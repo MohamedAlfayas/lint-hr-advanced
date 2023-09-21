@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardBody, Col, Container, Input, Label, Row, Button, Form, FormFeedback, Alert, Spinner } from 'reactstrap';
 import * as Yup from "yup";
 import logoLight from "../../assets/images/logo-light.png";
+import LoginParticles from '../../component/loginparticles/LoginParticles';
 
 
 const Login = () => {
@@ -36,6 +37,7 @@ const Login = () => {
 
     return (
         <React.Fragment>
+            <LoginParticles>
             <div className="auth-page-content mt-lg-5">
                 <Container>
                     <Row>
@@ -163,6 +165,7 @@ const Login = () => {
                     </Row>
                 </Container>
             </div>
+            </LoginParticles>
         </React.Fragment>
     )
 }
