@@ -40,7 +40,8 @@ export const changeLayout = (layout) => async (dispatch) => {
 export const changeLayoutMode = (layoutMode) => async (dispatch) => {
     try {
         ChangeHTMLAttribute("data-bs-theme", layoutMode);
-        dispatch(changeLayoutModeAction(layoutMode));
+        dispatch(changeLayoutModeAction(layoutMode));        
+        dispatch(changeSidebarTheme(layoutMode));
     } catch (error) { }
 };
 
