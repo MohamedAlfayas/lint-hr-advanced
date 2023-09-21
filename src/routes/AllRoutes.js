@@ -1,6 +1,6 @@
 import { Navigate } from "react-router";
-import Dashboard from "../component/dashboard/Dashboard";
-import Login from "../component/login/Login";
+import Dashboard from "../pages/dashboard/Dashboard";
+import Login from "../pages/login/Login";
 
 const privateRoutes = [
     { path: "/dashboard", component: <Dashboard /> },

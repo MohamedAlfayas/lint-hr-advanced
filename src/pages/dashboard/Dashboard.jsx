@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Col, Container, Row } from "reactstrap";
-import Widget from "./Widgets";
-import Section from "./Section";
+import Widget from "../../component/widget/Widgets";
+import Section from "../../component/section/Section";
 
 const Dashboard = () => {
   document.title = "Dashboard | Velzon - React Admin & Dashboard Template";
