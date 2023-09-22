@@ -43,13 +43,16 @@ const Register = () => {
 
   const navigate = useNavigate();
 
-  const [userRegister, setuserRegister] = useState([]);
+  // const [userRegister, setuserRegister] = useState([]);
   const [passwordShow, setPasswordShow] = useState(false);
 
   const [activeTab, setactiveTab] = useState(1);
   const [progressbarvalue, setprogressbarvalue] = useState(0);
   const [passedSteps, setPassedSteps] = useState([1]);
 
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [comapnyName, setCompanyName] = useState("");
   const [domain, setDomain] = useState("");
   const [domainChangeAccess, setDomainChangeAccess] = useState(true)
@@ -76,9 +79,9 @@ const Register = () => {
     enableReinitialize: true,
 
     initialValues: {
-      name: userRegister.name || '',
-      email: userRegister.email || '',
-      password: userRegister.password || '',
+      name: name || '',
+      email: email || '',
+      password: password || '',
       comapnyName: comapnyName || '',
       domain: domain || '',
     },
@@ -90,24 +93,32 @@ const Register = () => {
       domain: Yup.string().required("Please Enter Your Domain"),
     }),
     onSubmit: (values) => {
-      if (((values.name).trim()).length === 0 ||
-        ((values.email).trim()).length === 0 ||
-        ((values.password).trim()).length === 0 ||
+      console.log("Values = ",values);
+      if (((name).trim()).length === 0 ||
+        ((email).trim()).length === 0 ||
+        ((password).trim()).length === 0 ||
         ((comapnyName).trim()).length === 0 ||
         ((domain).trim().length === 0)
       ) {
         alert("Please Fill Your Details")
       }
-      else {
-        localStorage.setItem("token", "abc")
+      else {        
+        toggleTab(activeTab + 1, 100);
+        // localStorage.setItem("token", "abc")
         console.log("Form Values = ", values);
-        navigate("/dashboard")
+        // navigate("/login")
+
+        setTimeout(() =>{
+          navigate("/login")
+        },2000)
+        
       }
     }
   });
 
 
   useEffect(() => {
+    console.log("Valid values = ",validation.values);
     if (domainChangeAccess === true) {
       setDomain((comapnyName)
         .replaceAll(" ", "-")
@@ -119,8 +130,8 @@ const Register = () => {
   const handleDomainChange = (e) => {
     setDomainChangeAccess(false);
     setDomain((e.target.value)
-    .replaceAll(" ", "-")
-    .replaceAll("--", "-"))
+      .replaceAll(" ", "-")
+      .replaceAll("--", "-"))
   }
 
 
@@ -130,7 +141,7 @@ const Register = () => {
   return (
     <React.Fragment>
       <LoginParticles>
-        <div className="auth-page-content mt-lg-5">
+        <div className="auth-page-content mt-lg-3">
           <Container>
             <Row>
               <Col lg={12}>
@@ -204,7 +215,7 @@ const Register = () => {
                                   "rounded-pill"
                                 )}
                                 onClick={() => {
-                                  if (((validation.values.name).trim()).length === 0 || ((validation.values.email).trim()).length === 0 || ((validation.values.password).trim()).length === 0) {
+                                  if (((name).trim()).length === 0 || ((email).trim()).length === 0 || ((password).trim()).length === 0) {
                                     alert("Please Enter All Details")
                                   }
                                   else {
@@ -265,9 +276,9 @@ const Register = () => {
                                     className="form-control"
                                     placeholder="Enter name"
                                     type="name"
-                                    onChange={validation.handleChange}
+                                    onChange={(e) => setName(e.target.value)}
                                     onBlur={validation.handleBlur}
-                                    value={validation.values.name || ""}
+                                    value={name || ""}
                                     invalid={
                                       validation.touched.name && validation.errors.name ? true : false
                                     }
@@ -290,9 +301,9 @@ const Register = () => {
                                     className="form-control"
                                     placeholder="Enter email"
                                     type="email"
-                                    onChange={validation.handleChange}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     onBlur={validation.handleBlur}
-                                    value={validation.values.email || ""}
+                                    value={email || ""}
                                     invalid={
                                       validation.touched.email && validation.errors.email ? true : false
                                     }
@@ -314,11 +325,11 @@ const Register = () => {
                               <div className="position-relative auth-pass-inputgroup mb-3">
                                 <Input
                                   name="password"
-                                  value={validation.values.password || ""}
+                                  value={password || ""}
                                   type={passwordShow ? "text" : "password"}
                                   className="form-control pe-5"
                                   placeholder="Enter Password"
-                                  onChange={validation.handleChange}
+                                  onChange={(e) => setPassword(e.target.value)}
                                   onBlur={validation.handleBlur}
                                   invalid={
                                     validation.touched.password && validation.errors.password ? true : false
@@ -336,13 +347,14 @@ const Register = () => {
                               type="button"
                               className="btn btn-success btn-label right ms-auto nexttab nexttab"
                               onClick={() => {
-                                if (((validation.values.name).trim()).length === 0 || ((validation.values.email).trim()).length === 0 || ((validation.values.password).trim()).length === 0) {
+                                
+                                if (((name).trim()).length === 0 || ((email).trim()).length === 0 || ((password).trim()).length === 0) {
                                   alert("Please Enter All Details")
                                 }
                                 else {
                                   toggleTab(activeTab + 1, 50);
                                 }
-
+                                console.log("Values = ",validation.values);
                               }}
                             >
                               <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
@@ -375,11 +387,16 @@ const Register = () => {
                                     className="form-control"
                                     placeholder="Enter Company Name"
                                     type="text"
-                                    required
-                                    onChange={(e) =>setCompanyName(e.target.value)}
+                                    onChange={(e) => setCompanyName(e.target.value)}
                                     onBlur={validation.handleBlur}
-                                    value={comapnyName || ""}                                    
+                                    value={comapnyName || ""}
+                                    invalid={
+                                      validation.touched.comapnyName && validation.errors.comapnyName ? true : false
+                                    }
                                   />
+                                  {validation.touched.comapnyName && validation.errors.comapnyName ? (
+                                    <FormFeedback type="invalid">{validation.errors.comapnyName}</FormFeedback>
+                                  ) : null}
                                 </div>
                               </Col>
                               <Col lg={12}>
@@ -402,10 +419,11 @@ const Register = () => {
                                         validation.touched.domain && validation.errors.domain ? true : false
                                       }
                                     />
+                                    <span className="input-group-text" id="basic-addon2">.linthr.com</span>
                                     {validation.touched.domain && validation.errors.domain ? (
                                       <FormFeedback type="invalid">{validation.errors.domain}</FormFeedback>
                                     ) : null}
-                                    <span className="input-group-text" id="basic-addon2">.linthr.com</span>
+
                                   </div>
                                   <div id="passwordHelpBlock" className="form-text">
 
@@ -435,6 +453,9 @@ const Register = () => {
                               Back to General
                             </button>
                             <Button
+                              onClick={() =>{
+                                console.log("final Values = ",validation.values);
+                              }}
                               type="submit"
                               className="btn btn-success btn-label right ms-auto nexttab nexttab"
                             >
@@ -458,6 +479,9 @@ const Register = () => {
                               <h5>Well Done !</h5>
                               <p className="text-muted">
                                 You have Successfully Signed Up
+                              </p>
+                              <p className="text-muted">
+                                Please Wait !!!
                               </p>
                             </div>
                           </div>
