@@ -5,9 +5,13 @@ import {
   CardBody,
   CardHeader,
   Col,
+  Dropdown,
   DropdownItem,
   DropdownMenu,
   DropdownToggle,
+  FormGroup,
+  Input,
+  Label,
   Row,
   UncontrolledDropdown,
 } from "reactstrap";
@@ -33,74 +37,121 @@ const OrgInfoTab = () => {
         <Col xl={9} lg={8}>
           <Card>
             <CardBody>
-              <div className="text-muted">
-                <h6 className="mb-3 fw-semibold text-uppercase">Summary</h6>
-                <p>
-                  It will be as simple as occidental in fact, it will be
-                  Occidental. To an English person, it will seem like simplified
-                  English, as a skeptical Cambridge friend of mine told me what
-                  Occidental is. The European languages are members of the same
-                  family. Their separate existence is a myth. For science,
-                  music, sport, etc, Europe uses the same vocabulary. The
-                  languages only differ in their grammar, their pronunciation
-                  and their most common words.
-                </p>
+              <div>
+                <h6 className="mb-3 fw-semibold text-uppercase">
+                  Company Info
+                </h6>
 
-                <ul className="ps-4 vstack gap-2">
-                  <li>Product Design, Figma (Software), Prototype</li>
-                  <li>Four Dashboards : Ecommerce, Analytics, Project,etc.</li>
-                  <li>Create calendar, chat and email app pages.</li>
-                  <li>Add authentication pages.</li>
-                  <li>Content listing.</li>
-                </ul>
-
-                <div>
-                  <button
-                    type="button"
-                    className="btn btn-link link-success p-0">
-                    Read more
-                  </button>
-                </div>
-
-                <div className="pt-3 border-top border-top-dashed mt-4">
-                  <Row>
-                    <Col lg={3} sm={6}>
+                <div className="live-preview">
+                  <Row className="gy-4">
+                    <Col xxl={3} md={7}>
                       <div>
-                        <p className="mb-2 text-uppercase fw-medium">
-                          Create Date :
-                        </p>
-                        <h5 className="fs-15 mb-0">15 Sep, 2021</h5>
+                        <Label htmlFor="orgwebsite" className="form-label">
+                          Company Website
+                        </Label>
+                        <div className="form-icon right">
+                          <Input
+                            type="url"
+                            className="form-control form-control-icon"
+                            id="orgwebsite"
+                            placeholder="www.company.com"
+                          />
+                          <i className="ri-global-line"></i>
+                        </div>
+                        <div id="passwordHelpBlock" className="form-text">
+                          Enter Your Company Website.
+                        </div>
                       </div>
                     </Col>
-                    <Col lg={3} sm={6}>
+
+                    <Col xxl={3} md={7}>
                       <div>
-                        <p className="mb-2 text-uppercase fw-medium">
-                          Due Date :
-                        </p>
-                        <h5 className="fs-15 mb-0">29 Dec, 2021</h5>
+                        <Label htmlFor="contactnumber" className="form-label">
+                          Contact Number*
+                        </Label>
+                        <div className="form-icon right">
+                          <Input
+                            type="number"
+                            className="form-control form-control-icon"
+                            id="contactnumber"
+                            placeholder="999999999"
+                          />
+                          <i className="ri-phone-line"></i>
+                        </div>
+                        <div id="passwordHelpBlock" className="form-text">
+                          Enter Your Contact number with country code.
+                        </div>
                       </div>
                     </Col>
-                    <Col lg={3} sm={6}>
+
+                    <Col xxl={3} md={7}>
                       <div>
-                        <p className="mb-2 text-uppercase fw-medium">
-                          Priority :
-                        </p>
-                        <div className="badge bg-danger fs-12">High</div>
+                        <Label htmlFor="companyemail" className="form-label">
+                          Contact Email*
+                        </Label>
+                        <div className="form-icon right">
+                          <Input
+                            type="email"
+                            className="form-control form-control-icon"
+                            id="companyemail"
+                            placeholder="user@company.com"
+                          />
+                          <i className="ri-mail-line"></i>
+                        </div>
+                        <div id="passwordHelpBlock" className="form-text">
+                          Enter Your Email.
+                        </div>
                       </div>
                     </Col>
-                    <Col lg={3} sm={6}>
+
+                    <Col xxl={3} md={7}>
                       <div>
-                        <p className="mb-2 text-uppercase fw-medium">
-                          Status :
-                        </p>
-                        <div className="badge bg-warning fs-12">Inprogress</div>
+                        <Label
+                          htmlFor="exampleFormControlTextarea5"
+                          className="form-label">
+                          Address
+                        </Label>
+                        <textarea
+                          className="form-control"
+                          id="exampleFormControlTextarea5"
+                          rows="2"></textarea>
+                      </div>
+                    </Col>
+
+                    <Col xxl={3} md={7}>
+                      <div>
+                        <Label
+                          htmlFor="exampleFormControlTextarea5"
+                          className="form-label">
+                          Country
+                        </Label>
+                        <select class="form-select mb-3" aria-label="Default select example">
+                            <option selected>Open this select menu</option>
+                            <option value="1">One</option>
+                            <option value="2">Two</option>
+                            <option value="3">Three</option>
+                        </select>
+                      </div>
+                    </Col>
+
+                    <Col xxl={3} md={7}>
+                      <div>
+                        <Label
+                          htmlFor="exampleFormControlTextarea5"
+                          className="form-label">
+                          Company Overview
+                        </Label>
+                        <textarea
+                          className="form-control"
+                          id="exampleFormControlTextarea5"
+                          rows="3"></textarea>
                       </div>
                     </Col>
                   </Row>
                 </div>
 
                 <div className="pt-3 border-top border-top-dashed mt-4">
-                  <h6 className="mb-3 fw-semibold text-uppercase">Resources</h6>
+                  <h6 className="mb-3 fw-semibold text-uppercase">Logo</h6>
                   <Row className="g-3">
                     <Col xxl={4} lg={6}>
                       <div className="border rounded border-dashed p-2">
@@ -212,203 +263,6 @@ const OrgInfoTab = () => {
                   </Row>
                 </div>
               </div>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardHeader className="align-items-center d-flex">
-              <h4 className="card-title mb-0 flex-grow-1">Comments</h4>
-              <div className="flex-shrink-0">
-                <UncontrolledDropdown className="card-header-dropdown">
-                  <DropdownToggle
-                    tag="a"
-                    className="text-reset dropdown-btn"
-                    href="#">
-                    <span className="text-muted">
-                      Recent<i className="mdi mdi-chevron-down ms-1"></i>
-                    </span>
-                  </DropdownToggle>
-                  <DropdownMenu className="dropdown-menu-end">
-                    <DropdownItem>Recent</DropdownItem>
-                    <DropdownItem>Top Rated</DropdownItem>
-                    <DropdownItem>Previous</DropdownItem>
-                  </DropdownMenu>
-                </UncontrolledDropdown>
-              </div>
-            </CardHeader>
-
-            <CardBody>
-              <SimpleBar
-                style={{ height: "300px" }}
-                className="px-3 mx-n3 mb-2">
-                <div className="d-flex mb-4">
-                  <div className="flex-shrink-0">
-                    <img
-                      src={avatar8}
-                      alt=""
-                      className="avatar-xs rounded-circle"
-                    />
-                  </div>
-                  <div className="flex-grow-1 ms-3">
-                    <h5 className="fs-13">
-                      Joseph Parker{" "}
-                      <small className="text-muted ms-2">
-                        20 Dec 2021 - 05:47AM
-                      </small>
-                    </h5>
-                    <p className="text-muted">
-                      I am getting message from customers that when they place
-                      order always get error message .
-                    </p>
-                    <Link to="#" className="badge text-muted bg-light">
-                      <i className="mdi mdi-reply"></i> Reply
-                    </Link>
-                    <div className="d-flex mt-4">
-                      <div className="flex-shrink-0">
-                        <img
-                          src={avatar10}
-                          alt=""
-                          className="avatar-xs rounded-circle"
-                        />
-                      </div>
-                      <div className="flex-grow-1 ms-3">
-                        <h5 className="fs-13">
-                          Alexis Clarke{" "}
-                          <small className="text-muted ms-2">
-                            22 Dec 2021 - 02:32PM
-                          </small>
-                        </h5>
-                        <p className="text-muted">
-                          Please be sure to check your Spam mailbox to see if
-                          your email filters have identified the email from Dell
-                          as spam.
-                        </p>
-                        <Link to="#" className="badge text-muted bg-light">
-                          <i className="mdi mdi-reply"></i> Reply
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="d-flex mb-4">
-                  <div className="flex-shrink-0">
-                    <img
-                      src={avatar6}
-                      alt=""
-                      className="avatar-xs rounded-circle"
-                    />
-                  </div>
-                  <div className="flex-grow-1 ms-3">
-                    <h5 className="fs-13">
-                      Donald Palmer{" "}
-                      <small className="text-muted ms-2">
-                        24 Dec 2021 - 05:20PM
-                      </small>
-                    </h5>
-                    <p className="text-muted">
-                      If you have further questions, please contact Customer
-                      Support from the “Action Menu” on your{" "}
-                      <Link to="#" className="text-decoration-underline">
-                        Online Order Support
-                      </Link>
-                      .
-                    </p>
-                    <Link to="#" className="badge text-muted bg-light">
-                      <i className="mdi mdi-reply"></i> Reply
-                    </Link>
-                  </div>
-                </div>
-                <div className="d-flex">
-                  <div className="flex-shrink-0">
-                    <img
-                      src={avatar10}
-                      alt=""
-                      className="avatar-xs rounded-circle"
-                    />
-                  </div>
-                  <div className="flex-grow-1 ms-3">
-                    <h5 className="fs-13">
-                      Alexis Clarke{" "}
-                      <small className="text-muted ms-2">26 min ago</small>
-                    </h5>
-                    <p className="text-muted">
-                      Your{" "}
-                      <Link to="#" className="text-decoration-underline">
-                        Online Order Support
-                      </Link>{" "}
-                      provides you with the most current status of your order.
-                      To help manage your order refer to the “Action Menu” to
-                      initiate return, contact Customer Support and more.
-                    </p>
-                    <Row className="g-2 mb-3">
-                      <div className="col-lg-1 col-sm-2 col-6">
-                        <img
-                          src={image4}
-                          alt=""
-                          className="img-fluid rounded"
-                        />
-                      </div>
-                      <div className="col-lg-1 col-sm-2 col-6">
-                        <img
-                          src={image5}
-                          alt=""
-                          className="img-fluid rounded"
-                        />
-                      </div>
-                    </Row>
-                    <Link to="#" className="badge text-muted bg-light">
-                      <i className="mdi mdi-reply"></i> Reply
-                    </Link>
-                    <div className="d-flex mt-4">
-                      <div className="flex-shrink-0">
-                        <img
-                          src={avatar6}
-                          alt=""
-                          className="avatar-xs rounded-circle"
-                        />
-                      </div>
-                      <div className="flex-grow-1 ms-3">
-                        <h5 className="fs-13">
-                          Donald Palmer{" "}
-                          <small className="text-muted ms-2">8 sec ago</small>
-                        </h5>
-                        <p className="text-muted">
-                          Other shipping methods are available at checkout if
-                          you want your purchase delivered faster.
-                        </p>
-                        <Link to="#" className="badge text-muted bg-light">
-                          <i className="mdi mdi-reply"></i> Reply
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </SimpleBar>
-              <form className="mt-4">
-                <Row className="g-3">
-                  <Col xs={12}>
-                    <label
-                      htmlFor="exampleFormControlTextarea1"
-                      className="form-label text-body">
-                      Leave a Comments
-                    </label>
-                    <textarea
-                      className="form-control bg-light border-light"
-                      id="exampleFormControlTextarea1"
-                      rows="3"
-                      placeholder="Enter your comment..."></textarea>
-                  </Col>
-                  <Col xs={12} className="text-end">
-                    <button
-                      type="button"
-                      className="btn btn-ghost-secondary btn-icon waves-effect me-1">
-                      <i className="ri-attachment-line fs-16"></i>
-                    </button>
-                    <Link to="#" className="btn btn-success">
-                      Post Comments
-                    </Link>
-                  </Col>
-                </Row>
-              </form>
             </CardBody>
           </Card>
         </Col>
