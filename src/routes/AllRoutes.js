@@ -2,6 +2,7 @@ import { Navigate } from "react-router";
 import Dashboard from "../pages/dashboard/Dashboard";
 import Login from "../pages/login/Login";
 import Register from "../pages/register/Register";
+import ForgetPassword from "../pages/forgotpassword/ForgetPassword";
 
 const pathList = [
     {
@@ -25,6 +26,7 @@ const privateRoutes = [
 
 const publicRoutes = [
     { path: "/login", component: <Login /> },
+    { path: "/forgot-password", component: <ForgetPassword /> },
     { path: "/register", component: <Register /> },
 ]
 

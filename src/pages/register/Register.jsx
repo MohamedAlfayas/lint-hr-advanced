@@ -21,7 +21,7 @@ import {
   FormFeedback,
   Button,
 } from "reactstrap";
-import LoginParticles from '../../component/loginparticles/LoginParticles';
+import LoginParticles from '../../component/authparticles/AuthParticles';
 import classnames from "classnames";
 
 
@@ -33,6 +33,7 @@ import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
 
 import * as Yup from "yup";
+import { MetaTitle } from '../../common/data/MetaTitle';
 
 
 // register lottie and define custom element
@@ -136,7 +137,7 @@ const Register = () => {
 
 
 
-  document.title = "Register | Lint HR Admin Dashboard";
+  document.title = `Register | ${MetaTitle || "Lint HR"} `;
 
   return (
     <React.Fragment>

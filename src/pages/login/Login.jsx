@@ -5,7 +5,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardBody, Col, Container, Input, Label, Row, Button, Form, FormFeedback, Alert, Spinner } from 'reactstrap';
 import * as Yup from "yup";
 import logoLight from "../../assets/images/logo-light.png";
-import LoginParticles from '../../component/loginparticles/LoginParticles';
+import LoginParticles from '../../component/authparticles/AuthParticles';
+import { MetaTitle } from '../../common/data/MetaTitle';
 
 
 const Login = () => {
@@ -33,7 +34,7 @@ const Login = () => {
         }
     });
 
-    document.title = "Login | Lint HR Admin Dashboard";
+    document.title = `Login | ${MetaTitle || "Lint HR"}`;
 
     return (
         <React.Fragment>

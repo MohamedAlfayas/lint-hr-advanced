@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { Col, Container, Row } from "reactstrap";
 import Widget from "../../component/widget/Widgets";
 import Section from "../../component/section/Section";
+import { MetaTitle } from "../../common/data/MetaTitle";
 
 const Dashboard = () => {
-  document.title = "Dashboard | Velzon - React Admin & Dashboard Template";
+  document.title = `Dashboard | ${MetaTitle || "Lint HR"}`;
 
   const [rightColumn, setRightColumn] = useState(true);
   const toggleRightColumn = () => {

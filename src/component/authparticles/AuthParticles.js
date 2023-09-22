@@ -1,7 +1,7 @@
  import React from 'react';
 import withRouter from '../../common/js/withRouter';
 
-const LoginParticles = ({ children }) => {
+const AuthParticles = ({ children }) => {
     return (
         <React.Fragment>
             <div className="auth-page-wrapper pt-5">
@@ -36,4 +36,4 @@ const LoginParticles = ({ children }) => {
     );
 };
 
-export default withRouter(LoginParticles);
+export default withRouter(AuthParticles);

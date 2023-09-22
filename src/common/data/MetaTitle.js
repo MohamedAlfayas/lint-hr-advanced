@@ -1,0 +1,1 @@
+export const MetaTitle  = "Lint HR"
