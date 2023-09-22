@@ -13,7 +13,7 @@ const ProfileDropdown = () => {
     const logout = () =>{
         console.log("User Logout");
         localStorage.removeItem("token");
-        navigate("/login")
+        navigate("/auth/login")
     }
 
     //Dropdown Toggle
