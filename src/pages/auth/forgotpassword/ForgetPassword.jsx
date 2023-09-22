@@ -6,7 +6,7 @@ import { Row, Col, Alert, Card, CardBody, Container, FormFeedback, Input, Label,
 import { useSelector, useDispatch } from "react-redux";
 
 import { Link } from "react-router-dom";
-import withRouter from "../../common/js/withRouter";
+import withRouter from "../../../common/js/withRouter";
 
 // Formik Validation
 import * as Yup from "yup";
@@ -16,9 +16,10 @@ import { useFormik } from "formik";
 
 // import images
 // import profile from "../../assets/images/bg.png";
-import logoLight from "../../assets/images/logo-light.png";
-import { MetaTitle } from "../../common/data/MetaTitle";
-import AuthParticles from "../../component/authparticles/AuthParticles";
+import logoLight from "../../../assets/images/logo-light.png";
+import { MetaTitle } from "../../../common/data/MetaTitle";
+import AuthParticles from "../../../component/authparticles/AuthParticles";
+import { validate } from "../../../common/js/EmailValidate";
 
 const ForgetPassword = props => {
 
@@ -29,6 +30,7 @@ const ForgetPassword = props => {
     initialValues: {
       email: '',
     },
+    validate,
     validationSchema: Yup.object({
       email: Yup.string().required("Please Enter Your Email"),
     }),
@@ -115,7 +117,7 @@ const ForgetPassword = props => {
               </Card>
 
               <div className="mt-4 text-center">
-                <p className="mb-0">Wait, I remember my password... <Link to="/login" className="fw-semibold text-primary text-decoration-underline"> Click here </Link> </p>
+                <p className="mb-0">Wait, I remember my password... <Link to="/auth/login" className="fw-semibold text-primary text-decoration-underline"> Click here </Link> </p>
               </div>
 
             </Col>

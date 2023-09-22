@@ -4,9 +4,10 @@ import { useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardBody, Col, Container, Input, Label, Row, Button, Form, FormFeedback, Alert, Spinner } from 'reactstrap';
 import * as Yup from "yup";
-import logoLight from "../../assets/images/logo-light.png";
-import LoginParticles from '../../component/authparticles/AuthParticles';
-import { MetaTitle } from '../../common/data/MetaTitle';
+import logoLight from "../../../assets/images/logo-light.png";
+import AuthParticles from '../../../component/authparticles/AuthParticles';
+import { MetaTitle } from '../../../common/data/MetaTitle';
+import { validate } from '../../../common/js/EmailValidate';
 
 
 const Login = () => {
@@ -14,6 +15,7 @@ const Login = () => {
 
     const [userLogin, setUserLogin] = useState([]);
     const [passwordShow, setPasswordShow] = useState(false);
+    
 
     const validation = useFormik({
         // enableReinitialize : use this flag when initial values needs to be changed
@@ -23,6 +25,7 @@ const Login = () => {
             email: userLogin.email || "admin@lintcloud.com" || '',
             password: userLogin.password || "lintcloud" || '',
         },
+        validate,
         validationSchema: Yup.object({
             email: Yup.string().required("Please Enter Your Email"),
             password: Yup.string().required("Please Enter Your Password"),
@@ -38,7 +41,7 @@ const Login = () => {
 
     return (
         <React.Fragment>
-            <LoginParticles>
+            <AuthParticles>
             <div className="auth-page-content mt-lg-5">
                 <Container>
                     <Row>
@@ -92,7 +95,7 @@ const Login = () => {
 
                                             <div className="mb-3">
                                                 <div className="float-end">
-                                                    <Link to="/forgot-password" className="text-muted">Forgot password?</Link>
+                                                    <Link to="/auth/forgot-password" className="text-muted">Forgot password?</Link>
                                                 </div>
                                                 <Label className="form-label" htmlFor="password-input">Password</Label>
                                                 <div className="position-relative auth-pass-inputgroup mb-3">
@@ -159,14 +162,14 @@ const Login = () => {
                             </Card>
 
                             <div className="mt-4 text-center">
-                                <p className="mb-0">Don't have an account ? <Link to="/register" className="fw-semibold text-primary text-decoration-underline"> Signup </Link> </p>
+                                <p className="mb-0">Don't have an account ? <Link to="/auth/register" className="fw-semibold text-primary text-decoration-underline"> Signup </Link> </p>
                             </div>
 
                         </Col>
                     </Row>
                 </Container>
             </div>
-            </LoginParticles>
+            </AuthParticles>
         </React.Fragment>
     )
 }

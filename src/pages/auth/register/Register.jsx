@@ -21,19 +21,18 @@ import {
   FormFeedback,
   Button,
 } from "reactstrap";
-import LoginParticles from '../../component/authparticles/AuthParticles';
 import classnames from "classnames";
 
-
-import dummyUser from "../../assets/images/users/user-dummy-img.jpg";
-import logoLight from "../../assets/images/logo-light.png";
+import logoLight from "../../../assets/images/logo-light.png";
 
 
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
 
 import * as Yup from "yup";
-import { MetaTitle } from '../../common/data/MetaTitle';
+import { MetaTitle } from '../../../common/data/MetaTitle';
+import { validate } from '../../../common/js/EmailValidate';
+import AuthParticles from '../../../component/authparticles/AuthParticles';
 
 
 // register lottie and define custom element
@@ -72,9 +71,6 @@ const Register = () => {
   }
 
 
-
-
-
   const validation = useFormik({
     // enableReinitialize : use this flag when initial values needs to be changed
     enableReinitialize: true,
@@ -86,6 +82,7 @@ const Register = () => {
       comapnyName: comapnyName || '',
       domain: domain || '',
     },
+    validate,
     validationSchema: Yup.object({
       name: Yup.string().required("Please Enter Your Name"),
       email: Yup.string().required("Please Enter Your Email"),
@@ -110,29 +107,32 @@ const Register = () => {
         // navigate("/login")
 
         setTimeout(() =>{
-          navigate("/login")
+          navigate("/auth/login")
         },2000)
         
       }
     }
   });
 
+  const setDomainFormat = (val) =>{
+    return ((val)
+    .replaceAll(" ", "-")
+    .replaceAll("--", "-")
+    .replaceAll("_", "-")).toLowerCase()
+  }
+
 
   useEffect(() => {
     console.log("Valid values = ",validation.values);
     if (domainChangeAccess === true) {
-      setDomain((comapnyName)
-        .replaceAll(" ", "-")
-        .replaceAll("--", "-"))
+      setDomain(setDomainFormat(comapnyName))
     }
   }, [comapnyName])
 
 
   const handleDomainChange = (e) => {
     setDomainChangeAccess(false);
-    setDomain((e.target.value)
-      .replaceAll(" ", "-")
-      .replaceAll("--", "-"))
+    setDomain(setDomainFormat(e.target.value))
   }
 
 
@@ -141,7 +141,7 @@ const Register = () => {
 
   return (
     <React.Fragment>
-      <LoginParticles>
+      <AuthParticles>
         <div className="auth-page-content mt-lg-3">
           <Container>
             <Row>
@@ -493,14 +493,14 @@ const Register = () => {
                 </Card>
 
                 <div className="mt-4 text-center">
-                  <p className="mb-0">Already have an account ? <Link to="/login" className="fw-semibold text-primary text-decoration-underline"> Signin </Link> </p>
+                  <p className="mb-0">Already have an account ? <Link to="/auth/login" className="fw-semibold text-primary text-decoration-underline"> Signin </Link> </p>
                 </div>
 
               </Col>
             </Row>
           </Container>
         </div>
-      </LoginParticles>
+      </AuthParticles>
     </React.Fragment>
   )
 }
