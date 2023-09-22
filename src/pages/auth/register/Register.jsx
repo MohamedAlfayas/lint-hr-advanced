@@ -216,8 +216,12 @@ const Register = () => {
                                   "rounded-pill"
                                 )}
                                 onClick={() => {
-                                  if (((name).trim()).length === 0 || ((email).trim()).length === 0 || ((password).trim()).length === 0) {
+                                  console.log("validation.errors.email = ",validation.errors.email);
+                                  if (((name).trim()).length === 0 || (((email).trim()).length === 0 && (!validation.errors.email)) || ((password).trim()).length === 0) {
                                     alert("Please Enter All Details")
+                                  }
+                                  else if(((email).trim()).length !== 0 && (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(email))){
+                                    alert("Invalid Email Format")
                                   }
                                   else {
                                     toggleTab(2, 50);
@@ -348,9 +352,12 @@ const Register = () => {
                               type="button"
                               className="btn btn-success btn-label right ms-auto nexttab nexttab"
                               onClick={() => {
-                                
+                                console.log("validation.errors.email = ",validation.errors);
                                 if (((name).trim()).length === 0 || ((email).trim()).length === 0 || ((password).trim()).length === 0) {
                                   alert("Please Enter All Details")
+                                }
+                                else if(((email).trim()).length !== 0 && (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(email))){
+                                  alert("Invalid Email Format")
                                 }
                                 else {
                                   toggleTab(activeTab + 1, 50);
