@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
@@ -27,10 +28,130 @@ import avatar7 from "../../assets/images/users/avatar-7.jpg";
 import image4 from "../../assets/images/small/img-4.jpg";
 import image5 from "../../assets/images/small/img-5.jpg";
 
+
+import indflag from '../../assets/images/flags/in.svg'
 //SimpleBar
 import SimpleBar from "simplebar-react";
+import CountryList from "../../common/data/CountryList";
+import Dropzone from "react-dropzone";
+import axios from "axios";
+
 
 const OrgInfoTab = () => {
+
+  const [stateList, setStateList] = useState([]);
+  const [contactCountry, setContactCountry] = useState({
+    id: 240,
+    flagImg: indflag,
+    countryName: "India",
+    countryCode: "+91"
+  });
+
+  const [dropdownOpen3, setDropdownOpen3] = useState(false);
+  const [dropdownOpen4, setDropdownOpen4] = useState(false);
+  const [stateDD, setStateDD] = useState(false);
+
+  const toggle3 = () => setDropdownOpen3((prevState) => !prevState);
+  const toggle4 = () => setDropdownOpen4((prevState) => !prevState);
+  const stateToggle = () => setStateDD((prevState) => !prevState);
+
+
+  // Set Empty Data To form
+
+  const initialData = useMemo(() => {
+    return {
+      id: "0",
+      website: "",
+      contact_number: "",
+      country_code: "+91",
+      contact_email: "",
+      about: "",
+      address: "",
+      city: "",
+      state: "",
+      country: "",
+      pincode: "",
+      timezone: "",
+    }
+  }, []);
+
+  const [profileData, setProfileData] = useState(initialData);
+
+  const updateProfileData = (name, value) => {
+    setProfileData({
+      ...profileData,
+      [name]: value
+    })
+  }
+
+  const [darkLogoFile, setDarkLogoFile] = useState(null);
+  const [lightLogoFile, setLightLogoFile] = useState(null);
+
+  const setStateForThisCountry = (c_id) => {
+    console.log("Country Id = ", c_id);
+    const stateLists = CountryList.find(obj => obj.id === c_id).states;
+    console.log("State List = ", stateList);
+    setStateList(stateLists);
+    updateProfileData('state', "");
+    updateProfileData('timezone', CountryList.find(obj => obj.id === c_id).timezone);
+  }
+
+  function handleAcceptedFiles(file, logo_type) {
+    console.log("File === ", file);
+    let chosenFile = Object.assign(file[0], {
+      preview: URL.createObjectURL(file[0]),
+      formattedSize: formatBytes(file[0].size),
+    })
+    logo_type === "dark" ? setDarkLogoFile(chosenFile) : setLightLogoFile(chosenFile)
+  }
+
+  /**
+   * Formats the size
+   */
+  function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+  };
+
+
+  const submitProfileForm = () => {
+    console.log("Submitting Profile Data = ", profileData);
+
+
+    let form_data = new FormData();
+    darkLogoFile !== null && form_data.append('dark_logo', darkLogoFile, darkLogoFile.name);
+    lightLogoFile !== null && form_data.append('light_logo', lightLogoFile, lightLogoFile.name);
+    
+    Object.entries(profileData).map((key,idx) =>{
+      form_data.append(key[0], key[1])
+    });
+
+
+    axios({
+      method: 'POST',
+      url: "http://192.168.1.6:8000/company/create-profile/",
+      // headers : {
+      //     "Access-Control-Allow-Credentials": true,
+      //     "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS",
+      //     "Content-Type": "application/json"
+      // },
+      headers: {
+        'content-type': 'multipart/form-data'
+      },
+      data: form_data
+    })
+      .then(res => {
+        console.log("RES ==== ", res);
+      })
+      .catch(err => console.log("ERRR === ", err))
+
+  }
+
   return (
     <React.Fragment>
       <Row>
@@ -44,7 +165,7 @@ const OrgInfoTab = () => {
 
                 <div className="live-preview">
                   <Row className="gy-4">
-                    <Col xxl={3} md={7}>
+                    <Col xxl={8} md={7}>
                       <div>
                         <Label htmlFor="orgwebsite" className="form-label">
                           Company Website
@@ -55,6 +176,8 @@ const OrgInfoTab = () => {
                             className="form-control form-control-icon"
                             id="orgwebsite"
                             placeholder="www.company.com"
+                            value={profileData.website || ""}
+                            onChange={(e) => updateProfileData('website', e.target.value)}
                           />
                           <i className="ri-global-line"></i>
                         </div>
@@ -64,27 +187,47 @@ const OrgInfoTab = () => {
                       </div>
                     </Col>
 
-                    <Col xxl={3} md={7}>
+                    <Col xxl={8} md={7}>
                       <div>
-                        <Label htmlFor="contactnumber" className="form-label">
-                          Contact Number*
-                        </Label>
-                        <div className="form-icon right">
-                          <Input
+                        <Label>Contact Number*</Label>
+                        <Dropdown className='input-group' isOpen={dropdownOpen4} toggle={toggle4}>
+                          <DropdownToggle as="button" className="btn btn-light border arrow-none">
+                            <img src={contactCountry.flagImg} alt="country flag" className="options-flagimg" height="20" />
+                            <span className="countrylist-codeno text-muted">{contactCountry.countryCode}</span>
+                          </DropdownToggle>
+                          <input
                             type="number"
-                            className="form-control form-control-icon"
-                            id="contactnumber"
-                            placeholder="999999999"
+                            className="form-control rounded-end flag-input"
+                            placeholder="Enter number"
+                            value={profileData.contact_number || ""}
+                            onChange={(e) => updateProfileData('contact_number', e.target.value)}
                           />
-                          <i className="ri-phone-line"></i>
-                        </div>
+                          <DropdownMenu as='ul' className="list-unstyled w-100 dropdown-menu-list mb-0">
+                            <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
+                              {((CountryList.filter(obj => obj.show)).sort((a, b) => a.countryName.localeCompare(b.countryName)) || []).map((item, key) => (
+                                <DropdownItem as='li' onClick={() => { setContactCountry(item); updateProfileData('country_code', item.countryCode) }} key={key} className="dropdown-item d-flex">
+                                  <div className="flex-shrink-0 me-2">
+                                    <img src={item.flagImg} alt="country flag" className="options-flagimg" height="20" />
+                                  </div>
+                                  <div className="flex-grow-1">
+                                    <div className="d-flex">
+                                      <div className="country-name me-1">{item.countryName}</div>
+                                      <span className="countrylist-codeno text-muted">{item.countryCode}</span>
+                                    </div>
+                                  </div>
+                                </DropdownItem>
+                              ))}
+                            </SimpleBar>
+                          </DropdownMenu>
+                        </Dropdown>
+
                         <div id="passwordHelpBlock" className="form-text">
                           Enter Your Contact number with country code.
                         </div>
                       </div>
                     </Col>
 
-                    <Col xxl={3} md={7}>
+                    <Col xxl={8} md={7}>
                       <div>
                         <Label htmlFor="companyemail" className="form-label">
                           Contact Email*
@@ -95,6 +238,8 @@ const OrgInfoTab = () => {
                             className="form-control form-control-icon"
                             id="companyemail"
                             placeholder="user@company.com"
+                            value={profileData.contact_email || ""}
+                            onChange={(e) => updateProfileData('contact_email', e.target.value)}
                           />
                           <i className="ri-mail-line"></i>
                         </div>
@@ -104,7 +249,7 @@ const OrgInfoTab = () => {
                       </div>
                     </Col>
 
-                    <Col xxl={3} md={7}>
+                    <Col xxl={8} md={7}>
                       <div>
                         <Label
                           htmlFor="exampleFormControlTextarea5"
@@ -114,11 +259,14 @@ const OrgInfoTab = () => {
                         <textarea
                           className="form-control"
                           id="exampleFormControlTextarea5"
-                          rows="3"></textarea>
+                          rows="3"
+                          value={profileData.about || ""}
+                          onChange={(e) => updateProfileData('about', e.target.value)}
+                        ></textarea>
                       </div>
                     </Col>
 
-                    <Col xxl={3} md={12}>
+                    <Col xxl={8} md={12}>
                       <div>
                         <Label
                           htmlFor="exampleFormControlTextarea5"
@@ -128,47 +276,90 @@ const OrgInfoTab = () => {
                         <textarea
                           className="form-control"
                           id="exampleFormControlTextarea5"
-                          rows="2"></textarea>
+                          rows="2"
+                          value={profileData.address || ""}
+                          onChange={(e) => updateProfileData('address', e.target.value)}
+                        ></textarea>
                       </div>
                     </Col>
 
-                    <Col xxl={3} md={6}>
+                    <Col xxl={8} md={6}>
                       <div>
                         <Label
                           htmlFor="exampleFormControlTextarea5"
                           className="form-label">
                           Country
                         </Label>
-                        <select
+                        {/* <select
                           class="form-select mb-3"
                           aria-label="Default select example">
                           <option selected>Open this select menu</option>
                           <option value="1">One</option>
                           <option value="2">Two</option>
                           <option value="3">Three</option>
-                        </select>
+                        </select> */}
+                        <Dropdown isOpen={dropdownOpen3} toggle={toggle3}>
+                          <DropdownToggle
+                            tag="div"
+                            className="form-control rounded-end flag-input form-select"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            {profileData.country || 'Select country'}
+                          </DropdownToggle>
+                          <DropdownMenu as='ul' className="list-unstyled w-100 dropdown-menu-list mb-0">
+                            <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
+                              {((CountryList.filter(obj => obj.show)).sort((a, b) => a.countryName.localeCompare(b.countryName)) || []).map((item, key) => (
+                                <DropdownItem as='li' onClick={() => { updateProfileData("country", item.countryName); setStateForThisCountry(item.id) }} key={key} className="dropdown-item d-flex">
+                                  <div className="flex-shrink-0 me-2">
+                                    <img src={item.flagImg} alt="country flag" className="options-flagimg" height="20" />
+                                  </div>
+                                  <div className="flex-grow-1">
+                                    <div className="d-flex">
+                                      <div className="country-name me-1">{item.countryName}</div>
+                                      <span className="countrylist-codeno text-muted">{item.countryCode}</span>
+                                    </div>
+                                  </div>
+                                </DropdownItem>
+                              ))}
+                            </SimpleBar>
+                          </DropdownMenu>
+                        </Dropdown>
                       </div>
                     </Col>
 
-                    <Col xxl={3} md={6}>
+                    <Col xxl={8} md={6}>
                       <div>
                         <Label
                           htmlFor="exampleFormControlTextarea5"
                           className="form-label">
                           State
                         </Label>
-                        <select
-                          class="form-select mb-3"
-                          aria-label="Default select example">
-                          <option selected>Open this select menu</option>
-                          <option value="1">One</option>
-                          <option value="2">Two</option>
-                          <option value="3">Three</option>
-                        </select>
+                        <Dropdown isOpen={stateDD} toggle={stateToggle}>
+                          <DropdownToggle
+                            tag="div"
+                            className="form-control rounded-end flag-input form-select"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            {profileData.state || 'Select State'}
+                          </DropdownToggle>
+                          <DropdownMenu as='ul' className="list-unstyled w-100 dropdown-menu-list mb-0">
+                            <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
+                              {(stateList || []).map((item, key) => (
+                                <DropdownItem as='li' onClick={() => updateProfileData("state", item)} key={key} className="dropdown-item d-flex">
+                                  <div className="flex-grow-1">
+                                    <div className="d-flex">
+                                      <div className="country-name me-1">{item}</div>
+                                    </div>
+                                  </div>
+                                </DropdownItem>
+                              ))}
+                            </SimpleBar>
+                          </DropdownMenu>
+                        </Dropdown>
                       </div>
                     </Col>
 
-                    <Col xxl={3} md={6}>
+                    <Col xxl={8} md={6}>
                       <div>
                         <Label
                           htmlFor="exampleFormControlTextarea5"
@@ -177,17 +368,19 @@ const OrgInfoTab = () => {
                         </Label>
                         <div className="form-icon right">
                           <Input
-                            type="email"
+                            type="text"
                             className="form-control form-control-icon"
-                            id="companyemail"
-                            placeholder="user@company.com"
+                            id="companycity"
+                            placeholder="Chennai"
+                            value={profileData.city || ""}
+                            onChange={(e) => updateProfileData('city', e.target.value)}
                           />
                           <i className="ri-mail-line"></i>
                         </div>
                       </div>
                     </Col>
 
-                    <Col xxl={3} md={6}>
+                    <Col xxl={8} md={6}>
                       <div>
                         <Label
                           htmlFor="exampleFormControlTextarea5"
@@ -198,36 +391,182 @@ const OrgInfoTab = () => {
                           <Input
                             type="number"
                             className="form-control form-control-icon"
-                            id="companyemail"
+                            id="companypincode"
                             placeholder="666666"
+                            value={profileData.city || ""}
+                            onChange={(e) => updateProfileData('city', e.target.value)}
                           />
                           <i className="ri-mail-line"></i>
                         </div>
                       </div>
                     </Col>
 
-                    <Col xxl={3} md={6}>
+                    <Col xxl={8} md={6}>
                       <div>
                         <Label
                           htmlFor="exampleFormControlTextarea5"
                           className="form-label">
                           Time Zone
                         </Label>
-                        <select
-                          class="form-select mb-3"
-                          aria-label="Default select example">
-                          <option selected>Open this select menu</option>
-                          <option value="1">One</option>
-                          <option value="2">Two</option>
-                          <option value="3">Three</option>
-                        </select>
+                        <div className="form-icon right">
+                          <Input
+                            type="text"
+                            className="form-control form-control-icon"
+                            id="timezone"
+                            placeholder="Asia/Kolkata"
+                            value={profileData.timezone || ""}
+                            onChange={(e) => updateProfileData('timezone', e.target.value)}
+                          />
+                          <i className="ri-time-line"></i>
+                        </div>
                       </div>
                     </Col>
 
+                    <Col xxl={8} md={12}>
+                      <Row>
+                        {/* Dark Logo Section */}
+                        <Col xxl={6} md={6}>
+                          <div>
+                            <Label
+                              htmlFor="exampleFormControlTextarea5"
+                              className="form-label">
+                              Dark Logo
+                            </Label>
+                            <Dropzone
+                              multiple={false}
+                              onDrop={acceptedFiles => {
+                                handleAcceptedFiles(acceptedFiles, "dark");
+                              }}
+                            >
+                              {({ getRootProps, getInputProps }) => (
+                                <div className="dropzone dz-clickable">
+                                  <div
+                                    className="dz-message needsclick"
+                                    {...getRootProps()}
+                                  >
+                                    <div className="mb-3">
+                                      <i className="display-4 text-muted ri-upload-cloud-2-fill" />
+                                    </div>
+                                    <h5>Drop files here or click to upload Dark Logo.</h5>
+                                  </div>
+                                </div>
+                              )}
+                            </Dropzone>
+                            <div className="list-unstyled mb-0" id="file-previews">
+                              {darkLogoFile && (
+                                <Card
+                                  className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete"
+                                  key={darkLogoFile + "-file"}
+                                >
+                                  <div className="p-2">
+                                    <Row className="align-items-center">
+                                      <Col className="col-auto">
+                                        <img
+                                          data-dz-thumbnail=""
+                                          height="80"
+                                          className="avatar-sm rounded bg-light"
+                                          alt={darkLogoFile.name}
+                                          src={darkLogoFile.preview}
+                                        />
+                                      </Col>
+                                      <Col>
+                                        <Link
+                                          to="#"
+                                          className="text-muted font-weight-bold"
+                                        >
+                                          {darkLogoFile.name}
+                                        </Link>
+                                        <p className="mb-0">
+                                          <strong>{darkLogoFile.formattedSize}</strong>
+                                        </p>
+                                      </Col>
+                                    </Row>
+                                  </div>
+                                </Card>
+                              )}
+                            </div>
+                          </div>
+                        </Col>
+
+
+                        {/* Light Logo Section */}
+
+                        <Col xxl={6} md={6}>
+                          <div>
+                            <Label
+                              htmlFor="exampleFormControlTextarea5"
+                              className="form-label">
+                              Light Logo
+                            </Label>
+                            <Dropzone
+                              multiple={false}
+                              onDrop={acceptedFiles => {
+                                handleAcceptedFiles(acceptedFiles, "light");
+                              }}
+                            >
+                              {({ getRootProps, getInputProps }) => (
+                                <div className="dropzone dz-clickable">
+                                  <div
+                                    className="dz-message needsclick"
+                                    {...getRootProps()}
+                                  >
+                                    <div className="mb-3">
+                                      <i className="display-4 text-muted ri-upload-cloud-2-fill" />
+                                    </div>
+                                    <h5>Drop files here or click to upload Light Logo.</h5>
+                                  </div>
+                                </div>
+                              )}
+                            </Dropzone>
+                            <div className="list-unstyled mb-0" id="file-previews">
+                              {lightLogoFile && (
+                                <Card
+                                  className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete"
+                                  key={lightLogoFile + "-file"}
+                                >
+                                  <div className="p-2">
+                                    <Row className="align-items-center">
+                                      <Col className="col-auto">
+                                        <img
+                                          data-dz-thumbnail=""
+                                          height="80"
+                                          className="avatar-sm rounded bg-light"
+                                          alt={lightLogoFile.name}
+                                          src={lightLogoFile.preview}
+                                        />
+                                      </Col>
+                                      <Col>
+                                        <Link
+                                          to="#"
+                                          className="text-muted font-weight-bold"
+                                        >
+                                          {lightLogoFile.name}
+                                        </Link>
+                                        <p className="mb-0">
+                                          <strong>{lightLogoFile.formattedSize}</strong>
+                                        </p>
+                                      </Col>
+                                    </Row>
+                                  </div>
+                                </Card>
+                              )}
+                            </div>
+                          </div>
+                        </Col>
+                      </Row>
+                    </Col>
+
+                    <Col xxl={12} md={12}>
+                      <Button type="button" onClick={submitProfileForm}>
+                        Submit
+                      </Button>
+                    </Col>
+
                   </Row>
+
                 </div>
 
-                <div className="pt-3 border-top border-top-dashed mt-4">
+                {/* <div className="pt-3 border-top border-top-dashed mt-4">
                   <h6 className="mb-3 fw-semibold text-uppercase">Logo</h6>
                   <Row className="g-3">
                     <Col xxl={4} lg={6}>
@@ -338,7 +677,7 @@ const OrgInfoTab = () => {
                       </div>
                     </Col>
                   </Row>
-                </div>
+                </div> */}
               </div>
             </CardBody>
           </Card>
