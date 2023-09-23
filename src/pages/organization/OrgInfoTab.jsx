@@ -109,6 +109,20 @@ const OrgInfoTab = () => {
                         <Label
                           htmlFor="exampleFormControlTextarea5"
                           className="form-label">
+                          Company Overview
+                        </Label>
+                        <textarea
+                          className="form-control"
+                          id="exampleFormControlTextarea5"
+                          rows="3"></textarea>
+                      </div>
+                    </Col>
+
+                    <Col xxl={3} md={12}>
+                      <div>
+                        <Label
+                          htmlFor="exampleFormControlTextarea5"
+                          className="form-label">
                           Address
                         </Label>
                         <textarea
@@ -118,35 +132,98 @@ const OrgInfoTab = () => {
                       </div>
                     </Col>
 
-                    <Col xxl={3} md={7}>
+                    <Col xxl={3} md={6}>
                       <div>
                         <Label
                           htmlFor="exampleFormControlTextarea5"
                           className="form-label">
                           Country
                         </Label>
-                        <select class="form-select mb-3" aria-label="Default select example">
-                            <option selected>Open this select menu</option>
-                            <option value="1">One</option>
-                            <option value="2">Two</option>
-                            <option value="3">Three</option>
+                        <select
+                          class="form-select mb-3"
+                          aria-label="Default select example">
+                          <option selected>Open this select menu</option>
+                          <option value="1">One</option>
+                          <option value="2">Two</option>
+                          <option value="3">Three</option>
                         </select>
                       </div>
                     </Col>
 
-                    <Col xxl={3} md={7}>
+                    <Col xxl={3} md={6}>
                       <div>
                         <Label
                           htmlFor="exampleFormControlTextarea5"
                           className="form-label">
-                          Company Overview
+                          State
                         </Label>
-                        <textarea
-                          className="form-control"
-                          id="exampleFormControlTextarea5"
-                          rows="3"></textarea>
+                        <select
+                          class="form-select mb-3"
+                          aria-label="Default select example">
+                          <option selected>Open this select menu</option>
+                          <option value="1">One</option>
+                          <option value="2">Two</option>
+                          <option value="3">Three</option>
+                        </select>
                       </div>
                     </Col>
+
+                    <Col xxl={3} md={6}>
+                      <div>
+                        <Label
+                          htmlFor="exampleFormControlTextarea5"
+                          className="form-label">
+                          City
+                        </Label>
+                        <div className="form-icon right">
+                          <Input
+                            type="email"
+                            className="form-control form-control-icon"
+                            id="companyemail"
+                            placeholder="user@company.com"
+                          />
+                          <i className="ri-mail-line"></i>
+                        </div>
+                      </div>
+                    </Col>
+
+                    <Col xxl={3} md={6}>
+                      <div>
+                        <Label
+                          htmlFor="exampleFormControlTextarea5"
+                          className="form-label">
+                          Pincode
+                        </Label>
+                        <div className="form-icon right">
+                          <Input
+                            type="number"
+                            className="form-control form-control-icon"
+                            id="companyemail"
+                            placeholder="666666"
+                          />
+                          <i className="ri-mail-line"></i>
+                        </div>
+                      </div>
+                    </Col>
+
+                    <Col xxl={3} md={6}>
+                      <div>
+                        <Label
+                          htmlFor="exampleFormControlTextarea5"
+                          className="form-label">
+                          Time Zone
+                        </Label>
+                        <select
+                          class="form-select mb-3"
+                          aria-label="Default select example">
+                          <option selected>Open this select menu</option>
+                          <option value="1">One</option>
+                          <option value="2">Two</option>
+                          <option value="3">Three</option>
+                        </select>
+                      </div>
+                    </Col>
+
                   </Row>
                 </div>
 
