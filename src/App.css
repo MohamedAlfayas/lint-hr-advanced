@@ -36,3 +36,11 @@
     transform: rotate(360deg);
   }
 }
+
+
+.p-organizationchart .p-organizationchart-node-content {
+  border: 0px solid #ffffff !important;
+  background: #ffffff;
+  color: #495057;
+  padding: 0rem;
+}

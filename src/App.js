@@ -14,6 +14,10 @@ import 'rsuite/dist/rsuite.min.css';
 //imoprt Route
 import Route from './routes';
 
+//imoprt Css @Elan
+import './App.css';
+
+
 // Import Firebase Configuration file
 // import { initFirebaseBackend } from "./helpers/firebase_helper";
 
