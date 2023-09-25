@@ -15,7 +15,7 @@ import classnames from "classnames";
 //import images
 import slack from "../../assets/images/brands/slack.png";
 import DepartmentsTab from "./DepartmentsTab";
-import ActivitiesTab from "./ActivitiesTab";
+import Branch from "./Branch";
 import TeamTab from "./TeamTab";
 import OrgInfoTab from "./OrgInfoTab";
 
@@ -162,7 +162,7 @@ const Section = () => {
               <DepartmentsTab />
             </TabPane>
             <TabPane tabId="3">
-              <ActivitiesTab />
+              <Branch />
             </TabPane>
             <TabPane tabId="4">
               <TeamTab />

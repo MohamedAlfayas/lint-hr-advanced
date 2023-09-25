@@ -3,6 +3,14 @@ import React from 'react';
 //import Scss
 import './assets/scss/themes.scss';
 
+//theme
+import "primereact/resources/themes/lara-light-indigo/theme.css";     
+    
+//core
+import "primereact/resources/primereact.min.css";
+
+import 'rsuite/dist/rsuite.min.css';
+
 //imoprt Route
 import Route from './routes';
 

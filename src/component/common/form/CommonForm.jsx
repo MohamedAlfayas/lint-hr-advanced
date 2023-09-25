@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 
-import withRouter from '../../common/js/withRouter';
+import withRouter from '../../../common/js/withRouter';
 
 
 import { useSelector, useDispatch } from "react-redux";
 
 
-import { toggleRSBView } from '../../redux/reducers/ChildReducer/RightSideBarReducer';
-import RightSideBar from '../../component/rightsidebar/RightSideBar';
+import { resetForm, toggleRSBView } from '../../../redux/reducers/ChildReducer/RightSideBarReducer';
+import RightSideBar from './DisplayForms';
+import DisplayForms from './DisplayForms';
 
-const RSBForm = (props) => {
+const CommonForm = (props) => {
     const dispatch = useDispatch();
 
     const [show, setShow] = useState(false)
@@ -27,10 +28,12 @@ const RSBForm = (props) => {
     } = useSelector((state) => state.LayoutReducer);
 
     // open offcanvas
-    const [open, setOpen] = useState(false);
+    
+    const { showRSB, form_title, form_obj, form_width_percentage } = useSelector(state => state.RightSideBarReducer)
+
+
     const toggleLeftCanvas = () => {
-        setOpen(!open)
-        dispatch(toggleRSBView(open))
+        dispatch(toggleRSBView(!showRSB))
     };
 
     window.onscroll = function () {
@@ -62,23 +65,26 @@ const RSBForm = (props) => {
         }
     }, [preloader, pathName]);
 
+    const resetCommonForm = () =>{
+        dispatch(resetForm())
+    }
+
     return (
         <React.Fragment>
             <button
-                onClick={() =>setOpen(!open)}
+                onClick={() => resetCommonForm()}
                 type="button" className="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle light-dark-mode">
                 <i className='bx bx-plus fs-22'></i>
             </button>
 
             <div>
-                <RightSideBar 
-                    open={open}
+                <DisplayForms 
+                    open={showRSB}
                     toggleLeftCanvas = {toggleLeftCanvas}
-                    width_per = {"30%"}
                 />
             </div>
         </React.Fragment>
     );
 };
 
-export default withRouter(RSBForm);
+export default withRouter(CommonForm);

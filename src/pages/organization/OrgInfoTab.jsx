@@ -47,6 +47,8 @@ const OrgInfoTab = () => {
     countryCode: "+91"
   });
 
+  const [selectedCountry, setSelectedCountry] = useState({});
+
   const [dropdownOpen3, setDropdownOpen3] = useState(false);
   const [dropdownOpen4, setDropdownOpen4] = useState(false);
   const [stateDD, setStateDD] = useState(false);
@@ -304,12 +306,12 @@ const OrgInfoTab = () => {
                             className="form-control rounded-end flag-input form-select"
                             style={{ cursor: 'pointer' }}
                           >
-                            {profileData.country || 'Select country'}
+                            {selectedCountry.countryName || 'Select country'}
                           </DropdownToggle>
                           <DropdownMenu as='ul' className="list-unstyled w-100 dropdown-menu-list mb-0">
                             <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
                               {((CountryList.filter(obj => obj.show)).sort((a, b) => a.countryName.localeCompare(b.countryName)) || []).map((item, key) => (
-                                <DropdownItem as='li' onClick={() => { updateProfileData("country", item.countryName); setStateForThisCountry(item.id) }} key={key} className="dropdown-item d-flex">
+                                <DropdownItem as='li' onClick={() => { setSelectedCountry(item); updateProfileData("country", item.countryName); setStateForThisCountry(item.id) }} key={key} className="dropdown-item d-flex">
                                   <div className="flex-shrink-0 me-2">
                                     <img src={item.flagImg} alt="country flag" className="options-flagimg" height="20" />
                                   </div>
@@ -340,7 +342,7 @@ const OrgInfoTab = () => {
                             className="form-control rounded-end flag-input form-select"
                             style={{ cursor: 'pointer' }}
                           >
-                            {profileData.state || 'Select State'}
+                            {stateList.find(obj => obj === profileData.state) || 'Select State'}
                           </DropdownToggle>
                           <DropdownMenu as='ul' className="list-unstyled w-100 dropdown-menu-list mb-0">
                             <SimpleBar style={{ maxHeight: "220px" }} className="px-3">

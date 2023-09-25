@@ -11,7 +11,9 @@ import { Dropdown, DropdownMenu, DropdownToggle, Form } from 'reactstrap';
 import LightDark from '../../common/js/LightDark';
 import NotificationDropdown from '../../common/js/NotificationDropdown';
 import ProfileDropdown from '../../common/js/ProfileDropdown';
-import RSBForm from '../../common/js/RSBForm';
+import RSBForm from '../common/form/CommonForm';
+import Forms from '../common/form/CommonForm';
+import CommonForm from '../common/form/CommonForm';
 
 const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
 
@@ -122,7 +124,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
 
                             {/* RightSideBar Form View */}
 
-                            <RSBForm />
+                            <CommonForm />
 
                             {/* Dark/Light Mode set */}
                             <LightDark
