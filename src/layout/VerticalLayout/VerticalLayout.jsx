@@ -13,11 +13,9 @@ import withRouter from "../../common/js/withRouter";
 
 const VerticalLayout = (props) => {
     const navData = navdata().props.children;
-    console.log("Props = ",props);
     const path = props.router.location.pathname;
 
     const {employeelist} = useSelector((state) => state.EmployeeReducer);
-    console.log("Employee List = ",employeelist);
 
     const {
         leftsidbarSizeType, sidebarVisibilitytype, layoutType

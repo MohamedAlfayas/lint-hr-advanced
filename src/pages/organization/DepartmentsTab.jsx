@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Card, CardBody, Col, Row } from "reactstrap";
+import { Button, Card, CardBody, Col, Modal, ModalBody, ModalHeader, Row } from "reactstrap";
 import { OrganizationChart } from "primereact/organizationchart";
 import { useDispatch } from "react-redux";
 import {
@@ -14,6 +14,7 @@ import { Link } from "react-router-dom";
 import avatar1 from "../../assets/images/users/avatar-1.jpg";
 import avatar2 from "../../assets/images/users/avatar-2.jpg";
 import avatar3 from "../../assets/images/users/avatar-3.jpg";
+import OrgModal from "./common/OrgModal";
 
 const DepartmentsTab = () => {
   const dispatch = useDispatch();
@@ -190,8 +191,8 @@ const DepartmentsTab = () => {
       type: "person",
       data: {
         id: 1,
-        manager: [1, 2],
-        employee: [3, 4],
+        manager: [1],
+        employee: [2, 3],
       },
       children: [
         {
@@ -199,14 +200,14 @@ const DepartmentsTab = () => {
           type: "person",
           label: "Sales and marketing (Business development)",
           data: {
-            id: 1,
-            manager: [1, 2],
-            employee: [3, 4],
+            id: 2,
+            manager: [4],
+            employee: [5, 6],
           },
           children: [
             {
               label: "Pre Sales",
-              
+
             },
             {
               label: "Post Sales",
@@ -218,9 +219,9 @@ const DepartmentsTab = () => {
           type: "person",
           label: "Development",
           data: {
-            id: 1,
-            manager: [1, 2],
-            employee: [3, 4],
+            id: 3,
+            manager: [2,3],
+            employee: [7,8],
           },
           children: [
             {
@@ -236,9 +237,9 @@ const DepartmentsTab = () => {
           type: "person",
           label: "Accounts",
           data: {
-            id: 1,
-            manager: [1, 2],
-            employee: [3, 4],
+            id: 4,
+            manager: [4],
+            employee: [5, 6],
           },
           children: [
             {
@@ -251,7 +252,7 @@ const DepartmentsTab = () => {
           type: "person",
           label: "Back Office",
           data: {
-            id: 1,
+            id: 5,
             manager: [1, 2],
             employee: [3, 4],
           },
@@ -279,16 +280,23 @@ const DepartmentsTab = () => {
 
       { id: 3, imgNumber: "7", bgcolor: "bg-info" },
     ],
-  };
+  };  
 
-  const [modal_positionBottom, setmodal_positionBottom] = useState(false);
-  function tog_positionBottom() {
-    console.log("Inside .....");
-    setmodal_positionBottom(!modal_positionBottom);
+  const [showOrgModal, setShowOrgModal] = useState(false);
+  function toggleOrgModal() {
+    setShowOrgModal(!showOrgModal);
+  }
+
+  const [teamMembersID, setTeamMembersID] = useState([]);
+
+  const setDataForTable = (obj) =>{
+    console.log("Node Data == ",obj);
+    let team_members_id = obj.data.manager.concat(obj.data.employee);
+    console.log("Team Members Id = ",team_members_id);
+    setTeamMembersID(team_members_id);
   }
 
   const nodeTemplate1 = (node) => {
-    console.log("node");
     if (true) {
       return (
         <Col xxl={12} lg={12}>
@@ -297,7 +305,7 @@ const DepartmentsTab = () => {
               <div className="flex-grow-1 ms-2 overflow-hidden">
                 <h5 className="fs-13 mb-1">
                   <Link
-                    onClick={() => tog_positionBottom()}
+                    onClick={() => {toggleOrgModal(); setDataForTable(node)}}
                     className="text-body  text-truncate d-block">
                     {node.label}
                   </Link>
@@ -345,7 +353,6 @@ const DepartmentsTab = () => {
               <div className="flex-shrink-0 ms-1">
                 <div className="d-flex gap-1">
                   <button
-                    onClick={() => tog_positionBottom()}
                     type="button"
                     className="btn btn-icon text-muted btn-sm fs-18">
                     <i className="ri-eye-line"></i>
@@ -375,10 +382,19 @@ const DepartmentsTab = () => {
             Edit Department
           </Button>
           <div className="card overflow-x-auto">
-            <OrganizationChart value={data2} nodeTemplate={nodeTemplate1} />
+            <OrganizationChart 
+              value={data2} 
+              nodeTemplate={nodeTemplate1} 
+            />
           </div>
         </CardBody>
       </Card>
+
+      <OrgModal 
+        showOrgModal={showOrgModal}  
+        toggleOrgModal={toggleOrgModal}
+        teamMembersID={teamMembersID}
+      />
     </React.Fragment>
   );
 };
