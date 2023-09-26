@@ -183,38 +183,112 @@ const DepartmentsTab = () => {
     },
   ]);
 
+  const [data2] = useState([
+    {
+      label: "Lintcloud IT Service Private Limited",
+      expanded: true,
+      type: "person",
+      data: {
+        id: 1,
+        manager: [1, 2],
+        employee: [3, 4],
+      },
+      children: [
+        {
+          expanded: true,
+          type: "person",
+          label: "Sales and marketing (Business development)",
+          data: {
+            id: 1,
+            manager: [1, 2],
+            employee: [3, 4],
+          },
+          children: [
+            {
+              label: "Pre Sales",
+              
+            },
+            {
+              label: "Post Sales",
+            },
+          ],
+        },
+        {
+          expanded: true,
+          type: "person",
+          label: "Development",
+          data: {
+            id: 1,
+            manager: [1, 2],
+            employee: [3, 4],
+          },
+          children: [
+            {
+              label: "UI/UX Design",
+            },
+            {
+              label: "Backend (DB)",
+            },
+          ],
+        },
+        {
+          expanded: true,
+          type: "person",
+          label: "Accounts",
+          data: {
+            id: 1,
+            manager: [1, 2],
+            employee: [3, 4],
+          },
+          children: [
+            {
+              label: "Acc & Finance",
+            },
+          ],
+        },
+        {
+          expanded: true,
+          type: "person",
+          label: "Back Office",
+          data: {
+            id: 1,
+            manager: [1, 2],
+            employee: [3, 4],
+          },
+          children: [
+            {
+              label: "Carpet Sweeper",
+            },
+            {
+              label: "Cab Driver",
+            },
+            {
+              label: "Document Keeper",
+            },
+          ],
+        },
+      ],
+    },
+  ]);
+
   const item = {
     subItem: [
-      { id: 1, img: avatar1 },
-      { id: 2, img: avatar2 },
+      { id: 1, img: avatar1, name: "ELan" },
+      { id: 2, img: avatar2, name: "ELan1" },
       // { id: 3, img: avatar3 },
 
-      { id: 4, imgNumber: "5", bgcolor: "bg-info" },
+      { id: 3, imgNumber: "7", bgcolor: "bg-info" },
     ],
   };
 
-  const nodeTemplate = (node) => {
-    if (node.type === "person") {
-      return (
-        <div className="flex flex-column">
-          <div className="flex flex-column align-items-center">
-            <img
-              alt={node.data.name}
-              src={node.data.image}
-              className="mb-3 w-3rem h-3rem"
-            />
-            <span className="font-bold mb-2">{node.data.name}</span>
-            <span>{node.data.title}</span>
-          </div>
-        </div>
-      );
-    }
-
-    return node.label;
-  };
+  const [modal_positionBottom, setmodal_positionBottom] = useState(false);
+  function tog_positionBottom() {
+    console.log("Inside .....");
+    setmodal_positionBottom(!modal_positionBottom);
+  }
 
   const nodeTemplate1 = (node) => {
-    console.log(node);
+    console.log("node");
     if (true) {
       return (
         <Col xxl={12} lg={12}>
@@ -222,7 +296,9 @@ const DepartmentsTab = () => {
             <div className="d-flex align-items-center">
               <div className="flex-grow-1 ms-2 overflow-hidden">
                 <h5 className="fs-13 mb-1">
-                  <Link to="#" className="text-body  text-truncate d-block">
+                  <Link
+                    onClick={() => tog_positionBottom()}
+                    className="text-body  text-truncate d-block">
                     {node.label}
                   </Link>
                 </h5>
@@ -238,7 +314,8 @@ const DepartmentsTab = () => {
                               id={item.targetId}>
                               <img
                                 src={item.img}
-                                alt=""
+                                alt={item.name}
+                                title={item.name}
                                 className="rounded-circle avatar-xxs"
                               />
                             </Link>
@@ -248,12 +325,12 @@ const DepartmentsTab = () => {
                             <Link to="#">
                               <div className="avatar-xxs">
                                 <span
-                                  title="Members"
+                                  title={item.imgNumber + " Employees"}
                                   className={
                                     "avatar-title rounded-circle text-white " +
                                     item.bgcolor
                                   }>
-                                  <small>+</small> {item.imgNumber}
+                                  <small>{item.imgNumber}</small>
                                 </span>
                               </div>
                             </Link>
@@ -268,6 +345,7 @@ const DepartmentsTab = () => {
               <div className="flex-shrink-0 ms-1">
                 <div className="d-flex gap-1">
                   <button
+                    onClick={() => tog_positionBottom()}
                     type="button"
                     className="btn btn-icon text-muted btn-sm fs-18">
                     <i className="ri-eye-line"></i>
@@ -297,7 +375,7 @@ const DepartmentsTab = () => {
             Edit Department
           </Button>
           <div className="card overflow-x-auto">
-            <OrganizationChart value={data} nodeTemplate={nodeTemplate1} />
+            <OrganizationChart value={data2} nodeTemplate={nodeTemplate1} />
           </div>
         </CardBody>
       </Card>
