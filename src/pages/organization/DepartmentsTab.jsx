@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Button,
   Card,
@@ -31,16 +31,24 @@ const DepartmentsTab = () => {
 
   const dispatch = useDispatch();
 
+  const newDepObj = useMemo(() =>{
+    return {
+      id : 0,
+      name : "",
+      desc : "",
+      pid : 0
+    }
+  },[])
+
   const handleDepartmentEdit = ($id) => {
     console.log($id);
 
-    const depObj = globalData.Department.filter((p) => p.id === $id);
+    const depObj = $id === 0 ? newDepObj : globalData.Department.find((p) => p.id === $id);
     console.log(depObj);
-    console.log(depObj[0]);
 
     //dispatch(setDepartmentData($id));
     dispatch(setFormTitle("Departments"));
-    dispatch(setFormObj(depObj[0]));
+    dispatch(setFormObj(depObj));
     dispatch(setFormWidthPercentage("30%"));
     dispatch(setComponentToShow("department"));
     dispatch(toggleRSBView(true));

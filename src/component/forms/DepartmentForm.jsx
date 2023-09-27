@@ -1,3 +1,4 @@
+import axios from "axios";
 import { FilePond } from "filepond";
 import React, { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
@@ -19,6 +20,7 @@ import {
   UncontrolledDropdown,
 } from "reactstrap";
 import SimpleBar from "simplebar-react";
+import { Api } from "../../common/api/Api";
 
 const DepartmentForm = () => {
   let globalData = JSON.parse(localStorage.getItem("lcEdu_GlobalData"));
@@ -26,21 +28,13 @@ const DepartmentForm = () => {
   const [hdDropDown, setHdDropDown] = useState(false);
   const toggleHd = () => setHdDropDown((prevState) => !prevState);
 
-  const initialData = useMemo(() => {
-    return {
-      id: "0",
-      name: "",
-      head_department: 1,
-      description: "",
-    };
-  }, []);
 
   const [departmentData, setDepartmentData] = useState({});
   const [selectedHeadDepartment, setSelectedHeadDepartment] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
 
   const DepartmentList = globalData.Department;
-  console.log(departmentData);
+  console.log("Global Dep Data = ", DepartmentList);
 
   useEffect(() => {
     console.log("UseEffect Running !!!!");
@@ -57,8 +51,23 @@ const DepartmentForm = () => {
     });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     console.log("department data = ", departmentData);
+    try {
+      Api({
+        method: 'POST',
+        url: 'department/create/',
+        data : departmentData
+      })
+        .then(res => {
+          console.log("REs = ", res);
+        })
+        .catch(err => {
+          console.log("ERr == ", err);
+        })
+    } catch (error) {
+
+    }
   };
 
   const sortbyname = [
@@ -81,11 +90,13 @@ const DepartmentForm = () => {
                 </label>
                 <input
                   type="text"
+                  name="name"
                   className="form-control"
                   id="departmentName"
                   placeholder="Enter department name"
                   value={departmentData.name || ""}
                   onChange={handleInputChange}
+                  required
                 />
               </Col>
               <Col lg={12}>
@@ -97,6 +108,7 @@ const DepartmentForm = () => {
                   <DropdownToggle
                     tag="div"
                     className="form-control rounded-end flag-input form-select"
+                    required
                     style={{ cursor: "pointer" }}>
                     {selectedHeadDepartment.name || "Select Parent Department"}
                   </DropdownToggle>
@@ -139,6 +151,7 @@ const DepartmentForm = () => {
                 </label>
                 <input
                   type="text"
+                  name="description"
                   className="form-control"
                   id="description"
                   placeholder="Enter description"
