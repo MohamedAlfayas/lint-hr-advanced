@@ -6,15 +6,24 @@ import OrgTable from "./OrgTable";
 const OrgModal = ({ showOrgModal, toggleOrgModal, teamMembersID }) => {
   return (
     <Modal
+      className="modal-dialog"
+      scrollable={true}
       isOpen={showOrgModal}
       toggle={() => {
         toggleOrgModal();
       }}
       centered>
-      <ModalHeader className="modal-title">Members</ModalHeader>
+      <ModalHeader
+        className="modal-title"
+        id="myModalLabel"
+        toggle={() => {
+          toggleOrgModal();
+        }}>
+        Members
+      </ModalHeader>
 
       <ModalBody className="text-center p-1">
-        <div className="mt-4">
+        <div>
           <OrgTable teamMembersID={teamMembersID} />
         </div>
       </ModalBody>

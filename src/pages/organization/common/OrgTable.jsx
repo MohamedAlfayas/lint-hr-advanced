@@ -9,96 +9,102 @@ import avatar4 from "../../../assets/images/users/avatar-4.jpg";
 import avatar5 from "../../../assets/images/users/avatar-5.jpg";
 import avatar6 from "../../../assets/images/users/avatar-6.jpg";
 import avatar7 from "../../../assets/images/users/avatar-7.jpg";
-import { UncontrolledTooltip } from "reactstrap";
+import {
+  Badge,
+  Button,
+  ListGroup,
+  ListGroupItem,
+  UncontrolledTooltip,
+} from "reactstrap";
 
 const OrgTable = ({ teamMembersID }) => {
   const department = [
     {
-      id: "1",
+      id: 1,
       name: "Lintcloud",
-      pid: "",
+      pid: 0,
       desc: "",
     },
     {
-      id: "2",
+      id: 2,
       name: "Android",
-      pid: "1",
+      pid: 1,
       desc: "",
     },
     {
-      id: "3",
+      id: 3,
       name: "Full Stock",
-      pid: "1",
+      pid: 1,
       desc: "",
     },
     {
-      id: "4",
+      id: 4,
       name: "Marketing",
-      pid: "1",
+      pid: 1,
       desc: "",
     },
     {
-      id: "5",
+      id: 5,
       name: "Intern",
-      pid: "1",
+      pid: 1,
       desc: "",
     },
   ];
   const TeamData = [
     {
-      id: "1",
+      id: 1,
       img: avatar1,
       name: "Fayaz",
       dep: [3, 1],
       status: "Active",
     },
     {
-      id: "2",
+      id: 2,
       img: avatar2,
       name: "Antony",
       dep: [2],
       status: "Active",
     },
     {
-      id: "3",
+      id: 3,
       img: avatar3,
       name: "Tharun",
-      dep: [3, 1],
+      dep: [4, 1],
       status: "Active",
     },
     {
-      id: "4",
+      id: 4,
       img: avatar4,
       name: "Kathir",
-      dep: [3, 1],
+      dep: [1, 2, 3, 4, 5],
       status: "Active",
     },
     {
-      id: "5",
+      id: 5,
       img: avatar5,
       name: "Thalavai",
-      dep: [3, 1],
+      dep: [4, 2],
       status: "Active",
     },
     {
-      id: "6",
+      id: 6,
       img: avatar6,
       name: "Paul",
-      dep: [3, 1],
+      dep: [5, 1],
       status: "Active",
     },
     {
-      id: "7",
+      id: 7,
       img: avatar7,
       name: "Elan",
-      dep: [3, 1],
+      dep: [2, 1],
       status: "Active",
     },
     {
-      id: "8",
+      id: 8,
       img: avatar1,
       name: "Lintcloud",
-      dep: [3, 1],
+      dep: [4, 1],
       status: "Active",
     },
   ];
@@ -116,6 +122,11 @@ const OrgTable = ({ teamMembersID }) => {
         },
         disableFilters: false,
         filterable: false,
+        sortBy: [
+          {
+            desc: false,
+          },
+        ],
       },
 
       {
@@ -150,19 +161,49 @@ const OrgTable = ({ teamMembersID }) => {
         filterable: false,
         accessor: (cellProps) => {
           console.log(cellProps);
-          const depName = department.filter((p) => p.id === cellProps.dep[0]);
-          console.log(depName);
+          //const depName = department.filter((p) => p.id === cellProps.dep[0]);
+
+          var depList = department.filter((obj) =>
+            cellProps.dep.includes(parseInt(obj.id))
+          );
+
+          //console.log(depList);
+
+          let row_id = cellProps.id;
 
           return (
             <span>
-              {depName}Test
-              <Link to="#" id="tooltipwithHtml" className="link-info">
-                +1
-              </Link>
-              <UncontrolledTooltip placement="top" target="tooltipwithHtml">
-                {" "}
-                <em>Tooltip</em> <u>with</u> <b>HTML</b>{" "}
-              </UncontrolledTooltip>
+              <Button
+                color="light"
+                id={`depListRef-${row_id}`}
+                className="position-relative">
+                {depList[0].name}
+                {depList.length > 1 ? (
+                  <span>
+                    <Badge
+                      //id="tooltipwithHtml"
+                      pill
+                      color="success"
+                      className="position-absolute top-0 start-100 translate-middle">
+                      +{depList.length}
+                      <span className="visually-hidden">Departments</span>
+                    </Badge>
+
+                    <UncontrolledTooltip
+                      placement="bottom"
+                      target={`depListRef-${row_id}`}>
+                      {" "}
+                      <div class="mt-1">
+                        {depList.map((item, key) => (
+                          <p class="mb-1">{item.name}</p>
+                        ))}
+                      </div>{" "}
+                    </UncontrolledTooltip>
+                  </span>
+                ) : (
+                  ""
+                )}
+              </Button>
             </span>
           );
         },
@@ -202,7 +243,15 @@ const OrgTable = ({ teamMembersID }) => {
         disableFilters: true,
         filterable: true,
         accessor: (cellProps) => {
-          return <React.Fragment>View</React.Fragment>;
+          return (
+            <React.Fragment>
+              <p>
+                <Link to="#" className="link-info">
+                  View
+                </Link>
+              </p>
+            </React.Fragment>
+          );
         },
       },
     ];

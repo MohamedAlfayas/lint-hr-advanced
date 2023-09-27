@@ -38,7 +38,7 @@ const DepartmentsTab = () => {
         description: "",
       })
     );
-    dispatch(setFormWidthPercentage("50%"));
+    dispatch(setFormWidthPercentage("30%"));
     dispatch(setComponentToShow("department"));
     dispatch(toggleRSBView(true));
   };
