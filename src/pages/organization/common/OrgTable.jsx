@@ -18,96 +18,11 @@ import {
 } from "reactstrap";
 
 const OrgTable = ({ teamMembersID }) => {
-  const department = [
-    {
-      id: 1,
-      name: "Lintcloud",
-      pid: 0,
-      desc: "",
-    },
-    {
-      id: 2,
-      name: "Android",
-      pid: 1,
-      desc: "",
-    },
-    {
-      id: 3,
-      name: "Full Stock",
-      pid: 1,
-      desc: "",
-    },
-    {
-      id: 4,
-      name: "Marketing",
-      pid: 1,
-      desc: "",
-    },
-    {
-      id: 5,
-      name: "Intern",
-      pid: 1,
-      desc: "",
-    },
-  ];
-  const TeamData = [
-    {
-      id: 1,
-      img: avatar1,
-      name: "Fayaz",
-      dep: [3, 1],
-      status: "Active",
-    },
-    {
-      id: 2,
-      img: avatar2,
-      name: "Antony",
-      dep: [2],
-      status: "Active",
-    },
-    {
-      id: 3,
-      img: avatar3,
-      name: "Tharun",
-      dep: [4, 1],
-      status: "Active",
-    },
-    {
-      id: 4,
-      img: avatar4,
-      name: "Kathir",
-      dep: [1, 2, 3, 4, 5],
-      status: "Active",
-    },
-    {
-      id: 5,
-      img: avatar5,
-      name: "Thalavai",
-      dep: [4, 2],
-      status: "Active",
-    },
-    {
-      id: 6,
-      img: avatar6,
-      name: "Paul",
-      dep: [5, 1],
-      status: "Active",
-    },
-    {
-      id: 7,
-      img: avatar7,
-      name: "Elan",
-      dep: [2, 1],
-      status: "Active",
-    },
-    {
-      id: 8,
-      img: avatar1,
-      name: "Lintcloud",
-      dep: [4, 1],
-      status: "Active",
-    },
-  ];
+  let globalData = JSON.parse(localStorage.getItem("lcEdu_GlobalData"));
+  console.log("globalData.......");
+  console.log(globalData);
+  const department = globalData.Department;
+  const TeamData = globalData.Employee;
 
   const tableData = TeamData.filter((obj) =>
     teamMembersID.includes(parseInt(obj.id))
@@ -267,7 +182,7 @@ const OrgTable = ({ teamMembersID }) => {
         iscustomPageSize={false}
         isBordered={false}
         customPageSize={40}
-        class="custom-header-css table align-middle table-nowrap"
+        className="custom-header-css table align-middle table-nowrap"
         tableClass="table-centered align-middle table-nowrap mb-0"
         theadClass="text-muted table-light"
         SearchPlaceholder="Search Products..."

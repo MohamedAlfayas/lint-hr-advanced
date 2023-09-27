@@ -12,6 +12,7 @@ import {
 import { OrganizationChart } from "primereact/organizationchart";
 import { useDispatch } from "react-redux";
 import {
+  setDepartmentData,
   setComponentToShow,
   setFormObj,
   setFormTitle,
@@ -26,18 +27,20 @@ import avatar3 from "../../assets/images/users/avatar-3.jpg";
 import OrgModal from "./common/OrgModal";
 
 const DepartmentsTab = () => {
+  let globalData = JSON.parse(localStorage.getItem("lcEdu_GlobalData"));
+
   const dispatch = useDispatch();
 
-  const handleDepartmentEdit = () => {
+  const handleDepartmentEdit = ($id) => {
+    console.log($id);
+
+    const depObj = globalData.Department.filter((p) => p.id === $id);
+    console.log(depObj);
+    console.log(depObj[0]);
+
+    //dispatch(setDepartmentData($id));
     dispatch(setFormTitle("Departments"));
-    dispatch(
-      setFormObj({
-        id: "0",
-        name: "",
-        head_department: 1,
-        description: "",
-      })
-    );
+    dispatch(setFormObj(depObj[0]));
     dispatch(setFormWidthPercentage("30%"));
     dispatch(setComponentToShow("department"));
     dispatch(toggleRSBView(true));
@@ -196,88 +199,124 @@ const DepartmentsTab = () => {
   const [data2] = useState([
     {
       label: "Lintcloud IT Service Private Limited",
+      id: 1,
+      pid: 0,
       expanded: true,
-      type: "person",
       data: {
-        id: 1,
         manager: [1],
         employee: [1, 2, 3, 4, 5, 6, 7, 8],
       },
       children: [
         {
           expanded: true,
-          type: "person",
           label: "Sales and marketing (Business development)",
+          id: 2,
+          pid: 1,
           data: {
-            id: 2,
             manager: [4],
             employee: [5, 6],
           },
           children: [
             {
               label: "Pre Sales",
+              id: 3,
+              pid: 1,
               data: {
-                id: 2,
                 manager: [],
                 employee: [],
               },
-            },
-            {
-              label: "Post Sales",
             },
           ],
         },
         {
           expanded: true,
-          type: "person",
           label: "Development",
+          id: 4,
+          pid: 1,
           data: {
-            id: 3,
             manager: [2, 3],
             employee: [7, 8],
           },
           children: [
             {
               label: "UI/UX Design",
+              id: 5,
+              pid: 1,
+              data: {
+                manager: [],
+                employee: [],
+              },
             },
             {
               label: "Backend (DB)",
+              id: 6,
+              pid: 1,
+              data: {
+                manager: [],
+                employee: [],
+              },
             },
           ],
         },
         {
           expanded: true,
-          type: "person",
           label: "Accounts",
+          id: 7,
+          pid: 1,
           data: {
-            id: 4,
+            id: 8,
+            pid: 1,
             manager: [4],
             employee: [5, 6],
           },
           children: [
             {
               label: "Acc & Finance",
+              id: 9,
+              pid: 1,
+              data: {
+                manager: [],
+                employee: [],
+              },
             },
           ],
         },
         {
           expanded: true,
-          type: "person",
           label: "Back Office",
+          id: 10,
+          pid: 1,
           data: {
-            id: 5,
             manager: [1, 2],
             employee: [3, 4],
           },
           children: [
             {
               label: "Carpet Sweeper",
+              id: 12,
+              pid: 1,
+              data: {
+                manager: [],
+                employee: [],
+              },
             },
             {
               label: "Cab Driver",
+              id: 13,
+              pid: 1,
+              data: {
+                manager: [],
+                employee: [],
+              },
             },
             {
               label: "Document Keeper",
+              id: 14,
+              pid: 1,
+              data: {
+                manager: [],
+                employee: [],
+              },
             },
           ],
         },
@@ -310,6 +349,8 @@ const DepartmentsTab = () => {
   };
 
   const nodeTemplate1 = (node) => {
+    console.log("nodfde");
+    console.log(node);
     if (true) {
       return (
         <Col xxl={12} lg={12}>
@@ -374,7 +415,7 @@ const DepartmentsTab = () => {
                     <i className="ri-eye-line"></i>
                   </button>
                   <button
-                    onClick={() => handleDepartmentEdit()}
+                    onClick={() => handleDepartmentEdit(node.id)}
                     type="button"
                     className="btn btn-icon text-muted btn-sm fs-18">
                     <i className="ri-pencil-fill"></i>
@@ -395,7 +436,9 @@ const DepartmentsTab = () => {
       <Card>
         <CardBody>
           <h5 className="card-title">Department</h5>
-          <Button onClick={() => handleDepartmentEdit()}>New Department</Button>
+          <Button onClick={() => handleDepartmentEdit(0)}>
+            New Department
+          </Button>
           <div className="card overflow-x-auto">
             <OrganizationChart value={data2} nodeTemplate={nodeTemplate1} />
           </div>

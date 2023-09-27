@@ -143,13 +143,14 @@ const Navdata = () => {
             id: "dashboard",
             label: "Dashboards",
             icon: "ri-dashboard-2-line",
-            link: "/#",
+            link: "/",
             stateVariables: isDashboard,
             click: function (e) {
                 e.preventDefault();
                 setIsDashboard(!isDashboard);
                 setIscurrentState('Dashboard');
                 updateIconSidebar(e);
+                history('/')
             },
             subItems: [
                 {
