@@ -4,6 +4,7 @@ import Login from "../pages/auth/login/Login";
 import Register from "../pages/auth/register/Register";
 import ForgetPassword from "../pages/auth/forgotpassword/ForgetPassword";
 import ProjectOverview from "../pages/organization";
+import Roles from "../pages/roles";
 
 const pathList = [
     {
@@ -19,6 +20,7 @@ const pathList = [
 const privateRoutes = [
     { path: "/dashboard", component: <Dashboard /> },
     { path: "/organization", component: <ProjectOverview /> },
+    { path: "/roles", component: <Roles /> },
     {
         path: "/",
         exact: true,
