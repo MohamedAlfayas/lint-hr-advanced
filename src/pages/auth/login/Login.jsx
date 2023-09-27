@@ -130,6 +130,45 @@ const Login = () => {
         desc: "",
       },
     ],
+    Roles: [
+      {
+        id: 1,
+        name: "Admin",
+        roles: [1, 2, 3, 4, 5, 6, 7],
+        members: 43,
+      },
+      {
+        id: 2,
+        name: "Super Admin",
+        roles: [1, 2, 3, 4, 5, 6, 7],
+        members: 43,
+      },
+      {
+        id: 3,
+        name: "Manager",
+        roles: [1, 2, 3, 4, 5, 6, 7],
+        members: 43,
+      },
+      {
+        id: 4,
+        name: "Employee",
+        roles: [1, 2, 3, 4, 5, 6, 7],
+        members: 43,
+      },
+    ],
+    RoleList: {
+      1: "",
+      2: "",
+      3: "",
+      4: "",
+      5: "",
+      6: "",
+      7: "",
+      8: "",
+      9: "",
+      10: "",
+      11: "",
+    },
   };
 
   const navigate = useNavigate();
