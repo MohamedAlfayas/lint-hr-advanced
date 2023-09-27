@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { Button, Card, CardBody, Col, Modal, ModalBody, ModalHeader, Row } from "reactstrap";
+import {
+  Button,
+  Card,
+  CardBody,
+  Col,
+  Modal,
+  ModalBody,
+  ModalHeader,
+  Row,
+} from "reactstrap";
 import { OrganizationChart } from "primereact/organizationchart";
 import { useDispatch } from "react-redux";
 import {
@@ -192,7 +201,7 @@ const DepartmentsTab = () => {
       data: {
         id: 1,
         manager: [1],
-        employee: [2, 3],
+        employee: [1, 2, 3, 4, 5, 6, 7, 8],
       },
       children: [
         {
@@ -207,7 +216,11 @@ const DepartmentsTab = () => {
           children: [
             {
               label: "Pre Sales",
-
+              data: {
+                id: 2,
+                manager: [],
+                employee: [],
+              },
             },
             {
               label: "Post Sales",
@@ -220,8 +233,8 @@ const DepartmentsTab = () => {
           label: "Development",
           data: {
             id: 3,
-            manager: [2,3],
-            employee: [7,8],
+            manager: [2, 3],
+            employee: [7, 8],
           },
           children: [
             {
@@ -280,7 +293,7 @@ const DepartmentsTab = () => {
 
       { id: 3, imgNumber: "7", bgcolor: "bg-info" },
     ],
-  };  
+  };
 
   const [showOrgModal, setShowOrgModal] = useState(false);
   function toggleOrgModal() {
@@ -289,12 +302,12 @@ const DepartmentsTab = () => {
 
   const [teamMembersID, setTeamMembersID] = useState([]);
 
-  const setDataForTable = (obj) =>{
-    console.log("Node Data == ",obj);
+  const setDataForTable = (obj) => {
+    console.log("Node Data == ", obj);
     let team_members_id = obj.data.manager.concat(obj.data.employee);
-    console.log("Team Members Id = ",team_members_id);
+    console.log("Team Members Id = ", team_members_id);
     setTeamMembersID(team_members_id);
-  }
+  };
 
   const nodeTemplate1 = (node) => {
     if (true) {
@@ -305,7 +318,10 @@ const DepartmentsTab = () => {
               <div className="flex-grow-1 ms-2 overflow-hidden">
                 <h5 className="fs-13 mb-1">
                   <Link
-                    onClick={() => {toggleOrgModal(); setDataForTable(node)}}
+                    onClick={() => {
+                      toggleOrgModal();
+                      setDataForTable(node);
+                    }}
                     className="text-body  text-truncate d-block">
                     {node.label}
                   </Link>
@@ -358,6 +374,7 @@ const DepartmentsTab = () => {
                     <i className="ri-eye-line"></i>
                   </button>
                   <button
+                    onClick={() => handleDepartmentEdit()}
                     type="button"
                     className="btn btn-icon text-muted btn-sm fs-18">
                     <i className="ri-pencil-fill"></i>
@@ -378,20 +395,15 @@ const DepartmentsTab = () => {
       <Card>
         <CardBody>
           <h5 className="card-title">Department</h5>
-          <Button onClick={() => handleDepartmentEdit()}>
-            Edit Department
-          </Button>
+          <Button onClick={() => handleDepartmentEdit()}>New Department</Button>
           <div className="card overflow-x-auto">
-            <OrganizationChart 
-              value={data2} 
-              nodeTemplate={nodeTemplate1} 
-            />
+            <OrganizationChart value={data2} nodeTemplate={nodeTemplate1} />
           </div>
         </CardBody>
       </Card>
 
-      <OrgModal 
-        showOrgModal={showOrgModal}  
+      <OrgModal
+        showOrgModal={showOrgModal}
         toggleOrgModal={toggleOrgModal}
         teamMembersID={teamMembersID}
       />
