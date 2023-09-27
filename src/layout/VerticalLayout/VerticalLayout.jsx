@@ -170,6 +170,7 @@ const VerticalLayout = (props) => {
                                                                 <Link
                                                                     to={subItem.link ? subItem.link : "/#"}
                                                                     className="nav-link"
+                                                                    id={subItem.link}
                                                                 >
                                                                     {(subItem.label)}
                                                                     {subItem.badgeName ?

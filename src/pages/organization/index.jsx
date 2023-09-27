@@ -1,8 +1,6 @@
 import React from 'react';
 import { Container } from 'reactstrap';
 import Section from './Section';
-
-
 const ProjectOverview = () => {
     document.title="Organization Overview | Velzon - React Admin & Dashboard Template";
     return (
