@@ -17,6 +17,7 @@ import {
 import Sidebar from '../component/sidebar/Sidebar';
 import Footer from '../component/footer/Footer';
 import LoadingBar from 'react-top-loading-bar'
+import { GetGlobalVersion } from '../meta/GetGlobalVersion';
 
 const Layout = ({ children }) => {
 
@@ -97,6 +98,14 @@ const Layout = ({ children }) => {
       setHeaderClass("");
     }
   }
+
+  useEffect(() => {    
+    GetGlobalVersion();
+    const interval = setInterval(() => {
+      GetGlobalVersion()
+    }, 30000);
+    return () => clearInterval(interval);
+  },[]);
 
 
   return (

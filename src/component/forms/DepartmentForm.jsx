@@ -21,6 +21,7 @@ import {
 } from "reactstrap";
 import SimpleBar from "simplebar-react";
 import { Api } from "../../common/api/Api";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
 const DepartmentForm = () => {
   let globalData = JSON.parse(localStorage.getItem("lcEdu_GlobalData"));
@@ -33,8 +34,7 @@ const DepartmentForm = () => {
   const [selectedHeadDepartment, setSelectedHeadDepartment] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
 
-  const DepartmentList = globalData.Department;
-  console.log("Global Dep Data = ", DepartmentList);
+  const DepartmentList = useMemo(() =>GetLocalStorageData('department'),[]);  
 
   useEffect(() => {
     console.log("UseEffect Running !!!!");
@@ -53,21 +53,17 @@ const DepartmentForm = () => {
 
   const handleSubmit = async () => {
     console.log("department data = ", departmentData);
-    try {
-      Api({
-        method: 'POST',
-        url: 'department/create/',
-        data : departmentData
+    Api({
+      method: 'POST',
+      url: 'department/create/',
+      data: departmentData
+    })
+      .then(res => {
+        console.log("REs = ", res);
       })
-        .then(res => {
-          console.log("REs = ", res);
-        })
-        .catch(err => {
-          console.log("ERr == ", err);
-        })
-    } catch (error) {
-
-    }
+      .catch(err => {
+        console.log("ERr == ", err);
+      })
   };
 
   const sortbyname = [
@@ -127,7 +123,7 @@ const DepartmentForm = () => {
                             setSelectedHeadDepartment(item);
                             setDepartmentData({
                               ...departmentData,
-                              head_department: item.id,
+                              pid: item.id,
                             });
                           }}
                           key={key}

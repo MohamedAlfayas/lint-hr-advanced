@@ -29,6 +29,10 @@ import avatar4 from "../../../assets/images/users/avatar-4.jpg";
 import avatar5 from "../../../assets/images/users/avatar-5.jpg";
 import avatar6 from "../../../assets/images/users/avatar-6.jpg";
 import avatar7 from "../../../assets/images/users/avatar-7.jpg";
+import { Api } from "../../../common/api/Api";
+import { BaseURL } from "../../../common/api/BaseURL";
+import axios from "axios";
+import { GetGlobalVersion } from "../../../meta/GetGlobalVersion";
 
 const Login = () => {
   let tempGlobalData = {
@@ -181,8 +185,8 @@ const Login = () => {
     enableReinitialize: true,
 
     initialValues: {
-      email: userLogin.email || "admin@lintcloud.com" || "",
-      password: userLogin.password || "lintcloud" || "",
+      email: userLogin.email || "elan@lintcloud.com" || "",
+      password: userLogin.password || "lint@123" || "",
     },
     validate,
     validationSchema: Yup.object({
@@ -191,9 +195,27 @@ const Login = () => {
     }),
     onSubmit: (values) => {
       console.log("Form Values = ", values);
-      localStorage.setItem("token", "abc");
-      localStorage.setItem("lcEdu_GlobalData", JSON.stringify(tempGlobalData));
-      navigate("/dashboard");
+      // localStorage.setItem("token", "abc");
+      values['username'] = values.email
+      values['logged_by'] = 2
+
+      axios({
+        method : 'POST',
+        url : `${BaseURL}/employee/auth/login/`,
+        // url : `http://192.168.1.100:8000/employee/auth/login/`,
+        data : values
+      })
+      .then(res =>{
+        localStorage.setItem('lint_hr_token',JSON.stringify(res?.data?.token));
+        localStorage.setItem("lcEdu_GlobalData", JSON.stringify(tempGlobalData));
+        navigate("/dashboard");
+      })
+      .catch(err =>{
+        console.log("err = ",err);
+      })
+
+      
+      
     },
   });
 

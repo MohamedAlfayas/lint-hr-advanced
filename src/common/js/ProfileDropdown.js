@@ -11,8 +11,7 @@ const ProfileDropdown = () => {
     const [userName, setUserName] = useState("LC Admin");
 
     const logout = () =>{
-        console.log("User Logout");
-        localStorage.removeItem("token");
+        localStorage.removeItem("lint_hr_token");
         navigate("/auth/login")
     }
 
