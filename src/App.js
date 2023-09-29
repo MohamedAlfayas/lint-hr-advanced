@@ -9,7 +9,6 @@ import "primereact/resources/themes/lara-light-indigo/theme.css";
 //core
 import "primereact/resources/primereact.min.css";
 
-import 'rsuite/dist/rsuite.min.css';
 
 //imoprt Route
 import Route from './routes';

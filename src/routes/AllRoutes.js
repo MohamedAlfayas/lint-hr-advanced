@@ -4,22 +4,14 @@ import Login from "../pages/auth/login/Login";
 import Register from "../pages/auth/register/Register";
 import ForgetPassword from "../pages/auth/forgotpassword/ForgetPassword";
 import ProjectOverview from "../pages/organization";
-import Roles from "../pages/roles";
+import Employee from "../pages/employee/Employee";
+import Roles from "../pages/roles/Roles";
 
-const pathList = [
-    {
-        "path" : "/dashboard",
-        "component" : "Dashboard"
-    },
-    {
-        "path" : "/",
-        "component" : "Dashboard"
-    }
-]
 
 const privateRoutes = [
     { path: "/dashboard", component: <Dashboard /> },
     { path: "/organization", component: <ProjectOverview /> },
+    { path: "/employee", component: <Employee /> },
     { path: "/roles", component: <Roles /> },
     {
         path: "/",

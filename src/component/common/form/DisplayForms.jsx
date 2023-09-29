@@ -4,6 +4,8 @@ import SimpleBar from "simplebar-react";
 import DepartmentForm from "../../forms/DepartmentForm";
 import { useSelector } from "react-redux";
 import BranchForm from "../../forms/BranchForm";
+import EmployeeForm from "../../forms/EmployeeForm";
+import RoleForm from "../../forms/RoleForm";
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
   const { form_title, form_width_percentage, component_to_show } = useSelector(
@@ -27,6 +29,10 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
                 <DepartmentForm />
               ) : component_to_show === "branch" ? (
                 <BranchForm />
+              ) : component_to_show === "employee" ? (
+                <EmployeeForm />
+              ) : component_to_show === "role" ? (
+                <RoleForm />
               ) : (
                 <></>
               )}

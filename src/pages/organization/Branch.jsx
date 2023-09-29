@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 
 import { Button, Card, CardBody, CardHeader, Col, Row } from "reactstrap";
-import { Table } from 'rsuite';
+// import { Table } from 'rsuite';
 import { setComponentToShow, setFormObj, setFormTitle, setFormWidthPercentage, toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 
-const { Column, HeaderCell, Cell } = Table;
+// const { Column, HeaderCell, Cell } = Table;
 
 //import images
 
@@ -189,7 +189,7 @@ const Branch = () => {
           <Row>
             <Col lg={12}>
               <div className="card overflow-x-auto">
-                <Table
+                {/* <Table
                   height={400}
                   data={data}
                   onRowClick={rowData => {
@@ -257,7 +257,7 @@ const Branch = () => {
                       )}
                     </Cell>
                   </Column>
-                </Table>
+                </Table> */}
               </div>
             </Col>
           </Row>

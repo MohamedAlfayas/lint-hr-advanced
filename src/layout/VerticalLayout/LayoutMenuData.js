@@ -795,6 +795,8 @@ const Navdata = () => {
              stateVariables: isBaseUi,
              subItems: [
                 { id: "organization", label: "Organization", link: "/organization", parentId: "baseUi" },
+                { id: "employee", label: "Employee", link: "/employee", parentId: "baseUi" },
+                { id: "roles", label: "Roles", link: "/roles", parentId: "baseUi" },
             //     { id: "badges", label: "Badges", link: "#", parentId: "baseUi" },
             //     { id: "buttons", label: "Buttons", link: "#", parentId: "baseUi" },
             //     { id: "colors", label: "Colors", link: "#", parentId: "baseUi" },
