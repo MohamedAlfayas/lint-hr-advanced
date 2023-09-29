@@ -3,15 +3,20 @@ import { useDispatch } from "react-redux";
 
 import { Button, Card, CardBody, CardHeader, Col, Row } from "reactstrap";
 // import { Table } from 'rsuite';
-import { setComponentToShow, setFormObj, setFormTitle, setFormWidthPercentage, toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
+import {
+  setComponentToShow,
+  setFormObj,
+  setFormTitle,
+  setFormWidthPercentage,
+  toggleRSBView,
+} from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 
 // const { Column, HeaderCell, Cell } = Table;
 
 //import images
 
 const Branch = () => {
-
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
   const [data] = useState([
     {
@@ -160,30 +165,198 @@ const Branch = () => {
     },
   ]);
 
+  const [rolelist, setListData] = useState([
+    {
+      id: 1,
+      Name: "Company",
+      priority: 1,
+      note: "",
+      permission: [
+        {
+          id: 1,
+          notes: "User Can View All Branch",
+          element: "per_company_view",
+        },
+        {
+          id: 2,
+          notes: "User Can Create New Branch",
+          element: "per_company_create",
+        },
+        {
+          id: 3,
+          notes: "User Can Edit Branch",
+          element: "per_company_edit",
+        },
+        {
+          id: 4,
+          notes: "User Can Delete Branch",
+          element: "per_company_delete",
+        },
+      ],
+    },
+    {
+      id: 2,
+      Name: "Employee",
+      priority: 2,
+      note: "",
+      permission: [
+        {
+          id: 5,
+          notes: "User Can View All Employee In his Department",
+          element: "per_employee_view",
+        },
+        {
+          id: 6,
+          notes: "User Can Create New Employee",
+          element: "per_employee_create",
+        },
+        {
+          id: 7,
+          notes: "User Can Edit Employee",
+          element: "per_employee_edit",
+        },
+        {
+          id: 8,
+          notes: "User Can Delete Employee",
+          element: "per_employee_delete",
+        },
+      ],
+    },
+    {
+      id: 2,
+      Name: "Roles",
+      priority: 1,
+      note: "",
+      permission: [
+        {
+          id: 9,
+          notes: "User Can View All Roles",
+          element: "per_role_view",
+        },
+        {
+          id: 10,
+          notes: "User Can Create New Role",
+          element: "per_role_create",
+        },
+        {
+          id: 11,
+          notes: "User Can Edit Role",
+          element: "per_role_edit",
+        },
+        {
+          id: 12,
+          notes: "User Can Delete Role",
+          element: "per_role_delete",
+        },
+      ],
+    },
+    {
+      id: 3,
+      Name: "Work_Schedule",
+      priority: 1,
+      note: "",
+      permission: [
+        {
+          id: 13,
+          notes: "User Can View All Work Schedule",
+          element: "per_ws_view",
+        },
+        {
+          id: 14,
+          notes: "User Can Create New Work Schedule",
+          element: "per_ws_create",
+        },
+        {
+          id: 15,
+          notes: "User Can Edit Work Schedule",
+          element: "per_ws_edit",
+        },
+        {
+          id: 16,
+          notes: "User Can Delete Work Schedule",
+          element: "per_ws_delete",
+        },
+      ],
+    },
+    {
+      id: 4,
+      Name: "Holiday",
+      priority: 1,
+      note: "",
+      permission: [
+        {
+          id: 17,
+          notes: "User Can View All Holiday",
+          element: "per_holiday_view",
+        },
+        {
+          id: 18,
+          notes: "User Can Create New Holiday",
+          element: "per_holiday_create",
+        },
+        {
+          id: 19,
+          notes: "User Can Edit Holiday",
+          element: "per_holiday_edit",
+        },
+        {
+          id: 20,
+          notes: "User Can Delete Holiday",
+          element: "per_department_delete",
+        },
+      ],
+    },
+    {
+      id: 5,
+      Name: "Department",
+      priority: 2,
+      note: "",
+      permission: [
+        {
+          id: 21,
+          notes: "User Can View All Departments",
+          element: "per_department_view",
+        },
+        {
+          id: 22,
+          notes: "User Can Create New Departments",
+          element: "per_department_create",
+        },
+        {
+          id: 23,
+          notes: "User Can Edit Departments",
+          element: "per_department_edit",
+        },
+        {
+          id: 24,
+          notes: "User Can Delete Departments",
+          element: "per_department_delete",
+        },
+      ],
+    },
+  ]);
 
-  const handleBranchEdit = () =>{
+  const handleBranchEdit = () => {
     dispatch(setFormTitle("Branch"));
-    dispatch(setFormObj({
-      id : "0",
-      name : "",
-      total_branches : 1,
-      description : "",
-    }));
-    dispatch(setFormWidthPercentage("40%"))
-    dispatch(setComponentToShow('branch'));
+    dispatch(
+      setFormObj({
+        id: "0",
+        name: "",
+        total_branches: 1,
+        description: "",
+      })
+    );
+    dispatch(setFormWidthPercentage("75%"));
+    dispatch(setComponentToShow("branch"));
     dispatch(toggleRSBView(true));
-  }
-
-
+  };
 
   return (
     <React.Fragment>
       <Card>
         <CardHeader>
           <h4 className="card-title mb-0">Branch</h4>
-          <Button onClick={() => handleBranchEdit()}>
-            Edit Branch
-          </Button>
+          <Button onClick={() => handleBranchEdit()}>Edit Branch</Button>
         </CardHeader>
         <CardBody>
           <Row>

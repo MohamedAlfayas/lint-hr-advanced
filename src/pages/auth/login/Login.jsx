@@ -161,17 +161,138 @@ const Login = () => {
       },
     ],
     RoleList: {
-      1: "",
-      2: "",
-      3: "",
-      4: "",
-      5: "",
-      6: "",
-      7: "",
-      8: "",
-      9: "",
-      10: "",
-      11: "",
+      Company: [
+        {
+          id: 1,
+          notes: "User Can View All Branch",
+          element: "per_company_view",
+        },
+        {
+          id: 2,
+          notes: "User Can Create New Branch",
+          element: "per_company_create",
+        },
+        {
+          id: 3,
+          notes: "User Can Edit Branch",
+          element: "per_company_edit",
+        },
+        {
+          id: 4,
+          notes: "User Can Delete Branch",
+          element: "per_company_delete",
+        },
+      ],
+      Employee: [
+        {
+          id: 5,
+          notes: "User Can View All Employee In his Department",
+          element: "per_employee_view",
+        },
+        {
+          id: 6,
+          notes: "User Can Create New Employee",
+          element: "per_employee_create",
+        },
+        {
+          id: 7,
+          notes: "User Can Edit Employee",
+          element: "per_employee_edit",
+        },
+        {
+          id: 8,
+          notes: "User Can Delete Employee",
+          element: "per_employee_delete",
+        },
+      ],
+      Roles: [
+        {
+          id: 9,
+          notes: "User Can View All Roles",
+          element: "per_role_view",
+        },
+        {
+          id: 10,
+          notes: "User Can Create New Role",
+          element: "per_role_create",
+        },
+        {
+          id: 11,
+          notes: "User Can Edit Role",
+          element: "per_role_edit",
+        },
+        {
+          id: 12,
+          notes: "User Can Delete Role",
+          element: "per_role_delete",
+        },
+      ],
+      Work_Schedule: [
+        {
+          id: 13,
+          notes: "User Can View All Work Schedule",
+          element: "per_ws_view",
+        },
+        {
+          id: 14,
+          notes: "User Can Create New Work Schedule",
+          element: "per_ws_create",
+        },
+        {
+          id: 15,
+          notes: "User Can Edit Work Schedule",
+          element: "per_ws_edit",
+        },
+        {
+          id: 16,
+          notes: "User Can Delete Work Schedule",
+          element: "per_ws_delete",
+        },
+      ],
+      Holiday: [
+        {
+          id: 17,
+          notes: "User Can View All Holiday",
+          element: "per_holiday_view",
+        },
+        {
+          id: 18,
+          notes: "User Can Create New Holiday",
+          element: "per_holiday_create",
+        },
+        {
+          id: 19,
+          notes: "User Can Edit Holiday",
+          element: "per_holiday_edit",
+        },
+        {
+          id: 20,
+          notes: "User Can Delete Holiday",
+          element: "per_department_delete",
+        },
+      ],
+      Department: [
+        {
+          id: 21,
+          notes: "User Can View All Departments",
+          element: "per_department_view",
+        },
+        {
+          id: 22,
+          notes: "User Can Create New Departments",
+          element: "per_department_create",
+        },
+        {
+          id: 23,
+          notes: "User Can Edit Departments",
+          element: "per_department_edit",
+        },
+        {
+          id: 24,
+          notes: "User Can Delete Departments",
+          element: "per_department_delete",
+        },
+      ],
     },
   };
 
@@ -196,26 +317,29 @@ const Login = () => {
     onSubmit: (values) => {
       console.log("Form Values = ", values);
       // localStorage.setItem("token", "abc");
-      values['username'] = values.email
-      values['logged_by'] = 2
+      values["username"] = values.email;
+      values["logged_by"] = 2;
 
       axios({
-        method : 'POST',
-        url : `${BaseURL}/employee/auth/login/`,
+        method: "POST",
+        url: `${BaseURL}/employee/auth/login/`,
         // url : `http://192.168.1.100:8000/employee/auth/login/`,
-        data : values
+        data: values,
       })
-      .then(res =>{
-        localStorage.setItem('lint_hr_token',JSON.stringify(res?.data?.token));
-        localStorage.setItem("lcEdu_GlobalData", JSON.stringify(tempGlobalData));
-        navigate("/dashboard");
-      })
-      .catch(err =>{
-        console.log("err = ",err);
-      })
-
-      
-      
+        .then((res) => {
+          localStorage.setItem(
+            "lint_hr_token",
+            JSON.stringify(res?.data?.token)
+          );
+          localStorage.setItem(
+            "lcEdu_GlobalData",
+            JSON.stringify(tempGlobalData)
+          );
+          navigate("/dashboard");
+        })
+        .catch((err) => {
+          console.log("err = ", err);
+        });
     },
   });
 
