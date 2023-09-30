@@ -6,6 +6,7 @@ import { useSelector } from "react-redux";
 import BranchForm from "../../forms/BranchForm";
 import EmployeeForm from "../../forms/EmployeeForm";
 import RoleForm from "../../forms/RoleForm";
+import WorkScheduleForm from "../../forms/WorkScheduleForm";
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
   const { form_title, form_width_percentage, component_to_show } = useSelector(
@@ -33,7 +34,11 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
                 <EmployeeForm />
               ) : component_to_show === "role" ? (
                 <RoleForm />
-              ) : (
+              ) 
+              : component_to_show === "workschedule" ? (
+                <WorkScheduleForm />
+              ) 
+              : (
                 <></>
               )}
             </div>

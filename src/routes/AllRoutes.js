@@ -6,6 +6,7 @@ import ForgetPassword from "../pages/auth/forgotpassword/ForgetPassword";
 import ProjectOverview from "../pages/organization";
 import Employee from "../pages/employee/Employee";
 import Roles from "../pages/roles/Roles";
+import WorkSchedule from "../pages/workschedule/WorkSchedule ";
 
 
 const privateRoutes = [
@@ -13,6 +14,7 @@ const privateRoutes = [
     { path: "/organization", component: <ProjectOverview /> },
     { path: "/employee", component: <Employee /> },
     { path: "/roles", component: <Roles /> },
+    { path: "/workschedule", component: <WorkSchedule /> },
     {
         path: "/",
         exact: true,
