@@ -29,7 +29,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import { setComponentToShow, setFormObj, setFormTitle, setFormWidthPercentage, toggleRSBView } from '../../../redux/reducers/ChildReducer/RightSideBarReducer';
 import { useDispatch } from 'react-redux';
 
-const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filterKey, filterOptions }) => {
+const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filterKey, filterOptions, width_per }) => {
 
     const dispatch = useDispatch();
 
@@ -184,7 +184,7 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
 
         dispatch(setFormTitle(formname.charAt(0).toUpperCase() + formname.slice(1)));
         dispatch(setFormObj(FormObj));
-        dispatch(setFormWidthPercentage("30%"));
+        dispatch(setFormWidthPercentage(width_per));
         dispatch(setComponentToShow(formname));
         dispatch(toggleRSBView(true));
     };
