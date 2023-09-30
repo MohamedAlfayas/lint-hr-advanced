@@ -54,18 +54,217 @@ const BranchForm = () => {
     console.log("branch data = ", branchData);
   };
 
+  const [rolelist, setListData] = useState([
+    {
+      id: 1,
+      Name: "Company",
+      priority: 1,
+      note: "COmpany FUll Access",
+      permission: [
+        {
+          id: 1,
+          notes: "User Can View All Branch",
+          element: "per_company_view",
+        },
+        {
+          id: 2,
+          notes: "User Can Create New Branch",
+          element: "per_company_create",
+        },
+        {
+          id: 3,
+          notes: "User Can Edit Branch",
+          element: "per_company_edit",
+        },
+        {
+          id: 4,
+          notes: "User Can Delete Branch",
+          element: "per_company_delete",
+        },
+      ],
+    },
+
+    {
+      id: 2,
+      Name: "Employee",
+      priority: 3,
+      note: "",
+      permission: [
+        {
+          id: 5,
+          notes: "User Can View All Employee",
+          element: "per_employee_view",
+        },
+        {
+          id: 6,
+          notes: "User Can Create Employee",
+          element: "per_employee_create",
+        },
+        {
+          id: 7,
+          notes: "User Can Edit Employee",
+          element: "per_employee_edit",
+        },
+        {
+          id: 8,
+          notes: "User Can Delete Employee",
+          element: "per_employee_delete",
+        },
+      ],
+    },
+    {
+      id: 2,
+      Name: "Roles",
+      priority: 1,
+      note: "",
+      permission: [
+        {
+          id: 9,
+          notes: "User Can View All Roles",
+          element: "per_role_view",
+        },
+        {
+          id: 10,
+          notes: "User Can Create New Role",
+          element: "per_role_create",
+        },
+        {
+          id: 11,
+          notes: "User Can Edit Role",
+          element: "per_role_edit",
+        },
+        {
+          id: 12,
+          notes: "User Can Delete Role",
+          element: "per_role_delete",
+        },
+      ],
+    },
+    {
+      id: 3,
+      Name: "Work_Schedule",
+      priority: 1,
+      note: "",
+      permission: [
+        {
+          id: 13,
+          notes: "Can View Work Schedule",
+          element: "per_ws_view",
+        },
+        {
+          id: 14,
+          notes: "Can Create Work Schedule",
+          element: "per_ws_create",
+        },
+        {
+          id: 15,
+          notes: "Can Edit Work Schedule",
+          element: "per_ws_edit",
+        },
+        {
+          id: 16,
+          notes: "Can Delete Work Schedule",
+          element: "per_ws_delete",
+        },
+      ],
+    },
+    {
+      id: 4,
+      Name: "Holiday",
+      priority: 2,
+      note: "",
+      permission: [
+        {
+          id: 17,
+          notes: "User Can View All Holiday",
+          element: "per_holiday_view",
+        },
+        {
+          id: 18,
+          notes: "User Can Create New Holiday",
+          element: "per_holiday_create",
+        },
+        {
+          id: 19,
+          notes: "User Can Edit Holiday",
+          element: "per_holiday_edit",
+        },
+        {
+          id: 20,
+          notes: "User Can Delete Holiday",
+          element: "per_department_delete",
+        },
+      ],
+    },
+    {
+      id: 5,
+      Name: "Department",
+      priority: 2,
+      note: "",
+      permission: [
+        {
+          id: 21,
+          notes: "User Can View All Departments",
+          element: "per_department_view",
+        },
+        {
+          id: 22,
+          notes: "User Can Create New Departments",
+          element: "per_department_create",
+        },
+        {
+          id: 23,
+          notes: "User Can Edit Departments",
+          element: "per_department_edit",
+        },
+        {
+          id: 24,
+          notes: "User Can Delete Departments",
+          element: "per_department_delete",
+        },
+      ],
+    },
+    {
+      id: 0,
+      Name: "Attendance Report",
+      note: "Attendance",
+      priority: 4,
+      permission: [
+        {
+          id: 1,
+          notes: "View Daily Attendance Reports",
+          element: "per_attendance_report",
+        },
+      ],
+    },
+  ]);
+
   return (
     <React.Fragment>
       <Row className="g-4 mb-3">
         <div className="col-sm">
           <div className="d-flex">
-            <div className="search-box me-2">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search Role..."
-              />
-              <i className="ri-search-line search-icon"></i>
+            <label htmlFor="roleName" className="form-label">
+              Role Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              className="form-control"
+              id="roleName"
+              placeholder="Enter Role Name"
+              required
+            />
+          </div>
+        </div>
+        <div className="col-sm-auto">
+          <div>
+            <div className="text-end">
+              <Button color="success" className="btn-label">
+                {" "}
+                <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                Save{" "}
+              </Button>{" "}
             </div>
           </div>
         </div>
@@ -79,998 +278,163 @@ const BranchForm = () => {
                 <Col lg={3} className="ml-2">
                   <b>Access</b>
                 </Col>
-                <Col lg={3} className="ml-2">
-                  <b>Create</b>
-                </Col>
-                <Col lg={3} className="ml-2">
-                  <b>Edit</b>
-                </Col>
-                <Col lg={3} className="ml-2">
-                  <b> Delete</b>
-                </Col>
-              </Row>
-            </CardBody>
-          </Card>
-          <Card className="team-box ribbon-box">
-            <CardBody className="px-4">
-              <div className="ribbon-two ribbon-two-warning">
-                <span>Master</span>
-              </div>
-              <Row className="align-items-center team-row ">
-                <Col lg={3} className="ml-2">
-                  <div className="team-profile-img">
-                    <div className="team-content">
-                      <Link to="#" className="d-block">
-                        <h5 className="fs-16 mb-1">Company</h5>
-                      </Link>
-                      <p className="text-muted mb-0">Company Access</p>
-                    </div>
-                  </div>
-                </Col>
-                <Col lg={9}>
-                  <Row className="text-muted text-center align-items-center">
-                    <Col xs={4} className="border-end border-end-dashed">
-                      <div
-                        className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                        dir="ltr">
-                        <Input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="customSwitchsizemd"
-                          defaultChecked
-                        />
-                      </div>
-                      <p className="text-muted mb-0">
-                        User Can Create New Branch
-                      </p>
+                <Col lg={9} className="ml-2">
+                  <Row className="align-items-center team-row text-center">
+                    <Col lg={3} className="ml-2">
+                      <b> View</b>
                     </Col>
-                    <Col xs={4} className="border-end border-end-dashed">
-                      <div
-                        className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                        dir="ltr">
-                        <Input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="customSwitchsizemd"
-                        />
-                      </div>
-                      <p className="text-muted mb-0">User Can Edit Branch</p>{" "}
+                    <Col lg={3} className="ml-2">
+                      <b>Create</b>
                     </Col>
-                    <Col xs={4}>
-                      <div
-                        className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                        dir="ltr">
-                        <Input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="customSwitchsizemd"
-                        />
-                      </div>
-                      <p className="text-muted mb-0">User Can Delete Branch</p>{" "}
+                    <Col lg={3} className="ml-2">
+                      <b>Edit</b>
+                    </Col>
+                    <Col lg={3} className="ml-2">
+                      <b> Delete</b>
                     </Col>
                   </Row>
                 </Col>
               </Row>
             </CardBody>
           </Card>
-          <Card className="team-box ribbon-box">
-            <CardBody className="px-4">
-              <div className="ribbon-two ribbon-two-warning">
-                <span>Master</span>
-              </div>
-              <Row className="align-items-center team-row ">
-                <Col lg={3} className="ml-2">
-                  <div className="team-profile-img">
-                    <div className="team-content">
-                      <Link to="#" className="d-block">
-                        <h5 className="fs-16 mb-1">Company</h5>
-                      </Link>
-                      <p className="text-muted mb-0">Company Access</p>
+
+          {rolelist.map((data, idx) => (
+            //const priority = data.priority === 1 ? "Primary" : "Secondary";
+            <>
+              <Card className="team-box ribbon-box">
+                <CardBody className="px-4">
+                  {data.priority === 1 ? (
+                    <div className="ribbon-two ribbon-two-warning">
+                      <span>Master</span>
                     </div>
-                  </div>
-                </Col>
-                <Col lg={9}>
-                  <Row className="text-muted text-center align-items-center">
-                    <Col xs={4} className="border-end border-end-dashed">
-                      <div
-                        className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                        dir="ltr">
-                        <Input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="customSwitchsizemd"
-                          defaultChecked
-                        />
+                  ) : data.priority === 2 ? (
+                    <div className="ribbon-two ribbon-two-info">
+                      <span>Access</span>
+                    </div>
+                  ) : data.priority === 3 ? (
+                    ""
+                  ) : data.priority === 4 ? (
+                    <div className="ribbon-two ribbon-two-success">
+                      <span>Report</span>
+                    </div>
+                  ) : (
+                    ""
+                  )}
+
+                  <Row className="align-items-center team-row ">
+                    <Col lg={3} className="ml-2">
+                      <div className="team-profile-img">
+                        <div className="team-content">
+                          <Link to="#" className="d-block">
+                            <h5 className="fs-16 mb-1">{data.Name}</h5>
+                          </Link>
+                          <p className="text-muted mb-0">{data.note}</p>
+                        </div>
                       </div>
-                      <p className="text-muted mb-0">
-                        User Can Create New Branch
-                      </p>
                     </Col>
-                    <Col xs={4} className="border-end border-end-dashed">
-                      <div
-                        className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                        dir="ltr">
-                        <Input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="customSwitchsizemd"
-                        />
-                      </div>
-                      <p className="text-muted mb-0">User Can Edit Branch</p>{" "}
-                    </Col>
-                    <Col xs={4}>
-                      <div
-                        className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                        dir="ltr">
-                        <Input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="customSwitchsizemd"
-                        />
-                      </div>
-                      <p className="text-muted mb-0">User Can Delete Branch</p>{" "}
+                    <Col lg={9}>
+                      <Row className="text-muted text-center align-items-center">
+                        {data.permission.length === 1 ? (
+                          <Col xs={3} className="border-end border-end-dashed">
+                            <div
+                              className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
+                              dir="ltr">
+                              <Input
+                                id={data.permission[0].element}
+                                name={data.permission[0].element}
+                                type="checkbox"
+                                className="form-check-input"
+                                defaultChecked
+                              />
+                            </div>
+                            <p className="text-muted mb-0">
+                              {data.permission[0].notes}
+                            </p>
+                          </Col>
+                        ) : data.permission.length === 4 ? (
+                          <>
+                            <Col
+                              xs={3}
+                              className="border-end border-end-dashed">
+                              <div
+                                className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
+                                dir="ltr">
+                                <Input
+                                  id={data.permission[0].element}
+                                  name={data.permission[0].element}
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  defaultChecked
+                                />
+                              </div>
+                              <p className="text-muted mb-0">
+                                {data.permission[0].notes}
+                              </p>
+                            </Col>
+                            <Col
+                              xs={3}
+                              className="border-end border-end-dashed">
+                              <div
+                                className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
+                                dir="ltr">
+                                <Input
+                                  id={data.permission[1].element}
+                                  name={data.permission[1].element}
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  defaultChecked
+                                />
+                              </div>
+                              <p className="text-muted mb-0">
+                                {data.permission[1].notes}
+                              </p>
+                            </Col>
+
+                            <Col
+                              xs={3}
+                              className="border-end border-end-dashed">
+                              <div
+                                className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
+                                dir="ltr">
+                                <Input
+                                  id={data.permission[2].element}
+                                  name={data.permission[2].element}
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  defaultChecked
+                                />
+                              </div>
+                              <p className="text-muted mb-0">
+                                {data.permission[2].notes}
+                              </p>
+                            </Col>
+                            <Col xs={3} className=" ">
+                              <div
+                                className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
+                                dir="ltr">
+                                <Input
+                                  id={data.permission[3].element}
+                                  name={data.permission[3].element}
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  defaultChecked
+                                />
+                              </div>
+                              <p className="text-muted mb-0">
+                                {data.permission[3].notes}
+                              </p>
+                            </Col>
+                          </>
+                        ) : (
+                          ""
+                        )}
+                      </Row>
                     </Col>
                   </Row>
-                </Col>
-              </Row>
-            </CardBody>
-          </Card>
-          <Card className="team-box ribbon-box">
-            <CardBody className="px-4">
-              <div className="ribbon-two ribbon-two-warning">
-                <span>Master</span>
-              </div>
-              <Row className="align-items-center team-row ">
-                <Col lg={3} className="ml-2">
-                  <div className="team-profile-img">
-                    <div className="team-content">
-                      <Link to="#" className="d-block">
-                        <h5 className="fs-16 mb-1">Company</h5>
-                      </Link>
-                      <p className="text-muted mb-0">Company Access</p>
-                    </div>
-                  </div>
-                </Col>
-                <Col lg={9}>
-                  <Row className="text-muted text-center align-items-center">
-                    <Col xs={4} className="border-end border-end-dashed">
-                      <div
-                        className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                        dir="ltr">
-                        <Input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="customSwitchsizemd"
-                          defaultChecked
-                        />
-                      </div>
-                      <p className="text-muted mb-0">
-                        User Can Create New Branch
-                      </p>
-                    </Col>
-                    <Col xs={4} className="border-end border-end-dashed">
-                      <div
-                        className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                        dir="ltr">
-                        <Input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="customSwitchsizemd"
-                        />
-                      </div>
-                      <p className="text-muted mb-0">User Can Edit Branch</p>{" "}
-                    </Col>
-                    <Col xs={4}>
-                      <div
-                        className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                        dir="ltr">
-                        <Input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="customSwitchsizemd"
-                        />
-                      </div>
-                      <p className="text-muted mb-0">User Can Delete Branch</p>{" "}
-                    </Col>
-                  </Row>
-                </Col>
-              </Row>
-            </CardBody>
-          </Card>
-          <Card className="team-box ribbon-box">
-            <CardBody className="px-4">
-              <div className="ribbon-two ribbon-two-warning">
-                <span>Master</span>
-              </div>
-              <Row className="align-items-center team-row ">
-                <Col lg={3} className="ml-2">
-                  <div className="team-profile-img">
-                    <div className="team-content">
-                      <Link to="#" className="d-block">
-                        <h5 className="fs-16 mb-1">Company</h5>
-                      </Link>
-                      <p className="text-muted mb-0">Company Access</p>
-                    </div>
-                  </div>
-                </Col>
-                <Col lg={9}>
-                  <Row className="text-muted text-center align-items-center">
-                    <Col xs={4} className="border-end border-end-dashed">
-                      <div
-                        className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                        dir="ltr">
-                        <Input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="customSwitchsizemd"
-                          defaultChecked
-                        />
-                      </div>
-                      <p className="text-muted mb-0">
-                        User Can Create New Branch
-                      </p>
-                    </Col>
-                    <Col xs={4} className="border-end border-end-dashed">
-                      <div
-                        className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                        dir="ltr">
-                        <Input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="customSwitchsizemd"
-                        />
-                      </div>
-                      <p className="text-muted mb-0">User Can Edit Branch</p>{" "}
-                    </Col>
-                    <Col xs={4}>
-                      <div
-                        className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                        dir="ltr">
-                        <Input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="customSwitchsizemd"
-                        />
-                      </div>
-                      <p className="text-muted mb-0">User Can Delete Branch</p>{" "}
-                    </Col>
-                  </Row>
-                </Col>
-              </Row>
-            </CardBody>
-          </Card>
-          <Card className="team-box">
-            <CardBody className="px-4">
-              <Row className="align-items-center team-row">
-                <div className="col team-settings">
-                  <Row className="align-items-center">
-                    <div className="col">
-                      <div className="flex-shrink-0 me-2">
-                        <button
-                          type="button"
-                          className="btn fs-16 p-0 favourite-btn active">
-                          <i className="ri-star-fill"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <UncontrolledDropdown className="col text-end">
-                      <DropdownToggle tag="a" role="button">
-                        <i className="ri-more-fill fs-17"></i>
-                      </DropdownToggle>
-                      <DropdownMenu className="dropdown-menu-end">
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                            View
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                            Favourite
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                            Delete
-                          </DropdownItem>
-                        </li>
-                      </DropdownMenu>
-                    </UncontrolledDropdown>
-                  </Row>
-                </div>
-                <Col lg={4}>
-                  <div className="team-profile-img">
-                    <div className="avatar-lg img-thumbnail rounded-circle">
-                      <div className="avatar-title bg-danger-subtle text-danger rounded-circle">
-                        HB
-                      </div>
-                    </div>
-                    <div className="team-content">
-                      <Link to="#" className="d-block">
-                        <h5 className="fs-16 mb-1">Henry Baird</h5>
-                      </Link>
-                      <p className="text-muted mb-0">Full Stack Developer</p>
-                    </div>
-                  </div>
-                </Col>
-                <Col lg={4}>
-                  <Row className="text-muted text-center">
-                    <Col xs={6} className="border-end border-end-dashed">
-                      <h5 className="mb-1">352</h5>
-                      <p className="text-muted mb-0">Projects</p>
-                    </Col>
-                    <Col xs={6}>
-                      <h5 className="mb-1">376</h5>
-                      <p className="text-muted mb-0">Tasks</p>
-                    </Col>
-                  </Row>
-                </Col>
-                <Col lg={2} className="col">
-                  <div className="text-end">
-                    <Link
-                      to="/pages-profile"
-                      className="btn btn-light view-btn">
-                      View Profile
-                    </Link>
-                  </div>
-                </Col>
-              </Row>
-            </CardBody>
-          </Card>
-          <Card className="team-box">
-            <CardBody className="px-4">
-              <Row className="align-items-center team-row">
-                <div className="col team-settings">
-                  <Row className="align-items-center">
-                    <div className="col">
-                      <div className="flex-shrink-0 me-2">
-                        <button
-                          type="button"
-                          className="btn fs-16 p-0 favourite-btn active">
-                          <i className="ri-star-fill"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <UncontrolledDropdown className="col text-end">
-                      <DropdownToggle tag="a" role="button">
-                        <i className="ri-more-fill fs-17"></i>
-                      </DropdownToggle>
-                      <DropdownMenu className="dropdown-menu-end">
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                            View
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                            Favourite
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                            Delete
-                          </DropdownItem>
-                        </li>
-                      </DropdownMenu>
-                    </UncontrolledDropdown>
-                  </Row>
-                </div>
-                <Col lg={4}>
-                  <div className="team-profile-img">
-                    <div className="avatar-lg img-thumbnail rounded-circle">
-                      <img
-                        src={avatar3}
-                        alt=""
-                        className="img-fluid d-block rounded-circle"
-                      />
-                    </div>
-                    <div className="team-content">
-                      <Link to="#" className="d-block">
-                        <h5 className="fs-16 mb-1">Frank Hook</h5>
-                      </Link>
-                      <p className="text-muted mb-0">Project Manager</p>
-                    </div>
-                  </div>
-                </Col>
-                <Col lg={4}>
-                  <Row className="text-muted text-center">
-                    <Col xs={6} className="border-end border-end-dashed">
-                      <h5 className="mb-1">164</h5>
-                      <p className="text-muted mb-0">Projects</p>
-                    </Col>
-                    <Col xs={6}>
-                      <h5 className="mb-1">182</h5>
-                      <p className="text-muted mb-0">Tasks</p>
-                    </Col>
-                  </Row>
-                </Col>
-                <Col lg={2} className="col">
-                  <div className="text-end">
-                    <Link
-                      to="/pages-profile"
-                      className="btn btn-light view-btn">
-                      View Profile
-                    </Link>
-                  </div>
-                </Col>
-              </Row>
-            </CardBody>
-          </Card>
-          <Card className="team-box">
-            <CardBody className="px-4">
-              <Row className="align-items-center team-row">
-                <div className="col team-settings">
-                  <Row className="align-items-center">
-                    <div className="col">
-                      <div className="flex-shrink-0 me-2">
-                        <button
-                          type="button"
-                          className="btn fs-16 p-0 favourite-btn">
-                          <i className="ri-star-fill"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <UncontrolledDropdown className="col text-end">
-                      <DropdownToggle tag="a" role="button">
-                        <i className="ri-more-fill fs-17"></i>
-                      </DropdownToggle>
-                      <DropdownMenu className="dropdown-menu-end">
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                            View
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                            Favourite
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                            Delete
-                          </DropdownItem>
-                        </li>
-                      </DropdownMenu>
-                    </UncontrolledDropdown>
-                  </Row>
-                </div>
-                <Col lg={4}>
-                  <div className="team-profile-img">
-                    <div className="avatar-lg img-thumbnail rounded-circle">
-                      <img
-                        src={avatar8}
-                        alt=""
-                        className="img-fluid d-block rounded-circle"
-                      />
-                    </div>
-                    <div className="team-content">
-                      <Link to="#" className="d-block">
-                        <h5 className="fs-16 mb-1">Jennifer Carter</h5>
-                      </Link>
-                      <p className="text-muted mb-0">UI/UX Designer</p>
-                    </div>
-                  </div>
-                </Col>
-                <Col lg={4}>
-                  <Row className="text-muted text-center">
-                    <Col xs={6} className="border-end border-end-dashed">
-                      <h5 className="mb-1">225</h5>
-                      <p className="text-muted mb-0">Projects</p>
-                    </Col>
-                    <Col xs={6}>
-                      <h5 className="mb-1">197</h5>
-                      <p className="text-muted mb-0">Tasks</p>
-                    </Col>
-                  </Row>
-                </Col>
-                <Col lg={2} className="col">
-                  <div className="text-end">
-                    <Link
-                      to="/pages-profile"
-                      className="btn btn-light view-btn">
-                      View Profile
-                    </Link>
-                  </div>
-                </Col>
-              </Row>
-            </CardBody>
-          </Card>
-          <Card className="team-box">
-            <CardBody className="px-4">
-              <Row className="align-items-center team-row">
-                <div className="col team-settings">
-                  <Row className="align-items-center">
-                    <div className="col">
-                      <div className="flex-shrink-0 me-2">
-                        <button
-                          type="button"
-                          className="btn fs-16 p-0 favourite-btn">
-                          <i className="ri-star-fill"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <UncontrolledDropdown className="col text-end">
-                      <DropdownToggle tag="a" role="button">
-                        <i className="ri-more-fill fs-17"></i>
-                      </DropdownToggle>
-                      <DropdownMenu className="dropdown-menu-end">
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                            View
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                            Favourite
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                            Delete
-                          </DropdownItem>
-                        </li>
-                      </DropdownMenu>
-                    </UncontrolledDropdown>
-                  </Row>
-                </div>
-                <Col lg={4}>
-                  <div className="team-profile-img">
-                    <div className="avatar-lg img-thumbnail rounded-circle">
-                      <div className="avatar-title bg-success-subtle text-success rounded-circle">
-                        ME
-                      </div>
-                    </div>
-                    <div className="team-content">
-                      <Link to="#" className="d-block">
-                        <h5 className="fs-16 mb-1">Megan Elmore</h5>
-                      </Link>
-                      <p className="text-muted mb-0">
-                        Team Leader & Web Developer
-                      </p>
-                    </div>
-                  </div>
-                </Col>
-                <Col lg={4}>
-                  <Row className="text-muted text-center">
-                    <Col xs={6} className="border-end border-end-dashed">
-                      <h5 className="mb-1">201</h5>
-                      <p className="text-muted mb-0">Projects</p>
-                    </Col>
-                    <Col xs={6}>
-                      <h5 className="mb-1">263</h5>
-                      <p className="text-muted mb-0">Tasks</p>
-                    </Col>
-                  </Row>
-                </Col>
-                <Col lg={2} className="col">
-                  <div className="text-end">
-                    <Link
-                      to="/pages-profile"
-                      className="btn btn-light view-btn">
-                      View Profile
-                    </Link>
-                  </div>
-                </Col>
-              </Row>
-            </CardBody>
-          </Card>
-          <Card className="team-box">
-            <CardBody className="px-4">
-              <Row className="align-items-center team-row">
-                <div className="col team-settings">
-                  <Row className="align-items-center">
-                    <div className="col">
-                      <div className="flex-shrink-0 me-2">
-                        <button
-                          type="button"
-                          className="btn fs-16 p-0 favourite-btn">
-                          <i className="ri-star-fill"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <UncontrolledDropdown className="col text-end">
-                      <DropdownToggle tag="a" role="button">
-                        <i className="ri-more-fill fs-17"></i>
-                      </DropdownToggle>
-                      <DropdownMenu className="dropdown-menu-end">
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                            View
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                            Favourite
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                            Delete
-                          </DropdownItem>
-                        </li>
-                      </DropdownMenu>
-                    </UncontrolledDropdown>
-                  </Row>
-                </div>
-                <Col lg={4}>
-                  <div className="team-profile-img">
-                    <div className="avatar-lg img-thumbnail rounded-circle">
-                      <img
-                        src={avatar4}
-                        alt=""
-                        className="img-fluid d-block rounded-circle"
-                      />
-                    </div>
-                    <div className="team-content">
-                      <Link to="#" className="d-block">
-                        <h5 className="fs-16 mb-1">Alexis Clarke</h5>
-                      </Link>
-                      <p className="text-muted mb-0">Backend Developer</p>
-                    </div>
-                  </div>
-                </Col>
-                <Col lg={4}>
-                  <Row className="text-muted text-center">
-                    <Col xs={6} className="border-end border-end-dashed">
-                      <h5 className="mb-1">132</h5>
-                      <p className="text-muted mb-0">Projects</p>
-                    </Col>
-                    <Col xs={6}>
-                      <h5 className="mb-1">147</h5>
-                      <p className="text-muted mb-0">Tasks</p>
-                    </Col>
-                  </Row>
-                </Col>
-                <Col lg={2} className="col">
-                  <div className="text-end">
-                    <Link
-                      to="/pages-profile"
-                      className="btn btn-light view-btn">
-                      View Profile
-                    </Link>
-                  </div>
-                </Col>
-              </Row>
-            </CardBody>
-          </Card>
-          <Card className="team-box">
-            <CardBody className="px-4">
-              <div className="row align-items-center team-row">
-                <div className="col team-settings">
-                  <div className="row align-items-center">
-                    <div className="col">
-                      <div className="flex-shrink-0 me-2">
-                        <button
-                          type="button"
-                          className="btn fs-16 p-0 favourite-btn">
-                          <i className="ri-star-fill"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <UncontrolledDropdown className="col text-end">
-                      <DropdownToggle tag="a" role="button">
-                        <i className="ri-more-fill fs-17"></i>
-                      </DropdownToggle>
-                      <DropdownMenu className="dropdown-menu-end">
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                            View
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                            Favourite
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                            Delete
-                          </DropdownItem>
-                        </li>
-                      </DropdownMenu>
-                    </UncontrolledDropdown>
-                  </div>
-                </div>
-                <Col lg={4}>
-                  <div className="team-profile-img">
-                    <div className="avatar-lg img-thumbnail rounded-circle">
-                      <div className="avatar-title bg-info-subtle text-info rounded-circle">
-                        NC
-                      </div>
-                    </div>
-                    <div className="team-content">
-                      <Link to="#" className="d-block">
-                        <h5 className="fs-16 mb-1">Nathan Cole</h5>
-                      </Link>
-                      <p className="text-muted mb-0">Front-End Developer</p>
-                    </div>
-                  </div>
-                </Col>
-                <Col lg={4}>
-                  <div className="row text-muted text-center">
-                    <Col xs={6} className="border-end border-end-dashed">
-                      <h5 className="mb-1">352</h5>
-                      <p className="text-muted mb-0">Projects</p>
-                    </Col>
-                    <Col xs={6}>
-                      <h5 className="mb-1">376</h5>
-                      <p className="text-muted mb-0">Tasks</p>
-                    </Col>
-                  </div>
-                </Col>
-                <Col lg={2} className="col">
-                  <div className="text-end">
-                    <Link
-                      to="/pages-profile"
-                      className="btn btn-light view-btn">
-                      View Profile
-                    </Link>
-                  </div>
-                </Col>
-              </div>
-            </CardBody>
-          </Card>
-          <Card className="team-box">
-            <CardBody className="px-4">
-              <div className="row align-items-center team-row">
-                <div className="col team-settings">
-                  <div className="row align-items-center">
-                    <div className="col">
-                      <div className="flex-shrink-0 me-2">
-                        <button
-                          type="button"
-                          className="btn fs-16 p-0 favourite-btn">
-                          <i className="ri-star-fill"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <UncontrolledDropdown className="col text-end">
-                      <DropdownToggle tag="a" role="button">
-                        <i className="ri-more-fill fs-17"></i>
-                      </DropdownToggle>
-                      <DropdownMenu className="dropdown-menu-end">
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                            View
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                            Favourite
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                            Delete
-                          </DropdownItem>
-                        </li>
-                      </DropdownMenu>
-                    </UncontrolledDropdown>
-                  </div>
-                </div>
-                <Col lg={4}>
-                  <div className="team-profile-img">
-                    <div className="avatar-lg img-thumbnail rounded-circle">
-                      <img
-                        src={avatar7}
-                        alt=""
-                        className="img-fluid d-block rounded-circle"
-                      />
-                    </div>
-                    <div className="team-content">
-                      <Link to="#" className="d-block">
-                        <h5 className="fs-16 mb-1">Joseph Parker</h5>
-                      </Link>
-                      <p className="text-muted mb-0">Team Leader & HR</p>
-                    </div>
-                  </div>
-                </Col>
-                <Col lg={4}>
-                  <div className="row text-muted text-center">
-                    <Col xs={6} className="border-end border-end-dashed">
-                      <h5 className="mb-1">64</h5>
-                      <p className="text-muted mb-0">Projects</p>
-                    </Col>
-                    <Col xs={6}>
-                      <h5 className="mb-1">93</h5>
-                      <p className="text-muted mb-0">Tasks</p>
-                    </Col>
-                  </div>
-                </Col>
-                <Col lg={2} className="col">
-                  <div className="text-end">
-                    <Link
-                      to="/pages-profile"
-                      className="btn btn-light view-btn">
-                      View Profile
-                    </Link>
-                  </div>
-                </Col>
-              </div>
-            </CardBody>
-          </Card>
-          <Card className="team-box">
-            <CardBody className="px-4">
-              <div className="row align-items-center team-row">
-                <div className="col team-settings">
-                  <div className="row align-items-center">
-                    <div className="col">
-                      <div className="flex-shrink-0 me-2">
-                        <button
-                          type="button"
-                          className="btn fs-16 p-0 favourite-btn">
-                          <i className="ri-star-fill"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <UncontrolledDropdown className="col text-end">
-                      <DropdownToggle tag="a" role="button">
-                        <i className="ri-more-fill fs-17"></i>
-                      </DropdownToggle>
-                      <DropdownMenu className="dropdown-menu-end">
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                            View
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                            Favourite
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                            Delete
-                          </DropdownItem>
-                        </li>
-                      </DropdownMenu>
-                    </UncontrolledDropdown>
-                  </div>
-                </div>
-                <Col lg={4}>
-                  <div className="team-profile-img">
-                    <div className="avatar-lg img-thumbnail rounded-circle">
-                      <img
-                        src={avatar5}
-                        alt=""
-                        className="img-fluid d-block rounded-circle"
-                      />
-                    </div>
-                    <div className="team-content">
-                      <Link to="#" className="d-block">
-                        <h5 className="fs-16 mb-1">Erica Kernan</h5>
-                      </Link>
-                      <p className="text-muted mb-0">Web Designer</p>
-                    </div>
-                  </div>
-                </Col>
-                <Col lg={4}>
-                  <div className="row text-muted text-center">
-                    <Col xs={6} className="border-end border-end-dashed">
-                      <h5 className="mb-1">345</h5>
-                      <p className="text-muted mb-0">Projects</p>
-                    </Col>
-                    <Col xs={6}>
-                      <h5 className="mb-1">298</h5>
-                      <p className="text-muted mb-0">Tasks</p>
-                    </Col>
-                  </div>
-                </Col>
-                <Col lg={2} className="col">
-                  <div className="text-end">
-                    <Link
-                      to="/pages-profile"
-                      className="btn btn-light view-btn">
-                      View Profile
-                    </Link>
-                  </div>
-                </Col>
-              </div>
-            </CardBody>
-          </Card>
-          <Card className="team-box">
-            <CardBody className="px-4">
-              <div className="row align-items-center team-row">
-                <div className="col team-settings">
-                  <div className="row align-items-center">
-                    <div className="col">
-                      <div className="flex-shrink-0 me-2">
-                        <button
-                          type="button"
-                          className="btn fs-16 p-0 favourite-btn">
-                          <i className="ri-star-fill"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <UncontrolledDropdown className="col text-end">
-                      <DropdownToggle tag="a" role="button">
-                        <i className="ri-more-fill fs-17"></i>
-                      </DropdownToggle>
-                      <DropdownMenu className="dropdown-menu-end">
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                            View
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                            Favourite
-                          </DropdownItem>
-                        </li>
-                        <li>
-                          <DropdownItem>
-                            <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                            Delete
-                          </DropdownItem>
-                        </li>
-                      </DropdownMenu>
-                    </UncontrolledDropdown>
-                  </div>
-                </div>
-                <Col lg={4}>
-                  <div className="team-profile-img">
-                    <div className="avatar-lg img-thumbnail rounded-circle">
-                      <div className="avatar-title border bg-light text-primary rounded-circle">
-                        DP
-                      </div>
-                    </div>
-                    <div className="team-content">
-                      <Link to="#" className="d-block">
-                        <h5 className="fs-16 mb-1">Donald Palmer</h5>
-                      </Link>
-                      <p className="text-muted mb-0">Wed Developer</p>
-                    </div>
-                  </div>
-                </Col>
-                <Col lg={4}>
-                  <div className="row text-muted text-center">
-                    <Col xs={6} className="border-end border-end-dashed">
-                      <h5 className="mb-1">97</h5>
-                      <p className="text-muted mb-0">Projects</p>
-                    </Col>
-                    <Col xs={6}>
-                      <h5 className="mb-1">135</h5>
-                      <p className="text-muted mb-0">Tasks</p>
-                    </Col>
-                  </div>
-                </Col>
-                <Col lg={2} className="col">
-                  <div className="text-end">
-                    <Link
-                      to="/pages-profile"
-                      className="btn btn-light view-btn">
-                      View Profile
-                    </Link>
-                  </div>
-                </Col>
-              </div>
-            </CardBody>
-          </Card>
+                </CardBody>
+              </Card>
+            </>
+          ))}
         </div>
       </Row>
     </React.Fragment>

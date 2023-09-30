@@ -346,7 +346,7 @@ const Branch = () => {
         description: "",
       })
     );
-    dispatch(setFormWidthPercentage("75%"));
+    dispatch(setFormWidthPercentage("80%"));
     dispatch(setComponentToShow("branch"));
     dispatch(toggleRSBView(true));
   };
