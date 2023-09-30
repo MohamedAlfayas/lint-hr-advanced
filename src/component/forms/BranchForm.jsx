@@ -24,15 +24,7 @@ import avatar7 from "../../assets/images/users/avatar-7.jpg";
 import avatar8 from "../../assets/images/users/avatar-8.jpg";
 import { Link } from "react-router-dom";
 
-const BranchForm = () => {
-  const initialData = useMemo(() => {
-    return {
-      id: "0",
-      name: "",
-      total_branches: 1,
-      description: "",
-    };
-  }, []);
+const BranchForm = () => {  
 
   const [branchData, setBranchData] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
@@ -42,14 +34,7 @@ const BranchForm = () => {
     setBranchData(form_obj);
   }, [form_obj]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setBranchData({
-      ...branchData,
-      [name]: value,
-    });
-  };
-
+ 
   const handleSubmit = () => {
     console.log("branch data = ", branchData);
   };

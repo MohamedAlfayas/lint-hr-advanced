@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Button,
@@ -10,6 +10,7 @@ import {
   DropdownItem,
   DropdownMenu,
   DropdownToggle,
+  Form,
   FormGroup,
   Input,
   Label,
@@ -35,6 +36,7 @@ import SimpleBar from "simplebar-react";
 import CountryList from "../../common/data/CountryList";
 import Dropzone from "react-dropzone";
 import axios from "axios";
+import { Api } from "../../common/api/Api";
 
 
 const OrgInfoTab = () => {
@@ -70,14 +72,43 @@ const OrgInfoTab = () => {
       about: "",
       address: "",
       city: "",
-      state: "",
-      country: "",
       pincode: "",
-      timezone: "",
     }
   }, []);
 
+  const [country, setCountry] = useState("");
+  const [state, setState] = useState("");
+  const [timezone, setTimeZone] = useState("");
   const [profileData, setProfileData] = useState(initialData);
+
+  useEffect(() => {
+    Api({
+      method: 'GET',
+      url: "/company/get-profile/"
+    })
+      .then(res => {
+        console.log("res = ", res);
+        setCountry(res?.data?.data?.country);
+        setProfileData({country_code : "+91",...res?.data?.data});
+        setState(res?.data?.data?.state);
+      })
+      .catch(err => {
+        console.log(err);
+      })
+  }, [])
+
+
+  useEffect(() => {
+    if (country !== "" && country !== undefined && country !== null) {
+      let CountryObj = CountryList.find(obj => obj.countryName === country)
+      setSelectedCountry(CountryObj);
+      setStateList(CountryObj?.states);
+      setTimeZone(CountryObj?.timezone);
+      if(changeId === 0){
+        setState("");
+      }
+    }
+  }, [country])
 
   const updateProfileData = (name, value) => {
     setProfileData({
@@ -86,20 +117,13 @@ const OrgInfoTab = () => {
     })
   }
 
+  const [changeId, setChangeId] = useState(1)
+
   const [darkLogoFile, setDarkLogoFile] = useState(null);
   const [lightLogoFile, setLightLogoFile] = useState(null);
 
-  const setStateForThisCountry = (c_id) => {
-    console.log("Country Id = ", c_id);
-    const stateLists = CountryList.find(obj => obj.id === c_id).states;
-    console.log("State List = ", stateList);
-    setStateList(stateLists);
-    updateProfileData('state', "");
-    updateProfileData('timezone', CountryList.find(obj => obj.id === c_id).timezone);
-  }
 
   function handleAcceptedFiles(file, logo_type) {
-    console.log("File === ", file);
     let chosenFile = Object.assign(file[0], {
       preview: URL.createObjectURL(file[0]),
       formattedSize: formatBytes(file[0].size),
@@ -124,34 +148,37 @@ const OrgInfoTab = () => {
   const submitProfileForm = () => {
     console.log("Submitting Profile Data = ", profileData);
 
+    let tempKey = ["country", "state", "timezone"];
+
+    tempKey.map(obj => {
+      if (obj in profileData) {
+        delete profileData.obj
+      }
+    });
+
 
     let form_data = new FormData();
     darkLogoFile !== null && form_data.append('dark_logo', darkLogoFile, darkLogoFile.name);
     lightLogoFile !== null && form_data.append('light_logo', lightLogoFile, lightLogoFile.name);
-    
-    Object.entries(profileData).map((key,idx) =>{
+
+    Object.entries(profileData).map((key, idx) => {
       form_data.append(key[0], key[1])
     });
 
+    form_data.append("country", country);
+    form_data.append("timezone", timezone);
+    form_data.append("state", state);
 
-    axios({
+
+    Api({
       method: 'POST',
-      url: "http://192.168.1.6:8000/company/create-profile/",
-      // headers : {
-      //     "Access-Control-Allow-Credentials": true,
-      //     "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS",
-      //     "Content-Type": "application/json"
-      // },
-      headers: {
-        'content-type': 'multipart/form-data'
-      },
+      url: "/company/save-profile/",
       data: form_data
     })
       .then(res => {
         console.log("RES ==== ", res);
       })
       .catch(err => console.log("ERRR === ", err))
-
   }
 
   return (
@@ -167,6 +194,7 @@ const OrgInfoTab = () => {
 
                 <div className="live-preview">
                   <Row className="gy-4">
+
                     <Col xxl={8} md={7}>
                       <div>
                         <Label htmlFor="orgwebsite" className="form-label">
@@ -207,7 +235,7 @@ const OrgInfoTab = () => {
                           <DropdownMenu as='ul' className="list-unstyled w-100 dropdown-menu-list mb-0">
                             <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
                               {((CountryList.filter(obj => obj.show)).sort((a, b) => a.countryName.localeCompare(b.countryName)) || []).map((item, key) => (
-                                <DropdownItem as='li' onClick={() => { setContactCountry(item); updateProfileData('country_code', item.countryCode) }} key={key} className="dropdown-item d-flex">
+                                <DropdownItem as='li' onClick={() => { updateProfileData('country_code', item.countryCode) }} key={key} className="dropdown-item d-flex">
                                   <div className="flex-shrink-0 me-2">
                                     <img src={item.flagImg} alt="country flag" className="options-flagimg" height="20" />
                                   </div>
@@ -292,14 +320,6 @@ const OrgInfoTab = () => {
                           className="form-label">
                           Country
                         </Label>
-                        {/* <select
-                          class="form-select mb-3"
-                          aria-label="Default select example">
-                          <option selected>Open this select menu</option>
-                          <option value="1">One</option>
-                          <option value="2">Two</option>
-                          <option value="3">Three</option>
-                        </select> */}
                         <Dropdown isOpen={dropdownOpen3} toggle={toggle3}>
                           <DropdownToggle
                             tag="div"
@@ -311,7 +331,7 @@ const OrgInfoTab = () => {
                           <DropdownMenu as='ul' className="list-unstyled w-100 dropdown-menu-list mb-0">
                             <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
                               {((CountryList.filter(obj => obj.show)).sort((a, b) => a.countryName.localeCompare(b.countryName)) || []).map((item, key) => (
-                                <DropdownItem as='li' onClick={() => { setSelectedCountry(item); updateProfileData("country", item.countryName); setStateForThisCountry(item.id) }} key={key} className="dropdown-item d-flex">
+                                <DropdownItem as='li' onClick={() => { setChangeId(0); setCountry(item.countryName); }} key={key} className="dropdown-item d-flex">
                                   <div className="flex-shrink-0 me-2">
                                     <img src={item.flagImg} alt="country flag" className="options-flagimg" height="20" />
                                   </div>
@@ -342,12 +362,12 @@ const OrgInfoTab = () => {
                             className="form-control rounded-end flag-input form-select"
                             style={{ cursor: 'pointer' }}
                           >
-                            {stateList.find(obj => obj === profileData.state) || 'Select State'}
+                            {stateList.find(obj => obj === state) || 'Select State'}
                           </DropdownToggle>
                           <DropdownMenu as='ul' className="list-unstyled w-100 dropdown-menu-list mb-0">
                             <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
                               {(stateList || []).map((item, key) => (
-                                <DropdownItem as='li' onClick={() => updateProfileData("state", item)} key={key} className="dropdown-item d-flex">
+                                <DropdownItem as='li' onClick={() => setState(item)} key={key} className="dropdown-item d-flex">
                                   <div className="flex-grow-1">
                                     <div className="d-flex">
                                       <div className="country-name me-1">{item}</div>
@@ -395,8 +415,8 @@ const OrgInfoTab = () => {
                             className="form-control form-control-icon"
                             id="companypincode"
                             placeholder="666666"
-                            value={profileData.city || ""}
-                            onChange={(e) => updateProfileData('city', e.target.value)}
+                            value={profileData.pincode || ""}
+                            onChange={(e) => updateProfileData('pincode', e.target.value)}
                           />
                           <i className="ri-mail-line"></i>
                         </div>
@@ -416,8 +436,8 @@ const OrgInfoTab = () => {
                             className="form-control form-control-icon"
                             id="timezone"
                             placeholder="Asia/Kolkata"
-                            value={profileData.timezone || ""}
-                            onChange={(e) => updateProfileData('timezone', e.target.value)}
+                            value={timezone || ""}
+                            onChange={(e) => setTimeZone(e.target.value)}
                           />
                           <i className="ri-time-line"></i>
                         </div>
@@ -487,6 +507,22 @@ const OrgInfoTab = () => {
                                 </Card>
                               )}
                             </div>
+
+                            {profileData.dark_logo_image && (
+                              <div className="p-2 m-3">
+                                <Row className="align-items-center">
+                                  <Col className="col-auto">
+                                    <img
+                                      data-dz-thumbnail=""
+                                      height="80"
+                                      className="avatar-sm rounded bg-light"
+                                      alt={profileData.dark_logo_image}
+                                      src={profileData.dark_logo_image}
+                                    />
+                                  </Col>
+                                </Row>
+                              </div>
+                            )}
                           </div>
                         </Col>
 
@@ -554,9 +590,28 @@ const OrgInfoTab = () => {
                               )}
                             </div>
                           </div>
+
+
+                          {profileData.light_logo_image && (
+                            <div className="p-2 m-3">
+                              <Row className="align-items-center">
+                                <Col className="col-auto">
+                                  <img
+                                    data-dz-thumbnail=""
+                                    height="80"
+                                    className="avatar-sm rounded bg-light"
+                                    alt={profileData.light_logo_image}
+                                    src={profileData.light_logo_image}
+                                  />
+                                </Col>
+                              </Row>
+                            </div>
+                          )}
+
                         </Col>
                       </Row>
                     </Col>
+
 
                     <Col xxl={12} md={12}>
                       <Button type="button" onClick={submitProfileForm}>

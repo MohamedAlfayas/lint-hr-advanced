@@ -98,6 +98,7 @@ const Employee = () => {
                 initialFormObj={initialFormObj}
                 filterKey={filterKey}  
                 filterOptions={filterOptions}  
+                width_per={"40%"}
             />
         </React.Fragment>
     );
