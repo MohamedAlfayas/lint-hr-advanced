@@ -98,7 +98,7 @@ const WorkSchedule = () => {
                 initialFormObj={initialFormObj}
                 filterKey={filterKey}  
                 filterOptions={filterOptions}
-                width_per={"50%"}  
+                width_per={"60%"}  
             />
         </React.Fragment>
     );
