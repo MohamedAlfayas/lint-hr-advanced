@@ -470,7 +470,7 @@ const Login = () => {
                         <div className="mt-4">
                           <Button
                             color="success"
-                            className="btn btn-success w-100"
+                            className="btn btn-success w-100 text-center"
                             type="submit">
                             Sign In
                           </Button>

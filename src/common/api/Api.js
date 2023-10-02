@@ -10,7 +10,7 @@ Api.interceptors.request.use(
         const token = JSON.parse(localStorage.getItem('lint_hr_token'))
         if (token) {
             req.headers['Authorization'] = 'Bearer ' + token?.access;
-            req.headers['content-type'] = 'multipart/form-data';
+            req.headers['Accept'] = 'application/json';
         }
         return req
     },

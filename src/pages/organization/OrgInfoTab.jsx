@@ -173,6 +173,9 @@ const OrgInfoTab = () => {
     Api({
       method: 'POST',
       url: "/company/save-profile/",
+      headers : {
+        'Content-Type' : 'multipart/form-data'
+      },
       data: form_data
     })
       .then(res => {

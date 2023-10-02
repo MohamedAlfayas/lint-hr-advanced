@@ -30,6 +30,8 @@ import { setComponentToShow, setFormObj, setFormTitle, setFormWidthPercentage, t
 import { useDispatch } from 'react-redux';
 
 const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filterKey, filterOptions, width_per }) => {
+    
+    console.log("Page Refreshing !!!!");
 
     const dispatch = useDispatch();
 
@@ -85,7 +87,7 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                 className="text-primary d-inline-block edit-item-btn"
                                 onClick={() => {
                                     const orderData = cellProps.row.original;
-                                    handleCreateAndUpdate(orderData.id);
+                                    handleCreateAndUpdate(orderData.id, orderData);
                                 }}
                             >
                                 <i className="ri-pencil-fill fs-16"></i>
@@ -107,7 +109,7 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                 );
             },
         },
-    ], []);
+    ], []);    
 
     useEffect(() => {
         columns.splice(1, 0, ...additionalColumn)
@@ -117,19 +119,20 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
     const toggleTab = (tab, type) => {
         if (activeTab !== tab) {
             setActiveTab(tab);
-            let filteredDatas = tabledata;
+            let filteredDatas = [...tabledata];
             if (type !== "all") {
-                filteredDatas = tabledata.filter((data) => data[filterKey] == type);
+                filteredDatas = [...tabledata].filter((data) => data[filterKey] == type);
             }
             setDataList(filteredDatas);
         }
     };
 
     useEffect(() => {
-        if (!isEmpty(tabledata)) {
+        if (tabledata.length) {
+            console.log("Datalist = ",tabledata);
             setDataList(tabledata);
         }
-    }, []);
+    }, [tabledata]);
 
 
     const handleDataClicks = () => {
@@ -171,16 +174,9 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
 
     // CUSTOM FORM
 
-
-    const handleCreateAndUpdate = ($id) => {
+    const handleCreateAndUpdate = ($id, obj) => {
         console.log($id);
-
-        const FormObj = $id === 0 ? initialFormObj : tabledata.find((p) => p.id === parseInt($id));
-
-        console.log("Form Obj = ", FormObj);
-
-        console.log("Form Name = ", formname);
-
+        const FormObj = $id === 0 ? initialFormObj : obj;
 
         dispatch(setFormTitle(formname.charAt(0).toUpperCase() + formname.slice(1)));
         dispatch(setFormObj(FormObj));

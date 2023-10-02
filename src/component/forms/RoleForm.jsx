@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
     Button,
     Card,
@@ -10,21 +10,41 @@ import {
 } from "reactstrap";
 
 import { Link } from "react-router-dom";
+import { Api } from "../../common/api/Api";
+import { addRole, editRole } from "../../redux/reducers/ChildReducer/RoleReducer";
+import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 
 const RoleForm = () => {
 
-    const [roleData, setRoleData] = useState({});
+    const [roleObj, setRoleObj] = useState({});
     const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+    const dispatch = useDispatch();
 
     useEffect(() => {
-        console.log("UseEffect Running !!!!");
-        setRoleData(form_obj);
-        console.log("Form Obj = ", form_obj);
+        setRoleObj(form_obj);
     }, [form_obj]);
 
 
     const handleSubmit = () => {
-        console.log("role data = ", roleData);
+        console.log("role data = ", roleObj);
+        if((roleObj.roles).length === 0){
+            window.alert('Please Choose Any Permission')
+        }
+        else{
+            Api({
+                method:'POST',
+                url:"/role/create-role/",
+                data : roleObj,
+            })
+            .then(res =>{
+                console.log("Res = ",res);
+                roleObj.id === 0 ? dispatch(addRole(res?.data.data)) : dispatch(editRole(res?.data?.data))
+                dispatch(toggleRSBView(false))
+            })
+            .catch(err =>{
+                console.log("Err = ",err);
+            })
+        }
     };
 
     const [rolelist, setListData] = useState([
@@ -231,6 +251,16 @@ const RoleForm = () => {
         },
     }
 
+    const handleCBChange = (elm, ck) =>{
+        const role_data = [...roleObj.roles];
+        const filtered_role_data = ck ? [...role_data, elm] : role_data.filter(obj => obj !== elm);
+        setRoleObj({
+            ...roleObj,
+            roles : filtered_role_data
+        });
+    }
+    
+
     return (
         <React.Fragment>
             <Row className="g-4 mb-3">
@@ -246,17 +276,18 @@ const RoleForm = () => {
                             id="roleName"
                             placeholder="Enter Role Name"
                             required
-                            value={roleData.name || ""}
+                            value={roleObj.name || ""}
+                            onChange={(e) => setRoleObj({...roleObj, name : e.target.value})}
                         />
                     </div>
                 </div>
                 <div className="col-sm-auto">
                     <div>
                         <div className="text-end">
-                            <Button color="success" className="btn-label">
+                            <Button color="success" className="btn-label" onClick={handleSubmit}>
                                 {" "}
                                 <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                                Save{" "}
+                                {roleObj.id === 0 ? 'Create' : 'Save'}{" "}
                             </Button>{" "}
                         </div>
                     </div>
@@ -320,7 +351,8 @@ const RoleForm = () => {
                                                                 name={obj.element}
                                                                 type="checkbox"
                                                                 className="form-check-input"
-                                                                checked={("roles" in roleData) && (roleData.roles).includes(obj.element) ? true : false}
+                                                                checked={("roles" in roleObj) && (roleObj.roles).includes(obj.element) ? true : false}
+                                                                onChange={(e) => handleCBChange(obj.element, e.target.checked)}
                                                             />
                                                         </div>
                                                         <p className="text-muted mb-0">

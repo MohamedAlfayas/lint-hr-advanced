@@ -1,111 +1,35 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { MetaTitle } from "../../common/data/MetaTitle";
 import { useState } from "react";
 import { useMemo } from "react";
 import InfoTable from "../../component/common/table/InfoTable";
+import { Api } from "../../common/api/Api";
+import { useDispatch, useSelector } from "react-redux";
+import { setRole } from "../../redux/reducers/ChildReducer/RoleReducer";
 
 const Roles = () => {
   document.title = `Role | ${MetaTitle}`;
 
-  const [roledata, setRoleData] = useState([
-    {
-      id: 1,
-      name: "Super Admin",
-      description: "",
-      status: 1,
-      roles: [
-        "per_company_view", 
-        "per_company_create",
-        "per_company_edit",
-        "per_company_delete",
-        "per_employee_view",
-        "per_employee_create",
-        "per_employee_edit",
-        "per_employee_delete",
-        "per_role_view",
-        "per_role_create",
-        "per_role_edit",
-        "per_role_delete",
-        "per_ws_view",
-        "per_ws_create",
-        "per_ws_edit",
-        "per_ws_delete",
-        "per_holiday_view",
-        "per_holiday_create",
-        "per_holiday_edit",
-        "per_holiday_delete",
-        "per_department_view",
-        "per_department_create",
-        "per_department_edit",
-        "per_department_delete",
-        "per_attendance_report",
-      ],
-      total_employees: 43,
-    },
-    {
-      id: 2,
-      name: "Admin",
-      description: "",
-      status: 1,
-      roles: [        
-        "per_employee_view",
-        "per_employee_create",
-        "per_employee_edit",
-        "per_employee_delete",
-        "per_role_view",
-        "per_role_create",
-        "per_role_edit",
-        "per_role_delete",
-        "per_ws_view",
-        "per_ws_create",
-        "per_ws_edit",
-        "per_ws_delete",
-        "per_holiday_view",
-        "per_holiday_create",
-        "per_holiday_edit",
-        "per_holiday_delete",
-        "per_department_view",
-        "per_department_create",
-        "per_department_edit",
-        "per_department_delete",
-        "per_attendance_report",
-      ],
-      total_employees: 43,
-    },
-    {
-      id: 3,
-      name: "Manager",
-      description: "",
-      status: 1,
-      roles: [        
-        "per_employee_view",
-        "per_employee_create",
-        "per_employee_edit",
-        "per_ws_view",
-        "per_ws_create",
-        "per_ws_edit",
-        "per_holiday_view",
-        "per_holiday_create",
-        "per_holiday_edit",
-        "per_department_view",
-      ],
-      total_employees: 43,
-    },
-    {
-      id: 4,
-      name: "Employee",
-      description: "",
-      status: 1,
-      roles: [
-        "per_employee_view",
-        "per_role_view",
-        "per_ws_view",
-        "per_holiday_view",
-        "per_department_view",
-      ],
-      total_employees: 43,
-    },
-  ]);
+  const dispatch = useDispatch()
+
+  const { role_data } = useSelector(state => state.RoleReducer);
+  // console.log("Role DAta = ",role_data);
+
+
+  useEffect(() => {
+    Api({
+      method: 'GET',
+      url: '/role/get-role'
+    })
+      .then(res => {
+        console.log("RES = ", res);
+        dispatch(setRole(res?.data?.data))
+      })
+      .catch(err => {
+        console.log("ERR = ", err);
+      })
+  }, []);
+
 
   const [rolelist, setListData] = useState([
     {
@@ -278,56 +202,6 @@ const Roles = () => {
     },
   ]);
 
-  const [roledata1, setRoleData1] = useState([
-    {
-      id: 1,
-      description: "",
-      name: "Admin",
-      status: 1,
-      total_employees: 5,
-      total_permissions: 100,
-    },
-    {
-      id: 2,
-      description: "",
-      name: "Manager",
-      status: 1,
-      total_employees: 12,
-      total_permissions: 90,
-    },
-    {
-      id: 3,
-      description: "",
-      name: "Team Lead",
-      status: 1,
-      total_employees: 22,
-      total_permissions: 50,
-    },
-    {
-      id: 4,
-      description: "",
-      name: "Developer",
-      status: 1,
-      total_employees: 57,
-      total_permissions: 30,
-    },
-    {
-      id: 5,
-      description: "",
-      name: "Junior Developer",
-      status: 2,
-      total_employees: 25,
-      total_permissions: 10,
-    },
-    {
-      id: 6,
-      description: "",
-      name: "Content Writer",
-      status: 2,
-      total_employees: 25,
-      total_permissions: 10,
-    },
-  ]);
 
   const additionalColumn = [
     {
@@ -348,10 +222,6 @@ const Roles = () => {
       filterable: false,
       id: "roles",
       accessor: (obj) => {
-        console.log("obj");
-        console.log(obj);
-        let row_id = obj.id;
-
         return <b>{obj.roles.length}</b>;
       },
     },
@@ -390,17 +260,26 @@ const Roles = () => {
     { option: "2", label: "Secondary" },
   ];
 
+
   return (
     <React.Fragment>
-      <InfoTable
-        additionalColumn={additionalColumn}
-        tabledata={roledata}
-        formname={"role"}
-        initialFormObj={initialFormObj}
-        filterKey={filterKey}
-        filterOptions={filterOptions}
-        width_per={"60%"}
-      />
+      {role_data.length ? (
+        <InfoTable
+          additionalColumn={additionalColumn}
+          tabledata={role_data}
+          formname={"role"}
+          initialFormObj={initialFormObj}
+          filterKey={filterKey}
+          filterOptions={filterOptions}
+          width_per={"60%"}
+        />
+      ) : (
+        <React.Fragment>
+          <div style={{height:'100vh',display:'flex',justifyContent:'center',alignItems:'center'}}>
+            <h2>No Role Data</h2>
+          </div>
+        </React.Fragment>
+      )}
     </React.Fragment>
   );
 };
