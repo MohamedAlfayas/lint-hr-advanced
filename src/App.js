@@ -4,10 +4,11 @@ import React from 'react';
 import './assets/scss/themes.scss';
 
 //theme
-import "primereact/resources/themes/lara-light-indigo/theme.css";     
-    
+import "primereact/resources/themes/lara-light-indigo/theme.css";
+
 //core
 import "primereact/resources/primereact.min.css";
+import { ToastContainer, toast } from 'react-toastify';
 
 
 //imoprt Route
@@ -38,6 +39,19 @@ function App() {
   return (
     <React.Fragment>
       <Route />
+      <ToastContainer
+        position="bottom-left"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick={true}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover={false}
+        theme="light"
+        progressStyle={{height:'2px'}}
+      />
     </React.Fragment>
   );
 }

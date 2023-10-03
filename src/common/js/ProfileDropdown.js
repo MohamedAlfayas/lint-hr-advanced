@@ -4,6 +4,7 @@ import { Dropdown, DropdownItem, DropdownMenu, DropdownToggle } from 'reactstrap
 
 //import images
 import avatar1 from "../../assets/images/users/avatar-1.jpg";
+import { toast } from 'react-toastify';
 
 const ProfileDropdown = () => {
     const navigate = useNavigate()
@@ -12,6 +13,7 @@ const ProfileDropdown = () => {
 
     const logout = () =>{
         localStorage.removeItem("lint_hr_token");
+        toast.success("Logged Out Successfully")
         navigate("/auth/login")
     }
 

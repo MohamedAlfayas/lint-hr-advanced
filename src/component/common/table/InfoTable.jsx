@@ -140,10 +140,6 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
     };
 
 
-    const handleDataClick = (data) => {
-        console.log("Edit DAta = ", data);
-    }
-
 
     // Delete Multiple
     const [selectedCheckBoxDelete, setSelectedCheckBoxDelete] = useState([]);
@@ -275,37 +271,7 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                                     {obj.label}
                                                 </NavLink>
                                             </NavItem>
-                                        ))}
-                                        {/* <NavItem>
-                                            <NavLink
-                                                className={classnames(
-                                                    { active: activeTab === "2" },
-                                                    "fw-semibold"
-                                                )}
-                                                onClick={() => {
-                                                    toggleTab("2", "1");
-                                                }}
-                                                href="#"
-                                            >
-                                                <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
-                                                Active
-                                            </NavLink>
-                                        </NavItem>
-                                        <NavItem>
-                                            <NavLink
-                                                className={classnames(
-                                                    { active: activeTab === "3" },
-                                                    "fw-semibold"
-                                                )}
-                                                onClick={() => {
-                                                    toggleTab("3", "2");
-                                                }}
-                                                href="#"
-                                            >
-                                                <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
-                                                Inactive
-                                            </NavLink>
-                                        </NavItem> */}
+                                        ))}                                        
                                     </Nav>
                                     {dataList.length ? (
                                         <TableContainer
@@ -321,10 +287,15 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                             isDataFilter={true}
                                             SearchPlaceholder='Search for data ID, customer, data status or something...'
                                         />
-                                    ) : (<Loader error={null} />)
+                                    ) : (
+                                        <React.Fragment>
+                                            <div className='text-center'>
+                                                <h2>No Data</h2>
+                                            </div>
+                                        </React.Fragment>
+                                    )
                                     }
                                 </div>
-                                <ToastContainer closeButton={false} limit={1} />
                             </CardBody>
                         </Card>
                     </Col>

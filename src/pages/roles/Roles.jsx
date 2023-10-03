@@ -256,8 +256,8 @@ const Roles = () => {
 
   const filterKey = "status";
   const filterOptions = [
-    { option: "1", label: "Primary" },
-    { option: "2", label: "Secondary" },
+    { option: 1, label: "Primary" },
+    { option: 2, label: "Secondary" },
   ];
 
 

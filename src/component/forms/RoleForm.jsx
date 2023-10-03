@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 import { Api } from "../../common/api/Api";
 import { addRole, editRole } from "../../redux/reducers/ChildReducer/RoleReducer";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
+import { toast } from "react-toastify";
 
 const RoleForm = () => {
 
@@ -37,12 +38,15 @@ const RoleForm = () => {
                 data : roleObj,
             })
             .then(res =>{
+                console.log("success");
                 console.log("Res = ",res);
-                roleObj.id === 0 ? dispatch(addRole(res?.data.data)) : dispatch(editRole(res?.data?.data))
-                dispatch(toggleRSBView(false))
+                roleObj.id === 0 ? dispatch(addRole(res?.data.data)) : dispatch(editRole(res?.data?.data));
+                dispatch(toggleRSBView(false));                
+                toast.success(res?.data?.message);
             })
             .catch(err =>{
                 console.log("Err = ",err);
+                toast.error(err?.response?.data?.message);
             })
         }
     };

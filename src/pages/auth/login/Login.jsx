@@ -33,6 +33,7 @@ import { Api } from "../../../common/api/Api";
 import { BaseURL } from "../../../common/api/BaseURL";
 import axios from "axios";
 import { GetGlobalVersion } from "../../../meta/GetGlobalVersion";
+import { toast } from "react-toastify";
 
 const Login = () => {
   let tempGlobalData = {
@@ -335,10 +336,12 @@ const Login = () => {
             "lcEdu_GlobalData",
             JSON.stringify(tempGlobalData)
           );
+          toast.success(res?.data?.message);
           navigate("/dashboard");
         })
         .catch((err) => {
           console.log("err = ", err);
+          toast.error(err?.response?.data?.message);
         });
     },
   });

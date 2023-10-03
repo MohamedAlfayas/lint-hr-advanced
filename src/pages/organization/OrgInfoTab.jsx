@@ -37,6 +37,7 @@ import CountryList from "../../common/data/CountryList";
 import Dropzone from "react-dropzone";
 import axios from "axios";
 import { Api } from "../../common/api/Api";
+import { toast } from "react-toastify";
 
 
 const OrgInfoTab = () => {
@@ -180,8 +181,13 @@ const OrgInfoTab = () => {
     })
       .then(res => {
         console.log("RES ==== ", res);
+        toast.success(res?.data?.message);
       })
-      .catch(err => console.log("ERRR === ", err))
+      .catch(err => {
+        console.log("ERRR === ", err);
+        toast.error(err?.response?.data?.message);
+      })
+      
   }
 
   return (
