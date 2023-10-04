@@ -7,6 +7,8 @@ import ProjectOverview from "../pages/organization";
 import Employee from "../pages/employee/Employee";
 import Roles from "../pages/roles/Roles";
 import WorkSchedule from "../pages/workschedule/WorkSchedule ";
+import Holidays from "../pages/holidays/Holidays";
+
 
 
 const privateRoutes = [
@@ -15,6 +17,7 @@ const privateRoutes = [
     { path: "/employee", component: <Employee /> },
     { path: "/roles", component: <Roles /> },
     { path: "/workschedule", component: <WorkSchedule /> },
+    { path: "/holidays", component: <Holidays /> },
     {
         path: "/",
         exact: true,

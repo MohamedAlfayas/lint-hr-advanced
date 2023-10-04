@@ -798,6 +798,8 @@ const Navdata = () => {
                 { id: "employee", label: "Employee", link: "/employee", parentId: "baseUi" },
                 { id: "roles", label: "Roles", link: "/roles", parentId: "baseUi" },
                 { id: "workschedule", label: "WorkSchedule", link: "/workschedule", parentId: "baseUi" },
+                { id: "holidays", label: "Holidays", link: "/holidays", parentId: "baseUi" },
+
             //     { id: "badges", label: "Badges", link: "#", parentId: "baseUi" },
             //     { id: "buttons", label: "Buttons", link: "#", parentId: "baseUi" },
             //     { id: "colors", label: "Colors", link: "#", parentId: "baseUi" },

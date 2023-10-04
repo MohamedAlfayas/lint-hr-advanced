@@ -1,0 +1,17 @@
+#lc_btn {
+    text-align: right; 
+    margin-top: 20px; 
+    margin-bottom: -125px;
+  }
+  
+ /* CSS for aligning navigation tabs to the right */
+#lc_btn .nav-tabs {
+  justify-content: flex-end; /* Align the tabs to the right */
+}
+
+/* Optional: Add margin to the right for spacing */
+#lc_btn .nav-item {
+  margin-right: 10px;
+}
+
+  

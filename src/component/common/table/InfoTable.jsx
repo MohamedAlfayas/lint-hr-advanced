@@ -11,6 +11,12 @@ import {
     NavItem,
     NavLink,
     Row,
+    Label,
+    Modal,
+    ModalHeader,
+    Form,
+    ModalBody,
+    Input,
 } from "reactstrap";
 
 import TableContainer from "../../../component/common/table/TableContainer"
@@ -28,10 +34,12 @@ import { Link } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import { setComponentToShow, setFormObj, setFormTitle, setFormWidthPercentage, toggleRSBView } from '../../../redux/reducers/ChildReducer/RightSideBarReducer';
 import { useDispatch } from 'react-redux';
+import Datetime from "react-datetime";
+import "react-datetime/css/react-datetime.css";
 
 const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filterKey, filterOptions, width_per }) => {
-    
-    console.log("Page Refreshing !!!!");
+
+    console.log("Page Refreshing !!!!" , tabledata);
 
     const dispatch = useDispatch();
 
@@ -40,6 +48,13 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
     const [isExportCSV, setIsExportCSV] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
     const [deleteModalMulti, setDeleteModalMulti] = useState(false);
+    const [modal, setModal] = useState(false);
+    const [modal_list, setmodal_list] = useState(false);
+    const tog_list = () => {
+        setmodal_list(!modal_list);
+    };
+    const currentYear = new Date().getFullYear();
+    const [selectedYear, setSelectedYear] = useState(new Date(currentYear, 0, 1));
 
 
     // Checked All
@@ -109,7 +124,7 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                 );
             },
         },
-    ], []);    
+    ], []);
 
     useEffect(() => {
         columns.splice(1, 0, ...additionalColumn)
@@ -129,8 +144,11 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
 
     useEffect(() => {
         if (tabledata.length) {
-            console.log("Datalist = ",tabledata);
+            console.log("Datalist = ", tabledata);
             setDataList(tabledata);
+        }
+        if (!tabledata?.length) {
+            setDataList([])
         }
     }, [tabledata]);
 
@@ -180,7 +198,15 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
         dispatch(setComponentToShow(formname));
         dispatch(toggleRSBView(true));
     };
-
+    const toggle = useCallback(() => {
+        if (modal) {
+          setModal(false);
+          setOrder(null);
+        } else {
+          setModal(true);
+          setDate(defaultdate());
+        }
+      }, [modal]);
 
     return (
         <div className="page-content">
@@ -210,7 +236,23 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                             <CardHeader className="bdata-0">
                                 <Row className="align-items-center gy-3">
                                     <div className="col-sm">
-                                        <h5 className="card-title mb-0">Data History</h5>
+                                        <h5 className="card-title mb-0">{formname.charAt(0).toUpperCase() + formname.slice(1)}</h5>
+                                      
+                                        <Datetime
+                                                            value={selectedYear}
+                                                            onChange={(date) => {
+                                                                if (date.isValid()) {
+                                                                    const year = date.year();
+                                                                    setSelectedYear(new Date(year, 0, 1));
+                                                                } else {
+                                                                    setSelectedYear(null);
+                                                                }
+                                                            }}
+                                                            dateFormat="YYYY"
+                                                            timeFormat={false}
+                                                            viewMode="years"
+                                                        />
+                                                  
                                     </div>
                                     <div className="col-sm-auto">
                                         <div className="d-flex gap-1 flex-wrap">
@@ -235,6 +277,7 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                     </div>
                                 </Row>
                             </CardHeader>
+                        
                             <CardBody className="pt-0">
                                 <div>
                                     <Nav
@@ -259,11 +302,11 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                             <NavItem>
                                                 <NavLink
                                                     className={classnames(
-                                                        { active: activeTab === String(idx+2) },
+                                                        { active: activeTab === String(idx + 2) },
                                                         "fw-semibold"
                                                     )}
                                                     onClick={() => {
-                                                        toggleTab(String(idx+2), obj.option);
+                                                        toggleTab(String(idx + 2), obj.option);
                                                     }}
                                                     href="#"
                                                 >
@@ -271,7 +314,7 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                                     {obj.label}
                                                 </NavLink>
                                             </NavItem>
-                                        ))}                                        
+                                        ))}
                                     </Nav>
                                     {dataList.length ? (
                                         <TableContainer
@@ -296,6 +339,248 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                     )
                                     }
                                 </div>
+                                <Modal id="showModal" isOpen={modal} toggle={toggle} centered>
+                                    <ModalHeader className="bg-light p-3" toggle={toggle}>
+                                        {/* {!!isEdit ? "Edit Order" : "Add Order"} */}
+                                    </ModalHeader>
+                                    <Form className="tablelist-form" onSubmit={(e) => {
+                                        e.preventDefault();
+                                        // validation.handleSubmit();
+                                        return false;
+                                    }}>
+                                        <ModalBody>
+                                            <input type="hidden" id="id-field" />
+
+                                            <div className="mb-3">
+                                                <Label
+                                                    htmlFor="id-field"
+                                                    className="form-label"
+                                                >
+                                                    Order Id
+                                                </Label>
+                                                <Input
+                                                    name="orderId"
+                                                    id="id-field"
+                                                    className="form-control"
+                                                    placeholder="Enter Order Id"
+                                                    type="text"
+                                                    // validate={{
+                                                    //     required: { value: true },
+                                                    // }}
+                                                    // onChange={validation.handleChange}
+                                                    // onBlur={validation.handleBlur}
+                                                    // value={validation.values.orderId || ""}
+                                                    // invalid={
+                                                    //     validation.touched.orderId && validation.errors.orderId ? true : false
+                                                    // }
+                                                />
+                                                {/* {validation.touched.orderId && validation.errors.orderId ? (
+                                                    <FormFeedback type="invalid">{validation.errors.orderId}</FormFeedback>
+                                                ) : null} */}
+
+                                            </div>
+
+                                            <div className="mb-3">
+                                                <Label
+                                                    htmlFor="customername-field"
+                                                    className="form-label"
+                                                >
+                                                    Customer Name
+                                                </Label>
+                                                <Input
+                                                    name="customer"
+                                                    id="customername-field"
+                                                    className="form-control"
+                                                    placeholder="Enter Name"
+                                                    type="text"
+                                                    // validate={{
+                                                    //     required: { value: true },
+                                                    // }}
+                                                    // onChange={validation.handleChange}
+                                                    // onBlur={validation.handleBlur}
+                                                    // value={validation.values.customer || ""}
+                                                    // invalid={
+                                                    //     validation.touched.customer && validation.errors.customer ? true : false
+                                                    // }
+                                                />
+                                                {/* {validation.touched.customer && validation.errors.customer ? (
+                                                    <FormFeedback type="invalid">{validation.errors.customer}</FormFeedback>
+                                                ) : null} */}
+
+                                            </div>
+
+                                            <div className="mb-3">
+                                                <Label
+                                                    htmlFor="productname-field"
+                                                    className="form-label"
+                                                >
+                                                    Product
+                                                </Label>
+
+                                                <Input
+                                                    name="product"
+                                                    type="select"
+                                                    className="form-select"
+                                                    // onChange={validation.handleChange}
+                                                    // onBlur={validation.handleBlur}
+                                                    // value={
+                                                    //     validation.values.product || ""
+                                                    // }
+                                                    required>
+                                                    {/* {productname.map((item, key) => (
+                                                        <React.Fragment key={key}>
+                                                            {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
+                                                        </React.Fragment>
+                                                    ))} */}
+                                                </Input>
+                                                {/* {validation.touched.product &&
+                                                    validation.errors.product ? (
+                                                    <FormFeedback type="invalid">
+                                                        {validation.errors.product}
+                                                    </FormFeedback>
+                                                ) : null} */}
+                                            </div>
+
+                                            <div className="mb-3">
+                                                <Label htmlFor="date-field" className="form-label">
+                                                    Order Date
+                                                </Label>
+{/* 
+                                                <Flatpickr
+                                                    name="orderDate"
+                                                    className="form-control"
+                                                    id="datepicker-publish-input"
+                                                    placeholder="Select a date"
+                                                    options={{
+                                                        enableTime: true,
+                                                        altInput: true,
+                                                        altFormat: "d M, Y, G:i K",
+                                                        dateFormat: "d M, Y, G:i K",
+                                                    }}
+                                                    onChange={(e) =>
+                                                        dateformate(e)
+                                                    }
+                                                    value={validation.values.orderDate || ""}
+                                                /> */}
+
+                                                {/* {validation.touched.orderDate && validation.errors.orderDate ? (
+                                                    <FormFeedback type="invalid">{validation.errors.orderDate}</FormFeedback>
+                                                ) : null} */}
+                                            </div>
+                                            <div className="row gy-4 mb-3">
+                                                <div className="col-md-6">
+                                                    <div>
+                                                        <Label
+                                                            htmlFor="amount-field"
+                                                            className="form-label"
+                                                        >
+                                                            Amount
+                                                        </Label>
+                                                        <Input
+                                                            name="amount"
+                                                            type="text"
+                                                            // onChange={validation.handleChange}
+                                                            // onBlur={validation.handleBlur}
+                                                            // value={validation.values.amount || ""}
+                                                            // invalid={
+                                                            //     validation.touched.amount && validation.errors.amount ? true : false
+                                                            // }
+                                                        />
+                                                        {/* {validation.touched.amount && validation.errors.amount ? (
+                                                            <FormFeedback type="invalid">{validation.errors.amount}</FormFeedback>
+                                                        ) : null} */}
+
+                                                    </div>
+                                                </div>
+                                                <div className="col-md-6">
+                                                    <div>
+                                                        <Label
+                                                            htmlFor="payment-field"
+                                                            className="form-label"
+                                                        >
+                                                            Payment Method
+                                                        </Label>
+
+                                                        <Input
+                                                            name="payment"
+                                                            type="select"
+                                                            className="form-select"
+                                                            // onChange={validation.handleChange}
+                                                            // onBlur={validation.handleBlur}
+                                                            // value={
+                                                            //     validation.values.payment || ""
+                                                            // }
+                                                        >
+                                                            {/* {orderpayement.map((item, key) => (
+                                                                <React.Fragment key={key}>
+                                                                    {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
+                                                                </React.Fragment>
+                                                            ))} */}
+                                                        </Input>
+                                                        {/* {validation.touched.payment &&
+                                                            validation.errors.payment ? (
+                                                            <FormFeedback type="invalid">
+                                                                {validation.errors.payment}
+                                                            </FormFeedback>
+                                                        ) : null} */}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <Label
+                                                    htmlFor="delivered-status"
+                                                    className="form-label"
+                                                >
+                                                    Delivery Status
+                                                </Label>
+
+                                                <Input
+                                                    name="status"
+                                                    type="select"
+                                                    className="form-select"
+                                                    // onChange={validation.handleChange}
+                                                    // onBlur={validation.handleBlur}
+                                                    // value={
+                                                    //     validation.values.status || ""
+                                                    // }
+                                                >
+                                                    {/* {orderstatus.map((item, key) => (
+                                                        <React.Fragment key={key}>
+                                                            {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
+                                                        </React.Fragment>
+                                                    ))} */}
+                                                </Input>
+                                                {/* {validation.touched.status &&
+                                                    validation.errors.status ? (
+                                                    <FormFeedback type="invalid">
+                                                        {validation.errors.status}
+                                                    </FormFeedback>
+                                                ) : null} */}
+
+                                            </div>
+                                        </ModalBody>
+                                        <div className="modal-footer">
+                                            <div className="hstack gap-2 justify-content-end">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-light"
+                                                    onClick={() => {
+                                                        setModal(false);
+                                                    }}
+                                                >
+                                                    Close
+                                                </button>
+
+                                                {/* <button type="submit" className="btn btn-success">
+                                                    {!!isEdit
+                                                        ? "Update"
+                                                        : "Add Customer"}
+                                                </button> */}
+                                            </div>
+                                        </div>
+                                    </Form>
+                                </Modal>
                             </CardBody>
                         </Card>
                     </Col>
