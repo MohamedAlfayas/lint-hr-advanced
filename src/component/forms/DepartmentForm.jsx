@@ -66,13 +66,6 @@ const DepartmentForm = () => {
       })
   };
 
-  const sortbyname = [
-    { label: "Alabama", value: 1 },
-    { label: "Madrid", value: 2 },
-    { label: "Toronto", value: 3 },
-    { label: "Londan", value: 4 },
-    { label: "Wyoming", value: 5 },
-  ];
 
   return (
     <React.Fragment>

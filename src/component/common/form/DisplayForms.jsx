@@ -7,6 +7,7 @@ import BranchForm from "../../forms/BranchForm";
 import EmployeeForm from "../../forms/EmployeeForm";
 import RoleForm from "../../forms/RoleForm";
 import WorkScheduleForm from "../../forms/WorkScheduleForm";
+import HolidayForm from "../../forms/HolidayForm";
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
   const { form_title, form_width_percentage, component_to_show } = useSelector(
@@ -37,6 +38,9 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
               ) 
               : component_to_show === "workschedule" ? (
                 <WorkScheduleForm />
+              ) 
+              : component_to_show === "holiday" ? (
+                <HolidayForm />
               ) 
               : (
                 <></>

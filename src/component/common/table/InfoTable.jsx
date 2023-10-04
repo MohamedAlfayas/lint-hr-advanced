@@ -39,7 +39,7 @@ import "react-datetime/css/react-datetime.css";
 
 const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filterKey, filterOptions, width_per }) => {
 
-    console.log("Page Refreshing !!!!" , tabledata);
+    console.log("Page Refreshing !!!!", tabledata);
 
     const dispatch = useDispatch();
 
@@ -132,6 +132,7 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
 
 
     const toggleTab = (tab, type) => {
+        console.log("Tab = ",tab,"    type = ",type);
         if (activeTab !== tab) {
             setActiveTab(tab);
             let filteredDatas = [...tabledata];
@@ -200,13 +201,13 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
     };
     const toggle = useCallback(() => {
         if (modal) {
-          setModal(false);
-          setOrder(null);
+            setModal(false);
+            setOrder(null);
         } else {
-          setModal(true);
-          setDate(defaultdate());
+            setModal(true);
+            setDate(defaultdate());
         }
-      }, [modal]);
+    }, [modal]);
 
     return (
         <div className="page-content">
@@ -237,22 +238,22 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                 <Row className="align-items-center gy-3">
                                     <div className="col-sm">
                                         <h5 className="card-title mb-0">{formname.charAt(0).toUpperCase() + formname.slice(1)}</h5>
-                                      
+
                                         <Datetime
-                                                            value={selectedYear}
-                                                            onChange={(date) => {
-                                                                if (date.isValid()) {
-                                                                    const year = date.year();
-                                                                    setSelectedYear(new Date(year, 0, 1));
-                                                                } else {
-                                                                    setSelectedYear(null);
-                                                                }
-                                                            }}
-                                                            dateFormat="YYYY"
-                                                            timeFormat={false}
-                                                            viewMode="years"
-                                                        />
-                                                  
+                                            value={selectedYear}
+                                            onChange={(date) => {
+                                                if (date.isValid()) {
+                                                    const year = date.year();
+                                                    setSelectedYear(new Date(year, 0, 1));
+                                                } else {
+                                                    setSelectedYear(null);
+                                                }
+                                            }}
+                                            dateFormat="YYYY"
+                                            timeFormat={false}
+                                            viewMode="years"
+                                        />
+
                                     </div>
                                     <div className="col-sm-auto">
                                         <div className="d-flex gap-1 flex-wrap">
@@ -277,7 +278,7 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                     </div>
                                 </Row>
                             </CardHeader>
-                        
+
                             <CardBody className="pt-0">
                                 <div>
                                     <Nav
@@ -364,15 +365,15 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                                     className="form-control"
                                                     placeholder="Enter Order Id"
                                                     type="text"
-                                                    // validate={{
-                                                    //     required: { value: true },
-                                                    // }}
-                                                    // onChange={validation.handleChange}
-                                                    // onBlur={validation.handleBlur}
-                                                    // value={validation.values.orderId || ""}
-                                                    // invalid={
-                                                    //     validation.touched.orderId && validation.errors.orderId ? true : false
-                                                    // }
+                                                // validate={{
+                                                //     required: { value: true },
+                                                // }}
+                                                // onChange={validation.handleChange}
+                                                // onBlur={validation.handleBlur}
+                                                // value={validation.values.orderId || ""}
+                                                // invalid={
+                                                //     validation.touched.orderId && validation.errors.orderId ? true : false
+                                                // }
                                                 />
                                                 {/* {validation.touched.orderId && validation.errors.orderId ? (
                                                     <FormFeedback type="invalid">{validation.errors.orderId}</FormFeedback>
@@ -393,15 +394,15 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                                     className="form-control"
                                                     placeholder="Enter Name"
                                                     type="text"
-                                                    // validate={{
-                                                    //     required: { value: true },
-                                                    // }}
-                                                    // onChange={validation.handleChange}
-                                                    // onBlur={validation.handleBlur}
-                                                    // value={validation.values.customer || ""}
-                                                    // invalid={
-                                                    //     validation.touched.customer && validation.errors.customer ? true : false
-                                                    // }
+                                                // validate={{
+                                                //     required: { value: true },
+                                                // }}
+                                                // onChange={validation.handleChange}
+                                                // onBlur={validation.handleBlur}
+                                                // value={validation.values.customer || ""}
+                                                // invalid={
+                                                //     validation.touched.customer && validation.errors.customer ? true : false
+                                                // }
                                                 />
                                                 {/* {validation.touched.customer && validation.errors.customer ? (
                                                     <FormFeedback type="invalid">{validation.errors.customer}</FormFeedback>
@@ -445,7 +446,7 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                                 <Label htmlFor="date-field" className="form-label">
                                                     Order Date
                                                 </Label>
-{/* 
+                                                {/* 
                                                 <Flatpickr
                                                     name="orderDate"
                                                     className="form-control"
@@ -479,12 +480,12 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                                         <Input
                                                             name="amount"
                                                             type="text"
-                                                            // onChange={validation.handleChange}
-                                                            // onBlur={validation.handleBlur}
-                                                            // value={validation.values.amount || ""}
-                                                            // invalid={
-                                                            //     validation.touched.amount && validation.errors.amount ? true : false
-                                                            // }
+                                                        // onChange={validation.handleChange}
+                                                        // onBlur={validation.handleBlur}
+                                                        // value={validation.values.amount || ""}
+                                                        // invalid={
+                                                        //     validation.touched.amount && validation.errors.amount ? true : false
+                                                        // }
                                                         />
                                                         {/* {validation.touched.amount && validation.errors.amount ? (
                                                             <FormFeedback type="invalid">{validation.errors.amount}</FormFeedback>
@@ -505,11 +506,11 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                                             name="payment"
                                                             type="select"
                                                             className="form-select"
-                                                            // onChange={validation.handleChange}
-                                                            // onBlur={validation.handleBlur}
-                                                            // value={
-                                                            //     validation.values.payment || ""
-                                                            // }
+                                                        // onChange={validation.handleChange}
+                                                        // onBlur={validation.handleBlur}
+                                                        // value={
+                                                        //     validation.values.payment || ""
+                                                        // }
                                                         >
                                                             {/* {orderpayement.map((item, key) => (
                                                                 <React.Fragment key={key}>
@@ -539,11 +540,11 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                                     name="status"
                                                     type="select"
                                                     className="form-select"
-                                                    // onChange={validation.handleChange}
-                                                    // onBlur={validation.handleBlur}
-                                                    // value={
-                                                    //     validation.values.status || ""
-                                                    // }
+                                                // onChange={validation.handleChange}
+                                                // onBlur={validation.handleBlur}
+                                                // value={
+                                                //     validation.values.status || ""
+                                                // }
                                                 >
                                                     {/* {orderstatus.map((item, key) => (
                                                         <React.Fragment key={key}>

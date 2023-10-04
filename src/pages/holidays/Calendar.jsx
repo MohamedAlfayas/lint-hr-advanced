@@ -38,6 +38,7 @@ import { useSelector, useDispatch } from "react-redux";
 
 
 import listPlugin from '@fullcalendar/list';
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
 
 
@@ -51,22 +52,25 @@ const Calender = () => {
     const [selectedNewDay, setSelectedNewDay] = useState(0);
     const [isEdit, setIsEdit] = useState(false);
     const [isEditButton, setIsEditButton] = useState(true);
-    const events = [
 
-        {
-            id: '1',
-            title: 'Diwali',
-            start: '12-11-2023',
-            className: "bg-success-subtle text-success",
-        },
-        {
-            id: '2',
-            title: 'Leo Day',
-            start: '19-10-2023',
-            className: "bg-danger-subtle text-danger",
-        },
+    const events = GetLocalStorageData('holiday')
 
-    ];
+    // const events = [
+
+    //     {
+    //         id: '1',
+    //         title: 'Diwali',
+    //         start: '12-11-2023',
+    //         className: "bg-success-subtle text-success",
+    //     },
+    //     {
+    //         id: '2',
+    //         title: 'Leo Day',
+    //         start: '19-10-2023',
+    //         className: "bg-danger-subtle text-danger",
+    //     },
+
+    // ];
 
 
     // Inside your component
@@ -253,23 +257,6 @@ const Calender = () => {
         },
     });
 
-    function convertDateFormat(inputDate) {
-        // Assuming inputDate is in the 'dd-mm-yyyy' format
-        const parts = inputDate.split('-');
-        if (parts.length === 3) {
-            const [day, month, year] = parts;
-            // Create a new Date object using the parts and format it to 'yyyy-mm-dd'
-            const convertedDate = new Date(`${year}-${month}-${day}`);
-            // Use toISOString() to get the date in 'yyyy-mm-dd' format
-            return convertedDate.toISOString().split('T')[0];
-        } else {
-            // If the input format is invalid, return the original string
-            return inputDate;
-        }
-    }
-
-
-
     document.title = "Calendar | Velzon - React Admin & Dashboard Template";
     return (
         <React.Fragment>
@@ -308,7 +295,9 @@ const Calender = () => {
                                                 // events={eee}
                                                 events={events.map(obj =>({
                                                     ...obj,
-                                                    start : convertDateFormat(obj.start)
+                                                    title : obj.name,
+                                                    className : obj.is_restricted ? "bg-danger-subtle text-danger" : "bg-success-subtle text-success",
+                                                    start : (obj.date)
                                                 }))}
                                             // dateClick={handleDateClick}
                                             // eventsClick={handleEventClick}
