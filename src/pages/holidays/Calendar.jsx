@@ -52,22 +52,22 @@ const Calender = () => {
     const [isEdit, setIsEdit] = useState(false);
     const [isEditButton, setIsEditButton] = useState(true);
     const events = [
-       
+
         {
             id: '1',
             title: 'Diwali',
-            start: '2023-11-12',
+            start: '12-11-2023',
             className: "bg-success-subtle text-success",
         },
         {
             id: '2',
             title: 'Leo Day',
-            start: '2023-10-19',
+            start: '19-10-2023',
             className: "bg-danger-subtle text-danger",
         },
-       
+
     ];
-    
+
 
     // Inside your component
 
@@ -253,6 +253,21 @@ const Calender = () => {
         },
     });
 
+    function convertDateFormat(inputDate) {
+        // Assuming inputDate is in the 'dd-mm-yyyy' format
+        const parts = inputDate.split('-');
+        if (parts.length === 3) {
+            const [day, month, year] = parts;
+            // Create a new Date object using the parts and format it to 'yyyy-mm-dd'
+            const convertedDate = new Date(`${year}-${month}-${day}`);
+            // Use toISOString() to get the date in 'yyyy-mm-dd' format
+            return convertedDate.toISOString().split('T')[0];
+        } else {
+            // If the input format is invalid, return the original string
+            return inputDate;
+        }
+    }
+
 
 
     document.title = "Calendar | Velzon - React Admin & Dashboard Template";
@@ -291,7 +306,10 @@ const Calender = () => {
                                                 droppable={true}
                                                 selectable={true}
                                                 // events={eee}
-                                            events={events}
+                                                events={events.map(obj =>({
+                                                    ...obj,
+                                                    start : convertDateFormat(obj.start)
+                                                }))}
                                             // dateClick={handleDateClick}
                                             // eventsClick={handleEventClick}
 
