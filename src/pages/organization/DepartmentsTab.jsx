@@ -21,6 +21,12 @@ import {
 } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { Link } from "react-router-dom";
 
+// Prime React Css
+import "primereact/resources/themes/lara-light-indigo/theme.css";
+
+// Prime React Minified Css
+import "primereact/resources/primereact.min.css";
+
 import avatar1 from "../../assets/images/users/avatar-1.jpg";
 import avatar2 from "../../assets/images/users/avatar-2.jpg";
 import avatar3 from "../../assets/images/users/avatar-3.jpg";
