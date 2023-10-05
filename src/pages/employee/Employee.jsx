@@ -8,7 +8,7 @@ import { MetaTitle } from "../../common/data/MetaTitle";
 import { useMemo } from "react";
 
 const Employee = () => {
-    
+
 
     const [empdata, setEmpData] = useState([
         { id: 1, name: "Elan", email: "elan@lintcloud.com", department: [9, 10], status: 1 },
@@ -23,7 +23,7 @@ const Employee = () => {
         { id: 10, name: "Dinesh", email: "dinesh@lintcloud.com", department: [11], status: 2 },
     ])
 
-    
+
 
     // Column
     const additionalColumn = [
@@ -31,13 +31,13 @@ const Employee = () => {
             Header: "Name",
             accessor: "name",
             filterable: false,
-            id:"name"
+            id: "name"
         },
         {
             Header: "Email",
             accessor: "email",
             filterable: false,
-            id:"email"
+            id: "email"
         },
         {
             Header: "Department",
@@ -60,11 +60,11 @@ const Employee = () => {
         },
         {
             Header: "Status",
-            id : 'status',
+            id: 'status',
             filterable: false,
             accessor: (obj) => {
                 let status = obj.status === 1 ? "Active" : "Inactive";
-                let statusClass = obj.status === 1 ? "success" :  "warning"
+                let statusClass = obj.status === 1 ? "success" : "warning"
                 return (
                     <span className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}> {status} </span>
                 )
@@ -72,32 +72,37 @@ const Employee = () => {
         }
     ]
 
-    const initialFormObj = useMemo(() =>{
+    const initialFormObj = useMemo(() => {
         return {
-            id : 0,
-            name : "",
-            department : [],
-            email : "",
-            status : 1
+            id: 0,
+            fname: "",
+            lname: "",
+            dob: "",
+            gender: "Male",
+            department: [],
+            role: 0,
+            work_schedule: 0,
+            profile_timezone: "Asia/Kolkata",
+            is_active: true
         }
-    },[]);
+    }, []);
 
     const filterKey = 'status';
     const filterOptions = [
-        {option : "1", label : "Active"},
-        {option : "2", label : "Inactive"}
+        { option: "1", label: "Active" },
+        { option: "2", label: "Inactive" }
     ]
 
-    document.title = `Employee | ${MetaTitle}` ;
+    document.title = `Employee | ${MetaTitle}`;
     return (
         <React.Fragment>
-            <InfoTable 
-                additionalColumn={additionalColumn} 
-                tabledata={empdata} 
-                formname={'employee'} 
+            <InfoTable
+                additionalColumn={additionalColumn}
+                tabledata={empdata}
+                formname={'employee'}
                 initialFormObj={initialFormObj}
-                filterKey={filterKey}  
-                filterOptions={filterOptions}  
+                filterKey={filterKey}
+                filterOptions={filterOptions}
                 width_per={"40%"}
             />
         </React.Fragment>
