@@ -144,11 +144,9 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
     };
 
     useEffect(() => {
-        if (tabledata.length) {
-            console.log("Datalist = ", tabledata);
+        if ( tabledata && tabledata.length) {
             setDataList(tabledata);
-        }
-        if (!tabledata?.length) {
+        }else{
             setDataList([])
         }
     }, [tabledata]);
