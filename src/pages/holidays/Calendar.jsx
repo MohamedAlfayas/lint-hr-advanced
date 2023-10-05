@@ -53,42 +53,9 @@ const Calender = () => {
     const [isEdit, setIsEdit] = useState(false);
     const [isEditButton, setIsEditButton] = useState(true);
 
-    const events = GetLocalStorageData('holiday')
+    const events = GetLocalStorageData('holiday') || []
 
-    // const events = [
-
-    //     {
-    //         id: '1',
-    //         title: 'Diwali',
-    //         start: '12-11-2023',
-    //         className: "bg-success-subtle text-success",
-    //     },
-    //     {
-    //         id: '2',
-    //         title: 'Leo Day',
-    //         start: '19-10-2023',
-    //         className: "bg-danger-subtle text-danger",
-    //     },
-
-    // ];
-
-
-    // Inside your component
-
-    useEffect(() => {
-        const savedEvents = localStorage.getItem('calendarEvents');
-        if (savedEvents) {
-            // setEvents(JSON.parse(savedEvents));
-        }
-    }, []);
-
-    // Effect to save events to local storage when events change
-    useEffect(() => {
-        localStorage.setItem('calendarEvents', JSON.stringify(events));
-    }, [events]);
-
-
-
+    
     /**
      * Handling the modal state
      */
