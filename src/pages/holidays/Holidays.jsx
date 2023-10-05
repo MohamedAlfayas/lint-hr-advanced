@@ -23,9 +23,9 @@ const Holiday = () => {
 
   const { holiday_data } = useSelector(state => state.HolidayReducer);
 
-  useEffect(() =>{
+  useEffect(() => {
     dispatch(setHoliday(GetLocalStorageData('holiday')))
-  },[])
+  }, [])
 
   console.log("holiday DAta = ", holiday_data);
 
@@ -44,7 +44,7 @@ const Holiday = () => {
       accessor: (obj) => {
         return (
           <React.Fragment>
-              {ConvertDateFormat(obj.date)}
+            {ConvertDateFormat(obj.date)}
           </React.Fragment>
         );
       },
@@ -120,23 +120,18 @@ const Holiday = () => {
       {showCalendar ? (
         <Calender
         />
+      ) : (
+        <InfoTable
+          additionalColumn={additionalColumn}
+          tabledata={holiday_data}
+          formname={"holiday"}
+          initialFormObj={initialFormObj}
+          filterKey={filterKey}
+          filterOptions={filterOptions}
+          width_per={"40%"}
+        />
       )
-        : (
-          <InfoTable
-            additionalColumn={additionalColumn}
-            tabledata={holiday_data}
-            formname={"holiday"}
-            initialFormObj={initialFormObj}
-            filterKey={filterKey}
-            filterOptions={filterOptions}
-            width_per={"40%"}
-          />
-        )}
-      {holiday_data.length === 0 && !showCalendar && (
-        <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <h2>No holiday Data</h2>
-        </div>
-      )}
+      }
     </React.Fragment>
   );
 }

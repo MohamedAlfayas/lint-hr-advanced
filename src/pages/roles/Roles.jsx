@@ -263,23 +263,15 @@ const Roles = () => {
 
   return (
     <React.Fragment>
-      {role_data.length ? (
-        <InfoTable
-          additionalColumn={additionalColumn}
-          tabledata={role_data}
-          formname={"role"}
-          initialFormObj={initialFormObj}
-          filterKey={filterKey}
-          filterOptions={filterOptions}
-          width_per={"60%"}
-        />
-      ) : (
-        <React.Fragment>
-          <div style={{height:'100vh',display:'flex',justifyContent:'center',alignItems:'center'}}>
-            <h2>No Role Data</h2>
-          </div>
-        </React.Fragment>
-      )}
+      <InfoTable
+        additionalColumn={additionalColumn}
+        tabledata={role_data}
+        formname={"role"}
+        initialFormObj={initialFormObj}
+        filterKey={filterKey}
+        filterOptions={filterOptions}
+        width_per={"60%"}
+      />
     </React.Fragment>
   );
 };
