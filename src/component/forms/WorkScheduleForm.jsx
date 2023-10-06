@@ -67,27 +67,40 @@ const WorkScheduleForm = () => {
     console.log(ck);
   };
 
-  const calculateTime = (obj, i) => {
-    var StartTime = obj.workday[i].s_hr + ":" + obj.workday[i].s_min;
-    var EndTime = obj.workday[i].e_hr + ":" + obj.workday[i].e_min;
+  const calculateTime = (obj, i, isWeekOff) => {
+    if (!isWeekOff) {
+      var StartTime = obj.workday[i].s_hr + ":" + obj.workday[i].s_min;
+      var EndTime = obj.workday[i].e_hr + ":" + obj.workday[i].e_min;
 
-    var Temp1 = new Date("2020-01-01" + " " + StartTime).getTime();
-    var Temp2 = new Date("2020-01-01" + " " + EndTime).getTime();
-    var DiffSec = Temp2 - Temp1;
+      var Temp1 = new Date("2020-01-01" + " " + StartTime).getTime();
+      var Temp2 = new Date("2020-01-01" + " " + EndTime).getTime();
+      var DiffSec = Temp2 - Temp1;
 
-    var mins = Math.floor(DiffSec / 60000);
-    var hrs = Math.floor(mins / 60);
+      var mins = Math.floor(DiffSec / 60000);
+      var hrs = Math.floor(mins / 60);
 
-    mins = mins % 60;
+      mins = mins % 60;
 
-    var ws_hr = obj.fullday_hr;
-    var ws_min = obj.fullday_min;
+      var ws_hr = obj.fullday_hr;
+      var ws_min = obj.fullday_min;
 
-    let colorCLass =
-      hrs - ws_hr == 0 && mins - ws_min == 0 ? "text-success" : "text-danger";
+      let colorCLass =
+        hrs - ws_hr == 0 && mins - ws_min == 0 ? "text-success" : "text-danger";
 
-    var actualHr = pad(Math.abs(hrs)) + ":" + pad(Math.abs(mins));
-    return <span className={colorCLass}>{actualHr}</span>;
+      var actualHr = pad(Math.abs(hrs)) + ":" + pad(Math.abs(mins));
+
+      return (
+        <span className={colorCLass}>
+          {actualHr} <small>Hr</small>
+        </span>
+      );
+    } else {
+      return (
+        <span className="text-info">
+          <small>W/O</small>
+        </span>
+      );
+    }
   };
 
   function pad(d) {
@@ -438,14 +451,7 @@ const WorkScheduleForm = () => {
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>
-                        {" "}
-                        <input
-                          type="checkbox"
-                          name="auto_clock_out_cb"
-                          id="auto_clock_out_cb"
-                        />
-                      </th>
+                      <th> </th>
                       <th>Day </th>
                       <th>Start Time</th>
                       <th>Minute</th>
@@ -461,30 +467,71 @@ const WorkScheduleForm = () => {
                             {" "}
                             <input
                               type="checkbox"
-                              name={workday.s_day}
-                              id={workday.s_day}
+                              name={`is_day_on_${workday.s_day}`}
+                              id={`is_day_on_${workday.s_day}`}
+                              className={`mb-2 is_day_on_${workday.s_day}`}
                               checked={workday.is_day_on}
                               onChange={(e) => {
-                                console.log(e);
+                                calculateTime(
+                                  workScheduleData,
+                                  index,
+                                  !workday.is_day_on
+                                );
+                                let global_wd = [...workScheduleData.workday];
+
+                                let this_wd = e.target.checked
+                                  ? { ...workday, is_day_on: e.target.checked }
+                                  : {
+                                      ...workday,
+                                      is_day_on: e.target.checked,
+                                      s_hr: "00",
+                                      s_min: "00",
+                                      e_hr: "00",
+                                      e_min: "00",
+                                    };
+
+                                let res = global_wd.map((obj, idx) =>
+                                  idx === index ? this_wd : obj
+                                );
                                 setWorkScheduleData({
                                   ...workScheduleData,
-                                  is_day_on: e.target.checked,
+                                  workday: res,
                                 });
                               }}
                             />
                           </th>
                           <th style={{ textTransform: "capitalize" }}>
-                            {workday.s_day}
+                            <label
+                              className="fw-bold"
+                              htmlFor={`is_day_on_${workday.s_day}`}>
+                              {workday.s_day}
+                            </label>
                           </th>
                           <th>
                             <Select
                               name={`s_hr_${workday.s_day}`}
                               id={`s_hr_${workday.s_day}`}
+                              className={`s_hr_${workday.s_day}`}
+                              isDisabled={!workday.is_day_on}
                               placeholder={"00"}
                               options={hourOptions}
                               value={minuteOptions.find(
                                 (option) => option.value === workday.s_hr
                               )}
+                              onChange={(e) => {
+                                let global_wd = [...workScheduleData.workday];
+                                let this_wd = {
+                                  ...workday,
+                                  s_hr: e.value,
+                                };
+                                let res = global_wd.map((obj, idx) =>
+                                  idx === index ? this_wd : obj
+                                );
+                                setWorkScheduleData({
+                                  ...workScheduleData,
+                                  workday: res,
+                                });
+                              }}
                             />
                           </th>
                           <th>
@@ -494,9 +541,24 @@ const WorkScheduleForm = () => {
                               id={`s_min_${workday.s_day}`}
                               placeholder={"00"}
                               options={minuteOptions}
+                              isDisabled={!workday.is_day_on}
                               value={minuteOptions.find(
                                 (option) => option.value === workday.s_min
                               )}
+                              onChange={(e) => {
+                                let global_wd = [...workScheduleData.workday];
+                                let this_wd = {
+                                  ...workday,
+                                  s_min: e.value,
+                                };
+                                let res = global_wd.map((obj, idx) =>
+                                  idx === index ? this_wd : obj
+                                );
+                                setWorkScheduleData({
+                                  ...workScheduleData,
+                                  workday: res,
+                                });
+                              }}
                             />
                           </th>
                           <th>
@@ -508,9 +570,24 @@ const WorkScheduleForm = () => {
                               id={`e_hr_${workday.s_day}`}
                               placeholder={"00"}
                               options={hourOptions}
+                              isDisabled={!workday.is_day_on}
                               value={hourOptions.find(
                                 (option) => option.value === workday.e_hr
                               )}
+                              onChange={(e) => {
+                                let global_wd = [...workScheduleData.workday];
+                                let this_wd = {
+                                  ...workday,
+                                  e_hr: e.value,
+                                };
+                                let res = global_wd.map((obj, idx) =>
+                                  idx === index ? this_wd : obj
+                                );
+                                setWorkScheduleData({
+                                  ...workScheduleData,
+                                  workday: res,
+                                });
+                              }}
                             />
                           </th>
                           <th>
@@ -520,14 +597,33 @@ const WorkScheduleForm = () => {
                               id={`e_min_${workday.s_day}`}
                               placeholder={"00"}
                               options={minuteOptions}
+                              isDisabled={!workday.is_day_on}
                               value={minuteOptions.find(
                                 (option) => option.value === workday.e_min
                               )}
+                              onChange={(e) => {
+                                let global_wd = [...workScheduleData.workday];
+                                let this_wd = {
+                                  ...workday,
+                                  e_min: e.value,
+                                };
+                                let res = global_wd.map((obj, idx) =>
+                                  idx === index ? this_wd : obj
+                                );
+                                setWorkScheduleData({
+                                  ...workScheduleData,
+                                  workday: res,
+                                });
+                              }}
                             />
                           </th>
                           <th>
                             <span className="mb-2">
-                              {calculateTime(workScheduleData, index)}
+                              {calculateTime(
+                                workScheduleData,
+                                index,
+                                !workday.is_day_on
+                              )}
                             </span>
                           </th>
                         </tr>
