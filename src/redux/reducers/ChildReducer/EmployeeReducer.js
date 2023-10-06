@@ -1,38 +1,34 @@
 import { createSlice } from "@reduxjs/toolkit"
 
 const initialState = {
-    employeelist : [
-        {
-            "id" : 1,
-            "name" : "Antony",
-            "department" : "Android"
-        },
-        {
-            "id" : 2,
-            "name" : "Fayaz",
-            "department" : "Web Team"
-        },
-        {
-            "id" : 3,
-            "name" : "Paul",
-            "department" : "Backend"
-        }
-    ]
+    employee_data : []
 }
 
 const EmployeeReducer = createSlice({
     name : 'EmployeeReducer',
     initialState,
     reducers : {
-        getEmployee : (state , { type , payload }) =>{
+        setEmployee : (state , { type , payload }) =>{
             return {
                 ...state,
-                employeelist : payload
+                employee_data : payload
+            }
+        },
+        addEmployee : (state, action) =>{
+            return {
+                ...state,
+                employee_data : [...state.employee_data, action.payload]
+            }
+        },
+        editEmployee : (state, action) =>{
+            return {
+                ...state,
+                employee_data : [...state.employee_data].map(obj => obj.id === action.payload.id ? action.payload : obj)
             }
         }
     }
 });
 
-export const { getEmployee } = EmployeeReducer.actions;
+export const { setEmployee, addEmployee, editEmployee } = EmployeeReducer.actions;
 
 export default EmployeeReducer.reducer

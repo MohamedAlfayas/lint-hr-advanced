@@ -6,22 +6,18 @@ import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import InfoTable from "../../component/common/table/InfoTable";
 import { MetaTitle } from "../../common/data/MetaTitle";
 import { useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useEffect } from "react";
+import { setEmployee } from "../../redux/reducers/ChildReducer/EmployeeReducer";
 
 const Employee = () => {
 
+    const dispatch = useDispatch()
+    const {employee_data} =  useSelector(state => state.EmployeeReducer);
 
-    const [empdata, setEmpData] = useState([
-        { id: 1, name: "Elan", email: "elan@lintcloud.com", department: [9, 10], status: 1 },
-        { id: 2, name: "Paul", email: "paul@lintcloud.com", department: [10], status: 1 },
-        { id: 3, name: "Antony", email: "antony@lintcloud.com", department: [10], status: 1 },
-        { id: 4, name: "Fayaz", email: "fayaz@lintcloud.com", department: [12], status: 1 },
-        { id: 5, name: "Thalavai", email: "thalavai@lintcloud.com", department: [11], status: 2 },
-        { id: 6, name: "Kathir", email: "kathir@lintcloud.com", department: [15], status: 1 },
-        { id: 7, name: "Vinish", email: "vinish@lintcloud.com", department: [10], status: 2 },
-        { id: 8, name: "Tharun", email: "tharun@lintcloud.com", department: [15], status: 2 },
-        { id: 9, name: "Arun", email: "arun@lintcloud.com", department: [15], status: 2 },
-        { id: 10, name: "Dinesh", email: "dinesh@lintcloud.com", department: [11], status: 2 },
-    ])
+    useEffect(() =>{
+        dispatch(setEmployee(GetLocalStorageData('employee') || []))
+    },[])
 
 
 
@@ -29,9 +25,16 @@ const Employee = () => {
     const additionalColumn = [
         {
             Header: "Name",
-            accessor: "name",
+            accessor: "fname",
             filterable: false,
-            id: "name"
+            id: "fname",
+            accessor: (obj) => {                
+                return (
+                    <>
+                        {obj.fname+" "+obj.lname}
+                    </>
+                )
+            }
         },
         {
             Header: "Email",
@@ -45,7 +48,7 @@ const Employee = () => {
             filterable: false,
             accessor: (obj) => {
                 const DepartmentData = GetLocalStorageData('department');
-                let thisDepartment = DepartmentData ? DepartmentData.filter(data => (obj.department).includes(data.id)) : []
+                let thisDepartment = DepartmentData ? DepartmentData.filter(data => obj.primary_department === data.id) : []
                 console.log("Name = ", thisDepartment);
                 return (
                     <>
@@ -63,8 +66,8 @@ const Employee = () => {
             id: 'status',
             filterable: false,
             accessor: (obj) => {
-                let status = obj.status === 1 ? "Active" : "Inactive";
-                let statusClass = obj.status === 1 ? "success" : "warning"
+                let status = obj.is_active ? "Active" : "Inactive";
+                let statusClass = obj.is_active ? "success" : "warning"
                 return (
                     <span className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}> {status} </span>
                 )
@@ -79,20 +82,20 @@ const Employee = () => {
             lname: "",
             dob: "",
             gender: "Male",
-            primary_department: 1,
-            sub_department: [2,3],
+            primary_department: 0,
+            sub_department: [],
             role: 0,
             work_schedule: 0,
             profile_timezone: "Asia/Kolkata",
             is_active: true,
-            profile: [] 
+            profile_url : null
         }
     }, []);
 
-    const filterKey = 'status';
+    const filterKey = 'is_active';
     const filterOptions = [
-        { option: "1", label: "Active" },
-        { option: "2", label: "Inactive" }
+        { option: true, label: "Active" },
+        { option: false, label: "Inactive" }
     ]
 
     document.title = `Employee | ${MetaTitle}`;
@@ -100,12 +103,12 @@ const Employee = () => {
         <React.Fragment>
             <InfoTable
                 additionalColumn={additionalColumn}
-                tabledata={empdata}
+                tabledata={employee_data}
                 formname={'employee'}
                 initialFormObj={initialFormObj}
                 filterKey={filterKey}
                 filterOptions={filterOptions}
-                width_per={"40%"}
+                width_per={"30%"}
             />
         </React.Fragment>
     );

@@ -15,8 +15,6 @@ const VerticalLayout = (props) => {
     const navData = navdata().props.children;
     const path = props.router.location.pathname;
 
-    const {employeelist} = useSelector((state) => state.EmployeeReducer);
-
     const {
         leftsidbarSizeType, sidebarVisibilitytype, layoutType
     } = useSelector((state) => state.LayoutReducer);

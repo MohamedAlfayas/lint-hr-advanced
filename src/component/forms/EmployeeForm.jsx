@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
     Button,
     Card,
@@ -12,32 +12,34 @@ import {
 } from "reactstrap";
 import Select from 'react-select';
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
-import avatar1 from '../../assets/images/logo-dark.png'
+import DummyUserImg from "../../assets/images/users/user.png"
 
 import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
+import { addEmployee, editEmployee } from "../../redux/reducers/ChildReducer/EmployeeReducer";
+import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 const EmployeeForm = () => {
 
+    const dispatch = useDispatch()
+
     const { form_obj } = useSelector(state => state.RightSideBarReducer);
-   
-    const [selectedPrimaryDepartment, setSelectedPrimaryDepartment] = useState(null);
-    const [selectedSubDepartment, setSelectedSubDepartment] = useState(null);
-    const [selectedRole, setSelectedRole] = useState([]);
-    const [selectedImage, setSelectedImage] = useState(null);
-    const [selectedGender, setSelectedGender] = useState([]);
+    const [employeeObj, setEmployeeObj] = useState({});
+
+
     const dep_options = GetLocalStorageData('department') || [];
     const ws_options = GetLocalStorageData('work_schedule') || [];
     const role_option = GetLocalStorageData('role') || [];
-    const gender_option = GetLocalStorageData('gender') || [];
-    const [selectedWS, setSelectedWS] = useState([])
-    const [employeeObj, setEmployeeObj] = useState({});
-    const formData = new FormData();
-    const [sub_dept, setSubDept] = useState(dep_options)
+
+    const [employeeImage, setEmployeeImage] = useState(null);
+
+    const [subDepOptions, setSubDeptOptions] = useState(dep_options);
 
 
     useEffect(() => {
+        console.log("emp Form Obj = ",form_obj);
         setEmployeeObj(form_obj);
-        // setSelectedWS(ws_options.filter(data => (form_obj.work_schedule_id_list).includes(data.id)))
+        let sub_dep_options = dep_options.filter(obj => obj.id !== form_obj.primary_department);
+        setSubDeptOptions(sub_dep_options)
     }, [form_obj]);
 
     const handleInputChange = (e) => {
@@ -49,118 +51,68 @@ const EmployeeForm = () => {
         });
     };
 
-    const handleWSChange = (obj) => {
-        setSelectedWS(obj);
-        setEmployeeObj({
-            ...employeeObj,
-            work_schedule: obj.id
-        });
-    }
-    const genderChange = (obj) => {
-        setSelectedWS(obj);
-        setEmployeeObj({
-            ...employeeObj,
-            gender: obj.id
-        });
-    }
-
-
-    const handleroleChange = (obj) => {
-        console.log("Obj = ", obj);
-        setSelectedRole(obj);
-        setEmployeeObj({
-            ...employeeObj,
-            role: obj.id
-        })
-    }
-    const handlePrimaryDepartmentChange = (obj) => {
-        console.log("Obj = ", obj);
-        setSelectedPrimaryDepartment(obj);
-        setEmployeeObj({
-            ...employeeObj,
-            primary_department: obj.id
-
-        })
-
-        const filtered = dep_options.filter((val) => val?.name !== obj?.name)
-        console.log('filteter', filtered);
-        setSubDept(filtered)
-    }
-    const handleSubDepartmentChange = (obj) => {
-        console.log("Obj = ", obj);
-        setSelectedSubDepartment(obj);
-        setEmployeeObj({
-            ...employeeObj,
-            sub_department: obj.map(d => d.id)
-
-        })
-
-    }
-    const handleImageChange = (event) => {
-        // const selectedImage = event.target.files[0];
-        console.log('nvent', event?.target?.files);
-        setSelectedImage(event.target.files[0])
-        setEmployeeObj({
-            ...employeeObj,
-            profileImage: event.target.files[0]
-
-        });
-
+    const handleFileChange = (e) => {
+        console.log("E.target.files = ",e.target.files);
+        if (e.target.files && e.target.files[0]) {
+            setEmployeeImage(e.target.files[0]);
+            const reader = new FileReader();
+            reader.onload = (readerEvent) => {
+                const newImageSrc = readerEvent.target.result;
+                setEmployeeObj({
+                    ...employeeObj,
+                    profile_url: newImageSrc
+                })
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
     };
-    const handleSubmit =  () => {
-        console.log("Submitting  Data = ", handleSubmit);
 
+    const handlePrimaryDepChange = (obj) => {
+        if (obj.id !== employeeObj.primary_department) {
+            setEmployeeObj({
+                ...employeeObj,
+                primary_department: obj.id,
+                sub_department: []
+            });
+            let sub_dep_options = dep_options.filter(data => data.id !== obj.id);
+            setSubDeptOptions(sub_dep_options);
+        }
+    }
+
+    const handleSubmit = () => {
         
+        console.log("Submitting  Data = ", employeeObj);
+        console.log("Profile = ",employeeImage);
+
+
         let formData = new FormData();
-        selectedImage !== null && formData.append('selectedImage', selectedImage, selectedImage.name);
+        employeeImage !== null && formData.append('profile', employeeImage, employeeImage.name);
         Object.entries(employeeObj).map((key, idx) => {
-           formData.append(key[0], key[1])
-         });
-     
-     
-    
+            formData.append(key[0], key[1])
+        });
 
-
-    
         Api({
             method: 'POST',
             url: 'employee/add-new/',
-            data: employeeObj
+            headers : {
+                'Content-Type' : 'multipart/form-data'
+            },
+            data: formData
         })
-            .then(res => {
-                console.log("REs = ", res);
-                employeeObj.id === 0 ? dispatch(addEmployee(res?.data.data)) : dispatch(editEmployee(res?.data?.data));
-                dispatch(toggleRSBView(false));
-                toast.success(res?.data?.message);
-            })
-            .catch(err => {
-                console.log("ERr == ", err);
-                toast.success(err?.response?.data?.message);
-            })
+        .then(res => {
+            console.log("REs = ", res);
+            employeeObj.id === 0 ? dispatch(addEmployee(res?.data.data)) : dispatch(editEmployee(res?.data?.data));
+            dispatch(toggleRSBView(false));
+            toast.success(res?.data?.message);
+        })
+        .catch(err => {
+            console.log("ERr == ", err);
+            toast.error(err?.response?.data?.message);
+        })
     };
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
 
-        if (file) {
-            const reader = new FileReader();
 
-            reader.onload = (e) => {
-                const dataURL = e.target.result;
-                setSelectedImage(dataURL);
-            };
-            
 
-            
-            // reader.readAsDataURL(file);
-            // // setSelectedFile(file);
-            // setEmployeeObj({
-            //     ...employeeObj,
-            //     profile: formData
-
-            // });
-        }
-    };
-    console.log('sub', sub_dept);
     return (
         <React.Fragment>
             <Row>
@@ -171,12 +123,10 @@ const EmployeeForm = () => {
                                 onSubmit={handleSubmit}
                                 action="javascript:void(0)"
                             >
-
-
                                 <div className="text-center">
                                     <div className="profile-user position-relative d-inline-block mx-auto mb-4">
                                         <img
-                                            src={selectedImage ? selectedImage : 'default-image-url.jpg'}
+                                            src={employeeObj.profile_url ? employeeObj.profile_url : DummyUserImg}
                                             className="rounded-circle avatar-xl img-thumbnail user-profile-image"
                                             alt="user-profile"
                                         />
@@ -266,8 +216,8 @@ const EmployeeForm = () => {
                                             isMulti={false}
                                             options={role_option || []}
                                             className="basic-multi-select"
-                                            value={selectedRole || 0}
-                                            onChange={handleroleChange}
+                                            value={(employeeObj.role && role_option.find(e => e.id === employeeObj.role)) || []}
+                                            onChange={(e) => { setEmployeeObj({ ...employeeObj, role: e.id }) }}
                                         />
 
                                     </Col>
@@ -278,9 +228,10 @@ const EmployeeForm = () => {
                                         <Select
                                             isMulti={false}
                                             options={dep_options || []}
+                                            placeholder={'Select Primary Department'}
                                             className="basic-multi-select"
-                                            value={selectedPrimaryDepartment || null}
-                                            onChange={handlePrimaryDepartmentChange}
+                                            value={(employeeObj.primary_department && dep_options.find(obj => obj.id === employeeObj.primary_department)) || []}
+                                            onChange={(e) => handlePrimaryDepChange(e)}
                                         />
 
                                     </Col>
@@ -290,10 +241,11 @@ const EmployeeForm = () => {
                                         </Label>
                                         <Select
                                             isMulti={true}
-                                            options={sub_dept || []}
+                                            options={subDepOptions || []}
+                                            placeholder={'Select Sub Department'}
                                             className="basic-multi-select"
-                                            value={selectedSubDepartment || []}
-                                            onChange={handleSubDepartmentChange}
+                                            value={(employeeObj.sub_department && subDepOptions.filter(obj => (employeeObj.sub_department).includes(obj.id))) || []}
+                                            onChange={(e) => setEmployeeObj({ ...employeeObj, sub_department: e.map(obj => obj.id) })}
                                         />
 
                                     </Col>
@@ -305,8 +257,8 @@ const EmployeeForm = () => {
                                                 isMulti={false}
                                                 options={ws_options || []}
                                                 className="basic-multi-select"
-                                                value={selectedWS || []}
-                                                onChange={handleWSChange}
+                                                value={(employeeObj.work_schedule && ws_options.find(e => e.id === employeeObj.work_schedule)) || []}
+                                                onChange={(e) => setEmployeeObj({ ...employeeObj, work_schedule: e.id })}
                                             />
                                         </div>
                                     </Col>
@@ -321,10 +273,10 @@ const EmployeeForm = () => {
                                                 <Input
                                                     type="text"
                                                     className="form-control form-control-icon"
-                                                    id="timezone"
-                                                    name="timezone"
+                                                    id="profile_timezone"
+                                                    name="profile_timezone"
                                                     placeholder="Asia/Kolkata"
-                                                    // value={timezone || ""}
+                                                    value={employeeObj.profile_timezone || ""}
                                                     onChange={handleInputChange}
                                                 />
                                                 <i className="ri-time-line"></i>

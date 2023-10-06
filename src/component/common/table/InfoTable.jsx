@@ -132,7 +132,7 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
 
 
     const toggleTab = (tab, type) => {
-        console.log("Tab = ",tab,"    type = ",type);
+        console.log("Tab = ", tab, "    type = ", type);
         if (activeTab !== tab) {
             setActiveTab(tab);
             let filteredDatas = [...tabledata];
@@ -144,9 +144,9 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
     };
 
     useEffect(() => {
-        if ( tabledata && tabledata.length) {
+        if (tabledata && tabledata.length) {
             setDataList(tabledata);
-        }else{
+        } else {
             setDataList([])
         }
     }, [tabledata]);
@@ -237,20 +237,22 @@ const InfoTable = ({ additionalColumn, tabledata, formname, initialFormObj, filt
                                     <div className="col-sm">
                                         <h5 className="card-title mb-0">{formname.charAt(0).toUpperCase() + formname.slice(1)}</h5>
 
-                                        <Datetime
-                                            value={selectedYear}
-                                            onChange={(date) => {
-                                                if (date.isValid()) {
-                                                    const year = date.year();
-                                                    setSelectedYear(new Date(year, 0, 1));
-                                                } else {
-                                                    setSelectedYear(null);
-                                                }
-                                            }}
-                                            dateFormat="YYYY"
-                                            timeFormat={false}
-                                            viewMode="years"
-                                        />
+                                        {formname && formname === "holiday" && (
+                                            <Datetime
+                                                value={selectedYear}
+                                                onChange={(date) => {
+                                                    if (date.isValid()) {
+                                                        const year = date.year();
+                                                        setSelectedYear(new Date(year, 0, 1));
+                                                    } else {
+                                                        setSelectedYear(null);
+                                                    }
+                                                }}
+                                                dateFormat="YYYY"
+                                                timeFormat={false}
+                                                viewMode="years"
+                                            />
+                                        )}
 
                                     </div>
                                     <div className="col-sm-auto">
