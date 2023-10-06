@@ -79,11 +79,13 @@ const Employee = () => {
             lname: "",
             dob: "",
             gender: "Male",
-            department: [],
+            primary_department: 1,
+            sub_department: [2,3],
             role: 0,
             work_schedule: 0,
             profile_timezone: "Asia/Kolkata",
-            is_active: true
+            is_active: true,
+            profile: [] 
         }
     }, []);
 

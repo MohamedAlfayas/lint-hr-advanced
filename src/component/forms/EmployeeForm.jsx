@@ -14,12 +14,16 @@ import Select from 'react-select';
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import avatar1 from '../../assets/images/logo-dark.png'
 
+import { Api } from "../../common/api/Api";
+import { toast } from "react-toastify";
 const EmployeeForm = () => {
 
     const { form_obj } = useSelector(state => state.RightSideBarReducer);
-    const [employeeData, setEmployeeData] = useState({});
-    const [selectedDepartment, setSelectedDepartment] = useState([]);
+   
+    const [selectedPrimaryDepartment, setSelectedPrimaryDepartment] = useState(null);
+    const [selectedSubDepartment, setSelectedSubDepartment] = useState(null);
     const [selectedRole, setSelectedRole] = useState([]);
+    const [selectedImage, setSelectedImage] = useState(null);
     const [selectedGender, setSelectedGender] = useState([]);
     const dep_options = GetLocalStorageData('department') || [];
     const ws_options = GetLocalStorageData('work_schedule') || [];
@@ -27,7 +31,9 @@ const EmployeeForm = () => {
     const gender_option = GetLocalStorageData('gender') || [];
     const [selectedWS, setSelectedWS] = useState([])
     const [employeeObj, setEmployeeObj] = useState({});
-    console.log("role_option = ", role_option);
+    const formData = new FormData();
+    const [sub_dept, setSubDept] = useState(dep_options)
+
 
     useEffect(() => {
         setEmployeeObj(form_obj);
@@ -67,34 +73,94 @@ const EmployeeForm = () => {
             role: obj.id
         })
     }
-    const handleDepartmentChange = (obj) => {
+    const handlePrimaryDepartmentChange = (obj) => {
         console.log("Obj = ", obj);
-        setSelectedDepartment(obj);
+        setSelectedPrimaryDepartment(obj);
         setEmployeeObj({
-            ...employeeData,
-            department: obj.map(d => d.id)
+            ...employeeObj,
+            primary_department: obj.id
+
         })
+
+        const filtered = dep_options.filter((val) => val?.name !== obj?.name)
+        console.log('filteter', filtered);
+        setSubDept(filtered)
     }
+    const handleSubDepartmentChange = (obj) => {
+        console.log("Obj = ", obj);
+        setSelectedSubDepartment(obj);
+        setEmployeeObj({
+            ...employeeObj,
+            sub_department: obj.map(d => d.id)
 
-    const handleSubmit = async () => {
+        })
 
-        console.log("data = ", employeeObj);
-        // Api({
-        //     method: 'POST',
-        //     url: 'holiday/create/',
-        //     data: holidayObj
-        // })
-        //     .then(res => {
-        //         console.log("REs = ", res);
-        //         holidayObj.id === 0 ? dispatch(addHoliday(res?.data.data)) : dispatch(editHoliday(res?.data?.data));
-        //         dispatch(toggleRSBView(false));
-        //         toast.success(res?.data?.message);
-        //     })
-        //     .catch(err => {
-        //         console.log("ERr == ", err);
-        //         toast.success(err?.response?.data?.message);
-        //     })
+    }
+    const handleImageChange = (event) => {
+        // const selectedImage = event.target.files[0];
+        console.log('nvent', event?.target?.files);
+        setSelectedImage(event.target.files[0])
+        setEmployeeObj({
+            ...employeeObj,
+            profileImage: event.target.files[0]
+
+        });
+
     };
+    const handleSubmit =  () => {
+        console.log("Submitting  Data = ", handleSubmit);
+
+        
+        let formData = new FormData();
+        selectedImage !== null && formData.append('selectedImage', selectedImage, selectedImage.name);
+        Object.entries(employeeObj).map((key, idx) => {
+           formData.append(key[0], key[1])
+         });
+     
+     
+    
+
+
+    
+        Api({
+            method: 'POST',
+            url: 'employee/add-new/',
+            data: employeeObj
+        })
+            .then(res => {
+                console.log("REs = ", res);
+                employeeObj.id === 0 ? dispatch(addEmployee(res?.data.data)) : dispatch(editEmployee(res?.data?.data));
+                dispatch(toggleRSBView(false));
+                toast.success(res?.data?.message);
+            })
+            .catch(err => {
+                console.log("ERr == ", err);
+                toast.success(err?.response?.data?.message);
+            })
+    };
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+
+        if (file) {
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                const dataURL = e.target.result;
+                setSelectedImage(dataURL);
+            };
+            
+
+            
+            // reader.readAsDataURL(file);
+            // // setSelectedFile(file);
+            // setEmployeeObj({
+            //     ...employeeObj,
+            //     profile: formData
+
+            // });
+        }
+    };
+    console.log('sub', sub_dept);
     return (
         <React.Fragment>
             <Row>
@@ -108,22 +174,26 @@ const EmployeeForm = () => {
 
 
                                 <div className="text-center">
-                                    <div className="profile-user position-relative d-inline-block mx-auto  mb-4">
-                                        <img src={avatar1}
+                                    <div className="profile-user position-relative d-inline-block mx-auto mb-4">
+                                        <img
+                                            src={selectedImage ? selectedImage : 'default-image-url.jpg'}
                                             className="rounded-circle avatar-xl img-thumbnail user-profile-image"
-                                            alt="user-profile" />
+                                            alt="user-profile"
+                                        />
                                         <div className="avatar-xs p-0 rounded-circle profile-photo-edit">
-                                            <Input id="profile-img-file-input" type="file"
-                                                className="profile-img-file-input" />
-                                            <Label htmlFor="profile-img-file-input"
-                                                className="profile-photo-edit avatar-xs">
+                                            <Input
+                                                id="profile-img-file-input"
+                                                type="file"
+                                                className="profile-img-file-input"
+                                                onChange={handleFileChange}
+                                            />
+                                            <Label htmlFor="profile-img-file-input" className="profile-photo-edit avatar-xs">
                                                 <span className="avatar-title rounded-circle bg-light text-body">
                                                     <i className="ri-camera-fill"></i>
                                                 </span>
                                             </Label>
                                         </div>
                                     </div>
-
                                 </div>
 
                                 <Row>
@@ -203,14 +273,27 @@ const EmployeeForm = () => {
                                     </Col>
                                     <Col lg={12}>
                                         <Label htmlFor="parentDepartment" className="form-label">
-                                            Department
+                                            Primary Department
+                                        </Label>
+                                        <Select
+                                            isMulti={false}
+                                            options={dep_options || []}
+                                            className="basic-multi-select"
+                                            value={selectedPrimaryDepartment || null}
+                                            onChange={handlePrimaryDepartmentChange}
+                                        />
+
+                                    </Col>
+                                    <Col lg={12}>
+                                        <Label htmlFor="parentDepartment" className="form-label">
+                                            Sub Department
                                         </Label>
                                         <Select
                                             isMulti={true}
-                                            options={dep_options || []}
+                                            options={sub_dept || []}
                                             className="basic-multi-select"
-                                            value={selectedDepartment || []}
-                                            onChange={handleDepartmentChange}
+                                            value={selectedSubDepartment || []}
+                                            onChange={handleSubDepartmentChange}
                                         />
 
                                     </Col>
