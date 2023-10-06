@@ -235,7 +235,7 @@ const WorkScheduleForm = () => {
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                fullday_hr: e.target.value,
+                                fullday_hr: e.value,
                               })
                             }
                           />
@@ -252,7 +252,7 @@ const WorkScheduleForm = () => {
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                fullday_min: e.target.value,
+                                fullday_min: e.value,
                               })
                             }
                           />
@@ -281,7 +281,7 @@ const WorkScheduleForm = () => {
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                halfday_hr: e.target.value,
+                                halfday_hr: e.value,
                               })
                             }
                           />
@@ -298,7 +298,7 @@ const WorkScheduleForm = () => {
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                halfday_min: e.target.value,
+                                halfday_min: e.value,
                               })
                             }
                           />
@@ -330,7 +330,7 @@ const WorkScheduleForm = () => {
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                grace_in_time_hr: e.target.value,
+                                grace_in_time_hr: e.value,
                               })
                             }
                           />
@@ -348,7 +348,7 @@ const WorkScheduleForm = () => {
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                grace_in_time_min: e.target.value,
+                                grace_in_time_min: e.value,
                               })
                             }
                           />
@@ -378,7 +378,7 @@ const WorkScheduleForm = () => {
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                maximum_break_hr: e.target.value,
+                                maximum_break_hr: e.value,
                               })
                             }
                           />
@@ -396,7 +396,7 @@ const WorkScheduleForm = () => {
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                maximum_break_min: e.target.value,
+                                maximum_break_min: e.value,
                               })
                             }
                           />
