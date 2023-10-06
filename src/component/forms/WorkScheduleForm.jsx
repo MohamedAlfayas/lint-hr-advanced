@@ -24,28 +24,20 @@ import classnames from "classnames";
 
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
-import Nouislider from "nouislider-react";
-import "nouislider/distribute/nouislider.css";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
 
 const WorkScheduleForm = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-  const [employeeData, setEmployeeData] = useState({});
-  const [selectedDepartment, setSelectedDepartment] = useState([]);
-  const [activeTab, setactiveTab] = useState(1);
-  const dep_options = GetLocalStorageData("department") || [];
+  const [workScheduleData, setWorkScheduleData] = useState({});
   const [activeArrowTab, setactiveArrowTab] = useState(4);
   useEffect(() => {
-    setEmployeeData(form_obj);
-    setSelectedDepartment(
-      dep_options.filter((data) => form_obj.department.includes(data.id))
-    );
+    setWorkScheduleData(form_obj);
   }, [form_obj]);
 
   const handleSubmit = () => {
-    console.log("employee data = ", employeeData);
+    console.log("employee data = ", workScheduleData);
   };
 
   const [passedarrowSteps, setPassedarrowSteps] = useState([1]);
@@ -70,35 +62,37 @@ const WorkScheduleForm = () => {
     }
   }
 
-  const [mincost, setMincost] = useState(0);
-  const [maxcost, setMaxcost] = useState(2000);
-  //slider function
-  const onUpDate = (value) => {
-    setMincost(value[0]);
-    setMaxcost(value[1]);
+  const handleCBChange = (elm, ck) => {
+    console.log(elm);
+    console.log(ck);
   };
 
-  useEffect(() => {
-    onUpDate([mincost, maxcost]);
-  }, [mincost, maxcost]);
+  const calculateTime = (obj, i) => {
+    var StartTime = obj.workday[i].s_hr + ":" + obj.workday[i].s_min;
+    var EndTime = obj.workday[i].e_hr + ":" + obj.workday[i].e_min;
 
-  useEffect(() => {
-    let slider = document.getElementById("product-price-range");
-    slider?.setAttribute("data-slider-color", "success");
-  }, []);
+    var Temp1 = new Date("2020-01-01" + " " + StartTime).getTime();
+    var Temp2 = new Date("2020-01-01" + " " + EndTime).getTime();
+    var DiffSec = Temp2 - Temp1;
 
-  const pipsOptions = {
-    mode: "positions",
-    values: [
-      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-      21, 22, 23, 24,
-    ],
-    density: 10,
-    format: {
-      to: (value) => parseInt(value),
-      from: (value) => parseInt(value),
-    },
+    var mins = Math.floor(DiffSec / 60000);
+    var hrs = Math.floor(mins / 60);
+
+    mins = mins % 60;
+
+    var ws_hr = obj.fullday_hr;
+    var ws_min = obj.fullday_min;
+
+    let colorCLass =
+      hrs - ws_hr == 0 && mins - ws_min == 0 ? "text-success" : "text-danger";
+
+    var actualHr = pad(Math.abs(hrs)) + ":" + pad(Math.abs(mins));
+    return <span className={colorCLass}>{actualHr}</span>;
   };
+
+  function pad(d) {
+    return d < 10 ? "0" + d.toString() : d.toString();
+  }
 
   document.title = "WorkSchedule | Lint HR";
   return (
@@ -163,199 +157,266 @@ const WorkScheduleForm = () => {
                       <p className="fw-bold text-center">
                         What should be the name of the Work Schedule?
                       </p>
-                      <div
-                        className="slider mb-5"
-                        id="slider-pips"
-                        data-slider-color="success">
-                        <Nouislider
-                          range={{ min: 0, max: 24 }}
-                          start={[9, 17]}
-                          STEP={true}
-                          connect={true}
-                          onSlide={onUpDate}
-                          pips={pipsOptions}
-                          id="product-price-range"
-                        />
-                      </div>
 
                       <div className="mb-3">
-                        <Label
-                          className="form-label"
-                          htmlFor="steparrow-gen-info-username-input">
+                        <Label className="form-label" htmlFor="ws_name">
                           Name
                         </Label>
                         <Input
                           type="text"
                           className="form-control"
-                          id="steparrow-gen-info-username-input"
+                          id="ws_name"
                           placeholder="Enter Work Schedule Name"
+                          required
+                          value={workScheduleData.name || ""}
+                          onChange={(e) =>
+                            setWorkScheduleData({
+                              ...workScheduleData,
+                              name: e.target.value,
+                            })
+                          }
                         />
                       </div>
                     </Col>
                     <Col md={12} lg={12} xxl={12}>
                       <div className="mb-3">
-                        <Label
-                          className="form-label"
-                          htmlFor="steparrow-gen-info-email-input">
+                        <Label className="form-label" htmlFor="ws_desc">
                           Description
                         </Label>
                         <Input
                           type="textarea"
                           className="form-control"
-                          id="steparrow-gen-info-email-input"
+                          id="ws_desc"
+                          value={workScheduleData.description || ""}
+                          onChange={(e) =>
+                            setWorkScheduleData({
+                              ...workScheduleData,
+                              description: e.target.value,
+                            })
+                          }
                         />
                       </div>
                     </Col>
                   </Row>
-                  <div class="col-md-12">
-                    <Label htmlFor="name" className="form-label">
-                      Grace Period
-                    </Label>
-                  </div>
-                  <div style={{}}>
-                    <Col md={6}>
-                      <span class="form-text text-muted">In Time</span>
-                      <div style={{ display: "flex" }}>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </div>
-                    </Col>
-                  </div>
-                  <div style={{}}>
-                    <Col md={6}>
-                      <span class="form-text text-muted">Out Time</span>
-                      <div style={{ display: "flex" }}>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </div>
-                    </Col>
-                  </div>
-                  <div style={{}}>
-                    <div class="col-md-12">
-                      <Label htmlFor="name" className="form-label">
-                        Work Duration
-                      </Label>
-                    </div>
-                    <Col md={6}>
-                      <span class="form-text text-muted">Full Day</span>
-                      <div style={{ display: "flex" }}>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </div>
-                    </Col>
-                  </div>
-                  <div style={{}}>
-                    <Col md={6}>
-                      <span class="form-text text-muted">Half Day</span>
-                      <div style={{ display: "flex" }}>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </div>
-                    </Col>
-                  </div>
 
-                  <div class="col-md-12">
-                    <Label htmlFor="name" className="form-label">
-                      Maximum Total Break Duration
-                    </Label>
-                  </div>
-                  <Col md={3}>
-                    <Select
-                      name="gracePeriodInHours"
-                      placeholder={"00"}
-                      options={hourOptions}
-                      value={hourOptions.find(
-                        (option) =>
-                          option.value === employeeData.gracePeriodInHours
-                      )}
-                    />
-                    <Select
-                      name="gracePeriodInMinutes"
-                      placeholder={"00"}
-                      options={minuteOptions}
-                      value={minuteOptions.find(
-                        (option) =>
-                          option.value === employeeData.gracePeriodInMinutes
-                      )}
-                    />
-                  </Col>
-                  <br />
+                  <Row className="mb-2">
+                    <Col xxl={3} md={6}>
+                      <div>
+                        <Label htmlFor="ws_full_hr" className="form-label">
+                          Work Duration
+                        </Label>
+                        <br></br>
+                        <span class="form-text text-muted ms-3">Full Day</span>
+                        <div style={{ display: "flex" }}>
+                          <b className="mt-2 me-1">H</b>
 
-                  <div class="form-group">
-                    <label for="auto_clock_out_cb">Auto Clock Out</label>
-                    <input
-                      type="checkbox"
-                      name="auto_clock_out_cb"
-                      id="auto_clock_out_cb"
-                    />
-                  </div>
+                          <Select
+                            id="ws_full_hr"
+                            name="wsFullDayHr"
+                            placeholder={"00"}
+                            options={hourOptions}
+                            value={hourOptions.find(
+                              (option) =>
+                                option.value === workScheduleData.fullday_hr
+                            )}
+                            onChange={(e) =>
+                              setWorkScheduleData({
+                                ...workScheduleData,
+                                fullday_hr: e.target.value,
+                              })
+                            }
+                          />
+                          <b className="mt-2 me-1 ms-2">M</b>
+                          <Select
+                            id="ws_full_mi"
+                            name="wsFullDayMin"
+                            placeholder={"00"}
+                            options={minuteOptions}
+                            value={minuteOptions.find(
+                              (option) =>
+                                option.value === workScheduleData.fullday_min
+                            )}
+                            onChange={(e) =>
+                              setWorkScheduleData({
+                                ...workScheduleData,
+                                fullday_min: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </Col>
 
-                  <div className="mb-3"></div>
-                  <div></div>
+                    <Col xxl={3} md={6}>
+                      <div>
+                        <Label
+                          htmlFor="basiInput"
+                          className="form-label mb-3"></Label>
+                        <br></br>
+                        <span class="form-text text-muted ms-3">Half Day</span>
+                        <div style={{ display: "flex" }}>
+                          <b className="mt-2 me-1">H</b>
+                          <Select
+                            id="ws_half_hr"
+                            name="wsHalfDayHr"
+                            placeholder={"00"}
+                            options={hourOptions}
+                            value={hourOptions.find(
+                              (option) =>
+                                option.value === workScheduleData.halfday_hr
+                            )}
+                            onChange={(e) =>
+                              setWorkScheduleData({
+                                ...workScheduleData,
+                                halfday_hr: e.target.value,
+                              })
+                            }
+                          />
+                          <b className="mt-2 me-1 ms-2">M</b>
+                          <Select
+                            id="ws_half_min"
+                            name="wsHalfDayMin"
+                            placeholder={"00"}
+                            options={minuteOptions}
+                            value={minuteOptions.find(
+                              (option) =>
+                                option.value === workScheduleData.halfday_min
+                            )}
+                            onChange={(e) =>
+                              setWorkScheduleData({
+                                ...workScheduleData,
+                                halfday_min: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </Col>
+                  </Row>
+
+                  <Row>
+                    <Col xxl={3} md={6}>
+                      <div>
+                        <Label htmlFor="basiInput" className="form-label">
+                          Grace Period
+                        </Label>
+                        <br></br>
+                        <div style={{ display: "flex" }}>
+                          <b className="mt-2 me-1">H</b>
+
+                          <Select
+                            id="gracePeriodInHours"
+                            name="gracePeriodInHours"
+                            placeholder={"00"}
+                            options={hourOptions}
+                            value={hourOptions.find(
+                              (option) =>
+                                option.value ===
+                                workScheduleData.grace_in_time_hr
+                            )}
+                            onChange={(e) =>
+                              setWorkScheduleData({
+                                ...workScheduleData,
+                                grace_in_time_hr: e.target.value,
+                              })
+                            }
+                          />
+                          <b className="mt-2 me-1 ms-2">M</b>
+                          <Select
+                            id="gracePeriodInMinutes"
+                            name="gracePeriodInMinutes"
+                            placeholder={"00"}
+                            options={minuteOptions}
+                            value={minuteOptions.find(
+                              (option) =>
+                                option.value ===
+                                workScheduleData.grace_in_time_min
+                            )}
+                            onChange={(e) =>
+                              setWorkScheduleData({
+                                ...workScheduleData,
+                                grace_in_time_min: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </Col>
+
+                    <Col xxl={3} md={6}>
+                      <div>
+                        <Label htmlFor="basiInput" className="form-label">
+                          Maximum Total Break Duration
+                        </Label>
+                        <br></br>
+                        <div style={{ display: "flex" }}>
+                          <b className="mt-2 me-1">H</b>
+
+                          <Select
+                            id="maximum_break_hr"
+                            name="maximum_break_hr"
+                            placeholder={"00"}
+                            options={hourOptions}
+                            value={hourOptions.find(
+                              (option) =>
+                                option.value ===
+                                workScheduleData.maximum_break_hr
+                            )}
+                            onChange={(e) =>
+                              setWorkScheduleData({
+                                ...workScheduleData,
+                                maximum_break_hr: e.target.value,
+                              })
+                            }
+                          />
+                          <b className="mt-2 me-1 ms-2">M</b>
+                          <Select
+                            id="maximum_break_min"
+                            name="maximum_break_min"
+                            placeholder={"00"}
+                            options={minuteOptions}
+                            value={minuteOptions.find(
+                              (option) =>
+                                option.value ===
+                                workScheduleData.maximum_break_min
+                            )}
+                            onChange={(e) =>
+                              setWorkScheduleData({
+                                ...workScheduleData,
+                                maximum_break_min: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </Col>
+                  </Row>
+
+                  <Row>
+                    <Col xxl={9} md={9}>
+                      <div className="form-check form-check-success mb-3 mt-3 w-50">
+                        <Label
+                          className="form-check-label"
+                          for="auto_clock_out_cb">
+                          Auto Clock Out
+                        </Label>
+                        <Input
+                          className="form-check-input"
+                          type="checkbox"
+                          name="auto_clock_out_cb"
+                          id="auto_clock_out_cb"
+                          checked={workScheduleData.auto_clock}
+                          onChange={(e) => {
+                            console.log(e);
+                            setWorkScheduleData({
+                              ...workScheduleData,
+                              auto_clock: e.target.checked,
+                            });
+                          }}
+                        />
+                      </div>
+                    </Col>
+                  </Row>
                 </div>
                 <div className="d-flex align-items-start gap-3 mt-4">
                   <button
@@ -372,7 +433,7 @@ const WorkScheduleForm = () => {
 
               <TabPane id="steparrow-description-info" tabId={5}>
                 <p className="fw-bold text-center">
-                  When do your employee work?
+                  When do your <i>{workScheduleData.name}</i> employee work?
                 </p>
                 <table className="table">
                   <thead>
@@ -386,433 +447,92 @@ const WorkScheduleForm = () => {
                         />
                       </th>
                       <th>Day </th>
-                      <th>Time</th>
+                      <th>Start Time</th>
                       <th>Minute</th>
                       <th>TO</th>
-                      <th>Time</th>
+                      <th>End Time</th>
                       <th>Minute</th>
                       <th>Shift Hourse</th>
                     </tr>
-                    <tr>
-                      <th>
-                        {" "}
-                        <input
-                          type="checkbox"
-                          name="auto_clock_out_cb"
-                          id="auto_clock_out_cb"
-                        />
-                      </th>
-                      <th>Monday</th>
-                      <th>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                      </th>
-                      <th>
-                        {" "}
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </th>
-                      <th>
-                        <i class="ri-arrow-left-right-line"></i>
-                      </th>
-                      <th>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                      </th>
-                      <th>
-                        {" "}
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </th>
-                    </tr>
-                    <tr>
-                      <th>
-                        {" "}
-                        <input
-                          type="checkbox"
-                          name="auto_clock_out_cb"
-                          id="auto_clock_out_cb"
-                        />
-                      </th>
-                      <th>Tuesday</th>
-                      <th>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                      </th>
-                      <th>
-                        {" "}
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </th>
-                      <th>
-                        <i class="ri-arrow-left-right-line"></i>
-                      </th>
-                      <th>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                      </th>
-                      <th>
-                        {" "}
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </th>
-                    </tr>
-                    <tr>
-                      <th>
-                        {" "}
-                        <input
-                          type="checkbox"
-                          name="auto_clock_out_cb"
-                          id="auto_clock_out_cb"
-                        />
-                      </th>
-                      <th>Wednesday</th>
-                      <th>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                      </th>
-                      <th>
-                        {" "}
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </th>
-                      <th>
-                        <i class="ri-arrow-left-right-line"></i>
-                      </th>
-                      <th>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                      </th>
-                      <th>
-                        {" "}
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </th>
-                    </tr>
-                    <tr>
-                      <th>
-                        {" "}
-                        <input
-                          type="checkbox"
-                          name="auto_clock_out_cb"
-                          id="auto_clock_out_cb"
-                        />
-                      </th>
-                      <th>Thursday</th>
-                      <th>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                      </th>
-                      <th>
-                        {" "}
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </th>
-                      <th>
-                        <i class="ri-arrow-left-right-line"></i>
-                      </th>
-                      <th>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                      </th>
-                      <th>
-                        {" "}
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </th>
-                    </tr>
-                    <tr>
-                      <th>
-                        {" "}
-                        <input
-                          type="checkbox"
-                          name="auto_clock_out_cb"
-                          id="auto_clock_out_cb"
-                        />
-                      </th>
-                      <th>Friday</th>
-                      <th>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                      </th>
-                      <th>
-                        {" "}
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </th>
-                      <th>
-                        <i class="ri-arrow-left-right-line"></i>
-                      </th>
-                      <th>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                      </th>
-                      <th>
-                        {" "}
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </th>
-                    </tr>
-                    <tr>
-                      <th>
-                        {" "}
-                        <input
-                          type="checkbox"
-                          name="auto_clock_out_cb"
-                          id="auto_clock_out_cb"
-                        />
-                      </th>
-                      <th>Saturday</th>
-                      <th>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                      </th>
-                      <th>
-                        {" "}
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </th>
-                      <th>
-                        <i class="ri-arrow-left-right-line"></i>
-                      </th>
-                      <th>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                      </th>
-                      <th>
-                        {" "}
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </th>
-                    </tr>
-                    <tr>
-                      <th>
-                        {" "}
-                        <input
-                          type="checkbox"
-                          name="auto_clock_out_cb"
-                          id="auto_clock_out_cb"
-                        />
-                      </th>
-                      <th>Sunday</th>
-                      <th>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                      </th>
-                      <th>
-                        {" "}
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </th>
-                      <th>
-                        <i class="ri-arrow-left-right-line"></i>
-                      </th>
-                      <th>
-                        <Select
-                          name="gracePeriodInHours"
-                          placeholder={"00"}
-                          options={hourOptions}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInHours
-                          )}
-                        />
-                      </th>
-                      <th>
-                        {" "}
-                        <Select
-                          name="gracePeriodInMinutes"
-                          placeholder={"00"}
-                          options={minuteOptions}
-                          value={minuteOptions.find(
-                            (option) =>
-                              option.value === employeeData.gracePeriodInMinutes
-                          )}
-                        />
-                      </th>
-                    </tr>
+                    {workScheduleData.workday?.map((workday, index) => {
+                      return (
+                        <tr key={index}>
+                          <th>
+                            {" "}
+                            <input
+                              type="checkbox"
+                              name={workday.s_day}
+                              id={workday.s_day}
+                              checked={workday.is_day_on}
+                              onChange={(e) => {
+                                console.log(e);
+                                setWorkScheduleData({
+                                  ...workScheduleData,
+                                  is_day_on: e.target.checked,
+                                });
+                              }}
+                            />
+                          </th>
+                          <th style={{ textTransform: "capitalize" }}>
+                            {workday.s_day}
+                          </th>
+                          <th>
+                            <Select
+                              name={`s_hr_${workday.s_day}`}
+                              id={`s_hr_${workday.s_day}`}
+                              placeholder={"00"}
+                              options={hourOptions}
+                              value={minuteOptions.find(
+                                (option) => option.value === workday.s_hr
+                              )}
+                            />
+                          </th>
+                          <th>
+                            {" "}
+                            <Select
+                              name={`s_min_${workday.s_day}`}
+                              id={`s_min_${workday.s_day}`}
+                              placeholder={"00"}
+                              options={minuteOptions}
+                              value={minuteOptions.find(
+                                (option) => option.value === workday.s_min
+                              )}
+                            />
+                          </th>
+                          <th>
+                            <i class="ri-arrow-left-right-line"></i>
+                          </th>
+                          <th>
+                            <Select
+                              name={`e_hr_${workday.s_day}`}
+                              id={`e_hr_${workday.s_day}`}
+                              placeholder={"00"}
+                              options={hourOptions}
+                              value={hourOptions.find(
+                                (option) => option.value === workday.e_hr
+                              )}
+                            />
+                          </th>
+                          <th>
+                            {" "}
+                            <Select
+                              name={`e_min_${workday.s_day}`}
+                              id={`e_min_${workday.s_day}`}
+                              placeholder={"00"}
+                              options={minuteOptions}
+                              value={minuteOptions.find(
+                                (option) => option.value === workday.e_min
+                              )}
+                            />
+                          </th>
+                          <th>
+                            <span className="mb-2">
+                              {calculateTime(workScheduleData, index)}
+                            </span>
+                          </th>
+                        </tr>
+                      );
+                    })}
                   </thead>
                 </table>
 
