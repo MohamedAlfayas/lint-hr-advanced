@@ -14,6 +14,8 @@ import Select from "react-select";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import DummyUserImg from "../../assets/images/users/user.png";
 
+import Flatpickr from "react-flatpickr";
+
 import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
 import {
@@ -21,6 +23,7 @@ import {
   editEmployee,
 } from "../../redux/reducers/ChildReducer/EmployeeReducer";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
+import { ConvertISODateFormat } from "../../common/js/ConvertDateFormat";
 const EmployeeForm = () => {
   const dispatch = useDispatch();
 
@@ -32,7 +35,6 @@ const EmployeeForm = () => {
   const role_option = GetLocalStorageData("role") || [];
 
   const [employeeImage, setEmployeeImage] = useState(null);
-
   const [subDepOptions, setSubDeptOptions] = useState(dep_options);
   const [selectedTimezone, setSelectedTimezone] = useState(null);
   const timezones = [
@@ -908,6 +910,14 @@ const EmployeeForm = () => {
 
   ];
 
+  const gender_option = useMemo(() => [
+    { id: 'Male', label: 'Male', value: 'Male' },
+    { id: 'Female', label: 'Female', value: 'Female' },
+    { id: 'Other', label: 'Other', value: 'Other' },
+  ], []);
+
+  const [dob, setDob] = useState([])
+
   useEffect(() => {
     console.log("emp Form Obj = ", form_obj);
     setEmployeeObj(form_obj);
@@ -915,6 +925,7 @@ const EmployeeForm = () => {
       (obj) => obj.id !== form_obj.primary_department
     );
     setSubDeptOptions(sub_dep_options);
+    setDob([new Date(form_obj.dob)])
   }, [form_obj]);
 
   const handleInputChange = (e) => {
@@ -953,10 +964,6 @@ const EmployeeForm = () => {
       setSubDeptOptions(sub_dep_options);
     }
   };
-  const handleTimeZoneChange = (selectedOption) => {
-    setSelectedTimezone(selectedOption);
-  };
-
 
   const handleSubmit = () => {
     console.log("Submitting  Data = ", employeeObj);
@@ -992,6 +999,7 @@ const EmployeeForm = () => {
         toast.error(err?.response?.data?.message);
       });
   };
+  
 
   return (
     <React.Fragment>
@@ -1097,98 +1105,114 @@ const EmployeeForm = () => {
               <Col lg={12}>
                 <div className="mb-3">
                   <Label>DOB</Label>
-                  <input
-                    type="date"
-                    name="dob"
-                    id="date"
+                  <Flatpickr
                     className="form-control"
-                    value={employeeObj.dob || ""}
-                    onChange={handleInputChange}
-                    required
+                    value={dob}
+                    options={{
+                      dateFormat: "d M, Y"
+                    }}
+                    onChange={handleDateChange}
                   />
                 </div>
-              </Col>
-              <Col lg={12}>
-                <Label htmlFor="gender" className="form-label">
-                  Gender
-                </Label>
-
-                <div className="input-group">
-                  <select
-                    name="gender"
-                    className="form-select"
-                    id="inputGroupSelect02"
-                    value={employeeObj.gender || ""}
-                    onChange={handleInputChange}>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  <label className="input-group-text" for="inputGroupSelect02">
-                    Options
-                  </label>
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Date Of Birth.
                 </div>
               </Col>
               <Col lg={12}>
-                <Label htmlFor="parentDepartment" className="form-label">
-                  Role
-                </Label>
-                <Select
-                  isMulti={false}
-                  options={role_option || []}
-                  className="basic-multi-select"
-                  value={
-                    (employeeObj.role &&
-                      role_option.find((e) => e.id === employeeObj.role)) ||
-                    []
-                  }
-                  onChange={(e) => {
-                    setEmployeeObj({ ...employeeObj, role: e.id });
-                  }}
-                />
+                <div className="mb-3">
+                  <Label htmlFor="gender" className="form-label">
+                    Gender
+                  </Label>
+
+                  <Select
+                    isMulti={false}
+                    options={gender_option || []}
+                    className="basic-multi-select"
+                    value={(employeeObj.gender && gender_option.find(e => e.value === employeeObj.gender)) || []}
+                    onChange={(e) => {
+                      setEmployeeObj({ ...employeeObj, gender: e.value });
+                    }}
+                  />
+                </div>
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Gender.
+                </div>
               </Col>
               <Col lg={12}>
-                <Label htmlFor="parentDepartment" className="form-label">
-                  Primary Department
-                </Label>
-                <Select
-                  isMulti={false}
-                  options={dep_options || []}
-                  placeholder={"Select Primary Department"}
-                  className="basic-multi-select"
-                  value={
-                    (employeeObj.primary_department &&
-                      dep_options.find(
-                        (obj) => obj.id === employeeObj.primary_department
-                      )) ||
-                    []
-                  }
-                  onChange={(e) => handlePrimaryDepChange(e)}
-                />
+                <div className="mb-3">
+                  <Label htmlFor="parentDepartment" className="form-label">
+                    Role
+                  </Label>
+                  <Select
+                    isMulti={false}
+                    options={role_option || []}
+                    className="basic-multi-select"
+                    value={
+                      (employeeObj.role &&
+                        role_option.find((e) => e.id === employeeObj.role)) ||
+                      []
+                    }
+                    onChange={(e) => {
+                      setEmployeeObj({ ...employeeObj, role: e.id });
+                    }}
+                  />
+                </div>
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Role
+                </div>
               </Col>
               <Col lg={12}>
-                <Label htmlFor="parentDepartment" className="form-label">
-                  Sub Department
-                </Label>
-                <Select
-                  isMulti={true}
-                  options={subDepOptions || []}
-                  placeholder={"Select Sub Department"}
-                  className="basic-multi-select"
-                  value={
-                    (employeeObj.sub_department &&
-                      subDepOptions.filter((obj) =>
-                        employeeObj.sub_department.includes(obj.id)
-                      )) ||
-                    []
-                  }
-                  onChange={(e) =>
-                    setEmployeeObj({
-                      ...employeeObj,
-                      sub_department: e.map((obj) => obj.id),
-                    })
-                  }
-                />
+                <div className="mb-3">
+                  <Label htmlFor="parentDepartment" className="form-label">
+                    Primary Department
+                  </Label>
+                  <Select
+                    isMulti={false}
+                    options={dep_options || []}
+                    placeholder={"Select Primary Department"}
+                    className="basic-multi-select"
+                    value={
+                      (employeeObj.primary_department &&
+                        dep_options.find(
+                          (obj) => obj.id === employeeObj.primary_department
+                        )) ||
+                      []
+                    }
+                    onChange={(e) => handlePrimaryDepChange(e)}
+                  />
+                </div>
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Primary Department
+                </div>
+              </Col>
+              <Col lg={12}>
+                <div className="mb-3">
+                  <Label htmlFor="parentDepartment" className="form-label">
+                    Sub Department
+                  </Label>
+                  <Select
+                    isMulti={true}
+                    options={subDepOptions || []}
+                    placeholder={"Select Sub Department"}
+                    className="basic-multi-select"
+                    value={
+                      (employeeObj.sub_department &&
+                        subDepOptions.filter((obj) =>
+                          employeeObj.sub_department.includes(obj.id)
+                        )) ||
+                      []
+                    }
+                    onChange={(e) =>
+                      setEmployeeObj({
+                        ...employeeObj,
+                        sub_department: e.map((obj) => obj.id),
+                      })
+                    }
+                  />
+                </div>
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Sub Department
+                </div>
               </Col>
               <Col lg={12}>
                 <div className="mb-3">
@@ -1210,58 +1234,63 @@ const EmployeeForm = () => {
                     }
                   />
                 </div>
-              </Col>
-
-              <Col lg={12}>
-                <div>
-                  <label htmlFor="timezoneSelect" className="form-label">
-                    Time Zone
-                  </label>
-                  <Select
-                    name="profile_timezone"
-                    id="profile_timezone"
-                    
-                    value={selectedTimezone}
-                    onChange={handleTimeZoneChange}
-                    options={timezones.map((tz) => ({ value: tz, label: tz }))}
-                    placeholder="Select a time zone"
-                  />
-                 
-
-              </div>
-            </Col>
-            <Col lg={12}>
-              <div className="mb-3">
-                <Label>Is Active</Label>
-                <div
-                  className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                  dir="ltr">
-                  <Input
-                    id=""
-                    name="is_active"
-                    type="checkbox"
-                    className="form-check-input"
-                    checked={employeeObj.is_active}
-                    onChange={(e) =>
-                      setEmployeeObj({
-                        ...employeeObj,
-                        is_active: e.target.checked,
-                      })
-                    }
-                  />
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Work Schedule
                 </div>
-              </div>
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <Button type="submit">Submit</Button>
-            </Col>
-          </Row>
-        </Form>
-      </Col>
-    </Row>
-    </React.Fragment >
+              </Col>
+              <Col xxl={8} md={6}>
+                <div>
+                  <Label
+                    htmlFor="exampleFormControlTextarea5"
+                    className="form-label">
+                    Time Zone
+                  </Label>
+                  <div className="form-icon right">
+                    <Input
+                      type="text"
+                      className="form-control form-control-icon"
+                      id="profile_timezone"
+                      name="profile_timezone"
+                      placeholder="Asia/Kolkata"
+                      value={employeeObj.profile_timezone || ""}
+                      onChange={handleInputChange}
+                    />
+                    <i className="ri-time-line"></i>
+                  </div>
+                </div>
+              </Col>
+              <Col lg={12}>
+                <div className="mb-3">
+                  <Label>Is Active</Label>
+                  <div
+                    className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
+                    dir="ltr">
+                    <Input
+                      id=""
+                      name="is_active"
+                      type="checkbox"
+                      className="form-check-input"
+                      checked={employeeObj.is_active}
+                      onChange={(e) =>
+                        setEmployeeObj({
+                          ...employeeObj,
+                          is_active: e.target.checked,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </Col>
+            </Row>
+            <Row>
+              <Col>
+                <Button type="submit">Submit</Button>
+              </Col>
+            </Row>
+          </Form>
+        </Col>
+      </Row>
+    </React.Fragment>
   );
 };
 

@@ -1,4 +1,4 @@
-export const ConvertDateFormat = (inputDate) =>{
+export const ConvertDateFormat = (inputDate) => {
     // Assuming inputDate is in the 'dd-mm-yyyy' format
     const parts = inputDate.split('-');
     if (parts.length === 3) {
@@ -11,4 +11,20 @@ export const ConvertDateFormat = (inputDate) =>{
         // If the input format is invalid, return the original string
         return inputDate;
     }
+}
+
+
+
+export const ConvertISODateFormat = (dateString) => {
+    const originalDate = new Date(String(dateString));
+
+    // Get the components of the date
+    const year = originalDate.getFullYear();
+    const month = (originalDate.getMonth() + 1).toString().padStart(2, '0'); // Adding 1 because months are zero-indexed
+    const day = originalDate.getDate().toString().padStart(2, '0');
+
+    // Format the date in the "yyyy-mm-dd" format
+    const formattedDate = `${year}-${month}-${day}`;
+
+    return formattedDate
 }
