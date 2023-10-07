@@ -14,6 +14,8 @@ import Select from "react-select";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import DummyUserImg from "../../assets/images/users/user.png";
 
+import Flatpickr from "react-flatpickr";
+
 import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
 import {
@@ -21,6 +23,7 @@ import {
   editEmployee,
 } from "../../redux/reducers/ChildReducer/EmployeeReducer";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
+import { ConvertISODateFormat } from "../../common/js/ConvertDateFormat";
 const EmployeeForm = () => {
   const dispatch = useDispatch();
 
@@ -32,8 +35,15 @@ const EmployeeForm = () => {
   const role_option = GetLocalStorageData("role") || [];
 
   const [employeeImage, setEmployeeImage] = useState(null);
-
   const [subDepOptions, setSubDeptOptions] = useState(dep_options);
+
+  const gender_option = useMemo(() => [
+    { id: 'Male', label: 'Male', value: 'Male' },
+    { id: 'Female', label: 'Female', value: 'Female' },
+    { id: 'Other', label: 'Other', value: 'Other' },
+  ], []);
+
+  const [dob, setDob] = useState([])
 
   useEffect(() => {
     console.log("emp Form Obj = ", form_obj);
@@ -42,6 +52,7 @@ const EmployeeForm = () => {
       (obj) => obj.id !== form_obj.primary_department
     );
     setSubDeptOptions(sub_dep_options);
+    setDob([new Date(form_obj.dob)])
   }, [form_obj]);
 
   const handleInputChange = (e) => {
@@ -81,6 +92,14 @@ const EmployeeForm = () => {
     }
   };
 
+  const handleDateChange = (selectedDates, dateStr, instance) => {
+      setDob(selectedDates);
+      setEmployeeObj({
+        ...employeeObj,
+        dob : ConvertISODateFormat(selectedDates[0])
+      })
+  };
+
   const handleSubmit = () => {
     console.log("Submitting  Data = ", employeeObj);
     console.log("Profile = ", employeeImage);
@@ -113,6 +132,7 @@ const EmployeeForm = () => {
         toast.error(err?.response?.data?.message);
       });
   };
+  
 
   return (
     <React.Fragment>
@@ -218,98 +238,114 @@ const EmployeeForm = () => {
               <Col lg={12}>
                 <div className="mb-3">
                   <Label>DOB</Label>
-                  <input
-                    type="date"
-                    name="dob"
-                    id="date"
+                  <Flatpickr
                     className="form-control"
-                    value={employeeObj.dob || ""}
-                    onChange={handleInputChange}
-                    required
+                    value={dob}
+                    options={{
+                      dateFormat: "d M, Y"
+                    }}
+                    onChange={handleDateChange}
                   />
                 </div>
-              </Col>
-              <Col lg={12}>
-                <Label htmlFor="gender" className="form-label">
-                  Gender
-                </Label>
-
-                <div className="input-group">
-                  <select
-                    name="gender"
-                    className="form-select"
-                    id="inputGroupSelect02"
-                    value={employeeObj.gender || ""}
-                    onChange={handleInputChange}>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  <label className="input-group-text" for="inputGroupSelect02">
-                    Options
-                  </label>
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Date Of Birth.
                 </div>
               </Col>
               <Col lg={12}>
-                <Label htmlFor="parentDepartment" className="form-label">
-                  Role
-                </Label>
-                <Select
-                  isMulti={false}
-                  options={role_option || []}
-                  className="basic-multi-select"
-                  value={
-                    (employeeObj.role &&
-                      role_option.find((e) => e.id === employeeObj.role)) ||
-                    []
-                  }
-                  onChange={(e) => {
-                    setEmployeeObj({ ...employeeObj, role: e.id });
-                  }}
-                />
+                <div className="mb-3">
+                  <Label htmlFor="gender" className="form-label">
+                    Gender
+                  </Label>
+
+                  <Select
+                    isMulti={false}
+                    options={gender_option || []}
+                    className="basic-multi-select"
+                    value={(employeeObj.gender && gender_option.find(e => e.value === employeeObj.gender)) || []}
+                    onChange={(e) => {
+                      setEmployeeObj({ ...employeeObj, gender: e.value });
+                    }}
+                  />
+                </div>
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Gender.
+                </div>
               </Col>
               <Col lg={12}>
-                <Label htmlFor="parentDepartment" className="form-label">
-                  Primary Department
-                </Label>
-                <Select
-                  isMulti={false}
-                  options={dep_options || []}
-                  placeholder={"Select Primary Department"}
-                  className="basic-multi-select"
-                  value={
-                    (employeeObj.primary_department &&
-                      dep_options.find(
-                        (obj) => obj.id === employeeObj.primary_department
-                      )) ||
-                    []
-                  }
-                  onChange={(e) => handlePrimaryDepChange(e)}
-                />
+                <div className="mb-3">
+                  <Label htmlFor="parentDepartment" className="form-label">
+                    Role
+                  </Label>
+                  <Select
+                    isMulti={false}
+                    options={role_option || []}
+                    className="basic-multi-select"
+                    value={
+                      (employeeObj.role &&
+                        role_option.find((e) => e.id === employeeObj.role)) ||
+                      []
+                    }
+                    onChange={(e) => {
+                      setEmployeeObj({ ...employeeObj, role: e.id });
+                    }}
+                  />
+                </div>
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Role
+                </div>
               </Col>
               <Col lg={12}>
-                <Label htmlFor="parentDepartment" className="form-label">
-                  Sub Department
-                </Label>
-                <Select
-                  isMulti={true}
-                  options={subDepOptions || []}
-                  placeholder={"Select Sub Department"}
-                  className="basic-multi-select"
-                  value={
-                    (employeeObj.sub_department &&
-                      subDepOptions.filter((obj) =>
-                        employeeObj.sub_department.includes(obj.id)
-                      )) ||
-                    []
-                  }
-                  onChange={(e) =>
-                    setEmployeeObj({
-                      ...employeeObj,
-                      sub_department: e.map((obj) => obj.id),
-                    })
-                  }
-                />
+                <div className="mb-3">
+                  <Label htmlFor="parentDepartment" className="form-label">
+                    Primary Department
+                  </Label>
+                  <Select
+                    isMulti={false}
+                    options={dep_options || []}
+                    placeholder={"Select Primary Department"}
+                    className="basic-multi-select"
+                    value={
+                      (employeeObj.primary_department &&
+                        dep_options.find(
+                          (obj) => obj.id === employeeObj.primary_department
+                        )) ||
+                      []
+                    }
+                    onChange={(e) => handlePrimaryDepChange(e)}
+                  />
+                </div>
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Primary Department
+                </div>
+              </Col>
+              <Col lg={12}>
+                <div className="mb-3">
+                  <Label htmlFor="parentDepartment" className="form-label">
+                    Sub Department
+                  </Label>
+                  <Select
+                    isMulti={true}
+                    options={subDepOptions || []}
+                    placeholder={"Select Sub Department"}
+                    className="basic-multi-select"
+                    value={
+                      (employeeObj.sub_department &&
+                        subDepOptions.filter((obj) =>
+                          employeeObj.sub_department.includes(obj.id)
+                        )) ||
+                      []
+                    }
+                    onChange={(e) =>
+                      setEmployeeObj({
+                        ...employeeObj,
+                        sub_department: e.map((obj) => obj.id),
+                      })
+                    }
+                  />
+                </div>
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Sub Department
+                </div>
               </Col>
               <Col lg={12}>
                 <div className="mb-3">
@@ -331,9 +367,12 @@ const EmployeeForm = () => {
                     }
                   />
                 </div>
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Work Schedule
+                </div>
               </Col>
               <Col xxl={8} md={6}>
-                <div>
+                <div className="mb-3">
                   <Label
                     htmlFor="exampleFormControlTextarea5"
                     className="form-label">
@@ -351,6 +390,9 @@ const EmployeeForm = () => {
                     />
                     <i className="ri-time-line"></i>
                   </div>
+                </div>
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Timezone
                 </div>
               </Col>
               <Col lg={12}>
