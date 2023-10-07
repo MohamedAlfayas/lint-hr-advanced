@@ -26,7 +26,30 @@ const Employee = () => {
       filterable: false,
       id: "fname",
       accessor: (obj) => {
-        return <>{obj.fname + " " + obj.lname}</>;
+        return (
+          obj.profile_url ? (
+            <div className="d-flex gap-2 align-items-center">
+              <div className="flex-shrink-0">
+                <img src={obj.profile_url} alt="" className="avatar-xs rounded-circle" />
+              </div>
+              <div className="flex-grow-1">
+                {obj.fname}
+              </div>
+            </div>
+          ) : (
+            <div className="d-flex gap-2 align-items-center">
+              <div className="flex-shrink-0">
+                <div className="avatar-xs rounded-circle" style={{display:'flex',justifyContent:'center',alignItems:'center',background:'#0ab39c'}} data-bs-toggle="tooltip" title={(obj.fname)}>
+                  <span className="first_letter" style={{color:'white'}} >{(obj.fname).charAt(0)}</span>
+                </div>
+              </div>
+              <div className="flex-grow-1">
+                {obj.fname}
+              </div>
+            </div>
+
+          )
+        )
       },
     },
     {

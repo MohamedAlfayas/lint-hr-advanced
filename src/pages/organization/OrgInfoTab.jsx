@@ -90,7 +90,7 @@ const OrgInfoTab = () => {
       .then(res => {
         console.log("res = ", res);
         setCountry(res?.data?.data?.country);
-        setProfileData({country_code : "+91",...res?.data?.data});
+        setProfileData({ country_code: "+91", ...res?.data?.data });
         setState(res?.data?.data?.state);
       })
       .catch(err => {
@@ -105,7 +105,7 @@ const OrgInfoTab = () => {
       setSelectedCountry(CountryObj);
       setStateList(CountryObj?.states);
       setTimeZone(CountryObj?.timezone);
-      if(changeId === 0){
+      if (changeId === 0) {
         setState("");
       }
     }
@@ -162,6 +162,7 @@ const OrgInfoTab = () => {
     darkLogoFile !== null && form_data.append('dark_logo', darkLogoFile, darkLogoFile.name);
     lightLogoFile !== null && form_data.append('light_logo', lightLogoFile, lightLogoFile.name);
 
+    console.log('objexr', Object?.entries(profileData));
     Object.entries(profileData).map((key, idx) => {
       form_data.append(key[0], key[1])
     });
@@ -174,8 +175,8 @@ const OrgInfoTab = () => {
     Api({
       method: 'POST',
       url: "/company/save-profile/",
-      headers : {
-        'Content-Type' : 'multipart/form-data'
+      headers: {
+        'Content-Type': 'multipart/form-data'
       },
       data: form_data
     })
@@ -187,7 +188,7 @@ const OrgInfoTab = () => {
         console.log("ERRR === ", err);
         toast.error(err?.response?.data?.message);
       })
-      
+
   }
 
   return (
