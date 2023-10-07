@@ -38,7 +38,7 @@ const EmployeeForm = () => {
   const [subDepOptions, setSubDeptOptions] = useState(dep_options);
   const [selectedTimezone, setSelectedTimezone] = useState(null);
   const timezones = [
-    
+
 
     "Africa/Abidjan",
 
@@ -906,7 +906,7 @@ const EmployeeForm = () => {
 
     "UTC"
 
-    
+
 
   ];
 
@@ -965,6 +965,14 @@ const EmployeeForm = () => {
     }
   };
 
+  const handleDateChange = (selectedDates, dateStr, instance) => {
+    setDob(selectedDates);
+    setEmployeeObj({
+      ...employeeObj,
+      dob: ConvertISODateFormat(selectedDates[0])
+    })
+  };
+
   const handleSubmit = () => {
     console.log("Submitting  Data = ", employeeObj);
     console.log("Profile = ", employeeImage);
@@ -974,7 +982,7 @@ const EmployeeForm = () => {
       formData.append("profile", employeeImage, employeeImage.name);
     Object.entries(employeeObj).map((key, idx) => {
       formData.append(key[0], key[1]);
-      
+
     });
     formData.append("timezone", selectedTimezone)
 
@@ -999,7 +1007,7 @@ const EmployeeForm = () => {
         toast.error(err?.response?.data?.message);
       });
   };
-  
+
 
   return (
     <React.Fragment>
