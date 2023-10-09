@@ -8,6 +8,7 @@ import Employee from "../pages/employee/Employee";
 import Roles from "../pages/roles/Roles";
 import WorkSchedule from "../pages/workschedule/WorkSchedule";
 import Holidays from "../pages/holidays/Holidays";
+import LeaveType from "../pages/leave/LeaveType";
 
 
 
@@ -18,6 +19,7 @@ const privateRoutes = [
     { path: "/roles", component: <Roles /> },
     { path: "/workschedule", component: <WorkSchedule /> },
     { path: "/holidays", component: <Holidays /> },
+    { path: "/leavetype", component: <LeaveType /> },
     {
         path: "/",
         exact: true,
