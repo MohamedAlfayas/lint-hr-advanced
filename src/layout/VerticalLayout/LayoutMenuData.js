@@ -800,6 +800,7 @@ const Navdata = () => {
                 { id: "workschedule", label: "WorkSchedule", link: "/workschedule", parentId: "baseUi" },
                 { id: "holidays", label: "Holidays", link: "/holidays", parentId: "baseUi" },
                 { id: "leavetype", label: "Leave Type", link: "/leavetype", parentId: "baseUi" },
+                { id: "leaveapproval", label: "Leave Approval", link: "/leave-approval", parentId: "baseUi" },
 
             //     { id: "badges", label: "Badges", link: "#", parentId: "baseUi" },
             //     { id: "buttons", label: "Buttons", link: "#", parentId: "baseUi" },
