@@ -10,6 +10,7 @@ import WorkSchedule from "../pages/workschedule/WorkSchedule";
 import Holidays from "../pages/holidays/Holidays";
 import LeaveType from "../pages/leave/LeaveType";
 import LeaveApproval from "../pages/leave/LeaveApproval";
+import LeaveDashboard from "../pages/leave/Leaves";
 
 
 
@@ -22,6 +23,7 @@ const privateRoutes = [
     { path: "/holidays", component: <Holidays /> },
     { path: "/leavetype", component: <LeaveType /> },
     { path: "/leave-approval", component: <LeaveApproval /> },
+    { path: "/leaves", component: <LeaveDashboard /> },
     {
         path: "/",
         exact: true,
