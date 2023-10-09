@@ -143,7 +143,7 @@ const LeaveType = () => {
         initialFormObj={initialFormObj}
         filterKey={filterKey}
         filterOptions={filterOptions}
-        width_per={"40%"}
+        width_per={"35%"}
       />
     </React.Fragment>
   );
