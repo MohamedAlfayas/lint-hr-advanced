@@ -212,7 +212,7 @@ const InfoTable = ({
   // CUSTOM FORM
 
   const handleCreateAndUpdate = ($id, obj) => {
-    console.log($id);
+    console.log($id, obj);
     const FormObj = $id === 0 ? initialFormObj : obj;
 
     dispatch(

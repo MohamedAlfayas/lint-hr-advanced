@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Card,
   CardBody,
@@ -18,17 +18,21 @@ import {
   Progress,
 } from "reactstrap";
 import Select from "react-select";
-import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { Api } from "../../common/api/Api";
 
 import classnames from "classnames";
 
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
+import { addWorkSchedule, editWorkSchedule } from "../../redux/reducers/ChildReducer/WorkScheduleReducer";
+import { toast } from "react-toastify";
+import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
 
 const WorkScheduleForm = () => {
+  const dispatch = useDispatch()
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const [workScheduleData, setWorkScheduleData] = useState({});
   const [activeArrowTab, setactiveArrowTab] = useState(4);
@@ -36,9 +40,6 @@ const WorkScheduleForm = () => {
     setWorkScheduleData(form_obj);
   }, [form_obj]);
 
-  const handleSubmit = () => {
-    console.log("employee data = ", workScheduleData);
-  };
 
   const [passedarrowSteps, setPassedarrowSteps] = useState([1]);
   const hourOptions = Array.from({ length: 24 }, (_, i) => ({
@@ -107,12 +108,35 @@ const WorkScheduleForm = () => {
     return d < 10 ? "0" + d.toString() : d.toString();
   }
 
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    console.log("employee data = ", workScheduleData);
+    toggleArrowTab(activeArrowTab + 1);
+    Api({
+      method: 'POST',
+      url: "/work-schedule/create/",
+      data: workScheduleData,
+    })
+      .then(res => {
+        console.log("Res = ", res);
+        workScheduleData.id === 0 ? dispatch(addWorkSchedule(res?.data.data)) : dispatch(editWorkSchedule(res?.data?.data));
+        dispatch(toggleRSBView(false));
+        toast.success(res?.data?.message);
+      })
+      .catch(err => {
+        console.log("Err = ", err);
+        toast.error(err?.response?.data?.message);
+      })
+  };
+
+
   document.title = "WorkSchedule | Lint HR";
+
   return (
     <React.Fragment>
       <Row>
         <Col xl={40}>
-          <Form className="form-steps">
+          <Form onSubmit={handleSubmit} className="form-steps">
             <div className="step-arrow-nav mb-4">
               <Nav
                 className="nav-pills custom-nav nav-justified"
@@ -418,12 +442,12 @@ const WorkScheduleForm = () => {
                           type="checkbox"
                           name="auto_clock_out_cb"
                           id="auto_clock_out_cb"
-                          checked={workScheduleData.auto_clock}
+                          checked={workScheduleData.auto_clock_out}
                           onChange={(e) => {
                             console.log(e);
                             setWorkScheduleData({
                               ...workScheduleData,
-                              auto_clock: e.target.checked,
+                              auto_clock_out: e.target.checked,
                             });
                           }}
                         />
@@ -482,13 +506,13 @@ const WorkScheduleForm = () => {
                                 let this_wd = e.target.checked
                                   ? { ...workday, is_day_on: e.target.checked }
                                   : {
-                                      ...workday,
-                                      is_day_on: e.target.checked,
-                                      s_hr: "00",
-                                      s_min: "00",
-                                      e_hr: "00",
-                                      e_min: "00",
-                                    };
+                                    ...workday,
+                                    is_day_on: e.target.checked,
+                                    s_hr: "00",
+                                    s_min: "00",
+                                    e_hr: "00",
+                                    e_min: "00",
+                                  };
 
                                 let res = global_wd.map((obj, idx) =>
                                   idx === index ? this_wd : obj
@@ -643,11 +667,9 @@ const WorkScheduleForm = () => {
                     Back to Basic Details
                   </button>
                   <button
-                    type="button"
+                    type="submit"
                     className="btn btn-success btn-label right ms-auto nexttab nexttab"
-                    onClick={() => {
-                      toggleArrowTab(activeArrowTab + 1);
-                    }}>
+                  >
                     <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
                     Submit
                   </button>
