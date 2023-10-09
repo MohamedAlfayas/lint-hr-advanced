@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Button,
   Card,
@@ -10,7 +10,7 @@ import {
   Row,
 } from "reactstrap";
 import { OrganizationChart } from "primereact/organizationchart";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   setDepartmentData,
   setComponentToShow,
@@ -32,31 +32,27 @@ import avatar2 from "../../assets/images/users/avatar-2.jpg";
 import avatar3 from "../../assets/images/users/avatar-3.jpg";
 import OrgModal from "./common/OrgModal";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { setDepartmentDetails } from "../../redux/reducers/ChildReducer/DepartmentReducer";
 
 const DepartmentsTab = () => {
-  let globalData = JSON.parse(localStorage.getItem("lcEdu_GlobalData"));
 
   const DepartmentData = GetLocalStorageData('department')
 
   const dispatch = useDispatch();
 
-  const newDepObj = useMemo(() =>{
+  const newDepObj = useMemo(() => {
     return {
-      id : 0,
-      name : "",
-      description : "",
-      pid : 0
+      id: 0,
+      name: "",
+      description: "",
+      pid: 0
     }
-  },[])
+  }, [])
 
-  const handleDepartmentEdit = ($id) => {
-    console.log($id);
+  const handleDepartmentEdit = ($id, obj) => {
+    console.log("Dep Edit = ",obj);
 
-    const depObj = $id === 0 ? newDepObj : DepartmentData.find((p) => p.id === parseInt($id));
-
-    console.log("Dep Obj = ",depObj);
-
-    //dispatch(setDepartmentData($id));
+    const depObj = $id === 0 ? newDepObj : obj;
     dispatch(setFormTitle("Departments"));
     dispatch(setFormObj(depObj));
     dispatch(setFormWidthPercentage("30%"));
@@ -214,135 +210,12 @@ const DepartmentsTab = () => {
     },
   ]);
 
-  const data2 = useMemo(() => GetLocalStorageData('department_details'),[])
+  const { department_data } = useSelector(state => state.DepartmentReducer);
 
-  // const [data2] = useState([
-  //   {
-  //     label: "Lintcloud IT Service Private Limited",
-  //     id: 1,
-  //     pid: 0,
-  //     expanded: true,
-  //     data: {
-  //       manager: [1],
-  //       employee: [1, 2, 3, 4, 5, 6, 7, 8],
-  //     },
-  //     children: [
-  //       {
-  //         expanded: true,
-  //         label: "Sales and marketing (Business development)",
-  //         id: 2,
-  //         pid: 1,
-  //         data: {
-  //           manager: [4],
-  //           employee: [5, 6],
-  //         },
-  //         children: [
-  //           {
-  //             label: "Pre Sales",
-  //             id: 3,
-  //             pid: 1,
-  //             data: {
-  //               manager: [],
-  //               employee: [],
-  //             },
-  //           },
-  //         ],
-  //       },
-  //       {
-  //         expanded: true,
-  //         label: "Development",
-  //         id: 4,
-  //         pid: 1,
-  //         data: {
-  //           manager: [2, 3],
-  //           employee: [7, 8],
-  //         },
-  //         children: [
-  //           {
-  //             label: "UI/UX Design",
-  //             id: 5,
-  //             pid: 1,
-  //             data: {
-  //               manager: [],
-  //               employee: [],
-  //             },
-  //           },
-  //           {
-  //             label: "Backend (DB)",
-  //             id: 6,
-  //             pid: 1,
-  //             data: {
-  //               manager: [],
-  //               employee: [],
-  //             },
-  //           },
-  //         ],
-  //       },
-  //       {
-  //         expanded: true,
-  //         label: "Accounts",
-  //         id: 7,
-  //         pid: 1,
-  //         data: {
-  //           id: 8,
-  //           pid: 1,
-  //           manager: [4],
-  //           employee: [5, 6],
-  //         },
-  //         children: [
-  //           {
-  //             label: "Acc & Finance",
-  //             id: 9,
-  //             pid: 1,
-  //             data: {
-  //               manager: [],
-  //               employee: [],
-  //             },
-  //           },
-  //         ],
-  //       },
-  //       {
-  //         expanded: true,
-  //         label: "Back Office",
-  //         id: 10,
-  //         pid: 1,
-  //         data: {
-  //           manager: [1, 2],
-  //           employee: [3, 4],
-  //         },
-  //         children: [
-  //           {
-  //             label: "Carpet Sweeper",
-  //             id: 12,
-  //             pid: 1,
-  //             data: {
-  //               manager: [],
-  //               employee: [],
-  //             },
-  //           },
-  //           {
-  //             label: "Cab Driver",
-  //             id: 13,
-  //             pid: 1,
-  //             data: {
-  //               manager: [],
-  //               employee: [],
-  //             },
-  //           },
-  //           {
-  //             label: "Document Keeper",
-  //             id: 14,
-  //             pid: 1,
-  //             data: {
-  //               manager: [],
-  //               employee: [],
-  //             },
-  //           },
-  //         ],
-  //       },
-  //     ],
-  //   },
-  // ]);
+  useEffect(() => {
+    dispatch(setDepartmentDetails(GetLocalStorageData('department_details') || []))
+  }, []);
+
 
   const item = {
     subItem: [
@@ -364,7 +237,6 @@ const DepartmentsTab = () => {
   const setDataForTable = (obj) => {
     console.log("Node Data == ", obj);
     let team_members_id = obj.data.manager.concat(obj.data.employee);
-    console.log("Team Members Id = ", team_members_id);
     setTeamMembersID(team_members_id);
   };
 
@@ -435,7 +307,7 @@ const DepartmentsTab = () => {
                     <i className="ri-eye-line"></i>
                   </button>
                   <button
-                    onClick={() => handleDepartmentEdit(node.id)}
+                    onClick={() => handleDepartmentEdit(node.id, node)}
                     type="button"
                     className="btn btn-icon text-muted btn-sm fs-18">
                     <i className="ri-pencil-fill"></i>
@@ -460,7 +332,15 @@ const DepartmentsTab = () => {
             New Department
           </Button>
           <div className="card overflow-x-auto">
-            <OrganizationChart value={data2} nodeTemplate={nodeTemplate1} />
+            {department_data.length ? (
+              <OrganizationChart value={department_data} nodeTemplate={nodeTemplate1} />
+            ) : (
+              <React.Fragment>
+                <div className='text-center'>
+                  <h2>No Data</h2>
+                </div>
+              </React.Fragment>
+            )}
           </div>
         </CardBody>
       </Card>

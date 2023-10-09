@@ -1,7 +1,7 @@
 import axios from "axios";
 import { FilePond } from "filepond";
 import React, { useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import {
   Button,
@@ -22,25 +22,24 @@ import {
 import SimpleBar from "simplebar-react";
 import { Api } from "../../common/api/Api";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { setDepartmentDetails } from "../../redux/reducers/ChildReducer/DepartmentReducer";
+import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
+import { toast } from "react-toastify";
 
 const DepartmentForm = () => {
-  let globalData = JSON.parse(localStorage.getItem("lcEdu_GlobalData"));
-
   const [hdDropDown, setHdDropDown] = useState(false);
   const toggleHd = () => setHdDropDown((prevState) => !prevState);
-
-
   const [departmentData, setDepartmentData] = useState({});
-  const [selectedHeadDepartment, setSelectedHeadDepartment] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-
-  const DepartmentList = useMemo(() =>GetLocalStorageData('department'),[]);  
+  const DepartmentList = GetLocalStorageData('department') || [];
+  
+  const dispatch = useDispatch();
+  
+  const [departmentOptions, setDepartmentOptions] = useState([]);
 
   useEffect(() => {
-    console.log("UseEffect Running !!!!");
     setDepartmentData(form_obj);
-    setSelectedHeadDepartment(form_obj);
-    //setParentDep({ label: "Madrid", value: 2 });
+    setDepartmentOptions(DepartmentList.filter(obj => obj.pid !== form_obj.id));
   }, [form_obj]);
 
   const handleInputChange = (e) => {
@@ -52,17 +51,18 @@ const DepartmentForm = () => {
   };
 
   const handleSubmit = async () => {
-    console.log("department data = ", departmentData);
     Api({
       method: 'POST',
       url: 'department/create/',
       data: departmentData
     })
       .then(res => {
-        console.log("REs = ", res);
+        dispatch(setDepartmentDetails(res?.data?.data));
+        dispatch(toggleRSBView(false));
+        toast.success(res?.data?.message);
       })
       .catch(err => {
-        console.log("ERr == ", err);
+        toast.error(err?.response?.data?.message);
       })
   };
 
@@ -99,21 +99,20 @@ const DepartmentForm = () => {
                     className="form-control rounded-end flag-input form-select"
                     required
                     style={{ cursor: "pointer" }}>
-                    {selectedHeadDepartment.name || "Select Parent Department"}
+                    {(departmentData.pid) && (departmentOptions.find(obj => obj.id === departmentData.pid)).name || "Select Parent Department"}
                   </DropdownToggle>
                   <DropdownMenu
                     as="ul"
                     className="list-unstyled w-100 dropdown-menu-list mb-0">
                     <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
                       {(
-                        DepartmentList.filter(
+                        departmentOptions.filter(
                           (obj) => obj !== parseInt(departmentData.id)
                         ).sort((a, b) => a.name.localeCompare(b.name)) || []
                       ).map((item, key) => (
                         <DropdownItem
                           as="li"
                           onClick={() => {
-                            setSelectedHeadDepartment(item);
                             setDepartmentData({
                               ...departmentData,
                               pid: item.id,
