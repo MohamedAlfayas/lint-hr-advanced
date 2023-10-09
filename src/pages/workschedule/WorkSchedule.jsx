@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import "react-toastify/dist/ReactToastify.css";
 
@@ -7,185 +7,195 @@ import InfoTable from "../../component/common/table/InfoTable";
 import { MetaTitle } from "../../common/data/MetaTitle";
 import { useMemo } from "react";
 import { UncontrolledTooltip } from "reactstrap";
+import { useDispatch, useSelector } from "react-redux";
+import { setWorkSchedule } from "../../redux/reducers/ChildReducer/WorkScheduleReducer";
 
 const WorkSchedule = () => {
 
-  const [wsdata1, setwsdata1] = useState([
-    {
-      id: 1,
-      name: "Morning Shift",
-      description: "Morning Shift Development Team",
-      timezone: "Asia/Kolkata",
-      grace_in_time_hr: "0",
-      grace_in_time_min: "30",
-      grace_out_time_hr: "0",
-      grace_out_time_min: "0",
-      fullday_hr: "08",
-      fullday_min: "00",
-      halfday_hr: "04",
-      halfday_min: "00",
-      maximum_break_hr: "00",
-      maximum_break_min: "30",
-      auto_clock: true,
-      status: 1,
-      timings: [
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-      ],
-      workday: [
-        {
-          s_day: "monday",
-          e_day: "monday",
-          s_hr: "09",
-          s_min: "00",
-          e_hr: "18",
-          e_min: "30",
-          is_day_on: true,
-        },
-        {
-          s_day: "tuesday",
-          e_day: "tuesday",
-          s_hr: "09",
-          s_min: "00",
-          e_hr: "18",
-          e_min: "30",
-          is_day_on: true,
-        },
-        {
-          s_day: "wednesday",
-          e_day: "wednesday",
-          s_hr: "09",
-          s_min: "00",
-          e_hr: "18",
-          e_min: "30",
-          is_day_on: true,
-        },
-        {
-          s_day: "thursday",
-          e_day: "thursday",
-          s_hr: "09",
-          s_min: "00",
-          e_hr: "18",
-          e_min: "30",
-          is_day_on: true,
-        },
-        {
-          s_day: "friday",
-          e_day: "friday",
-          s_hr: "09",
-          s_min: "00",
-          e_hr: "18",
-          e_min: "30",
-          is_day_on: true,
-        },
-        {
-          s_day: "saturday",
-          e_day: "saturday",
-          s_hr: "09",
-          s_min: "00",
-          e_hr: "17",
-          e_min: "00",
-          is_day_on: true,
-        },
-        {
-          s_day: "sunday",
-          e_day: "sunday",
-          s_hr: "00",
-          s_min: "00",
-          e_hr: "00",
-          e_min: "00",
-          is_day_on: false,
-        },
-      ],
-    },
-    {
-      id: 2,
-      name: "Night Shift",
-      description: "Night Shift Development Team",
-      timezone: "Asia/Kolkata",
-      grace_in_time_hr: "0",
-      grace_in_time_min: "30",
-      grace_out_time_hr: "0",
-      grace_out_time_min: "0",
-      fullday_hr: "08",
-      fullday_min: "00",
-      halfday_hr: "04",
-      halfday_min: "00",
-      maximum_break_hr: "00",
-      maximum_break_min: "30",
-      auto_clock: true,
-      status: 2,
-      workday: [
-        {
-          s_day: "monday",
-          e_day: "tuesday",
-          s_hr: "09",
-          s_min: "00",
-          e_hr: "06",
-          e_min: "00",
-          is_day_on: true,
-        },
-        {
-          s_day: "tuesday",
-          e_day: "wednesday",
-          s_hr: "09",
-          s_min: "00",
-          e_hr: "06",
-          e_min: "00",
-          is_day_on: true,
-        },
-        {
-          s_day: "wednesday",
-          e_day: "thursday",
-          s_hr: "09",
-          s_min: "00",
-          e_hr: "06",
-          e_min: "00",
-          is_day_on: true,
-        },
-        {
-          s_day: "thursday",
-          e_day: "friday",
-          s_hr: "09",
-          s_min: "00",
-          e_hr: "06",
-          e_min: "00",
-          is_day_on: true,
-        },
-        {
-          s_day: "friday",
-          e_day: "saturday",
-          s_hr: "09",
-          s_min: "00",
-          e_hr: "06",
-          e_min: "00",
-          is_day_on: true,
-        },
-        {
-          s_day: "saturday",
-          e_day: "sunday",
-          s_hr: "09",
-          s_min: "00",
-          e_hr: "06",
-          e_min: "00",
-          is_day_on: true,
-        },
-        {
-          s_day: "sunday",
-          e_day: "sunday",
-          s_hr: "00",
-          s_min: "00",
-          e_hr: "00",
-          e_min: "00",
-          is_day_on: false,
-        },
-      ],
-    },
-  ]);
+  const dispatch = useDispatch()
+
+  const { work_schedule_data } = useSelector(state => state.WorkScheduleReducer);
+
+  useEffect(() =>{
+    dispatch(setWorkSchedule(GetLocalStorageData('work_schedule') || []))
+  },[])
+
+  // const [wsdata1, setwsdata1] = useState([
+  //   {
+  //     id: 1,
+  //     name: "Morning Shift",
+  //     description: "Morning Shift Development Team",
+  //     timezone: "Asia/Kolkata",
+  //     grace_in_time_hr: "0",
+  //     grace_in_time_min: "30",
+  //     grace_out_time_hr: "0",
+  //     grace_out_time_min: "0",
+  //     fullday_hr: "08",
+  //     fullday_min: "00",
+  //     halfday_hr: "04",
+  //     halfday_min: "00",
+  //     maximum_break_hr: "00",
+  //     maximum_break_min: "30",
+  //     auto_clock: true,
+  //     status: 1,
+  //     timings: [
+  //       "monday",
+  //       "tuesday",
+  //       "wednesday",
+  //       "thursday",
+  //       "friday",
+  //       "saturday",
+  //     ],
+  //     workday: [
+  //       {
+  //         s_day: "monday",
+  //         e_day: "monday",
+  //         s_hr: "09",
+  //         s_min: "00",
+  //         e_hr: "18",
+  //         e_min: "30",
+  //         is_day_on: true,
+  //       },
+  //       {
+  //         s_day: "tuesday",
+  //         e_day: "tuesday",
+  //         s_hr: "09",
+  //         s_min: "00",
+  //         e_hr: "18",
+  //         e_min: "30",
+  //         is_day_on: true,
+  //       },
+  //       {
+  //         s_day: "wednesday",
+  //         e_day: "wednesday",
+  //         s_hr: "09",
+  //         s_min: "00",
+  //         e_hr: "18",
+  //         e_min: "30",
+  //         is_day_on: true,
+  //       },
+  //       {
+  //         s_day: "thursday",
+  //         e_day: "thursday",
+  //         s_hr: "09",
+  //         s_min: "00",
+  //         e_hr: "18",
+  //         e_min: "30",
+  //         is_day_on: true,
+  //       },
+  //       {
+  //         s_day: "friday",
+  //         e_day: "friday",
+  //         s_hr: "09",
+  //         s_min: "00",
+  //         e_hr: "18",
+  //         e_min: "30",
+  //         is_day_on: true,
+  //       },
+  //       {
+  //         s_day: "saturday",
+  //         e_day: "saturday",
+  //         s_hr: "09",
+  //         s_min: "00",
+  //         e_hr: "17",
+  //         e_min: "00",
+  //         is_day_on: true,
+  //       },
+  //       {
+  //         s_day: "sunday",
+  //         e_day: "sunday",
+  //         s_hr: "00",
+  //         s_min: "00",
+  //         e_hr: "00",
+  //         e_min: "00",
+  //         is_day_on: false,
+  //       },
+  //     ],
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "Night Shift",
+  //     description: "Night Shift Development Team",
+  //     timezone: "Asia/Kolkata",
+  //     grace_in_time_hr: "0",
+  //     grace_in_time_min: "30",
+  //     grace_out_time_hr: "0",
+  //     grace_out_time_min: "0",
+  //     fullday_hr: "08",
+  //     fullday_min: "00",
+  //     halfday_hr: "04",
+  //     halfday_min: "00",
+  //     maximum_break_hr: "00",
+  //     maximum_break_min: "30",
+  //     auto_clock: true,
+  //     status: 2,
+  //     workday: [
+  //       {
+  //         s_day: "monday",
+  //         e_day: "tuesday",
+  //         s_hr: "09",
+  //         s_min: "00",
+  //         e_hr: "06",
+  //         e_min: "00",
+  //         is_day_on: true,
+  //       },
+  //       {
+  //         s_day: "tuesday",
+  //         e_day: "wednesday",
+  //         s_hr: "09",
+  //         s_min: "00",
+  //         e_hr: "06",
+  //         e_min: "00",
+  //         is_day_on: true,
+  //       },
+  //       {
+  //         s_day: "wednesday",
+  //         e_day: "thursday",
+  //         s_hr: "09",
+  //         s_min: "00",
+  //         e_hr: "06",
+  //         e_min: "00",
+  //         is_day_on: true,
+  //       },
+  //       {
+  //         s_day: "thursday",
+  //         e_day: "friday",
+  //         s_hr: "09",
+  //         s_min: "00",
+  //         e_hr: "06",
+  //         e_min: "00",
+  //         is_day_on: true,
+  //       },
+  //       {
+  //         s_day: "friday",
+  //         e_day: "saturday",
+  //         s_hr: "09",
+  //         s_min: "00",
+  //         e_hr: "06",
+  //         e_min: "00",
+  //         is_day_on: true,
+  //       },
+  //       {
+  //         s_day: "saturday",
+  //         e_day: "sunday",
+  //         s_hr: "09",
+  //         s_min: "00",
+  //         e_hr: "06",
+  //         e_min: "00",
+  //         is_day_on: true,
+  //       },
+  //       {
+  //         s_day: "sunday",
+  //         e_day: "sunday",
+  //         s_hr: "00",
+  //         s_min: "00",
+  //         e_hr: "00",
+  //         e_min: "00",
+  //         is_day_on: false,
+  //       },
+  //     ],
+  //   },
+  // ]);
 
   // Column
   const additionalColumn = [
@@ -224,7 +234,7 @@ const WorkSchedule = () => {
         for (let i = 0; i < days.length; i++) {
           for (let j = 0; j < obj.workday.length; j++) {
             if (
-              days[i].desc.toLowerCase() == obj.workday[j].s_day &&
+              days[i].desc.toLowerCase() == (obj.workday[j].s_day).toLowerCase() &&
               obj.workday[j].is_day_on
             ) {
               timings.push(days[i].id);
@@ -259,8 +269,8 @@ const WorkSchedule = () => {
       id: "status",
       filterable: false,
       accessor: (obj) => {
-        let status = obj.status === 1 ? "Active" : "Inactive";
-        let statusClass = obj.status === 1 ? "success" : "warning";
+        let status = obj.status ? "Active" : "Inactive";
+        let statusClass = obj.status ? "success" : "warning";
         return (
           <span
             className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
@@ -288,6 +298,7 @@ const WorkSchedule = () => {
       halfday_min: "00",
       maximum_break_hr: "00",
       maximum_break_min: "00",
+      auto_clock_out : false,
       status: 1,
       workday: [
         {
@@ -359,8 +370,8 @@ const WorkSchedule = () => {
 
   const filterKey = "status";
   const filterOptions = [
-    { option: "1", label: "Active" },
-    { option: "2", label: "Inactive" },
+    { option: true, label: "Active" },
+    { option: false, label: "Inactive" },
   ];
 
   document.title = `Work Schedule | ${MetaTitle}`;
@@ -368,7 +379,7 @@ const WorkSchedule = () => {
     <React.Fragment>
       <InfoTable
         additionalColumn={additionalColumn}
-        tabledata={wsdata1}
+        tabledata={work_schedule_data}
         formname={"workschedule"}
         initialFormObj={initialFormObj}
         filterKey={filterKey}
