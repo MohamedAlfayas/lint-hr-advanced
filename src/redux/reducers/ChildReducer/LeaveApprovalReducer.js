@@ -8,7 +8,7 @@ const LeaveApprovalReducer = createSlice({
     name : 'LeaveApprovalReducer',
     initialState : initialState,
     reducers : {
-        setHoliday : (state, action) =>{
+        setLeaveApproval : (state, action) =>{
             return {
                 ...state,
                 leave_approval : action.payload

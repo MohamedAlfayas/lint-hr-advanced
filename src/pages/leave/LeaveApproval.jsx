@@ -11,11 +11,11 @@ import { useEffect } from "react";
 import { setEmployee } from "../../redux/reducers/ChildReducer/EmployeeReducer";
 
 const LeaveApproval = () => {
-   [
+  const [LeaveData,setLeavedata] = useState([ 
     {
       "id" : 1,
-      "employee" : 5,
-      "department" : 3,
+      "employee" : 16,
+      "department" : 15,
       "start_date" : "2023-05-01",
       "end_date" : "2023-05-03",
       "total_days" : "3 Days",
@@ -24,43 +24,46 @@ const LeaveApproval = () => {
       "status" :1
     },{
       "id" : 2,
-      "employee" : 6,
-      "department" : 3,
-      "start_date" : "2023-05-30 10:00",
-      "end_date" : "2023-05-30 12:00",
+      "employee" : 32,
+      "department" : 14,
+      "start_date" : "2023-05-30 ",
+      "end_date" : "2023-05-30 ",
       "total_days" : "2 Hours",
       "leave_type" : 3,
       "reason" : "Traffic",
       "status" :1
     }
-  ]
+  ])
   // Column
   const additionalColumn = [
     {
       Header: "Name",
-      accessor: "fname",
+      accessor: "employee",
       filterable: false,
-      id: "fname",
+      id: "employee",
       accessor: (obj) => {
+        const EmployeeData = GetLocalStorageData("employee");
+        const thisEmployee = EmployeeData.find(data => data.id === obj.employee);
+        console.log("This Emp = ",thisEmployee);
         return (
-          obj.profile_url ? (
+          thisEmployee.profile_url ? (
             <div className="d-flex gap-2 align-items-center">
               <div className="flex-shrink-0">
-                <img src={obj.profile_url} alt="" className="avatar-xs rounded-circle" />
+                <img src={thisEmployee.profile_url} alt="" className="avatar-xs rounded-circle" />
               </div>
               <div className="flex-grow-1">
-                {obj.fname}
+                {thisEmployee.fname}
               </div>
             </div>
           ) : (
             <div className="d-flex gap-2 align-items-center">
               <div className="flex-shrink-0">
-                <div className="avatar-xs rounded-circle" style={{display:'flex',justifyContent:'center',alignItems:'center',background:'#0ab39c'}} data-bs-toggle="tooltip" title={(obj.fname)}>
-                  <span className="first_letter" style={{color:'white'}} >{(obj.fname).charAt(0)}</span>
+                <div className="avatar-xs rounded-circle" style={{display:'flex',justifyContent:'center',alignItems:'center',background:'#0ab39c'}} data-bs-toggle="tooltip" title={(thisEmployee.fname)}>
+                  <span className="first_letter" style={{color:'white'}} >{(thisEmployee.fname).charAt(0)}</span>
                 </div>
               </div>
               <div className="flex-grow-1">
-                {obj.fname}
+                {thisEmployee.fname}
               </div>
             </div>
 
@@ -68,30 +71,66 @@ const LeaveApproval = () => {
         )
       },
     },
-    {
-      Header: "Email",
-      accessor: "email",
-      filterable: false,
-      id: "email",
-    },
+   
     {
       Header: "Department",
       id: "department",
       filterable: false,
       accessor: (obj) => {
+        console.log("obj = ",obj);
         const DepartmentData = GetLocalStorageData("department");
-        let thisDepartment = DepartmentData
-          ? DepartmentData.filter((data) => obj.primary_department === data.id)
-          : [];
+        console.log("dd = ",DepartmentData);
+        const thisDepartment = DepartmentData.find(data => data.id === obj.department)
         console.log("Name = ", thisDepartment);
         return (
-          <>
-            {thisDepartment.map((d) => (
-              <React.Fragment>{d.name}</React.Fragment>
-            ))}
-          </>
+          <React.Fragment>{thisDepartment && thisDepartment.name}</React.Fragment>
         );
       },
+    },
+    {
+      Header: "Start Date",
+      accessor: "start_date",
+      filterable: false,
+      id: "start_date",
+      // accessor: (obj) => {
+      //   return <b>{obj.Date}</b>;
+      // },
+    },
+    {
+      Header: "End Date",
+      accessor: "end_date",
+      filterable: false,
+      id: "end_date",
+      // accessor: (obj) => {
+      //   return <b>{obj.Date}</b>;
+      // },
+    },
+    {
+      Header: "Total ",
+      accessor: "total_days",
+      filterable: false,
+      id: "total_days",
+      // accessor: (obj) => {
+      //   return <b>{obj.Days}</b>;
+      // },
+    },
+    {
+      Header: "Leave Type ",
+      accessor: "leave_type",
+      filterable: false,
+      id: "leave_type",
+      // accessor: (obj) => {
+      //   return <b>{obj.Days}</b>;
+      // },
+    },
+    {
+      Header: "Reason",
+      accessor: "reason",
+      filterable: false,
+      id: "reason",
+      // accessor: (obj) => {
+      //   return <b>{obj.Days}</b>;
+      // },
     },
     
     {
@@ -114,20 +153,28 @@ const LeaveApproval = () => {
 
   const initialFormObj = useMemo(() => {
     return {
-      id: 0,
-      fname: "",
-      lname: "",
-      dob: new Date(),
-      gender: "",
-      primary_department: 0,
-      sub_department: [],
-      role: 0,
-      work_schedule: 0,
-      profile_timezone: "Asia/Kolkata",
-      is_active: true,
-      profile_url: null,
-    };
-  }, []);
+      
+        id: 1,
+        employee : "Paul",
+        department : "Development",
+        start_date :"2023-05-30 ",
+        end_date :"2023-05-30",
+        total_days : "2 Hours",
+        leave_type : 3,
+        reason : "Traffic",
+        status :1
+      },{
+        id : 2,
+        employee : "Antony",
+        department : "App",
+        start_date : "2023-05-01",
+        end_date : "2023-05-03",
+        total_days : "3 Days",
+        leave_type : 1,
+        reason : "Family Function",
+        status :1
+      }}, []);
+    
 
   const filterKey = "is_active";
   const filterOptions = [
@@ -140,8 +187,8 @@ const LeaveApproval = () => {
     <React.Fragment>
       <InfoTable
         additionalColumn={additionalColumn}
-        tabledata={employee_data}
-        formname={"leave approval"}
+        tabledata={LeaveData}
+        formname={"leaveapproval"}
         initialFormObj={initialFormObj}
         filterKey={filterKey}
         filterOptions={filterOptions}
