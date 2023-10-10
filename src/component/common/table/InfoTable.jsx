@@ -41,6 +41,7 @@ import {
 import { useDispatch } from "react-redux";
 import Datetime from "react-datetime";
 import "react-datetime/css/react-datetime.css";
+import { Status } from "filepond";
 
 const InfoTable = ({
   additionalColumn,
@@ -112,40 +113,77 @@ const InfoTable = ({
         id: "#",
       },
       {
+
         Header: "Action",
         Cell: (cellProps) => {
-          return (
-            <ul className="list-inline hstack gap-2 mb-0">
-              <li className="list-inline-item">
-                <Link to="#" className="text-primary d-inline-block">
-                  <i className="ri-eye-fill fs-16"></i>
-                </Link>
-              </li>
-              <li className="list-inline-item edit">
-                <Link
-                  to="javascript:void(0)"
-                  className="text-primary d-inline-block edit-item-btn"
-                  onClick={() => {
-                    const orderData = cellProps.row.original;
-                    handleCreateAndUpdate(orderData.id, orderData);
-                  }}>
-                  <i className="ri-pencil-fill fs-16"></i>
-                </Link>
-              </li>
-              <li className="list-inline-item">
-                <Link
-                  to="#"
-                  className="text-danger d-inline-block remove-item-btn"
-                  onClick={() => {
-                    const orderData = cellProps.row.original;
-                    onClickDelete(orderData);
-                  }}>
-                  <i className="ri-delete-bin-5-fill fs-16"></i>
-                </Link>
-              </li>
-            </ul>
-          );
+
+          console.log("cellProps:", cellProps);
+          // if (cellProps.row.original.status === 1) {
+            return (
+              formname && formname === "leave approval" ? (
+                cellProps.row.original.status !== 1 ? <></> :
+                <ul className="list-inline hstack gap-2 mb-0">
+                  <li className="list-inline-item edit">
+                    <Link
+                      to="javascript:void(0)"
+                      className="text-success d-inline-block edit-item-btn"
+                      onClick={() => {
+                        const orderData = cellProps.row.original;
+                        handleCreateAndUpdate(orderData.id, orderData);
+                      }}>
+                      <i className=" ri-check-line fs-16"></i>
+                    </Link>
+                  </li>
+                  <li className="list-inline-item">
+                    <Link
+                      to="#"
+                      className="text-danger d-inline-block remove-item-btn"
+                      onClick={() => {
+                        const orderData = cellProps.row.original;
+                        onClickDelete(orderData);
+                      }}>
+                      <i className=" ri-close-line fs-16"></i>
+                    </Link>
+                  </li>
+                </ul>
+              ) : (
+                <ul className="list-inline hstack gap-2 mb-0">
+                  <li className="list-inline-item">
+                    <Link to="#" className="text-primary d-inline-block">
+                      <i className="ri-eye-fill fs-16"></i>
+                    </Link>
+                  </li>
+                  <li className="list-inline-item edit">
+                    <Link
+                      to="javascript:void(0)"
+                      className="text-primary d-inline-block edit-item-btn"
+                      onClick={() => {
+                        const orderData = cellProps.row.original;
+                        handleCreateAndUpdate(orderData.id, orderData);
+                      }}>
+                      <i className="ri-pencil-fill fs-16"></i>
+                    </Link>
+                  </li>
+                  <li className="list-inline-item">
+                    <Link
+                      to="#"
+                      className="text-danger d-inline-block remove-item-btn"
+                      onClick={() => {
+                        const orderData = cellProps.row.original;
+                        onClickDelete(orderData);
+                      }}>
+                      <i className="ri-delete-bin-5-fill fs-16"></i>
+                    </Link>
+                  </li>
+                </ul>
+              )
+            );
+          // } else {
+
+          //   return null;
+          // }
         },
+
       },
     ],
     []
@@ -398,15 +436,15 @@ const InfoTable = ({
                           className="form-control"
                           placeholder="Enter Order Id"
                           type="text"
-                          // validate={{
-                          //     required: { value: true },
-                          // }}
-                          // onChange={validation.handleChange}
-                          // onBlur={validation.handleBlur}
-                          // value={validation.values.orderId || ""}
-                          // invalid={
-                          //     validation.touched.orderId && validation.errors.orderId ? true : false
-                          // }
+                        // validate={{
+                        //     required: { value: true },
+                        // }}
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={validation.values.orderId || ""}
+                        // invalid={
+                        //     validation.touched.orderId && validation.errors.orderId ? true : false
+                        // }
                         />
                         {/* {validation.touched.orderId && validation.errors.orderId ? (
                                                     <FormFeedback type="invalid">{validation.errors.orderId}</FormFeedback>
@@ -425,15 +463,15 @@ const InfoTable = ({
                           className="form-control"
                           placeholder="Enter Name"
                           type="text"
-                          // validate={{
-                          //     required: { value: true },
-                          // }}
-                          // onChange={validation.handleChange}
-                          // onBlur={validation.handleBlur}
-                          // value={validation.values.customer || ""}
-                          // invalid={
-                          //     validation.touched.customer && validation.errors.customer ? true : false
-                          // }
+                        // validate={{
+                        //     required: { value: true },
+                        // }}
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={validation.values.customer || ""}
+                        // invalid={
+                        //     validation.touched.customer && validation.errors.customer ? true : false
+                        // }
                         />
                         {/* {validation.touched.customer && validation.errors.customer ? (
                                                     <FormFeedback type="invalid">{validation.errors.customer}</FormFeedback>
@@ -508,12 +546,12 @@ const InfoTable = ({
                             <Input
                               name="amount"
                               type="text"
-                              // onChange={validation.handleChange}
-                              // onBlur={validation.handleBlur}
-                              // value={validation.values.amount || ""}
-                              // invalid={
-                              //     validation.touched.amount && validation.errors.amount ? true : false
-                              // }
+                            // onChange={validation.handleChange}
+                            // onBlur={validation.handleBlur}
+                            // value={validation.values.amount || ""}
+                            // invalid={
+                            //     validation.touched.amount && validation.errors.amount ? true : false
+                            // }
                             />
                             {/* {validation.touched.amount && validation.errors.amount ? (
                                                             <FormFeedback type="invalid">{validation.errors.amount}</FormFeedback>
@@ -532,11 +570,11 @@ const InfoTable = ({
                               name="payment"
                               type="select"
                               className="form-select"
-                              // onChange={validation.handleChange}
-                              // onBlur={validation.handleBlur}
-                              // value={
-                              //     validation.values.payment || ""
-                              // }
+                            // onChange={validation.handleChange}
+                            // onBlur={validation.handleBlur}
+                            // value={
+                            //     validation.values.payment || ""
+                            // }
                             >
                               {/* {orderpayement.map((item, key) => (
                                                                 <React.Fragment key={key}>
@@ -565,11 +603,11 @@ const InfoTable = ({
                           name="status"
                           type="select"
                           className="form-select"
-                          // onChange={validation.handleChange}
-                          // onBlur={validation.handleBlur}
-                          // value={
-                          //     validation.values.status || ""
-                          // }
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={
+                        //     validation.values.status || ""
+                        // }
                         >
                           {/* {orderstatus.map((item, key) => (
                                                         <React.Fragment key={key}>

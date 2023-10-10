@@ -31,7 +31,7 @@ const LeaveApproval = () => {
       "total_days" : "2 Hours",
       "leave_type" : 3,
       "reason" : "Traffic",
-      "status" :1
+      "status" :2
     }
   ])
   // Column
@@ -52,7 +52,8 @@ const LeaveApproval = () => {
                 <img src={thisEmployee.profile_url} alt="" className="avatar-xs rounded-circle" />
               </div>
               <div className="flex-grow-1">
-                {thisEmployee.fname}
+              <div>{thisEmployee.fname}</div> 
+               <div>{thisEmployee.email}</div> 
               </div>
             </div>
           ) : (
@@ -63,7 +64,8 @@ const LeaveApproval = () => {
                 </div>
               </div>
               <div className="flex-grow-1">
-                {thisEmployee.fname}
+               <div>{thisEmployee.fname}</div> 
+               <div>{thisEmployee.email}</div> 
               </div>
             </div>
 
@@ -71,6 +73,12 @@ const LeaveApproval = () => {
         )
       },
     },
+    // {
+    //   Header: "Email",
+    //   accessor: "email",
+    //   filterable: false,
+    //   id: "email",
+    // },
    
     {
       Header: "Department",
@@ -92,45 +100,45 @@ const LeaveApproval = () => {
       accessor: "start_date",
       filterable: false,
       id: "start_date",
-      // accessor: (obj) => {
-      //   return <b>{obj.Date}</b>;
-      // },
+      accessor: (obj) => {
+        return <b>{obj.start_date}</b>;
+      },
     },
     {
       Header: "End Date",
       accessor: "end_date",
       filterable: false,
       id: "end_date",
-      // accessor: (obj) => {
-      //   return <b>{obj.Date}</b>;
-      // },
+      accessor: (obj) => {
+        return <b>{obj.end_date}</b>;
+      },
     },
     {
       Header: "Total ",
       accessor: "total_days",
       filterable: false,
       id: "total_days",
-      // accessor: (obj) => {
-      //   return <b>{obj.Days}</b>;
-      // },
+      accessor: (obj) => {
+        return <b>{obj.total_days}</b>;
+      },
     },
     {
       Header: "Leave Type ",
       accessor: "leave_type",
       filterable: false,
       id: "leave_type",
-      // accessor: (obj) => {
-      //   return <b>{obj.Days}</b>;
-      // },
+      accessor: (obj) => {
+        return <b>{obj.leave_type}</b>;
+      },
     },
     {
       Header: "Reason",
       accessor: "reason",
       filterable: false,
       id: "reason",
-      // accessor: (obj) => {
-      //   return <b>{obj.Days}</b>;
-      // },
+      accessor: (obj) => {
+        return <b>{obj.reason}</b>;
+      },
     },
     
     {
@@ -138,13 +146,14 @@ const LeaveApproval = () => {
       id: "status",
       filterable: false,
       accessor: (obj) => {
-        let status = obj.is_active ? "Active" : "Inactive";
-        let statusClass = obj.is_active ? "success" : "warning";
+        let status = obj.status === 1 ? "Pending" : obj.status === 2 ? "Approved" : "Rejected";
+        let statusClass = obj.status === 1 ? "primary" : obj.status === 2 ? "success" : "danger";
         return (
           <span
             className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
             {" "}
             {status}{" "}
+            
           </span>
         );
       },
@@ -155,8 +164,8 @@ const LeaveApproval = () => {
     return {
       
         id: 1,
-        employee : "Paul",
-        department : "Development",
+        employee : 16,
+        department : 15,
         start_date :"2023-05-30 ",
         end_date :"2023-05-30",
         total_days : "2 Hours",
@@ -165,8 +174,8 @@ const LeaveApproval = () => {
         status :1
       },{
         id : 2,
-        employee : "Antony",
-        department : "App",
+        employee : 32,
+        department : 14,
         start_date : "2023-05-01",
         end_date : "2023-05-03",
         total_days : "3 Days",
@@ -178,8 +187,8 @@ const LeaveApproval = () => {
 
   const filterKey = "is_active";
   const filterOptions = [
-    { option: true, label: "Active" },
-    { option: false, label: "Inactive" },
+    { option: true, label: "Approval" },
+    { option: false, label: "Reject" },
   ];
 
   document.title = `Leave Approval | ${MetaTitle}`;
@@ -188,7 +197,7 @@ const LeaveApproval = () => {
       <InfoTable
         additionalColumn={additionalColumn}
         tabledata={LeaveData}
-        formname={"leaveapproval"}
+        formname={"leave approval"}
         initialFormObj={initialFormObj}
         filterKey={filterKey}
         filterOptions={filterOptions}

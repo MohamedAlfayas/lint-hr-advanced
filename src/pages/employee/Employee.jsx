@@ -33,7 +33,8 @@ const Employee = () => {
                 <img src={obj.profile_url} alt="" className="avatar-xs rounded-circle" />
               </div>
               <div className="flex-grow-1">
-                {obj.fname}
+              <div>{obj.fname}</div>
+                <div>{obj.email}</div>
               </div>
             </div>
           ) : (
@@ -44,20 +45,23 @@ const Employee = () => {
                 </div>
               </div>
               <div className="flex-grow-1">
-                {obj.fname}
+              <div>{obj.fname}</div>
+                <div>{obj.email}</div>
               </div>
             </div>
 
           )
         )
       },
+      // filterable: false,
+      // id: "nameAndEmail",
     },
-    {
-      Header: "Email",
-      accessor: "email",
-      filterable: false,
-      id: "email",
-    },
+    // {
+    //   Header: "Email",
+    //   accessor: "email",
+    //   filterable: false,
+    //   id: "email",
+    // },
     {
       Header: "Department",
       id: "department",
