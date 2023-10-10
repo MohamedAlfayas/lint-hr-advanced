@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import "react-toastify/dist/ReactToastify.css";
 
@@ -6,49 +6,59 @@ import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import InfoTable from "../../component/common/table/InfoTable";
 import { MetaTitle } from "../../common/data/MetaTitle";
 import { useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { setLeaveType } from "../../redux/reducers/ChildReducer/LeaveTypeReducer";
 
 const LeaveType = () => {
+
+  const dispatch = useDispatch();
+  const { leave_type_data } = useSelector(state => state.LeaveTypeReducer);
+  useEffect(() => {
+    dispatch(setLeaveType(GetLocalStorageData('leave_types') || []));
+  }, []);
+
   let types = [
-    { id: 1, label: "Paid", value: "Paid" },
-    { id: 2, label: "UnPaid", value: "UnPaid" },
-    { id: 3, label: "On Duty", value: "On Duty" },
-    { id: 4, label: "Comp Off", value: "Comp Off" },
+    { id: 1, label: "Paid", value: 1 },
+    { id: 2, label: "UnPaid", value: 2 },
+    { id: 3, label: "On Duty", value: 3 },
+    { id: 4, label: "Comp Off", value: 4 },
   ];
   let reset = [
-    { id: 1, name: "January To December" },
-    { id: 2, name: "May To April" },
+    { id: 1, label: "January To December", value: 1 },
+    { id: 2, label: "May To April", value: 2 },
   ];
 
-  const [leavetype, setLeaveType] = useState([
-    {
-      id: 1,
-      name: "Casual Leave",
-      type: 1,
-      unit: "Day",
-      leave_count: 12,
-      reset: 1,
-      applicable_ws: [1, 2],
-      gender: "M",
-      week_between_leave: true,
-      holiday_between_leave: false,
-      desc: "Connect your bank account or credit card",
-      status: 1,
-    },
-    {
-      id: 2,
-      name: "Permission",
-      type: 2,
-      unit: "Hour",
-      leave_count: 12,
-      reset: 1,
-      applicable_ws: [1, 2],
-      gender: "M",
-      week_between_leave: false,
-      holiday_between_leave: true,
-      desc: "Connect your bank account or credit card",
-      status: 2,
-    },
-  ]);
+
+  // const [leavetype, setLeaveType] = useState([
+  //   {
+  //     id: 1,
+  //     name: "Casual Leave",
+  //     type: 1,
+  //     unit: "Day",
+  //     leave_count: 12,
+  //     reset: 1,
+  //     ws_id: [1, 2],
+  //     gender: "M",
+  //     week_between_leave: true,
+  //     holiday_between_leave: false,
+  //     desc: "Connect your bank account or credit card",
+  //     status: 1,
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "Permission",
+  //     type: 2,
+  //     unit: "Hour",
+  //     leave_count: 12,
+  //     reset: 1,
+  //     ws_id: [1, 2],
+  //     gender: "M",
+  //     week_between_leave: false,
+  //     holiday_between_leave: true,
+  //     desc: "Connect your bank account or credit card",
+  //     status: 2,
+  //   },
+  // ]);
 
   // Column
   const additionalColumn = [
@@ -63,9 +73,9 @@ const LeaveType = () => {
     },
     {
       Header: "Description",
-      accessor: "desc",
+      accessor: "description",
       filterable: false,
-      id: "desc",
+      id: "description",
     },
     {
       Header: "Type",
@@ -73,7 +83,7 @@ const LeaveType = () => {
       filterable: false,
       accessor: (obj) => {
         let htmltag = types.map((type, i) =>
-          obj.type == type.id ? type.value : ""
+          obj.type == type.id ? type.label : ""
         );
 
         return <>{htmltag}</>;
@@ -84,9 +94,10 @@ const LeaveType = () => {
       id: "unit",
       filterable: false,
       accessor: (obj) => {
+        let leave_count = obj.unit === 'Day' ? obj.day_value : obj.hour_value
         return (
           <b>
-            {obj.leave_count}
+            {leave_count}
             <small> {obj.unit} / Year</small>
           </b>
         );
@@ -97,8 +108,8 @@ const LeaveType = () => {
       id: "status",
       filterable: false,
       accessor: (obj) => {
-        let status = obj.status === 1 ? "Active" : "Inactive";
-        let statusClass = obj.status === 1 ? "success" : "warning";
+        let status = obj.status ? "Active" : "Inactive";
+        let statusClass = obj.status ? "success" : "warning";
         return (
           <span
             className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
@@ -114,23 +125,24 @@ const LeaveType = () => {
     return {
       id: 0,
       name: "",
-      type: 1,
+      type: 0,
       unit: "Day",
-      leave_count: 12,
-      reset: 1,
-      applicable_ws: [1, 2],
-      gender: "M",
-      week_between_leave: true,
+      day_value: "",
+      hour_value: "",
+      reset_type: 1,
+      ws_id: [],
+      genders: [],
+      weekend_between_leave: false,
       holiday_between_leave: false,
-      desc: "",
-      status: 1,
+      description: "",
+      status : true,
     };
   }, []);
 
   const filterKey = "status";
   const filterOptions = [
-    { option: "1", label: "Active" },
-    { option: "2", label: "Inactive" },
+    { option: true, label: "Active" },
+    { option: false, label: "Inactive" },
   ];
 
   document.title = `Leave Type | ${MetaTitle}`;
@@ -138,7 +150,7 @@ const LeaveType = () => {
     <React.Fragment>
       <InfoTable
         additionalColumn={additionalColumn}
-        tabledata={leavetype}
+        tabledata={leave_type_data}
         formname={"leavetypes"}
         initialFormObj={initialFormObj}
         filterKey={filterKey}

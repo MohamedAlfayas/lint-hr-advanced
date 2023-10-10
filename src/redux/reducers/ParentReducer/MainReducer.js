@@ -7,6 +7,7 @@ import HolidayReducer from "../ChildReducer/HolidayReducer";
 import DepartmentReducer from "../ChildReducer/DepartmentReducer";
 import LeaveApprovalReducer from "../ChildReducer/LeaveApprovalReducer";
 import WorkScheduleReducer from "../ChildReducer/WorkScheduleReducer";
+import LeaveTypeReducer from "../ChildReducer/LeaveTypeReducer";
 
 export const MainReducer = combineReducers({
     EmployeeReducer : EmployeeReducer,
@@ -16,5 +17,6 @@ export const MainReducer = combineReducers({
     HolidayReducer : HolidayReducer,
     DepartmentReducer : DepartmentReducer,
     LeaveApprovalReducer : LeaveApprovalReducer,
-    WorkScheduleReducer : WorkScheduleReducer
+    WorkScheduleReducer : WorkScheduleReducer,
+    LeaveTypeReducer : LeaveTypeReducer,
 })
