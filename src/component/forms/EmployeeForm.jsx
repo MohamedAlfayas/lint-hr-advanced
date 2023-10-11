@@ -1847,6 +1847,7 @@ const EmployeeForm = () => {
   };
 
   const handleSubmit = () => {
+    console.log("emp Obj = ",employeeObj);
     let formData = new FormData();
     employeeImage !== null &&
       formData.append("profile", employeeImage, employeeImage.name);
@@ -2064,6 +2065,28 @@ const EmployeeForm = () => {
                 </div>
                 <div id="passwordHelpBlock" className="form-text">
                   Select Primary Department
+                </div>
+              </Col>
+              <Col lg={12}>
+                <div className="mb-3">
+                  <Label>Is Manager</Label>
+                  <div
+                    className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
+                    dir="ltr">
+                    <Input
+                      id=""
+                      name="is_manager"
+                      type="checkbox"
+                      className="form-check-input"
+                      checked={employeeObj.is_manager}
+                      onChange={(e) =>
+                        setEmployeeObj({
+                          ...employeeObj,
+                          is_manager: e.target.checked,
+                        })
+                      }
+                    />
+                  </div>
                 </div>
               </Col>
               <Col lg={12}>
