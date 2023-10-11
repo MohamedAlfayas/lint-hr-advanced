@@ -112,6 +112,7 @@ const Employee = () => {
       work_schedule: 0,
       profile_timezone: "Asia/Kolkata",
       is_active: true,
+      is_manager: false,
       profile_url: null,
     };
   }, []);

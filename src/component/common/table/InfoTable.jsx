@@ -116,9 +116,6 @@ const InfoTable = ({
 
         Header: "Action",
         Cell: (cellProps) => {
-
-          console.log("cellProps:", cellProps);
-          // if (cellProps.row.original.status === 1) {
             return (
               formname && formname === "leave approval" ? (
                 cellProps.row.original.status !== 1 ? <></> :
