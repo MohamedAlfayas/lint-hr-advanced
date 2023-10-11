@@ -116,9 +116,9 @@ const InfoTable = ({
 
         Header: "Action",
         Cell: (cellProps) => {
-            return (
-              formname && formname === "leave approval" ? (
-                cellProps.row.original.status !== 1 ? <></> :
+          return (
+            formname && formname === "leave_approval" ? (
+              cellProps.row.original.status !== 1 ? <></> :
                 <ul className="list-inline hstack gap-2 mb-0">
                   <li className="list-inline-item edit">
                     <Link
@@ -143,38 +143,38 @@ const InfoTable = ({
                     </Link>
                   </li>
                 </ul>
-              ) : (
-                <ul className="list-inline hstack gap-2 mb-0">
-                  <li className="list-inline-item">
-                    <Link to="#" className="text-primary d-inline-block">
-                      <i className="ri-eye-fill fs-16"></i>
-                    </Link>
-                  </li>
-                  <li className="list-inline-item edit">
-                    <Link
-                      to="javascript:void(0)"
-                      className="text-primary d-inline-block edit-item-btn"
-                      onClick={() => {
-                        const orderData = cellProps.row.original;
-                        handleCreateAndUpdate(orderData.id, orderData);
-                      }}>
-                      <i className="ri-pencil-fill fs-16"></i>
-                    </Link>
-                  </li>
-                  <li className="list-inline-item">
-                    <Link
-                      to="#"
-                      className="text-danger d-inline-block remove-item-btn"
-                      onClick={() => {
-                        const orderData = cellProps.row.original;
-                        onClickDelete(orderData);
-                      }}>
-                      <i className="ri-delete-bin-5-fill fs-16"></i>
-                    </Link>
-                  </li>
-                </ul>
-              )
-            );
+            ) : (
+              <ul className="list-inline hstack gap-2 mb-0">
+                <li className="list-inline-item">
+                  <Link to="#" className="text-primary d-inline-block">
+                    <i className="ri-eye-fill fs-16"></i>
+                  </Link>
+                </li>
+                <li className="list-inline-item edit">
+                  <Link
+                    to="javascript:void(0)"
+                    className="text-primary d-inline-block edit-item-btn"
+                    onClick={() => {
+                      const orderData = cellProps.row.original;
+                      handleCreateAndUpdate(orderData.id, orderData);
+                    }}>
+                    <i className="ri-pencil-fill fs-16"></i>
+                  </Link>
+                </li>
+                <li className="list-inline-item">
+                  <Link
+                    to="#"
+                    className="text-danger d-inline-block remove-item-btn"
+                    onClick={() => {
+                      const orderData = cellProps.row.original;
+                      onClickDelete(orderData);
+                    }}>
+                    <i className="ri-delete-bin-5-fill fs-16"></i>
+                  </Link>
+                </li>
+              </ul>
+            )
+          );
           // } else {
 
           //   return null;
@@ -298,7 +298,7 @@ const InfoTable = ({
                     <h5
                       className="card-title mb-0"
                       style={{ textTransform: "capitalize" }}>
-                      {formname}
+                      {(formname.charAt(0).toUpperCase() + formname.slice(1)).split("_").join(" ")}
                     </h5>
 
                     {formname && formname === "holiday" && (
@@ -321,16 +321,20 @@ const InfoTable = ({
                   </div>
                   <div className="col-sm-auto">
                     <div className="d-flex gap-1 flex-wrap">
-                      <button
-                        type="button"
-                        className="btn btn-success add-btn"
-                        id="create-btn"
-                        onClick={() => {
-                          handleCreateAndUpdate(0);
-                        }}>
-                        <i className="ri-add-line align-bottom me-1"></i> Create{" "}
-                        {formname.charAt(0).toUpperCase() + formname.slice(1)}
-                      </button>{" "}
+                      {formname && formname !== "leave_approval" && (
+                        <button
+                          type="button"
+                          className="btn btn-success add-btn"
+                          id="create-btn"
+                          style={{ textTransform: "capitalize" }}
+                          onClick={() => {
+                            handleCreateAndUpdate(0);
+                          }}>
+                          <i className="ri-add-line align-bottom me-1"></i> Create{" "}
+                          {(formname.charAt(0).toUpperCase() + formname.slice(1)).split("_").join(" ")}
+                        </button>
+                      )}
+                      {" "}
                       <button
                         type="button"
                         className="btn btn-info"

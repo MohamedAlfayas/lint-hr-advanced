@@ -13,6 +13,8 @@ const ProfileDropdown = () => {
 
     const logout = () =>{
         localStorage.removeItem("lint_hr_token");
+        localStorage.removeItem("lint_hr_v");
+        localStorage.removeItem("lint_hr_globaldata");
         toast.success("Logged Out Successfully")
         navigate("/auth/login")
     }

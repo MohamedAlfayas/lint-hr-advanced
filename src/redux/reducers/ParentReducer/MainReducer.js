@@ -8,8 +8,10 @@ import DepartmentReducer from "../ChildReducer/DepartmentReducer";
 import LeaveApprovalReducer from "../ChildReducer/LeaveApprovalReducer";
 import WorkScheduleReducer from "../ChildReducer/WorkScheduleReducer";
 import LeaveTypeReducer from "../ChildReducer/LeaveTypeReducer";
+import MetaReducer from "../ChildReducer/MetaReducer";
 
 export const MainReducer = combineReducers({
+    MetaReducer : MetaReducer,
     EmployeeReducer : EmployeeReducer,
     LayoutReducer : LayoutReducer,
     RightSideBarReducer : RightSideBarReducer,

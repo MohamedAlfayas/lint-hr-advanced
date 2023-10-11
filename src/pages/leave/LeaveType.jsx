@@ -151,7 +151,7 @@ const LeaveType = () => {
       <InfoTable
         additionalColumn={additionalColumn}
         tabledata={leave_type_data}
-        formname={"leavetypes"}
+        formname={"leave_types"}
         initialFormObj={initialFormObj}
         filterKey={filterKey}
         filterOptions={filterOptions}

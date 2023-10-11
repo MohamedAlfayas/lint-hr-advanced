@@ -102,7 +102,7 @@ const Layout = ({ children }) => {
   useEffect(() => {    
     GetGlobalVersion();
     const interval = setInterval(() => {
-      GetGlobalVersion()
+      GetGlobalVersion(dispatch)
     }, 30000);
     return () => clearInterval(interval);
   },[]);

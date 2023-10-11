@@ -89,7 +89,7 @@ const CustomField = () => {
       <InfoTable
         additionalColumn={additionalColumn}
         tabledata={CustomData}
-        formname={"customfield"}
+        formname={"custom_fields"}
         initialFormObj={initialFormObj}
         filterKey={filterKey}
         filterOptions={filterOptions}

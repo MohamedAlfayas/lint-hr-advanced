@@ -41,7 +41,7 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
                 <WorkScheduleForm />
               ) : component_to_show === "holiday" ? (
                 <HolidayForm />
-              ) : component_to_show === "leavetypes" ? (
+              ) : component_to_show === "leave_types" ? (
                 <LeaveTypeForm />
               ) : component_to_show === "leaveapply" ? (
                 <ApplyLeaveForm />
