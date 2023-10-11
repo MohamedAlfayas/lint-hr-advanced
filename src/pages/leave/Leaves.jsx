@@ -157,7 +157,7 @@ const LeaveDashboard = () => {
               <InfoTable
                 additionalColumn={additionalColumn}
                 tabledata={leaveapplication}
-                formname={"leaveApply"}
+                formname={"leaveapply"}
                 initialFormObj={initialFormObj}
                 filterKey={filterKey}
                 filterOptions={filterOptions}
