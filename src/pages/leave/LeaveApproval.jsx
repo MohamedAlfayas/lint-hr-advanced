@@ -8,30 +8,41 @@ import { MetaTitle } from "../../common/data/MetaTitle";
 import { useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
-import { setEmployee } from "../../redux/reducers/ChildReducer/EmployeeReducer";
+import { setLeaveApproval } from "../../redux/reducers/ChildReducer/LeaveApprovalReducer";
 
 const LeaveApproval = () => {
-  const [LeaveData,setLeavedata] = useState([ 
+
+  const dispatch = useDispatch()
+
+  const { leave_approval_data } = useSelector(data => data.LeaveApprovalReducer);
+
+  const { version } = useSelector(data => data.MetaReducer);
+
+  useEffect(() => {
+    dispatch(setLeaveApproval(GetLocalStorageData('leave_approval') || []))
+  }, [version])
+
+  const [LeaveData, setLeavedata] = useState([
     {
-      "id" : 1,
-      "employee" : 16,
-      "department" : 15,
-      "start_date" : "2023-05-01",
-      "end_date" : "2023-05-03",
-      "total_days" : "3 Days",
-      "leave_type" : 1,
-      "reason" : "Family Function",
-      "status" :1
-    },{
-      "id" : 2,
-      "employee" : 32,
-      "department" : 14,
-      "start_date" : "2023-05-30 ",
-      "end_date" : "2023-05-30 ",
-      "total_days" : "2 Hours",
-      "leave_type" : 3,
-      "reason" : "Traffic",
-      "status" :2
+      "id": 1,
+      "employee": 41,
+      "department": 15,
+      "start_date": "2023-05-01",
+      "end_date": "2023-05-03",
+      "total_days": "3 Days",
+      "leave_type": 1,
+      "reason": "Family Function",
+      "status": 1
+    }, {
+      "id": 2,
+      "employee": 43,
+      "department": 14,
+      "start_date": "2023-05-30 ",
+      "end_date": "2023-05-30 ",
+      "total_days": "2 Hours",
+      "leave_type": 3,
+      "reason": "Traffic",
+      "status": 2
     }
   ])
   // Column
@@ -44,7 +55,7 @@ const LeaveApproval = () => {
       accessor: (obj) => {
         const EmployeeData = GetLocalStorageData("employee");
         const thisEmployee = EmployeeData.find(data => data.id === obj.employee);
-        console.log("This Emp = ",thisEmployee);
+        console.log("This Emp = ", thisEmployee);
         return (
           thisEmployee.profile_url ? (
             <div className="d-flex gap-2 align-items-center">
@@ -52,20 +63,20 @@ const LeaveApproval = () => {
                 <img src={thisEmployee.profile_url} alt="" className="avatar-xs rounded-circle" />
               </div>
               <div className="flex-grow-1">
-              <div>{thisEmployee.fname}</div> 
-               <div>{thisEmployee.email}</div> 
+                <div>{thisEmployee.fname}</div>
+                <div>{thisEmployee.email}</div>
               </div>
             </div>
           ) : (
             <div className="d-flex gap-2 align-items-center">
               <div className="flex-shrink-0">
-                <div className="avatar-xs rounded-circle" style={{display:'flex',justifyContent:'center',alignItems:'center',background:'#0ab39c'}} data-bs-toggle="tooltip" title={(thisEmployee.fname)}>
-                  <span className="first_letter" style={{color:'white'}} >{(thisEmployee.fname).charAt(0)}</span>
+                <div className="avatar-xs rounded-circle" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0ab39c' }} data-bs-toggle="tooltip" title={(thisEmployee.fname)}>
+                  <span className="first_letter" style={{ color: 'white' }} >{(thisEmployee.fname).charAt(0)}</span>
                 </div>
               </div>
               <div className="flex-grow-1">
-               <div>{thisEmployee.fname}</div> 
-               <div>{thisEmployee.email}</div> 
+                <div>{thisEmployee.fname}</div>
+                <div>{thisEmployee.email}</div>
               </div>
             </div>
 
@@ -73,23 +84,13 @@ const LeaveApproval = () => {
         )
       },
     },
-    // {
-    //   Header: "Email",
-    //   accessor: "email",
-    //   filterable: false,
-    //   id: "email",
-    // },
-   
     {
       Header: "Department",
       id: "department",
       filterable: false,
       accessor: (obj) => {
-        console.log("obj = ",obj);
         const DepartmentData = GetLocalStorageData("department");
-        console.log("dd = ",DepartmentData);
-        const thisDepartment = DepartmentData.find(data => data.id === obj.department)
-        console.log("Name = ", thisDepartment);
+        const thisDepartment = DepartmentData.find(data => data.id === obj.department);
         return (
           <React.Fragment>{thisDepartment && thisDepartment.name}</React.Fragment>
         );
@@ -97,29 +98,29 @@ const LeaveApproval = () => {
     },
     {
       Header: "Start Date",
-      accessor: "start_date",
+      accessor: "start",
       filterable: false,
-      id: "start_date",
+      id: "start",
       accessor: (obj) => {
-        return <b>{obj.start_date}</b>;
+        return <b>{obj.start}</b>;
       },
     },
     {
       Header: "End Date",
-      accessor: "end_date",
+      accessor: "end",
       filterable: false,
-      id: "end_date",
+      id: "end",
       accessor: (obj) => {
-        return <b>{obj.end_date}</b>;
+        return <b>{obj.end}</b>;
       },
     },
     {
       Header: "Total ",
-      accessor: "total_days",
+      accessor: "total",
       filterable: false,
-      id: "total_days",
+      id: "total",
       accessor: (obj) => {
-        return <b>{obj.total_days}</b>;
+        return <b>{obj.total}</b>;
       },
     },
     {
@@ -128,7 +129,11 @@ const LeaveApproval = () => {
       filterable: false,
       id: "leave_type",
       accessor: (obj) => {
-        return <b>{obj.leave_type}</b>;
+        const LeaveTypeData = GetLocalStorageData("leave_types");
+        const thisLeaveType = LeaveTypeData.find(data => data.id === obj.leave_type)
+        return (
+          <React.Fragment>{thisLeaveType && thisLeaveType.name}</React.Fragment>
+        );
       },
     },
     {
@@ -140,7 +145,7 @@ const LeaveApproval = () => {
         return <b>{obj.reason}</b>;
       },
     },
-    
+
     {
       Header: "Status",
       id: "status",
@@ -153,7 +158,7 @@ const LeaveApproval = () => {
             className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
             {" "}
             {status}{" "}
-            
+
           </span>
         );
       },
@@ -162,33 +167,35 @@ const LeaveApproval = () => {
 
   const initialFormObj = useMemo(() => {
     return {
-      
-        id: 1,
-        employee : 16,
-        department : 15,
-        start_date :"2023-05-30 ",
-        end_date :"2023-05-30",
-        total_days : "2 Hours",
-        leave_type : 3,
-        reason : "Traffic",
-        status :1
-      },{
-        id : 2,
-        employee : 32,
-        department : 14,
-        start_date : "2023-05-01",
-        end_date : "2023-05-03",
-        total_days : "3 Days",
-        leave_type : 1,
-        reason : "Family Function",
-        status :1
-      }}, []);
-    
 
-  const filterKey = "is_active";
+      id: 1,
+      employee: 16,
+      department: 15,
+      start_date: "2023-05-30 ",
+      end_date: "2023-05-30",
+      total_days: "2 Hours",
+      leave_type: 3,
+      reason: "Traffic",
+      status: 1
+    }, {
+      id: 2,
+      employee: 32,
+      department: 14,
+      start_date: "2023-05-01",
+      end_date: "2023-05-03",
+      total_days: "3 Days",
+      leave_type: 1,
+      reason: "Family Function",
+      status: 1
+    }
+  }, []);
+
+
+  const filterKey = "status";
   const filterOptions = [
-    { option: true, label: "Approval" },
-    { option: false, label: "Reject" },
+    { option: 1, label: "Pending" },
+    { option: 2, label: "Approved" },
+    { option: 3, label: "Rejected" },
   ];
 
   document.title = `Leave Approval | ${MetaTitle}`;
@@ -196,8 +203,8 @@ const LeaveApproval = () => {
     <React.Fragment>
       <InfoTable
         additionalColumn={additionalColumn}
-        tabledata={LeaveData}
-        formname={"leave approval"}
+        tabledata={leave_approval_data}
+        formname={"leave_approval"}
         initialFormObj={initialFormObj}
         filterKey={filterKey}
         filterOptions={filterOptions}
