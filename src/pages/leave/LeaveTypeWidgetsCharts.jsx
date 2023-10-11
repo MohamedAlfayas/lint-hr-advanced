@@ -2,46 +2,52 @@ import React from "react";
 import ReactApexChart from "react-apexcharts";
 
 const LeaveTypeWidgetsCharts = ({ seriesData, chartsColor }) => {
-  const areachartlitecoinColors = [chartsColor];
-  var options = {
+  const series = [seriesData];
+  const options = {
     chart: {
-      width: 130,
-      height: 46,
-      type: "area",
+      type: "radialBar",
+      width: 105,
       sparkline: {
         enabled: true,
-      },
-      toolbar: {
-        show: false,
       },
     },
     dataLabels: {
       enabled: false,
     },
-    stroke: {
-      curve: "smooth",
-      width: 1.5,
-    },
-    fill: {
-      type: "gradient",
-      gradient: {
-        shadeIntensity: 1,
-        inverseColors: false,
-        opacityFrom: 0.45,
-        opacityTo: 0.05,
-        stops: [50, 100, 100, 100],
+    plotOptions: {
+      radialBar: {
+        hollow: {
+          margin: 0,
+          size: "70%",
+        },
+        track: {
+          margin: 1,
+        },
+        dataLabels: {
+          show: true,
+          name: {
+            show: false,
+          },
+          value: {
+            show: true,
+            fontSize: "16px",
+            fontWeight: 600,
+            offsetY: 8,
+          },
+        },
       },
     },
-    colors: areachartlitecoinColors,
+    colors: [chartsColor],
   };
   return (
     <React.Fragment>
       <ReactApexChart
         dir="ltr"
         options={options}
-        series={[...seriesData]}
-        type="area"
-        height="46"
+        series={[...series]}
+        type="radialBar"
+        id="total_jobs"
+        width="105"
         className="apex-charts"
       />
     </React.Fragment>
