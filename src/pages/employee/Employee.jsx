@@ -129,7 +129,7 @@ const Employee = () => {
       is_active: true,
       is_manager: false,
       profile_url: null,
-      custom_fields : CustomFieldsForThisForm || []
+      cf_values : CustomFieldsForThisForm || []
     };
   }, []);
 
