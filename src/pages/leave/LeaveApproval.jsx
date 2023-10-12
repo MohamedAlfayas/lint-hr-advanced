@@ -9,6 +9,7 @@ import { useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { setLeaveApproval } from "../../redux/reducers/ChildReducer/LeaveApprovalReducer";
+import { Api } from "../../common/api/Api";
 
 const LeaveApproval = () => {
 
@@ -19,7 +20,16 @@ const LeaveApproval = () => {
   const { version } = useSelector(data => data.MetaReducer);
 
   useEffect(() => {
-    dispatch(setLeaveApproval(GetLocalStorageData('leave_approval') || []))
+    Api({
+      method : 'GET',
+      url : 'leave/leave-approval/get/',
+    })
+    .then(res =>{
+      dispatch(setLeaveApproval(res?.data?.data))      
+    })
+    .catch(err =>{
+      dispatch(setLeaveApproval([]))
+    })
   }, [version])
 
   const [LeaveData, setLeavedata] = useState([

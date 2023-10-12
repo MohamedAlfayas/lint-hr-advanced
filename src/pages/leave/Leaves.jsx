@@ -4,9 +4,10 @@ import LeaveTypesWidgets from "./LeaveTypesWidgets";
 import HolidayCalenderAPi from "../holidays/HolidayCalenderAPi";
 import InfoTable from "../../component/common/table/InfoTable";
 import { useDispatch, useSelector } from "react-redux";
+import { MetaTitle } from "../../common/data/MetaTitle";
 
 const LeaveDashboard = () => {
-  document.title = "Projects | Velzon - React Admin & Dashboard Template";
+  document.title = `Leave Application | ${MetaTitle}`;
 
   // const dispatch = useDispatch();
   // const { leave_application_data } = useSelector(
@@ -153,18 +154,22 @@ const LeaveDashboard = () => {
             <Col xxl={12}>
               <LeaveTypesWidgets />
             </Col>
-            <Col xxl={8} xl={8} sm={12}>
-              <InfoTable
+            {/* <Col xxl={8} xl={8} sm={12}>
+              
+            </Col> */}
+            <InfoTable
                 additionalColumn={additionalColumn}
                 tabledata={leaveapplication}
-                formname={"leaveapply"}
+                formname={"leave_apply"}
                 initialFormObj={initialFormObj}
                 filterKey={filterKey}
                 filterOptions={filterOptions}
                 width_per={"35%"}
+                table_col={8}
               />
-            </Col>
             <HolidayCalenderAPi />
+
+
           </Row>
         </Container>
       </div>

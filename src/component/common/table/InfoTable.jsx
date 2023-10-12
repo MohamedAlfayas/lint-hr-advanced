@@ -51,6 +51,7 @@ const InfoTable = ({
   filterKey,
   filterOptions,
   width_per,
+  table_col
 }) => {
   console.log("Page Refreshing !!!!", tabledata);
 
@@ -232,7 +233,6 @@ const InfoTable = ({
   };
 
   const deleteCheckbox = (id) => {
-    console.log("CB clicked");
     const ele = document.querySelectorAll(".dataCheckBox:checked");
     ele.length > 0
       ? setIsMultiDeleteButton(true)
@@ -251,7 +251,7 @@ const InfoTable = ({
     const FormObj = $id === 0 ? initialFormObj : obj;
 
     dispatch(
-      setFormTitle(formname.charAt(0).toUpperCase() + formname.slice(1))
+      setFormTitle(formname)
     );
     dispatch(setFormObj(FormObj));
     dispatch(setFormWidthPercentage(width_per));
@@ -289,232 +289,231 @@ const InfoTable = ({
         onCloseClick={() => setDeleteModalMulti(false)}
       />
       <Container fluid>
-        <Row>
-          <Col lg={12}>
-            <Card id="dataList">
-              <CardHeader className="bdata-0">
-                <Row className="align-items-center gy-3">
-                  <div className="col-sm">
-                    <h5
-                      className="card-title mb-0"
-                      style={{ textTransform: "capitalize" }}>
-                      {(formname.charAt(0).toUpperCase() + formname.slice(1)).split("_").join(" ")}
-                    </h5>
+        <Col lg={table_col || 12}>
+          <Card id="dataList">
+            <CardHeader className="bdata-0">
+              <Row className="align-items-center gy-3">
+                <div className="col-sm">
+                  <h5
+                    className="card-title mb-0"
+                    style={{ textTransform: "capitalize" }}>
+                    {(formname).split("_").join(" ")}
+                  </h5>
 
-                    {formname && formname === "holiday" && (
-                      <Datetime
-                        className="w-20"
-                        value={selectedYear}
-                        onChange={(date) => {
-                          if (date.isValid()) {
-                            const year = date.year();
-                            setSelectedYear(new Date(year, 0, 1));
-                          } else {
-                            setSelectedYear(null);
-                          }
-                        }}
-                        dateFormat="YYYY"
-                        timeFormat={false}
-                        viewMode="years"
-                      />
-                    )}
-                  </div>
-                  <div className="col-sm-auto">
-                    <div className="d-flex gap-1 flex-wrap">
-                      {formname && formname !== "leave_approval" && (
-                        <button
-                          type="button"
-                          className="btn btn-success add-btn"
-                          id="create-btn"
-                          style={{ textTransform: "capitalize" }}
-                          onClick={() => {
-                            handleCreateAndUpdate(0);
-                          }}>
-                          <i className="ri-add-line align-bottom me-1"></i> Create{" "}
-                          {(formname.charAt(0).toUpperCase() + formname.slice(1)).split("_").join(" ")}
-                        </button>
-                      )}
-                      {" "}
-                      <button
-                        type="button"
-                        className="btn btn-info"
-                        onClick={() => setIsExportCSV(true)}>
-                        <i className="ri-file-download-line align-bottom me-1"></i>{" "}
-                        Export
-                      </button>{" "}
-                      {isMultiDeleteButton && (
-                        <button
-                          className="btn btn-soft-danger"
-                          onClick={() => setDeleteModalMulti(true)}>
-                          <i className="ri-delete-bin-2-line"></i>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </Row>
-              </CardHeader>
-
-              <CardBody className="pt-0">
-                <div>
-                  <Nav
-                    className="nav-tabs nav-tabs-custom nav-success"
-                    role="tablist">
-                    <NavItem>
-                      <NavLink
-                        className={classnames(
-                          { active: activeTab === 1 },
-                          "fw-semibold"
-                        )}
-                        onClick={() => {
-                          toggleTab(1, "all");
-                        }}
-                        href="#">
-                        <i className="ri-store-2-fill me-1 align-bottom"></i>{" "}
-                        All Datas
-                      </NavLink>
-                    </NavItem>
-                    {!!filterOptions &&
-                      filterOptions.map((obj, idx) => (
-                        <NavItem>
-                          <NavLink
-                            className={classnames(
-                              { active: activeTab === String(idx + 2) },
-                              "fw-semibold"
-                            )}
-                            onClick={() => {
-                              toggleTab(String(idx + 2), obj.option);
-                            }}
-                            href="#">
-                            <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
-                            {obj.label}
-                          </NavLink>
-                        </NavItem>
-                      ))}
-                  </Nav>
-                  {dataList.length ? (
-                    <TableContainer
-                      columns={columns}
-                      data={dataList || []}
-                      isGlobalFilter={true}
-                      isAddUserList={false}
-                      customPageSize={15}
-                      divClass="table-responsive table-card mb-1"
-                      tableClass="align-middle table-nowrap"
-                      theadClass="table-light text-muted"
-                      handleDataClick={handleDataClicks}
-                      isDataFilter={true}
-                      SearchPlaceholder="Search for data ID, customer, data status or something..."
+                  {formname && formname === "holiday" && (
+                    <Datetime
+                      className="w-20"
+                      value={selectedYear}
+                      onChange={(date) => {
+                        if (date.isValid()) {
+                          const year = date.year();
+                          setSelectedYear(new Date(year, 0, 1));
+                        } else {
+                          setSelectedYear(null);
+                        }
+                      }}
+                      dateFormat="YYYY"
+                      timeFormat={false}
+                      viewMode="years"
                     />
-                  ) : (
-                    <React.Fragment>
-                      <div className="text-center">
-                        <h2>No Data</h2>
-                      </div>
-                    </React.Fragment>
                   )}
                 </div>
-                <Modal id="showModal" isOpen={modal} toggle={toggle} centered>
-                  <ModalHeader className="bg-light p-3" toggle={toggle}>
-                    {/* {!!isEdit ? "Edit Order" : "Add Order"} */}
-                  </ModalHeader>
-                  <Form
-                    className="tablelist-form"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      // validation.handleSubmit();
-                      return false;
-                    }}>
-                    <ModalBody>
-                      <input type="hidden" id="id-field" />
+                <div className="col-sm-auto">
+                  <div className="d-flex gap-1 flex-wrap">
+                    {formname && formname !== "leave_approval" && (
+                      <button
+                        type="button"
+                        className="btn btn-success add-btn"
+                        id="create-btn"
+                        style={{ textTransform: "capitalize" }}
+                        onClick={() => {
+                          handleCreateAndUpdate(0);
+                        }}>
+                        <i className="ri-add-line align-bottom me-1"></i> Create{" "}
+                        {(formname).split("_").join(" ")}
+                      </button>
+                    )}
+                    {" "}
+                    <button
+                      type="button"
+                      className="btn btn-info"
+                      onClick={() => setIsExportCSV(true)}>
+                      <i className="ri-file-download-line align-bottom me-1"></i>{" "}
+                      Export
+                    </button>{" "}
+                    {isMultiDeleteButton && (
+                      <button
+                        className="btn btn-soft-danger"
+                        onClick={() => setDeleteModalMulti(true)}>
+                        <i className="ri-delete-bin-2-line"></i>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </Row>
+            </CardHeader>
 
-                      <div className="mb-3">
-                        <Label htmlFor="id-field" className="form-label">
-                          Order Id
-                        </Label>
-                        <Input
-                          name="orderId"
-                          id="id-field"
-                          className="form-control"
-                          placeholder="Enter Order Id"
-                          type="text"
-                        // validate={{
-                        //     required: { value: true },
-                        // }}
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={validation.values.orderId || ""}
-                        // invalid={
-                        //     validation.touched.orderId && validation.errors.orderId ? true : false
-                        // }
-                        />
-                        {/* {validation.touched.orderId && validation.errors.orderId ? (
+            <CardBody className="pt-0">
+              <div>
+                <Nav
+                  className="nav-tabs nav-tabs-custom nav-success"
+                  role="tablist">
+                  <NavItem>
+                    <NavLink
+                      className={classnames(
+                        { active: activeTab === 1 },
+                        "fw-semibold"
+                      )}
+                      onClick={() => {
+                        toggleTab(1, "all");
+                      }}
+                      href="#">
+                      <i className="ri-store-2-fill me-1 align-bottom"></i>{" "}
+                      All Datas
+                    </NavLink>
+                  </NavItem>
+                  {!!filterOptions &&
+                    filterOptions.map((obj, idx) => (
+                      <NavItem>
+                        <NavLink
+                          className={classnames(
+                            { active: activeTab === String(idx + 2) },
+                            "fw-semibold"
+                          )}
+                          onClick={() => {
+                            toggleTab(String(idx + 2), obj.option);
+                          }}
+                          href="#">
+                          <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
+                          {obj.label}
+                        </NavLink>
+                      </NavItem>
+                    ))}
+                </Nav>
+                {dataList.length ? (
+                  <TableContainer
+                    columns={columns}
+                    data={dataList || []}
+                    isGlobalFilter={true}
+                    isAddUserList={false}
+                    customPageSize={15}
+                    divClass="table-responsive table-card mb-1"
+                    tableClass="align-middle table-nowrap"
+                    theadClass="table-light text-muted"
+                    handleDataClick={handleDataClicks}
+                    isDataFilter={true}
+                    SearchPlaceholder="Search for data ID, customer, data status or something..."
+                  />
+                ) : (
+                  <React.Fragment>
+                    <div className="text-center">
+                      <h2>No Data</h2>
+                    </div>
+                  </React.Fragment>
+                )}
+              </div>
+              <Modal id="showModal" isOpen={modal} toggle={toggle} centered>
+                <ModalHeader className="bg-light p-3" toggle={toggle}>
+                  {/* {!!isEdit ? "Edit Order" : "Add Order"} */}
+                </ModalHeader>
+                <Form
+                  className="tablelist-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    // validation.handleSubmit();
+                    return false;
+                  }}>
+                  <ModalBody>
+                    <input type="hidden" id="id-field" />
+
+                    <div className="mb-3">
+                      <Label htmlFor="id-field" className="form-label">
+                        Order Id
+                      </Label>
+                      <Input
+                        name="orderId"
+                        id="id-field"
+                        className="form-control"
+                        placeholder="Enter Order Id"
+                        type="text"
+                      // validate={{
+                      //     required: { value: true },
+                      // }}
+                      // onChange={validation.handleChange}
+                      // onBlur={validation.handleBlur}
+                      // value={validation.values.orderId || ""}
+                      // invalid={
+                      //     validation.touched.orderId && validation.errors.orderId ? true : false
+                      // }
+                      />
+                      {/* {validation.touched.orderId && validation.errors.orderId ? (
                                                     <FormFeedback type="invalid">{validation.errors.orderId}</FormFeedback>
                                                 ) : null} */}
-                      </div>
+                    </div>
 
-                      <div className="mb-3">
-                        <Label
-                          htmlFor="customername-field"
-                          className="form-label">
-                          Customer Name
-                        </Label>
-                        <Input
-                          name="customer"
-                          id="customername-field"
-                          className="form-control"
-                          placeholder="Enter Name"
-                          type="text"
-                        // validate={{
-                        //     required: { value: true },
-                        // }}
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={validation.values.customer || ""}
-                        // invalid={
-                        //     validation.touched.customer && validation.errors.customer ? true : false
-                        // }
-                        />
-                        {/* {validation.touched.customer && validation.errors.customer ? (
+                    <div className="mb-3">
+                      <Label
+                        htmlFor="customername-field"
+                        className="form-label">
+                        Customer Name
+                      </Label>
+                      <Input
+                        name="customer"
+                        id="customername-field"
+                        className="form-control"
+                        placeholder="Enter Name"
+                        type="text"
+                      // validate={{
+                      //     required: { value: true },
+                      // }}
+                      // onChange={validation.handleChange}
+                      // onBlur={validation.handleBlur}
+                      // value={validation.values.customer || ""}
+                      // invalid={
+                      //     validation.touched.customer && validation.errors.customer ? true : false
+                      // }
+                      />
+                      {/* {validation.touched.customer && validation.errors.customer ? (
                                                     <FormFeedback type="invalid">{validation.errors.customer}</FormFeedback>
                                                 ) : null} */}
-                      </div>
+                    </div>
 
-                      <div className="mb-3">
-                        <Label
-                          htmlFor="productname-field"
-                          className="form-label">
-                          Product
-                        </Label>
+                    <div className="mb-3">
+                      <Label
+                        htmlFor="productname-field"
+                        className="form-label">
+                        Product
+                      </Label>
 
-                        <Input
-                          name="product"
-                          type="select"
-                          className="form-select"
-                          // onChange={validation.handleChange}
-                          // onBlur={validation.handleBlur}
-                          // value={
-                          //     validation.values.product || ""
-                          // }
-                          required>
-                          {/* {productname.map((item, key) => (
+                      <Input
+                        name="product"
+                        type="select"
+                        className="form-select"
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={
+                        //     validation.values.product || ""
+                        // }
+                        required>
+                        {/* {productname.map((item, key) => (
                                                         <React.Fragment key={key}>
                                                             {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
                                                         </React.Fragment>
                                                     ))} */}
-                        </Input>
-                        {/* {validation.touched.product &&
+                      </Input>
+                      {/* {validation.touched.product &&
                                                     validation.errors.product ? (
                                                     <FormFeedback type="invalid">
                                                         {validation.errors.product}
                                                     </FormFeedback>
                                                 ) : null} */}
-                      </div>
+                    </div>
 
-                      <div className="mb-3">
-                        <Label htmlFor="date-field" className="form-label">
-                          Order Date
-                        </Label>
-                        {/* 
+                    <div className="mb-3">
+                      <Label htmlFor="date-field" className="form-label">
+                        Order Date
+                      </Label>
+                      {/* 
                                                 <Flatpickr
                                                     name="orderDate"
                                                     className="form-control"
@@ -532,122 +531,121 @@ const InfoTable = ({
                                                     value={validation.values.orderDate || ""}
                                                 /> */}
 
-                        {/* {validation.touched.orderDate && validation.errors.orderDate ? (
+                      {/* {validation.touched.orderDate && validation.errors.orderDate ? (
                                                     <FormFeedback type="invalid">{validation.errors.orderDate}</FormFeedback>
                                                 ) : null} */}
-                      </div>
-                      <div className="row gy-4 mb-3">
-                        <div className="col-md-6">
-                          <div>
-                            <Label
-                              htmlFor="amount-field"
-                              className="form-label">
-                              Amount
-                            </Label>
-                            <Input
-                              name="amount"
-                              type="text"
-                            // onChange={validation.handleChange}
-                            // onBlur={validation.handleBlur}
-                            // value={validation.values.amount || ""}
-                            // invalid={
-                            //     validation.touched.amount && validation.errors.amount ? true : false
-                            // }
-                            />
-                            {/* {validation.touched.amount && validation.errors.amount ? (
+                    </div>
+                    <div className="row gy-4 mb-3">
+                      <div className="col-md-6">
+                        <div>
+                          <Label
+                            htmlFor="amount-field"
+                            className="form-label">
+                            Amount
+                          </Label>
+                          <Input
+                            name="amount"
+                            type="text"
+                          // onChange={validation.handleChange}
+                          // onBlur={validation.handleBlur}
+                          // value={validation.values.amount || ""}
+                          // invalid={
+                          //     validation.touched.amount && validation.errors.amount ? true : false
+                          // }
+                          />
+                          {/* {validation.touched.amount && validation.errors.amount ? (
                                                             <FormFeedback type="invalid">{validation.errors.amount}</FormFeedback>
                                                         ) : null} */}
-                          </div>
                         </div>
-                        <div className="col-md-6">
-                          <div>
-                            <Label
-                              htmlFor="payment-field"
-                              className="form-label">
-                              Payment Method
-                            </Label>
+                      </div>
+                      <div className="col-md-6">
+                        <div>
+                          <Label
+                            htmlFor="payment-field"
+                            className="form-label">
+                            Payment Method
+                          </Label>
 
-                            <Input
-                              name="payment"
-                              type="select"
-                              className="form-select"
-                            // onChange={validation.handleChange}
-                            // onBlur={validation.handleBlur}
-                            // value={
-                            //     validation.values.payment || ""
-                            // }
-                            >
-                              {/* {orderpayement.map((item, key) => (
+                          <Input
+                            name="payment"
+                            type="select"
+                            className="form-select"
+                          // onChange={validation.handleChange}
+                          // onBlur={validation.handleBlur}
+                          // value={
+                          //     validation.values.payment || ""
+                          // }
+                          >
+                            {/* {orderpayement.map((item, key) => (
                                                                 <React.Fragment key={key}>
                                                                     {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
                                                                 </React.Fragment>
                                                             ))} */}
-                            </Input>
-                            {/* {validation.touched.payment &&
+                          </Input>
+                          {/* {validation.touched.payment &&
                                                             validation.errors.payment ? (
                                                             <FormFeedback type="invalid">
                                                                 {validation.errors.payment}
                                                             </FormFeedback>
                                                         ) : null} */}
-                          </div>
                         </div>
                       </div>
+                    </div>
 
-                      <div>
-                        <Label
-                          htmlFor="delivered-status"
-                          className="form-label">
-                          Delivery Status
-                        </Label>
+                    <div>
+                      <Label
+                        htmlFor="delivered-status"
+                        className="form-label">
+                        Delivery Status
+                      </Label>
 
-                        <Input
-                          name="status"
-                          type="select"
-                          className="form-select"
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={
-                        //     validation.values.status || ""
-                        // }
-                        >
-                          {/* {orderstatus.map((item, key) => (
+                      <Input
+                        name="status"
+                        type="select"
+                        className="form-select"
+                      // onChange={validation.handleChange}
+                      // onBlur={validation.handleBlur}
+                      // value={
+                      //     validation.values.status || ""
+                      // }
+                      >
+                        {/* {orderstatus.map((item, key) => (
                                                         <React.Fragment key={key}>
                                                             {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
                                                         </React.Fragment>
                                                     ))} */}
-                        </Input>
-                        {/* {validation.touched.status &&
+                      </Input>
+                      {/* {validation.touched.status &&
                                                     validation.errors.status ? (
                                                     <FormFeedback type="invalid">
                                                         {validation.errors.status}
                                                     </FormFeedback>
                                                 ) : null} */}
-                      </div>
-                    </ModalBody>
-                    <div className="modal-footer">
-                      <div className="hstack gap-2 justify-content-end">
-                        <button
-                          type="button"
-                          className="btn btn-light"
-                          onClick={() => {
-                            setModal(false);
-                          }}>
-                          Close
-                        </button>
+                    </div>
+                  </ModalBody>
+                  <div className="modal-footer">
+                    <div className="hstack gap-2 justify-content-end">
+                      <button
+                        type="button"
+                        className="btn btn-light"
+                        onClick={() => {
+                          setModal(false);
+                        }}>
+                        Close
+                      </button>
 
-                        {/* <button type="submit" className="btn btn-success">
+                      {/* <button type="submit" className="btn btn-success">
                                                     {!!isEdit
                                                         ? "Update"
                                                         : "Add Customer"}
                                                 </button> */}
-                      </div>
                     </div>
-                  </Form>
-                </Modal>
-              </CardBody>
-            </Card>
-          </Col>
-        </Row>
+                  </div>
+                </Form>
+              </Modal>
+            </CardBody>
+          </Card>
+        </Col>
       </Container>
     </div>
   );
