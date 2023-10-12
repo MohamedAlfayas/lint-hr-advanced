@@ -52,6 +52,7 @@ const InfoTable = ({
   filterOptions,
   width_per,
   table_col,
+  table_class,
 }) => {
   console.log("Page Refreshing !!!!", tabledata);
 
@@ -266,27 +267,27 @@ const InfoTable = ({
   }, [modal]);
 
   return (
-    <div className="page-content">
-      <ExportCSV
-        show={isExportCSV}
-        onCloseClick={() => setIsExportCSV(false)}
-        data={dataList}
-      />
-      <DeleteModal
-        show={deleteModal}
-        onDeleteClick={handleDeleteData}
-        onCloseClick={() => setDeleteModal(false)}
-      />
-      <DeleteModal
-        show={deleteModalMulti}
-        onDeleteClick={() => {
-          deleteMultiple();
-          setDeleteModalMulti(false);
-        }}
-        onCloseClick={() => setDeleteModalMulti(false)}
-      />
-      <Container fluid>
-        <Col lg={table_col || 12}>
+    <Col lg={table_col || 12}>
+      <div className={table_class || "page-content"}>
+        <ExportCSV
+          show={isExportCSV}
+          onCloseClick={() => setIsExportCSV(false)}
+          data={dataList}
+        />
+        <DeleteModal
+          show={deleteModal}
+          onDeleteClick={handleDeleteData}
+          onCloseClick={() => setDeleteModal(false)}
+        />
+        <DeleteModal
+          show={deleteModalMulti}
+          onDeleteClick={() => {
+            deleteMultiple();
+            setDeleteModalMulti(false);
+          }}
+          onCloseClick={() => setDeleteModalMulti(false)}
+        />
+        <Container fluid>
           <Card id="dataList">
             <CardHeader className="bdata-0">
               <Row className="align-items-center gy-3">
@@ -663,9 +664,9 @@ const InfoTable = ({
               </Modal>
             </CardBody>
           </Card>
-        </Col>
-      </Container>
-    </div>
+        </Container>
+      </div>
+    </Col>
   );
 };
 

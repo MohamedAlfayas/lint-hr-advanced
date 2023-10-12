@@ -153,6 +153,9 @@ const LeaveDashboard = () => {
       end: "",
       total: 0,
       status: 1,
+      unit: "Day",
+      leave_count: 12,
+      available_count: 12,
     };
   }, []);
 
@@ -171,18 +174,17 @@ const LeaveDashboard = () => {
             <Col xxl={12}>
               <LeaveTypesWidgets />
             </Col>
-            <Col xxl={8} xl={8} sm={12}>
-              <InfoTable
-                additionalColumn={additionalColumn}
-                tabledata={leaveapplication}
-                formname={"leaveapply"}
-                initialFormObj={initialFormObj}
-                filterKey={filterKey}
-                filterOptions={filterOptions}
-                width_per={"35%"}
-                table_col={8}
-              />
-            </Col>
+            <InfoTable
+              additionalColumn={additionalColumn}
+              tabledata={leaveapplication}
+              formname={"leave_apply"}
+              initialFormObj={initialFormObj}
+              filterKey={filterKey}
+              filterOptions={filterOptions}
+              width_per={"35%"}
+              table_col={8}
+              table_class={"Lc_leave_apply_table me-n3 ms-n3"}
+            />
             <HolidayCalenderAPi />
           </Row>
         </Container>

@@ -13,13 +13,15 @@ import {
   editLeaveApplication,
 } from "../../redux/reducers/ChildReducer/LeaveApplyReducer";
 import { toast } from "react-toastify";
+import { ConvertISODateFormat } from "../../common/js/ConvertDateFormat";
+import Flatpickr from "react-flatpickr";
 
 const ApplyLeaveForm = () => {
   const dispatch = useDispatch();
   const [leaveapplyObj, setLeaveApplyObj] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const [selectedLeaveType, setSelectedLeaveType] = useState([]);
-  const [leaveDaysCount, setLeaveDaysCount] = useState([]);
+  const [leaveDaysCount, setLeaveDaysCount] = useState(0);
   const [leaveHoursCount, setLeaveHoursCount] = useState([]);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
@@ -140,31 +142,38 @@ const ApplyLeaveForm = () => {
       status: 1,
     },
   ];
-
-  console.log("leaveapplyObj");
-  console.log(leaveapplyObj);
-
-  let isSelectedUnit = "";
-
   const handleDateChange = (startDate, endDate) => {
-    setLeaveApplyObj({
-      ...leaveapplyObj,
-      start: ConvertISODateFormat(startDate),
-    });
-    setLeaveApplyObj({ ...leaveapplyObj, end: ConvertISODateFormat(endDate) });
+    console.log(leaveapplyObj);
+    if (startDate != null && endDate != null) {
+      setLeaveApplyObj({
+        ...leaveapplyObj,
+        start: ConvertISODateFormat(startDate),
+      });
+      setLeaveApplyObj({
+        ...leaveapplyObj,
+        end: ConvertISODateFormat(endDate),
+      });
+      console.log(startDate);
+      console.log(endDate);
+      var diff = new Date(endDate) - new Date(startDate);
+      console.log(diff);
+      if (!isNaN(diff)) {
+        var diffCount = diff / 1000 / 60 / 60 / 24 + 1;
+        setLeaveDaysCount(diffCount);
+        if (diffCount <= 0) {
+          setEndDate(startDate);
+          setLeaveDaysCount(0);
+          toast.warning("Date Range Error");
+        } else if (diffCount > leaveapplyObj.available_count) {
+          toast.warning("Date Range is Exceed Your Limit");
 
-    console.log(startDate);
-    console.log(endDate);
-
-    var diff = new Date(endDate) - new Date(startDate);
-
-    if (!isNaN(diff)) {
-      setLeaveDaysCount(diff / 1000 / 60 / 60 / 24 + 1);
-    } else {
-      setLeaveDaysCount(0);
+          setEndDate(null);
+        } else {
+          setLeaveDaysCount(diffCount);
+        }
+        console.log(diffCount);
+      }
     }
-
-    console.log(diff);
   };
 
   useEffect(() => {
@@ -195,9 +204,12 @@ const ApplyLeaveForm = () => {
                   }
                   onChange={(e) => {
                     setSelectedLeaveType(e.unit);
-                    isSelectedUnit = e.unit;
-                    console.log(selectedLeaveType);
-                    setLeaveApplyObj({ ...leaveapplyObj, leavetype: e.id });
+                    console.log(leaveDaysCount);
+                    setLeaveApplyObj({
+                      ...leaveapplyObj,
+                      leavetype: e.id,
+                      available_count: e.available_count,
+                    });
                   }}
                   placeholder="Select Leave Type"
                   className="basic-multi-select"

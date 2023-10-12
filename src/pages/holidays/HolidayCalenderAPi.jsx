@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 const HolidayCalenderAPi = () => {
   return (
     <React.Fragment>
-      <div className="col-xxl-4">
+      <div className="col-xxl-4 col-xl-4">
         <div className="card">
           <div className="card-header border-0">
             <h4 className="card-title mb-0">Upcoming Schedules</h4>
