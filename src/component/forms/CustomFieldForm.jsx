@@ -26,17 +26,27 @@ import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarRed
 import { addCustomField, editCustomField } from "../../redux/reducers/ChildReducer/CustomFieldReducer";
 import { toast } from "react-toastify";
 
-const CustomFieldForm= () => {
+const CustomFieldForm = () => {
     const dispatch = useDispatch();
     const [customFieldObj, setCustomFieldObj] = useState({});
     const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-    const ws_options = GetLocalStorageData('work_schedule') || [];
-    const [selectedWS, setSelectedWS] = useState([])
 
-    // useEffect(() => {
-    //     setHolidayObj(form_obj);
-    //     setSelectedWS(ws_options.filter(data => (form_obj.work_schedule_id_list).includes(data.id)))
-    // }, [form_obj]);
+
+    let types = [
+        { id: "text", label: "Text", value: "text" },
+        { id: "number", label: "Number", value: "number" },
+        { id: "date", label: "Date", value: "date" },
+
+    ];
+    let module_lists = [
+        { id: "emp", label: "Employee", value: "emp" },
+        { id: "org", label: "Organization", value: "org" },
+
+
+    ];
+    useEffect(() => {
+        setCustomFieldObj(form_obj);
+    }, [form_obj]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -45,31 +55,27 @@ const CustomFieldForm= () => {
             [name]: value,
         });
     };
-
-    const handleWSChange = (obj) => {
-        setSelectedWS(obj);
-        setCustomFieldObj({
-            ...customFieldObj,
-            work_schedule_id_list: obj.map(d => d.id)
-        });
-    }
-
-    const handleSubmit = async () => {
-        Api({
-            method: 'POST',
-            url: 'holiday/create/',
-            data: holidayObj
-        })
-            .then(res => {
-                console.log("REs = ", res);
-                holidayObj.id === 0 ? dispatch(addHoliday(res?.data.data)) : dispatch(editHoliday(res?.data?.data));
-                dispatch(toggleRSBView(false));
-                toast.success(res?.data?.message);
-            })
-            .catch(err => {
-                console.log("ERr == ", err);
-                toast.success(err?.response?.data?.message);
-            })
+    
+    
+    console.log(" data = ", customFieldObj);
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        console.log("employee data = ", customFieldObj);
+        // Api({
+        //     method: 'POST',
+        //     url: 'customfield/create/',
+        //     data: customFieldObj
+        // })
+        //     .then(res => {
+        //         console.log("REs = ", res);
+        //         customFieldObj.id === 0 ? dispatch(addHoliday(res?.data.data)) : dispatch(editHoliday(res?.data?.data));
+        //         dispatch(toggleRSBView(false));
+        //         toast.success(res?.data?.message);
+        //     })
+        //     .catch(err => {
+        //         console.log("ERr == ", err);
+        //         toast.success(err?.response?.data?.message);
+        //     })
     };
 
 
@@ -87,24 +93,42 @@ const CustomFieldForm= () => {
                                     type="text"
                                     name="name"
                                     className="form-control"
-                                    id="displayName"
+                                    id="name"
                                     placeholder="Display Name"
                                     value={customFieldObj.name || ""}
                                     onChange={handleInputChange}
                                     required
                                 />
                             </Col>
-                           
+
                             <Col lg={12}>
                                 <div className="mb-3">
                                     <Label>Field Type</Label>
                                     <Select
+
                                         required
-                                        isMulti={true}
-                                        options={ws_options || []}
+                                        name="type"
+                                        id="type"
+                                        isMulti={false}
+                                        options={types || []}
                                         className="basic-multi-select"
-                                        value={selectedWS || []}
-                                        onChange={handleWSChange}
+                                        value={(customFieldObj.type && types.find(e => e.value === customFieldObj.type)) || []}
+                                        onChange={(e) => setCustomFieldObj({...customFieldObj , type : e.value })}
+                                    />
+                                </div>
+                            </Col>
+
+                            <Col lg={12}>
+                                <div className="mb-3">
+                                    <Label>Applicable For</Label>
+                                    <Select
+                                        required
+                                        name="applicable_for_modules"
+                                        isMulti={true}
+                                        options={module_lists || []}
+                                        className="basic-multi-select"
+                                        value={(customFieldObj.applicable_for_modules && module_lists.filter(e => (customFieldObj.applicable_for_modules).includes(e.value)))}
+                                        onChange={(e) => setCustomFieldObj({...customFieldObj , applicable_for_modules : e.map(obj => obj.value) })}
                                     />
                                 </div>
                             </Col>
@@ -115,17 +139,17 @@ const CustomFieldForm= () => {
                                         className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
                                         dir="ltr">
                                         <Input
-                                            id=""
-                                            name=""
+                                            id="is_required"
+                                            name="is_required"
                                             type="checkbox"
                                             className="form-check-input"
-                                            checked={customFieldObj.is_restricted}
-                                            onChange={(e) => setCustomFieldObj({ ...customFieldObj, is_restricted: e.target.checked })}
+                                            checked={customFieldObj.is_required}
+                                            onChange={(e) => setCustomFieldObj({ ...customFieldObj, is_required: e.target.checked })}
                                         />
                                     </div>
                                 </div>
                             </Col>
-                          
+
 
                             <Col lg={12}>
                                 <div className="text-end">

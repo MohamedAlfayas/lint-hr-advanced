@@ -30,6 +30,6 @@ const CustomFieldReducer = createSlice({
 });
 
 
-export const { setCustomField, addCustomField, editCustomField } = CustomFieldReducer.actions;
+export const {setCustomField, addCustomField, editCustomField } = CustomFieldReducer.actions;
 
 export default CustomFieldReducer.reducer;

@@ -12,70 +12,75 @@ import { useEffect } from "react";
 import { setCustomField } from "../../redux/reducers/ChildReducer/CustomFieldReducer";
 
 const CustomField = () => {
-    const [CustomData,setCustomdata] = useState([ 
-      {
-        "id" : 1,
-        
-        "name" : "Paul",
-        "field_type" : "Text",
-        "required" : "No",
-        
-      },{
-        "id" : 2,
-        "name" : "Antony",
-        "field_type" : "Number",
-       "required" : "Yes",
-      }
-    ])
+  const [CustomData, setCustomdata] = useState([
+    {
+      "id": 1,
+
+      "name": "Paul",
+      "type": "Text",
+      "applicable_for_modules": ["Organization"],
+      "is_required": true,
+
+    }, {
+      "id": 2,
+      "name": "Antony",
+      "type": "Number",
+      "applicable_for_modules": ["Employee"],
+      "is_required": false,
+    }
+  ])
 
   // Column
   const additionalColumn = [
-    
-     
+
+
     {
       Header: "Display Name",
-         accessor: (obj) => {
+      accessor: "name",
+      accessor: (obj) => {
         return <b>{obj.name}</b>;
       },
       filterable: false,
       id: "name",
     },
     {
-        Header: "Field Type",
-        accessor: (obj) => {
-            return <b>{obj.field_type}</b>;
-          },
-        filterable: false,
-        id: "fieldtype",
+      Header: "Field Type",
+      accessor: (obj) => {
+        return <b>{obj.type}</b>;
       },
-   
-    
+      filterable: false,
+      id: "fieldtype",
+    },
+    {
+      Header: "Applicable For",
+      accessor: (obj) => {
+        return <b>{obj.applicable_for_modules}</b>;
+      },
+      filterable: false,
+      id: "applicablefor",
+    },
     {
       Header: "Required",
-      accessor: "required",
       filterable: false,
-      id: "required",
+      id: "is_required",
       accessor: (obj) => {
-        return <b>{obj.required}</b>;
+        return <b>{obj.is_required ? 'Required' : 'Not Required'}</b>;
+        
       }
     },
   ];
 
   const initialFormObj = useMemo(() => {
-    return    {
-        id : 1,
-        
-        name: "Paul",
-        field_type : "Text",
-        required : "No",
-        
-      },{
-        id : 2,
-        name : "Antony",
-        field_type : "Number",
-       required : "Yes",
-      }}, []);
-    
+    return {
+      id: 0,
+
+      name: "",
+      type: "",
+      is_required: false,
+      applicable_for_modules: []
+    };
+  }, []);
+
 
   const filterKey = "is_active";
   const filterOptions = [
