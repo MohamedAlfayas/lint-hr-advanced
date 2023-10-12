@@ -51,7 +51,7 @@ const InfoTable = ({
   filterKey,
   filterOptions,
   width_per,
-  table_col
+  table_col,
 }) => {
   console.log("Page Refreshing !!!!", tabledata);
 
@@ -114,52 +114,22 @@ const InfoTable = ({
         id: "#",
       },
       {
-
         Header: "Action",
         Cell: (cellProps) => {
-          return (
-            formname && formname === "leave_approval" ? (
-              cellProps.row.original.status !== 1 ? <></> :
-                <ul className="list-inline hstack gap-2 mb-0">
-                  <li className="list-inline-item edit">
-                    <Link
-                      to="javascript:void(0)"
-                      className="text-success d-inline-block edit-item-btn"
-                      onClick={() => {
-                        const orderData = cellProps.row.original;
-                        handleCreateAndUpdate(orderData.id, orderData);
-                      }}>
-                      <i className=" ri-check-line fs-16"></i>
-                    </Link>
-                  </li>
-                  <li className="list-inline-item">
-                    <Link
-                      to="#"
-                      className="text-danger d-inline-block remove-item-btn"
-                      onClick={() => {
-                        const orderData = cellProps.row.original;
-                        onClickDelete(orderData);
-                      }}>
-                      <i className=" ri-close-line fs-16"></i>
-                    </Link>
-                  </li>
-                </ul>
+          return formname && formname === "leave_approval" ? (
+            cellProps.row.original.status !== 1 ? (
+              <></>
             ) : (
               <ul className="list-inline hstack gap-2 mb-0">
-                <li className="list-inline-item">
-                  <Link to="#" className="text-primary d-inline-block">
-                    <i className="ri-eye-fill fs-16"></i>
-                  </Link>
-                </li>
                 <li className="list-inline-item edit">
                   <Link
                     to="javascript:void(0)"
-                    className="text-primary d-inline-block edit-item-btn"
+                    className="text-success d-inline-block edit-item-btn"
                     onClick={() => {
                       const orderData = cellProps.row.original;
                       handleCreateAndUpdate(orderData.id, orderData);
                     }}>
-                    <i className="ri-pencil-fill fs-16"></i>
+                    <i className=" ri-check-line fs-16"></i>
                   </Link>
                 </li>
                 <li className="list-inline-item">
@@ -170,18 +140,47 @@ const InfoTable = ({
                       const orderData = cellProps.row.original;
                       onClickDelete(orderData);
                     }}>
-                    <i className="ri-delete-bin-5-fill fs-16"></i>
+                    <i className=" ri-close-line fs-16"></i>
                   </Link>
                 </li>
               </ul>
             )
+          ) : (
+            <ul className="list-inline hstack gap-2 mb-0">
+              <li className="list-inline-item">
+                <Link to="#" className="text-primary d-inline-block">
+                  <i className="ri-eye-fill fs-16"></i>
+                </Link>
+              </li>
+              <li className="list-inline-item edit">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-primary d-inline-block edit-item-btn"
+                  onClick={() => {
+                    const orderData = cellProps.row.original;
+                    handleCreateAndUpdate(orderData.id, orderData);
+                  }}>
+                  <i className="ri-pencil-fill fs-16"></i>
+                </Link>
+              </li>
+              <li className="list-inline-item">
+                <Link
+                  to="#"
+                  className="text-danger d-inline-block remove-item-btn"
+                  onClick={() => {
+                    const orderData = cellProps.row.original;
+                    onClickDelete(orderData);
+                  }}>
+                  <i className="ri-delete-bin-5-fill fs-16"></i>
+                </Link>
+              </li>
+            </ul>
           );
           // } else {
 
           //   return null;
           // }
         },
-
       },
     ],
     []
@@ -250,9 +249,7 @@ const InfoTable = ({
     console.log($id, obj);
     const FormObj = $id === 0 ? initialFormObj : obj;
 
-    dispatch(
-      setFormTitle(formname)
-    );
+    dispatch(setFormTitle(formname));
     dispatch(setFormObj(FormObj));
     dispatch(setFormWidthPercentage(width_per));
     dispatch(setComponentToShow(formname));
@@ -297,25 +294,55 @@ const InfoTable = ({
                   <h5
                     className="card-title mb-0"
                     style={{ textTransform: "capitalize" }}>
-                    {(formname).split("_").join(" ")}
+                    {formname.split("_").join(" ")}
                   </h5>
 
                   {formname && formname === "holiday" && (
-                    <Datetime
-                      className="w-20"
-                      value={selectedYear}
-                      onChange={(date) => {
-                        if (date.isValid()) {
-                          const year = date.year();
-                          setSelectedYear(new Date(year, 0, 1));
-                        } else {
-                          setSelectedYear(null);
-                        }
-                      }}
-                      dateFormat="YYYY"
-                      timeFormat={false}
-                      viewMode="years"
-                    />
+                    // <Datetime
+                    //   className="w-20"
+                    //   value={selectedYear}
+                    //   onChange={(date) => {
+                    //     if (date.isValid()) {
+                    //       const year = date.year();
+                    //       setSelectedYear(new Date(year, 0, 1));
+                    //     } else {
+                    //       setSelectedYear(null);
+                    //     }
+                    //   }}
+                    //   dateFormat="YYYY"
+                    //   timeFormat={false}
+                    //   viewMode="years"
+                    // />
+
+                    <center>
+                      <div className="flex-shrink-0 ms-5 mt-0">
+                        <UncontrolledDropdown className="card-header-dropdown">
+                          <DropdownToggle
+                            tag="a"
+                            className="text-reset dropdown-btn"
+                            role="button">
+                            <span className="text-muted">
+                              01 Jan 2023 to 31 Dec 2023
+                              <i className="mdi mdi-chevron-down ms-1"></i>
+                            </span>
+                          </DropdownToggle>
+                          <DropdownMenu className="dropdown-menu-end">
+                            <DropdownItem>
+                              01 Jan 2022 to 31 Dec 2022
+                            </DropdownItem>
+                            <DropdownItem>
+                              01 Jan 2023 to 31 Dec 2023
+                            </DropdownItem>
+                            <DropdownItem>
+                              01 Jan 2024 to 31 Dec 2024
+                            </DropdownItem>
+                            <DropdownItem>
+                              01 Jan 2025 to 31 Dec 2025
+                            </DropdownItem>
+                          </DropdownMenu>
+                        </UncontrolledDropdown>
+                      </div>
+                    </center>
                   )}
                 </div>
                 <div className="col-sm-auto">
@@ -330,10 +357,9 @@ const InfoTable = ({
                           handleCreateAndUpdate(0);
                         }}>
                         <i className="ri-add-line align-bottom me-1"></i> Create{" "}
-                        {(formname).split("_").join(" ")}
+                        {formname.split("_").join(" ")}
                       </button>
-                    )}
-                    {" "}
+                    )}{" "}
                     <button
                       type="button"
                       className="btn btn-info"
@@ -368,8 +394,8 @@ const InfoTable = ({
                         toggleTab(1, "all");
                       }}
                       href="#">
-                      <i className="ri-store-2-fill me-1 align-bottom"></i>{" "}
-                      All Datas
+                      <i className="ri-store-2-fill me-1 align-bottom"></i> All
+                      Datas
                     </NavLink>
                   </NavItem>
                   {!!filterOptions &&
@@ -436,15 +462,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Order Id"
                         type="text"
-                      // validate={{
-                      //     required: { value: true },
-                      // }}
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={validation.values.orderId || ""}
-                      // invalid={
-                      //     validation.touched.orderId && validation.errors.orderId ? true : false
-                      // }
+                        // validate={{
+                        //     required: { value: true },
+                        // }}
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={validation.values.orderId || ""}
+                        // invalid={
+                        //     validation.touched.orderId && validation.errors.orderId ? true : false
+                        // }
                       />
                       {/* {validation.touched.orderId && validation.errors.orderId ? (
                                                     <FormFeedback type="invalid">{validation.errors.orderId}</FormFeedback>
@@ -463,15 +489,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Name"
                         type="text"
-                      // validate={{
-                      //     required: { value: true },
-                      // }}
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={validation.values.customer || ""}
-                      // invalid={
-                      //     validation.touched.customer && validation.errors.customer ? true : false
-                      // }
+                        // validate={{
+                        //     required: { value: true },
+                        // }}
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={validation.values.customer || ""}
+                        // invalid={
+                        //     validation.touched.customer && validation.errors.customer ? true : false
+                        // }
                       />
                       {/* {validation.touched.customer && validation.errors.customer ? (
                                                     <FormFeedback type="invalid">{validation.errors.customer}</FormFeedback>
@@ -479,9 +505,7 @@ const InfoTable = ({
                     </div>
 
                     <div className="mb-3">
-                      <Label
-                        htmlFor="productname-field"
-                        className="form-label">
+                      <Label htmlFor="productname-field" className="form-label">
                         Product
                       </Label>
 
@@ -538,20 +562,18 @@ const InfoTable = ({
                     <div className="row gy-4 mb-3">
                       <div className="col-md-6">
                         <div>
-                          <Label
-                            htmlFor="amount-field"
-                            className="form-label">
+                          <Label htmlFor="amount-field" className="form-label">
                             Amount
                           </Label>
                           <Input
                             name="amount"
                             type="text"
-                          // onChange={validation.handleChange}
-                          // onBlur={validation.handleBlur}
-                          // value={validation.values.amount || ""}
-                          // invalid={
-                          //     validation.touched.amount && validation.errors.amount ? true : false
-                          // }
+                            // onChange={validation.handleChange}
+                            // onBlur={validation.handleBlur}
+                            // value={validation.values.amount || ""}
+                            // invalid={
+                            //     validation.touched.amount && validation.errors.amount ? true : false
+                            // }
                           />
                           {/* {validation.touched.amount && validation.errors.amount ? (
                                                             <FormFeedback type="invalid">{validation.errors.amount}</FormFeedback>
@@ -560,9 +582,7 @@ const InfoTable = ({
                       </div>
                       <div className="col-md-6">
                         <div>
-                          <Label
-                            htmlFor="payment-field"
-                            className="form-label">
+                          <Label htmlFor="payment-field" className="form-label">
                             Payment Method
                           </Label>
 
@@ -570,11 +590,11 @@ const InfoTable = ({
                             name="payment"
                             type="select"
                             className="form-select"
-                          // onChange={validation.handleChange}
-                          // onBlur={validation.handleBlur}
-                          // value={
-                          //     validation.values.payment || ""
-                          // }
+                            // onChange={validation.handleChange}
+                            // onBlur={validation.handleBlur}
+                            // value={
+                            //     validation.values.payment || ""
+                            // }
                           >
                             {/* {orderpayement.map((item, key) => (
                                                                 <React.Fragment key={key}>
@@ -593,9 +613,7 @@ const InfoTable = ({
                     </div>
 
                     <div>
-                      <Label
-                        htmlFor="delivered-status"
-                        className="form-label">
+                      <Label htmlFor="delivered-status" className="form-label">
                         Delivery Status
                       </Label>
 
@@ -603,11 +621,11 @@ const InfoTable = ({
                         name="status"
                         type="select"
                         className="form-select"
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={
-                      //     validation.values.status || ""
-                      // }
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={
+                        //     validation.values.status || ""
+                        // }
                       >
                         {/* {orderstatus.map((item, key) => (
                                                         <React.Fragment key={key}>

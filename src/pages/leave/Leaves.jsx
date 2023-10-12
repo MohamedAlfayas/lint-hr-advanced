@@ -30,6 +30,23 @@ const LeaveDashboard = () => {
     { id: 3, name: "Cancel", class: "danger" },
   ];
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    console.log("name = ", name, "   value = ", value);
+    setLeaveApplication({
+      ...leaveapplication,
+      [name]: value,
+    });
+  };
+
+  const handleTypeChange = (obj) => {
+    setSelectedGenders(obj);
+    setLeaveTypeData({
+      ...leaveTypeData,
+      genders: obj.map((d) => d.id),
+    });
+  };
+
   const [leaveapplication, setLeaveApplication] = useState([
     {
       id: 1,
@@ -154,22 +171,19 @@ const LeaveDashboard = () => {
             <Col xxl={12}>
               <LeaveTypesWidgets />
             </Col>
-            {/* <Col xxl={8} xl={8} sm={12}>
-              
-            </Col> */}
-            <InfoTable
+            <Col xxl={8} xl={8} sm={12}>
+              <InfoTable
                 additionalColumn={additionalColumn}
                 tabledata={leaveapplication}
-                formname={"leave_apply"}
+                formname={"leaveapply"}
                 initialFormObj={initialFormObj}
                 filterKey={filterKey}
                 filterOptions={filterOptions}
                 width_per={"35%"}
                 table_col={8}
               />
+            </Col>
             <HolidayCalenderAPi />
-
-
           </Row>
         </Container>
       </div>
