@@ -33,7 +33,7 @@ const CustomField = () => {
     
      
     {
-      Header: "Name",
+      Header: "Display Name",
          accessor: (obj) => {
         return <b>{obj.name}</b>;
       },
