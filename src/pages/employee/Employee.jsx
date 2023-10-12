@@ -18,6 +18,21 @@ const Employee = () => {
     dispatch(setEmployee(GetLocalStorageData("employee") || []));
   }, []);
 
+  // Custom Field Option
+
+  let customFieldOptions = (GetLocalStorageData('custom_fields').filter(obj => {
+    if((obj.applicable_for_modules).includes("emp")){
+      return (({status,name,...rest}) => rest)(obj)
+    }
+  })) || []
+
+  const CustomFieldsForThisForm = customFieldOptions.map(({status,applicable_for_modules, ...rest}) => {
+    return {
+      ...rest,
+      value : ""
+    }
+  })
+
   // Column
   const additionalColumn = [
     {
@@ -104,7 +119,7 @@ const Employee = () => {
       id: 0,
       fname: "",
       lname: "",
-      dob: new Date(),
+      dob: String(new Date()),
       gender: "",
       primary_department: 0,
       sub_department: [],
@@ -114,6 +129,7 @@ const Employee = () => {
       is_active: true,
       is_manager: false,
       profile_url: null,
+      custom_fields : CustomFieldsForThisForm || []
     };
   }, []);
 

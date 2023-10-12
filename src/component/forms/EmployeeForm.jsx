@@ -1787,7 +1787,11 @@ const EmployeeForm = () => {
   const [dob, setDob] = useState([]);
 
   useEffect(() => {
-    setEmployeeObj(form_obj);
+    console.log("Employee Form Obj = ", form_obj);
+    setEmployeeObj({
+      ...form_obj,
+      dob: ConvertISODateFormat(form_obj.dob)
+    });
     let sub_dep_options = dep_options.filter(
       (obj) => obj.id !== form_obj.primary_department
     );
@@ -1846,8 +1850,13 @@ const EmployeeForm = () => {
     });
   };
 
+  const handleCFInputChange = (e) =>{
+    const { name, value } = e.target;
+    console.log("CF Change Name = ",name, " CF Change Value = ",value);
+  }
+
   const handleSubmit = () => {
-    console.log("emp Obj = ",employeeObj);
+    console.log("emp Obj = ", employeeObj);
     let formData = new FormData();
     employeeImage !== null &&
       formData.append("profile", employeeImage, employeeImage.name);
@@ -2166,6 +2175,32 @@ const EmployeeForm = () => {
                   </div>
                 </div>
               </Col>
+              {(employeeObj.cf_values && (employeeObj.cf_values).length) ? (
+                (employeeObj.cf_values).map(obj => (
+                  <Col lg={12}>
+                    <div>
+                      <Label htmlFor="lname" className="form-label">
+                        {obj.name}
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type={obj.type || 'text'}
+                          name={obj.input_name}
+                          id={obj.input_name}
+                          className="form-control"
+                          placeholder={`Enter ${obj.name}`}
+                          value={obj.value || ""}
+                          onChange={handleCFInputChange}
+                        />
+                        <i className="ri-user-2-line"></i>
+                      </div>
+                      <div id="passwordHelpBlock" className="form-text">
+                        Enter {obj.name}
+                      </div>
+                    </div>
+                  </Col>
+                ))
+              ) : null}
               <Col lg={12}>
                 <div className="mb-3">
                   <Label>Is Active</Label>

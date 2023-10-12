@@ -38,6 +38,7 @@ import Dropzone from "react-dropzone";
 import axios from "axios";
 import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
 
 const OrgInfoTab = () => {
@@ -61,6 +62,22 @@ const OrgInfoTab = () => {
   const stateToggle = () => setStateDD((prevState) => !prevState);
 
 
+  // Custom Field Option
+
+  let customFieldOptions = (GetLocalStorageData('cf_values') && (GetLocalStorageData('cf_values')).filter(obj => {
+    if ((obj.applicable_for_modules).includes("org")) {
+      return (({ status, name, ...rest }) => rest)(obj)
+    }
+  })) || []
+
+  const CustomFieldsForThisForm = customFieldOptions.map(({ status, applicable_for_modules, ...rest }) => {
+    return {
+      ...rest,
+      value: ""
+    }
+  })
+
+
   // Set Empty Data To form
 
   const initialData = useMemo(() => {
@@ -74,6 +91,7 @@ const OrgInfoTab = () => {
       address: "",
       city: "",
       pincode: "",
+      cf_values : CustomFieldsForThisForm || []
     }
   }, []);
 
@@ -146,6 +164,12 @@ const OrgInfoTab = () => {
   };
 
 
+  const handleCFInputChange = (e) => {
+    const { name, value } = e.target;
+    console.log("CF Change Name = ", name, " CF Change Value = ", value);
+  }
+
+
   const submitProfileForm = () => {
     console.log("Submitting Profile Data = ", profileData);
 
@@ -172,22 +196,22 @@ const OrgInfoTab = () => {
     form_data.append("state", state);
 
 
-    Api({
-      method: 'POST',
-      url: "/company/save-profile/",
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      },
-      data: form_data
-    })
-      .then(res => {
-        console.log("RES ==== ", res);
-        toast.success(res?.data?.message);
-      })
-      .catch(err => {
-        console.log("ERRR === ", err);
-        toast.error(err?.response?.data?.message);
-      })
+    // Api({
+    //   method: 'POST',
+    //   url: "/company/save-profile/",
+    //   headers: {
+    //     'Content-Type': 'multipart/form-data'
+    //   },
+    //   data: form_data
+    // })
+    //   .then(res => {
+    //     console.log("RES ==== ", res);
+    //     toast.success(res?.data?.message);
+    //   })
+    //   .catch(err => {
+    //     console.log("ERRR === ", err);
+    //     toast.error(err?.response?.data?.message);
+    //   })
 
   }
 
@@ -454,6 +478,33 @@ const OrgInfoTab = () => {
                       </div>
                     </Col>
 
+                    {(profileData.cf_values && (profileData.cf_values).length) ? (
+                      (profileData.cf_values).map(obj => (
+                        <Col xxl={8} md={6}>
+                          <div>
+                            <Label htmlFor="lname" className="form-label">
+                              {obj.name}
+                            </Label>
+                            <div className="form-icon right">
+                              <Input
+                                type={obj.type || 'text'}
+                                name={obj.input_name}
+                                id={obj.input_name}
+                                className="form-control"
+                                placeholder={`Enter ${obj.name}`}
+                                value={obj.value || ""}
+                                onChange={handleCFInputChange}
+                              />
+                              <i className="ri-user-2-line"></i>
+                            </div>
+                            <div id="passwordHelpBlock" className="form-text">
+                              Enter {obj.name}
+                            </div>
+                          </div>
+                        </Col>
+                      ))
+                    ) : null}
+
                     <Col xxl={8} md={12}>
                       <Row>
                         {/* Dark Logo Section */}
@@ -619,6 +670,7 @@ const OrgInfoTab = () => {
                           )}
 
                         </Col>
+
                       </Row>
                     </Col>
 
