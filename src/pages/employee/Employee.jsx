@@ -20,18 +20,20 @@ const Employee = () => {
 
   // Custom Field Option
 
-  let customFieldOptions = (GetLocalStorageData('custom_fields').filter(obj => {
-    if((obj.applicable_for_modules).includes("emp")){
-      return (({status,name,...rest}) => rest)(obj)
+  let customFieldOptions = ((GetLocalStorageData('custom_fields')).filter(obj => {
+    if ((obj.status === true) && (obj.applicable_for_modules).includes("emp")) {
+      return obj
     }
-  })) || []
+  })) || [];
 
-  const CustomFieldsForThisForm = customFieldOptions.map(({status,applicable_for_modules, ...rest}) => {
+  const CustomFieldsForThisForm = customFieldOptions.map(({ status, applicable_for_modules, ...rest }) => {
     return {
       ...rest,
-      value : ""
+      value: ""
     }
-  })
+  });
+
+  console.log("CustomFieldsForThisForm = ", CustomFieldsForThisForm);
 
   // Column
   const additionalColumn = [
@@ -48,19 +50,19 @@ const Employee = () => {
                 <img src={obj.profile_url} alt="" className="avatar-xs rounded-circle" />
               </div>
               <div className="flex-grow-1">
-              <div>{obj.fname}</div>
+                <div>{obj.fname}</div>
                 <div>{obj.email}</div>
               </div>
             </div>
           ) : (
             <div className="d-flex gap-2 align-items-center">
               <div className="flex-shrink-0">
-                <div className="avatar-xs rounded-circle" style={{display:'flex',justifyContent:'center',alignItems:'center',background:'#0ab39c'}} data-bs-toggle="tooltip" title={(obj.fname)}>
-                  <span className="first_letter" style={{color:'white'}} >{(obj.fname).charAt(0)}</span>
+                <div className="avatar-xs rounded-circle" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0ab39c' }} data-bs-toggle="tooltip" title={(obj.fname)}>
+                  <span className="first_letter" style={{ color: 'white' }} >{(obj.fname).charAt(0)}</span>
                 </div>
               </div>
               <div className="flex-grow-1">
-              <div>{obj.fname}</div>
+                <div>{obj.fname}</div>
                 <div>{obj.email}</div>
               </div>
             </div>
@@ -129,7 +131,7 @@ const Employee = () => {
       is_active: true,
       is_manager: false,
       profile_url: null,
-      cf_values : CustomFieldsForThisForm || []
+      cf_values: CustomFieldsForThisForm || []
     };
   }, []);
 

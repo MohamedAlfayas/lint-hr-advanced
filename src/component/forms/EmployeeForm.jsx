@@ -24,6 +24,7 @@ import {
 } from "../../redux/reducers/ChildReducer/EmployeeReducer";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { ConvertISODateFormat } from "../../common/js/ConvertDateFormat";
+import { setActiveTableTab } from "../../redux/reducers/ChildReducer/TableReducer";
 const EmployeeForm = () => {
   const dispatch = useDispatch();
 
@@ -1877,7 +1878,8 @@ const EmployeeForm = () => {
         employeeObj.id === 0
           ? dispatch(addEmployee(res?.data.data))
           : dispatch(editEmployee(res?.data?.data));
-        dispatch(toggleRSBView(false));
+        dispatch(toggleRSBView(false));        
+        dispatch(setActiveTableTab("all"))
         toast.success(res?.data?.message);
       })
       .catch((err) => {
