@@ -10,6 +10,8 @@ import WorkScheduleReducer from "../ChildReducer/WorkScheduleReducer";
 import LeaveTypeReducer from "../ChildReducer/LeaveTypeReducer";
 import MetaReducer from "../ChildReducer/MetaReducer";
 import LeaveApplyReducer from "../ChildReducer/LeaveApplyReducer";
+import CustomFieldReducer from "../ChildReducer/CustomFieldReducer";
+import TableReducer from "../ChildReducer/TableReducer";
 
 export const MainReducer = combineReducers({
     MetaReducer : MetaReducer,
@@ -23,4 +25,6 @@ export const MainReducer = combineReducers({
     WorkScheduleReducer : WorkScheduleReducer,
     LeaveTypeReducer : LeaveTypeReducer,
     LeaveApplyReducer : LeaveApplyReducer,
+    CustomFieldReducer : CustomFieldReducer,
+    TableReducer : TableReducer,
 })

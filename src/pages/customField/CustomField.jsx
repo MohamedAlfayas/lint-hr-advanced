@@ -12,28 +12,28 @@ import { useEffect } from "react";
 import { setCustomField } from "../../redux/reducers/ChildReducer/CustomFieldReducer";
 
 const CustomField = () => {
-  const [CustomData, setCustomdata] = useState([
-    {
-      "id": 1,
 
-      "name": "Paul",
-      "type": "Text",
-      "applicable_for_modules": ["Organization"],
-      "is_required": true,
+  const dispatch = useDispatch()
 
-    }, {
-      "id": 2,
-      "name": "Antony",
-      "type": "Number",
-      "applicable_for_modules": ["Employee"],
-      "is_required": false,
-    }
-  ])
+  const { custom_fields } = useSelector(state => state.CustomFieldReducer);
+
+  useEffect(() => {
+    dispatch(setCustomField(GetLocalStorageData('custom_fields') || []));
+  }, []);
+
+  let types = [
+    { id: "text", label: "Text", value: "text" },
+    { id: "number", label: "Number", value: "number" },
+    { id: "date", label: "Date", value: "date" },
+  ];
+
+  let module_lists = [
+    { id: "emp", label: "Employee", value: "emp" },
+    { id: "org", label: "Organization", value: "org" },
+  ];
 
   // Column
   const additionalColumn = [
-
-
     {
       Header: "Display Name",
       accessor: "name",
@@ -46,7 +46,7 @@ const CustomField = () => {
     {
       Header: "Field Type",
       accessor: (obj) => {
-        return <b>{obj.type}</b>;
+        return <b>{(types.find(e => e.value === obj.type)).label}</b>;
       },
       filterable: false,
       id: "fieldtype",
@@ -54,7 +54,14 @@ const CustomField = () => {
     {
       Header: "Applicable For",
       accessor: (obj) => {
-        return <b>{obj.applicable_for_modules}</b>;
+        return (
+          <b>
+            {obj.applicable_for_modules.map(e => {
+              return (module_lists.find(m => m.value === e)).label
+            })}
+          </b>
+        )
+
       },
       filterable: false,
       id: "applicablefor",
@@ -64,8 +71,16 @@ const CustomField = () => {
       filterable: false,
       id: "is_required",
       accessor: (obj) => {
-        return <b>{obj.is_required ? 'Required' : 'Not Required'}</b>;
-        
+        let status = obj.is_required ? "Required" : "Optional";
+        let statusClass = obj.is_required ? "success" : "warning";
+        return (
+          <span
+            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
+            {" "}
+            {status}{" "}
+          </span>
+        );
+
       }
     },
   ];
@@ -73,7 +88,6 @@ const CustomField = () => {
   const initialFormObj = useMemo(() => {
     return {
       id: 0,
-
       name: "",
       type: "",
       is_required: false,
@@ -82,10 +96,10 @@ const CustomField = () => {
   }, []);
 
 
-  const filterKey = "is_active";
+  const filterKey = "is_required";
   const filterOptions = [
-    { option: true, label: "Approval" },
-    { option: false, label: "Reject" },
+    { option: true, label: "Required" },
+    { option: false, label: "Optional" },
   ];
 
   document.title = `Custom Field | ${MetaTitle}`;
@@ -93,7 +107,7 @@ const CustomField = () => {
     <React.Fragment>
       <InfoTable
         additionalColumn={additionalColumn}
-        tabledata={CustomData}
+        tabledata={custom_fields}
         formname={"custom_fields"}
         initialFormObj={initialFormObj}
         filterKey={filterKey}

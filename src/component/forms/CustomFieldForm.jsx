@@ -25,6 +25,7 @@ import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { addCustomField, editCustomField } from "../../redux/reducers/ChildReducer/CustomFieldReducer";
 import { toast } from "react-toastify";
+import { setActiveTableTab } from "../../redux/reducers/ChildReducer/TableReducer";
 
 const CustomFieldForm = () => {
     const dispatch = useDispatch();
@@ -36,13 +37,10 @@ const CustomFieldForm = () => {
         { id: "text", label: "Text", value: "text" },
         { id: "number", label: "Number", value: "number" },
         { id: "date", label: "Date", value: "date" },
-
     ];
     let module_lists = [
         { id: "emp", label: "Employee", value: "emp" },
         { id: "org", label: "Organization", value: "org" },
-
-
     ];
     useEffect(() => {
         setCustomFieldObj(form_obj);
@@ -61,21 +59,22 @@ const CustomFieldForm = () => {
     const handleSubmit = async (e) => {
         e.preventDefault()
         console.log("employee data = ", customFieldObj);
-        // Api({
-        //     method: 'POST',
-        //     url: 'customfield/create/',
-        //     data: customFieldObj
-        // })
-        //     .then(res => {
-        //         console.log("REs = ", res);
-        //         customFieldObj.id === 0 ? dispatch(addHoliday(res?.data.data)) : dispatch(editHoliday(res?.data?.data));
-        //         dispatch(toggleRSBView(false));
-        //         toast.success(res?.data?.message);
-        //     })
-        //     .catch(err => {
-        //         console.log("ERr == ", err);
-        //         toast.success(err?.response?.data?.message);
-        //     })
+        Api({
+            method: 'POST',
+            url: 'fields/custom-field/create/',
+            data: customFieldObj
+        })
+            .then(res => {
+                console.log("REs = ", res);
+                customFieldObj.id === 0 ? dispatch(addCustomField(res?.data.data)) : dispatch(editCustomField(res?.data?.data));
+                dispatch(toggleRSBView(false));
+                dispatch(setActiveTableTab("all"))
+                toast.success(res?.data?.message);
+            })
+            .catch(err => {
+                console.log("ERr == ", err);
+                toast.success(err?.response?.data?.message);
+            })
     };
 
 

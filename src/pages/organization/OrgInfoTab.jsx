@@ -64,19 +64,18 @@ const OrgInfoTab = () => {
 
   // Custom Field Option
 
-  let customFieldOptions = (GetLocalStorageData('cf_values') && (GetLocalStorageData('cf_values')).filter(obj => {
-    if ((obj.applicable_for_modules).includes("org")) {
-      return (({ status, name, ...rest }) => rest)(obj)
+  let customFieldOptions = ((GetLocalStorageData('custom_fields')).filter(obj => {
+    if ((obj.status) && (obj.applicable_for_modules).includes("org")) {
+      return obj
     }
-  })) || []
+  })) || [];
 
   const CustomFieldsForThisForm = customFieldOptions.map(({ status, applicable_for_modules, ...rest }) => {
     return {
       ...rest,
       value: ""
     }
-  })
-
+  });
 
   // Set Empty Data To form
 
@@ -91,14 +90,16 @@ const OrgInfoTab = () => {
       address: "",
       city: "",
       pincode: "",
-      cf_values : CustomFieldsForThisForm || []
+      cf_values: CustomFieldsForThisForm || []
     }
   }, []);
+
 
   const [country, setCountry] = useState("");
   const [state, setState] = useState("");
   const [timezone, setTimeZone] = useState("");
   const [profileData, setProfileData] = useState(initialData);
+
 
   useEffect(() => {
     Api({
@@ -107,8 +108,9 @@ const OrgInfoTab = () => {
     })
       .then(res => {
         console.log("res = ", res);
+        let cf = ((res?.data?.data?.cf_values) && (res?.data?.data?.cf_values.length)) ? res?.data?.data?.cf_values : CustomFieldsForThisForm
         setCountry(res?.data?.data?.country);
-        setProfileData({ country_code: "+91", ...res?.data?.data });
+        setProfileData({ ...res?.data?.data, cf_values: cf });
         setState(res?.data?.data?.state);
       })
       .catch(err => {
@@ -121,6 +123,7 @@ const OrgInfoTab = () => {
     if (country !== "" && country !== undefined && country !== null) {
       let CountryObj = CountryList.find(obj => obj.countryName === country)
       setSelectedCountry(CountryObj);
+      setContactCountry(CountryObj);
       setStateList(CountryObj?.states);
       setTimeZone(CountryObj?.timezone);
       if (changeId === 0) {
@@ -164,13 +167,19 @@ const OrgInfoTab = () => {
   };
 
 
-  const handleCFInputChange = (e) => {
-    const { name, value } = e.target;
-    console.log("CF Change Name = ", name, " CF Change Value = ", value);
+  const handleCFInputChange = (e, cf_id) => {
+    const newPD = {
+      ...profileData,
+      cf_values: [...profileData.cf_values].map(item =>
+        item.id === cf_id ? { ...item, value: e.target.value } : item
+      )
+    }
+    setProfileData(newPD);
   }
 
 
-  const submitProfileForm = () => {
+  const submitProfileForm = (e) => {
+    e.preventDefault()
     console.log("Submitting Profile Data = ", profileData);
 
     let tempKey = ["country", "state", "timezone"];
@@ -186,9 +195,12 @@ const OrgInfoTab = () => {
     darkLogoFile !== null && form_data.append('dark_logo', darkLogoFile, darkLogoFile.name);
     lightLogoFile !== null && form_data.append('light_logo', lightLogoFile, lightLogoFile.name);
 
-    console.log('objexr', Object?.entries(profileData));
     Object.entries(profileData).map((key, idx) => {
-      form_data.append(key[0], key[1])
+      if (key[0] === "cf_values") {
+        form_data.append(key[0], JSON.stringify(key[1]))
+      } else {
+        form_data.append(key[0], key[1])
+      }
     });
 
     form_data.append("country", country);
@@ -196,22 +208,22 @@ const OrgInfoTab = () => {
     form_data.append("state", state);
 
 
-    // Api({
-    //   method: 'POST',
-    //   url: "/company/save-profile/",
-    //   headers: {
-    //     'Content-Type': 'multipart/form-data'
-    //   },
-    //   data: form_data
-    // })
-    //   .then(res => {
-    //     console.log("RES ==== ", res);
-    //     toast.success(res?.data?.message);
-    //   })
-    //   .catch(err => {
-    //     console.log("ERRR === ", err);
-    //     toast.error(err?.response?.data?.message);
-    //   })
+    Api({
+      method: 'POST',
+      url: "/company/save-profile/",
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      data: form_data
+    })
+      .then(res => {
+        console.log("RES ==== ", res);
+        toast.success(res?.data?.message);
+      })
+      .catch(err => {
+        console.log("ERRR === ", err);
+        toast.error(err?.response?.data?.message);
+      })
 
   }
 
@@ -226,350 +238,436 @@ const OrgInfoTab = () => {
                   Company Info
                 </h6>
 
-                <div className="live-preview">
-                  <Row className="gy-4">
+                <form onSubmit={submitProfileForm}>
+                  <div className="live-preview">
+                    <Row className="gy-4">
 
-                    <Col xxl={8} md={7}>
-                      <div>
-                        <Label htmlFor="orgwebsite" className="form-label">
-                          Company Website
-                        </Label>
-                        <div className="form-icon right">
-                          <Input
-                            type="url"
-                            className="form-control form-control-icon"
-                            id="orgwebsite"
-                            placeholder="www.company.com"
-                            value={profileData.website || ""}
-                            onChange={(e) => updateProfileData('website', e.target.value)}
-                          />
-                          <i className="ri-global-line"></i>
-                        </div>
-                        <div id="passwordHelpBlock" className="form-text">
-                          Enter Your Company Website.
-                        </div>
-                      </div>
-                    </Col>
-
-                    <Col xxl={8} md={7}>
-                      <div>
-                        <Label>Contact Number*</Label>
-                        <Dropdown className='input-group' isOpen={dropdownOpen4} toggle={toggle4}>
-                          <DropdownToggle as="button" className="btn btn-light border arrow-none">
-                            <img src={contactCountry.flagImg} alt="country flag" className="options-flagimg" height="20" />
-                            <span className="countrylist-codeno text-muted">{contactCountry.countryCode}</span>
-                          </DropdownToggle>
-                          <input
-                            type="number"
-                            className="form-control rounded-end flag-input"
-                            placeholder="Enter number"
-                            value={profileData.contact_number || ""}
-                            onChange={(e) => updateProfileData('contact_number', e.target.value)}
-                          />
-                          <DropdownMenu as='ul' className="list-unstyled w-100 dropdown-menu-list mb-0">
-                            <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
-                              {((CountryList.filter(obj => obj.show)).sort((a, b) => a.countryName.localeCompare(b.countryName)) || []).map((item, key) => (
-                                <DropdownItem as='li' onClick={() => { updateProfileData('country_code', item.countryCode) }} key={key} className="dropdown-item d-flex">
-                                  <div className="flex-shrink-0 me-2">
-                                    <img src={item.flagImg} alt="country flag" className="options-flagimg" height="20" />
-                                  </div>
-                                  <div className="flex-grow-1">
-                                    <div className="d-flex">
-                                      <div className="country-name me-1">{item.countryName}</div>
-                                      <span className="countrylist-codeno text-muted">{item.countryCode}</span>
-                                    </div>
-                                  </div>
-                                </DropdownItem>
-                              ))}
-                            </SimpleBar>
-                          </DropdownMenu>
-                        </Dropdown>
-
-                        <div id="passwordHelpBlock" className="form-text">
-                          Enter Your Contact number with country code.
-                        </div>
-                      </div>
-                    </Col>
-
-                    <Col xxl={8} md={7}>
-                      <div>
-                        <Label htmlFor="companyemail" className="form-label">
-                          Contact Email*
-                        </Label>
-                        <div className="form-icon right">
-                          <Input
-                            type="email"
-                            className="form-control form-control-icon"
-                            id="companyemail"
-                            placeholder="user@company.com"
-                            value={profileData.contact_email || ""}
-                            onChange={(e) => updateProfileData('contact_email', e.target.value)}
-                          />
-                          <i className="ri-mail-line"></i>
-                        </div>
-                        <div id="passwordHelpBlock" className="form-text">
-                          Enter Your Email.
-                        </div>
-                      </div>
-                    </Col>
-
-                    <Col xxl={8} md={7}>
-                      <div>
-                        <Label
-                          htmlFor="exampleFormControlTextarea5"
-                          className="form-label">
-                          Company Overview
-                        </Label>
-                        <textarea
-                          className="form-control"
-                          id="exampleFormControlTextarea5"
-                          rows="3"
-                          value={profileData.about || ""}
-                          onChange={(e) => updateProfileData('about', e.target.value)}
-                        ></textarea>
-                      </div>
-                    </Col>
-
-                    <Col xxl={8} md={12}>
-                      <div>
-                        <Label
-                          htmlFor="exampleFormControlTextarea5"
-                          className="form-label">
-                          Address
-                        </Label>
-                        <textarea
-                          className="form-control"
-                          id="exampleFormControlTextarea5"
-                          rows="2"
-                          value={profileData.address || ""}
-                          onChange={(e) => updateProfileData('address', e.target.value)}
-                        ></textarea>
-                      </div>
-                    </Col>
-
-                    <Col xxl={8} md={6}>
-                      <div>
-                        <Label
-                          htmlFor="exampleFormControlTextarea5"
-                          className="form-label">
-                          Country
-                        </Label>
-                        <Dropdown isOpen={dropdownOpen3} toggle={toggle3}>
-                          <DropdownToggle
-                            tag="div"
-                            className="form-control rounded-end flag-input form-select"
-                            style={{ cursor: 'pointer' }}
-                          >
-                            {selectedCountry.countryName || 'Select country'}
-                          </DropdownToggle>
-                          <DropdownMenu as='ul' className="list-unstyled w-100 dropdown-menu-list mb-0">
-                            <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
-                              {((CountryList.filter(obj => obj.show)).sort((a, b) => a.countryName.localeCompare(b.countryName)) || []).map((item, key) => (
-                                <DropdownItem as='li' onClick={() => { setChangeId(0); setCountry(item.countryName); }} key={key} className="dropdown-item d-flex">
-                                  <div className="flex-shrink-0 me-2">
-                                    <img src={item.flagImg} alt="country flag" className="options-flagimg" height="20" />
-                                  </div>
-                                  <div className="flex-grow-1">
-                                    <div className="d-flex">
-                                      <div className="country-name me-1">{item.countryName}</div>
-                                      <span className="countrylist-codeno text-muted">{item.countryCode}</span>
-                                    </div>
-                                  </div>
-                                </DropdownItem>
-                              ))}
-                            </SimpleBar>
-                          </DropdownMenu>
-                        </Dropdown>
-                      </div>
-                    </Col>
-
-                    <Col xxl={8} md={6}>
-                      <div>
-                        <Label
-                          htmlFor="exampleFormControlTextarea5"
-                          className="form-label">
-                          State
-                        </Label>
-                        <Dropdown isOpen={stateDD} toggle={stateToggle}>
-                          <DropdownToggle
-                            tag="div"
-                            className="form-control rounded-end flag-input form-select"
-                            style={{ cursor: 'pointer' }}
-                          >
-                            {stateList.find(obj => obj === state) || 'Select State'}
-                          </DropdownToggle>
-                          <DropdownMenu as='ul' className="list-unstyled w-100 dropdown-menu-list mb-0">
-                            <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
-                              {(stateList || []).map((item, key) => (
-                                <DropdownItem as='li' onClick={() => setState(item)} key={key} className="dropdown-item d-flex">
-                                  <div className="flex-grow-1">
-                                    <div className="d-flex">
-                                      <div className="country-name me-1">{item}</div>
-                                    </div>
-                                  </div>
-                                </DropdownItem>
-                              ))}
-                            </SimpleBar>
-                          </DropdownMenu>
-                        </Dropdown>
-                      </div>
-                    </Col>
-
-                    <Col xxl={8} md={6}>
-                      <div>
-                        <Label
-                          htmlFor="exampleFormControlTextarea5"
-                          className="form-label">
-                          City
-                        </Label>
-                        <div className="form-icon right">
-                          <Input
-                            type="text"
-                            className="form-control form-control-icon"
-                            id="companycity"
-                            placeholder="Chennai"
-                            value={profileData.city || ""}
-                            onChange={(e) => updateProfileData('city', e.target.value)}
-                          />
-                          <i className="ri-mail-line"></i>
-                        </div>
-                      </div>
-                    </Col>
-
-                    <Col xxl={8} md={6}>
-                      <div>
-                        <Label
-                          htmlFor="exampleFormControlTextarea5"
-                          className="form-label">
-                          Pincode
-                        </Label>
-                        <div className="form-icon right">
-                          <Input
-                            type="number"
-                            className="form-control form-control-icon"
-                            id="companypincode"
-                            placeholder="666666"
-                            value={profileData.pincode || ""}
-                            onChange={(e) => updateProfileData('pincode', e.target.value)}
-                          />
-                          <i className="ri-mail-line"></i>
-                        </div>
-                      </div>
-                    </Col>
-
-                    <Col xxl={8} md={6}>
-                      <div>
-                        <Label
-                          htmlFor="exampleFormControlTextarea5"
-                          className="form-label">
-                          Time Zone
-                        </Label>
-                        <div className="form-icon right">
-                          <Input
-                            type="text"
-                            className="form-control form-control-icon"
-                            id="timezone"
-                            placeholder="Asia/Kolkata"
-                            value={timezone || ""}
-                            onChange={(e) => setTimeZone(e.target.value)}
-                          />
-                          <i className="ri-time-line"></i>
-                        </div>
-                      </div>
-                    </Col>
-
-                    {(profileData.cf_values && (profileData.cf_values).length) ? (
-                      (profileData.cf_values).map(obj => (
-                        <Col xxl={8} md={6}>
-                          <div>
-                            <Label htmlFor="lname" className="form-label">
-                              {obj.name}
-                            </Label>
-                            <div className="form-icon right">
-                              <Input
-                                type={obj.type || 'text'}
-                                name={obj.input_name}
-                                id={obj.input_name}
-                                className="form-control"
-                                placeholder={`Enter ${obj.name}`}
-                                value={obj.value || ""}
-                                onChange={handleCFInputChange}
-                              />
-                              <i className="ri-user-2-line"></i>
-                            </div>
-                            <div id="passwordHelpBlock" className="form-text">
-                              Enter {obj.name}
-                            </div>
+                      <Col xxl={8} md={7}>
+                        <div>
+                          <Label htmlFor="orgwebsite" className="form-label">
+                            Company Website
+                          </Label>
+                          <div className="form-icon right">
+                            <Input
+                              type="text"
+                              className="form-control form-control-icon"
+                              id="orgwebsite"
+                              placeholder="www.company.com"
+                              value={profileData.website || ""}
+                              onChange={(e) => updateProfileData('website', e.target.value)}
+                            />
+                            <i className="ri-global-line"></i>
                           </div>
-                        </Col>
-                      ))
-                    ) : null}
+                          <div id="passwordHelpBlock" className="form-text">
+                            Enter Your Company Website.
+                          </div>
+                        </div>
+                      </Col>
 
-                    <Col xxl={8} md={12}>
-                      <Row>
-                        {/* Dark Logo Section */}
-                        <Col xxl={6} md={6}>
-                          <div>
-                            <Label
-                              htmlFor="exampleFormControlTextarea5"
-                              className="form-label">
-                              Dark Logo
-                            </Label>
-                            <Dropzone
-                              multiple={false}
-                              onDrop={acceptedFiles => {
-                                handleAcceptedFiles(acceptedFiles, "dark");
-                              }}
-                            >
-                              {({ getRootProps, getInputProps }) => (
-                                <div className="dropzone dz-clickable">
-                                  <div
-                                    className="dz-message needsclick"
-                                    {...getRootProps()}
-                                  >
-                                    <div className="mb-3">
-                                      <i className="display-4 text-muted ri-upload-cloud-2-fill" />
+                      <Col xxl={8} md={7}>
+                        <div>
+                          <Label>Contact Number*</Label>
+                          <Dropdown className='input-group' isOpen={dropdownOpen4} toggle={toggle4}>
+                            <DropdownToggle as="button" className="btn btn-light border arrow-none">
+                              <img src={contactCountry.flagImg} alt="country flag" className="options-flagimg" height="20" />
+                              <span className="countrylist-codeno text-muted">{contactCountry.countryCode}</span>
+                            </DropdownToggle>
+                            <input
+                              type="number"
+                              className="form-control rounded-end flag-input"
+                              placeholder="Enter number"
+                              value={profileData.contact_number || ""}
+                              onChange={(e) => updateProfileData('contact_number', e.target.value)}
+                            />
+                            <DropdownMenu as='ul' className="list-unstyled w-100 dropdown-menu-list mb-0">
+                              <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
+                                {((CountryList.filter(obj => obj.show)).sort((a, b) => a.countryName.localeCompare(b.countryName)) || []).map((item, key) => (
+                                  <DropdownItem as='li' onClick={() => { updateProfileData('country_code', item.countryCode); setContactCountry(item) }} key={key} className="dropdown-item d-flex">
+                                    <div className="flex-shrink-0 me-2">
+                                      <img src={item.flagImg} alt="country flag" className="options-flagimg" height="20" />
                                     </div>
-                                    <h5>Drop files here or click to upload Dark Logo.</h5>
+                                    <div className="flex-grow-1">
+                                      <div className="d-flex">
+                                        <div className="country-name me-1">{item.countryName}</div>
+                                        <span className="countrylist-codeno text-muted">{item.countryCode}</span>
+                                      </div>
+                                    </div>
+                                  </DropdownItem>
+                                ))}
+                              </SimpleBar>
+                            </DropdownMenu>
+                          </Dropdown>
+
+                          <div id="passwordHelpBlock" className="form-text">
+                            Enter Your Contact number with country code.
+                          </div>
+                        </div>
+                      </Col>
+
+                      <Col xxl={8} md={7}>
+                        <div>
+                          <Label htmlFor="companyemail" className="form-label">
+                            Contact Email*
+                          </Label>
+                          <div className="form-icon right">
+                            <Input
+                              type="email"
+                              className="form-control form-control-icon"
+                              id="companyemail"
+                              placeholder="user@company.com"
+                              value={profileData.contact_email || ""}
+                              onChange={(e) => updateProfileData('contact_email', e.target.value)}
+                            />
+                            <i className="ri-mail-line"></i>
+                          </div>
+                          <div id="passwordHelpBlock" className="form-text">
+                            Enter Your Email.
+                          </div>
+                        </div>
+                      </Col>
+
+                      <Col xxl={8} md={7}>
+                        <div>
+                          <Label
+                            htmlFor="exampleFormControlTextarea5"
+                            className="form-label">
+                            Company Overview
+                          </Label>
+                          <textarea
+                            className="form-control"
+                            id="exampleFormControlTextarea5"
+                            rows="3"
+                            value={profileData.about || ""}
+                            onChange={(e) => updateProfileData('about', e.target.value)}
+                          ></textarea>
+                        </div>
+                      </Col>
+
+                      <Col xxl={8} md={12}>
+                        <div>
+                          <Label
+                            htmlFor="exampleFormControlTextarea5"
+                            className="form-label">
+                            Address
+                          </Label>
+                          <textarea
+                            className="form-control"
+                            id="exampleFormControlTextarea5"
+                            rows="2"
+                            value={profileData.address || ""}
+                            onChange={(e) => updateProfileData('address', e.target.value)}
+                          ></textarea>
+                        </div>
+                      </Col>
+
+                      <Col xxl={8} md={6}>
+                        <div>
+                          <Label
+                            htmlFor="exampleFormControlTextarea5"
+                            className="form-label">
+                            Country
+                          </Label>
+                          <Dropdown isOpen={dropdownOpen3} toggle={toggle3}>
+                            <DropdownToggle
+                              tag="div"
+                              className="form-control rounded-end flag-input form-select"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              {selectedCountry.countryName || 'Select country'}
+                            </DropdownToggle>
+                            <DropdownMenu as='ul' className="list-unstyled w-100 dropdown-menu-list mb-0">
+                              <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
+                                {((CountryList.filter(obj => obj.show)).sort((a, b) => a.countryName.localeCompare(b.countryName)) || []).map((item, key) => (
+                                  <DropdownItem as='li' onClick={() => { setChangeId(0); setCountry(item.countryName); }} key={key} className="dropdown-item d-flex">
+                                    <div className="flex-shrink-0 me-2">
+                                      <img src={item.flagImg} alt="country flag" className="options-flagimg" height="20" />
+                                    </div>
+                                    <div className="flex-grow-1">
+                                      <div className="d-flex">
+                                        <div className="country-name me-1">{item.countryName}</div>
+                                        <span className="countrylist-codeno text-muted">{item.countryCode}</span>
+                                      </div>
+                                    </div>
+                                  </DropdownItem>
+                                ))}
+                              </SimpleBar>
+                            </DropdownMenu>
+                          </Dropdown>
+                        </div>
+                      </Col>
+
+                      <Col xxl={8} md={6}>
+                        <div>
+                          <Label
+                            htmlFor="exampleFormControlTextarea5"
+                            className="form-label">
+                            State
+                          </Label>
+                          <Dropdown isOpen={stateDD} toggle={stateToggle}>
+                            <DropdownToggle
+                              tag="div"
+                              className="form-control rounded-end flag-input form-select"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              {stateList.find(obj => obj === state) || 'Select State'}
+                            </DropdownToggle>
+                            <DropdownMenu as='ul' className="list-unstyled w-100 dropdown-menu-list mb-0">
+                              <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
+                                {(stateList || []).map((item, key) => (
+                                  <DropdownItem as='li' onClick={() => setState(item)} key={key} className="dropdown-item d-flex">
+                                    <div className="flex-grow-1">
+                                      <div className="d-flex">
+                                        <div className="country-name me-1">{item}</div>
+                                      </div>
+                                    </div>
+                                  </DropdownItem>
+                                ))}
+                              </SimpleBar>
+                            </DropdownMenu>
+                          </Dropdown>
+                        </div>
+                      </Col>
+
+                      <Col xxl={8} md={6}>
+                        <div>
+                          <Label
+                            htmlFor="exampleFormControlTextarea5"
+                            className="form-label">
+                            City
+                          </Label>
+                          <div className="form-icon right">
+                            <Input
+                              type="text"
+                              className="form-control form-control-icon"
+                              id="companycity"
+                              placeholder="Chennai"
+                              value={profileData.city || ""}
+                              onChange={(e) => updateProfileData('city', e.target.value)}
+                            />
+                            <i className="ri-mail-line"></i>
+                          </div>
+                        </div>
+                      </Col>
+
+                      <Col xxl={8} md={6}>
+                        <div>
+                          <Label
+                            htmlFor="exampleFormControlTextarea5"
+                            className="form-label">
+                            Pincode
+                          </Label>
+                          <div className="form-icon right">
+                            <Input
+                              type="number"
+                              className="form-control form-control-icon"
+                              id="companypincode"
+                              placeholder="666666"
+                              value={profileData.pincode || ""}
+                              onChange={(e) => updateProfileData('pincode', e.target.value)}
+                            />
+                            <i className="ri-mail-line"></i>
+                          </div>
+                        </div>
+                      </Col>
+
+                      <Col xxl={8} md={6}>
+                        <div>
+                          <Label
+                            htmlFor="exampleFormControlTextarea5"
+                            className="form-label">
+                            Time Zone
+                          </Label>
+                          <div className="form-icon right">
+                            <Input
+                              type="text"
+                              className="form-control form-control-icon"
+                              id="timezone"
+                              placeholder="Asia/Kolkata"
+                              value={timezone || ""}
+                              onChange={(e) => setTimeZone(e.target.value)}
+                            />
+                            <i className="ri-time-line"></i>
+                          </div>
+                        </div>
+                      </Col>
+
+                      {(profileData.cf_values) && ((profileData.cf_values).length) ? (
+                        (profileData.cf_values).map(obj => (
+                          <Col xxl={8} md={6}>
+                            <div>
+                              <Label htmlFor="lname" className="form-label">
+                                {obj.name}
+                              </Label>
+                              <div className="form-icon right">
+                                <Input
+                                  type={obj.type || "text"}
+                                  name={obj.input_name}
+                                  id={obj.input_name}
+                                  className="form-control"
+                                  placeholder={`Enter ${obj.name}`}
+                                  value={obj.value || ""}
+                                  required={obj.is_required || false}
+                                  onChange={(e) => handleCFInputChange(e, obj.id)}
+                                />
+                                <i className="ri-user-2-line"></i>
+                              </div>
+                              <div id="passwordHelpBlock" className="form-text">
+                                Enter {obj.name}
+                              </div>
+                            </div>
+                          </Col>
+                        ))
+                      ) : null}
+
+                      <Col xxl={8} md={12}>
+                        <Row>
+                          {/* Dark Logo Section */}
+                          <Col xxl={6} md={6}>
+                            <div>
+                              <Label
+                                htmlFor="exampleFormControlTextarea5"
+                                className="form-label">
+                                Dark Logo
+                              </Label>
+                              <Dropzone
+                                multiple={false}
+                                onDrop={acceptedFiles => {
+                                  handleAcceptedFiles(acceptedFiles, "dark");
+                                }}
+                              >
+                                {({ getRootProps, getInputProps }) => (
+                                  <div className="dropzone dz-clickable">
+                                    <div
+                                      className="dz-message needsclick"
+                                      {...getRootProps()}
+                                    >
+                                      <div className="mb-3">
+                                        <i className="display-4 text-muted ri-upload-cloud-2-fill" />
+                                      </div>
+                                      <h5>Drop files here or click to upload Dark Logo.</h5>
+                                    </div>
                                   </div>
+                                )}
+                              </Dropzone>
+                              <div className="list-unstyled mb-0" id="file-previews">
+                                {darkLogoFile && (
+                                  <Card
+                                    className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete"
+                                    key={darkLogoFile + "-file"}
+                                  >
+                                    <div className="p-2">
+                                      <Row className="align-items-center">
+                                        <Col className="col-auto">
+                                          <img
+                                            data-dz-thumbnail=""
+                                            height="80"
+                                            className="avatar-sm rounded bg-light"
+                                            alt={darkLogoFile.name}
+                                            src={darkLogoFile.preview}
+                                          />
+                                        </Col>
+                                        <Col>
+                                          <Link
+                                            to="#"
+                                            className="text-muted font-weight-bold"
+                                          >
+                                            {darkLogoFile.name}
+                                          </Link>
+                                          <p className="mb-0">
+                                            <strong>{darkLogoFile.formattedSize}</strong>
+                                          </p>
+                                        </Col>
+                                      </Row>
+                                    </div>
+                                  </Card>
+                                )}
+                              </div>
+
+                              {profileData.dark_logo_image && (
+                                <div className="p-2 m-3">
+                                  <Row className="align-items-center">
+                                    <Col className="col-auto">
+                                      <img
+                                        data-dz-thumbnail=""
+                                        height="80"
+                                        className="avatar-sm rounded bg-light"
+                                        alt={profileData.dark_logo_image}
+                                        src={profileData.dark_logo_image}
+                                      />
+                                    </Col>
+                                  </Row>
                                 </div>
                               )}
-                            </Dropzone>
-                            <div className="list-unstyled mb-0" id="file-previews">
-                              {darkLogoFile && (
-                                <Card
-                                  className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete"
-                                  key={darkLogoFile + "-file"}
-                                >
-                                  <div className="p-2">
-                                    <Row className="align-items-center">
-                                      <Col className="col-auto">
-                                        <img
-                                          data-dz-thumbnail=""
-                                          height="80"
-                                          className="avatar-sm rounded bg-light"
-                                          alt={darkLogoFile.name}
-                                          src={darkLogoFile.preview}
-                                        />
-                                      </Col>
-                                      <Col>
-                                        <Link
-                                          to="#"
-                                          className="text-muted font-weight-bold"
-                                        >
-                                          {darkLogoFile.name}
-                                        </Link>
-                                        <p className="mb-0">
-                                          <strong>{darkLogoFile.formattedSize}</strong>
-                                        </p>
-                                      </Col>
-                                    </Row>
+                            </div>
+                          </Col>
+
+
+                          {/* Light Logo Section */}
+
+                          <Col xxl={6} md={6}>
+                            <div>
+                              <Label
+                                htmlFor="exampleFormControlTextarea5"
+                                className="form-label">
+                                Light Logo
+                              </Label>
+                              <Dropzone
+                                multiple={false}
+                                onDrop={acceptedFiles => {
+                                  handleAcceptedFiles(acceptedFiles, "light");
+                                }}
+                              >
+                                {({ getRootProps, getInputProps }) => (
+                                  <div className="dropzone dz-clickable">
+                                    <div
+                                      className="dz-message needsclick"
+                                      {...getRootProps()}
+                                    >
+                                      <div className="mb-3">
+                                        <i className="display-4 text-muted ri-upload-cloud-2-fill" />
+                                      </div>
+                                      <h5>Drop files here or click to upload Light Logo.</h5>
+                                    </div>
                                   </div>
-                                </Card>
-                              )}
+                                )}
+                              </Dropzone>
+                              <div className="list-unstyled mb-0" id="file-previews">
+                                {lightLogoFile && (
+                                  <Card
+                                    className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete"
+                                    key={lightLogoFile + "-file"}
+                                  >
+                                    <div className="p-2">
+                                      <Row className="align-items-center">
+                                        <Col className="col-auto">
+                                          <img
+                                            data-dz-thumbnail=""
+                                            height="80"
+                                            className="avatar-sm rounded bg-light"
+                                            alt={lightLogoFile.name}
+                                            src={lightLogoFile.preview}
+                                          />
+                                        </Col>
+                                        <Col>
+                                          <Link
+                                            to="#"
+                                            className="text-muted font-weight-bold"
+                                          >
+                                            {lightLogoFile.name}
+                                          </Link>
+                                          <p className="mb-0">
+                                            <strong>{lightLogoFile.formattedSize}</strong>
+                                          </p>
+                                        </Col>
+                                      </Row>
+                                    </div>
+                                  </Card>
+                                )}
+                              </div>
                             </div>
 
-                            {profileData.dark_logo_image && (
+
+                            {profileData.light_logo_image && (
                               <div className="p-2 m-3">
                                 <Row className="align-items-center">
                                   <Col className="col-auto">
@@ -577,226 +675,31 @@ const OrgInfoTab = () => {
                                       data-dz-thumbnail=""
                                       height="80"
                                       className="avatar-sm rounded bg-light"
-                                      alt={profileData.dark_logo_image}
-                                      src={profileData.dark_logo_image}
+                                      alt={profileData.light_logo_image}
+                                      src={profileData.light_logo_image}
                                     />
                                   </Col>
                                 </Row>
                               </div>
                             )}
-                          </div>
-                        </Col>
+
+                          </Col>
+
+                        </Row>
+                      </Col>
 
 
-                        {/* Light Logo Section */}
+                      <Col xxl={12} md={12}>
+                        <Button type="submit">
+                          Submit
+                        </Button>
+                      </Col>
 
-                        <Col xxl={6} md={6}>
-                          <div>
-                            <Label
-                              htmlFor="exampleFormControlTextarea5"
-                              className="form-label">
-                              Light Logo
-                            </Label>
-                            <Dropzone
-                              multiple={false}
-                              onDrop={acceptedFiles => {
-                                handleAcceptedFiles(acceptedFiles, "light");
-                              }}
-                            >
-                              {({ getRootProps, getInputProps }) => (
-                                <div className="dropzone dz-clickable">
-                                  <div
-                                    className="dz-message needsclick"
-                                    {...getRootProps()}
-                                  >
-                                    <div className="mb-3">
-                                      <i className="display-4 text-muted ri-upload-cloud-2-fill" />
-                                    </div>
-                                    <h5>Drop files here or click to upload Light Logo.</h5>
-                                  </div>
-                                </div>
-                              )}
-                            </Dropzone>
-                            <div className="list-unstyled mb-0" id="file-previews">
-                              {lightLogoFile && (
-                                <Card
-                                  className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete"
-                                  key={lightLogoFile + "-file"}
-                                >
-                                  <div className="p-2">
-                                    <Row className="align-items-center">
-                                      <Col className="col-auto">
-                                        <img
-                                          data-dz-thumbnail=""
-                                          height="80"
-                                          className="avatar-sm rounded bg-light"
-                                          alt={lightLogoFile.name}
-                                          src={lightLogoFile.preview}
-                                        />
-                                      </Col>
-                                      <Col>
-                                        <Link
-                                          to="#"
-                                          className="text-muted font-weight-bold"
-                                        >
-                                          {lightLogoFile.name}
-                                        </Link>
-                                        <p className="mb-0">
-                                          <strong>{lightLogoFile.formattedSize}</strong>
-                                        </p>
-                                      </Col>
-                                    </Row>
-                                  </div>
-                                </Card>
-                              )}
-                            </div>
-                          </div>
+                    </Row>
 
+                  </div>
+                </form>
 
-                          {profileData.light_logo_image && (
-                            <div className="p-2 m-3">
-                              <Row className="align-items-center">
-                                <Col className="col-auto">
-                                  <img
-                                    data-dz-thumbnail=""
-                                    height="80"
-                                    className="avatar-sm rounded bg-light"
-                                    alt={profileData.light_logo_image}
-                                    src={profileData.light_logo_image}
-                                  />
-                                </Col>
-                              </Row>
-                            </div>
-                          )}
-
-                        </Col>
-
-                      </Row>
-                    </Col>
-
-
-                    <Col xxl={12} md={12}>
-                      <Button type="button" onClick={submitProfileForm}>
-                        Submit
-                      </Button>
-                    </Col>
-
-                  </Row>
-
-                </div>
-
-                {/* <div className="pt-3 border-top border-top-dashed mt-4">
-                  <h6 className="mb-3 fw-semibold text-uppercase">Logo</h6>
-                  <Row className="g-3">
-                    <Col xxl={4} lg={6}>
-                      <div className="border rounded border-dashed p-2">
-                        <div className="d-flex align-items-center">
-                          <div className="flex-shrink-0 me-3">
-                            <div className="avatar-sm">
-                              <div className="avatar-title bg-light text-secondary rounded fs-24">
-                                <i className="ri-folder-zip-line"></i>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex-grow-1 overflow-hidden">
-                            <h5 className="fs-13 mb-1">
-                              <Link
-                                to="#"
-                                className="text-body text-truncate d-block">
-                                App pages.zip
-                              </Link>
-                            </h5>
-                            <div>2.2MB</div>
-                          </div>
-                          <div className="flex-shrink-0 ms-2">
-                            <div className="d-flex gap-1">
-                              <button
-                                type="button"
-                                className="btn btn-icon text-muted btn-sm fs-18">
-                                <i className="ri-download-2-line"></i>
-                              </button>
-                              <UncontrolledDropdown>
-                                <DropdownToggle
-                                  tag="button"
-                                  className="btn btn-icon text-muted btn-sm fs-18 dropdown">
-                                  <i className="ri-more-fill"></i>
-                                </DropdownToggle>
-                                <DropdownMenu>
-                                  <li>
-                                    <DropdownItem>
-                                      <i className="ri-pencil-fill align-bottom me-2 text-muted"></i>{" "}
-                                      Rename
-                                    </DropdownItem>
-                                  </li>
-                                  <li>
-                                    <DropdownItem>
-                                      <i className="ri-delete-bin-fill align-bottom me-2 text-muted"></i>{" "}
-                                      Delete
-                                    </DropdownItem>
-                                  </li>
-                                </DropdownMenu>
-                              </UncontrolledDropdown>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Col>
-
-                    <Col xxl={4} lg={6}>
-                      <div className="border rounded border-dashed p-2">
-                        <div className="d-flex align-items-center">
-                          <div className="flex-shrink-0 me-3">
-                            <div className="avatar-sm">
-                              <div className="avatar-title bg-light text-secondary rounded fs-24">
-                                <i className="ri-file-ppt-2-line"></i>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex-grow-1 overflow-hidden">
-                            <h5 className="fs-13 mb-1">
-                              <Link
-                                to="#"
-                                className="text-body text-truncate d-block">
-                                Velzon admin.ppt
-                              </Link>
-                            </h5>
-                            <div>2.4MB</div>
-                          </div>
-                          <div className="flex-shrink-0 ms-2">
-                            <div className="d-flex gap-1">
-                              <button
-                                type="button"
-                                className="btn btn-icon text-muted btn-sm fs-18">
-                                <i className="ri-download-2-line"></i>
-                              </button>
-                              <UncontrolledDropdown>
-                                <DropdownToggle
-                                  tag="button"
-                                  className="btn btn-icon text-muted btn-sm fs-18 dropdown">
-                                  <i className="ri-more-fill"></i>
-                                </DropdownToggle>
-                                <DropdownMenu>
-                                  <li>
-                                    <DropdownItem>
-                                      <i className="ri-pencil-fill align-bottom me-2 text-muted"></i>{" "}
-                                      Rename
-                                    </DropdownItem>
-                                  </li>
-                                  <li>
-                                    <DropdownItem>
-                                      <i className="ri-delete-bin-fill align-bottom me-2 text-muted"></i>{" "}
-                                      Delete
-                                    </DropdownItem>
-                                  </li>
-                                </DropdownMenu>
-                              </UncontrolledDropdown>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Col>
-                  </Row>
-                </div> */}
               </div>
             </CardBody>
           </Card>

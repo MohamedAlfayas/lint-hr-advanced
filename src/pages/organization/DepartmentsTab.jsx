@@ -241,8 +241,6 @@ const DepartmentsTab = () => {
   };
 
   const nodeTemplate1 = (node) => {
-    console.log("nodfde");
-    console.log(node);
     if (true) {
       return (
         <Col xxl={12} lg={12}>

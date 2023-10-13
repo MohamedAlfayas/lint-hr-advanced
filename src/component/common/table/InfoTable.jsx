@@ -38,10 +38,11 @@ import {
   setFormWidthPercentage,
   toggleRSBView,
 } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import Datetime from "react-datetime";
 import "react-datetime/css/react-datetime.css";
 import { Status } from "filepond";
+import { setActiveTableTab } from "../../../redux/reducers/ChildReducer/TableReducer";
 
 const InfoTable = ({
   additionalColumn,
@@ -57,6 +58,14 @@ const InfoTable = ({
   console.log("Page Refreshing !!!!", tabledata);
 
   const dispatch = useDispatch();
+
+  const { activeTableTab } = useSelector(state => state.TableReducer);
+
+  useEffect(() =>{
+    if(activeTableTab && activeTableTab === "all"){
+      toggleTab(1, "all")
+    }
+  },[activeTableTab])
 
   const [activeTab, setActiveTab] = useState(1);
   const [dataList, setDataList] = useState([]);
@@ -139,7 +148,6 @@ const InfoTable = ({
                     className="text-danger d-inline-block remove-item-btn"
                     onClick={() => {
                       const orderData = cellProps.row.original;
-                      onClickDelete(orderData);
                     }}>
                     <i className=" ri-close-line fs-16"></i>
                   </Link>
@@ -170,7 +178,6 @@ const InfoTable = ({
                   className="text-danger d-inline-block remove-item-btn"
                   onClick={() => {
                     const orderData = cellProps.row.original;
-                    onClickDelete(orderData);
                   }}>
                   <i className="ri-delete-bin-5-fill fs-16"></i>
                 </Link>
@@ -203,6 +210,7 @@ const InfoTable = ({
       }
       setDataList(filteredDatas);
     }
+    dispatch(setActiveTableTab(null))
   };
 
   useEffect(() => {
