@@ -65,7 +65,7 @@ const OrgInfoTab = () => {
   // Custom Field Option
 
   let customFieldOptions = ((GetLocalStorageData('custom_fields')).filter(obj => {
-    if ((obj.status) && (obj.applicable_for_modules).includes("org")) {
+    if ((obj.status === true) && (obj.applicable_for_modules).includes("org")) {
       return obj
     }
   })) || [];
@@ -108,7 +108,19 @@ const OrgInfoTab = () => {
     })
       .then(res => {
         console.log("res = ", res);
-        let cf = ((res?.data?.data?.cf_values) && (res?.data?.data?.cf_values.length)) ? res?.data?.data?.cf_values : CustomFieldsForThisForm
+        let thisCFValues = [...res?.data?.data?.cf_values];
+        let cf = [];
+        if(thisCFValues && thisCFValues.length){
+          cf = CustomFieldsForThisForm.map(obj =>{
+            return {
+              ...obj,
+              value : thisCFValues.find(t => t.id === obj.id)?.value || obj.value
+            }
+          })
+        }
+        else{
+          cf = CustomFieldsForThisForm;
+        }
         setCountry(res?.data?.data?.country);
         setProfileData({ ...res?.data?.data, cf_values: cf });
         setState(res?.data?.data?.state);
@@ -180,16 +192,12 @@ const OrgInfoTab = () => {
 
   const submitProfileForm = (e) => {
     e.preventDefault()
-    console.log("Submitting Profile Data = ", profileData);
-
     let tempKey = ["country", "state", "timezone"];
-
     tempKey.map(obj => {
       if (obj in profileData) {
         delete profileData.obj
       }
     });
-
 
     let form_data = new FormData();
     darkLogoFile !== null && form_data.append('dark_logo', darkLogoFile, darkLogoFile.name);
@@ -509,7 +517,6 @@ const OrgInfoTab = () => {
                                   required={obj.is_required || false}
                                   onChange={(e) => handleCFInputChange(e, obj.id)}
                                 />
-                                <i className="ri-user-2-line"></i>
                               </div>
                               <div id="passwordHelpBlock" className="form-text">
                                 Enter {obj.name}
