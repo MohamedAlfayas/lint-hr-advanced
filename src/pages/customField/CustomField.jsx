@@ -12,6 +12,63 @@ import { useEffect } from "react";
 import { setCustomField } from "../../redux/reducers/ChildReducer/CustomFieldReducer";
 
 const CustomField = () => {
+  const [CustomData, setCustomdata] = useState([
+    {
+      "id": 1,
+      "name": "Aadhar Number",
+      "input_name": "aadhar_number",
+      "type": "text",
+      "applicable_for_modules": [
+        "emp"
+      ],
+      "is_required": true,
+      "status": true
+    },
+    {
+      "id": 2,
+      "name": "MMID No",
+      "input_name": "mmid_no",
+      "type": "number",
+      "applicable_for_modules": [
+        "org"
+      ],
+      "is_required": true,
+      "status": true
+    },
+    {
+      "id": 3,
+      "name": "UAN No",
+      "input_name": "uan_no",
+      "type": "number",
+      "applicable_for_modules": [
+        "emp"
+      ],
+      "is_required": false,
+      "status": true
+    },
+    {
+      "id": 4,
+      "name": "GST Number",
+      "input_name": "gst_number",
+      "type": "text",
+      "applicable_for_modules": [
+        "org"
+      ],
+      "is_required": false,
+      "status": true
+    },
+    {
+      "id": 5,
+      "name": "Reg No",
+      "input_name": "reg_no",
+      "type": "text",
+      "applicable_for_modules": [
+        "org"
+      ],
+      "is_required": true,
+      "status": true
+    }
+  ])
 
   const dispatch = useDispatch()
 
@@ -25,13 +82,14 @@ const CustomField = () => {
     { id: "text", label: "Text", value: "text" },
     { id: "number", label: "Number", value: "number" },
     { id: "date", label: "Date", value: "date" },
+    { id: "option", label: "Option", value: "option" },
   ];
 
   let module_lists = [
     { id: "emp", label: "Employee", value: "emp" },
     { id: "org", label: "Organization", value: "org" },
   ];
-
+  
   // Column
   const additionalColumn = [
     {
@@ -90,6 +148,7 @@ const CustomField = () => {
       id: 0,
       name: "",
       type: "",
+      options: [],
       is_required: false,
       applicable_for_modules: []
     };
@@ -107,7 +166,7 @@ const CustomField = () => {
     <React.Fragment>
       <InfoTable
         additionalColumn={additionalColumn}
-        tabledata={custom_fields}
+        tabledata={CustomData}
         formname={"custom_fields"}
         initialFormObj={initialFormObj}
         filterKey={filterKey}

@@ -31,17 +31,27 @@ const CustomFieldForm = () => {
     const dispatch = useDispatch();
     const [customFieldObj, setCustomFieldObj] = useState({});
     const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+    const [repeaterValues, setRepeaterValues] = useState([]);
 
 
     let types = [
         { id: "text", label: "Text", value: "text" },
         { id: "number", label: "Number", value: "number" },
         { id: "date", label: "Date", value: "date" },
+        { id: "option", label: "Option", value: "option" },
     ];
     let module_lists = [
         { id: "emp", label: "Employee", value: "emp" },
         { id: "org", label: "Organization", value: "org" },
     ];
+    let options = [
+        { id: "24", label: "Twenty Four", value: "24" },
+        { id: "fayas", label: "FAYAS", value: "fayas" },
+
+    ]
+    const labels = options.map(option => option.label);
+    console.log("labels:", labels);
+
     useEffect(() => {
         setCustomFieldObj(form_obj);
     }, [form_obj]);
@@ -53,28 +63,36 @@ const CustomFieldForm = () => {
             [name]: value,
         });
     };
-    
-    
+    const addRepeaterValue = () => {
+        setRepeaterValues([...repeaterValues, '']);
+    };
+
+    const removeRepeaterValue = (index) => {
+        const updatedRepeaterValues = [...repeaterValues];
+        updatedRepeaterValues.splice(index, 1);
+        setRepeaterValues(updatedRepeaterValues);
+    };
+
     console.log(" data = ", customFieldObj);
     const handleSubmit = async (e) => {
         e.preventDefault()
         console.log("employee data = ", customFieldObj);
-        Api({
-            method: 'POST',
-            url: 'fields/custom-field/create/',
-            data: customFieldObj
-        })
-            .then(res => {
-                console.log("REs = ", res);
-                customFieldObj.id === 0 ? dispatch(addCustomField(res?.data.data)) : dispatch(editCustomField(res?.data?.data));
-                dispatch(toggleRSBView(false));
-                dispatch(setActiveTableTab("all"))
-                toast.success(res?.data?.message);
-            })
-            .catch(err => {
-                console.log("ERr == ", err);
-                toast.success(err?.response?.data?.message);
-            })
+        // Api({
+        //     method: 'POST',
+        //     url: 'fields/custom-field/create/',
+        //     data: customFieldObj
+        // })
+        //     .then(res => {
+        //         console.log("REs = ", res);
+        //         customFieldObj.id === 0 ? dispatch(addCustomField(res?.data.data)) : dispatch(editCustomField(res?.data?.data));
+        //         dispatch(toggleRSBView(false));
+        //         dispatch(setActiveTableTab("all"))
+        //         toast.success(res?.data?.message);
+        //     })
+        //     .catch(err => {
+        //         console.log("ERr == ", err);
+        //         toast.success(err?.response?.data?.message);
+        //     })
     };
 
 
@@ -104,7 +122,6 @@ const CustomFieldForm = () => {
                                 <div className="mb-3">
                                     <Label>Field Type</Label>
                                     <Select
-
                                         required
                                         name="type"
                                         id="type"
@@ -112,11 +129,72 @@ const CustomFieldForm = () => {
                                         options={types || []}
                                         className="basic-multi-select"
                                         value={(customFieldObj.type && types.find(e => e.value === customFieldObj.type)) || []}
-                                        onChange={(e) => setCustomFieldObj({...customFieldObj , type : e.value })}
+                                        onChange={(e) => {
+                                            setCustomFieldObj({ ...customFieldObj, type: e.value });
+                                        }}
                                     />
                                 </div>
                             </Col>
+                            <Col lg={12}>
+                                {customFieldObj.type === "option" && (
+                                    <div className="mb-3">
+                                        <label htmlFor="displayName" className="form-label">
+                                            Options
+                                        </label>
+                                        {repeaterValues.map((value, index) => (
+                                            <div key={index} className="d-flex mb-2">
+                                                <div className="flex-grow-1">
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        placeholder="Label"
+                                                        name="options"
+                                                        value={value.options}
+                                                        onChange={(e) => {
+                                                            const updatedOptions = [...options];
+                                                            updatedOptions[index].label = e.target.value;
 
+                                                            setCustomFieldObj({ ...customFieldObj, options: updatedOptions });
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="flex-grow-1">
+                                                    <input
+                                                        type="text"
+                                                        name="options"
+                                                        className="form-control"
+                                                        placeholder="Value"
+                                                        value={value.options}
+                                                        onChange={(e) => {
+                                                            const updatedOptions = [...options];
+                                                            updatedOptions[index].value = e.target.value;
+
+                                                            setCustomFieldObj({ ...customFieldObj, options: updatedOptions });
+                                                        }}
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-danger ms-2"
+                                                    onClick={() => removeRepeaterValue(index)}
+                                                >
+                                                    <i class="bx bx-bx bx-trash"></i>
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <div className="d-flex mb-2">
+                                            <button
+                                                type="button"
+                                                className="btn btn-primary"
+                                                onClick={addRepeaterValue}
+                                            >
+                                                <i class="bx bx-plus-circle"></i>
+
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </Col>
                             <Col lg={12}>
                                 <div className="mb-3">
                                     <Label>Applicable For</Label>
@@ -127,7 +205,7 @@ const CustomFieldForm = () => {
                                         options={module_lists || []}
                                         className="basic-multi-select"
                                         value={(customFieldObj.applicable_for_modules && module_lists.filter(e => (customFieldObj.applicable_for_modules).includes(e.value)))}
-                                        onChange={(e) => setCustomFieldObj({...customFieldObj , applicable_for_modules : e.map(obj => obj.value) })}
+                                        onChange={(e) => setCustomFieldObj({ ...customFieldObj, applicable_for_modules: e.map(obj => obj.value) })}
                                     />
                                 </div>
                             </Col>
