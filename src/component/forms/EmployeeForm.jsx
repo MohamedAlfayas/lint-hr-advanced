@@ -1791,7 +1791,7 @@ const EmployeeForm = () => {
     console.log("Employee Form Obj = ", form_obj);
     setEmployeeObj({
       ...form_obj,
-      dob: ConvertISODateFormat(form_obj.dob)
+      dob: ConvertISODateFormat(form_obj.dob),
     });
     let sub_dep_options = dep_options.filter(
       (obj) => obj.id !== form_obj.primary_department
@@ -1851,25 +1851,25 @@ const EmployeeForm = () => {
     });
   };
 
-  const handleCFInputChange = (e, cf_id) =>{
+  const handleCFInputChange = (e, cf_id) => {
     setEmployeeObj({
       ...employeeObj,
-      cf_values: [...employeeObj.cf_values].map(item =>
+      cf_values: [...employeeObj.cf_values].map((item) =>
         item.id === cf_id ? { ...item, value: e.target.value } : item
-      )
-    })
-  }
+      ),
+    });
+  };
 
   const handleSubmit = () => {
     console.log("emp Obj = ", employeeObj);
     let form_data = new FormData();
     employeeImage !== null &&
-    form_data.append("profile", employeeImage, employeeImage.name);
+      form_data.append("profile", employeeImage, employeeImage.name);
     Object.entries(employeeObj).map((key, idx) => {
       if (key[0] === "cf_values") {
-        form_data.append(key[0], JSON.stringify(key[1]))
+        form_data.append(key[0], JSON.stringify(key[1]));
       } else {
-        form_data.append(key[0], key[1])
+        form_data.append(key[0], key[1]);
       }
     });
 
@@ -1886,8 +1886,8 @@ const EmployeeForm = () => {
         employeeObj.id === 0
           ? dispatch(addEmployee(res?.data.data))
           : dispatch(editEmployee(res?.data?.data));
-        dispatch(toggleRSBView(false));        
-        dispatch(setActiveTableTab("all"))
+        dispatch(toggleRSBView(false));
+        dispatch(setActiveTableTab("all"));
         toast.success(res?.data?.message);
       })
       .catch((err) => {
@@ -1948,7 +1948,7 @@ const EmployeeForm = () => {
                     />
                     <i className="ri-user-line"></i>
                   </div>
-                  <div id="passwordHelpBlock" className="form-text">
+                  <div id="passwordHelpBlock" className="form-text mb-3">
                     Enter First Name.
                   </div>
                 </div>
@@ -1970,7 +1970,7 @@ const EmployeeForm = () => {
                     />
                     <i className="ri-user-2-line"></i>
                   </div>
-                  <div id="passwordHelpBlock" className="form-text">
+                  <div id="passwordHelpBlock" className="form-text mb-3">
                     Enter Last Name.
                   </div>
                 </div>
@@ -1992,16 +1992,19 @@ const EmployeeForm = () => {
                     />
                     <i className="ri-at-line"></i>
                   </div>
-                  <div id="passwordHelpBlock" className="form-text">
+                  <div id="passwordHelpBlock" className="form-text mb-3">
                     Enter Email.
                   </div>
                 </div>
               </Col>
               <Col lg={12}>
-                <div className="mb-3">
-                  <Label>DOB</Label>
+                <div>
+                  <Label htmlFor="dob" className="form-label">
+                    DOB
+                  </Label>
                   <Flatpickr
                     className="form-control"
+                    id="dob"
                     value={dob}
                     options={{
                       dateFormat: "d M, Y",
@@ -2009,17 +2012,18 @@ const EmployeeForm = () => {
                     onChange={handleDateChange}
                   />
                 </div>
-                <div id="passwordHelpBlock" className="form-text">
+                <div id="passwordHelpBlock" className="form-text mb-3">
                   Select Date Of Birth.
                 </div>
               </Col>
               <Col lg={12}>
-                <div className="mb-3">
-                  <Label htmlFor="gender" className="form-label">
+                <div>
+                  <Label htmlFor="emp_gender" className="form-label">
                     Gender
                   </Label>
 
                   <Select
+                    id="emp_gender"
                     isMulti={false}
                     options={gender_option || []}
                     className="basic-multi-select"
@@ -2035,16 +2039,17 @@ const EmployeeForm = () => {
                     }}
                   />
                 </div>
-                <div id="passwordHelpBlock" className="form-text">
+                <div id="passwordHelpBlock" className="form-text mb-3">
                   Select Gender.
                 </div>
               </Col>
               <Col lg={12}>
-                <div className="mb-3">
-                  <Label htmlFor="parentDepartment" className="form-label">
+                <div>
+                  <Label htmlFor="role" className="form-label">
                     Role
                   </Label>
                   <Select
+                    id="role"
                     isMulti={false}
                     options={role_option || []}
                     className="basic-multi-select"
@@ -2058,16 +2063,17 @@ const EmployeeForm = () => {
                     }}
                   />
                 </div>
-                <div id="passwordHelpBlock" className="form-text">
+                <div id="passwordHelpBlock" className="form-text mb-3">
                   Select Role
                 </div>
               </Col>
               <Col lg={12}>
-                <div className="mb-3">
+                <div>
                   <Label htmlFor="parentDepartment" className="form-label">
                     Primary Department
                   </Label>
                   <Select
+                    id="parentDepartment"
                     isMulti={false}
                     options={dep_options || []}
                     placeholder={"Select Primary Department"}
@@ -2079,41 +2085,73 @@ const EmployeeForm = () => {
                         )) ||
                       []
                     }
-                    onChange={(e) => handlePrimaryDepChange(e)}
+                    onChange={(e) => {
+                      var depName = dep_options.find(
+                        (obj) => obj.id === employeeObj.primary_department
+                      );
+                      console.log(depName);
+                      // setEmployeeObj({
+                      //   ...employeeObj,
+                      //   primary_department_text: depName.name,
+                      // });
+                      handlePrimaryDepChange(e);
+                    }}
                   />
                 </div>
-                <div id="passwordHelpBlock" className="form-text">
+                <div id="passwordHelpBlock" className="form-text mb-3">
                   Select Primary Department
                 </div>
               </Col>
-              <Col lg={12}>
-                <div className="mb-3">
-                  <Label>Is Manager</Label>
-                  <div
-                    className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                    dir="ltr">
-                    <Input
-                      id=""
-                      name="is_manager"
-                      type="checkbox"
-                      className="form-check-input"
-                      checked={employeeObj.is_manager}
-                      onChange={(e) =>
-                        setEmployeeObj({
-                          ...employeeObj,
-                          is_manager: e.target.checked,
-                        })
-                      }
-                    />
+              {employeeObj.primary_department !== 0 ? (
+                <Col md={12} lg={12} xxl={12}>
+                  <div>
+                    <Label htmlFor="isManager" className="form-label">
+                      Is Manager
+                    </Label>
+                    <div className="mb-2">
+                      <div
+                        className="form-check form-switch form-switch-md form-switch-success"
+                        dir="ltr">
+                        {" "}
+                        <Input
+                          id="isManager"
+                          name="is_manager"
+                          type="checkbox"
+                          className="form-check-input"
+                          checked={employeeObj.is_manager}
+                          onChange={(e) =>
+                            setEmployeeObj({
+                              ...employeeObj,
+                              is_manager: e.target.checked,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </Col>
+                  <div id="passwordHelpBlock" className="form-text mb-3">
+                    Check if{" "}
+                    <b>
+                      <i>{employeeObj.fname}</i>
+                    </b>{" "}
+                    is Manager of{" "}
+                    <b>
+                      <i>{employeeObj.primary_department}</i>
+                    </b>{" "}
+                    Department ?
+                  </div>
+                </Col>
+              ) : (
+                ""
+              )}
+
               <Col lg={12}>
-                <div className="mb-3">
-                  <Label htmlFor="parentDepartment" className="form-label">
+                <div>
+                  <Label htmlFor="subDepartment" className="form-label">
                     Sub Department
                   </Label>
                   <Select
+                    id="subDepartment"
                     isMulti={true}
                     options={subDepOptions || []}
                     placeholder={"Select Sub Department"}
@@ -2133,14 +2171,15 @@ const EmployeeForm = () => {
                     }
                   />
                 </div>
-                <div id="passwordHelpBlock" className="form-text">
+                <div id="passwordHelpBlock" className="form-text mb-3">
                   Select Sub Department
                 </div>
               </Col>
               <Col lg={12}>
-                <div className="mb-3">
-                  <Label>Work Schedule</Label>
+                <div>
+                  <Label htmlFor="empWs">Work Schedule</Label>
                   <Select
+                    id="empWs"
                     required
                     isMulti={false}
                     options={ws_options || []}
@@ -2157,15 +2196,13 @@ const EmployeeForm = () => {
                     }
                   />
                 </div>
-                <div id="passwordHelpBlock" className="form-text">
+                <div id="passwordHelpBlock" className="form-text mb-3">
                   Select Work Schedule
                 </div>
               </Col>
               <Col lg={12}>
                 <div>
-                  <Label
-                    htmlFor="exampleFormControlTextarea5"
-                    className="form-label">
+                  <Label htmlFor="profile_timezone" className="form-label">
                     Time Zone
                   </Label>
                   <div className="form-icon right">
@@ -2184,60 +2221,81 @@ const EmployeeForm = () => {
                     />
                   </div>
                 </div>
-              </Col>
-              {(employeeObj.cf_values && (employeeObj.cf_values).length) ? (
-                (employeeObj.cf_values).map(obj => (
-                  <Col lg={12}>
-                    <div>
-                      <Label htmlFor="lname" className="form-label">
-                        {obj.name}
-                      </Label>
-                      <div className="form-icon right">
-                        <Input
-                          type={obj.type || 'text'}
-                          name={obj.input_name}
-                          id={obj.input_name}
-                          className="form-control"
-                          placeholder={`Enter ${obj.name}`}
-                          required={obj.is_required || false}
-                          value={obj.value || ""}
-                          onChange={(e) => handleCFInputChange(e, obj.id)}
-                        />
-                        <i className="ri-user-2-line"></i>
-                      </div>
-                      <div id="passwordHelpBlock" className="form-text">
-                        Enter {obj.name}
-                      </div>
-                    </div>
-                  </Col>
-                ))
-              ) : null}
-              <Col lg={12}>
-                <div className="mb-3">
-                  <Label>Is Active</Label>
-                  <div
-                    className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                    dir="ltr">
-                    <Input
-                      id=""
-                      name="is_active"
-                      type="checkbox"
-                      className="form-check-input"
-                      checked={employeeObj.is_active}
-                      onChange={(e) =>
-                        setEmployeeObj({
-                          ...employeeObj,
-                          is_active: e.target.checked,
-                        })
-                      }
-                    />
-                  </div>
+                <div id="passwordHelpBlock" className="form-text mb-3">
+                  Select Time Zone
                 </div>
               </Col>
-            </Row>
-            <Row>
-              <Col>
-                <Button type="submit">Submit</Button>
+              {employeeObj.cf_values && employeeObj.cf_values.length
+                ? employeeObj.cf_values.map((obj) => (
+                    <Col lg={12}>
+                      <div>
+                        <Label htmlFor="obj.input_name" className="form-label">
+                          {obj.name}
+                        </Label>
+                        <div className="form-icon right">
+                          <Input
+                            type={obj.type || "text"}
+                            name={obj.input_name}
+                            id={obj.input_name}
+                            className="form-control"
+                            placeholder={`Enter ${obj.name}`}
+                            required={obj.is_required || false}
+                            value={obj.value || ""}
+                            onChange={(e) => handleCFInputChange(e, obj.id)}
+                          />
+                          <i className="ri-user-2-line"></i>
+                        </div>
+                        <div id="passwordHelpBlock" className="form-text">
+                          Enter {obj.name}
+                        </div>
+                      </div>
+                    </Col>
+                  ))
+                : null}
+
+              <Col md={12} lg={12} xxl={12}>
+                <div>
+                  <Label htmlFor="isActive" className="form-label">
+                    Is Active
+                  </Label>
+
+                  <div className="mb-2">
+                    <div
+                      className="form-check form-switch form-switch-md form-switch-success"
+                      dir="ltr">
+                      {" "}
+                      <Input
+                        id="isActive"
+                        name="is_active"
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={employeeObj.is_active}
+                        onChange={(e) =>
+                          setEmployeeObj({
+                            ...employeeObj,
+                            is_active: e.target.checked,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div id="passwordHelpBlock" className="form-text mb-3">
+                  Check if{" "}
+                  <b>
+                    <i>{employeeObj.fname}</i>
+                  </b>{" "}
+                  is Active State.
+                </div>
+              </Col>
+              <Col lg={12}>
+                <div className="text-end">
+                  <Button type="submit" color="success" className="btn-label">
+                    {" "}
+                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                    Save{" "}
+                  </Button>{" "}
+                </div>
               </Col>
             </Row>
           </Form>
