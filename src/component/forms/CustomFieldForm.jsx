@@ -39,10 +39,11 @@ const CustomFieldForm = () => {
         { id: "number", label: "Number", value: "number" },
         { id: "date", label: "Date", value: "date" },
         { id: "option", label: "Option", value: "option" },
+        { id: "file", label: "File", value: "file" },
     ];
     let module_lists = [
-        { id: "emp", label: "Employee", value: "emp" },
-        { id: "org", label: "Organization", value: "org" },
+        { id: "employee", label: "Employee", value: "employee" },
+        { id: "organization", label: "Organization", value: "organization" },
     ];
     let options = [
         { id: "24", label: "Twenty Four", value: "24" },
@@ -68,10 +69,9 @@ const CustomFieldForm = () => {
     };
 
     const removeRepeaterValue = (index) => {
-        const updatedRepeaterValues = [...repeaterValues];
-        updatedRepeaterValues.splice(index, 1);
+        const updatedRepeaterValues = repeaterValues.filter((_, i) => i !== index);
         setRepeaterValues(updatedRepeaterValues);
-    };
+      };
 
     console.log(" data = ", customFieldObj);
     const handleSubmit = async (e) => {
@@ -135,6 +135,30 @@ const CustomFieldForm = () => {
                                     />
                                 </div>
                             </Col>
+                            {/* {customFieldObj.type === "text" && (
+                                <Col lg={12}>
+                                    <div>
+                                        <Label htmlFor="formFile" className="form-label"></Label>
+
+                                        <Input className="form-control" type="text-box" placeholder="Enter Value" />
+                                    </div>
+                                    <div id="passwordHelpBlock" className="form-text">
+                                        Enter Text.
+                                    </div>
+                                </Col>
+                            )} */}
+                            {/* {customFieldObj.type === "number" && (
+                                <Col lg={12}>
+                                    <div>
+                                        <Label htmlFor="formFile" className="form-label"></Label>
+
+                                        <Input className="form-control" type="number" placeholder="Enter Number" />
+                                    </div>
+                                    <div id="passwordHelpBlock" className="form-text">
+                                        Enter Number.
+                                    </div>
+                                </Col>
+                            )} */}
                             <Col lg={12}>
                                 {customFieldObj.type === "option" && (
                                     <div className="mb-3">
@@ -151,9 +175,8 @@ const CustomFieldForm = () => {
                                                         name="options"
                                                         value={value.options}
                                                         onChange={(e) => {
-                                                            const updatedOptions = [...options];
-                                                            updatedOptions[index].label = e.target.value;
-
+                                                            const updatedOptions = [...customFieldObj.options];
+                                                            updatedOptions[index] = { ...updatedOptions[index], label: e.target.value };
                                                             setCustomFieldObj({ ...customFieldObj, options: updatedOptions });
                                                         }}
                                                     />
@@ -166,10 +189,11 @@ const CustomFieldForm = () => {
                                                         placeholder="Value"
                                                         value={value.options}
                                                         onChange={(e) => {
-                                                            const updatedOptions = [...options];
-                                                            updatedOptions[index].value = e.target.value;
-
+                                                            const updatedOptions = [...customFieldObj.options];
+                                                            updatedOptions[index] = { ...updatedOptions[index], value: e.target.value };
+                                                            
                                                             setCustomFieldObj({ ...customFieldObj, options: updatedOptions });
+                                                            // const id = customFieldObj.length ? customFieldObj[customFieldObj.length - 1].id + 1 : 1;
                                                         }}
                                                     />
                                                 </div>
@@ -195,6 +219,18 @@ const CustomFieldForm = () => {
                                     </div>
                                 )}
                             </Col>
+                            {customFieldObj.type === "file" && (
+                                <Col lg={12}>
+                                    <div>
+                                        <Label htmlFor="formFile" className="form-label"></Label>
+
+                                        <Input className="form-control" type="number" />
+                                    </div>
+                                    <div id="passwordHelpBlock" className="form-text">
+                                        Maximum Size.
+                                    </div>
+                                </Col>
+                            )}
                             <Col lg={12}>
                                 <div className="mb-3">
                                     <Label>Applicable For</Label>
