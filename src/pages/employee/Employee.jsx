@@ -10,21 +10,22 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { setEmployee } from "../../redux/reducers/ChildReducer/EmployeeReducer";
 import { GetCustomField } from "../../common/js/GetCustomField";
+import { Badge, Button, UncontrolledTooltip } from "reactstrap";
 
 const Employee = () => {
   const dispatch = useDispatch();
   const { employee_data } = useSelector((state) => state.EmployeeReducer);
 
-  const { version } = useSelector(state => state.MetaReducer)
+  const { version } = useSelector((state) => state.MetaReducer);
 
   useEffect(() => {
     dispatch(setEmployee(GetLocalStorageData("employee") || []));
   }, [version]);
 
-
-  const CustomFieldsForThisForm = GetCustomField("employee") || []; 
+  const CustomFieldsForThisForm = GetCustomField("employee") || [];
 
   console.log("CustomFieldsForThisForm = ", CustomFieldsForThisForm);
+  console.log(employee_data);
 
   // Column
   const additionalColumn = [
@@ -34,32 +35,44 @@ const Employee = () => {
       filterable: false,
       id: "fname",
       accessor: (obj) => {
-        return (
-          obj.profile_url ? (
-            <div className="d-flex gap-2 align-items-center">
-              <div className="flex-shrink-0">
-                <img src={obj.profile_url} alt="" className="avatar-xs rounded-circle" />
-              </div>
-              <div className="flex-grow-1">
-                <div>{obj.fname}</div>
-                <div>{obj.email}</div>
+        return obj.profile_url ? (
+          <div className="d-flex gap-2 align-items-center">
+            <div className="flex-shrink-0">
+              <img
+                src={obj.profile_url}
+                alt=""
+                className="avatar-xs rounded-circle"
+              />
+            </div>
+            <div className="flex-grow-1">
+              <div>{obj.fname}</div>
+              <div>{obj.email}</div>
+            </div>
+          </div>
+        ) : (
+          <div className="d-flex gap-2 align-items-center">
+            <div className="flex-shrink-0">
+              <div
+                className="avatar-xs rounded-circle"
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  background: "#0ab39c",
+                }}
+                data-bs-toggle="tooltip"
+                title={obj.fname}>
+                <span className="first_letter" style={{ color: "white" }}>
+                  {obj.fname.charAt(0)}
+                </span>
               </div>
             </div>
-          ) : (
-            <div className="d-flex gap-2 align-items-center">
-              <div className="flex-shrink-0">
-                <div className="avatar-xs rounded-circle" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0ab39c' }} data-bs-toggle="tooltip" title={(obj.fname)}>
-                  <span className="first_letter" style={{ color: 'white' }} >{(obj.fname).charAt(0)}</span>
-                </div>
-              </div>
-              <div className="flex-grow-1">
-                <div>{obj.fname}</div>
-                <div>{obj.email}</div>
-              </div>
+            <div className="flex-grow-1">
+              <div>{obj.fname}</div>
+              <div>{obj.email}</div>
             </div>
-
-          )
-        )
+          </div>
+        );
       },
       // filterable: false,
       // id: "nameAndEmail",
@@ -71,6 +84,25 @@ const Employee = () => {
     //   id: "email",
     // },
     {
+      Header: "Role",
+      id: "role",
+      filterable: false,
+      accessor: (obj) => {
+        const RoleData = GetLocalStorageData("role");
+        let thisRole = RoleData
+          ? RoleData.filter((data) => obj.role === data.id)
+          : [];
+        console.log("Name = ", thisRole);
+        return (
+          <>
+            {thisRole.map((d) => (
+              <React.Fragment>{d.name}</React.Fragment>
+            ))}
+          </>
+        );
+      },
+    },
+    {
       Header: "Department",
       id: "department",
       filterable: false,
@@ -80,6 +112,64 @@ const Employee = () => {
           ? DepartmentData.filter((data) => obj.primary_department === data.id)
           : [];
         console.log("Name = ", thisDepartment);
+
+        // var subDepList = DepartmentData.filter((datas) =>
+        //   obj.sub_department.length > 0
+        //     ? obj.sub_department.includes(parseInt(datas.id))
+        //     : []
+
+        //  );
+
+        var subDepList = obj.sub_department
+          ? DepartmentData.filter((datas, index) => {
+              if (obj.sub_department.includes(parseInt(datas.id))) {
+                console.log("Emp Has Sub Dep");
+                console.log(obj.fname);
+                console.log(obj);
+                console.log(obj.sub_department.length);
+                return datas;
+              }
+            })
+          : [];
+
+        return (
+          <span>
+            <Button
+              color="light"
+              id={`depListRef-${obj.id}`}
+              className="position-relative">
+              {thisDepartment.map((d) => (
+                <React.Fragment>{d.name}</React.Fragment>
+              ))}
+              {obj.sub_department.length > 0 ? (
+                <span>
+                  <Badge
+                    //id="tooltipwithHtml"
+                    pill
+                    color="success"
+                    className="position-absolute top-0 start-100 translate-middle">
+                    +{obj.sub_department.length}
+                    <span className="visually-hidden">Departments</span>
+                  </Badge>
+
+                  <UncontrolledTooltip
+                    placement="bottom"
+                    target={`depListRef-${obj.id}`}>
+                    {" "}
+                    <div className="mt-1">
+                      {subDepList.map((item, key) => (
+                        <p className="mb-1">{item.name}</p>
+                      ))}
+                    </div>{" "}
+                  </UncontrolledTooltip>
+                </span>
+              ) : (
+                ""
+              )}
+            </Button>
+          </span>
+        );
+
         return (
           <>
             {thisDepartment.map((d) => (
@@ -122,7 +212,7 @@ const Employee = () => {
       is_active: true,
       is_manager: false,
       profile_url: null,
-      cf_values: CustomFieldsForThisForm || []
+      cf_values: CustomFieldsForThisForm || [],
     };
   }, [version]);
 
