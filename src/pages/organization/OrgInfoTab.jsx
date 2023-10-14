@@ -39,6 +39,7 @@ import axios from "axios";
 import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { GetCustomField } from "../../common/js/GetCustomField";
 
 
 const OrgInfoTab = () => {
@@ -64,18 +65,7 @@ const OrgInfoTab = () => {
 
   // Custom Field Option
 
-  let customFieldOptions = ((GetLocalStorageData('custom_fields')).filter(obj => {
-    if ((obj.status === true) && (obj.applicable_for_modules).includes("org")) {
-      return obj
-    }
-  })) || [];
-
-  const CustomFieldsForThisForm = customFieldOptions.map(({ status, applicable_for_modules, ...rest }) => {
-    return {
-      ...rest,
-      value: ""
-    }
-  });
+  const CustomFieldsForThisForm = GetCustomField("organization") || []; 
 
   // Set Empty Data To form
 
@@ -121,6 +111,7 @@ const OrgInfoTab = () => {
         else{
           cf = CustomFieldsForThisForm;
         }
+        console.log("CF === ",cf);
         setCountry(res?.data?.data?.country);
         setProfileData({ ...res?.data?.data, cf_values: cf });
         setState(res?.data?.data?.state);

@@ -9,29 +9,20 @@ import { useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { setEmployee } from "../../redux/reducers/ChildReducer/EmployeeReducer";
+import { GetCustomField } from "../../common/js/GetCustomField";
 
 const Employee = () => {
   const dispatch = useDispatch();
   const { employee_data } = useSelector((state) => state.EmployeeReducer);
 
+  const { version } = useSelector(state => state.MetaReducer)
+
   useEffect(() => {
     dispatch(setEmployee(GetLocalStorageData("employee") || []));
-  }, []);
+  }, [version]);
 
-  // Custom Field Option
 
-  let customFieldOptions = ((GetLocalStorageData('custom_fields')).filter(obj => {
-    if ((obj.status === true) && (obj.applicable_for_modules).includes("emp")) {
-      return obj
-    }
-  })) || [];
-
-  const CustomFieldsForThisForm = customFieldOptions.map(({ status, applicable_for_modules, ...rest }) => {
-    return {
-      ...rest,
-      value: ""
-    }
-  });
+  const CustomFieldsForThisForm = GetCustomField("employee") || []; 
 
   console.log("CustomFieldsForThisForm = ", CustomFieldsForThisForm);
 
@@ -133,7 +124,7 @@ const Employee = () => {
       profile_url: null,
       cf_values: CustomFieldsForThisForm || []
     };
-  }, []);
+  }, [version]);
 
   const filterKey = "is_active";
   const filterOptions = [

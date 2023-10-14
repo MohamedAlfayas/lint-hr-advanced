@@ -1851,18 +1851,26 @@ const EmployeeForm = () => {
     });
   };
 
-  const handleCFInputChange = (e) =>{
-    const { name, value } = e.target;
-    console.log("CF Change Name = ",name, " CF Change Value = ",value);
+  const handleCFInputChange = (e, cf_id) =>{
+    setEmployeeObj({
+      ...employeeObj,
+      cf_values: [...employeeObj.cf_values].map(item =>
+        item.id === cf_id ? { ...item, value: e.target.value } : item
+      )
+    })
   }
 
   const handleSubmit = () => {
     console.log("emp Obj = ", employeeObj);
-    let formData = new FormData();
+    let form_data = new FormData();
     employeeImage !== null &&
-      formData.append("profile", employeeImage, employeeImage.name);
+    form_data.append("profile", employeeImage, employeeImage.name);
     Object.entries(employeeObj).map((key, idx) => {
-      formData.append(key[0], key[1]);
+      if (key[0] === "cf_values") {
+        form_data.append(key[0], JSON.stringify(key[1]))
+      } else {
+        form_data.append(key[0], key[1])
+      }
     });
 
     Api({
@@ -1871,7 +1879,7 @@ const EmployeeForm = () => {
       headers: {
         "Content-Type": "multipart/form-data",
       },
-      data: formData,
+      data: form_data,
     })
       .then((res) => {
         console.log("REs = ", res);
@@ -2191,8 +2199,9 @@ const EmployeeForm = () => {
                           id={obj.input_name}
                           className="form-control"
                           placeholder={`Enter ${obj.name}`}
+                          required={obj.is_required || false}
                           value={obj.value || ""}
-                          onChange={handleCFInputChange}
+                          onChange={(e) => handleCFInputChange(e, obj.id)}
                         />
                         <i className="ri-user-2-line"></i>
                       </div>
