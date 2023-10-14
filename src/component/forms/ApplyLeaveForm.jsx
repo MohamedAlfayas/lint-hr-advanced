@@ -25,6 +25,8 @@ const ApplyLeaveForm = () => {
   const [leaveHoursCount, setLeaveHoursCount] = useState([]);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+  const [startHour, setStartHour] = useState(null);
+  const [endHour, setEndHour] = useState(null);
 
   useEffect(() => {
     setLeaveApplyObj(form_obj);
@@ -176,9 +178,61 @@ const ApplyLeaveForm = () => {
     }
   };
 
+  const handleHourChange = (startHour, endHour) => {
+    if (startHour != null && endHour != null) {
+      setLeaveApplyObj({
+        ...leaveapplyObj,
+        start: startHour,
+      });
+      setLeaveApplyObj({
+        ...leaveapplyObj,
+        end: endHour,
+      });
+
+      var diff = new Date(endHour) - new Date(startHour);
+      console.log(diff);
+
+      if (!isNaN(diff)) {
+        //var diffCount = diff / 1000 / 60 / 60 / 24 + 1;
+
+        var seconds = Math.floor(diff / 1000);
+        var minutes =
+          Math.floor((seconds % 3600) / 60) < 10
+            ? "0" + Math.floor((seconds % 3600) / 60)
+            : Math.floor((seconds % 3600) / 60);
+        var hour =
+          Math.floor(seconds / 3600) < 10
+            ? "0" + Math.floor(seconds / 3600)
+            : Math.floor(seconds / 3600);
+        var TotalDiff = hour + " : " + minutes;
+
+        console.log(TotalDiff);
+
+        setLeaveHoursCount(TotalDiff);
+
+        if (TotalDiff <= 0) {
+          setEndHour(startHour);
+          setLeaveHoursCount(0);
+          toast.warning("Hour Range Error");
+        } else if (TotalDiff > leaveapplyObj.available_count) {
+          toast.warning("Hour Range is Exceed Your Limit");
+
+          setEndHour(null);
+        } else {
+          setLeaveHoursCount(TotalDiff);
+        }
+        console.log(TotalDiff);
+      }
+    }
+  };
+
   useEffect(() => {
     handleDateChange(startDate, endDate);
   }, [startDate, endDate]);
+
+  useEffect(() => {
+    handleHourChange(startHour, endHour);
+  }, [startHour, endHour]);
 
   return (
     <React.Fragment>
@@ -272,18 +326,34 @@ const ApplyLeaveForm = () => {
                   <Flatpickr
                     className="form-control"
                     placeholder="Start Hour"
+                    value={startHour}
                     options={{
                       enableTime: true,
                       dateFormat: "Y-m-d H:i",
                     }}
+                    onChange={(selectedDates, dateStr, instance) => {
+                      //setLeaveApplyObj({ ...leaveapplyObj, end: dateStr });
+                      setStartHour(dateStr);
+
+                      // handleDateChange(selectedDates, dateStr, instance);
+                    }}
                   />
-                  <span className="input-group-text">2 Hours</span>
+                  <span className="input-group-text">
+                    {leaveHoursCount} Hours
+                  </span>
                   <Flatpickr
                     className="form-control"
                     placeholder="End Hour"
+                    value={endHour}
                     options={{
                       enableTime: true,
                       dateFormat: "Y-m-d H:i",
+                    }}
+                    onChange={(selectedDates, dateStr, instance) => {
+                      //setLeaveApplyObj({ ...leaveapplyObj, end: dateStr });
+                      setEndHour(dateStr);
+
+                      // handleDateChange(selectedDates, dateStr, instance);
                     }}
                   />
                 </div>
