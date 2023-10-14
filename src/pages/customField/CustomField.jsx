@@ -19,7 +19,7 @@ const CustomField = () => {
       "input_name": "aadhar_number",
       "type": "text",
       "applicable_for_modules": [
-        "emp"
+        "employee"
       ],
       "is_required": true,
       "status": true
@@ -30,7 +30,7 @@ const CustomField = () => {
       "input_name": "mmid_no",
       "type": "number",
       "applicable_for_modules": [
-        "org"
+        "organization"
       ],
       "is_required": true,
       "status": true
@@ -41,7 +41,7 @@ const CustomField = () => {
       "input_name": "uan_no",
       "type": "number",
       "applicable_for_modules": [
-        "emp"
+        "employee"
       ],
       "is_required": false,
       "status": true
@@ -52,7 +52,7 @@ const CustomField = () => {
       "input_name": "gst_number",
       "type": "text",
       "applicable_for_modules": [
-        "org"
+        "organization"
       ],
       "is_required": false,
       "status": true
@@ -63,7 +63,7 @@ const CustomField = () => {
       "input_name": "reg_no",
       "type": "text",
       "applicable_for_modules": [
-        "org"
+        "organization"
       ],
       "is_required": true,
       "status": true
@@ -86,8 +86,8 @@ const CustomField = () => {
   ];
 
   let module_lists = [
-    { id: "emp", label: "Employee", value: "emp" },
-    { id: "org", label: "Organization", value: "org" },
+    { id: "employee", label: "Employee", value: "employee" },
+    { id: "organization", label: "Organization", value: "organization" },
   ];
   
   // Column
@@ -104,7 +104,7 @@ const CustomField = () => {
     {
       Header: "Field Type",
       accessor: (obj) => {
-        return <b>{(types.find(e => e.value === obj.type)).label}</b>;
+        return <b>{(types.find(e => e.value === obj.type))?.label || ""}</b>;
       },
       filterable: false,
       id: "fieldtype",
@@ -115,7 +115,7 @@ const CustomField = () => {
         return (
           <b>
             {obj.applicable_for_modules.map(e => {
-              return (module_lists.find(m => m.value === e)).label
+              return (module_lists.find(m => m.value === e))?.label || ""
             })}
           </b>
         )
