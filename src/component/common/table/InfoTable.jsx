@@ -460,7 +460,7 @@ const InfoTable = ({
                     >
                       <i className="ri-store-2-fill me-1 align-bottom"></i> All
                       Datas
-                      <Badge>{(tabledata && tabledata.length > 0) ? tabledata.length : 0}</Badge>
+                      {(tabledata && tabledata.length > 0) && <Badge color={activeTab === 1 ? 'success' : 'primary'} style={{marginLeft:'5px'}} >{tabledata.length}</Badge>}
                     </NavLink>
                   </NavItem>
                   {!!filterOptions &&
@@ -478,7 +478,7 @@ const InfoTable = ({
                         >
                           <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
                           {obj.label}
-                          <Badge>{(obj.count && (obj.count) > 0) ? (obj.count) : 0}</Badge>
+                          {(obj.count > 0) && <Badge color={activeTab === String(idx + 2) ? 'success' : 'primary'} style={{marginLeft:'5px'}} >{obj.count}</Badge>}
                         </NavLink>
                       </NavItem>
                     ))}

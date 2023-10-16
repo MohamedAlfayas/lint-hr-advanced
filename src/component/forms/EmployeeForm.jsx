@@ -1788,7 +1788,6 @@ const EmployeeForm = () => {
   const [dob, setDob] = useState([]);
 
   useEffect(() => {
-    console.log("Employee Form Obj = ", form_obj);
     setEmployeeObj({
       ...form_obj,
       dob: ConvertISODateFormat(form_obj.dob),
@@ -1802,7 +1801,6 @@ const EmployeeForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    console.log("name = ", name, "   value = ", value);
     setEmployeeObj({
       ...employeeObj,
       [name]: value,
@@ -1921,7 +1919,8 @@ const EmployeeForm = () => {
                   />
                   <Label
                     htmlFor="profile-img-file-input"
-                    className="profile-photo-edit avatar-xs">
+                    className="profile-photo-edit avatar-xs"
+                  >
                     <span className="avatar-title rounded-circle bg-light text-body">
                       <i className="ri-camera-fill"></i>
                     </span>
@@ -2076,23 +2075,16 @@ const EmployeeForm = () => {
                     id="parentDepartment"
                     isMulti={false}
                     options={dep_options || []}
-                    placeholder={"Select Primary Department"}
                     className="basic-multi-select"
+                    placeholder={"Select Primary Department"}
                     value={
-                      (employeeObj.primary_department &&
-                        dep_options.find(
-                          (obj) => obj.id === employeeObj.primary_department
-                        )) ||
-                      []
+                      employeeObj.primary_department
+                        ? dep_options.find(
+                            (obj) => obj.id === employeeObj.primary_department
+                          )
+                        : []
                     }
                     onChange={(e) => {
-                      var depName = dep_options.find(
-                        (obj) => obj.id === employeeObj.primary_department
-                      );
-                      // setEmployeeObj({
-                      //   ...employeeObj,
-                      //   primary_department_text: depName.name,
-                      // });
                       handlePrimaryDepChange(e);
                     }}
                   />
@@ -2110,7 +2102,8 @@ const EmployeeForm = () => {
                     <div className="mb-2">
                       <div
                         className="form-check form-switch form-switch-md form-switch-success"
-                        dir="ltr">
+                        dir="ltr"
+                      >
                         {" "}
                         <Input
                           id="isManager"
@@ -2136,7 +2129,11 @@ const EmployeeForm = () => {
                       </b>{" "}
                       is Manager of{" "}
                       <b>
-                        <i>{dep_options.find(obj => obj.id === employeeObj.primary_department)?.name || ""}</i>
+                        <i>
+                          {dep_options.find(
+                            (obj) => obj.id === employeeObj.primary_department
+                          )?.name || ""}
+                        </i>
                       </b>{" "}
                       Department ?
                     </div>
@@ -2152,24 +2149,22 @@ const EmployeeForm = () => {
                     Sub Department
                   </Label>
                   <Select
-                    id="subDepartment"
                     isMulti={true}
                     options={subDepOptions || []}
-                    placeholder={"Select Sub Department"}
                     className="basic-multi-select"
                     value={
-                      (employeeObj.sub_department &&
-                        subDepOptions.filter((obj) =>
-                          employeeObj.sub_department.includes(obj.id)
-                        )) ||
-                      []
+                      employeeObj.sub_department
+                        ? subDepOptions.filter((obj) =>
+                            employeeObj.sub_department.includes(obj.id)
+                          )
+                        : []
                     }
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setEmployeeObj({
                         ...employeeObj,
                         sub_department: e.map((obj) => obj.id),
-                      })
-                    }
+                      });
+                    }}
                   />
                 </div>
                 <div id="passwordHelpBlock" className="form-text mb-3">
@@ -2228,30 +2223,30 @@ const EmployeeForm = () => {
               </Col>
               {employeeObj.cf_values && employeeObj.cf_values.length
                 ? employeeObj.cf_values.map((obj) => (
-                  <Col lg={12}>
-                    <div>
-                      <Label htmlFor="obj.input_name" className="form-label">
-                        {obj.name}
-                      </Label>
-                      <div className="form-icon right">
-                        <Input
-                          type={obj.type || "text"}
-                          name={obj.input_name}
-                          id={obj.input_name}
-                          className="form-control"
-                          placeholder={`Enter ${obj.name}`}
-                          required={obj.is_required || false}
-                          value={obj.value || ""}
-                          onChange={(e) => handleCFInputChange(e, obj.id)}
-                        />
-                        <i className="ri-user-2-line"></i>
+                    <Col lg={12}>
+                      <div>
+                        <Label htmlFor="obj.input_name" className="form-label">
+                          {obj.name}
+                        </Label>
+                        <div className="form-icon right">
+                          <Input
+                            type={obj.type || "text"}
+                            name={obj.input_name}
+                            id={obj.input_name}
+                            className="form-control"
+                            placeholder={`Enter ${obj.name}`}
+                            required={obj.is_required || false}
+                            value={obj.value || ""}
+                            onChange={(e) => handleCFInputChange(e, obj.id)}
+                          />
+                          <i className="ri-user-2-line"></i>
+                        </div>
+                        <div id="passwordHelpBlock" className="form-text">
+                          Enter {obj.name}
+                        </div>
                       </div>
-                      <div id="passwordHelpBlock" className="form-text">
-                        Enter {obj.name}
-                      </div>
-                    </div>
-                  </Col>
-                ))
+                    </Col>
+                  ))
                 : null}
 
               <Col md={12} lg={12} xxl={12}>
@@ -2263,7 +2258,8 @@ const EmployeeForm = () => {
                   <div className="mb-2">
                     <div
                       className="form-check form-switch form-switch-md form-switch-success"
-                      dir="ltr">
+                      dir="ltr"
+                    >
                       {" "}
                       <Input
                         id="isActive"
