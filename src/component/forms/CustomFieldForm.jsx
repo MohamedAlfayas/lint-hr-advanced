@@ -141,30 +141,7 @@ const CustomFieldForm = () => {
                                     />
                                 </div>
                             </Col>
-                            {/* {customFieldObj.type === "text" && (
-                                <Col lg={12}>
-                                    <div>
-                                        <Label htmlFor="formFile" className="form-label"></Label>
-
-                                        <Input className="form-control" type="text-box" placeholder="Enter Value" />
-                                    </div>
-                                    <div id="passwordHelpBlock" className="form-text">
-                                        Enter Text.
-                                    </div>
-                                </Col>
-                            )} */}
-                            {/* {customFieldObj.type === "number" && (
-                                <Col lg={12}>
-                                    <div>
-                                        <Label htmlFor="formFile" className="form-label"></Label>
-
-                                        <Input className="form-control" type="number" placeholder="Enter Number" />
-                                    </div>
-                                    <div id="passwordHelpBlock" className="form-text">
-                                        Enter Number.
-                                    </div>
-                                </Col>
-                            )} */}
+                        
                             <Col lg={12}>
                                 {customFieldObj.type === "option" && (
                                     <div className="mb-3">
@@ -272,7 +249,7 @@ const CustomFieldForm = () => {
 
                             <Col lg={12}>
                                 <div className="text-end">
-                                    <Button color="success" className="btn-label">
+                                    <Button color="success" className="btn-label" type="submit">
                                         {" "}
                                         <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
                                         Save{" "}
