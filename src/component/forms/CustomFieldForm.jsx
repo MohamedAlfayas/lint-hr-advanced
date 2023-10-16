@@ -31,7 +31,6 @@ const CustomFieldForm = () => {
     const dispatch = useDispatch();
     const [customFieldObj, setCustomFieldObj] = useState({});
     const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-    const [repeaterValues, setRepeaterValues] = useState([]);
 
 
     let types = [
@@ -65,14 +64,21 @@ const CustomFieldForm = () => {
         });
     };
     const addRepeaterValue = () => {
-        setRepeaterValues([...repeaterValues, '']);
+        const newId = (customFieldObj.options).length ? (customFieldObj.options)[(customFieldObj.options).length -1].id + 1 : 1;
+        let newOptions = { id : newId, value : "", label : "" };
+        setCustomFieldObj({
+            ...customFieldObj,
+            options : [...customFieldObj.options, newOptions]
+        })
     };
 
-    const removeRepeaterValue = (index) => {
-        const updatedRepeaterValues = repeaterValues.filter((_, i) => i !== index);
-        setRepeaterValues(updatedRepeaterValues);
-      };
-
+    const removeRepeaterValue = (id) => {
+        const updatedOptions = customFieldObj.options.filter(option => option.id !== id);
+        setCustomFieldObj({
+            ...customFieldObj,
+            options: updatedOptions,
+        });
+    };
     console.log(" data = ", customFieldObj);
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -165,7 +171,7 @@ const CustomFieldForm = () => {
                                         <label htmlFor="displayName" className="form-label">
                                             Options
                                         </label>
-                                        {repeaterValues.map((value, index) => (
+                                        {(customFieldObj.options).map((data, index) => (
                                             <div key={index} className="d-flex mb-2">
                                                 <div className="flex-grow-1">
                                                     <input
@@ -173,7 +179,7 @@ const CustomFieldForm = () => {
                                                         className="form-control"
                                                         placeholder="Label"
                                                         name="options"
-                                                        value={value.options}
+                                                        value={data.label}
                                                         onChange={(e) => {
                                                             const updatedOptions = [...customFieldObj.options];
                                                             updatedOptions[index] = { ...updatedOptions[index], label: e.target.value };
@@ -187,20 +193,20 @@ const CustomFieldForm = () => {
                                                         name="options"
                                                         className="form-control"
                                                         placeholder="Value"
-                                                        value={value.options}
+                                                        value={data.value}
                                                         onChange={(e) => {
                                                             const updatedOptions = [...customFieldObj.options];
                                                             updatedOptions[index] = { ...updatedOptions[index], value: e.target.value };
                                                             
                                                             setCustomFieldObj({ ...customFieldObj, options: updatedOptions });
-                                                            // const id = customFieldObj.length ? customFieldObj[customFieldObj.length - 1].id + 1 : 1;
+                                                           
                                                         }}
                                                     />
                                                 </div>
                                                 <button
                                                     type="button"
                                                     className="btn btn-danger ms-2"
-                                                    onClick={() => removeRepeaterValue(index)}
+                                                    onClick={() =>removeRepeaterValue(data.id)}
                                                 >
                                                     <i class="bx bx-bx bx-trash"></i>
                                                 </button>

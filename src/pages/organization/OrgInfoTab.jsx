@@ -339,6 +339,9 @@ const OrgInfoTab = () => {
                             value={profileData.about || ""}
                             onChange={(e) => updateProfileData('about', e.target.value)}
                           ></textarea>
+                           <div id="passwordHelpBlock" className="form-text">
+                           Company Overview.
+                          </div>
                         </div>
                       </Col>
 
@@ -356,6 +359,9 @@ const OrgInfoTab = () => {
                             value={profileData.address || ""}
                             onChange={(e) => updateProfileData('address', e.target.value)}
                           ></textarea>
+                           <div id="passwordHelpBlock" className="form-text">
+                            Address.
+                          </div>
                         </div>
                       </Col>
 
@@ -392,6 +398,9 @@ const OrgInfoTab = () => {
                               </SimpleBar>
                             </DropdownMenu>
                           </Dropdown>
+                          <div id="passwordHelpBlock" className="form-text">
+                            Select Country.
+                          </div>
                         </div>
                       </Col>
 
@@ -424,6 +433,9 @@ const OrgInfoTab = () => {
                               </SimpleBar>
                             </DropdownMenu>
                           </Dropdown>
+                          <div id="passwordHelpBlock" className="form-text">
+                            Select State.
+                          </div>
                         </div>
                       </Col>
 
@@ -444,6 +456,9 @@ const OrgInfoTab = () => {
                               onChange={(e) => updateProfileData('city', e.target.value)}
                             />
                             <i className="ri-mail-line"></i>
+                          </div>
+                          <div id="passwordHelpBlock" className="form-text">
+                            Select City.
                           </div>
                         </div>
                       </Col>
@@ -466,6 +481,9 @@ const OrgInfoTab = () => {
                             />
                             <i className="ri-mail-line"></i>
                           </div>
+                          <div id="passwordHelpBlock" className="form-text">
+                            Pincode.
+                          </div>
                         </div>
                       </Col>
 
@@ -486,6 +504,9 @@ const OrgInfoTab = () => {
                               onChange={(e) => setTimeZone(e.target.value)}
                             />
                             <i className="ri-time-line"></i>
+                          </div>
+                          <div id="passwordHelpBlock" className="form-text">
+                            Time Zone.
                           </div>
                         </div>
                       </Col>

@@ -32,9 +32,9 @@ const DepartmentForm = () => {
   const [departmentData, setDepartmentData] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const DepartmentList = GetLocalStorageData('department') || [];
-  
+
   const dispatch = useDispatch();
-  
+
   const [departmentOptions, setDepartmentOptions] = useState([]);
 
   useEffect(() => {
@@ -87,6 +87,9 @@ const DepartmentForm = () => {
                   onChange={handleInputChange}
                   required
                 />
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Department.
+                </div>
               </Col>
               <Col lg={12}>
                 <label htmlFor="parentDepartment" className="form-label">
@@ -132,6 +135,9 @@ const DepartmentForm = () => {
                     </SimpleBar>
                   </DropdownMenu>
                 </Dropdown>
+                <div id="passwordHelpBlock" className="form-text">
+                  Select Parent Department.
+                </div>
               </Col>
               <Col lg={12}>
                 <label htmlFor="description" className="form-label">
@@ -146,6 +152,9 @@ const DepartmentForm = () => {
                   value={departmentData.description || ""}
                   onChange={handleInputChange}
                 />
+                <div id="passwordHelpBlock" className="form-text">
+                  Description.
+                </div>
               </Col>
 
               <Col lg={12}>
