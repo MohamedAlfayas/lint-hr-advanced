@@ -203,9 +203,9 @@ const LeaveApproval = () => {
 
   const filterKey = "status";
   const filterOptions = [
-    { option: 1, label: "Pending" },
-    { option: 2, label: "Approved" },
-    { option: 3, label: "Rejected" },
+    { option: 1, label: "Pending", count : leave_approval_data.filter(e => e[filterKey] === 1).length || 0  },
+    { option: 2, label: "Approved", count : leave_approval_data.filter(e => e[filterKey] === 2).length || 0  },
+    { option: 3, label: "Rejected", count : leave_approval_data.filter(e => e[filterKey] === 3).length || 0  },
   ];
 
   document.title = `Leave Approval | ${MetaTitle}`;

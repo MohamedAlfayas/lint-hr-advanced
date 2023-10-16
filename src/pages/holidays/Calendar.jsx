@@ -39,6 +39,7 @@ import { useSelector, useDispatch } from "react-redux";
 
 import listPlugin from '@fullcalendar/list';
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { MetaTitle } from "../../common/data/MetaTitle";
 
 
 
@@ -224,7 +225,7 @@ const Calender = () => {
         },
     });
 
-    document.title = "Calendar | Velzon - React Admin & Dashboard Template";
+    document.title = `Holiday Calendar | ${MetaTitle}`;
     return (
         <React.Fragment>
 

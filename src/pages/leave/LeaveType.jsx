@@ -141,8 +141,8 @@ const LeaveType = () => {
 
   const filterKey = "status";
   const filterOptions = [
-    { option: true, label: "Active" },
-    { option: false, label: "Inactive" },
+    { option: true, label: "Active", count : leave_type_data.filter(e => e[filterKey] === true).length || 0 },
+    { option: false, label: "Inactive", count : leave_type_data.filter(e => e[filterKey] === false).length || 0 },
   ];
 
   document.title = `Leave Type | ${MetaTitle}`;

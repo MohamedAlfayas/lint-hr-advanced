@@ -1887,7 +1887,7 @@ const EmployeeForm = () => {
           ? dispatch(addEmployee(res?.data.data))
           : dispatch(editEmployee(res?.data?.data));
         dispatch(toggleRSBView(false));
-        dispatch(setActiveTableTab("all"));
+        // dispatch(setActiveTableTab("all"));
         toast.success(res?.data?.message);
       })
       .catch((err) => {
@@ -2089,7 +2089,6 @@ const EmployeeForm = () => {
                       var depName = dep_options.find(
                         (obj) => obj.id === employeeObj.primary_department
                       );
-                      console.log(depName);
                       // setEmployeeObj({
                       //   ...employeeObj,
                       //   primary_department_text: depName.name,
@@ -2129,17 +2128,19 @@ const EmployeeForm = () => {
                       </div>
                     </div>
                   </div>
-                  <div id="passwordHelpBlock" className="form-text mb-3">
-                    Check if{" "}
-                    <b>
-                      <i>{employeeObj.fname}</i>
-                    </b>{" "}
-                    is Manager of{" "}
-                    <b>
-                      <i>{employeeObj.primary_department}</i>
-                    </b>{" "}
-                    Department ?
-                  </div>
+                  {dep_options.length && (
+                    <div id="passwordHelpBlock" className="form-text mb-3">
+                      Check if{" "}
+                      <b>
+                        <i>{employeeObj.fname}</i>
+                      </b>{" "}
+                      is Manager of{" "}
+                      <b>
+                        <i>{dep_options.find(obj => obj.id === employeeObj.primary_department)?.name || ""}</i>
+                      </b>{" "}
+                      Department ?
+                    </div>
+                  )}
                 </Col>
               ) : (
                 ""
@@ -2227,30 +2228,30 @@ const EmployeeForm = () => {
               </Col>
               {employeeObj.cf_values && employeeObj.cf_values.length
                 ? employeeObj.cf_values.map((obj) => (
-                    <Col lg={12}>
-                      <div>
-                        <Label htmlFor="obj.input_name" className="form-label">
-                          {obj.name}
-                        </Label>
-                        <div className="form-icon right">
-                          <Input
-                            type={obj.type || "text"}
-                            name={obj.input_name}
-                            id={obj.input_name}
-                            className="form-control"
-                            placeholder={`Enter ${obj.name}`}
-                            required={obj.is_required || false}
-                            value={obj.value || ""}
-                            onChange={(e) => handleCFInputChange(e, obj.id)}
-                          />
-                          <i className="ri-user-2-line"></i>
-                        </div>
-                        <div id="passwordHelpBlock" className="form-text">
-                          Enter {obj.name}
-                        </div>
+                  <Col lg={12}>
+                    <div>
+                      <Label htmlFor="obj.input_name" className="form-label">
+                        {obj.name}
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type={obj.type || "text"}
+                          name={obj.input_name}
+                          id={obj.input_name}
+                          className="form-control"
+                          placeholder={`Enter ${obj.name}`}
+                          required={obj.is_required || false}
+                          value={obj.value || ""}
+                          onChange={(e) => handleCFInputChange(e, obj.id)}
+                        />
+                        <i className="ri-user-2-line"></i>
                       </div>
-                    </Col>
-                  ))
+                      <div id="passwordHelpBlock" className="form-text">
+                        Enter {obj.name}
+                      </div>
+                    </div>
+                  </Col>
+                ))
                 : null}
 
               <Col md={12} lg={12} xxl={12}>

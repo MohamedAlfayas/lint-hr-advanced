@@ -24,9 +24,6 @@ const Employee = () => {
 
   const CustomFieldsForThisForm = GetCustomField("employee") || [];
 
-  console.log("CustomFieldsForThisForm = ", CustomFieldsForThisForm);
-  console.log(employee_data);
-
   // Column
   const additionalColumn = [
     {
@@ -92,7 +89,6 @@ const Employee = () => {
         let thisRole = RoleData
           ? RoleData.filter((data) => obj.role === data.id)
           : [];
-        console.log("Name = ", thisRole);
         return (
           <>
             {thisRole.map((d) => (
@@ -111,22 +107,10 @@ const Employee = () => {
         let thisDepartment = DepartmentData
           ? DepartmentData.filter((data) => obj.primary_department === data.id)
           : [];
-        console.log("Name = ", thisDepartment);
-
-        // var subDepList = DepartmentData.filter((datas) =>
-        //   obj.sub_department.length > 0
-        //     ? obj.sub_department.includes(parseInt(datas.id))
-        //     : []
-
-        //  );
 
         var subDepList = obj.sub_department
           ? DepartmentData.filter((datas, index) => {
               if (obj.sub_department.includes(parseInt(datas.id))) {
-                console.log("Emp Has Sub Dep");
-                console.log(obj.fname);
-                console.log(obj);
-                console.log(obj.sub_department.length);
                 return datas;
               }
             })
@@ -218,8 +202,8 @@ const Employee = () => {
 
   const filterKey = "is_active";
   const filterOptions = [
-    { option: true, label: "Active" },
-    { option: false, label: "Inactive" },
+    { option: true, label: "Active", count : employee_data.filter(e => e[filterKey] === true).length || 0 },
+    { option: false, label: "Inactive", count : employee_data.filter(e => e[filterKey] === false).length || 0 },
   ];
 
   document.title = `Employee | ${MetaTitle}`;

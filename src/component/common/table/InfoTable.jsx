@@ -21,6 +21,7 @@ import {
   DropdownToggle,
   DropdownMenu,
   DropdownItem,
+  Badge,
 } from "reactstrap";
 
 import TableContainer from "../../../component/common/table/TableContainer";
@@ -65,15 +66,24 @@ const InfoTable = ({
 
   const dispatch = useDispatch();
 
-  const { activeTableTab } = useSelector(state => state.TableReducer);
+  const { activeTableTab } = useSelector((state) => state.TableReducer);
 
   useEffect(() => {
     if (activeTableTab && activeTableTab === "all") {
-      toggleTab(1, "all")
+      toggleTab(1, "all");
     }
-  }, [activeTableTab])
+  }, [activeTableTab]);
 
-  const [activeTab, setActiveTab] = useState(1);
+  const tabOptions = filterOptions
+    ? filterOptions.map((obj, idx) => {
+        return {
+          ...obj,
+          idx: idx + 2,
+        };
+      })
+    : [];
+
+  const [activeTab, setActiveTab] = useState("2");
   const [dataList, setDataList] = useState([]);
   const [isExportCSV, setIsExportCSV] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
@@ -144,7 +154,8 @@ const InfoTable = ({
                     onClick={() => {
                       const orderData = cellProps.row.original;
                       handleCreateAndUpdate(orderData.id, orderData);
-                    }}>
+                    }}
+                  >
                     <i className=" ri-check-line fs-16"></i>
                   </Link>
                 </li>
@@ -154,7 +165,8 @@ const InfoTable = ({
                     className="text-danger d-inline-block remove-item-btn"
                     onClick={() => {
                       const orderData = cellProps.row.original;
-                    }}>
+                    }}
+                  >
                     <i className=" ri-close-line fs-16"></i>
                   </Link>
                 </li>
@@ -174,7 +186,8 @@ const InfoTable = ({
                   onClick={() => {
                     const orderData = cellProps.row.original;
                     handleCreateAndUpdate(orderData.id, orderData);
-                  }}>
+                  }}
+                >
                   <i className="ri-pencil-fill fs-16"></i>
                 </Link>
               </li>
@@ -184,7 +197,8 @@ const InfoTable = ({
                   className="text-danger d-inline-block remove-item-btn"
                   onClick={() => {
                     const orderData = cellProps.row.original;
-                  }}>
+                  }}
+                >
                   <i className="ri-delete-bin-5-fill fs-16"></i>
                 </Link>
               </li>
@@ -205,7 +219,6 @@ const InfoTable = ({
   }, []);
 
   const toggleTab = (tab, type) => {
-    console.log("Tab = ", tab, "    type = ", type);
     if (activeTab !== tab) {
       setActiveTab(tab);
       let filteredDatas = [...tabledata];
@@ -216,12 +229,18 @@ const InfoTable = ({
       }
       setDataList(filteredDatas);
     }
-    dispatch(setActiveTableTab(null))
+    dispatch(setActiveTableTab(null));
   };
 
   useEffect(() => {
     if (tabledata && tabledata.length) {
-      setDataList(tabledata);
+      let type = tabOptions.length
+        ? tabOptions.find((e) => e.idx === parseInt(activeTab))?.option
+        : "";
+      let filtered_table_data = [...tabledata].filter(
+        (data) => data[filterKey] == type
+      ) || [...tabledata];
+      setDataList(filtered_table_data);
     } else {
       setDataList([]);
     }
@@ -261,32 +280,31 @@ const InfoTable = ({
   // CUSTOM FORM
 
   const handleCreateAndUpdate = ($id, table_obj) => {
-    console.log($id, table_obj); 
+    console.log($id, table_obj);
 
-    let FormObj = {}
+    let FormObj = {};
 
-    if($id === 0){
-      FormObj = initialFormObj
-    }
-    else{
-      let thisCFValues = "cf_values" in table_obj ? [...table_obj?.cf_values] : [];
+    if ($id === 0) {
+      FormObj = initialFormObj;
+    } else {
+      let thisCFValues =
+        "cf_values" in table_obj ? [...table_obj?.cf_values] : [];
       let cf = [];
       let CustomFieldsForThisForm = GetCustomField(formname);
       if (thisCFValues && thisCFValues.length) {
-        cf = CustomFieldsForThisForm.map(obj => {
+        cf = CustomFieldsForThisForm.map((obj) => {
           return {
             ...obj,
-            value: thisCFValues.find(t => t.id === obj.id)?.value || obj.value
-          }
-        })
-      }
-      else {
+            value:
+              thisCFValues.find((t) => t.id === obj.id)?.value || obj.value,
+          };
+        });
+      } else {
         cf = CustomFieldsForThisForm;
       }
 
-      FormObj = {...table_obj, cf_values : cf}
+      FormObj = { ...table_obj, cf_values: cf };
     }
-    
 
     dispatch(setFormTitle(formname));
     dispatch(setFormObj(FormObj));
@@ -332,7 +350,8 @@ const InfoTable = ({
                 <div className="col-sm">
                   <h5
                     className="card-title mb-0"
-                    style={{ textTransform: "capitalize" }}>
+                    style={{ textTransform: "capitalize" }}
+                  >
                     {formname.split("_").join(" ")}
                   </h5>
 
@@ -359,7 +378,8 @@ const InfoTable = ({
                           <DropdownToggle
                             tag="a"
                             className="text-reset dropdown-btn"
-                            role="button">
+                            role="button"
+                          >
                             <span className="text-muted">
                               01 Jan 2023 to 31 Dec 2023
                               <i className="mdi mdi-chevron-down ms-1"></i>
@@ -394,7 +414,8 @@ const InfoTable = ({
                         style={{ textTransform: "capitalize" }}
                         onClick={() => {
                           handleCreateAndUpdate(0);
-                        }}>
+                        }}
+                      >
                         <i className="ri-add-line align-bottom me-1"></i> Create{" "}
                         {formname.split("_").join(" ")}
                       </button>
@@ -402,14 +423,16 @@ const InfoTable = ({
                     <button
                       type="button"
                       className="btn btn-info"
-                      onClick={() => setIsExportCSV(true)}>
+                      onClick={() => setIsExportCSV(true)}
+                    >
                       <i className="ri-file-download-line align-bottom me-1"></i>{" "}
                       Export
                     </button>{" "}
                     {isMultiDeleteButton && (
                       <button
                         className="btn btn-soft-danger"
-                        onClick={() => setDeleteModalMulti(true)}>
+                        onClick={() => setDeleteModalMulti(true)}
+                      >
                         <i className="ri-delete-bin-2-line"></i>
                       </button>
                     )}
@@ -422,7 +445,8 @@ const InfoTable = ({
               <div>
                 <Nav
                   className="nav-tabs nav-tabs-custom nav-success"
-                  role="tablist">
+                  role="tablist"
+                >
                   <NavItem>
                     <NavLink
                       className={classnames(
@@ -432,9 +456,11 @@ const InfoTable = ({
                       onClick={() => {
                         toggleTab(1, "all");
                       }}
-                      href="#">
+                      href="#"
+                    >
                       <i className="ri-store-2-fill me-1 align-bottom"></i> All
                       Datas
+                      <Badge>{(tabledata && tabledata.length > 0) ? tabledata.length : 0}</Badge>
                     </NavLink>
                   </NavItem>
                   {!!filterOptions &&
@@ -448,9 +474,11 @@ const InfoTable = ({
                           onClick={() => {
                             toggleTab(String(idx + 2), obj.option);
                           }}
-                          href="#">
+                          href="#"
+                        >
                           <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
                           {obj.label}
+                          <Badge>{(obj.count && (obj.count) > 0) ? (obj.count) : 0}</Badge>
                         </NavLink>
                       </NavItem>
                     ))}
@@ -487,7 +515,8 @@ const InfoTable = ({
                     e.preventDefault();
                     // validation.handleSubmit();
                     return false;
-                  }}>
+                  }}
+                >
                   <ModalBody>
                     <input type="hidden" id="id-field" />
 
@@ -501,15 +530,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Order Id"
                         type="text"
-                      // validate={{
-                      //     required: { value: true },
-                      // }}
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={validation.values.orderId || ""}
-                      // invalid={
-                      //     validation.touched.orderId && validation.errors.orderId ? true : false
-                      // }
+                        // validate={{
+                        //     required: { value: true },
+                        // }}
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={validation.values.orderId || ""}
+                        // invalid={
+                        //     validation.touched.orderId && validation.errors.orderId ? true : false
+                        // }
                       />
                       {/* {validation.touched.orderId && validation.errors.orderId ? (
                                                     <FormFeedback type="invalid">{validation.errors.orderId}</FormFeedback>
@@ -519,7 +548,8 @@ const InfoTable = ({
                     <div className="mb-3">
                       <Label
                         htmlFor="customername-field"
-                        className="form-label">
+                        className="form-label"
+                      >
                         Customer Name
                       </Label>
                       <Input
@@ -528,15 +558,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Name"
                         type="text"
-                      // validate={{
-                      //     required: { value: true },
-                      // }}
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={validation.values.customer || ""}
-                      // invalid={
-                      //     validation.touched.customer && validation.errors.customer ? true : false
-                      // }
+                        // validate={{
+                        //     required: { value: true },
+                        // }}
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={validation.values.customer || ""}
+                        // invalid={
+                        //     validation.touched.customer && validation.errors.customer ? true : false
+                        // }
                       />
                       {/* {validation.touched.customer && validation.errors.customer ? (
                                                     <FormFeedback type="invalid">{validation.errors.customer}</FormFeedback>
@@ -557,7 +587,8 @@ const InfoTable = ({
                         // value={
                         //     validation.values.product || ""
                         // }
-                        required>
+                        required
+                      >
                         {/* {productname.map((item, key) => (
                                                         <React.Fragment key={key}>
                                                             {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
@@ -607,12 +638,12 @@ const InfoTable = ({
                           <Input
                             name="amount"
                             type="text"
-                          // onChange={validation.handleChange}
-                          // onBlur={validation.handleBlur}
-                          // value={validation.values.amount || ""}
-                          // invalid={
-                          //     validation.touched.amount && validation.errors.amount ? true : false
-                          // }
+                            // onChange={validation.handleChange}
+                            // onBlur={validation.handleBlur}
+                            // value={validation.values.amount || ""}
+                            // invalid={
+                            //     validation.touched.amount && validation.errors.amount ? true : false
+                            // }
                           />
                           {/* {validation.touched.amount && validation.errors.amount ? (
                                                             <FormFeedback type="invalid">{validation.errors.amount}</FormFeedback>
@@ -629,11 +660,11 @@ const InfoTable = ({
                             name="payment"
                             type="select"
                             className="form-select"
-                          // onChange={validation.handleChange}
-                          // onBlur={validation.handleBlur}
-                          // value={
-                          //     validation.values.payment || ""
-                          // }
+                            // onChange={validation.handleChange}
+                            // onBlur={validation.handleBlur}
+                            // value={
+                            //     validation.values.payment || ""
+                            // }
                           >
                             {/* {orderpayement.map((item, key) => (
                                                                 <React.Fragment key={key}>
@@ -660,11 +691,11 @@ const InfoTable = ({
                         name="status"
                         type="select"
                         className="form-select"
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={
-                      //     validation.values.status || ""
-                      // }
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={
+                        //     validation.values.status || ""
+                        // }
                       >
                         {/* {orderstatus.map((item, key) => (
                                                         <React.Fragment key={key}>
@@ -687,7 +718,8 @@ const InfoTable = ({
                         className="btn btn-light"
                         onClick={() => {
                           setModal(false);
-                        }}>
+                        }}
+                      >
                         Close
                       </button>
 

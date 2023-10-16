@@ -12,63 +12,63 @@ import { useEffect } from "react";
 import { setCustomField } from "../../redux/reducers/ChildReducer/CustomFieldReducer";
 
 const CustomField = () => {
-  const [CustomData, setCustomdata] = useState([
-    {
-      "id": 1,
-      "name": "Aadhar Number",
-      "input_name": "aadhar_number",
-      "type": "text",
-      "applicable_for_modules": [
-        "employee"
-      ],
-      "is_required": true,
-      "status": true
-    },
-    {
-      "id": 2,
-      "name": "MMID No",
-      "input_name": "mmid_no",
-      "type": "number",
-      "applicable_for_modules": [
-        "organization"
-      ],
-      "is_required": true,
-      "status": true
-    },
-    {
-      "id": 3,
-      "name": "UAN No",
-      "input_name": "uan_no",
-      "type": "number",
-      "applicable_for_modules": [
-        "employee"
-      ],
-      "is_required": false,
-      "status": true
-    },
-    {
-      "id": 4,
-      "name": "GST Number",
-      "input_name": "gst_number",
-      "type": "text",
-      "applicable_for_modules": [
-        "organization"
-      ],
-      "is_required": false,
-      "status": true
-    },
-    {
-      "id": 5,
-      "name": "Reg No",
-      "input_name": "reg_no",
-      "type": "text",
-      "applicable_for_modules": [
-        "organization"
-      ],
-      "is_required": true,
-      "status": true
-    }
-  ])
+  // const [CustomData, setCustomdata] = useState([
+  //   {
+  //     "id": 1,
+  //     "name": "Aadhar Number",
+  //     "input_name": "aadhar_number",
+  //     "type": "text",
+  //     "applicable_for_modules": [
+  //       "employee"
+  //     ],
+  //     "is_required": true,
+  //     "status": true
+  //   },
+  //   {
+  //     "id": 2,
+  //     "name": "MMID No",
+  //     "input_name": "mmid_no",
+  //     "type": "number",
+  //     "applicable_for_modules": [
+  //       "organization"
+  //     ],
+  //     "is_required": true,
+  //     "status": true
+  //   },
+  //   {
+  //     "id": 3,
+  //     "name": "UAN No",
+  //     "input_name": "uan_no",
+  //     "type": "number",
+  //     "applicable_for_modules": [
+  //       "employee"
+  //     ],
+  //     "is_required": false,
+  //     "status": true
+  //   },
+  //   {
+  //     "id": 4,
+  //     "name": "GST Number",
+  //     "input_name": "gst_number",
+  //     "type": "text",
+  //     "applicable_for_modules": [
+  //       "organization"
+  //     ],
+  //     "is_required": false,
+  //     "status": true
+  //   },
+  //   {
+  //     "id": 5,
+  //     "name": "Reg No",
+  //     "input_name": "reg_no",
+  //     "type": "text",
+  //     "applicable_for_modules": [
+  //       "organization"
+  //     ],
+  //     "is_required": true,
+  //     "status": true
+  //   }
+  // ])
 
   const dispatch = useDispatch()
 
@@ -157,8 +157,8 @@ const CustomField = () => {
 
   const filterKey = "is_required";
   const filterOptions = [
-    { option: true, label: "Required" },
-    { option: false, label: "Optional" },
+    { option: true, label: "Required", count : custom_fields.filter(e => e[filterKey] === true).length || 0  },
+    { option: false, label: "Optional",  count : custom_fields.filter(e => e[filterKey] === false).length || 0  },
   ];
 
   document.title = `Custom Field | ${MetaTitle}`;
@@ -166,7 +166,7 @@ const CustomField = () => {
     <React.Fragment>
       <InfoTable
         additionalColumn={additionalColumn}
-        tabledata={CustomData}
+        tabledata={custom_fields}
         formname={"custom_fields"}
         initialFormObj={initialFormObj}
         filterKey={filterKey}
