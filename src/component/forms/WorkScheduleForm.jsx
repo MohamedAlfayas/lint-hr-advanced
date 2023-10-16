@@ -24,7 +24,10 @@ import classnames from "classnames";
 
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
-import { addWorkSchedule, editWorkSchedule } from "../../redux/reducers/ChildReducer/WorkScheduleReducer";
+import {
+  addWorkSchedule,
+  editWorkSchedule,
+} from "../../redux/reducers/ChildReducer/WorkScheduleReducer";
 import { toast } from "react-toastify";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 
@@ -32,14 +35,13 @@ import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarRed
 defineElement(loadAnimation);
 
 const WorkScheduleForm = () => {
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const [workScheduleData, setWorkScheduleData] = useState({});
   const [activeArrowTab, setactiveArrowTab] = useState(4);
   useEffect(() => {
     setWorkScheduleData(form_obj);
   }, [form_obj]);
-
 
   const [passedarrowSteps, setPassedarrowSteps] = useState([1]);
   const hourOptions = Array.from({ length: 24 }, (_, i) => ({
@@ -85,8 +87,14 @@ const WorkScheduleForm = () => {
       var ws_hr = obj.fullday_hr;
       var ws_min = obj.fullday_min;
 
+      if (parseInt(obj.workday[i].s_hr) > parseInt(obj.workday[i].e_hr)) {
+        hrs = Math.abs(hrs) - 24;
+      }
+
       let colorCLass =
-        hrs - ws_hr == 0 && mins - ws_min == 0 ? "text-success" : "text-danger";
+        Math.abs(hrs) - ws_hr == 0 && Math.abs(mins) - ws_min == 0
+          ? "text-success"
+          : "text-danger";
 
       var actualHr = pad(Math.abs(hrs)) + ":" + pad(Math.abs(mins));
 
@@ -109,26 +117,27 @@ const WorkScheduleForm = () => {
   }
 
   const handleSubmit = (e) => {
-    e.preventDefault()
+    e.preventDefault();
     console.log("employee data = ", workScheduleData);
     toggleArrowTab(activeArrowTab + 1);
     Api({
-      method: 'POST',
+      method: "POST",
       url: "/work-schedule/create/",
       data: workScheduleData,
     })
-      .then(res => {
+      .then((res) => {
         console.log("Res = ", res);
-        workScheduleData.id === 0 ? dispatch(addWorkSchedule(res?.data.data)) : dispatch(editWorkSchedule(res?.data?.data));
+        workScheduleData.id === 0
+          ? dispatch(addWorkSchedule(res?.data.data))
+          : dispatch(editWorkSchedule(res?.data?.data));
         dispatch(toggleRSBView(false));
         toast.success(res?.data?.message);
       })
-      .catch(err => {
+      .catch((err) => {
         console.log("Err = ", err);
         toast.error(err?.response?.data?.message);
-      })
+      });
   };
-
 
   document.title = "WorkSchedule | Lint HR";
 
@@ -506,13 +515,13 @@ const WorkScheduleForm = () => {
                                 let this_wd = e.target.checked
                                   ? { ...workday, is_day_on: e.target.checked }
                                   : {
-                                    ...workday,
-                                    is_day_on: e.target.checked,
-                                    s_hr: "00",
-                                    s_min: "00",
-                                    e_hr: "00",
-                                    e_min: "00",
-                                  };
+                                      ...workday,
+                                      is_day_on: e.target.checked,
+                                      s_hr: "00",
+                                      s_min: "00",
+                                      e_hr: "00",
+                                      e_min: "00",
+                                    };
 
                                 let res = global_wd.map((obj, idx) =>
                                   idx === index ? this_wd : obj
@@ -668,8 +677,7 @@ const WorkScheduleForm = () => {
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-success btn-label right ms-auto nexttab nexttab"
-                  >
+                    className="btn btn-success btn-label right ms-auto nexttab nexttab">
                     <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
                     Submit
                   </button>
