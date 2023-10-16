@@ -156,7 +156,6 @@ const LeaveTypeForm = () => {
       })
   };
 
-  document.title = "WorkSchedule | Lint HR";
   return (
     <React.Fragment>
       <Row>

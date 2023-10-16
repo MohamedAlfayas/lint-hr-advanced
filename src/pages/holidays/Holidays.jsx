@@ -82,12 +82,15 @@ const Holiday = () => {
     },
   ];
 
+
+  const WorkScheduleData = GetLocalStorageData('work_schedule') || []
+
   const initialFormObj = useMemo(() => {
     return {
       id: 0,
       name: "",
       date: "",
-      work_schedule_id_list: [],
+      work_schedule_id_list: WorkScheduleData.map(e=>e.id) || [],
       description: "",
       is_restricted: false
     };

@@ -34,7 +34,7 @@ const RightSideBarReducer = createSlice({
         setFormWidthPercentage: (state, action) => {
             return {
                 ...state,
-                form_width_percentage: action.payload
+                form_width_percentage: parseInt(window.screen.width) > 768 ? action.payload : "90%"
             }
         },
         setComponentToShow: (state, action) => {
