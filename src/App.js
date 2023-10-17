@@ -5,6 +5,10 @@ import './assets/scss/themes.scss';
 
 import { ToastContainer, toast } from 'react-toastify';
 
+// Rsuite css
+
+import 'rsuite/dist/rsuite-no-reset.min.css';
+
 
 //imoprt Route
 import Route from './routes';

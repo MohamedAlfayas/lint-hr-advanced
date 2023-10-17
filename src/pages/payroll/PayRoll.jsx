@@ -24,7 +24,6 @@ import {
 import classnames from "classnames";
 import Select from "react-select";
 
-import "rsuite/dist/rsuite.min.css";
 
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
