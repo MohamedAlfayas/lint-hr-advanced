@@ -30,6 +30,7 @@ import {
 } from "../../redux/reducers/ChildReducer/WorkScheduleReducer";
 import { toast } from "react-toastify";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
