@@ -24,7 +24,6 @@ import {
 import classnames from "classnames";
 import Select from "react-select";
 
-
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
 import { MetaTitle } from "../../common/data/MetaTitle";
@@ -150,7 +149,10 @@ const PayRoll = () => {
     checked = true;
   } else if (checkedKeys.length === 0) {
     checked = false;
-  } else if (checkedKeys.length > 0 && checkedKeys.length < employee_details.length) {
+  } else if (
+    checkedKeys.length > 0 &&
+    checkedKeys.length < employee_details.length
+  ) {
     indeterminate = true;
   }
 
@@ -201,8 +203,8 @@ const PayRoll = () => {
   return (
     <React.Fragment>
       <div className="page-content">
-        <Row>
-          <Col md={12} lg={12} xl={12}>
+        <Row className="justify-content-center">
+          <Col md={10} lg={10} xl={8}>
             <Card>
               <CardBody>
                 <Form onSubmit={handleSubmit} className="form-steps">
@@ -219,8 +221,7 @@ const PayRoll = () => {
 
                       <Nav
                         className="nav-pills progress-bar-tab custom-nav"
-                        role="tablist"
-                      >
+                        role="tablist">
                         <NavItem>
                           <NavLink
                             id="pills-gen-info-tab"
@@ -235,8 +236,7 @@ const PayRoll = () => {
                               toggleTab(1, 0);
                             }}
                             tag="button"
-                            type="button"
-                          >
+                            type="button">
                             1
                           </NavLink>
                         </NavItem>
@@ -254,8 +254,7 @@ const PayRoll = () => {
                               toggleTab(2, 50);
                             }}
                             tag="button"
-                            type="button"
-                          >
+                            type="button">
                             2
                           </NavLink>
                         </NavItem>
@@ -273,8 +272,7 @@ const PayRoll = () => {
                             //   toggleTab(3, 100);
                             // }}
                             tag="button"
-                            type="button"
-                          >
+                            type="button">
                             3
                           </NavLink>
                         </NavItem>
@@ -295,8 +293,7 @@ const PayRoll = () => {
                             <Col lg={6} sm={12}>
                               <Label
                                 className="form-label"
-                                htmlFor="gen-info-username-input"
-                              >
+                                htmlFor="gen-info-username-input">
                                 When do You Want to Use Linthr's Payroll from
                               </Label>
                             </Col>
@@ -317,8 +314,7 @@ const PayRoll = () => {
                             <Col lg={6} sm={12}>
                               <Label
                                 className="form-label"
-                                htmlFor="gen-info-username-input"
-                              >
+                                htmlFor="gen-info-username-input">
                                 Pay Cycle
                               </Label>
                             </Col>
@@ -329,8 +325,7 @@ const PayRoll = () => {
                                 display: "flex",
                                 justifyContent: "center",
                                 alignItems: "center",
-                              }}
-                            >
+                              }}>
                               <span style={{ marginRight: "3px" }}>From</span>
                               <Select
                                 id="pay_cycle"
@@ -349,16 +344,14 @@ const PayRoll = () => {
                             <Col lg={6} sm={12}>
                               <Label
                                 className="form-label"
-                                htmlFor="gen-info-username-input"
-                              >
+                                htmlFor="gen-info-username-input">
                                 Does Your Company have PF ?
                               </Label>
                             </Col>
                             <Col lg={6} sm={12}>
                               <div
                                 className="form-check form-switch form-switch-md form-switch-success"
-                                dir="ltr"
-                              >
+                                dir="ltr">
                                 {" "}
                                 <Input
                                   id="company_has_pf"
@@ -376,8 +369,7 @@ const PayRoll = () => {
                             <Col lg={6} sm={12}>
                               <Label
                                 className="form-label"
-                                htmlFor="gen-info-username-input"
-                              >
+                                htmlFor="gen-info-username-input">
                                 Employee Contribution
                               </Label>
                             </Col>
@@ -399,16 +391,14 @@ const PayRoll = () => {
                             <Col lg={6} sm={12}>
                               <Label
                                 className="form-label"
-                                htmlFor="gen-info-username-input"
-                              >
+                                htmlFor="gen-info-username-input">
                                 PF Ceiling at Rs. 15000
                               </Label>
                             </Col>
                             <Col lg={6} sm={12}>
                               <div
                                 className="form-check form-switch form-switch-md form-switch-success"
-                                dir="ltr"
-                              >
+                                dir="ltr">
                                 {" "}
                                 <Input
                                   id="pf_ceiling"
@@ -426,16 +416,14 @@ const PayRoll = () => {
                             <Col lg={6} sm={12}>
                               <Label
                                 className="form-label"
-                                htmlFor="gen-info-username-input"
-                              >
+                                htmlFor="gen-info-username-input">
                                 Does Your Company have ESI ?
                               </Label>
                             </Col>
                             <Col lg={6} sm={12}>
                               <div
                                 className="form-check form-switch form-switch-md form-switch-success"
-                                dir="ltr"
-                              >
+                                dir="ltr">
                                 {" "}
                                 <Input
                                   id="company_has_esi"
@@ -453,16 +441,14 @@ const PayRoll = () => {
                             <Col lg={6} sm={12}>
                               <Label
                                 className="form-label"
-                                htmlFor="gen-info-username-input"
-                              >
+                                htmlFor="gen-info-username-input">
                                 Do You deduct Professional Tax ?
                               </Label>
                             </Col>
                             <Col lg={6} sm={12}>
                               <div
                                 className="form-check form-switch form-switch-md form-switch-success"
-                                dir="ltr"
-                              >
+                                dir="ltr">
                                 {" "}
                                 <Input
                                   id="deduct_profesional_tax"
@@ -482,8 +468,7 @@ const PayRoll = () => {
                           className="btn btn-success btn-label right ms-auto nexttab nexttab"
                           onClick={() => {
                             toggleTab(activeTab + 1, 50);
-                          }}
-                        >
+                          }}>
                           <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
                           Next
                         </button>
@@ -498,8 +483,7 @@ const PayRoll = () => {
                             data={employee_details}
                             onRowClick={(rowData) => {
                               console.log(rowData);
-                            }}
-                          >
+                            }}>
                             <Column width={60} align="center" fixed>
                               <HeaderCell style={{ padding: 0 }}>
                                 <div style={{ lineHeight: "40px" }}>
@@ -548,12 +532,11 @@ const PayRoll = () => {
                               <Cell style={{ padding: "6px" }}>
                                 {(rowData) => (
                                   <Link
-                                    style={{textDecoration:'none'}}
+                                    style={{ textDecoration: "none" }}
                                     className="text-primary d-inline-block edit-item-btn"
                                     onClick={() =>
                                       console.log("Edit DAta = ", rowData)
-                                    }
-                                  >
+                                    }>
                                     <i className="ri-pencil-fill fs-16"></i>
                                   </Link>
                                 )}
@@ -569,15 +552,13 @@ const PayRoll = () => {
                           className="btn btn-link text-decoration-none btn-label previestab"
                           onClick={() => {
                             toggleTab(activeTab - 1, 0);
-                          }}
-                        >
+                          }}>
                           <i className="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>{" "}
                           Back to General
                         </button>
                         <Button
                           type="submit"
-                          className="btn btn-success btn-label right ms-auto nexttab nexttab"
-                        >
+                          className="btn btn-success btn-label right ms-auto nexttab nexttab">
                           <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
                           Submit
                         </Button>
