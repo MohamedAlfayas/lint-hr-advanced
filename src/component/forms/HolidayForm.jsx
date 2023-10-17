@@ -54,7 +54,8 @@ const HolidayForm = () => {
         });
     }
 
-    const handleSubmit = async () => {
+    const handleSubmit = async () => {        
+        dispatch(setLoaderVisible(true));
         Api({
             method: 'POST',
             url: 'holiday/create/',
@@ -63,10 +64,12 @@ const HolidayForm = () => {
             .then(res => {
                 console.log("REs = ", res);
                 holidayObj.id === 0 ? dispatch(addHoliday(res?.data.data)) : dispatch(editHoliday(res?.data?.data));
+                dispatch(setLoaderVisible(false));
                 dispatch(toggleRSBView(false));
                 toast.success(res?.data?.message);
             })
-            .catch(err => {
+            .catch(err => {                
+                dispatch(setLoaderVisible(false));
                 console.log("ERr == ", err);
                 toast.success(err?.response?.data?.message);
             })

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react'
-import Header from '../component/header/Header';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useEffect, useState } from "react";
+import Header from "../component/header/Header";
+import { useDispatch, useSelector } from "react-redux";
 
 import {
   changeLayout,
@@ -12,15 +12,14 @@ import {
   changeLeftsidebarSizeType,
   changeLeftsidebarViewType,
   changeSidebarImageType,
-  changeSidebarVisibility
+  changeSidebarVisibility,
 } from "./HtmlLayoutHelpers";
-import Sidebar from '../component/sidebar/Sidebar';
-import Footer from '../component/footer/Footer';
-import LoadingBar from 'react-top-loading-bar'
-import { GetGlobalVersion } from '../meta/GetGlobalVersion';
+import Sidebar from "../component/sidebar/Sidebar";
+import Footer from "../component/footer/Footer";
+import LoadingBar from "react-top-loading-bar";
+import { GetGlobalVersion } from "../meta/GetGlobalVersion";
 
 const Layout = ({ children }) => {
-
   const dispatch = useDispatch();
 
   const [headerClass, setHeaderClass] = useState("");
@@ -36,9 +35,8 @@ const Layout = ({ children }) => {
     leftSidebarViewType,
     leftSidebarImageType,
     preloader,
-    sidebarVisibilitytype
-  } = useSelector(state => state.LayoutReducer)
-
+    sidebarVisibilitytype,
+  } = useSelector((state) => state.LayoutReducer);
 
   useEffect(() => {
     if (
@@ -53,7 +51,7 @@ const Layout = ({ children }) => {
       leftSidebarImageType ||
       sidebarVisibilitytype
     ) {
-      window.dispatchEvent(new Event('resize'));
+      window.dispatchEvent(new Event("resize"));
       dispatch(changeLeftsidebarViewType(leftSidebarViewType));
       dispatch(changeLeftsidebarSizeType(leftsidbarSizeType));
       dispatch(changeSidebarTheme(leftSidebarType));
@@ -65,7 +63,8 @@ const Layout = ({ children }) => {
       dispatch(changeSidebarImageType(leftSidebarImageType));
       dispatch(changeSidebarVisibility(sidebarVisibilitytype));
     }
-  }, [layoutType,
+  }, [
+    layoutType,
     leftSidebarType,
     layoutModeType,
     layoutWidthType,
@@ -75,8 +74,8 @@ const Layout = ({ children }) => {
     leftSidebarViewType,
     leftSidebarImageType,
     sidebarVisibilitytype,
-    dispatch]
-  );
+    dispatch,
+  ]);
 
   const onChangeLayoutMode = (value) => {
     if (changeLayoutMode) {
@@ -84,8 +83,7 @@ const Layout = ({ children }) => {
     }
   };
 
-
-  // class add remove in header 
+  // class add remove in header
   useEffect(() => {
     window.addEventListener("scroll", scrollNavigation, true);
   });
@@ -99,14 +97,15 @@ const Layout = ({ children }) => {
     }
   }
 
-  useEffect(() => {    
+  useEffect(() => {
     GetGlobalVersion(dispatch);
     const interval = setInterval(() => {
-      GetGlobalVersion(dispatch)
+      GetGlobalVersion(dispatch);
     }, 30000);
     return () => clearInterval(interval);
-  },[]);
+  }, []);
 
+  const { showLoader } = useSelector((state) => state.LoaderReducer);
 
   return (
     <React.Fragment>
@@ -118,16 +117,22 @@ const Layout = ({ children }) => {
         />
         <Sidebar layoutType="vertical" />
         <div className="main-content">
-          <LoadingBar 
-            progress={100}
-            color='#405189' 
-          />
+          <LoadingBar progress={100} color="#405189" />
           {children}
+          {showLoader && (
+            <div className="card-preloader d-block" id="spinner1">
+              <div className="card-status">
+                <div className="spinner-border text-success">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <Footer />
       </div>
     </React.Fragment>
-  )
-}
+  );
+};
 
-export default Layout
+export default Layout;

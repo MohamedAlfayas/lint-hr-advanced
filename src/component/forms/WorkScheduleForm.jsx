@@ -120,6 +120,7 @@ const WorkScheduleForm = () => {
     e.preventDefault();
     console.log("employee data = ", workScheduleData);
     toggleArrowTab(activeArrowTab + 1);
+    dispatch(setLoaderVisible(true));
     Api({
       method: "POST",
       url: "/work-schedule/create/",
@@ -130,10 +131,12 @@ const WorkScheduleForm = () => {
         workScheduleData.id === 0
           ? dispatch(addWorkSchedule(res?.data.data))
           : dispatch(editWorkSchedule(res?.data?.data));
+        dispatch(setLoaderVisible(false));
         dispatch(toggleRSBView(false));
         toast.success(res?.data?.message);
       })
       .catch((err) => {
+        dispatch(setLoaderVisible(false));
         console.log("Err = ", err);
         toast.error(err?.response?.data?.message);
       });

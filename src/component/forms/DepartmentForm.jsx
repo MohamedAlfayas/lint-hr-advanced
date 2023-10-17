@@ -25,6 +25,7 @@ import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setDepartmentDetails } from "../../redux/reducers/ChildReducer/DepartmentReducer";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { toast } from "react-toastify";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 
 const DepartmentForm = () => {
   const [hdDropDown, setHdDropDown] = useState(false);
@@ -50,7 +51,8 @@ const DepartmentForm = () => {
     });
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async () => {    
+    dispatch(setLoaderVisible(true));
     Api({
       method: 'POST',
       url: 'department/create/',
@@ -58,10 +60,12 @@ const DepartmentForm = () => {
     })
       .then(res => {
         dispatch(setDepartmentDetails(res?.data?.data));
+        dispatch(setLoaderVisible(false));
         dispatch(toggleRSBView(false));
         toast.success(res?.data?.message);
       })
       .catch(err => {
+        dispatch(setLoaderVisible(false));
         toast.error(err?.response?.data?.message);
       })
   };

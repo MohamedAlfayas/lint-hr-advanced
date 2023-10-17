@@ -32,6 +32,7 @@ const RoleForm = () => {
             window.alert('Please Choose Any Permission')
         }
         else{
+            dispatch(setLoaderVisible(true));
             Api({
                 method:'POST',
                 url:"/role/create-role/",
@@ -41,10 +42,12 @@ const RoleForm = () => {
                 console.log("success");
                 console.log("Res = ",res);
                 roleObj.id === 0 ? dispatch(addRole(res?.data.data)) : dispatch(editRole(res?.data?.data));
+                dispatch(setLoaderVisible(false));
                 dispatch(toggleRSBView(false));                
                 toast.success(res?.data?.message);
             })
             .catch(err =>{
+                dispatch(setLoaderVisible(false));
                 console.log("Err = ",err);
                 toast.error(err?.response?.data?.message);
             })

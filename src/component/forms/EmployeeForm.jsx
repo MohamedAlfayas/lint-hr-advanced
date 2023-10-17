@@ -25,6 +25,7 @@ import {
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { ConvertISODateFormat } from "../../common/js/ConvertDateFormat";
 import { setActiveTableTab } from "../../redux/reducers/ChildReducer/TableReducer";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 const EmployeeForm = () => {
   const dispatch = useDispatch();
 
@@ -1871,6 +1872,8 @@ const EmployeeForm = () => {
       }
     });
 
+    dispatch(setLoaderVisible(true))
+
     Api({
       method: "POST",
       url: "employee/add-new/",
@@ -1886,10 +1889,12 @@ const EmployeeForm = () => {
           : dispatch(editEmployee(res?.data?.data));
         dispatch(toggleRSBView(false));
         // dispatch(setActiveTableTab("all"));
+        dispatch(setLoaderVisible(false));
         toast.success(res?.data?.message);
       })
       .catch((err) => {
         console.log("ERr == ", err);
+        dispatch(setLoaderVisible(false))
         toast.error(err?.response?.data?.message);
       });
   };

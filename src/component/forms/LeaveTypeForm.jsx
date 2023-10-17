@@ -139,6 +139,7 @@ const LeaveTypeForm = () => {
   const handleSubmit = (e) => {
     e.preventDefault()
     console.log("employee data = ", leaveTypeData);
+    dispatch(setLoaderVisible(true));
     Api({
       method: 'POST',
       url: '/leave/leave_type/create/',
@@ -147,10 +148,12 @@ const LeaveTypeForm = () => {
       .then(res => {
         console.log("REs = ", res);
         leaveTypeData.id === 0 ? dispatch(addLeaveType(res?.data.data)) : dispatch(editLeaveType(res?.data?.data));
+        dispatch(setLoaderVisible(false));
         dispatch(toggleRSBView(false));
         toast.success(res?.data?.message);
       })
       .catch(err => {
+        dispatch(setLoaderVisible(false));
         console.log("ERr == ", err);
         toast.success(err?.response?.data?.message);
       })

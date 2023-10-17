@@ -12,6 +12,7 @@ import MetaReducer from "../ChildReducer/MetaReducer";
 import LeaveApplyReducer from "../ChildReducer/LeaveApplyReducer";
 import CustomFieldReducer from "../ChildReducer/CustomFieldReducer";
 import TableReducer from "../ChildReducer/TableReducer";
+import LoaderReducer from "../ChildReducer/LoaderReducer";
 
 export const MainReducer = combineReducers({
     MetaReducer : MetaReducer,
@@ -27,4 +28,5 @@ export const MainReducer = combineReducers({
     LeaveApplyReducer : LeaveApplyReducer,
     CustomFieldReducer : CustomFieldReducer,
     TableReducer : TableReducer,
+    LoaderReducer : LoaderReducer,
 })
