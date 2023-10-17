@@ -12,6 +12,7 @@ import LeaveType from "../pages/leave/LeaveType";
 import LeaveApproval from "../pages/leave/LeaveApproval";
 import LeaveDashboard from "../pages/leave/Leaves";
 import CustomField from "../pages/customField/CustomField";
+import PayRoll from "../pages/payroll/PayRoll";
 
 
 
@@ -26,6 +27,7 @@ const privateRoutes = [
     { path: "/leave-approval", component: <LeaveApproval /> },
     { path: "/leaves", component: <LeaveDashboard /> },
     { path: "/custom-field", component: <CustomField /> },
+    { path: "/payroll", component: <PayRoll /> },
     {
         path: "/",
         exact: true,

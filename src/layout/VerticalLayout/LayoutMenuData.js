@@ -802,6 +802,7 @@ const Navdata = () => {
                 { id: "leavetype", label: "Leave Type", link: "/leavetype", parentId: "baseUi" },
                 { id: "leaveapproval", label: "Leave Approval", link: "/leave-approval", parentId: "baseUi" },
                 { id: "customfield", label: "Custom Field", link: "/custom-field", parentId: "baseUi" },
+                { id: "payroll", label: "Pay Roll", link: "/payroll", parentId: "payroll" },
 
             //     { id: "badges", label: "Badges", link: "#", parentId: "baseUi" },
             //     { id: "buttons", label: "Buttons", link: "#", parentId: "baseUi" },
