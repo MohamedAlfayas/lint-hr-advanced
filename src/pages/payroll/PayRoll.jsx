@@ -59,6 +59,10 @@ const PayRoll = () => {
 
   const [payRollObj, setPayRollObj] = useState(initialFormObj);
 
+  useEffect(() =>{
+    console.log("PayRoll Obj = ",payRollObj);
+  },[payRollObj])
+
   const payroll_from_options = [
     { id: 1, label: "Jan", value: 1 },
     { id: 2, label: "Feb", value: 2 },
@@ -304,7 +308,8 @@ const PayRoll = () => {
                                 options={payroll_from_options || []}
                                 className="basic-multi-select"
                                 placeholder={"Select Payroll From"}
-                                value={[]}
+                                value={(payRollObj.payroll_from && payroll_from_options.find(e => e.value === payRollObj.payroll_from)) || []}
+                                onChange={(e) => setPayRollObj({...payRollObj, payroll_from:e.value})}
                               />
                             </Col>
                           </Row>
@@ -333,7 +338,8 @@ const PayRoll = () => {
                                 options={pay_cycle_options || []}
                                 className="basic-multi-select"
                                 placeholder={"Select Payroll From"}
-                                value={[]}
+                                value={(payRollObj.pay_cycle_from && pay_cycle_options.find(e => e.value === payRollObj.pay_cycle_from)) || []}
+                                onChange={(e) => setPayRollObj({...payRollObj, pay_cycle_from:e.value})}
                               />
                               <span style={{ marginLeft: "3px" }}>To 31</span>
                             </Col>
@@ -359,6 +365,7 @@ const PayRoll = () => {
                                   type="checkbox"
                                   className="form-check-input"
                                   checked={payRollObj.company_has_pf}
+                                  onChange={(e) => setPayRollObj({...payRollObj, company_has_pf : e.target.checked})}
                                 />
                               </div>
                             </Col>
@@ -381,7 +388,8 @@ const PayRoll = () => {
                                 options={employee_contribution_options || []}
                                 className="basic-multi-select"
                                 placeholder={"Select Employee Contribution"}
-                                value={[]}
+                                value={(payRollObj.employee_contribution && employee_contribution_options.find(e => e.value === payRollObj.employee_contribution)) || []}
+                                onChange={(e) => setPayRollObj({...payRollObj, employee_contribution:e.value})}
                               />
                             </Col>
                           </Row>
@@ -406,6 +414,7 @@ const PayRoll = () => {
                                   type="checkbox"
                                   className="form-check-input"
                                   checked={payRollObj.pf_ceiling}
+                                  onChange={(e) => setPayRollObj({...payRollObj, pf_ceiling : e.target.checked})}
                                 />
                               </div>
                             </Col>
@@ -431,6 +440,7 @@ const PayRoll = () => {
                                   type="checkbox"
                                   className="form-check-input"
                                   checked={payRollObj.company_has_esi}
+                                  onChange={(e) => setPayRollObj({...payRollObj, company_has_esi : e.target.checked})}
                                 />
                               </div>
                             </Col>
@@ -456,6 +466,7 @@ const PayRoll = () => {
                                   type="checkbox"
                                   className="form-check-input"
                                   checked={payRollObj.deduct_profesional_tax}
+                                  onChange={(e) => setPayRollObj({...payRollObj, deduct_profesional_tax : e.target.checked})}
                                 />
                               </div>
                             </Col>

@@ -12,7 +12,7 @@ const Footer = () => {
                         </Col>
                         <Col sm={6}>
                             <div className="text-sm-end d-none d-sm-block">
-                                Design & Develop by Lintcloud
+                                Designed & Developed by <a target='_blank' href='https://www.lintcloud.com/'>Lintcloud</a>
                             </div>
                         </Col>
                     </Row>
