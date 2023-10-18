@@ -80,6 +80,16 @@ const CustomFieldForm = () => {
         });
     };
     console.log(" data = ", customFieldObj);
+
+    const handleFieldTypeChange = (e) =>{
+        if(e.value === "option"){
+            setCustomFieldObj({ ...customFieldObj, type: e.value, options:[{id : 1,label : '', value : ''}] });
+        }
+        else{
+            setCustomFieldObj({ ...customFieldObj, type: e.value });
+        }
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         console.log("employee data = ", customFieldObj);
@@ -136,7 +146,7 @@ const CustomFieldForm = () => {
                                         className="basic-multi-select"
                                         value={(customFieldObj.type && types.find(e => e.value === customFieldObj.type)) || []}
                                         onChange={(e) => {
-                                            setCustomFieldObj({ ...customFieldObj, type: e.value });
+                                            handleFieldTypeChange(e)                                            
                                         }}
                                     />
                                 </div>
