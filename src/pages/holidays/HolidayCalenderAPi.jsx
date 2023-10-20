@@ -6,9 +6,13 @@ const HolidayCalenderAPi = () => {
   return (
     <React.Fragment>
       <div className="col-xxl-4 col-xl-4">
+        <div className="container text-center">
+      <h4 className="card-title mb-0">Upcoming Schedules</h4>
+      </div>
+      <br></br>
         <div className="card">
           <div className="card-header border-0">
-            <h4 className="card-title mb-0">Upcoming Schedules</h4>
+          
           </div>
           <div className="card-body pt-0">
             <div className="upcoming-scheduled">
