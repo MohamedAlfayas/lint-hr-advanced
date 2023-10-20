@@ -18,6 +18,14 @@ import "swiper/css/pagination";
 // import required modules
 import { Autoplay, Mousewheel } from "swiper";
 import LeaveTypeWidgetsCharts from "./LeaveTypeWidgetsCharts";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  setComponentToShow,
+  setFormObj,
+  setFormTitle,
+  setFormWidthPercentage,
+  toggleRSBView,
+} from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 
 // Import Images
 import btcCoin from "../../assets/images/svg/crypto-icons/btc.svg";
@@ -124,7 +132,46 @@ const leaveTypes = [
   },
 ];
 
-const LeaveTypesWidgets = () => {
+
+const LeaveTypesWidgets = ({
+  formname,
+  initialFormObj,
+  width_per,
+}) => {
+  const dispatch = useDispatch();
+  const handleCreateAndUpdate = ($id, table_obj,) => {
+    console.log($id, table_obj);
+  
+    let FormObj = {};
+  
+    if ($id === 0) {
+      FormObj = initialFormObj;
+    } else {
+      let thisCFValues =
+        "cf_values" in table_obj ? [...table_obj?.cf_values] : [];
+      let cf = [];
+      let CustomFieldsForThisForm = GetCustomField(formname);
+      if (thisCFValues && thisCFValues.length) {
+        cf = CustomFieldsForThisForm.map((obj) => {
+          return {
+            ...obj,
+            value:
+              thisCFValues.find((t) => t.id === obj.id)?.value || obj.value,
+          };
+        });
+      } else {
+        cf = CustomFieldsForThisForm;
+      }
+  
+      FormObj = { ...table_obj, cf_values: cf };
+    }
+  
+    dispatch(setFormTitle(formname));
+    dispatch(setFormObj(FormObj));
+    dispatch(setFormWidthPercentage(width_per));
+    dispatch(setComponentToShow(formname));
+    dispatch(toggleRSBView(true));
+  }; 
   return (
     <React.Fragment>
       <Col lg={12}>
@@ -180,7 +227,10 @@ const LeaveTypesWidgets = () => {
                       <Button
                         color="success"
                         className="btn-label ms-0 mt-2"
-                        size="sm">
+                        size="sm"
+                        onClick={() => {
+                          handleCreateAndUpdate(0);
+                        }}>
                         {" "}
                         <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
                         Apply{" "}

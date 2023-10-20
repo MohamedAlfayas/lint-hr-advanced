@@ -172,7 +172,9 @@ const LeaveDashboard = () => {
         <Container fluid>
           <Row className="project-wrapper">
             <Col xxl={12}>
-              <LeaveTypesWidgets />
+              <LeaveTypesWidgets 
+                 formname={"leave_apply"}
+                 initialFormObj={initialFormObj}/>
             </Col>
             <InfoTable
               additionalColumn={additionalColumn}
