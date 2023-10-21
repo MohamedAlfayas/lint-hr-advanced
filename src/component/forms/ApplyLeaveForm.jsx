@@ -133,16 +133,7 @@ const ApplyLeaveForm = () => {
       available_count: 32,
       status: 1,
     },
-    {
-      id: 9,
-      label: "Casual Leave",
-      value: 9,
-      type: 1,
-      unit: "Day",
-      leave_count: 12,
-      available_count: 12,
-      status: 1,
-    },
+   
   ];
   const handleDateChange = (startDate, endDate) => {
     console.log(leaveapplyObj);

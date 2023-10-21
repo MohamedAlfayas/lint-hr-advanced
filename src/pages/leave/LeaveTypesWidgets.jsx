@@ -1,4 +1,5 @@
 import React from "react";
+import { useState } from "react";
 import {
   Button,
   Card,
@@ -35,6 +36,7 @@ import bnbCoin from "../../assets/images/svg/crypto-icons/bnb.svg";
 import usdtCoin from "../../assets/images/svg/crypto-icons/usdt.svg";
 import dashCoin from "../../assets/images/svg/crypto-icons/dash.svg";
 import neoCoin from "../../assets/images/svg/crypto-icons/neo.svg";
+import { GetCustomField } from "../../common/js/GetCustomField";
 
 const leaveTypeSlider = [
   {
@@ -47,7 +49,7 @@ const leaveTypeSlider = [
     status: 1,
   },
   {
-    id: 1,
+    id: 2,
     name: "Earned Leave (EL)",
     type: 1,
     unit: "Day",
@@ -56,7 +58,7 @@ const leaveTypeSlider = [
     status: 1,
   },
   {
-    id: 1,
+    id: 3,
     name: "Sick Leave (SL)",
     type: 2,
     unit: "Day",
@@ -65,7 +67,7 @@ const leaveTypeSlider = [
     status: 1,
   },
   {
-    id: 1,
+    id: 4,
     name: "Maternity Leave (ML)",
     type: 1,
     unit: "Day",
@@ -74,7 +76,7 @@ const leaveTypeSlider = [
     status: 1,
   },
   {
-    id: 1,
+    id: 5,
     name: "Marriage Leave",
     type: 1,
     unit: "Day",
@@ -83,7 +85,7 @@ const leaveTypeSlider = [
     status: 1,
   },
   {
-    id: 1,
+    id: 6,
     name: "Compensatory Off",
     type: 1,
     unit: "Day",
@@ -92,7 +94,7 @@ const leaveTypeSlider = [
     status: 1,
   },
   {
-    id: 1,
+    id: 7,
     name: "Loss Of Pay Leave",
     type: 1,
     unit: "Day",
@@ -101,7 +103,7 @@ const leaveTypeSlider = [
     status: 1,
   },
   {
-    id: 1,
+    id: 8,
     name: "Permission",
     type: 1,
     unit: "Hour",
@@ -109,15 +111,7 @@ const leaveTypeSlider = [
     available_count: 32,
     status: 1,
   },
-  {
-    id: 1,
-    name: "Casual Leave",
-    type: 1,
-    unit: "Day",
-    leave_count: 12,
-    available_count: 12,
-    status: 1,
-  },
+ 
 ];
 
 const leaveTypes = [
@@ -139,8 +133,14 @@ const LeaveTypesWidgets = ({
   width_per,
 }) => {
   const dispatch = useDispatch();
+  const [intialFormObj, setIntialFormObj] = useState(null);
+  
   const handleCreateAndUpdate = ($id, table_obj,) => {
     console.log($id, table_obj);
+    setIntialFormObj({
+    ...intialFormObj,
+    end:initialFormObj.id
+  });
   
     let FormObj = {};
   
@@ -165,7 +165,7 @@ const LeaveTypesWidgets = ({
   
       FormObj = { ...table_obj, cf_values: cf };
     }
-  
+    
     dispatch(setFormTitle(formname));
     dispatch(setFormObj(FormObj));
     dispatch(setFormWidthPercentage(width_per));
@@ -229,7 +229,7 @@ const LeaveTypesWidgets = ({
                         className="btn-label ms-0 mt-2"
                         size="sm"
                         onClick={() => {
-                          handleCreateAndUpdate(0);
+                          handleCreateAndUpdate(item.id, item);
                         }}>
                         {" "}
                         <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
