@@ -39,7 +39,7 @@ import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { GetCustomField } from "../../common/js/GetCustomField";
-import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
+// import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 
 const OrgInfoTab = () => {
   const [stateList, setStateList] = useState([]);
@@ -233,7 +233,7 @@ const OrgInfoTab = () => {
                 <form onSubmit={submitProfileForm}>
                   <div className="live-preview">
                     <Row className="gy-4">
-                      <WebCheckInOutBtn />
+                      {/* <WebCheckInOutBtn /> */}
 
                       <Col xxl={8} md={7}>
                         <div>
