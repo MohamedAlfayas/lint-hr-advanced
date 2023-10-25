@@ -42,6 +42,7 @@ import {
   setFormTitle,
   setFormWidthPercentage,
   toggleRSBView,
+  toggleISBView,
 } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { useDispatch, useSelector } from "react-redux";
 import Datetime from "react-datetime";
@@ -273,6 +274,8 @@ const InfoTable = ({
     console.log(data);
   };
 
+  const module_list_for_create_btn_access = ["employee","leave_types","holiday","department"]
+
   // CUSTOM FORM
 
   const handleCreateAndUpdate = ($id, table_obj) => {
@@ -307,6 +310,7 @@ const InfoTable = ({
     dispatch(setFormWidthPercentage(width_per));
     dispatch(setComponentToShow(formname));
     dispatch(toggleRSBView(true));
+    dispatch(toggleISBView(true));
   };
   const toggle = useCallback(() => {
     if (modal) {
@@ -413,6 +417,21 @@ const InfoTable = ({
                         {formname.split("_").join(" ")}
                       </button>
                     )}{" "}
+                      <div className="d-flex gap-1 flex-wrap">
+                    {formname && (module_list_for_create_btn_access.includes(formname))  &&  (
+                      <button
+                        type="button"
+                        className="btn btn-primary add-btn"
+                        id="create-btn"
+                        style={{ textTransform: "capitalize" }}
+                        onClick={() => {
+                          handleCreateAndUpdate(0);
+                        }}>
+                       <i className="ri-file-download-line align-bottom me-1"></i>{" "}
+                       Import
+                      
+                      </button>
+                    )}{" "}
                     <button
                       type="button"
                       className="btn btn-info"
@@ -428,6 +447,7 @@ const InfoTable = ({
                       </button>
                     )}
                   </div>
+                </div>
                 </div>
               </Row>
             </CardHeader>

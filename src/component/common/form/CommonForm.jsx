@@ -6,9 +6,10 @@ import withRouter from '../../../common/js/withRouter';
 import { useSelector, useDispatch } from "react-redux";
 
 
-import { resetForm, toggleRSBView } from '../../../redux/reducers/ChildReducer/RightSideBarReducer';
+import { resetForm, toggleRSBView, toggleISBView } from '../../../redux/reducers/ChildReducer/RightSideBarReducer';
 import RightSideBar from './DisplayForms';
 import DisplayForms from './DisplayForms';
+import ImportForms from './importForms';
 
 const CommonForm = (props) => {
     const dispatch = useDispatch();
@@ -29,11 +30,14 @@ const CommonForm = (props) => {
 
     // open offcanvas
     
-    const { showRSB, form_title, form_obj, form_width_percentage } = useSelector(state => state.RightSideBarReducer)
+    const { showRSB, showISB, form_title, form_obj, form_width_percentage } = useSelector(state => state.RightSideBarReducer)
 
 
     const toggleLeftCanvas = () => {
         dispatch(toggleRSBView(!showRSB))
+    };
+    const toggleImportCanvas = () => {
+        dispatch(toggleISBView(!showISB))
     };
 
     window.onscroll = function () {
@@ -82,6 +86,12 @@ const CommonForm = (props) => {
                     open={showRSB}
                     toggleLeftCanvas = {toggleLeftCanvas}
                 />
+            </div>
+            <div>
+                {/* <ImportForms 
+                    open={showISB}
+                    toggleImportCanvas= {toggleImportCanvas}
+                /> */}
             </div>
         </React.Fragment>
     );

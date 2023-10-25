@@ -4,12 +4,20 @@ import {
   Button,
   Card,
   CardBody,
+  CardHeader,
   Col,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownToggle,
   Form,
+  FormGroup,
   Input,
   Label,
   Row,
+  UncontrolledDropdown,
 } from "reactstrap";
+
 import Select from "react-select";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import DummyUserImg from "../../assets/images/users/user.png";
@@ -26,6 +34,9 @@ import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarRed
 import { ConvertISODateFormat } from "../../common/js/ConvertDateFormat";
 import { setActiveTableTab } from "../../redux/reducers/ChildReducer/TableReducer";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import indflag from "../../assets/images/flags/in.svg";
+import SimpleBar from "simplebar-react";
+import CountryList from "../../common/data/CountryList";
 const EmployeeForm = () => {
   const dispatch = useDispatch();
 
@@ -38,6 +49,22 @@ const EmployeeForm = () => {
 
   const [employeeImage, setEmployeeImage] = useState(null);
   const [subDepOptions, setSubDeptOptions] = useState(dep_options);
+  const [stateList, setStateList] = useState([]);
+  const [contactCountry, setContactCountry] = useState({
+    id: 240,
+    flagImg: indflag,
+    countryName: "India",
+    countryCode: "+91",
+  });
+  const [selectedCountry, setSelectedCountry] = useState({});
+
+  const [dropdownOpen3, setDropdownOpen3] = useState(false);
+  const [dropdownOpen4, setDropdownOpen4] = useState(false);
+  const [stateDD, setStateDD] = useState(false);
+
+  const toggle3 = () => setDropdownOpen3((prevState) => !prevState);
+  const toggle4 = () => setDropdownOpen4((prevState) => !prevState);
+  const stateToggle = () => setStateDD((prevState) => !prevState);
 
   const timzone_options = useMemo(
     () => [
@@ -1871,6 +1898,7 @@ const EmployeeForm = () => {
         form_data.append(key[0], key[1]);
       }
     });
+    
 
     dispatch(setLoaderVisible(true))
 
@@ -2253,6 +2281,90 @@ const EmployeeForm = () => {
                     </Col>
                   ))
                 : null}
+                 <Col lg={12}>
+                        <div>
+                          <Label>Contact Number*</Label>
+                          <Dropdown
+                            className="input-group"
+                            isOpen={dropdownOpen4}
+                            toggle={toggle4}>
+                            <DropdownToggle
+                              as="button"
+                              className="btn btn-light border arrow-none">
+                              <img
+                                src={contactCountry.flagImg}
+                                alt="country flag"
+                                className="options-flagimg"
+                                height="20"
+                              />
+                              <span className="countrylist-codeno text-muted">
+                                {contactCountry.countryCode}
+                              </span>
+                            </DropdownToggle>
+                            <input
+                              type="number"
+                              className="form-control rounded-end flag-input"
+                              placeholder="Enter number"
+                              // value={profileData.contact_number || ""}
+                              onChange={(e) =>
+                                updateProfileData(
+                                  "contact_number",
+                                  e.target.value
+                                )
+                              }
+                            />
+                            <DropdownMenu
+                              as="ul"
+                              className="list-unstyled w-100 dropdown-menu-list mb-0">
+                              <SimpleBar
+                                style={{ maxHeight: "220px" }}
+                                className="px-3">
+                                {(
+                                  CountryList.filter((obj) => obj.show).sort(
+                                    (a, b) =>
+                                      a.countryName.localeCompare(b.countryName)
+                                  ) || []
+                                ).map((item, key) => (
+                                  <DropdownItem
+                                    as="li"
+                                    onClick={() => {
+                                      updateProfileData(
+                                        "country_code",
+                                        item.countryCode
+                                      );
+                                      setContactCountry(item);
+                                    }}
+                                    key={key}
+                                    className="dropdown-item d-flex">
+                                    <div className="flex-shrink-0 me-2">
+                                      <img
+                                        src={item.flagImg}
+                                        alt="country flag"
+                                        className="options-flagimg"
+                                        height="20"
+                                      />
+                                    </div>
+                                    <div className="flex-grow-1">
+                                      <div className="d-flex">
+                                        <div className="country-name me-1">
+                                          {item.countryName}
+                                        </div>
+                                        <span className="countrylist-codeno text-muted">
+                                          {item.countryCode}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </DropdownItem>
+                                ))}
+                              </SimpleBar>
+                            </DropdownMenu>
+                          </Dropdown>
+
+                          <div id="passwordHelpBlock" className="form-text">
+                            Enter Your Contact number with country code.
+                          </div>
+                        </div>
+                      </Col>
 
               <Col md={12} lg={12} xxl={12}>
                 <div>

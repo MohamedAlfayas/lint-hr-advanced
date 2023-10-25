@@ -13,6 +13,7 @@ import LeaveApproval from "../pages/leave/LeaveApproval";
 import LeaveDashboard from "../pages/leave/Leaves";
 import CustomField from "../pages/customField/CustomField";
 import PayRoll from "../pages/payroll/PayRoll";
+import Xlsx from "../pages/xlsx/Xlsx"
 
 
 
@@ -28,6 +29,7 @@ const privateRoutes = [
     { path: "/leaves", component: <LeaveDashboard /> },
     { path: "/custom-field", component: <CustomField /> },
     { path: "/payroll", component: <PayRoll /> },
+    { path: "/xlsx", component: <Xlsx /> },
     {
         path: "/",
         exact: true,

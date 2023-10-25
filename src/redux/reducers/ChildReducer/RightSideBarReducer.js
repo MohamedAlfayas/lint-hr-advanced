@@ -2,11 +2,13 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
     showRSB: false,
+    showISB:false,
     form_title: "LC Form",
     form_obj: {},
     form_width_percentage: "30%",
     component_to_show : "default"
 };
+
 
 
 const RightSideBarReducer = createSlice({
@@ -17,6 +19,12 @@ const RightSideBarReducer = createSlice({
             return {
                 ...state,
                 showRSB: action.payload
+            }
+        },
+        toggleISBView: (state, action) => {
+            return {
+                ...state,
+                showISB: action.payload
             }
         },
         setFormTitle: (state, action) => {
@@ -47,6 +55,7 @@ const RightSideBarReducer = createSlice({
             return {
                 ...state,
                 showRSB: true,
+                showISB: true,
                 form_title: "LC Form",
                 form_obj: {},
                 form_width_percentage: "30%",
@@ -58,6 +67,7 @@ const RightSideBarReducer = createSlice({
 
 export const {
     toggleRSBView,
+    toggleISBView,
     setFormTitle,
     setFormObj,
     setFormWidthPercentage,
