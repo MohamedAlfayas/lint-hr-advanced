@@ -45,7 +45,6 @@ const ProfileViewMin = () => {
             alt="Available"
             className="avatar-lg img-thumbnail rounded-circle mx-auto border-success"
           />
-          <span className="user-status"></span>
           <div className="mt-3">
             <h5 className="fs-15 profile-name">
               <Link to="#" className="link-primary">
@@ -313,7 +312,7 @@ const ProfileViewMin = () => {
           <button className="btn btn-light w-100">
             <i className="ri-at-line align-bottom ms-1"></i> Send Email
           </button>
-          <Link to="#" className="btn btn-primary w-100">
+          <Link to="/employeeview" className="btn btn-primary w-100">
             <i className="ri-user-3-line align-bottom ms-1"></i> View Profile
           </Link>
         </div>
