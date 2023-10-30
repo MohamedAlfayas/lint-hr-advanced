@@ -1,0 +1,325 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, NavLink } from "react-router-dom";
+import classnames from "classnames";
+
+import {
+  Button,
+  Card,
+  CardBody,
+  Col,
+  DropdownItem,
+  DropdownMenu,
+  DropdownToggle,
+  Form,
+  Input,
+  Label,
+  Nav,
+  NavItem,
+  Row,
+  TabContent,
+  TabPane,
+  Table,
+  UncontrolledDropdown,
+} from "reactstrap";
+import SimpleBar from "simplebar-react";
+
+const ProfileViewMin = () => {
+  const dispatch = useDispatch();
+
+  // Custom Tabs Bordered
+  const [customActiveTab, setcustomActiveTab] = useState("1");
+  const toggleCustom = (tab) => {
+    if (customActiveTab !== tab) {
+      setcustomActiveTab(tab);
+    }
+    console.log(customActiveTab);
+  };
+
+  return (
+    <React.Fragment>
+      <Row>
+        <div className="p-2 text-center">
+          <img
+            src="https://local-lcedu-static.s3.amazonaws.com/dev/employee/profile/18ba4128-f7f0-435b-a841-96c01c829d0b.jpg"
+            alt="Available"
+            className="avatar-lg img-thumbnail rounded-circle mx-auto border-success"
+          />
+          <span className="user-status"></span>
+          <div className="mt-3">
+            <h5 className="fs-15 profile-name">
+              <Link to="#" className="link-primary">
+                "Kathir"
+              </Link>
+            </h5>
+            <p className="text-muted profile-designation">"Developer"</p>
+            <div className="  mb-3 align-center">
+              <span className="text-muted">
+                <i className="ri-at-line me-1 align-bottom"></i>{" "}
+                <span className="view-companyname">
+                  <Link to="mailto:Kathir@lc.com" className="link-primary">
+                    Kathir@lc.com
+                  </Link>
+                </span>
+              </span>
+              <span className="text-muted">
+                <i className="ri-phone-line me-1 ms-2 align-bottom"></i>{" "}
+                <span className="view-location">
+                  <Link to="tel:+91 9999999999" className="link-primary">
+                    +91 9999999999
+                  </Link>
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <Row className="g-0 text-center">
+          <Col xs={4}>
+            <div className="p-3 border border-dashed border-start-0">
+              <h5 className="mb-1 profile-project">09:00</h5>
+              <p className="text-muted mb-0">Check In</p>
+            </div>
+          </Col>
+          <Col xs={4}>
+            <div className="p-3 border border-dashed border-start-0">
+              <h5 className="mb-1 profile-task">00:00</h5>
+              <p className="text-muted mb-0">Check Out</p>
+            </div>
+          </Col>
+          <Col xs={4}>
+            <div className="p-3 border border-dashed border-end-0">
+              <h5 className="mb-1 profile-task">07:00</h5>
+              <p className="text-muted mb-0">Working Hrs</p>
+            </div>
+          </Col>
+        </Row>
+        <div className="table-responsive table-card p-3">
+          <h5 className="fs-15 mb-2 mt-3 ms-3">Basic Details</h5>
+
+          <Table className="table table-borderless mb-0">
+            <tbody>
+              <tr>
+                <td className="fw-medium">DOB</td>
+                <td>09 Jan, 1992</td>
+              </tr>
+              <tr>
+                <td className="fw-medium">Gender</td>
+                <td>Male</td>
+              </tr>
+              <tr>
+                <td className="fw-medium">Work Schedule</td>
+                <td>Morning Shift</td>
+              </tr>
+              <tr>
+                <td className="fw-medium">Custom Field 1</td>
+                <td>Value</td>
+              </tr>
+              <tr>
+                <td className="fw-medium">Sub Departments</td>
+                <td>
+                  <span
+                    className="badge bg-primary-subtle text-primary me-1"
+                    key={1}>
+                    Dep 1
+                  </span>
+                  <span
+                    className="badge bg-primary-subtle text-primary me-1"
+                    key={2}>
+                    Dep 2
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td className="fw-medium">Created Date</td>
+                <td>
+                  <small className="text-muted">2021-04-13T18:30:00.000Z</small>
+                </td>
+              </tr>
+            </tbody>
+          </Table>
+        </div>
+        <div className="p-3 border border-dashed border-end-0 border-start-0">
+          <Nav
+            tabs
+            className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3">
+            <NavItem>
+              <NavLink
+                to="#"
+                style={{ cursor: "pointer" }}
+                className={customActiveTab === "1" ? "active nav-link" : "mt-2"}
+                onClick={() => {
+                  toggleCustom("1");
+                }}>
+                Attendance
+              </NavLink>
+            </NavItem>
+            <NavItem>
+              <NavLink
+                to="#"
+                style={{ cursor: "pointer" }}
+                className={customActiveTab === "2" ? "active nav-link" : "mt-2"}
+                onClick={() => {
+                  toggleCustom("2");
+                }}>
+                Payrol
+              </NavLink>
+            </NavItem>
+            <NavItem>
+              <NavLink
+                to="#"
+                style={{ cursor: "pointer" }}
+                className={customActiveTab === "3" ? "active nav-link" : "mt-2"}
+                onClick={() => {
+                  toggleCustom("3");
+                }}>
+                Activity
+              </NavLink>
+            </NavItem>
+          </Nav>
+
+          <TabContent activeTab={customActiveTab} className="text-muted">
+            <TabPane tabId="1" id="home1">
+              <SimpleBar style={{ maxHeight: "215px" }}>
+                <Table className="table table-borderless mb-0">
+                  <tbody>
+                    <tr>
+                      <td>
+                        <strong>Date</strong>
+                      </td>
+                      <td>
+                        <strong>In</strong>
+                      </td>
+                      <td>
+                        <strong>Out</strong>
+                      </td>
+                      <td>
+                        <strong>Total</strong>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">01 Jan, 2023</td>
+                      <td>09:00</td>
+                      <td>20:00</td>
+                      <td className="text-success">08:00</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">01 Jan, 2023</td>
+                      <td>09:00</td>
+                      <td>20:00</td>
+                      <td>08:00</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">01 Jan, 2023</td>
+                      <td>09:00</td>
+                      <td>20:00</td>
+                      <td className="text-warning">07:00</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">01 Jan, 2023</td>
+                      <td>09:00</td>
+                      <td>20:00</td>
+                      <td className="text-success">08:00</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">01 Jan, 2023</td>
+                      <td>09:00</td>
+                      <td>20:00</td>
+                      <td className="text-success">08:00</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">01 Jan, 2023</td>
+                      <td colspan="2" className="text-center">
+                        WO
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">01 Jan, 2023</td>
+                      <td colspan="2" className="text-center">
+                        New Year
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">01 Jan, 2023</td>
+                      <td>09:00</td>
+                      <td>20:00</td>
+                      <td>08:00</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">01 Jan, 2023</td>
+                      <td>09:00</td>
+                      <td>20:00</td>
+                      <td>08:00</td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </SimpleBar>
+            </TabPane>
+            <TabPane tabId="2">
+              <p>Pending</p>
+            </TabPane>
+            <TabPane tabId="3">
+              <SimpleBar style={{ maxHeight: "215px" }}>
+                <Table className="table table-borderless mb-0">
+                  <tbody>
+                    <tr>
+                      <td>
+                        <strong>Time</strong>
+                      </td>
+                      <td>
+                        <strong>Event</strong>
+                      </td>
+                      <td>
+                        <strong>Source</strong>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">10 min ago</td>
+                      <td>Check Out</td>
+                      <td>Door Tap</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">2 hr ago</td>
+                      <td>Check In</td>
+                      <td>Door Tap</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">2:15 hr ago</td>
+                      <td>Check Out</td>
+                      <td>Door Tap</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">4:15 hr ago</td>
+                      <td>Check In</td>
+                      <td>Door Tap</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">4:45 hr ago</td>
+                      <td>Check Out</td>
+                      <td>Door Tap</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">8:15 hr ago</td>
+                      <td>Check In</td>
+                      <td>Mobile</td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </SimpleBar>
+            </TabPane>
+          </TabContent>
+        </div>
+
+        <div className="offcanvas-foorter border p-3 hstack gap-3 text-center position-relative">
+          <button className="btn btn-light w-100">
+            <i className="ri-at-line align-bottom ms-1"></i> Send Email
+          </button>
+          <Link to="#" className="btn btn-primary w-100">
+            <i className="ri-user-3-line align-bottom ms-1"></i> View Profile
+          </Link>
+        </div>
+      </Row>
+    </React.Fragment>
+  );
+};
+
+export default ProfileViewMin;

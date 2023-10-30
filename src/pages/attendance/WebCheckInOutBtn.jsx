@@ -18,6 +18,7 @@ const WebCheckInOutBtn = () => {
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "visible") {
       console.log("has focus");
+      //LCGetTodaysWorkDuration();
       //LCGetTodaysWorkDuration.init();
     } else {
       //clearInterval(interval);
@@ -25,11 +26,33 @@ const WebCheckInOutBtn = () => {
     }
   });
 
-  var LCGetTodaysWorkDuration = (function () {
+  function LCGetTodaysWorkDuration() {
     useEffect(() => {
       Api({
         method: "GET",
-        url: "",
+        url: "/attendance/get-total-work-duration/",
+      })
+        .then((data) => {
+          console.log("RES = ", data);
+
+          // LCAttendance.init(
+          //   data.total_work_duration,
+          //   data.currently_checked_in
+          // );
+
+          //dispatch(setRole(res?.data?.data))
+        })
+        .catch((err) => {
+          console.log("ERR = ", err);
+        });
+    }, []);
+  }
+
+  var LCGetTodaysWorkDurations = (function () {
+    useEffect(() => {
+      Api({
+        method: "GET",
+        url: "/attendance/get-total-work-duration/",
       })
         .then((data) => {
           console.log("RES = ", data);

@@ -30,6 +30,15 @@ const ApplyLeaveForm = () => {
 
   useEffect(() => {
     setLeaveApplyObj(form_obj);
+    console.log("...............");
+    console.log(form_obj);
+    setSelectedLeaveType(
+      (form_obj.leavetype &&
+        lt_option.find((e) => e.id === form_obj.leavetype).unit) ||
+        []
+    );
+    setStartDate(form_obj.start);
+    setEndDate(form_obj.end);
   }, [form_obj]);
 
   // const handleSubmit = async () => {
@@ -133,7 +142,6 @@ const ApplyLeaveForm = () => {
       available_count: 32,
       status: 1,
     },
-   
   ];
   const handleDateChange = (startDate, endDate) => {
     console.log(leaveapplyObj);

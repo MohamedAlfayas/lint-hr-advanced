@@ -111,7 +111,6 @@ const leaveTypeSlider = [
     available_count: 32,
     status: 1,
   },
- 
 ];
 
 const leaveTypes = [
@@ -126,24 +125,19 @@ const leaveTypes = [
   },
 ];
 
-
-const LeaveTypesWidgets = ({
-  formname,
-  initialFormObj,
-  width_per,
-}) => {
+const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
   const dispatch = useDispatch();
   const [intialFormObj, setIntialFormObj] = useState(null);
-  
-  const handleCreateAndUpdate = ($id, table_obj,) => {
-    console.log($id, table_obj);
+
+  const handleCreateAndUpdate = ($id, table_obj) => {
+    console.log(table_obj);
     setIntialFormObj({
-    ...intialFormObj,
-    end:initialFormObj.id
-  });
-  
+      ...intialFormObj,
+      end: initialFormObj.id,
+    });
+
     let FormObj = {};
-  
+
     if ($id === 0) {
       FormObj = initialFormObj;
     } else {
@@ -162,16 +156,16 @@ const LeaveTypesWidgets = ({
       } else {
         cf = CustomFieldsForThisForm;
       }
-  
+
       FormObj = { ...table_obj, cf_values: cf };
     }
-    
+
     dispatch(setFormTitle(formname));
     dispatch(setFormObj(FormObj));
     dispatch(setFormWidthPercentage(width_per));
     dispatch(setComponentToShow(formname));
     dispatch(toggleRSBView(true));
-  }; 
+  };
   return (
     <React.Fragment>
       <Col lg={12}>

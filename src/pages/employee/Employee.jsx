@@ -11,6 +11,14 @@ import { useEffect } from "react";
 import { setEmployee } from "../../redux/reducers/ChildReducer/EmployeeReducer";
 import { GetCustomField } from "../../common/js/GetCustomField";
 import { Badge, Button, UncontrolledTooltip } from "reactstrap";
+import { Link } from "react-router-dom";
+import {
+  setComponentToShow,
+  setFormObj,
+  setFormTitle,
+  setFormWidthPercentage,
+  toggleRSBView,
+} from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 
 const Employee = () => {
   const dispatch = useDispatch();
@@ -23,6 +31,16 @@ const Employee = () => {
   }, [version]);
 
   const CustomFieldsForThisForm = GetCustomField("employee") || [];
+
+  const viewEmployee = (obj) => {
+    console.log("Dep Edit = ", obj);
+
+    dispatch(setFormTitle("Employee Details"));
+    dispatch(setFormObj(obj));
+    dispatch(setFormWidthPercentage("25%"));
+    dispatch(setComponentToShow("profileViewMin"));
+    dispatch(toggleRSBView(true));
+  };
 
   // Column
   const additionalColumn = [
@@ -42,7 +60,15 @@ const Employee = () => {
               />
             </div>
             <div className="flex-grow-1">
-              <div>{obj.fname}</div>
+              <div>
+                <Link
+                  to="#"
+                  onClick={() => viewEmployee(obj)}
+                  className="link-body-emphasis mb-0">
+                  {" "}
+                  <h5 className="fs-14 mb-1">{obj.fname}</h5>
+                </Link>
+              </div>
               <div>{obj.email}</div>
             </div>
           </div>
@@ -65,7 +91,15 @@ const Employee = () => {
               </div>
             </div>
             <div className="flex-grow-1">
-              <div>{obj.fname}</div>
+              <div>
+                <Link
+                  to="#"
+                  onClick={() => viewEmployee(obj)}
+                  className="link-body-emphasis mb-0">
+                  {" "}
+                  <h5 className="fs-14 mb-1">{obj.fname}</h5>
+                </Link>
+              </div>
               <div>{obj.email}</div>
             </div>
           </div>
@@ -202,8 +236,16 @@ const Employee = () => {
 
   const filterKey = "is_active";
   const filterOptions = [
-    { option: true, label: "Active", count : employee_data.filter(e => e[filterKey] === true).length || 0 },
-    { option: false, label: "Inactive", count : employee_data.filter(e => e[filterKey] === false).length || 0 },
+    {
+      option: true,
+      label: "Active",
+      count: employee_data.filter((e) => e[filterKey] === true).length || 0,
+    },
+    {
+      option: false,
+      label: "Inactive",
+      count: employee_data.filter((e) => e[filterKey] === false).length || 0,
+    },
   ];
 
   document.title = `Employee | ${MetaTitle}`;

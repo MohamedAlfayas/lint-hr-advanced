@@ -11,6 +11,7 @@ import HolidayForm from "../../forms/HolidayForm";
 import LeaveTypeForm from "../../forms/LeaveTypeForm";
 import ApplyLeaveForm from "../../forms/ApplyLeaveForm";
 import CustomFieldForm from "../../forms/CustomFieldForm";
+import ProfileViewMin from "../../forms/ProfileViewMin";
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
   const { form_title, form_width_percentage, component_to_show } = useSelector(
@@ -24,8 +25,10 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
         isOpen={open}
         toggle={toggleLeftCanvas}
         direction="end">
-     <OffcanvasHeader toggle={toggleLeftCanvas} style={{ textTransform: "capitalize" }}>
-          {(form_title).split("_").join(" ")}
+        <OffcanvasHeader
+          toggle={toggleLeftCanvas}
+          style={{ textTransform: "capitalize" }}>
+          {form_title.split("_").join(" ")}
         </OffcanvasHeader>
         <OffcanvasBody className="p-0">
           <SimpleBar className="h-100">
@@ -46,9 +49,11 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
                 <LeaveTypeForm />
               ) : component_to_show === "leave_apply" ? (
                 <ApplyLeaveForm />
-              ) :component_to_show === "custom_fields" ? (
+              ) : component_to_show === "custom_fields" ? (
                 <CustomFieldForm />
-              ) :(
+              ) : component_to_show === "profileViewMin" ? (
+                <ProfileViewMin />
+              ) : (
                 <></>
               )}
             </div>
