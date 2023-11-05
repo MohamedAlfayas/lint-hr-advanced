@@ -15,6 +15,7 @@ import {
 import { toast } from "react-toastify";
 import { ConvertISODateFormat } from "../../common/js/ConvertDateFormat";
 import Flatpickr from "react-flatpickr";
+import { format } from "date-fns";
 
 const ApplyLeaveForm = () => {
   const dispatch = useDispatch();
@@ -30,13 +31,17 @@ const ApplyLeaveForm = () => {
 
   useEffect(() => {
     setLeaveApplyObj(form_obj);
-    console.log("...............");
+    console.log("...............##########");
     console.log(form_obj);
     setSelectedLeaveType(
       (form_obj.leavetype &&
         lt_option.find((e) => e.id === form_obj.leavetype).unit) ||
+        (form_obj.id && lt_option.find((e) => e.id === form_obj.id).unit) ||
         []
     );
+
+    //format(new Date(2014, 1, 11), 'yyyy-MM-dd')
+
     setStartDate(form_obj.start);
     setEndDate(form_obj.end);
   }, [form_obj]);
@@ -253,6 +258,8 @@ const ApplyLeaveForm = () => {
                       lt_option.find(
                         (e) => e.id === leaveapplyObj.leavetype
                       )) ||
+                    (leaveapplyObj.id &&
+                      lt_option.find((e) => e.id === leaveapplyObj.id)) ||
                     []
                   }
                   onChange={(e) => {
@@ -285,6 +292,8 @@ const ApplyLeaveForm = () => {
                     value={startDate}
                     options={{
                       dateFormat: "d M, Y",
+
+                      //dateFormat: "d-m-Y",
                     }}
                     onChange={(selectedDates, dateStr, instance) => {
                       // setLeaveApplyObj({ ...leaveapplyObj, start: dateStr });
@@ -302,6 +311,8 @@ const ApplyLeaveForm = () => {
                     value={endDate}
                     options={{
                       dateFormat: "d M, Y",
+
+                      // dateFormat: "d-m-Y",
                     }}
                     onChange={(selectedDates, dateStr, instance) => {
                       //setLeaveApplyObj({ ...leaveapplyObj, end: dateStr });
@@ -374,8 +385,7 @@ const ApplyLeaveForm = () => {
                 className="form-control"
                 id="description"
                 placeholder="Enter Reason"
-                // value={holidayObj.description || ""}
-              ></textarea>
+                value={leaveapplyObj.reason || ""}></textarea>
               <div id="passwordHelpBlock" className="form-text">
                 Please enter reason for leave.
               </div>
