@@ -2365,6 +2365,23 @@ const EmployeeForm = () => {
                           </div>
                         </div>
                       </Col>
+                      <Col lg={12}>
+                                <div className="mb-3">
+                                    <Label>Joining Date</Label>
+                                    <input
+                                        type="date"
+                                        name="date"
+                                        id="date"
+                                        className="form-control"
+                                       
+                                        required
+                                    />
+                               
+                                <div id="passwordHelpBlock" className="form-text">
+                            Enter Your Joining Date.
+                          </div>
+                          </div>
+                            </Col>
 
               <Col md={12} lg={12} xxl={12}>
                 <div>

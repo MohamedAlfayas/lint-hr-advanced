@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import {
   Card,
+  swal,
   CardBody,
   Col,
   Container,
@@ -28,6 +29,7 @@ import TableContainer from "../../../component/common/table/TableContainer";
 import DeleteModal from "../../../component/common/modal/DeleteModal";
 import Loader from "../../../component/common/loader/Loader";
 import ExportCSV from "../../../component/common/export/ExportCSV";
+
 import { useEffect } from "react";
 import { useCallback } from "react";
 
@@ -51,6 +53,7 @@ import { Status } from "filepond";
 import { setActiveTableTab } from "../../../redux/reducers/ChildReducer/TableReducer";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { GetCustomField } from "../../../common/js/GetCustomField";
+import { SweetAlert } from "../sweetAlert/SweetAlert";
 
 const InfoTable = ({
   additionalColumn,
@@ -113,6 +116,21 @@ const InfoTable = ({
     deleteCheckbox();
   }, []);
 
+  const handleApproval = () =>{
+    console.log("Click Approve")
+    let content = "<span>Are You Sure to <span style='color:green'>Accept Leave To Agent</span></span>  ?";
+    let btnText = 'Yes, Approve';
+    let btnClass = 'Success';
+    SweetAlert(true, content, btnText, btnClass)
+  }
+  const handleReject = () =>{
+    console.log("Click Reject")
+    let content = "<span>Are You Sure to <span style='color:red'>Reject Leave To Agent</span></span> ?";
+    let btnText = 'Yes, Reject';
+    let btnClass = 'Danger';
+    SweetAlert(true, content, btnText, btnClass)
+  }
+
   // Column
   const columns = useMemo(
     () => [
@@ -152,20 +170,18 @@ const InfoTable = ({
                   <Link
                     to="javascript:void(0)"
                     className="text-success d-inline-block edit-item-btn"
-                    onClick={() => {
-                      const orderData = cellProps.row.original;
-                      handleCreateAndUpdate(orderData.id, orderData);
-                    }}>
+          
+                      onClick={handleApproval}>
+
                     <i className=" ri-check-line fs-16"></i>
                   </Link>
                 </li>
                 <li className="list-inline-item">
                   <Link
-                    to="#"
+                    to="javascript:void(0)"
                     className="text-danger d-inline-block remove-item-btn"
-                    onClick={() => {
-                      const orderData = cellProps.row.original;
-                    }}>
+                    onClick={handleReject}>
+
                     <i className=" ri-close-line fs-16"></i>
                   </Link>
                 </li>
@@ -310,8 +326,14 @@ const InfoTable = ({
     dispatch(setFormWidthPercentage(width_per));
     dispatch(setComponentToShow(formname));
     dispatch(toggleRSBView(true));
-    dispatch(toggleISBView(true));
   };
+
+
+  const HandleImportExport = () =>{
+    dispatch(toggleISBView(true));
+  }
+
+
   const toggle = useCallback(() => {
     if (modal) {
       setModal(false);
@@ -330,6 +352,7 @@ const InfoTable = ({
           onCloseClick={() => setIsExportCSV(false)}
           data={dataList}
         />
+       
         <DeleteModal
           show={deleteModal}
           onDeleteClick={handleDeleteData}
@@ -425,10 +448,38 @@ const InfoTable = ({
                         id="create-btn"
                         style={{ textTransform: "capitalize" }}
                         onClick={() => {
-                          handleCreateAndUpdate(0);
+                          HandleImportExport(0);
                         }}>
                        <i className="ri-file-download-line align-bottom me-1"></i>{" "}
                        Import
+                      
+                      </button>
+                    )}{" "}
+                      {formname && formname === "leave_approval" &&  (
+                      <button
+                        type="button"
+                        className="btn btn-success add-btn"
+                        id="create-btn"
+                        style={{ textTransform: "capitalize" }}
+                        onClick={() => {
+                         
+                        }}>
+                       <i className="ri-check-line fs-16"></i>{" "}
+                       Bulk Approve
+                      
+                      </button>
+                    )}{" "}
+                      {formname && formname === "leave_approval" &&  (
+                      <button
+                        type="button"
+                        className="btn btn-danger add-btn"
+                        id="create-btn"
+                        style={{ textTransform: "capitalize" }}
+                        onClick={() => {
+                         
+                        }}>
+                       <i className="ri-close-line fs-16"></i>{" "}
+                       Bulk Reject
                       
                       </button>
                     )}{" "}
