@@ -103,7 +103,7 @@ const HolidayForm = () => {
                                     <Label>Date</Label>
                                     <input
                                         type="date"
-                                        name=" "
+                                        name="date"
                                         id="date"
                                         className="form-control"
                                         value={holidayObj.date || ""}
