@@ -80,11 +80,11 @@ const InfoTable = ({
 
   const tabOptions = filterOptions
     ? filterOptions.map((obj, idx) => {
-        return {
-          ...obj,
-          idx: idx + 2,
-        };
-      })
+      return {
+        ...obj,
+        idx: idx + 2,
+      };
+    })
     : [];
 
   const [activeTab, setActiveTab] = useState("2");
@@ -94,6 +94,9 @@ const InfoTable = ({
   const [deleteModalMulti, setDeleteModalMulti] = useState(false);
   const [modal, setModal] = useState(false);
   const [modal_list, setmodal_list] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const tog_list = () => {
     setmodal_list(!modal_list);
   };
@@ -116,20 +119,34 @@ const InfoTable = ({
     deleteCheckbox();
   }, []);
 
-  const handleApproval = () =>{
+  const handleApproval = () => {
     console.log("Click Approve")
     let content = "<span>Are You Sure to <span style='color:green'>Accept Leave To Agent</span></span>  ?";
     let btnText = 'Yes, Approve';
     let btnClass = 'Success';
     SweetAlert(true, content, btnText, btnClass)
   }
-  const handleReject = () =>{
+  const handleReject = () => {
     console.log("Click Reject")
     let content = "<span>Are You Sure to <span style='color:red'>Reject Leave To Agent</span></span> ?";
     let btnText = 'Yes, Reject';
     let btnClass = 'Danger';
     SweetAlert(true, content, btnText, btnClass)
   }
+  const handleSearchChange = (event) => {
+    setSearch(event.target.value);
+   
+  };
+
+  const handleStatusFilterChange = (event) => {
+    setStatusFilter(event.target.value);
+    
+  };
+
+  const handleTypeFilterChange = (event) => {
+    setTypeFilter(event.target.value);
+    
+  };
 
   // Column
   const columns = useMemo(
@@ -170,8 +187,8 @@ const InfoTable = ({
                   <Link
                     to="javascript:void(0)"
                     className="text-success d-inline-block edit-item-btn"
-          
-                      onClick={handleApproval}>
+
+                    onClick={handleApproval}>
 
                     <i className=" ri-check-line fs-16"></i>
                   </Link>
@@ -290,7 +307,7 @@ const InfoTable = ({
     console.log(data);
   };
 
-  const module_list_for_create_btn_access = ["employee","leave_types","holiday","department"]
+  const module_list_for_create_btn_access = ["employee", "leave_types", "holiday", "department"]
 
   // CUSTOM FORM
 
@@ -329,7 +346,7 @@ const InfoTable = ({
   };
 
 
-  const HandleImportExport = () =>{
+  const HandleImportExport = () => {
     dispatch(toggleISBView(true));
   }
 
@@ -352,7 +369,7 @@ const InfoTable = ({
           onCloseClick={() => setIsExportCSV(false)}
           data={dataList}
         />
-       
+
         <DeleteModal
           show={deleteModal}
           onDeleteClick={handleDeleteData}
@@ -440,65 +457,134 @@ const InfoTable = ({
                         {formname.split("_").join(" ")}
                       </button>
                     )}{" "}
-                      <div className="d-flex gap-1 flex-wrap">
-                    {formname && (module_list_for_create_btn_access.includes(formname))  &&  (
+                    <div className="d-flex gap-1 flex-wrap">
+                      {formname && (module_list_for_create_btn_access.includes(formname)) && (
+                        <button
+                          type="button"
+                          className="btn btn-primary add-btn"
+                          id="create-btn"
+                          style={{ textTransform: "capitalize" }}
+                          onClick={() => {
+                            HandleImportExport(0);
+                          }}>
+                          <i className="ri-file-download-line align-bottom me-1"></i>{" "}
+                          Import
+
+                        </button>
+                      )}{" "}
+                      <div>
+                        {formname && formname === "leave_approval" && (
+                          <div style={{ display: 'flex', flexDirection: 'row' }}>
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'relative', width: '200px' }}>
+                                <i className="bx bx-search-alt search-icon" style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)' }}></i>
+                                <input
+                                  type="text"
+                                  placeholder="Search"
+                                  value={search}
+                                  onChange={handleSearchChange}
+                                  style={{
+                                    padding: '6px 30px 6px 30px', 
+                                    borderRadius: '4px',
+                                    border: '1px solid #ccc',
+                                    width: '100%',
+                                    outline: 'none',
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div style={{  marginLeft: '10px', marginRight: '5px'}}>
+                            <label htmlFor="roleName" className="form-label">
+                              Status:
+                            </label>
+                            <select
+                              value={statusFilter}
+                              onChange={handleStatusFilterChange}
+                              style={{
+                                padding: '6px',
+                                borderRadius: '4px',
+                                border: '1px solid #ccc',
+                                width: '170px',
+                                outline: 'none',
+                              }}
+                            >
+                              <option value="all">All Status</option>
+                              <option value="approved">Approved</option>
+                              <option value="rejected">Rejected</option>
+                              
+                            </select>
+                          </div>
+                          <div style={{ marginLeft: '10px', marginRight: '5px' }}>
+                            <label htmlFor="roleName" className="form-label">
+                              Type:
+                            </label>
+                            <select
+                              value={typeFilter}
+                              onChange={handleTypeFilterChange}
+                              style={{
+                                padding: '6px',
+                                borderRadius: '4px',
+                                border: '1px solid #ccc',
+                                width: '170px',
+                                outline: 'none',
+                              }}
+                            >
+                              <option value="all">All Types</option>
+                              <option value="type1">Type 1</option>
+                              <option value="type2">Type 2</option>
+                             
+                            </select>
+                          </div>
+                          <div>
+                           
+                          </div>
+                        </div>
+                        )}
+                        
+                      </div>
+                      {formname && formname === "leave_approval" && (
+                        <div>
+                          <button
+                            type="button"
+                            className="btn btn-success add-btn"
+                            id="bulk-approve-btn"
+                            style={{ textTransform: "capitalize", marginRight: "5px", }}
+                            onClick={() => handleBulkAction("approve")}
+                          >
+                            <i className="ri-check-line fs-16"></i>{" "}
+                            Bulk Approve
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-danger add-btn"
+                            id="bulk-reject-btn"
+                            style={{ textTransform: "capitalize" }}
+                            onClick={() => handleBulkAction("reject")}
+                          >
+                            <i className="ri-close-line fs-16"></i>{" "}
+                            Bulk Reject
+                          </button>
+                        </div>
+                      )}
                       <button
                         type="button"
-                        className="btn btn-primary add-btn"
-                        id="create-btn"
-                        style={{ textTransform: "capitalize" }}
-                        onClick={() => {
-                          HandleImportExport(0);
-                        }}>
-                       <i className="ri-file-download-line align-bottom me-1"></i>{" "}
-                       Import
-                      
-                      </button>
-                    )}{" "}
-                      {formname && formname === "leave_approval" &&  (
-                      <button
-                        type="button"
-                        className="btn btn-success add-btn"
-                        id="create-btn"
-                        style={{ textTransform: "capitalize" }}
-                        onClick={() => {
-                         
-                        }}>
-                       <i className="ri-check-line fs-16"></i>{" "}
-                       Bulk Approve
-                      
-                      </button>
-                    )}{" "}
-                      {formname && formname === "leave_approval" &&  (
-                      <button
-                        type="button"
-                        className="btn btn-danger add-btn"
-                        id="create-btn"
-                        style={{ textTransform: "capitalize" }}
-                        onClick={() => {
-                         
-                        }}>
-                       <i className="ri-close-line fs-16"></i>{" "}
-                       Bulk Reject
-                      
-                      </button>
-                    )}{" "}
-                    <button
-                      type="button"
-                      className="btn btn-info"
-                      onClick={() => setIsExportCSV(true)}>
-                      <i className="ri-file-download-line align-bottom me-1"></i>{" "}
-                      Export
-                    </button>{" "}
-                    {isMultiDeleteButton && (
-                      <button
-                        className="btn btn-soft-danger"
-                        onClick={() => setDeleteModalMulti(true)}>
-                        <i className="ri-delete-bin-2-line"></i>
-                      </button>
-                    )}
+                        className="btn btn-info"
+                        onClick={() => setIsExportCSV(true)}>
+                        <i className="ri-file-download-line align-bottom me-1"></i>{" "}
+                        Export
+                      </button>{" "}
+                      {isMultiDeleteButton && (
+                        <button
+                          className="btn btn-soft-danger"
+                          onClick={() => setDeleteModalMulti(true)}>
+                          <i className="ri-delete-bin-2-line"></i>
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
                 </div>
               </Row>
             </CardHeader>
@@ -604,15 +690,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Order Id"
                         type="text"
-                        // validate={{
-                        //     required: { value: true },
-                        // }}
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={validation.values.orderId || ""}
-                        // invalid={
-                        //     validation.touched.orderId && validation.errors.orderId ? true : false
-                        // }
+                      // validate={{
+                      //     required: { value: true },
+                      // }}
+                      // onChange={validation.handleChange}
+                      // onBlur={validation.handleBlur}
+                      // value={validation.values.orderId || ""}
+                      // invalid={
+                      //     validation.touched.orderId && validation.errors.orderId ? true : false
+                      // }
                       />
                       {/* {validation.touched.orderId && validation.errors.orderId ? (
                                                     <FormFeedback type="invalid">{validation.errors.orderId}</FormFeedback>
@@ -631,15 +717,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Name"
                         type="text"
-                        // validate={{
-                        //     required: { value: true },
-                        // }}
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={validation.values.customer || ""}
-                        // invalid={
-                        //     validation.touched.customer && validation.errors.customer ? true : false
-                        // }
+                      // validate={{
+                      //     required: { value: true },
+                      // }}
+                      // onChange={validation.handleChange}
+                      // onBlur={validation.handleBlur}
+                      // value={validation.values.customer || ""}
+                      // invalid={
+                      //     validation.touched.customer && validation.errors.customer ? true : false
+                      // }
                       />
                       {/* {validation.touched.customer && validation.errors.customer ? (
                                                     <FormFeedback type="invalid">{validation.errors.customer}</FormFeedback>
@@ -710,12 +796,12 @@ const InfoTable = ({
                           <Input
                             name="amount"
                             type="text"
-                            // onChange={validation.handleChange}
-                            // onBlur={validation.handleBlur}
-                            // value={validation.values.amount || ""}
-                            // invalid={
-                            //     validation.touched.amount && validation.errors.amount ? true : false
-                            // }
+                          // onChange={validation.handleChange}
+                          // onBlur={validation.handleBlur}
+                          // value={validation.values.amount || ""}
+                          // invalid={
+                          //     validation.touched.amount && validation.errors.amount ? true : false
+                          // }
                           />
                           {/* {validation.touched.amount && validation.errors.amount ? (
                                                             <FormFeedback type="invalid">{validation.errors.amount}</FormFeedback>
@@ -732,11 +818,11 @@ const InfoTable = ({
                             name="payment"
                             type="select"
                             className="form-select"
-                            // onChange={validation.handleChange}
-                            // onBlur={validation.handleBlur}
-                            // value={
-                            //     validation.values.payment || ""
-                            // }
+                          // onChange={validation.handleChange}
+                          // onBlur={validation.handleBlur}
+                          // value={
+                          //     validation.values.payment || ""
+                          // }
                           >
                             {/* {orderpayement.map((item, key) => (
                                                                 <React.Fragment key={key}>
@@ -763,11 +849,11 @@ const InfoTable = ({
                         name="status"
                         type="select"
                         className="form-select"
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={
-                        //     validation.values.status || ""
-                        // }
+                      // onChange={validation.handleChange}
+                      // onBlur={validation.handleBlur}
+                      // value={
+                      //     validation.values.status || ""
+                      // }
                       >
                         {/* {orderstatus.map((item, key) => (
                                                         <React.Fragment key={key}>
