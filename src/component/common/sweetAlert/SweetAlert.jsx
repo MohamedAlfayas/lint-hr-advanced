@@ -5,6 +5,8 @@ export const SweetAlert = (show, content, btnText, btnClass,) =>{
         Swal.fire({
             icon: "info",
             html: content,
+            input: 'text',
+            inputPlaceholder: 'Enter Reason',
             showCloseButton: false,
             showCancelButton: true,
             focusConfirm: false,
@@ -14,6 +16,7 @@ export const SweetAlert = (show, content, btnText, btnClass,) =>{
             if(result.isConfirmed){
                 console.log("Send API");
             }
+            
           });
     }
 }
