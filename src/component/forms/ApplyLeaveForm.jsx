@@ -35,6 +35,7 @@ const ApplyLeaveForm = () => {
     setSelectedLeaveType(
       (form_obj.leavetype &&
         lt_option.find((e) => e.id === form_obj.leavetype).unit) ||
+        (form_obj.id && lt_option.find((e) => e.id === form_obj.id).unit) ||
         []
     );
     setStartDate(form_obj.start);
@@ -253,6 +254,8 @@ const ApplyLeaveForm = () => {
                       lt_option.find(
                         (e) => e.id === leaveapplyObj.leavetype
                       )) ||
+                    (leaveapplyObj.id &&
+                      lt_option.find((e) => e.id === leaveapplyObj.id)) ||
                     []
                   }
                   onChange={(e) => {
@@ -374,8 +377,7 @@ const ApplyLeaveForm = () => {
                 className="form-control"
                 id="description"
                 placeholder="Enter Reason"
-                // value={holidayObj.description || ""}
-              ></textarea>
+                value={leaveapplyObj.reason || ""}></textarea>
               <div id="passwordHelpBlock" className="form-text">
                 Please enter reason for leave.
               </div>
