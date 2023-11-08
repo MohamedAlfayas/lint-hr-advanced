@@ -128,10 +128,12 @@ const InfoTable = ({
   }
   const handleReject = () => {
     console.log("Click Reject")
+    
     let content = "<span>Are You Sure to <span style='color:red'>Reject Leave To Agent</span></span> ?";
     let btnText = 'Yes, Reject';
     let btnClass = 'Danger';
-    SweetAlert(true, content, btnText, btnClass)
+    let input = "text"
+    SweetAlert(true, content, btnText, btnClass, input)
   }
   const handleSearchChange = (event) => {
     setSearch(event.target.value);
