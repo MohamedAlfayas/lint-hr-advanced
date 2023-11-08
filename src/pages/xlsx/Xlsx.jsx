@@ -1,22 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Badge, Col, Container, Row } from "reactstrap";
+import { useDropzone } from 'react-dropzone';
+// import 'react-dropzone-uploader/dist/styles.css';
 import * as XLSX from "xlsx";
 const Xlsx = () => {
-    const [data,setData]=useState([]);
+    const [data, setData] = useState([]);
 
-  const handleFileUpload = (e)=>{
-    const reader = new FileReader();
-    reader.readAsBinaryString(e.target.files[0]);
-    reader.onload =(e) =>{
-        const data = e.target.result;
-        const workbook = XLSX.read(data,{type:"binary"});
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const parseData = XLSX.utils.sheet_to_json(sheet);
-        setData(parseData);
-        console.log("Parsed Data:", parseData);
-    }
-  }
+    const onDrop = useCallback((acceptedFiles) => {
+      acceptedFiles.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const data = e.target.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const parseData = XLSX.utils.sheet_to_json(sheet);
+          setData(parseData);
+          console.log('Parsed Data:', parseData);
+        };
+        reader.readAsBinaryString(file);
+      });
+    }, []);
+  
+    const { getRootProps, getInputProps } = useDropzone({
+      accept: '.xlsx, .xls',
+      onDrop,
+    });
 
   return (
     <React.Fragment>
@@ -24,32 +33,36 @@ const Xlsx = () => {
         <Container fluid>
     
     
-    
-    <input
-    type="file"
-    accept=".xlsx,.xls"
-    onChange={handleFileUpload}
-    />
-    {data.length > 0 && (
-        <table className="table">
-            <thead>
-                <tr>
-                    {Object.keys(data[0]).map((key)=>(
-                        <th key={key}>{key}</th>
-                    ))}
-                </tr>
-            </thead>
-            <tbody>
-                {data.map((row, index)=>(
-                    <tr key={index}>
-                        {Object.values(row).map((value,index)=>(
-                            <td key={index}>{value}</td>
-                        ))}
-                    </tr>
+        <div {...getRootProps()} className="container" style={{ textAlign: 'center' }}>
+        <input {...getInputProps()} />
+        <div className="mb-3">
+                            <i className="display-4 text-muted ri-upload-cloud-2-fill" />
+                          </div>
+        <h4>Drop or upload your file here</h4>
+         (.CSV,.XLSX formats supported; max file size 5MB)
+      </div>
+
+      {data.length > 0 && (
+        <table className="table" >
+          <thead>
+            <tr>
+              {Object.keys(data[0]).map((key) => (
+                <th key={key}>{key}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, index) => (
+              <tr key={index}>
+                {Object.values(row).map((value, index) => (
+                  <td key={index}>{value}</td>
                 ))}
-            </tbody>
+              </tr>
+            ))}
+          </tbody>
         </table>
-    )}
+      )}
+    
       </Container>
       </div>
     </React.Fragment>

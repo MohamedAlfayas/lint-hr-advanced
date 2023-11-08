@@ -96,6 +96,7 @@
     "save": "^2.9.0",
     "simplebar-react": "^3.2.4",
     "styled-components": "^6.0.0",
+    "sweetalert2": "^11.9.0",
     "swiper": "^9.4.1",
     "web-vitals": "^3.3.2",
     "xlsx": "^0.18.5",

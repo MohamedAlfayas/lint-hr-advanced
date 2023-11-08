@@ -9,7 +9,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { resetForm, toggleRSBView, toggleISBView } from '../../../redux/reducers/ChildReducer/RightSideBarReducer';
 import RightSideBar from './DisplayForms';
 import DisplayForms from './DisplayForms';
-import ImportForms from './importForms';
+import ImportExportForms from './ImportExportForms';
 
 const CommonForm = (props) => {
     const dispatch = useDispatch();
@@ -88,10 +88,10 @@ const CommonForm = (props) => {
                 />
             </div>
             <div>
-                {/* <ImportForms 
+                <ImportExportForms 
                     open={showISB}
                     toggleImportCanvas= {toggleImportCanvas}
-                /> */}
+                />
             </div>
         </React.Fragment>
     );
