@@ -1,4 +1,4 @@
-import React from "react";
+import React from "react"; UncontrolledDropdown
 import { useState } from "react";
 
 import {
@@ -54,6 +54,7 @@ import { setActiveTableTab } from "../../../redux/reducers/ChildReducer/TableRed
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { GetCustomField } from "../../../common/js/GetCustomField";
 import { SweetAlert } from "../sweetAlert/SweetAlert";
+import Swal from 'sweetalert2';
 
 const InfoTable = ({
   additionalColumn,
@@ -97,6 +98,8 @@ const InfoTable = ({
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [showContainer, setShowContainer] = useState(false);
+
   const tog_list = () => {
     setmodal_list(!modal_list);
   };
@@ -128,26 +131,45 @@ const InfoTable = ({
   }
   const handleReject = () => {
     console.log("Click Reject")
-    
+
     let content = "<span>Are You Sure to <span style='color:red'>Reject Leave To Agent</span></span> ?";
     let btnText = 'Yes, Reject';
     let btnClass = 'Danger';
-    let input = "text"
-    SweetAlert(true, content, btnText, btnClass, input)
+    let input = "text";
+    let inputValue = ''
+    SweetAlert(true, content, btnText, btnClass, input, inputValue)
   }
+
   const handleSearchChange = (event) => {
     setSearch(event.target.value);
-   
+
   };
 
   const handleStatusFilterChange = (event) => {
     setStatusFilter(event.target.value);
-    
+
   };
 
   const handleTypeFilterChange = (event) => {
     setTypeFilter(event.target.value);
+
+  };
+  const handleDeactivate = () => {
     
+    Swal.fire({
+      title: 'Deactivate',
+      text: 'Are you sure to deactivate Agent ?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, deactivate!',
+    }).then((result) => {
+      if (result.isConfirmed) {
+      
+        Swal.fire('Deactivated!', 'Your account has been deactivated.', 'success');
+      }
+    });
   };
 
   // Column
@@ -180,68 +202,110 @@ const InfoTable = ({
       {
         Header: "Action",
         Cell: (cellProps) => {
-          return formname && formname === "leave_approval" ? (
-            cellProps.row.original.status !== 1 ? (
-              <></>
-            ) : (
+          const orderData = cellProps.row.original;
+
+          if (formname && formname === "leave_approval" && orderData.status === 1) {
+            return (
               <ul className="list-inline hstack gap-2 mb-0">
                 <li className="list-inline-item edit">
                   <Link
                     to="javascript:void(0)"
                     className="text-success d-inline-block edit-item-btn"
-
-                    onClick={handleApproval}>
-
-                    <i className=" ri-check-line fs-16"></i>
+                    onClick={handleApproval}
+                  >
+                    <i className="ri-check-line fs-16"></i>
                   </Link>
                 </li>
                 <li className="list-inline-item">
                   <Link
                     to="javascript:void(0)"
                     className="text-danger d-inline-block remove-item-btn"
-                    onClick={handleReject}>
-
-                    <i className=" ri-close-line fs-16"></i>
+                    onClick={handleReject}
+                  >
+                    <i className="ri-close-line fs-16"></i>
                   </Link>
                 </li>
               </ul>
-            )
-          ) : (
-            <ul className="list-inline hstack gap-2 mb-0">
-              <li className="list-inline-item">
-                <Link to="#" className="text-primary d-inline-block">
-                  <i className="ri-eye-fill fs-16"></i>
-                </Link>
-              </li>
-              <li className="list-inline-item edit">
-                <Link
-                  to="javascript:void(0)"
-                  className="text-primary d-inline-block edit-item-btn"
-                  onClick={() => {
-                    const orderData = cellProps.row.original;
-                    handleCreateAndUpdate(orderData.id, orderData);
-                  }}>
-                  <i className="ri-pencil-fill fs-16"></i>
-                </Link>
-              </li>
-              <li className="list-inline-item">
-                <Link
-                  to="#"
-                  className="text-danger d-inline-block remove-item-btn"
-                  onClick={() => {
-                    const orderData = cellProps.row.original;
-                  }}>
-                  <i className="ri-delete-bin-5-fill fs-16"></i>
-                </Link>
-              </li>
-            </ul>
-          );
-          // } else {
+            );
+          } else if (formname && formname === "employee") {
+            return (
 
-          //   return null;
-          // }
+
+
+              <ul className="list-inline hstack gap-2 mb-0">
+
+                <UncontrolledDropdown className="float-end">
+                  <DropdownToggle tag="a" className="text-reset dropdown-btn" href="#">
+                    <span className="text-muted fs-18"><i className="mdi mdi-dots-horizontal"></i></span>
+                  </DropdownToggle>
+                  <DropdownMenu className="dropdown-menu-end">
+                    <DropdownItem onClick={handleDeactivate}> <i className="ri-shut-down-line"></i> {' '} Deactivate</DropdownItem>
+                    <DropdownItem><i className="ri-refresh-line"></i> {' '} Reset Password</DropdownItem>
+                  </DropdownMenu>
+                </UncontrolledDropdown>
+
+                <li className="list-inline-item edit">
+                  <Link
+                    to="javascript:void(0)"
+                    className="text-primary d-inline-block edit-item-btn"
+                    onClick={() => {
+                      handleCreateAndUpdate(orderData.id, orderData);
+                    }}
+                  >
+                    <i className="ri-pencil-fill fs-16"></i>
+                  </Link>
+                </li>
+                <li className="list-inline-item">
+                  <Link
+                    to="#"
+                    className="text-danger d-inline-block remove-item-btn"
+                    onClick={() => {
+                      const orderData = cellProps.row.original;
+                    }}>
+
+                    <i className="ri-delete-bin-5-fill fs-16"></i>
+                  </Link>
+                </li>
+              </ul>
+
+
+            );
+          } else {
+            return (
+              <ul className="list-inline hstack gap-2 mb-0">
+                <li className="list-inline-item">
+                  <Link to="#" className="text-primary d-inline-block">
+                    <i className="ri-eye-fill fs-16"></i>
+                  </Link>
+                </li>
+                <li className="list-inline-item edit">
+                  <Link
+                    to="javascript:void(0)"
+                    className="text-primary d-inline-block edit-item-btn"
+                    onClick={() => {
+                      handleCreateAndUpdate(orderData.id, orderData);
+                    }}
+                  >
+                    <i className="ri-pencil-fill fs-16"></i>
+                  </Link>
+                </li>
+                <li className="list-inline-item">
+                  <Link
+                    to="#"
+                    className="text-danger d-inline-block remove-item-btn"
+                    onClick={() => {
+                      const orderData = cellProps.row.original;
+                    }}>
+
+                    <i className="ri-delete-bin-5-fill fs-16"></i>
+                  </Link>
+                </li>
+              </ul>
+            );
+          }
         },
       },
+
     ],
     []
   );
@@ -477,75 +541,75 @@ const InfoTable = ({
                       <div>
                         {formname && formname === "leave_approval" && (
                           <div style={{ display: 'flex', flexDirection: 'row' }}>
-                          <div style={{ marginBottom: '10px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                              <div style={{ position: 'relative', width: '200px' }}>
-                                <i className="bx bx-search-alt search-icon" style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)' }}></i>
-                                <input
-                                  type="text"
-                                  placeholder="Search"
-                                  value={search}
-                                  onChange={handleSearchChange}
-                                  style={{
-                                    padding: '6px 30px 6px 30px', 
-                                    borderRadius: '4px',
-                                    border: '1px solid #ccc',
-                                    width: '100%',
-                                    outline: 'none',
-                                  }}
-                                />
+                            <div style={{ marginBottom: '10px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <div style={{ position: 'relative', width: '200px' }}>
+                                  <i className="bx bx-search-alt search-icon" style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)' }}></i>
+                                  <input
+                                    type="text"
+                                    placeholder="Search"
+                                    value={search}
+                                    onChange={handleSearchChange}
+                                    style={{
+                                      padding: '6px 30px 6px 30px',
+                                      borderRadius: '4px',
+                                      border: '1px solid #ccc',
+                                      width: '100%',
+                                      outline: 'none',
+                                    }}
+                                  />
+                                </div>
                               </div>
                             </div>
+
+                            <div style={{ marginLeft: '10px', marginRight: '5px' }}>
+                              <label htmlFor="roleName" className="form-label">
+                                Status:
+                              </label>
+                              <select
+                                value={statusFilter}
+                                onChange={handleStatusFilterChange}
+                                style={{
+                                  padding: '6px',
+                                  borderRadius: '4px',
+                                  border: '1px solid #ccc',
+                                  width: '170px',
+                                  outline: 'none',
+                                }}
+                              >
+                                <option value="all">All Status</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+
+                              </select>
+                            </div>
+                            <div style={{ marginLeft: '10px', marginRight: '5px' }}>
+                              <label htmlFor="roleName" className="form-label">
+                                Type:
+                              </label>
+                              <select
+                                value={typeFilter}
+                                onChange={handleTypeFilterChange}
+                                style={{
+                                  padding: '6px',
+                                  borderRadius: '4px',
+                                  border: '1px solid #ccc',
+                                  width: '170px',
+                                  outline: 'none',
+                                }}
+                              >
+                                <option value="all">All Types</option>
+                                <option value="type1">Type 1</option>
+                                <option value="type2">Type 2</option>
+
+                              </select>
+                            </div>
+                            <div>
+
+                            </div>
                           </div>
-                          
-                          <div style={{  marginLeft: '10px', marginRight: '5px'}}>
-                            <label htmlFor="roleName" className="form-label">
-                              Status:
-                            </label>
-                            <select
-                              value={statusFilter}
-                              onChange={handleStatusFilterChange}
-                              style={{
-                                padding: '6px',
-                                borderRadius: '4px',
-                                border: '1px solid #ccc',
-                                width: '170px',
-                                outline: 'none',
-                              }}
-                            >
-                              <option value="all">All Status</option>
-                              <option value="approved">Approved</option>
-                              <option value="rejected">Rejected</option>
-                              
-                            </select>
-                          </div>
-                          <div style={{ marginLeft: '10px', marginRight: '5px' }}>
-                            <label htmlFor="roleName" className="form-label">
-                              Type:
-                            </label>
-                            <select
-                              value={typeFilter}
-                              onChange={handleTypeFilterChange}
-                              style={{
-                                padding: '6px',
-                                borderRadius: '4px',
-                                border: '1px solid #ccc',
-                                width: '170px',
-                                outline: 'none',
-                              }}
-                            >
-                              <option value="all">All Types</option>
-                              <option value="type1">Type 1</option>
-                              <option value="type2">Type 2</option>
-                             
-                            </select>
-                          </div>
-                          <div>
-                           
-                          </div>
-                        </div>
                         )}
-                        
+
                       </div>
                       {formname && formname === "leave_approval" && (
                         <div>

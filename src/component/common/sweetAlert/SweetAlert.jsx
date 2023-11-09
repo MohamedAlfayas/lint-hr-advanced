@@ -1,22 +1,30 @@
 import Swal from "sweetalert2"
 
-export const SweetAlert = (show, content, btnText, btnClass,) =>{
-    if(show){
-        Swal.fire({
-            icon: "info",
-            html: content,
-            input: 'text',
-            inputPlaceholder: 'Enter Reason',
-            showCloseButton: false,
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: btnText,
-            cancelButtonText: 'Cancel',
-          }).then((result) => {
-            if(result.isConfirmed){
-                console.log("Send API");
-            }
-            
-          });
-    }
+export const SweetAlert = (show, content, btnText, btnClass, input = false, inputValue) => {
+  if (show) {
+    Swal.fire({
+      icon: "info",
+      html: content,
+      input: input ? 'text' : undefined,
+      inputPlaceholder: 'Enter Reason',
+      showCloseButton: false,
+      showCancelButton: true,
+      focusConfirm: false,
+      confirmButtonText: btnText,
+      cancelButtonText: 'Cancel',
+      inputValue: inputValue,
+      preConfirm: (value) => {
+        if (input) {
+          if (!value.trim()) {
+            Swal.showValidationMessage('Please enter a reason');
+          }
+        }
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
+        console.log("Send API");
+      }
+
+    });
+  }
 }

@@ -2077,13 +2077,90 @@ const EmployeeForm = () => {
               </Col>
               <Col lg={12}>
                 <div>
-                  <Label htmlFor="formFile" className="form-label">ID Proof</Label>
-                  <Input className="form-control" type="file" id="formFile" />
+                  <Label>Contact Number*</Label>
+                  <Dropdown
+                    className="input-group"
+                    isOpen={dropdownOpen4}
+                    toggle={toggle4}>
+                    <DropdownToggle
+                      as="button"
+                      className="btn btn-light border arrow-none">
+                      <img
+                        src={contactCountry.flagImg}
+                        alt="country flag"
+                        className="options-flagimg"
+                        height="20"
+                      />
+                      <span className="countrylist-codeno text-muted">
+                        {contactCountry.countryCode}
+                      </span>
+                    </DropdownToggle>
+                    <input
+                      type="number"
+                      className="form-control rounded-end flag-input"
+                      placeholder="Enter number"
+                      // value={profileData.contact_number || ""}
+                      onChange={(e) =>
+                        updateProfileData(
+                          "contact_number",
+                          e.target.value
+                        )
+                      }
+                    />
+                    <DropdownMenu
+                      as="ul"
+                      className="list-unstyled w-100 dropdown-menu-list mb-0">
+                      <SimpleBar
+                        style={{ maxHeight: "220px" }}
+                        className="px-3">
+                        {(
+                          CountryList.filter((obj) => obj.show).sort(
+                            (a, b) =>
+                              a.countryName.localeCompare(b.countryName)
+                          ) || []
+                        ).map((item, key) => (
+                          <DropdownItem
+                            as="li"
+                            onClick={() => {
+                              updateProfileData(
+                                "country_code",
+                                item.countryCode
+                              );
+                              setContactCountry(item);
+                            }}
+                            key={key}
+                            className="dropdown-item d-flex">
+                            <div className="flex-shrink-0 me-2">
+                              <img
+                                src={item.flagImg}
+                                alt="country flag"
+                                className="options-flagimg"
+                                height="20"
+                              />
+                            </div>
+                            <div className="flex-grow-1">
+                              <div className="d-flex">
+                                <div className="country-name me-1">
+                                  {item.countryName}
+                                </div>
+                                <span className="countrylist-codeno text-muted">
+                                  {item.countryCode}
+                                </span>
+                              </div>
+                            </div>
+                          </DropdownItem>
+                        ))}
+                      </SimpleBar>
+                    </DropdownMenu>
+                  </Dropdown>
+
+                  <div id="passwordHelpBlock" className="form-text">
+                    Enter Your Contact number with country code.
+                  </div>
                 </div>
               </Col>
-              <div id="passwordHelpBlock" className="form-text mb-3">
-                Select ID Proof.
-              </div>
+
+
               <Col lg={12}>
                 <div>
                   <Label htmlFor="role" className="form-label">
@@ -2239,6 +2316,41 @@ const EmployeeForm = () => {
                 </div>
               </Col>
               <Col lg={12}>
+                <div className="mb-3">
+                  <Label>Joining Date</Label>
+                  <input
+                    type="date"
+                    name="date"
+                    id="date"
+                    className="form-control"
+
+                    required
+                  />
+
+                  <div id="passwordHelpBlock" className="form-text">
+                    Enter Your Joining Date.
+                  </div>
+                </div>
+              </Col>
+              <Col lg={12}>
+                <div>
+                  <Label htmlFor="formFile" className="form-label">ID Proof</Label>
+                  <Input className="form-control" type="file" id="formFile" />
+                </div>
+              </Col>
+              <div id="passwordHelpBlock" className="form-text mb-3">
+                Select ID Proof.
+              </div>
+              <Col lg={12}>
+                <div>
+                  <Label htmlFor="formFile" className="form-label">Other Documents</Label>
+                  <Input className="form-control" type="file" id="formFile" multiple />
+                </div>
+              </Col>
+              <div id="passwordHelpBlock" className="form-text mb-3">
+                Select Other Documents.
+              </div>
+              <Col lg={12}>
                 <div>
                   <Label htmlFor="profile_timezone" className="form-label">
                     Time Zone
@@ -2261,134 +2373,6 @@ const EmployeeForm = () => {
                 </div>
                 <div id="passwordHelpBlock" className="form-text mb-3">
                   Select Time Zone
-                </div>
-              </Col>
-              {employeeObj.cf_values && employeeObj.cf_values.length
-                ? employeeObj.cf_values.map((obj) => (
-                  <Col lg={12}>
-                    <div>
-                      <Label htmlFor="obj.input_name" className="form-label">
-                        {obj.name}
-                      </Label>
-                      <div className="form-icon right">
-                        <Input
-                          type={obj.type || "text"}
-                          name={obj.input_name}
-                          id={obj.input_name}
-                          className="form-control"
-                          placeholder={`Enter ${obj.name}`}
-                          required={obj.is_required || false}
-                          value={obj.value || ""}
-                          onChange={(e) => handleCFInputChange(e, obj.id)}
-                        />
-                        <i className="ri-user-2-line"></i>
-                      </div>
-                      <div id="passwordHelpBlock" className="form-text">
-                        Enter {obj.name}
-                      </div>
-                    </div>
-                  </Col>
-                ))
-                : null}
-              <Col lg={12}>
-                <div>
-                  <Label>Contact Number*</Label>
-                  <Dropdown
-                    className="input-group"
-                    isOpen={dropdownOpen4}
-                    toggle={toggle4}>
-                    <DropdownToggle
-                      as="button"
-                      className="btn btn-light border arrow-none">
-                      <img
-                        src={contactCountry.flagImg}
-                        alt="country flag"
-                        className="options-flagimg"
-                        height="20"
-                      />
-                      <span className="countrylist-codeno text-muted">
-                        {contactCountry.countryCode}
-                      </span>
-                    </DropdownToggle>
-                    <input
-                      type="number"
-                      className="form-control rounded-end flag-input"
-                      placeholder="Enter number"
-                      // value={profileData.contact_number || ""}
-                      onChange={(e) =>
-                        updateProfileData(
-                          "contact_number",
-                          e.target.value
-                        )
-                      }
-                    />
-                    <DropdownMenu
-                      as="ul"
-                      className="list-unstyled w-100 dropdown-menu-list mb-0">
-                      <SimpleBar
-                        style={{ maxHeight: "220px" }}
-                        className="px-3">
-                        {(
-                          CountryList.filter((obj) => obj.show).sort(
-                            (a, b) =>
-                              a.countryName.localeCompare(b.countryName)
-                          ) || []
-                        ).map((item, key) => (
-                          <DropdownItem
-                            as="li"
-                            onClick={() => {
-                              updateProfileData(
-                                "country_code",
-                                item.countryCode
-                              );
-                              setContactCountry(item);
-                            }}
-                            key={key}
-                            className="dropdown-item d-flex">
-                            <div className="flex-shrink-0 me-2">
-                              <img
-                                src={item.flagImg}
-                                alt="country flag"
-                                className="options-flagimg"
-                                height="20"
-                              />
-                            </div>
-                            <div className="flex-grow-1">
-                              <div className="d-flex">
-                                <div className="country-name me-1">
-                                  {item.countryName}
-                                </div>
-                                <span className="countrylist-codeno text-muted">
-                                  {item.countryCode}
-                                </span>
-                              </div>
-                            </div>
-                          </DropdownItem>
-                        ))}
-                      </SimpleBar>
-                    </DropdownMenu>
-                  </Dropdown>
-
-                  <div id="passwordHelpBlock" className="form-text">
-                    Enter Your Contact number with country code.
-                  </div>
-                </div>
-              </Col>
-              <Col lg={12}>
-                <div className="mb-3">
-                  <Label>Joining Date</Label>
-                  <input
-                    type="date"
-                    name="date"
-                    id="date"
-                    className="form-control"
-
-                    required
-                  />
-
-                  <div id="passwordHelpBlock" className="form-text">
-                    Enter Your Joining Date.
-                  </div>
                 </div>
               </Col>
 
@@ -2428,6 +2412,36 @@ const EmployeeForm = () => {
                   is Active State.
                 </div>
               </Col>
+              <hr></hr>
+              {employeeObj.cf_values && employeeObj.cf_values.length
+                ? employeeObj.cf_values.map((obj) => (
+                  <Col lg={12}>
+                    <div>
+                      <Label htmlFor="obj.input_name" className="form-label">
+                        {obj.name}
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type={obj.type || "text"}
+                          name={obj.input_name}
+                          id={obj.input_name}
+                          className="form-control"
+                          placeholder={`Enter ${obj.name}`}
+                          required={obj.is_required || false}
+                          value={obj.value || ""}
+                          onChange={(e) => handleCFInputChange(e, obj.id)}
+                        />
+                        <i className="ri-user-2-line"></i>
+                      </div>
+                      <div id="passwordHelpBlock" className="form-text">
+                        Enter {obj.name}
+                      </div>
+                    </div>
+                  </Col>
+                ))
+                : null}
+
+
               <Col lg={12}>
                 <div className="text-end">
                   <Button type="submit" color="success" className="btn-label">
