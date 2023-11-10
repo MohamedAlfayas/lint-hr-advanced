@@ -131,7 +131,7 @@ const PayRollConfig = () => {
     const depObj = $id === 0 ? newDepObj : obj;
     dispatch(setFormTitle("Edit EPF"));
     dispatch(setFormObj(depObj));
-    dispatch(setFormWidthPercentage("30%"));
+    dispatch(setFormWidthPercentage("35%"));
     dispatch(setComponentToShow("EPFWageForm"));
     dispatch(toggleRSBView(true));
   };
