@@ -37,6 +37,15 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 import indflag from "../../assets/images/flags/in.svg";
 import SimpleBar from "simplebar-react";
 import CountryList from "../../common/data/CountryList";
+import { FilePond } from "react-filepond";
+import 'filepond/dist/filepond.min.css';
+import FilePondPluginImageExifOrientation from 'filepond-plugin-image-exif-orientation';
+import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
+import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css';
+
+
+// Register the plugins
+// registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
 const EmployeeForm = () => {
   const dispatch = useDispatch();
 
@@ -65,6 +74,7 @@ const EmployeeForm = () => {
   const toggle3 = () => setDropdownOpen3((prevState) => !prevState);
   const toggle4 = () => setDropdownOpen4((prevState) => !prevState);
   const stateToggle = () => setStateDD((prevState) => !prevState);
+  const [files, setFiles] = useState([]);
 
   const timzone_options = useMemo(
     () => [
@@ -2342,10 +2352,15 @@ const EmployeeForm = () => {
                 Select ID Proof.
               </div>
               <Col lg={12}>
-                <div>
-                  <Label htmlFor="formFile" className="form-label">Other Documents</Label>
-                  <Input className="form-control" type="file" id="formFile" multiple />
-                </div>
+              <Label htmlFor="formFile" className="form-label"> Other Documents</Label>
+                <FilePond
+                  files={files}
+                  onupdatefiles={setFiles}
+                  allowMultiple={true}
+                  maxFiles={3}
+                  name="filepond"
+                  className="filepond filepond-input-multiple mb-0"
+                />
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
                 Select Other Documents.

@@ -55,6 +55,7 @@ import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { GetCustomField } from "../../../common/js/GetCustomField";
 import { SweetAlert } from "../sweetAlert/SweetAlert";
 import Swal from 'sweetalert2';
+import '../../../common/./css/lc_style.css';
 
 const InfoTable = ({
   additionalColumn,
@@ -122,9 +123,9 @@ const InfoTable = ({
     deleteCheckbox();
   }, []);
 
-  const handleApproval = () => {
-    console.log("Click Approve")
-    let content = "<span>Are You Sure to <span style='color:green'>Accept Leave To Agent</span></span>  ?";
+  const handleApproval = (orderData) => {
+    console.log("Click Approve", orderData)
+    let content = `<span>Are You Sure to <span style='color:green'>Accept Leave To Agent ${orderData.fname}</span></span>  ?`;
     let btnText = 'Yes, Approve';
     let btnClass = 'Success';
     SweetAlert(true, content, btnText, btnClass)
@@ -154,11 +155,11 @@ const InfoTable = ({
     setTypeFilter(event.target.value);
 
   };
-  const handleDeactivate = () => {
-    
+  const handleDeactivate = (orderData) => {
+
     Swal.fire({
       title: 'Deactivate',
-      text: 'Are you sure to deactivate Agent ?',
+      text: ` Are you sure to deactivate Agent (${orderData.fname} ${orderData.lname})?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
@@ -166,8 +167,50 @@ const InfoTable = ({
       confirmButtonText: 'Yes, deactivate!',
     }).then((result) => {
       if (result.isConfirmed) {
-      
+
         Swal.fire('Deactivated!', 'Your account has been deactivated.', 'success');
+      }
+    });
+  };
+  const handleResetPassword = (orderData) => {
+
+    const profile_data = JSON.parse(localStorage.getItem('lint_hr_profile_data'));
+
+    const fname = (Object.keys(profile_data)).length > 0 ? profile_data.fname : "";
+    const lname = (Object.keys(profile_data)).length > 0 ? profile_data.lname : "";
+
+    Swal.fire({
+      title: 'Reset Password',
+      html: `
+        <form id="resetPasswordForm">
+          <label for="adminPassword" class="label-lc">Admin Password (${fname} ${lname})</label>
+          <input type="password" id="adminPassword" class="swal2-input"  placeholder="Enter Admin Password" required >
+          <label for="newPassword" class="label-lc">New Password (${orderData.fname} ${orderData.lname})</label>
+          <input type="password" id="newPassword" class="swal2-input"  placeholder="Enter New Password" required >
+          <label for="confirmPassword" class="label-lc">Confirm Password (${orderData.fname} ${orderData.lname})</label>
+          <input type="password" id="confirmPassword" class="swal2-input"  placeholder="Enter Confirm Password" required>
+        </form>
+      `,
+      icon: false,
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Reset Password',
+      preConfirm: () => {
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        if (newPassword !== confirmPassword) {
+          Swal.showValidationMessage('Passwords do not match');
+        }
+
+        return { newPassword, confirmPassword };
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const { newPassword, confirmPassword } = result.value;
+        // Handle reset password logic with newPassword and confirmPassword
+        Swal.fire('Password Reset!', 'Your password has been reset.', 'success');
       }
     });
   };
@@ -211,7 +254,7 @@ const InfoTable = ({
                   <Link
                     to="javascript:void(0)"
                     className="text-success d-inline-block edit-item-btn"
-                    onClick={handleApproval}
+                    onClick={() => { handleApproval(orderData) }}
                   >
                     <i className="ri-check-line fs-16"></i>
                   </Link>
@@ -239,8 +282,14 @@ const InfoTable = ({
                     <span className="text-muted fs-18"><i className="mdi mdi-dots-horizontal"></i></span>
                   </DropdownToggle>
                   <DropdownMenu className="dropdown-menu-end">
-                    <DropdownItem onClick={handleDeactivate}> <i className="ri-shut-down-line"></i> {' '} Deactivate</DropdownItem>
-                    <DropdownItem><i className="ri-refresh-line"></i> {' '} Reset Password</DropdownItem>
+                    <DropdownItem
+                      onClick={() => { handleDeactivate(orderData) }}>
+                      <i className="ri-shut-down-line"></i> {' '} Deactivate</DropdownItem>
+                    <DropdownItem
+                      onClick={() => {
+                        handleResetPassword(orderData);
+                      }}>
+                      <i className="ri-refresh-line"></i> {' '} Reset Password</DropdownItem>
                   </DropdownMenu>
                 </UncontrolledDropdown>
 

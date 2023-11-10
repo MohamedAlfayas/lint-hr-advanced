@@ -1,0 +1,17 @@
+#resetPasswordForm {
+    text-align: left;
+  }
+  
+  .label-lc {
+    font-size: 14px;
+    margin-bottom: 5px; 
+    margin-left: 25px;
+    display: block; 
+  }
+  
+  .swal2-input {
+    width: 400px;
+    margin-bottom: 25px; 
+    margin-left: 25px; 
+    padding: 10px; 
+  }

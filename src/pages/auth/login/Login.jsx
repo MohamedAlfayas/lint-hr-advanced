@@ -328,6 +328,7 @@ const Login = () => {
         data: values,
       })
         .then((res) => {
+          console.log('adminResponse', res);
           localStorage.setItem(
             "lint_hr_token",
             JSON.stringify(res?.data?.token)
@@ -336,6 +337,7 @@ const Login = () => {
             "lcEdu_GlobalData",
             JSON.stringify(tempGlobalData)
           );
+          localStorage.setItem('lint_hr_profile_data', JSON.stringify(res?.data?.profile_data))
           toast.success(res?.data?.message);
           navigate("/dashboard");
         })
@@ -398,13 +400,13 @@ const Login = () => {
                             value={validation.values.email || ""}
                             invalid={
                               validation.touched.email &&
-                              validation.errors.email
+                                validation.errors.email
                                 ? true
                                 : false
                             }
                           />
                           {validation.touched.email &&
-                          validation.errors.email ? (
+                            validation.errors.email ? (
                             <FormFeedback type="invalid">
                               {validation.errors.email}
                             </FormFeedback>
@@ -435,13 +437,13 @@ const Login = () => {
                               onBlur={validation.handleBlur}
                               invalid={
                                 validation.touched.password &&
-                                validation.errors.password
+                                  validation.errors.password
                                   ? true
                                   : false
                               }
                             />
                             {validation.touched.password &&
-                            validation.errors.password ? (
+                              validation.errors.password ? (
                               <FormFeedback type="invalid">
                                 {validation.errors.password}
                               </FormFeedback>
