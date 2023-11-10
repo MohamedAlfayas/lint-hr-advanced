@@ -12,6 +12,7 @@ import LeaveTypeForm from "../../forms/LeaveTypeForm";
 import ApplyLeaveForm from "../../forms/ApplyLeaveForm";
 import CustomFieldForm from "../../forms/CustomFieldForm";
 import ProfileViewMin from "../../forms/ProfileViewMin";
+import EPFWageForm from "../../forms/EPFWageForm";
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
   const { form_title, form_width_percentage, component_to_show } = useSelector(
@@ -53,6 +54,8 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
                 <CustomFieldForm />
               ) : component_to_show === "profileViewMin" ? (
                 <ProfileViewMin />
+              ) : component_to_show === "EPFWageForm" ? (
+                <EPFWageForm />
               ) : (
                 <></>
               )}
