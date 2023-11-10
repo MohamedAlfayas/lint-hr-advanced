@@ -28,6 +28,16 @@ import FeatherIcon from "feather-icons-react/build/FeatherIcon";
 import Flatpickr from "react-flatpickr";
 import { Link } from "react-router-dom";
 
+import {
+  setDepartmentData,
+  setComponentToShow,
+  setFormObj,
+  setFormTitle,
+  setFormWidthPercentage,
+  toggleRSBView,
+} from "../../redux/reducers/ChildReducer/RightSideBarReducer";
+import { useDispatch } from "react-redux";
+
 // register lottie and define custom element
 defineElement(loadAnimation);
 
@@ -103,6 +113,28 @@ const PayRollConfig = () => {
     ],
     []
   );
+
+  const dispatch = useDispatch();
+
+  const newDepObj = useMemo(() => {
+    return {
+      id: 0,
+      name: "",
+      description: "",
+      pid: 0,
+    };
+  }, []);
+
+  const handleEPFEdit = ($id, obj) => {
+    console.log("Dep Edit = ", obj);
+
+    const depObj = $id === 0 ? newDepObj : obj;
+    dispatch(setFormTitle("Edit EPF"));
+    dispatch(setFormObj(depObj));
+    dispatch(setFormWidthPercentage("30%"));
+    dispatch(setComponentToShow("EPFWageForm"));
+    dispatch(toggleRSBView(true));
+  };
 
   document.title = `PayRoll | ${MetaTitle || "Lint HR"} `;
 
@@ -484,7 +516,9 @@ const PayRollConfig = () => {
                                       toggleCustom("1");
                                     }}>
                                     ESI{" "}
-                                    <small>(Employees state insurance)</small>
+                                    <small>
+                                      {"(Employees state insurance)"}
+                                    </small>
                                   </NavLink>
                                 </NavItem>
                                 <NavItem>
@@ -497,7 +531,9 @@ const PayRollConfig = () => {
                                       toggleCustom("2");
                                     }}>
                                     EPF{" "}
-                                    <small>(Employees' Provident Fund)</small>
+                                    <small>
+                                      {"(Employees' Provident Fund)"}
+                                    </small>
                                   </NavLink>
                                 </NavItem>
                                 <NavItem>
@@ -529,6 +565,7 @@ const PayRollConfig = () => {
                               <TabContent
                                 activeTab={customActiveTab}
                                 className="text-muted">
+                                {/* ESI Tab */}
                                 <TabPane tabId="1" id="home1">
                                   <div className="d-flex">
                                     <Col
@@ -543,9 +580,9 @@ const PayRollConfig = () => {
                                               <div className="flex-grow-1">
                                                 <h5 className="mb-0 fs-14">
                                                   <Link
-                                                    to="/apps-projects-overview"
+                                                    to="#"
                                                     className="text-body">
-                                                    Test Lable
+                                                    ESI
                                                   </Link>
                                                 </h5>
                                               </div>
@@ -577,28 +614,75 @@ const PayRollConfig = () => {
 
                                           <div className="py-3">
                                             <Row className="gy-3">
-                                              <Col xs={6}>
+                                              <Col xs={4}>
                                                 <div>
                                                   <p className="text-muted mb-1">
-                                                    Status
-                                                  </p>
-                                                  <div
-                                                    className={
-                                                      "fs-12 badge bg-success-subtle"
-                                                    }>
-                                                    Status...
-                                                  </div>
-                                                </div>
-                                              </Col>
-                                              <Col xs={6}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    Deadline
+                                                    Deduction Cycle
                                                   </p>
                                                   <h5 className="fs-14">
-                                                    18 Sep, 2021
+                                                    Monthly
                                                   </h5>
                                                 </div>
+                                              </Col>
+                                              <Col xs={4}>
+                                                <div>
+                                                  <p className="text-muted mb-1">
+                                                    Employee's Contribution
+                                                  </p>
+                                                  <h5 className="fs-14">
+                                                    0.75 % of Gross Pay
+                                                  </h5>
+                                                </div>
+                                              </Col>
+                                              <Col xs={4}>
+                                                <div>
+                                                  <p className="text-muted mb-1">
+                                                    Employer's Contribution
+                                                  </p>
+                                                  <h5 className="fs-14">
+                                                    3.25 % of Gross Pay
+                                                  </h5>
+                                                </div>
+                                              </Col>
+                                              <Col md={12} lg={12} xxl={12}>
+                                                <Card>
+                                                  <CardBody className="bg-info-subtle">
+                                                    <div className="d-flex">
+                                                      <div className="flex-shrink-0">
+                                                        <FeatherIcon
+                                                          icon="info"
+                                                          className="text-info icon-dual-info"
+                                                        />
+                                                      </div>
+                                                      <div className="flex-grow-1 ms-3">
+                                                        <h6 className="fs-15">
+                                                          Note!
+                                                        </h6>
+                                                        <p className="text-muted mb-0 hide">
+                                                          ESI deductions will be
+                                                          made only if the
+                                                          employee’s monthly
+                                                          salary is less than or
+                                                          equal to ₹ 21,000. If
+                                                          the employee gets a
+                                                          salary revision which
+                                                          increases their
+                                                          monthly salary above ₹
+                                                          21,000, they would
+                                                          have to continue
+                                                          making ESI
+                                                          contributions till the
+                                                          end of the
+                                                          contribution period in
+                                                          which the salary was
+                                                          revised
+                                                          (April-September or
+                                                          October-March).
+                                                        </p>
+                                                      </div>
+                                                    </div>
+                                                  </CardBody>
+                                                </Card>
                                               </Col>
                                             </Row>
                                           </div>
@@ -607,30 +691,119 @@ const PayRollConfig = () => {
                                     </Col>
                                   </div>
                                 </TabPane>
+                                {/* EPF Tab */}
                                 <TabPane tabId="2">
                                   <div className="d-flex">
-                                    <div className="flex-shrink-0">
-                                      <i className="ri-checkbox-multiple-blank-fill text-success"></i>
-                                    </div>
-                                    <div className="flex-grow-1 ms-2">
-                                      When, while the lovely valley teems with
-                                      vapour around me, and the meridian sun
-                                      strikes the upper surface of the
-                                      impenetrable foliage of my trees, and but
-                                      a few stray gleams steal into the inner
-                                      sanctuary, I throw myself down among the
-                                      tall grass by the trickling stream; and,
-                                      as I lie close to the earth, a thousand
-                                      unknown.
-                                      <div className="mt-2">
-                                        <Link
-                                          to="#"
-                                          className="btn btn-sm btn-soft-primary">
-                                          Read More{" "}
-                                          <i className="ri-arrow-right-line ms-1 align-middle"></i>
-                                        </Link>
-                                      </div>
-                                    </div>
+                                    <Col
+                                      xxl={12}
+                                      sm={12}
+                                      className="project-card">
+                                      <Card>
+                                        <CardBody>
+                                          <div
+                                            className={`p-3 mt-n3 mx-n3 bg-success-subtle rounded-top`}>
+                                            <div className="d-flex align-items-center">
+                                              <div className="flex-grow-1">
+                                                <h5 className="mb-0 fs-14">
+                                                  <Link
+                                                    to="#"
+                                                    className="text-body">
+                                                    EPF
+                                                  </Link>
+                                                </h5>
+                                              </div>
+                                              <div className="flex-shrink-0">
+                                                <div className="d-flex gap-1 align-items-center my-n2">
+                                                  <div className="form-check form-switch form-switch-success  ">
+                                                    <Input
+                                                      className="form-check-input"
+                                                      type="checkbox"
+                                                      role="switch"
+                                                      id="enableEPF"
+                                                      defaultChecked
+                                                    />
+                                                    <Label
+                                                      className="form-check-label"
+                                                      for="enableEPF">
+                                                      Active
+                                                    </Label>
+                                                  </div>
+                                                  <a
+                                                    onClick={() =>
+                                                      handleEPFEdit(0)
+                                                    }
+                                                    className="text-primary d-inline-block edit-item-btn ms-2"
+                                                    href="javascript:void(0)">
+                                                    <i class="ri-pencil-fill fs-16"></i>
+                                                  </a>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          <div className="py-3">
+                                            <Row className="gy-3">
+                                              <Col xs={4}>
+                                                <div>
+                                                  <p className="text-muted mb-1">
+                                                    Deduction Cycle
+                                                  </p>
+                                                  <h5 className="fs-14">
+                                                    Monthly
+                                                  </h5>
+                                                </div>
+                                              </Col>
+                                              <Col xs={4}>
+                                                <div>
+                                                  <p className="text-muted mb-1">
+                                                    Employee's Contribution
+                                                  </p>
+                                                  <h5 className="fs-14">
+                                                    12% of Actual PF Wage
+                                                  </h5>
+                                                </div>
+                                              </Col>
+                                              <Col xs={4}>
+                                                <div>
+                                                  <p className="text-muted mb-1">
+                                                    Employer's Contribution
+                                                  </p>
+                                                  <h5 className="fs-14">
+                                                    12% of Actual PF Wage
+                                                  </h5>
+                                                </div>
+                                              </Col>
+                                              <Col md={12} lg={12} xxl={12}>
+                                                <Card>
+                                                  <CardBody className="bg-info-subtle">
+                                                    <div className="d-flex">
+                                                      <div className="flex-shrink-0">
+                                                        <FeatherIcon
+                                                          icon="info"
+                                                          className="text-info icon-dual-info"
+                                                        />
+                                                      </div>
+                                                      <div className="flex-grow-1 ms-3">
+                                                        <h6 className="fs-15">
+                                                          Note!
+                                                        </h6>
+                                                        <p className="text-muted mb-0 hide">
+                                                          Employer's EPF
+                                                          Contribution would
+                                                          include EDLI & Admin
+                                                          charge in CTC salary
+                                                          structure.
+                                                        </p>
+                                                      </div>
+                                                    </div>
+                                                  </CardBody>
+                                                </Card>
+                                              </Col>
+                                            </Row>
+                                          </div>
+                                        </CardBody>
+                                      </Card>
+                                    </Col>
                                   </div>
                                 </TabPane>
                                 <TabPane tabId="3">
