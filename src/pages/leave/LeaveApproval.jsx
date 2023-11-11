@@ -62,6 +62,7 @@ const LeaveApproval = () => {
       accessor: "employee",
       filterable: false,
       id: "employee",
+      
       accessor: (obj) => {
         const EmployeeData = GetLocalStorageData("employee");
         const thisEmployee = EmployeeData.find(data => data.id === obj.employee);

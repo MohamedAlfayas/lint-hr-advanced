@@ -71,6 +71,7 @@ const InfoTable = ({
   console.log("Page Refreshing !!!!", tabledata);
 
   const dispatch = useDispatch();
+  
 
   const { activeTableTab } = useSelector((state) => state.TableReducer);
 
@@ -174,6 +175,8 @@ const InfoTable = ({
   };
   const handleResetPassword = (orderData) => {
 
+    console.log("Deactivaet OD = ",orderData);
+
     const profile_data = JSON.parse(localStorage.getItem('lint_hr_profile_data'));
 
     const fname = (Object.keys(profile_data)).length > 0 ? profile_data.fname : "";
@@ -197,6 +200,24 @@ const InfoTable = ({
       cancelButtonColor: '#d33',
       confirmButtonText: 'Reset Password',
       preConfirm: () => {
+        const adminPasswordInput = document.getElementById('adminPassword');
+        const adminPasswordValue = adminPasswordInput.value.trim();
+        const newPasswordInput = document.getElementById('newPassword');
+        const newPasswordValue = newPasswordInput.value.trim();
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const confirmPasswordValue = confirmPasswordInput.value.trim();
+        if (!adminPasswordValue) {
+          Swal.showValidationMessage('Please enter Admin Password');
+          return false;
+        }
+        if (!newPasswordValue) {
+          Swal.showValidationMessage('Please enter New Password');
+          return false;
+        }
+        if (!confirmPasswordValue) {
+          Swal.showValidationMessage('Please enter Confirm Password');
+          return false;
+        }
         const newPassword = document.getElementById('newPassword').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
 
@@ -246,6 +267,7 @@ const InfoTable = ({
         Header: "Action",
         Cell: (cellProps) => {
           const orderData = cellProps.row.original;
+          console.log("ORDER DATA = ",orderData);
 
           if (formname && formname === "leave_approval" && orderData.status === 1) {
             return (
