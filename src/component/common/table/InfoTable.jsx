@@ -1,4 +1,5 @@
-import React from "react"; UncontrolledDropdown
+import React from "react";
+UncontrolledDropdown;
 import { useState } from "react";
 
 import {
@@ -54,8 +55,8 @@ import { setActiveTableTab } from "../../../redux/reducers/ChildReducer/TableRed
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { GetCustomField } from "../../../common/js/GetCustomField";
 import { SweetAlert } from "../sweetAlert/SweetAlert";
-import Swal from 'sweetalert2';
-import '../../../common/./css/lc_style.css';
+import Swal from "sweetalert2";
+import "../../../common/./css/lc_style.css";
 
 const InfoTable = ({
   additionalColumn,
@@ -71,7 +72,8 @@ const InfoTable = ({
   console.log("Page Refreshing !!!!", tabledata);
 
   const dispatch = useDispatch();
-  
+
+  const EmployeeData = GetLocalStorageData("employee");
 
   const { activeTableTab } = useSelector((state) => state.TableReducer);
 
@@ -83,11 +85,11 @@ const InfoTable = ({
 
   const tabOptions = filterOptions
     ? filterOptions.map((obj, idx) => {
-      return {
-        ...obj,
-        idx: idx + 2,
-      };
-    })
+        return {
+          ...obj,
+          idx: idx + 2,
+        };
+      })
     : [];
 
   const [activeTab, setActiveTab] = useState("2");
@@ -97,9 +99,9 @@ const InfoTable = ({
   const [deleteModalMulti, setDeleteModalMulti] = useState(false);
   const [modal, setModal] = useState(false);
   const [modal_list, setmodal_list] = useState(false);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [showContainer, setShowContainer] = useState(false);
 
   const tog_list = () => {
@@ -125,65 +127,71 @@ const InfoTable = ({
   }, []);
 
   const handleApproval = (orderData) => {
-    console.log("Click Approve", orderData)
-    let content = `<span>Are You Sure to <span style='color:green'>Accept Leave To Agent ${orderData.fname}</span></span>  ?`;
-    let btnText = 'Yes, Approve';
-    let btnClass = 'Success';
-    SweetAlert(true, content, btnText, btnClass)
-  }
-  const handleReject = () => {
-    console.log("Click Reject")
-
-    let content = "<span>Are You Sure to <span style='color:red'>Reject Leave To Agent</span></span> ?";
-    let btnText = 'Yes, Reject';
-    let btnClass = 'Danger';
+    console.log("Click Approve", orderData);
+    let employee_fname =
+      EmployeeData.find((e) => e.id === orderData.employee).fname || "";
+    let content = `<span>Are You Sure to <span style='color:green'>Accept Leave To Agent ${employee_fname}</span></span>  ?`;
+    let btnText = "Yes, Approve";
+    let btnClass = "Success";
+    SweetAlert(true, content, btnText, btnClass);
+  };
+  const handleReject = (orderData) => {
+    console.log("Click Reject");
+    console.log("Click Approve", orderData);
+    let employee_fname =
+      EmployeeData.find((e) => e.id === orderData.employee).fname || "";
+    let content = `<span>Are You Sure to <span style='color:red'>Reject Leave To Agent ${employee_fname} </span></span> ?`;
+    let btnText = "Yes, Reject";
+    let btnClass = "Danger";
     let input = "text";
-    let inputValue = ''
-    SweetAlert(true, content, btnText, btnClass, input, inputValue)
-  }
+    let inputValue = "";
+    SweetAlert(true, content, btnText, btnClass, input, inputValue);
+  };
 
   const handleSearchChange = (event) => {
     setSearch(event.target.value);
-
   };
 
   const handleStatusFilterChange = (event) => {
     setStatusFilter(event.target.value);
-
   };
 
   const handleTypeFilterChange = (event) => {
     setTypeFilter(event.target.value);
-
   };
   const handleDeactivate = (orderData) => {
-
     Swal.fire({
-      title: 'Deactivate',
+      title: "Deactivate",
       text: ` Are you sure to deactivate Agent (${orderData.fname} ${orderData.lname})?`,
-      icon: 'warning',
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, deactivate!',
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, deactivate!",
     }).then((result) => {
       if (result.isConfirmed) {
-
-        Swal.fire('Deactivated!', 'Your account has been deactivated.', 'success');
+        Swal.fire(
+          "Deactivated!",
+          "Your account has been deactivated.",
+          "success"
+        );
       }
     });
   };
   const handleResetPassword = (orderData) => {
+    console.log("Deactivaet OD = ", orderData);
 
-    console.log("Deactivaet OD = ",orderData);
+    const profile_data = JSON.parse(
+      localStorage.getItem("lint_hr_profile_data")
+    );
 
-    const profile_data = JSON.parse(localStorage.getItem('lint_hr_profile_data'));
-
-    const fname = (Object.keys(profile_data)).length > 0 ? profile_data.fname : "";
-    const lname = (Object.keys(profile_data)).length > 0 ? profile_data.lname : "";
+    const fname =
+      Object.keys(profile_data).length > 0 ? profile_data.fname : "";
+    const lname =
+      Object.keys(profile_data).length > 0 ? profile_data.lname : "";
 
     Swal.fire({
-      title: 'Reset Password',
+      title: "Reset Password",
       html: `
         <form id="resetPasswordForm">
           <label for="adminPassword" class="label-lc">Admin Password (${fname} ${lname})</label>
@@ -196,33 +204,34 @@ const InfoTable = ({
       `,
       icon: false,
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Reset Password',
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Reset Password",
       preConfirm: () => {
-        const adminPasswordInput = document.getElementById('adminPassword');
+        const adminPasswordInput = document.getElementById("adminPassword");
         const adminPasswordValue = adminPasswordInput.value.trim();
-        const newPasswordInput = document.getElementById('newPassword');
+        const newPasswordInput = document.getElementById("newPassword");
         const newPasswordValue = newPasswordInput.value.trim();
-        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const confirmPasswordInput = document.getElementById("confirmPassword");
         const confirmPasswordValue = confirmPasswordInput.value.trim();
         if (!adminPasswordValue) {
-          Swal.showValidationMessage('Please enter Admin Password');
+          Swal.showValidationMessage("Please enter Admin Password");
           return false;
         }
         if (!newPasswordValue) {
-          Swal.showValidationMessage('Please enter New Password');
+          Swal.showValidationMessage("Please enter New Password");
           return false;
         }
         if (!confirmPasswordValue) {
-          Swal.showValidationMessage('Please enter Confirm Password');
+          Swal.showValidationMessage("Please enter Confirm Password");
           return false;
         }
-        const newPassword = document.getElementById('newPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
+        const newPassword = document.getElementById("newPassword").value;
+        const confirmPassword =
+          document.getElementById("confirmPassword").value;
 
         if (newPassword !== confirmPassword) {
-          Swal.showValidationMessage('Passwords do not match');
+          Swal.showValidationMessage("Passwords do not match");
         }
 
         return { newPassword, confirmPassword };
@@ -231,7 +240,11 @@ const InfoTable = ({
       if (result.isConfirmed) {
         const { newPassword, confirmPassword } = result.value;
         // Handle reset password logic with newPassword and confirmPassword
-        Swal.fire('Password Reset!', 'Your password has been reset.', 'success');
+        Swal.fire(
+          "Password Reset!",
+          "Your password has been reset.",
+          "success"
+        );
       }
     });
   };
@@ -267,16 +280,22 @@ const InfoTable = ({
         Header: "Action",
         Cell: (cellProps) => {
           const orderData = cellProps.row.original;
-          console.log("ORDER DATA = ",orderData);
+          console.log("ORDER DATA = ", orderData);
 
-          if (formname && formname === "leave_approval" && orderData.status === 1) {
+          if (
+            formname &&
+            formname === "leave_approval" &&
+            orderData.status === 1
+          ) {
             return (
               <ul className="list-inline hstack gap-2 mb-0">
                 <li className="list-inline-item edit">
                   <Link
                     to="javascript:void(0)"
                     className="text-success d-inline-block edit-item-btn"
-                    onClick={() => { handleApproval(orderData) }}
+                    onClick={() => {
+                      handleApproval(orderData);
+                    }}
                   >
                     <i className="ri-check-line fs-16"></i>
                   </Link>
@@ -285,7 +304,7 @@ const InfoTable = ({
                   <Link
                     to="javascript:void(0)"
                     className="text-danger d-inline-block remove-item-btn"
-                    onClick={handleReject}
+                    onClick={() => handleReject(orderData)}
                   >
                     <i className="ri-close-line fs-16"></i>
                   </Link>
@@ -294,24 +313,32 @@ const InfoTable = ({
             );
           } else if (formname && formname === "employee") {
             return (
-
-
-
               <ul className="list-inline hstack gap-2 mb-0">
-
                 <UncontrolledDropdown className="float-end">
-                  <DropdownToggle tag="a" className="text-reset dropdown-btn" href="#">
-                    <span className="text-muted fs-18"><i className="mdi mdi-dots-horizontal"></i></span>
+                  <DropdownToggle
+                    tag="a"
+                    className="text-reset dropdown-btn"
+                    href="#"
+                  >
+                    <span className="text-muted fs-18">
+                      <i className="mdi mdi-dots-horizontal"></i>
+                    </span>
                   </DropdownToggle>
                   <DropdownMenu className="dropdown-menu-end">
                     <DropdownItem
-                      onClick={() => { handleDeactivate(orderData) }}>
-                      <i className="ri-shut-down-line"></i> {' '} Deactivate</DropdownItem>
+                      onClick={() => {
+                        handleDeactivate(orderData);
+                      }}
+                    >
+                      <i className="ri-shut-down-line"></i> Deactivate
+                    </DropdownItem>
                     <DropdownItem
                       onClick={() => {
                         handleResetPassword(orderData);
-                      }}>
-                      <i className="ri-refresh-line"></i> {' '} Reset Password</DropdownItem>
+                      }}
+                    >
+                      <i className="ri-refresh-line"></i> Reset Password
+                    </DropdownItem>
                   </DropdownMenu>
                 </UncontrolledDropdown>
 
@@ -332,14 +359,12 @@ const InfoTable = ({
                     className="text-danger d-inline-block remove-item-btn"
                     onClick={() => {
                       const orderData = cellProps.row.original;
-                    }}>
-
+                    }}
+                  >
                     <i className="ri-delete-bin-5-fill fs-16"></i>
                   </Link>
                 </li>
               </ul>
-
-
             );
           } else {
             return (
@@ -366,8 +391,8 @@ const InfoTable = ({
                     className="text-danger d-inline-block remove-item-btn"
                     onClick={() => {
                       const orderData = cellProps.row.original;
-                    }}>
-
+                    }}
+                  >
                     <i className="ri-delete-bin-5-fill fs-16"></i>
                   </Link>
                 </li>
@@ -376,7 +401,6 @@ const InfoTable = ({
           }
         },
       },
-
     ],
     []
   );
@@ -444,7 +468,12 @@ const InfoTable = ({
     console.log(data);
   };
 
-  const module_list_for_create_btn_access = ["employee", "leave_types", "holiday", "department"]
+  const module_list_for_create_btn_access = [
+    "employee",
+    "leave_types",
+    "holiday",
+    "department",
+  ];
 
   // CUSTOM FORM
 
@@ -482,11 +511,9 @@ const InfoTable = ({
     dispatch(toggleRSBView(true));
   };
 
-
   const HandleImportExport = () => {
     dispatch(toggleISBView(true));
-  }
-
+  };
 
   const toggle = useCallback(() => {
     if (modal) {
@@ -527,7 +554,8 @@ const InfoTable = ({
                 <div className="col-sm">
                   <h5
                     className="card-title mb-0"
-                    style={{ textTransform: "capitalize" }}>
+                    style={{ textTransform: "capitalize" }}
+                  >
                     {formname.split("_").join(" ")}
                   </h5>
 
@@ -554,7 +582,8 @@ const InfoTable = ({
                           <DropdownToggle
                             tag="a"
                             className="text-reset dropdown-btn"
-                            role="button">
+                            role="button"
+                          >
                             <span className="text-muted">
                               01 Jan 2023 to 31 Dec 2023
                               <i className="mdi mdi-chevron-down ms-1"></i>
@@ -589,51 +618,77 @@ const InfoTable = ({
                         style={{ textTransform: "capitalize" }}
                         onClick={() => {
                           handleCreateAndUpdate(0);
-                        }}>
+                        }}
+                      >
                         <i className="ri-add-line align-bottom me-1"></i> Create{" "}
                         {formname.split("_").join(" ")}
                       </button>
                     )}{" "}
                     <div className="d-flex gap-1 flex-wrap">
-                      {formname && (module_list_for_create_btn_access.includes(formname)) && (
-                        <button
-                          type="button"
-                          className="btn btn-primary add-btn"
-                          id="create-btn"
-                          style={{ textTransform: "capitalize" }}
-                          onClick={() => {
-                            HandleImportExport(0);
-                          }}>
-                          <i className="ri-file-download-line align-bottom me-1"></i>{" "}
-                          Import
-
-                        </button>
-                      )}{" "}
+                      {formname &&
+                        module_list_for_create_btn_access.includes(
+                          formname
+                        ) && (
+                          <button
+                            type="button"
+                            className="btn btn-primary add-btn"
+                            id="create-btn"
+                            style={{ textTransform: "capitalize" }}
+                            onClick={() => {
+                              HandleImportExport(0);
+                            }}
+                          >
+                            <i className="ri-file-download-line align-bottom me-1"></i>{" "}
+                            Import
+                          </button>
+                        )}{" "}
                       <div>
                         {formname && formname === "leave_approval" && (
-                          <div style={{ display: 'flex', flexDirection: 'row' }}>
-                            <div style={{ marginBottom: '10px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <div style={{ position: 'relative', width: '200px' }}>
-                                  <i className="bx bx-search-alt search-icon" style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)' }}></i>
+                          <div
+                            style={{ display: "flex", flexDirection: "row" }}
+                          >
+                            <div style={{ marginBottom: "10px" }}>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    position: "relative",
+                                    width: "200px",
+                                  }}
+                                >
+                                  <i
+                                    className="bx bx-search-alt search-icon"
+                                    style={{
+                                      position: "absolute",
+                                      top: "50%",
+                                      left: "10px",
+                                      transform: "translateY(-50%)",
+                                    }}
+                                  ></i>
                                   <input
                                     type="text"
                                     placeholder="Search"
                                     value={search}
                                     onChange={handleSearchChange}
                                     style={{
-                                      padding: '6px 30px 6px 30px',
-                                      borderRadius: '4px',
-                                      border: '1px solid #ccc',
-                                      width: '100%',
-                                      outline: 'none',
+                                      padding: "6px 30px 6px 30px",
+                                      borderRadius: "4px",
+                                      border: "1px solid #ccc",
+                                      width: "100%",
+                                      outline: "none",
                                     }}
                                   />
                                 </div>
                               </div>
                             </div>
 
-                            <div style={{ marginLeft: '10px', marginRight: '5px' }}>
+                            <div
+                              style={{ marginLeft: "10px", marginRight: "5px" }}
+                            >
                               <label htmlFor="roleName" className="form-label">
                                 Status:
                               </label>
@@ -641,20 +696,21 @@ const InfoTable = ({
                                 value={statusFilter}
                                 onChange={handleStatusFilterChange}
                                 style={{
-                                  padding: '6px',
-                                  borderRadius: '4px',
-                                  border: '1px solid #ccc',
-                                  width: '170px',
-                                  outline: 'none',
+                                  padding: "6px",
+                                  borderRadius: "4px",
+                                  border: "1px solid #ccc",
+                                  width: "170px",
+                                  outline: "none",
                                 }}
                               >
                                 <option value="all">All Status</option>
                                 <option value="approved">Approved</option>
                                 <option value="rejected">Rejected</option>
-
                               </select>
                             </div>
-                            <div style={{ marginLeft: '10px', marginRight: '5px' }}>
+                            <div
+                              style={{ marginLeft: "10px", marginRight: "5px" }}
+                            >
                               <label htmlFor="roleName" className="form-label">
                                 Type:
                               </label>
@@ -662,25 +718,21 @@ const InfoTable = ({
                                 value={typeFilter}
                                 onChange={handleTypeFilterChange}
                                 style={{
-                                  padding: '6px',
-                                  borderRadius: '4px',
-                                  border: '1px solid #ccc',
-                                  width: '170px',
-                                  outline: 'none',
+                                  padding: "6px",
+                                  borderRadius: "4px",
+                                  border: "1px solid #ccc",
+                                  width: "170px",
+                                  outline: "none",
                                 }}
                               >
                                 <option value="all">All Types</option>
                                 <option value="type1">Type 1</option>
                                 <option value="type2">Type 2</option>
-
                               </select>
                             </div>
-                            <div>
-
-                            </div>
+                            <div></div>
                           </div>
                         )}
-
                       </div>
                       {formname && formname === "leave_approval" && (
                         <div>
@@ -688,11 +740,13 @@ const InfoTable = ({
                             type="button"
                             className="btn btn-success add-btn"
                             id="bulk-approve-btn"
-                            style={{ textTransform: "capitalize", marginRight: "5px", }}
+                            style={{
+                              textTransform: "capitalize",
+                              marginRight: "5px",
+                            }}
                             onClick={() => handleBulkAction("approve")}
                           >
-                            <i className="ri-check-line fs-16"></i>{" "}
-                            Bulk Approve
+                            <i className="ri-check-line fs-16"></i> Bulk Approve
                           </button>
                           <button
                             type="button"
@@ -701,22 +755,23 @@ const InfoTable = ({
                             style={{ textTransform: "capitalize" }}
                             onClick={() => handleBulkAction("reject")}
                           >
-                            <i className="ri-close-line fs-16"></i>{" "}
-                            Bulk Reject
+                            <i className="ri-close-line fs-16"></i> Bulk Reject
                           </button>
                         </div>
                       )}
                       <button
                         type="button"
                         className="btn btn-info"
-                        onClick={() => setIsExportCSV(true)}>
+                        onClick={() => setIsExportCSV(true)}
+                      >
                         <i className="ri-file-download-line align-bottom me-1"></i>{" "}
                         Export
                       </button>{" "}
                       {isMultiDeleteButton && (
                         <button
                           className="btn btn-soft-danger"
-                          onClick={() => setDeleteModalMulti(true)}>
+                          onClick={() => setDeleteModalMulti(true)}
+                        >
                           <i className="ri-delete-bin-2-line"></i>
                         </button>
                       )}
@@ -730,7 +785,8 @@ const InfoTable = ({
               <div>
                 <Nav
                   className="nav-tabs nav-tabs-custom nav-success"
-                  role="tablist">
+                  role="tablist"
+                >
                   <NavItem>
                     <NavLink
                       className={classnames(
@@ -740,13 +796,15 @@ const InfoTable = ({
                       onClick={() => {
                         toggleTab(1, "all");
                       }}
-                      href="#">
+                      href="#"
+                    >
                       <i className="ri-store-2-fill me-1 align-bottom"></i> All
                       Datas
                       {tabledata && tabledata.length > 0 && (
                         <Badge
                           color={activeTab === 1 ? "success" : "primary"}
-                          style={{ marginLeft: "5px" }}>
+                          style={{ marginLeft: "5px" }}
+                        >
                           {tabledata.length}
                         </Badge>
                       )}
@@ -763,7 +821,8 @@ const InfoTable = ({
                           onClick={() => {
                             toggleTab(String(idx + 2), obj.option);
                           }}
-                          href="#">
+                          href="#"
+                        >
                           <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
                           {obj.label}
                           {obj.count > 0 && (
@@ -773,7 +832,8 @@ const InfoTable = ({
                                   ? "success"
                                   : "primary"
                               }
-                              style={{ marginLeft: "5px" }}>
+                              style={{ marginLeft: "5px" }}
+                            >
                               {obj.count}
                             </Badge>
                           )}
@@ -813,7 +873,8 @@ const InfoTable = ({
                     e.preventDefault();
                     // validation.handleSubmit();
                     return false;
-                  }}>
+                  }}
+                >
                   <ModalBody>
                     <input type="hidden" id="id-field" />
 
@@ -827,15 +888,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Order Id"
                         type="text"
-                      // validate={{
-                      //     required: { value: true },
-                      // }}
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={validation.values.orderId || ""}
-                      // invalid={
-                      //     validation.touched.orderId && validation.errors.orderId ? true : false
-                      // }
+                        // validate={{
+                        //     required: { value: true },
+                        // }}
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={validation.values.orderId || ""}
+                        // invalid={
+                        //     validation.touched.orderId && validation.errors.orderId ? true : false
+                        // }
                       />
                       {/* {validation.touched.orderId && validation.errors.orderId ? (
                                                     <FormFeedback type="invalid">{validation.errors.orderId}</FormFeedback>
@@ -845,7 +906,8 @@ const InfoTable = ({
                     <div className="mb-3">
                       <Label
                         htmlFor="customername-field"
-                        className="form-label">
+                        className="form-label"
+                      >
                         Customer Name
                       </Label>
                       <Input
@@ -854,15 +916,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Name"
                         type="text"
-                      // validate={{
-                      //     required: { value: true },
-                      // }}
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={validation.values.customer || ""}
-                      // invalid={
-                      //     validation.touched.customer && validation.errors.customer ? true : false
-                      // }
+                        // validate={{
+                        //     required: { value: true },
+                        // }}
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={validation.values.customer || ""}
+                        // invalid={
+                        //     validation.touched.customer && validation.errors.customer ? true : false
+                        // }
                       />
                       {/* {validation.touched.customer && validation.errors.customer ? (
                                                     <FormFeedback type="invalid">{validation.errors.customer}</FormFeedback>
@@ -883,7 +945,8 @@ const InfoTable = ({
                         // value={
                         //     validation.values.product || ""
                         // }
-                        required>
+                        required
+                      >
                         {/* {productname.map((item, key) => (
                                                         <React.Fragment key={key}>
                                                             {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
@@ -933,12 +996,12 @@ const InfoTable = ({
                           <Input
                             name="amount"
                             type="text"
-                          // onChange={validation.handleChange}
-                          // onBlur={validation.handleBlur}
-                          // value={validation.values.amount || ""}
-                          // invalid={
-                          //     validation.touched.amount && validation.errors.amount ? true : false
-                          // }
+                            // onChange={validation.handleChange}
+                            // onBlur={validation.handleBlur}
+                            // value={validation.values.amount || ""}
+                            // invalid={
+                            //     validation.touched.amount && validation.errors.amount ? true : false
+                            // }
                           />
                           {/* {validation.touched.amount && validation.errors.amount ? (
                                                             <FormFeedback type="invalid">{validation.errors.amount}</FormFeedback>
@@ -955,11 +1018,11 @@ const InfoTable = ({
                             name="payment"
                             type="select"
                             className="form-select"
-                          // onChange={validation.handleChange}
-                          // onBlur={validation.handleBlur}
-                          // value={
-                          //     validation.values.payment || ""
-                          // }
+                            // onChange={validation.handleChange}
+                            // onBlur={validation.handleBlur}
+                            // value={
+                            //     validation.values.payment || ""
+                            // }
                           >
                             {/* {orderpayement.map((item, key) => (
                                                                 <React.Fragment key={key}>
@@ -986,11 +1049,11 @@ const InfoTable = ({
                         name="status"
                         type="select"
                         className="form-select"
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={
-                      //     validation.values.status || ""
-                      // }
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={
+                        //     validation.values.status || ""
+                        // }
                       >
                         {/* {orderstatus.map((item, key) => (
                                                         <React.Fragment key={key}>
@@ -1013,7 +1076,8 @@ const InfoTable = ({
                         className="btn btn-light"
                         onClick={() => {
                           setModal(false);
-                        }}>
+                        }}
+                      >
                         Close
                       </button>
 
