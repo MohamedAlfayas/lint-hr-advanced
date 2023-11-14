@@ -1973,6 +1973,28 @@ const EmployeeForm = () => {
             </div>
 
             <Row>
+            <Col md={12} lg={12} xxl={12}>
+                <div>
+                  <Label htmlFor="emailid" className="form-label">
+                    Employee ID
+                  </Label>
+                  <div className="form-icon right">
+                    <Input
+                      type="text"
+                      name="emid"
+                      id="employeeid"
+                      className="form-control"
+                      placeholder="Employee ID"
+                      // value={employeeObj.email || ""}
+                      onChange={handleInputChange}
+                    />
+                    <i className="ri-user-line"></i>
+                  </div>
+                  <div id="passwordHelpBlock" className="form-text mb-3">
+                    Enter Employee ID.
+                  </div>
+                </div>
+              </Col>
               <Col md={6} lg={6} xxl={6}>
                 <div>
                   <Label htmlFor="fname" className="form-label">
@@ -2087,7 +2109,7 @@ const EmployeeForm = () => {
               </Col>
               <Col lg={12}>
                 <div>
-                  <Label>Contact Number*</Label>
+                  <Label className="form-label">Contact Number*</Label>
                   <Dropdown
                     className="input-group"
                     isOpen={dropdownOpen4}
@@ -2163,11 +2185,11 @@ const EmployeeForm = () => {
                       </SimpleBar>
                     </DropdownMenu>
                   </Dropdown>
-
-                  <div id="passwordHelpBlock" className="form-text">
+                  </div>
+                  <div id="passwordHelpBlock" className="form-text mb-3">
                     Enter Your Contact number with country code.
                   </div>
-                </div>
+               
               </Col>
 
 

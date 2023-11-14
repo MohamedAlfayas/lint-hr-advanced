@@ -74,6 +74,7 @@ const InfoTable = ({
   const dispatch = useDispatch();
 
   const EmployeeData = GetLocalStorageData("employee");
+  console.log("fsfa",EmployeeData);
 
   const { activeTableTab } = useSelector((state) => state.TableReducer);
 
@@ -130,7 +131,8 @@ const InfoTable = ({
     console.log("Click Approve", orderData);
     let employee_fname =
       EmployeeData.find((e) => e.id === orderData.employee).fname || "";
-    let content = `<span>Are You Sure to <span style='color:green'>Accept Leave To Agent ${employee_fname}</span></span>  ?`;
+   
+    let content = `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To Agent <strong style='color:#7066e0'>  ${employee_fname}</strong>  ? ${orderData.start} to  ${orderData.end} (${orderData.total})</span> `;
     let btnText = "Yes, Approve";
     let btnClass = "Success";
     SweetAlert(true, content, btnText, btnClass);
@@ -140,7 +142,7 @@ const InfoTable = ({
     console.log("Click Approve", orderData);
     let employee_fname =
       EmployeeData.find((e) => e.id === orderData.employee).fname || "";
-    let content = `<span>Are You Sure to <span style='color:red'>Reject Leave To Agent ${employee_fname} </span></span> ?`;
+    let content = `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To Agent<strong style='color:#7066e0'> ${employee_fname} </strong> ? ${orderData.start} to  ${orderData.end} (${orderData.total})</span>`;
     let btnText = "Yes, Reject";
     let btnClass = "Danger";
     let input = "text";
@@ -318,7 +320,8 @@ const InfoTable = ({
                   <DropdownToggle
                     tag="a"
                     className="text-reset dropdown-btn"
-                    href="#"
+                    href=""
+                    onClick={(e) => e.preventDefault()}
                   >
                     <span className="text-muted fs-18">
                       <i className="mdi mdi-dots-horizontal"></i>
@@ -513,6 +516,7 @@ const InfoTable = ({
 
   const HandleImportExport = () => {
     dispatch(toggleISBView(true));
+    dispatch(setComponentToShow(formname));
   };
 
   const toggle = useCallback(() => {

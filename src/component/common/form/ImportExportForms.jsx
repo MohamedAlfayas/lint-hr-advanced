@@ -25,7 +25,9 @@ const ImportExportForms = ({ open, toggleImportCanvas }) => {
                 <ImportForm />
                 )  : component_to_show === "leave_types" ? (
                     <ImportForm/>
-                ):(
+                ): component_to_show === "holiday" ? (
+                  <ImportForm/>
+              ):(
                     <></>
                   )}
                 </div>

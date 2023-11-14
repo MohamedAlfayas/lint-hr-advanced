@@ -309,6 +309,29 @@ const LeaveTypeForm = () => {
                       Please Enter Leave Hour Allowed in a year.
                     </div>
                   </div>
+                  <div className="mb-3">
+                    <Label htmlFor="lt_hour_allow" className="form-label">
+                      Leave Hour{" "}
+                      <small>
+                        <i>Leave Hour Allowed in a Day</i>
+                      </small>
+                    </Label>
+                    <div className="form-icon right">
+                      <Input
+                        type="number"
+                        name="hour_value"
+                        id="lt_hour_allow"
+                        className="form-control"
+                        placeholder="Casual"
+                        value={leaveTypeData.hour_value || ""}
+                        onChange={handleInputChange}
+                      />
+                      <i className="ri-time-line"></i>
+                    </div>
+                    <div id="passwordHelpBlock" className="form-text">
+                      Please Enter Leave Hour Allowed in a day.
+                    </div>
+                  </div>
                 </Col>
               )}
 
