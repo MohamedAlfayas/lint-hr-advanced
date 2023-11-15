@@ -4,6 +4,7 @@ import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
 import { MetaTitle } from "../../common/data/MetaTitle";
 import {
+  Badge,
   Button,
   Card,
   CardBody,
@@ -14,12 +15,16 @@ import {
   DropdownToggle,
   Input,
   Label,
+  Modal,
+  ModalBody,
+  ModalHeader,
   Nav,
   NavItem,
   NavLink,
   Row,
   TabContent,
   TabPane,
+  Table,
   UncontrolledDropdown,
 } from "reactstrap";
 import classnames from "classnames";
@@ -57,6 +62,81 @@ const PayRollConfig = () => {
       setcustomActiveTab(tab);
     }
   };
+
+  const payrollobj = useMemo(
+    () => [
+      {
+        general: {
+          location: "India",
+          currency: "INR",
+          calc_based_on: 1,
+        },
+        pay_cycle: {
+          name: "Junior",
+          desc: "",
+          from: "Nov, 23",
+          repeat: "Month",
+          cut_off: 3,
+        },
+        basic_components: {
+          esi: true,
+          epf: {
+            epf_cycle: 2,
+            epf_type: 2,
+          },
+          pro_tax: [
+            {
+              company: "Lintcloud It Service Pvt Ltd",
+              tag: "HEADQUARTER",
+              add: "694, C/10, SAHAR COMPLEX, NEAR MATHUMITHA HOSPITAL, OPP BUS STAND, VALLIOOR - 627117",
+              state: "Tamil Nadu",
+              tax_cycle: "Half-yearly",
+              slabs: 1,
+            },
+            {
+              company: "Lintcloud It Service Pvt Ltd",
+              tag: "HEADQUARTER",
+              add: "694, C/10, SAHAR COMPLEX, NEAR MATHUMITHA HOSPITAL, OPP BUS STAND, VALLIOOR - 627117",
+              state: "Tamil Nadu",
+              tax_cycle: "Half-yearly",
+              slabs: 1,
+            },
+          ],
+        },
+      },
+    ],
+    []
+  );
+
+  const tax_slab = useMemo(
+    () => [
+      {
+        id: 1,
+        state: "Tamil Nadu",
+        range: [
+          { s: 0, e: 21000, tax: 0 },
+          { s: 21001, e: 30000, tax: 135 },
+          { s: 30001, e: 45000, tax: 315 },
+          { s: 45001, e: 60000, tax: 690 },
+          { s: 60001, e: 75000, tax: 1025 },
+          { s: 75001, e: 999999999, tax: 1250 },
+        ],
+      },
+      {
+        id: 1,
+        state: "Kerala",
+        range: [
+          { s: 0, e: 11999, tax: 0 },
+          { s: 12000, e: 17999, tax: 120 },
+          { s: 18000, e: 29999, tax: 180 },
+          { s: 45001, e: 60000, tax: 690 },
+          { s: 60001, e: 75000, tax: 1025 },
+          { s: 75001, e: 999999999, tax: 1250 },
+        ],
+      },
+    ],
+    []
+  );
 
   const location_option = useMemo(
     () => [
@@ -135,6 +215,11 @@ const PayRollConfig = () => {
     dispatch(setComponentToShow("EPFWageForm"));
     dispatch(toggleRSBView(true));
   };
+
+  const [modal_animationZoom, setmodal_animationZoom] = useState(false);
+  function tog_animationZoom() {
+    setmodal_animationZoom(!modal_animationZoom);
+  }
 
   document.title = `PayRoll | ${MetaTitle || "Lint HR"} `;
 
@@ -557,7 +642,7 @@ const PayRollConfig = () => {
                                     onClick={() => {
                                       toggleCustom("4");
                                     }}>
-                                    Settings
+                                    LABOUR WELFARE FUND
                                   </NavLink>
                                 </NavItem>
                               </Nav>
@@ -808,27 +893,218 @@ const PayRollConfig = () => {
                                 </TabPane>
                                 <TabPane tabId="3">
                                   <div className="d-flex">
-                                    <div className="flex-shrink-0">
-                                      <i className="ri-checkbox-multiple-blank-fill text-success"></i>
-                                    </div>
-                                    <div className="flex-grow-1 ms-2">
-                                      Etsy mixtape wayfarers, ethical wes
-                                      anderson tofu before they sold out
-                                      mcsweeney's organic lomo retro fanny pack
-                                      lo-fi farm-to-table readymade. Messenger
-                                      bag gentrify pitchfork tattooed craft
-                                      beer, iphone skateboard locavore carles
-                                      etsy salvia banksy hoodie helvetica. DIY
-                                      synth PBR banksy irony.
-                                      <div className="mt-2">
-                                        <Link
-                                          to="#"
-                                          className="btn btn-sm btn-soft-primary">
-                                          Read More{" "}
-                                          <i className="ri-arrow-right-line ms-1 align-middle"></i>
-                                        </Link>
-                                      </div>
-                                    </div>
+                                    <Col
+                                      xxl={12}
+                                      sm={12}
+                                      className="project-card">
+                                      <Card>
+                                        <CardBody>
+                                          <div
+                                            className={`p-3 mt-n3 mx-n3 bg-success-subtle rounded-top`}>
+                                            <div className="d-flex align-items-center">
+                                              <div className="flex-grow-1">
+                                                <h5 className="mb-0 fs-14">
+                                                  <Link
+                                                    to="#"
+                                                    className="text-body">
+                                                    Lintcloud It Service Pvt Ltd
+                                                    <span className="badge border border-dark text-body ms-2">
+                                                      HEADQUARTER
+                                                    </span>
+                                                  </Link>
+                                                </h5>
+                                              </div>
+                                              <div className="flex-shrink-0">
+                                                <div className="d-flex gap-1 align-items-center my-n2">
+                                                  <div className="form-check form-switch form-switch-success  ">
+                                                    <Input
+                                                      className="form-check-input"
+                                                      type="checkbox"
+                                                      role="switch"
+                                                      id="enableEPF"
+                                                      defaultChecked
+                                                    />
+                                                    <Label
+                                                      className="form-check-label"
+                                                      for="enableEPF">
+                                                      Active
+                                                    </Label>
+                                                  </div>
+                                                  <a
+                                                    onClick={() =>
+                                                      handleEPFEdit(0)
+                                                    }
+                                                    className="text-primary d-inline-block edit-item-btn ms-2"
+                                                    href="javascript:void(0)">
+                                                    <i class="ri-pencil-fill fs-16"></i>
+                                                  </a>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          <div className="py-3">
+                                            <Row className="gy-3">
+                                              <Col xs={4}>
+                                                <div>
+                                                  <p className="text-muted mb-1">
+                                                    Address{" "}
+                                                  </p>
+                                                  <h5 className="fs-14">
+                                                    694, C/10, SAHAR COMPLEX,
+                                                    NEAR MATHUMITHA HOSPITAL,
+                                                    OPP BUS STAND, VALLIOOR -
+                                                    627117
+                                                  </h5>
+                                                </div>
+                                              </Col>
+                                              <Col xs={2}>
+                                                <div>
+                                                  <p className="text-muted mb-1">
+                                                    State
+                                                  </p>
+                                                  <h5 className="fs-14">
+                                                    Tamil Nadu
+                                                  </h5>
+                                                </div>
+                                              </Col>
+                                              <Col xs={2}>
+                                                <div>
+                                                  <p className="text-muted mb-1">
+                                                    Deduction Cycle
+                                                  </p>
+                                                  <h5 className="fs-14">
+                                                    Half-yearly
+                                                  </h5>
+                                                </div>
+                                              </Col>
+                                              <Col xs={2}>
+                                                <div>
+                                                  <p className="text-muted mb-1">
+                                                    PT Slabs
+                                                  </p>
+
+                                                  <p>
+                                                    <Link
+                                                      to="#"
+                                                      onClick={() =>
+                                                        tog_animationZoom()
+                                                      }
+                                                      className="link-success">
+                                                      View Tax Slabs
+                                                    </Link>
+                                                  </p>
+                                                </div>
+                                              </Col>
+                                            </Row>
+                                          </div>
+                                        </CardBody>
+                                      </Card>
+
+                                      <Card>
+                                        <CardBody>
+                                          <div
+                                            className={`p-3 mt-n3 mx-n3 bg-success-subtle rounded-top`}>
+                                            <div className="d-flex align-items-center">
+                                              <div className="flex-grow-1">
+                                                <h5 className="mb-0 fs-14">
+                                                  <Link
+                                                    to="#"
+                                                    className="text-body">
+                                                    Lintcloud Education
+                                                    <span className="badge border border-dark text-body ms-2">
+                                                      LintHr Team
+                                                    </span>
+                                                  </Link>
+                                                </h5>
+                                              </div>
+                                              <div className="flex-shrink-0">
+                                                <div className="d-flex gap-1 align-items-center my-n2">
+                                                  <div className="form-check form-switch form-switch-success  ">
+                                                    <Input
+                                                      className="form-check-input"
+                                                      type="checkbox"
+                                                      role="switch"
+                                                      id="enableEPF"
+                                                      defaultChecked
+                                                    />
+                                                    <Label
+                                                      className="form-check-label"
+                                                      for="enableEPF">
+                                                      Active
+                                                    </Label>
+                                                  </div>
+                                                  <a
+                                                    onClick={() =>
+                                                      handleEPFEdit(0)
+                                                    }
+                                                    className="text-primary d-inline-block edit-item-btn ms-2"
+                                                    href="javascript:void(0)">
+                                                    <i class="ri-pencil-fill fs-16"></i>
+                                                  </a>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          <div className="py-3">
+                                            <Row className="gy-3">
+                                              <Col xs={4}>
+                                                <div>
+                                                  <p className="text-muted mb-1">
+                                                    Address{" "}
+                                                  </p>
+                                                  <h5 className="fs-14">
+                                                    694, C/10, SAHAR COMPLEX,
+                                                    NEAR MATHUMITHA HOSPITAL,
+                                                    OPP BUS STAND, VALLIOOR -
+                                                    627117
+                                                  </h5>
+                                                </div>
+                                              </Col>
+                                              <Col xs={2}>
+                                                <div>
+                                                  <p className="text-muted mb-1">
+                                                    State
+                                                  </p>
+                                                  <h5 className="fs-14">
+                                                    Kerala
+                                                  </h5>
+                                                </div>
+                                              </Col>
+                                              <Col xs={2}>
+                                                <div>
+                                                  <p className="text-muted mb-1">
+                                                    Deduction Cycle
+                                                  </p>
+                                                  <h5 className="fs-14">
+                                                    Monthly
+                                                  </h5>
+                                                </div>
+                                              </Col>
+                                              <Col xs={2}>
+                                                <div>
+                                                  <p className="text-muted mb-1">
+                                                    PT Slabs
+                                                  </p>
+
+                                                  <p>
+                                                    <Link
+                                                      to="#"
+                                                      onClick={() =>
+                                                        tog_animationZoom()
+                                                      }
+                                                      className="link-success">
+                                                      View Tax Slabs
+                                                    </Link>
+                                                  </p>
+                                                </div>
+                                              </Col>
+                                            </Row>
+                                          </div>
+                                        </CardBody>
+                                      </Card>
+                                    </Col>
                                   </div>
                                 </TabPane>
                                 <TabPane tabId="4">
@@ -926,6 +1202,72 @@ const PayRollConfig = () => {
           </Row>
         </Container>
       </div>
+
+      <Modal
+        id="flipModal"
+        isOpen={modal_animationZoom}
+        toggle={() => {
+          tog_animationZoom();
+        }}
+        modalClassName="zoomIn"
+        centered>
+        <ModalHeader>
+          <h5 className="modal-title" id="staticBackdropLabel">
+            Tax Slabs for Lintcloud It Service Pvt Ltd
+          </h5>
+        </ModalHeader>
+        <ModalBody className="text-center">
+          <div className="mt-4">
+            <Col xl={12}>
+              <div className="">
+                <Table className="table-hover table-striped align-middle table-nowrap mb-0">
+                  <thead>
+                    <tr>
+                      <th scope="col">Half-yearly Gross Salary (₹)</th>
+                      <th scope="col">Half-yearly Tax Amount (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="fw-medium">1 - 21000</td>
+                      <td>0</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">21001 - 30000</td>
+                      <td>135</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">30001 - 45000</td>
+                      <td>315</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">45001 - 60000</td>
+                      <td>690</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">60001 - 75000</td>
+                      <td>1025</td>
+                    </tr>
+                    <tr>
+                      <td className="fw-medium">75001 - 999999999</td>
+                      <td>1250</td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </div>
+            </Col>
+
+            <div className="hstack gap-2 justify-content-center mt-3">
+              <Link
+                to="#"
+                className="btn btn-link link-success fw-medium"
+                onClick={() => setmodal_animationZoom(false)}>
+                <i className="ri-close-line me-1 align-middle"></i> Close
+              </Link>
+            </div>
+          </div>
+        </ModalBody>
+      </Modal>
     </React.Fragment>
   );
 };
