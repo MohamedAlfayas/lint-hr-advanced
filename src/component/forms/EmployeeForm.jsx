@@ -42,6 +42,7 @@ import 'filepond/dist/filepond.min.css';
 import FilePondPluginImageExifOrientation from 'filepond-plugin-image-exif-orientation';
 import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
 import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css';
+import { join } from "lodash";
 
 
 // Register the plugins
@@ -57,6 +58,7 @@ const EmployeeForm = () => {
   const role_option = GetLocalStorageData("role") || [];
 
   const [employeeImage, setEmployeeImage] = useState(null);
+  const [employeeFile, setEmployeeFile] = useState(null);
   const [subDepOptions, setSubDeptOptions] = useState(dep_options);
   const [stateList, setStateList] = useState([]);
   const [contactCountry, setContactCountry] = useState({
@@ -1824,20 +1826,26 @@ const EmployeeForm = () => {
   );
 
   const [dob, setDob] = useState([]);
+  const [joining_date, setJoinDate] = useState([]);
+  const [profileData, setProfileData] = useState([]);
+
 
   useEffect(() => {
     setEmployeeObj({
       ...form_obj,
       dob: ConvertISODateFormat(form_obj.dob),
+      joining_date: ConvertISODateFormat(form_obj.joindate),
     });
     let sub_dep_options = dep_options.filter(
       (obj) => obj.id !== form_obj.primary_department
     );
     setSubDeptOptions(sub_dep_options);
     setDob([new Date(form_obj.dob)]);
+    setJoinDate([new Date(form_obj.joindate)]);
   }, [form_obj]);
 
   const handleInputChange = (e) => {
+    console.log("eee", e);
     const { name, value } = e.target;
     setEmployeeObj({
       ...employeeObj,
@@ -1880,13 +1888,77 @@ const EmployeeForm = () => {
       dob: ConvertISODateFormat(selectedDates[0]),
     });
   };
+  const handleJoinDateChange = (selectedJoinDate, dateStr, instance) => {
+
+    console.log("ffff", selectedJoinDate);
+    setJoinDate(selectedJoinDate);
+    setEmployeeObj({
+      ...employeeObj,
+     joining_date: ConvertISODateFormat(selectedJoinDate[0]),
+
+    });
+  };
+  console.log("gggg", employeeObj);
   const handleTimeZoneChange = (selectedTimezone) => {
     setEmployeeObj({
       ...employeeObj,
       profile_timezone: selectedTimezone.value,
     });
   };
+  const updateProfileData = (name, value) => {
+    setEmployeeObj({
+      ...employeeObj,
+      [name]: value,
+    });
+  };
+  // const handleFileUpdate = (fileItems) => {
 
+  //   console.log("fileupdate", fileItems);
+  //   const fileNames = fileItems.map((fileItem) => fileItem.file);
+  //   console.log('File Names:', fileNames);
+  //   setFiles(fileItems);
+
+  // }
+  // const handleChange = (event) => {
+  //   const selectedFile = event.target.files[0];
+
+  //   if (selectedFile) {
+  //     console.log('Selected File Name:', selectedFile); 
+  //   }
+  // }
+// const handleFileUpload = (e) => {
+//     console.log("E.target.files = ", e.target.files);
+//     if (e.target.files && e.target.files[0]) {
+//       setEmployeeFile(e.target.files[0]);
+//       const reader = new FileReader();
+//       reader.onload = (readerEvent) => {
+//         const newFileSrc = readerEvent.target.result;
+//         setEmployeeObj({
+//           ...employeeObj,
+//           file_url: newFileSrc,
+//         });
+//       };
+//       reader.readAsDataURL(e.target.files[0]);
+//     }
+//   };
+const handleFileUpload = (e,name) => {
+  const file = e.target.files[0];
+
+  setEmployeeFile((oldImages) => ({
+    ...oldImages,
+    [name]: file,
+  }));
+
+  const reader = new FileReader();
+  reader.onload = (readerEvent) => {
+    const newImageSrc = readerEvent.target.result;
+    setEmployeeObj((oldObj) => ({
+      ...oldObj,
+      [name]: newImageSrc,
+    }));
+  };
+};
+console.log("rrrr",employeeObj);
   const handleCFInputChange = (e, cf_id) => {
     setEmployeeObj({
       ...employeeObj,
@@ -1895,6 +1967,7 @@ const EmployeeForm = () => {
       ),
     });
   };
+
 
   const handleSubmit = () => {
     console.log("emp Obj = ", employeeObj);
@@ -1973,7 +2046,7 @@ const EmployeeForm = () => {
             </div>
 
             <Row>
-            <Col md={12} lg={12} xxl={12}>
+              <Col md={12} lg={12} xxl={12}>
                 <div>
                   <Label htmlFor="emailid" className="form-label">
                     Employee ID
@@ -1981,11 +2054,11 @@ const EmployeeForm = () => {
                   <div className="form-icon right">
                     <Input
                       type="text"
-                      name="emid"
+                      name="emp_id"
                       id="employeeid"
                       className="form-control"
                       placeholder="Employee ID"
-                      // value={employeeObj.email || ""}
+                      value={employeeObj.emp_id || ""}
                       onChange={handleInputChange}
                     />
                     <i className="ri-user-line"></i>
@@ -2131,7 +2204,7 @@ const EmployeeForm = () => {
                       type="number"
                       className="form-control rounded-end flag-input"
                       placeholder="Enter number"
-                      // value={profileData.contact_number || ""}
+                      value={employeeObj.contact_number || ""}
                       onChange={(e) =>
                         updateProfileData(
                           "contact_number",
@@ -2185,11 +2258,11 @@ const EmployeeForm = () => {
                       </SimpleBar>
                     </DropdownMenu>
                   </Dropdown>
-                  </div>
-                  <div id="passwordHelpBlock" className="form-text mb-3">
-                    Enter Your Contact number with country code.
-                  </div>
-               
+                </div>
+                <div id="passwordHelpBlock" className="form-text mb-3">
+                  Enter Your Contact number with country code.
+                </div>
+
               </Col>
 
 
@@ -2348,36 +2421,90 @@ const EmployeeForm = () => {
                 </div>
               </Col>
               <Col lg={12}>
-                <div className="mb-3">
-                  <Label>Joining Date</Label>
-                  <input
-                    type="date"
-                    name="date"
-                    id="date"
+                <div>
+                  <Label htmlFor="joindate" className="form-label">
+                    Joining Date
+                  </Label>
+                  <Flatpickr
                     className="form-control"
-
-                    required
+                    id="joining_date"
+                    value={joining_date}
+                    options={{
+                      dateFormat: "d M, Y",
+                    }}
+                    onChange={handleJoinDateChange}
                   />
-
-                  <div id="passwordHelpBlock" className="form-text">
-                    Enter Your Joining Date.
-                  </div>
+                </div>
+                <div id="passwordHelpBlock" className="form-text mb-3">
+                  Select Your Joining Date.
                 </div>
               </Col>
-              <Col lg={12}>
+              <Col>
                 <div>
                   <Label htmlFor="formFile" className="form-label">ID Proof</Label>
-                  <Input className="form-control" type="file" id="formFile" />
+                  <Input className="form-control" type="file" id="formFile"
+                    onChange={(e)=>handleFileUpload(e, 'id_proof')} />
                 </div>
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
                 Select ID Proof.
               </div>
-              <Col lg={12}>
+ 
+              <Col>
+                <div>
+                  <Label htmlFor="formFile" className="form-label">File 1</Label>
+                  <Input className="form-control" type="file" id="formFile"
+                    onChange={(e)=>handleFileUpload(e, 'file_1')} />
+                </div>
+              </Col>
+              <div id="passwordHelpBlock" className="form-text mb-3">
+                Select File 1.
+              </div>
+              <Col>
+                <div>
+                  <Label htmlFor="formFile" className="form-label">File 2</Label>
+                  <Input className="form-control" type="file" id="formFile"
+                    onChange={(e)=>handleFileUpload(e, 'file_2')} />
+                </div>
+              </Col>
+              <div id="passwordHelpBlock" className="form-text mb-3">
+                Select File 2.
+              </div>
+              <Col>
+                <div>
+                  <Label htmlFor="formFile" className="form-label">File 3</Label>
+                  <Input className="form-control" type="file" id="formFile"
+                    onChange={(e)=>handleFileUpload(e, 'file_3')} />
+                </div>
+              </Col>
+              <div id="passwordHelpBlock" className="form-text mb-3">
+                Select File 3.
+              </div>
+              <Col>
+                <div>
+                  <Label htmlFor="formFile" className="form-label">File 4</Label>
+                  <Input className="form-control" type="file" id="formFile"
+                    onChange={(e)=>handleFileUpload(e, 'file_4')} />
+                </div>
+              </Col>
+              <div id="passwordHelpBlock" className="form-text mb-3">
+                Select File 4.
+              </div>
+              <Col>
+                <div>
+                  <Label htmlFor="formFile" className="form-label">File 5</Label>
+                  <Input className="form-control" type="file" id="formFile"
+                    onChange={(e)=>handleFileUpload(e, 'file_5')} />
+                </div>
+              </Col>
+              <div id="passwordHelpBlock" className="form-text mb-3">
+                Select File 5.
+              </div>
+              {/* <Col lg={12}>
               <Label htmlFor="formFile" className="form-label"> Other Documents</Label>
                 <FilePond
                   files={files}
-                  onupdatefiles={setFiles}
+                  onupdatefiles={handleFileUpdate}
                   allowMultiple={true}
                   maxFiles={3}
                   name="filepond"
@@ -2386,7 +2513,7 @@ const EmployeeForm = () => {
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
                 Select Other Documents.
-              </div>
+              </div> */}
               <Col lg={12}>
                 <div>
                   <Label htmlFor="profile_timezone" className="form-label">

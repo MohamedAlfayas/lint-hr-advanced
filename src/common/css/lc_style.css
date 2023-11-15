@@ -18,3 +18,13 @@
   .custom-input-class {
     width: 90%;
   }
+  .table-lc {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .table-lc th, .table-lc td {
+    border: 1px solid #ddd;
+    padding: 3px;
+    text-align: left;
+  }
