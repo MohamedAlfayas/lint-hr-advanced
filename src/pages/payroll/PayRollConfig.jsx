@@ -63,80 +63,96 @@ const PayRollConfig = () => {
     }
   };
 
-  const payrollobj = useMemo(
-    () => [
-      {
-        general: {
-          location: "India",
-          currency: "INR",
-          calc_based_on: 1,
-        },
-        pay_cycle: {
-          name: "Junior",
-          desc: "",
-          from: "Nov, 23",
-          repeat: "Month",
-          cut_off: 3,
-        },
-        basic_components: {
-          esi: true,
-          epf: {
-            epf_cycle: 2,
-            epf_type: 2,
-          },
-          pro_tax: [
-            {
-              company: "Lintcloud It Service Pvt Ltd",
-              tag: "HEADQUARTER",
-              add: "694, C/10, SAHAR COMPLEX, NEAR MATHUMITHA HOSPITAL, OPP BUS STAND, VALLIOOR - 627117",
-              state: "Tamil Nadu",
-              tax_cycle: "Half-yearly",
-              slabs: 1,
-            },
-            {
-              company: "Lintcloud It Service Pvt Ltd",
-              tag: "HEADQUARTER",
-              add: "694, C/10, SAHAR COMPLEX, NEAR MATHUMITHA HOSPITAL, OPP BUS STAND, VALLIOOR - 627117",
-              state: "Tamil Nadu",
-              tax_cycle: "Half-yearly",
-              slabs: 1,
-            },
-          ],
-        },
+  const payrollobj = {
+    general: {
+      location: "India",
+      currency: "INR",
+      calc_based_on: "Month Starting",
+    },
+    pay_cycle: {
+      name: "Junior",
+      desc: "",
+      from: "Nov, 23",
+      repeat: "Month",
+      cut_off: "Day 28",
+    },
+    basic_components: {
+      esi: false,
+      labour_fund: true,
+      epf: {
+        is_active: true,
+        epf_cycle: 3,
+        epf_type: "Weekly",
       },
-    ],
-    []
-  );
+      pro_tax: [
+        {
+          is_active: true,
+          company: "Lintcloud It Service Pvt Ltd",
+          tag: "HEADQUARTER",
+          add: "694, C/10, SAHAR COMPLEX, NEAR MATHUMITHA HOSPITAL, OPP BUS STAND, VALLIOOR - 627117",
+          state: "Tamil Nadu",
+          tax_cycle: "Half-yearly",
+          slabs: 1,
+        },
+        {
+          is_active: false,
+          company: "Lintcloud Human Resource",
+          tag: "Lint HR",
+          add: "694, C/10, SAHAR COMPLEX, NEAR MATHUMITHA HOSPITAL, OPP BUS STAND, VALLIOOR - 627117",
+          state: "Kerala",
+          tax_cycle: "Half-yearly",
+          slabs: 2,
+        },
+      ],
+    },
+  };
 
-  const tax_slab = useMemo(
-    () => [
-      {
-        id: 1,
-        state: "Tamil Nadu",
-        range: [
-          { s: 0, e: 21000, tax: 0 },
-          { s: 21001, e: 30000, tax: 135 },
-          { s: 30001, e: 45000, tax: 315 },
-          { s: 45001, e: 60000, tax: 690 },
-          { s: 60001, e: 75000, tax: 1025 },
-          { s: 75001, e: 999999999, tax: 1250 },
-        ],
-      },
-      {
-        id: 1,
-        state: "Kerala",
-        range: [
-          { s: 0, e: 11999, tax: 0 },
-          { s: 12000, e: 17999, tax: 120 },
-          { s: 18000, e: 29999, tax: 180 },
-          { s: 45001, e: 60000, tax: 690 },
-          { s: 60001, e: 75000, tax: 1025 },
-          { s: 75001, e: 999999999, tax: 1250 },
-        ],
-      },
-    ],
-    []
-  );
+  const EPFCycle = [
+    {
+      id: 1,
+      Employee: "12% of Actual PF Wage",
+      Employer: "12% of Actual PF Wage",
+    },
+    {
+      id: 2,
+      Employee: "12% of Actual PF Wage",
+      Employer: "3.67% of PF Wage restricted at ₹ 15000",
+    },
+    {
+      id: 3,
+      Employee: "12% of PF Wage restricted at ₹ 15000",
+      Employer: "3.67% of PF Wage restricted at ₹ 15000",
+    },
+  ];
+
+  const tax_slab = [
+    {
+      id: 1,
+      state: "Tamil Nadu",
+      range: [
+        { s: 0, e: 21000, tax: 0 },
+        { s: 21001, e: 30000, tax: 135 },
+        { s: 30001, e: 45000, tax: 315 },
+        { s: 45001, e: 60000, tax: 690 },
+        { s: 60001, e: 75000, tax: 1025 },
+        { s: 75001, e: 999999999, tax: 1250 },
+      ],
+    },
+    {
+      id: 2,
+      state: "Kerala",
+      range: [
+        { s: 0, e: 11999, tax: 0 },
+        { s: 12000, e: 17999, tax: 120 },
+        { s: 18000, e: 29999, tax: 180 },
+        { s: 45001, e: 60000, tax: 690 },
+        { s: 60001, e: 75000, tax: 1025 },
+        { s: 75001, e: 999999999, tax: 1250 },
+      ],
+    },
+  ];
+
+  console.log(payrollobj);
 
   const location_option = useMemo(
     () => [
@@ -217,7 +233,13 @@ const PayRollConfig = () => {
   };
 
   const [modal_animationZoom, setmodal_animationZoom] = useState(false);
-  function tog_animationZoom() {
+  const [tax_slabId, setTax_slabId] = useState(0);
+
+  function show_taxSlabModal($id) {
+    console.log($id);
+    setTax_slabId($id);
+
+    console.log(tax_slab.find((e) => e.id == $id).range);
     setmodal_animationZoom(!modal_animationZoom);
   }
 
@@ -234,7 +256,7 @@ const PayRollConfig = () => {
                   <h5 className="mb-3">Payroll Configuration</h5>
 
                   <Row>
-                    <Col md={2}>
+                    <Col md={2} className="border-end">
                       <Nav
                         pills
                         className="flex-column text-left"
@@ -314,6 +336,7 @@ const PayRollConfig = () => {
                         activeTab={verticalTab}
                         className="text-muted mt-4 mt-md-0"
                         id="v-pills-tabContent">
+                        {/* General Tab Start */}
                         <TabPane tabId="1" id="v-pills-home">
                           <div className="d-flex mb-2">
                             <Row>
@@ -329,6 +352,15 @@ const PayRollConfig = () => {
                                       id="location"
                                       isMulti={false}
                                       options={location_option || []}
+                                      value={
+                                        (payrollobj.general.location &&
+                                          location_option.find(
+                                            (e) =>
+                                              e.value ===
+                                              payrollobj.general.location
+                                          )) ||
+                                        []
+                                      }
                                       className="basic-multi-select "
                                     />
                                   </div>
@@ -351,6 +383,15 @@ const PayRollConfig = () => {
                                       id="currency"
                                       isMulti={false}
                                       options={currency_option || []}
+                                      value={
+                                        (payrollobj.general.currency &&
+                                          currency_option.find(
+                                            (e) =>
+                                              e.value ===
+                                              payrollobj.general.currency
+                                          )) ||
+                                        []
+                                      }
                                       className="basic-multi-select "
                                     />
                                   </div>
@@ -373,6 +414,15 @@ const PayRollConfig = () => {
                                       id="calculation"
                                       isMulti={false}
                                       options={salary_calculation_option || []}
+                                      value={
+                                        (payrollobj.general.calc_based_on &&
+                                          salary_calculation_option.find(
+                                            (e) =>
+                                              e.value ===
+                                              payrollobj.general.calc_based_on
+                                          )) ||
+                                        []
+                                      }
                                       className="basic-multi-select "
                                     />
                                   </div>
@@ -422,6 +472,9 @@ const PayRollConfig = () => {
                             </Card>
                           </Col>
                         </TabPane>
+                        {/* General Tab End */}
+
+                        {/* Pay Cycle Tab Start */}
                         <TabPane tabId="2" id="v-pills-profile">
                           <div className="d-flex mb-2">
                             <Row>
@@ -439,6 +492,7 @@ const PayRollConfig = () => {
                                       id="pc_name"
                                       className="form-control"
                                       placeholder="Pay Cycle Name"
+                                      value={payrollobj.pay_cycle.name || ""}
                                     />
                                     <i className="ri-profile-line"></i>
                                   </div>
@@ -462,6 +516,7 @@ const PayRollConfig = () => {
                                       name="description"
                                       className="form-control"
                                       id="description"
+                                      value={payrollobj.pay_cycle.desc || ""}
                                       placeholder="Enter description"></textarea>
                                     <i className="ri-file-list-3-line"></i>
                                   </div>
@@ -483,7 +538,7 @@ const PayRollConfig = () => {
                                     <Flatpickr
                                       className="form-control"
                                       placeholder="Effective From"
-                                      //value={endHour}
+                                      value={payrollobj.pay_cycle.from}
                                       options={{
                                         shorthand: true, //defaults to false https://flatpickr.js.org/plugins/
                                         dateFormat: "M, y", //defaults to "F Y"
@@ -511,6 +566,15 @@ const PayRollConfig = () => {
                                       id="calculation"
                                       isMulti={false}
                                       options={repeat_option || []}
+                                      value={
+                                        (payrollobj.pay_cycle.repeat &&
+                                          repeat_option.find(
+                                            (e) =>
+                                              e.value ===
+                                              payrollobj.pay_cycle.repeat
+                                          )) ||
+                                        []
+                                      }
                                       className="basic-multi-select "
                                     />
                                   </div>
@@ -533,6 +597,15 @@ const PayRollConfig = () => {
                                       id="calculation"
                                       isMulti={false}
                                       options={cut_of_month_option || []}
+                                      value={
+                                        (payrollobj.pay_cycle.cut_off &&
+                                          cut_of_month_option.find(
+                                            (e) =>
+                                              e.value ===
+                                              payrollobj.pay_cycle.cut_off
+                                          )) ||
+                                        []
+                                      }
                                       className="basic-multi-select "
                                     />
                                   </div>
@@ -584,6 +657,9 @@ const PayRollConfig = () => {
                             </Card>
                           </Col>
                         </TabPane>
+                        {/* Pay Cycle Tab End */}
+
+                        {/* Basic Components Tab Start */}
                         <TabPane tabId="3" id="v-pills-messages">
                           {/* Tab Inside Tab @Elan */}
                           <Row>
@@ -660,7 +736,11 @@ const PayRollConfig = () => {
                                       <Card>
                                         <CardBody>
                                           <div
-                                            className={`p-3 mt-n3 mx-n3 bg-success-subtle rounded-top`}>
+                                            className={`p-3 mt-n3 mx-n3 bg-${
+                                              payrollobj.basic_components.esi
+                                                ? "success"
+                                                : "dark"
+                                            }-subtle rounded-top`}>
                                             <div className="d-flex align-items-center">
                                               <div className="flex-grow-1">
                                                 <h5 className="mb-0 fs-14">
@@ -678,12 +758,15 @@ const PayRollConfig = () => {
                                                       className="form-check-input"
                                                       type="checkbox"
                                                       role="switch"
-                                                      id="SwitchCheck3"
-                                                      defaultChecked
+                                                      id="enableESI"
+                                                      checked={
+                                                        payrollobj
+                                                          .basic_components.esi
+                                                      }
                                                     />
                                                     <Label
                                                       className="form-check-label"
-                                                      for="SwitchCheck3">
+                                                      for="enableESI">
                                                       Active
                                                     </Label>
                                                   </div>
@@ -776,6 +859,7 @@ const PayRollConfig = () => {
                                     </Col>
                                   </div>
                                 </TabPane>
+
                                 {/* EPF Tab */}
                                 <TabPane tabId="2">
                                   <div className="d-flex">
@@ -786,7 +870,12 @@ const PayRollConfig = () => {
                                       <Card>
                                         <CardBody>
                                           <div
-                                            className={`p-3 mt-n3 mx-n3 bg-success-subtle rounded-top`}>
+                                            className={`p-3 mt-n3 mx-n3 bg-${
+                                              payrollobj.basic_components.epf
+                                                .is_active
+                                                ? "success"
+                                                : "dark"
+                                            }-subtle rounded-top`}>
                                             <div className="d-flex align-items-center">
                                               <div className="flex-grow-1">
                                                 <h5 className="mb-0 fs-14">
@@ -805,7 +894,11 @@ const PayRollConfig = () => {
                                                       type="checkbox"
                                                       role="switch"
                                                       id="enableEPF"
-                                                      defaultChecked
+                                                      checked={
+                                                        payrollobj
+                                                          .basic_components.epf
+                                                          .is_active
+                                                      }
                                                     />
                                                     <Label
                                                       className="form-check-label"
@@ -834,7 +927,11 @@ const PayRollConfig = () => {
                                                     Deduction Cycle
                                                   </p>
                                                   <h5 className="fs-14">
-                                                    Monthly
+                                                    {
+                                                      payrollobj
+                                                        .basic_components.epf
+                                                        .epf_type
+                                                    }
                                                   </h5>
                                                 </div>
                                               </Col>
@@ -844,7 +941,16 @@ const PayRollConfig = () => {
                                                     Employee's Contribution
                                                   </p>
                                                   <h5 className="fs-14">
-                                                    12% of Actual PF Wage
+                                                    {payrollobj.basic_components
+                                                      .epf.epf_cycle
+                                                      ? EPFCycle.find(
+                                                          (obj) =>
+                                                            obj.id ===
+                                                            payrollobj
+                                                              .basic_components
+                                                              .epf.epf_cycle
+                                                        ).Employee
+                                                      : []}
                                                   </h5>
                                                 </div>
                                               </Col>
@@ -854,7 +960,16 @@ const PayRollConfig = () => {
                                                     Employer's Contribution
                                                   </p>
                                                   <h5 className="fs-14">
-                                                    12% of Actual PF Wage
+                                                    {payrollobj.basic_components
+                                                      .epf.epf_cycle
+                                                      ? EPFCycle.find(
+                                                          (obj) =>
+                                                            obj.id ===
+                                                            payrollobj
+                                                              .basic_components
+                                                              .epf.epf_cycle
+                                                        ).Employer
+                                                      : []}
                                                   </h5>
                                                 </div>
                                               </Col>
@@ -891,252 +1006,223 @@ const PayRollConfig = () => {
                                     </Col>
                                   </div>
                                 </TabPane>
+
                                 <TabPane tabId="3">
                                   <div className="d-flex">
                                     <Col
                                       xxl={12}
                                       sm={12}
                                       className="project-card">
-                                      <Card>
-                                        <CardBody>
-                                          <div
-                                            className={`p-3 mt-n3 mx-n3 bg-success-subtle rounded-top`}>
-                                            <div className="d-flex align-items-center">
-                                              <div className="flex-grow-1">
-                                                <h5 className="mb-0 fs-14">
-                                                  <Link
-                                                    to="#"
-                                                    className="text-body">
-                                                    Lintcloud It Service Pvt Ltd
-                                                    <span className="badge border border-dark text-body ms-2">
-                                                      HEADQUARTER
-                                                    </span>
-                                                  </Link>
-                                                </h5>
-                                              </div>
-                                              <div className="flex-shrink-0">
-                                                <div className="d-flex gap-1 align-items-center my-n2">
-                                                  <div className="form-check form-switch form-switch-success  ">
-                                                    <Input
-                                                      className="form-check-input"
-                                                      type="checkbox"
-                                                      role="switch"
-                                                      id="enableEPF"
-                                                      defaultChecked
-                                                    />
-                                                    <Label
-                                                      className="form-check-label"
-                                                      for="enableEPF">
-                                                      Active
-                                                    </Label>
+                                      {(
+                                        payrollobj.basic_components.pro_tax ||
+                                        []
+                                      ).map((item, key) => (
+                                        <Card key={key}>
+                                          <CardBody>
+                                            <div
+                                              className={`p-3 mt-n3 mx-n3 bg-${
+                                                item.is_active
+                                                  ? "success"
+                                                  : "dark"
+                                              }-subtle rounded-top`}>
+                                              <div className="d-flex align-items-center">
+                                                <div className="flex-grow-1">
+                                                  <h5 className="mb-0 fs-14">
+                                                    <Link
+                                                      to="#"
+                                                      className="text-body">
+                                                      {item.company}
+                                                      <span className="badge border border-dark text-body ms-2">
+                                                        {item.tag}
+                                                      </span>
+                                                    </Link>
+                                                  </h5>
+                                                </div>
+                                                <div className="flex-shrink-0">
+                                                  <div className="d-flex gap-1 align-items-center my-n2">
+                                                    <div className="form-check form-switch form-switch-success  ">
+                                                      <Input
+                                                        className="form-check-input"
+                                                        type="checkbox"
+                                                        role="switch"
+                                                        id="enableEPF"
+                                                        checked={item.is_active}
+                                                      />
+                                                      <Label
+                                                        className="form-check-label"
+                                                        for="enableEPF">
+                                                        Active
+                                                      </Label>
+                                                    </div>
+                                                    <a
+                                                      onClick={() =>
+                                                        handleEPFEdit(0)
+                                                      }
+                                                      className="text-primary d-inline-block edit-item-btn ms-2"
+                                                      href="javascript:void(0)">
+                                                      <i class="ri-pencil-fill fs-16"></i>
+                                                    </a>
                                                   </div>
-                                                  <a
-                                                    onClick={() =>
-                                                      handleEPFEdit(0)
-                                                    }
-                                                    className="text-primary d-inline-block edit-item-btn ms-2"
-                                                    href="javascript:void(0)">
-                                                    <i class="ri-pencil-fill fs-16"></i>
-                                                  </a>
                                                 </div>
                                               </div>
                                             </div>
-                                          </div>
 
-                                          <div className="py-3">
-                                            <Row className="gy-3">
-                                              <Col xs={4}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    Address{" "}
-                                                  </p>
-                                                  <h5 className="fs-14">
-                                                    694, C/10, SAHAR COMPLEX,
-                                                    NEAR MATHUMITHA HOSPITAL,
-                                                    OPP BUS STAND, VALLIOOR -
-                                                    627117
-                                                  </h5>
-                                                </div>
-                                              </Col>
-                                              <Col xs={2}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    State
-                                                  </p>
-                                                  <h5 className="fs-14">
-                                                    Tamil Nadu
-                                                  </h5>
-                                                </div>
-                                              </Col>
-                                              <Col xs={2}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    Deduction Cycle
-                                                  </p>
-                                                  <h5 className="fs-14">
-                                                    Half-yearly
-                                                  </h5>
-                                                </div>
-                                              </Col>
-                                              <Col xs={2}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    PT Slabs
-                                                  </p>
-
-                                                  <p>
-                                                    <Link
-                                                      to="#"
-                                                      onClick={() =>
-                                                        tog_animationZoom()
-                                                      }
-                                                      className="link-success">
-                                                      View Tax Slabs
-                                                    </Link>
-                                                  </p>
-                                                </div>
-                                              </Col>
-                                            </Row>
-                                          </div>
-                                        </CardBody>
-                                      </Card>
-
-                                      <Card>
-                                        <CardBody>
-                                          <div
-                                            className={`p-3 mt-n3 mx-n3 bg-success-subtle rounded-top`}>
-                                            <div className="d-flex align-items-center">
-                                              <div className="flex-grow-1">
-                                                <h5 className="mb-0 fs-14">
-                                                  <Link
-                                                    to="#"
-                                                    className="text-body">
-                                                    Lintcloud Education
-                                                    <span className="badge border border-dark text-body ms-2">
-                                                      LintHr Team
-                                                    </span>
-                                                  </Link>
-                                                </h5>
-                                              </div>
-                                              <div className="flex-shrink-0">
-                                                <div className="d-flex gap-1 align-items-center my-n2">
-                                                  <div className="form-check form-switch form-switch-success  ">
-                                                    <Input
-                                                      className="form-check-input"
-                                                      type="checkbox"
-                                                      role="switch"
-                                                      id="enableEPF"
-                                                      defaultChecked
-                                                    />
-                                                    <Label
-                                                      className="form-check-label"
-                                                      for="enableEPF">
-                                                      Active
-                                                    </Label>
+                                            <div className="py-3">
+                                              <Row className="gy-3">
+                                                <Col xs={4}>
+                                                  <div>
+                                                    <p className="text-muted mb-1">
+                                                      Address{" "}
+                                                    </p>
+                                                    <h5 className="fs-14">
+                                                      {item.add}
+                                                    </h5>
                                                   </div>
-                                                  <a
-                                                    onClick={() =>
-                                                      handleEPFEdit(0)
-                                                    }
-                                                    className="text-primary d-inline-block edit-item-btn ms-2"
-                                                    href="javascript:void(0)">
-                                                    <i class="ri-pencil-fill fs-16"></i>
-                                                  </a>
-                                                </div>
-                                              </div>
+                                                </Col>
+                                                <Col xs={2}>
+                                                  <div>
+                                                    <p className="text-muted mb-1">
+                                                      State
+                                                    </p>
+                                                    <h5 className="fs-14">
+                                                      {item.state}
+                                                    </h5>
+                                                  </div>
+                                                </Col>
+                                                <Col xs={2}>
+                                                  <div>
+                                                    <p className="text-muted mb-1">
+                                                      Deduction Cycle
+                                                    </p>
+                                                    <h5 className="fs-14">
+                                                      {item.tax_cycle}
+                                                    </h5>
+                                                  </div>
+                                                </Col>
+                                                <Col xs={2}>
+                                                  <div>
+                                                    <p className="text-muted mb-1">
+                                                      PT Slabs
+                                                    </p>
+
+                                                    <p>
+                                                      <Link
+                                                        to="#"
+                                                        onClick={() =>
+                                                          show_taxSlabModal(
+                                                            item.slabs
+                                                          )
+                                                        }
+                                                        className="link-success">
+                                                        View Tax Slabs
+                                                      </Link>
+                                                    </p>
+                                                  </div>
+                                                </Col>
+                                              </Row>
                                             </div>
-                                          </div>
-
-                                          <div className="py-3">
-                                            <Row className="gy-3">
-                                              <Col xs={4}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    Address{" "}
-                                                  </p>
-                                                  <h5 className="fs-14">
-                                                    694, C/10, SAHAR COMPLEX,
-                                                    NEAR MATHUMITHA HOSPITAL,
-                                                    OPP BUS STAND, VALLIOOR -
-                                                    627117
-                                                  </h5>
-                                                </div>
-                                              </Col>
-                                              <Col xs={2}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    State
-                                                  </p>
-                                                  <h5 className="fs-14">
-                                                    Kerala
-                                                  </h5>
-                                                </div>
-                                              </Col>
-                                              <Col xs={2}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    Deduction Cycle
-                                                  </p>
-                                                  <h5 className="fs-14">
-                                                    Monthly
-                                                  </h5>
-                                                </div>
-                                              </Col>
-                                              <Col xs={2}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    PT Slabs
-                                                  </p>
-
-                                                  <p>
-                                                    <Link
-                                                      to="#"
-                                                      onClick={() =>
-                                                        tog_animationZoom()
-                                                      }
-                                                      className="link-success">
-                                                      View Tax Slabs
-                                                    </Link>
-                                                  </p>
-                                                </div>
-                                              </Col>
-                                            </Row>
-                                          </div>
-                                        </CardBody>
-                                      </Card>
+                                          </CardBody>
+                                        </Card>
+                                      ))}
                                     </Col>
                                   </div>
                                 </TabPane>
+
                                 <TabPane tabId="4">
                                   <div className="d-flex">
-                                    <div className="flex-shrink-0">
-                                      <i className="ri-checkbox-multiple-blank-fill text-success"></i>
-                                    </div>
-                                    <div className="flex-grow-1 ms-2">
-                                      when darkness overspreads my eyes, and
-                                      heaven and earth seem to dwell in my soul
-                                      and absorb its power, like the form of a
-                                      beloved mistress, then I often think with
-                                      longing, Oh, would I could describe these
-                                      conceptions, could impress upon paper all
-                                      that is living so full and warm within me,
-                                      that it might be the.
-                                      <div className="mt-2">
-                                        <Link
-                                          to="#"
-                                          className="btn btn-sm btn-soft-primary">
-                                          Read More{" "}
-                                          <i className="ri-arrow-right-line ms-1 align-middle"></i>
-                                        </Link>
-                                      </div>
-                                    </div>
+                                    <Card>
+                                      <CardBody>
+                                        <div
+                                          className={`p-3 mt-n3 mx-n3 bg-${
+                                            payrollobj.basic_components
+                                              .labour_fund
+                                              ? "success"
+                                              : "dark"
+                                          }-subtle rounded-top`}>
+                                          <div className="d-flex align-items-center">
+                                            <div className="flex-grow-1">
+                                              <h5 className="mb-0 fs-14">
+                                                <Link
+                                                  to="#"
+                                                  className="text-body">
+                                                  Tamil Nadu
+                                                </Link>
+                                              </h5>
+                                            </div>
+                                            <div className="flex-shrink-0">
+                                              <div className="d-flex gap-1 align-items-center my-n2">
+                                                <div className="form-check form-switch form-switch-success  ">
+                                                  <Input
+                                                    className="form-check-input"
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    id="enableEPF"
+                                                    checked={
+                                                      payrollobj
+                                                        .basic_components
+                                                        .labour_fund
+                                                    }
+                                                  />
+                                                  <Label
+                                                    className="form-check-label"
+                                                    for="enableEPF">
+                                                    Active
+                                                  </Label>
+                                                </div>
+                                                <a
+                                                  onClick={() =>
+                                                    handleEPFEdit(0)
+                                                  }
+                                                  className="text-primary d-inline-block edit-item-btn ms-2"
+                                                  href="javascript:void(0)">
+                                                  <i class="ri-pencil-fill fs-16"></i>
+                                                </a>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <div className="py-3">
+                                          <Row className="gy-3">
+                                            <Col xs={4}>
+                                              <div>
+                                                <p className="text-muted mb-1">
+                                                  Deduction Cycle
+                                                </p>
+                                                <h5 className="fs-14">
+                                                  Yearly
+                                                </h5>
+                                              </div>
+                                            </Col>
+                                            <Col xs={4}>
+                                              <div>
+                                                <p className="text-muted mb-1">
+                                                  Employee's Contribution
+                                                </p>
+                                                <h5 className="fs-14">₹ 20</h5>
+                                              </div>
+                                            </Col>
+                                            <Col xs={4}>
+                                              <div>
+                                                <p className="text-muted mb-1">
+                                                  Employer's Contribution
+                                                </p>
+                                                <h5 className="fs-14">₹ 40</h5>
+                                              </div>
+                                            </Col>
+                                          </Row>
+                                        </div>
+                                      </CardBody>
+                                    </Card>
                                   </div>
                                 </TabPane>
                               </TabContent>
                             </Col>
                           </Row>
                         </TabPane>
+                        {/* Basic Components Tab End */}
 
+                        {/* Salary Components Tab Start */}
                         <TabPane tabId="4" id="v-pills-settings">
                           <div className="d-flex mb-2">
                             <div className="flex-shrink-0">
@@ -1165,6 +1251,9 @@ const PayRollConfig = () => {
                             to the larger of the two objects.
                           </p>
                         </TabPane>
+                        {/* Salary Components Tab End */}
+
+                        {/* Salary Policies Tab Start */}
                         <TabPane tabId="5" id="v-pills-home">
                           <div className="d-flex mb-2">
                             <div className="flex-shrink-0">
@@ -1193,6 +1282,7 @@ const PayRollConfig = () => {
                             design, but do not over-exaggerate and go overboard.
                           </p>
                         </TabPane>
+                        {/* Salary Policies Tab End */}
                       </TabContent>
                     </Col>
                   </Row>
@@ -1207,7 +1297,7 @@ const PayRollConfig = () => {
         id="flipModal"
         isOpen={modal_animationZoom}
         toggle={() => {
-          tog_animationZoom();
+          show_taxSlabModal();
         }}
         modalClassName="zoomIn"
         centered>
@@ -1228,30 +1318,18 @@ const PayRollConfig = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td className="fw-medium">1 - 21000</td>
-                      <td>0</td>
-                    </tr>
-                    <tr>
-                      <td className="fw-medium">21001 - 30000</td>
-                      <td>135</td>
-                    </tr>
-                    <tr>
-                      <td className="fw-medium">30001 - 45000</td>
-                      <td>315</td>
-                    </tr>
-                    <tr>
-                      <td className="fw-medium">45001 - 60000</td>
-                      <td>690</td>
-                    </tr>
-                    <tr>
-                      <td className="fw-medium">60001 - 75000</td>
-                      <td>1025</td>
-                    </tr>
-                    <tr>
-                      <td className="fw-medium">75001 - 999999999</td>
-                      <td>1250</td>
-                    </tr>
+                    {(
+                      (tax_slabId &&
+                        tax_slab.find((e) => e.id == tax_slabId).range) ||
+                      []
+                    ).map((item, key) => (
+                      <tr key={key}>
+                        <td className="fw-medium">
+                          {item.s} - {item.e}
+                        </td>
+                        <td>{item.tax}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </Table>
               </div>
