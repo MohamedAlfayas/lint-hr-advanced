@@ -1834,15 +1834,22 @@ const EmployeeForm = () => {
     setEmployeeObj({
       ...form_obj,
       dob: ConvertISODateFormat(form_obj.dob),
-      joining_date: ConvertISODateFormat(form_obj.joindate),
+      joining_date: ConvertISODateFormat(form_obj.joining_date),
     });
     let sub_dep_options = dep_options.filter(
       (obj) => obj.id !== form_obj.primary_department
     );
     setSubDeptOptions(sub_dep_options);
     setDob([new Date(form_obj.dob)]);
-    setJoinDate([new Date(form_obj.joindate)]);
+    setJoinDate([new Date(form_obj.joining_date)]);
   }, [form_obj]);
+
+  
+
+
+  useEffect(() =>{
+    console.log("employeeObj = ",employeeObj);
+  },[employeeObj])
 
   const handleInputChange = (e) => {
     console.log("eee", e);
@@ -1957,6 +1964,8 @@ const handleFileUpload = (e,name) => {
       [name]: newImageSrc,
     }));
   };
+
+  reader.readAsDataURL(e.target.files[0]);
 };
 console.log("rrrr",employeeObj);
   const handleCFInputChange = (e, cf_id) => {
@@ -1967,6 +1976,7 @@ console.log("rrrr",employeeObj);
       ),
     });
   };
+
 
 
   const handleSubmit = () => {
@@ -1984,7 +1994,6 @@ console.log("rrrr",employeeObj);
 
 
     dispatch(setLoaderVisible(true))
-
     Api({
       method: "POST",
       url: "employee/add-new/",

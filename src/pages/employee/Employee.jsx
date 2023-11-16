@@ -218,9 +218,18 @@ const Employee = () => {
   const initialFormObj = useMemo(() => {
     return {
       id: 0,
+      emp_id:"",
       fname: "",
       lname: "",
       dob: String(new Date()),
+      joining_date: String(new Date()),
+      id_proof: null,
+      file_1:null,
+      file_2:null,
+      file_3:null,
+      file_4:null,
+      file_5:null,
+      contact_number:"",
       gender: "",
       primary_department: 0,
       sub_department: [],
