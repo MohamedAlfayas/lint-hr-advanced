@@ -66,6 +66,7 @@ const InfoTable = ({
   filterKey,
   filterOptions,
   width_per,
+  import_width_per,
   table_col,
   table_class,
 }) => {
@@ -481,7 +482,7 @@ const InfoTable = ({
   // CUSTOM FORM
 
   const handleCreateAndUpdate = ($id, table_obj) => {
-    console.log($id, table_obj);
+    console.log('tabObj',$id, table_obj);
 
     let FormObj = {};
 
@@ -517,6 +518,7 @@ const InfoTable = ({
   const HandleImportExport = () => {
     dispatch(toggleISBView(true));
     dispatch(setComponentToShow(formname));
+    dispatch(setFormWidthPercentage(import_width_per));
   };
 
   const toggle = useCallback(() => {
@@ -639,7 +641,7 @@ const InfoTable = ({
                             id="create-btn"
                             style={{ textTransform: "capitalize" }}
                             onClick={() => {
-                              HandleImportExport(0);
+                              HandleImportExport();
                             }}
                           >
                             <i className="ri-file-download-line align-bottom me-1"></i>{" "}

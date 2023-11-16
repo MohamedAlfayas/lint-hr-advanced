@@ -132,6 +132,7 @@ const Holiday = () => {
           filterKey={filterKey}
           filterOptions={filterOptions}
           width_per={"40%"}
+          import_width_per={"50%"}
         />
       )
       }

@@ -25,6 +25,13 @@
   
   .table-lc th, .table-lc td {
     border: 1px solid #ddd;
-    padding: 3px;
+    padding:10px 3px 10px 3px;
     text-align: left;
+  }
+  @media (max-width: 600px) {
+    /* Adjust styles for smaller screens */
+    .table-lc th, .table-lc td {
+      padding: 8px 2px;
+      font-size: 14px;
+    }
   }

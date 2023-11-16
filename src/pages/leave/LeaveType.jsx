@@ -156,6 +156,7 @@ const LeaveType = () => {
         filterKey={filterKey}
         filterOptions={filterOptions}
         width_per={"35%"}
+        import_width_per={"50%"}
       />
     </React.Fragment>
   );
