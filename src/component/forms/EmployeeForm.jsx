@@ -38,12 +38,11 @@ import indflag from "../../assets/images/flags/in.svg";
 import SimpleBar from "simplebar-react";
 import CountryList from "../../common/data/CountryList";
 import { FilePond } from "react-filepond";
-import 'filepond/dist/filepond.min.css';
-import FilePondPluginImageExifOrientation from 'filepond-plugin-image-exif-orientation';
-import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
-import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css';
+import "filepond/dist/filepond.min.css";
+import FilePondPluginImageExifOrientation from "filepond-plugin-image-exif-orientation";
+import FilePondPluginImagePreview from "filepond-plugin-image-preview";
+import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
 import { join } from "lodash";
-
 
 // Register the plugins
 // registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
@@ -58,7 +57,6 @@ const EmployeeForm = () => {
   const role_option = GetLocalStorageData("role") || [];
 
   const [employeeImage, setEmployeeImage] = useState(null);
-  const [employeeFile, setEmployeeFile] = useState(null);
   const [subDepOptions, setSubDeptOptions] = useState(dep_options);
   const [stateList, setStateList] = useState([]);
   const [contactCountry, setContactCountry] = useState({
@@ -1829,7 +1827,6 @@ const EmployeeForm = () => {
   const [joining_date, setJoinDate] = useState([]);
   const [profileData, setProfileData] = useState([]);
 
-
   useEffect(() => {
     setEmployeeObj({
       ...form_obj,
@@ -1844,15 +1841,7 @@ const EmployeeForm = () => {
     setJoinDate([new Date(form_obj.joining_date)]);
   }, [form_obj]);
 
-  
-
-
-  useEffect(() =>{
-    console.log("employeeObj = ",employeeObj);
-  },[employeeObj])
-
   const handleInputChange = (e) => {
-    console.log("eee", e);
     const { name, value } = e.target;
     setEmployeeObj({
       ...employeeObj,
@@ -1860,8 +1849,7 @@ const EmployeeForm = () => {
     });
   };
 
-  const handleFileChange = (e) => {
-    console.log("E.target.files = ", e.target.files);
+  const handleProfileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setEmployeeImage(e.target.files[0]);
       const reader = new FileReader();
@@ -1896,16 +1884,12 @@ const EmployeeForm = () => {
     });
   };
   const handleJoinDateChange = (selectedJoinDate, dateStr, instance) => {
-
-    console.log("ffff", selectedJoinDate);
     setJoinDate(selectedJoinDate);
     setEmployeeObj({
       ...employeeObj,
-     joining_date: ConvertISODateFormat(selectedJoinDate[0]),
-
+      joining_date: ConvertISODateFormat(selectedJoinDate[0]),
     });
   };
-  console.log("gggg", employeeObj);
   const handleTimeZoneChange = (selectedTimezone) => {
     setEmployeeObj({
       ...employeeObj,
@@ -1918,56 +1902,15 @@ const EmployeeForm = () => {
       [name]: value,
     });
   };
-  // const handleFileUpdate = (fileItems) => {
 
-  //   console.log("fileupdate", fileItems);
-  //   const fileNames = fileItems.map((fileItem) => fileItem.file);
-  //   console.log('File Names:', fileNames);
-  //   setFiles(fileItems);
+  const handleFileUpload = (e, name) => {
+    const file = e.target.files[0];
 
-  // }
-  // const handleChange = (event) => {
-  //   const selectedFile = event.target.files[0];
-
-  //   if (selectedFile) {
-  //     console.log('Selected File Name:', selectedFile); 
-  //   }
-  // }
-// const handleFileUpload = (e) => {
-//     console.log("E.target.files = ", e.target.files);
-//     if (e.target.files && e.target.files[0]) {
-//       setEmployeeFile(e.target.files[0]);
-//       const reader = new FileReader();
-//       reader.onload = (readerEvent) => {
-//         const newFileSrc = readerEvent.target.result;
-//         setEmployeeObj({
-//           ...employeeObj,
-//           file_url: newFileSrc,
-//         });
-//       };
-//       reader.readAsDataURL(e.target.files[0]);
-//     }
-//   };
-const handleFileUpload = (e,name) => {
-  const file = e.target.files[0];
-
-  setEmployeeFile((oldImages) => ({
-    ...oldImages,
-    [name]: file,
-  }));
-
-  const reader = new FileReader();
-  reader.onload = (readerEvent) => {
-    const newImageSrc = readerEvent.target.result;
     setEmployeeObj((oldObj) => ({
       ...oldObj,
-      [name]: newImageSrc,
+      [name]: file,
     }));
   };
-
-  reader.readAsDataURL(e.target.files[0]);
-};
-console.log("rrrr",employeeObj);
   const handleCFInputChange = (e, cf_id) => {
     setEmployeeObj({
       ...employeeObj,
@@ -1976,8 +1919,6 @@ console.log("rrrr",employeeObj);
       ),
     });
   };
-
-
 
   const handleSubmit = () => {
     console.log("emp Obj = ", employeeObj);
@@ -1992,8 +1933,7 @@ console.log("rrrr",employeeObj);
       }
     });
 
-
-    dispatch(setLoaderVisible(true))
+    dispatch(setLoaderVisible(true));
     Api({
       method: "POST",
       url: "employee/add-new/",
@@ -2014,7 +1954,7 @@ console.log("rrrr",employeeObj);
       })
       .catch((err) => {
         console.log("ERr == ", err);
-        dispatch(setLoaderVisible(false))
+        dispatch(setLoaderVisible(false));
         toast.error(err?.response?.data?.message);
       });
   };
@@ -2039,8 +1979,9 @@ console.log("rrrr",employeeObj);
                   <Input
                     id="profile-img-file-input"
                     type="file"
+                    accept="image/*"
                     className="profile-img-file-input"
-                    onChange={handleFileChange}
+                    onChange={handleProfileChange}
                   />
                   <Label
                     htmlFor="profile-img-file-input"
@@ -2195,10 +2136,12 @@ console.log("rrrr",employeeObj);
                   <Dropdown
                     className="input-group"
                     isOpen={dropdownOpen4}
-                    toggle={toggle4}>
+                    toggle={toggle4}
+                  >
                     <DropdownToggle
                       as="button"
-                      className="btn btn-light border arrow-none">
+                      className="btn btn-light border arrow-none"
+                    >
                       <img
                         src={contactCountry.flagImg}
                         alt="country flag"
@@ -2215,22 +2158,20 @@ console.log("rrrr",employeeObj);
                       placeholder="Enter number"
                       value={employeeObj.contact_number || ""}
                       onChange={(e) =>
-                        updateProfileData(
-                          "contact_number",
-                          e.target.value
-                        )
+                        updateProfileData("contact_number", e.target.value)
                       }
                     />
                     <DropdownMenu
                       as="ul"
-                      className="list-unstyled w-100 dropdown-menu-list mb-0">
+                      className="list-unstyled w-100 dropdown-menu-list mb-0"
+                    >
                       <SimpleBar
                         style={{ maxHeight: "220px" }}
-                        className="px-3">
+                        className="px-3"
+                      >
                         {(
-                          CountryList.filter((obj) => obj.show).sort(
-                            (a, b) =>
-                              a.countryName.localeCompare(b.countryName)
+                          CountryList.filter((obj) => obj.show).sort((a, b) =>
+                            a.countryName.localeCompare(b.countryName)
                           ) || []
                         ).map((item, key) => (
                           <DropdownItem
@@ -2243,7 +2184,8 @@ console.log("rrrr",employeeObj);
                               setContactCountry(item);
                             }}
                             key={key}
-                            className="dropdown-item d-flex">
+                            className="dropdown-item d-flex"
+                          >
                             <div className="flex-shrink-0 me-2">
                               <img
                                 src={item.flagImg}
@@ -2271,9 +2213,7 @@ console.log("rrrr",employeeObj);
                 <div id="passwordHelpBlock" className="form-text mb-3">
                   Enter Your Contact number with country code.
                 </div>
-
               </Col>
-
 
               <Col lg={12}>
                 <div>
@@ -2313,8 +2253,8 @@ console.log("rrrr",employeeObj);
                     value={
                       employeeObj.primary_department
                         ? dep_options.find(
-                          (obj) => obj.id === employeeObj.primary_department
-                        )
+                            (obj) => obj.id === employeeObj.primary_department
+                          )
                         : []
                     }
                     onChange={(e) => {
@@ -2388,8 +2328,8 @@ console.log("rrrr",employeeObj);
                     value={
                       employeeObj.sub_department
                         ? subDepOptions.filter((obj) =>
-                          employeeObj.sub_department.includes(obj.id)
-                        )
+                            employeeObj.sub_department.includes(obj.id)
+                          )
                         : []
                     }
                     onChange={(e) => {
@@ -2450,20 +2390,34 @@ console.log("rrrr",employeeObj);
               </Col>
               <Col>
                 <div>
-                  <Label htmlFor="formFile" className="form-label">ID Proof</Label>
-                  <Input className="form-control" type="file" id="formFile"
-                    onChange={(e)=>handleFileUpload(e, 'id_proof')} />
+                  <Label htmlFor="formFile" className="form-label">
+                    ID Proof
+                  </Label>
+                  <Input
+                    className="form-control"
+                    type="file"
+                    accept=".doc, .docx,.xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
+                    id="formFile"
+                    onChange={(e) => handleFileUpload(e, "id_proof")}
+                  />
                 </div>
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
                 Select ID Proof.
               </div>
- 
+
               <Col>
                 <div>
-                  <Label htmlFor="formFile" className="form-label">File 1</Label>
-                  <Input className="form-control" type="file" id="formFile"
-                    onChange={(e)=>handleFileUpload(e, 'file_1')} />
+                  <Label htmlFor="formFile" className="form-label">
+                    File 1
+                  </Label>
+                  <Input
+                    className="form-control"
+                    type="file"
+                    accept=".doc, .docx,.xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
+                    id="formFile"
+                    onChange={(e) => handleFileUpload(e, "file_1")}
+                  />
                 </div>
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
@@ -2471,9 +2425,16 @@ console.log("rrrr",employeeObj);
               </div>
               <Col>
                 <div>
-                  <Label htmlFor="formFile" className="form-label">File 2</Label>
-                  <Input className="form-control" type="file" id="formFile"
-                    onChange={(e)=>handleFileUpload(e, 'file_2')} />
+                  <Label htmlFor="formFile" className="form-label">
+                    File 2
+                  </Label>
+                  <Input
+                    className="form-control"
+                    type="file"
+                    accept=".doc, .docx,.xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
+                    id="formFile"
+                    onChange={(e) => handleFileUpload(e, "file_2")}
+                  />
                 </div>
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
@@ -2481,9 +2442,16 @@ console.log("rrrr",employeeObj);
               </div>
               <Col>
                 <div>
-                  <Label htmlFor="formFile" className="form-label">File 3</Label>
-                  <Input className="form-control" type="file" id="formFile"
-                    onChange={(e)=>handleFileUpload(e, 'file_3')} />
+                  <Label htmlFor="formFile" className="form-label">
+                    File 3
+                  </Label>
+                  <Input
+                    className="form-control"
+                    type="file"
+                    accept=".doc, .docx,.xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
+                    id="formFile"
+                    onChange={(e) => handleFileUpload(e, "file_3")}
+                  />
                 </div>
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
@@ -2491,9 +2459,16 @@ console.log("rrrr",employeeObj);
               </div>
               <Col>
                 <div>
-                  <Label htmlFor="formFile" className="form-label">File 4</Label>
-                  <Input className="form-control" type="file" id="formFile"
-                    onChange={(e)=>handleFileUpload(e, 'file_4')} />
+                  <Label htmlFor="formFile" className="form-label">
+                    File 4
+                  </Label>
+                  <Input
+                    className="form-control"
+                    type="file"
+                    accept=".doc, .docx,.xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
+                    id="formFile"
+                    onChange={(e) => handleFileUpload(e, "file_4")}
+                  />
                 </div>
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
@@ -2501,9 +2476,16 @@ console.log("rrrr",employeeObj);
               </div>
               <Col>
                 <div>
-                  <Label htmlFor="formFile" className="form-label">File 5</Label>
-                  <Input className="form-control" type="file" id="formFile"
-                    onChange={(e)=>handleFileUpload(e, 'file_5')} />
+                  <Label htmlFor="formFile" className="form-label">
+                    File 5
+                  </Label>
+                  <Input
+                    className="form-control"
+                    type="file"
+                    accept=".doc, .docx,.xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
+                    id="formFile"
+                    onChange={(e) => handleFileUpload(e, "file_5")}
+                  />
                 </div>
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
@@ -2588,32 +2570,31 @@ console.log("rrrr",employeeObj);
               <hr></hr>
               {employeeObj.cf_values && employeeObj.cf_values.length
                 ? employeeObj.cf_values.map((obj) => (
-                  <Col lg={12}>
-                    <div>
-                      <Label htmlFor="obj.input_name" className="form-label">
-                        {obj.name}
-                      </Label>
-                      <div className="form-icon right">
-                        <Input
-                          type={obj.type || "text"}
-                          name={obj.input_name}
-                          id={obj.input_name}
-                          className="form-control"
-                          placeholder={`Enter ${obj.name}`}
-                          required={obj.is_required || false}
-                          value={obj.value || ""}
-                          onChange={(e) => handleCFInputChange(e, obj.id)}
-                        />
-                        <i className="ri-user-2-line"></i>
+                    <Col lg={12}>
+                      <div>
+                        <Label htmlFor="obj.input_name" className="form-label">
+                          {obj.name}
+                        </Label>
+                        <div className="form-icon right">
+                          <Input
+                            type={obj.type || "text"}
+                            name={obj.input_name}
+                            id={obj.input_name}
+                            className="form-control"
+                            placeholder={`Enter ${obj.name}`}
+                            required={obj.is_required || false}
+                            value={obj.value || ""}
+                            onChange={(e) => handleCFInputChange(e, obj.id)}
+                          />
+                          <i className="ri-user-2-line"></i>
+                        </div>
+                        <div id="passwordHelpBlock" className="form-text">
+                          Enter {obj.name}
+                        </div>
                       </div>
-                      <div id="passwordHelpBlock" className="form-text">
-                        Enter {obj.name}
-                      </div>
-                    </div>
-                  </Col>
-                ))
+                    </Col>
+                  ))
                 : null}
-
 
               <Col lg={12}>
                 <div className="text-end">

@@ -64,7 +64,8 @@ const Employee = () => {
                 <Link
                   to="#"
                   onClick={() => viewEmployee(obj)}
-                  className="link-body-emphasis mb-0">
+                  className="link-body-emphasis mb-0"
+                >
                   {" "}
                   <h5 className="fs-14 mb-1">{obj.fname}</h5>
                 </Link>
@@ -84,7 +85,8 @@ const Employee = () => {
                   background: "#0ab39c",
                 }}
                 data-bs-toggle="tooltip"
-                title={obj.fname}>
+                title={obj.fname}
+              >
                 <span className="first_letter" style={{ color: "white" }}>
                   {obj.fname.charAt(0)}
                 </span>
@@ -95,7 +97,8 @@ const Employee = () => {
                 <Link
                   to="#"
                   onClick={() => viewEmployee(obj)}
-                  className="link-body-emphasis mb-0">
+                  className="link-body-emphasis mb-0"
+                >
                   {" "}
                   <h5 className="fs-14 mb-1">{obj.fname}</h5>
                 </Link>
@@ -155,7 +158,8 @@ const Employee = () => {
             <Button
               color="light"
               id={`depListRef-${obj.id}`}
-              className="position-relative">
+              className="position-relative"
+            >
               {thisDepartment.map((d) => (
                 <React.Fragment>{d.name}</React.Fragment>
               ))}
@@ -165,14 +169,16 @@ const Employee = () => {
                     //id="tooltipwithHtml"
                     pill
                     color="success"
-                    className="position-absolute top-0 start-100 translate-middle">
+                    className="position-absolute top-0 start-100 translate-middle"
+                  >
                     +{obj.sub_department.length}
                     <span className="visually-hidden">Departments</span>
                   </Badge>
 
                   <UncontrolledTooltip
                     placement="bottom"
-                    target={`depListRef-${obj.id}`}>
+                    target={`depListRef-${obj.id}`}
+                  >
                     {" "}
                     <div className="mt-1">
                       {subDepList.map((item, key) => (
@@ -206,7 +212,8 @@ const Employee = () => {
         let statusClass = obj.is_active ? "success" : "warning";
         return (
           <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
+            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
+          >
             {" "}
             {status}{" "}
           </span>
@@ -218,18 +225,18 @@ const Employee = () => {
   const initialFormObj = useMemo(() => {
     return {
       id: 0,
-      emp_id:"",
+      emp_id: "",
       fname: "",
       lname: "",
       dob: String(new Date()),
       joining_date: String(new Date()),
       id_proof: null,
-      file_1:null,
-      file_2:null,
-      file_3:null,
-      file_4:null,
-      file_5:null,
-      contact_number:"",
+      file_1: null,
+      file_2: null,
+      file_3: null,
+      file_4: null,
+      file_5: null,
+      contact_number: "",
       gender: "",
       primary_department: 0,
       sub_department: [],
@@ -268,6 +275,7 @@ const Employee = () => {
         filterKey={filterKey}
         filterOptions={filterOptions}
         width_per={"35%"}
+        import_width_per={"50%"}
       />
     </React.Fragment>
   );
