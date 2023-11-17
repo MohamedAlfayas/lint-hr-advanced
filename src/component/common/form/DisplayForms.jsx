@@ -13,6 +13,7 @@ import ApplyLeaveForm from "../../forms/ApplyLeaveForm";
 import CustomFieldForm from "../../forms/CustomFieldForm";
 import ProfileViewMin from "../../forms/ProfileViewMin";
 import EPFWageForm from "../../forms/EPFWageForm";
+import ProfessionalTaxForm from "../../forms/ProfessionalTaxForm";
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
   const { form_title, form_width_percentage, component_to_show } = useSelector(
@@ -56,6 +57,8 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
                 <ProfileViewMin />
               ) : component_to_show === "EPFWageForm" ? (
                 <EPFWageForm />
+              ) : component_to_show === "ProfessionalTaxForm" ? (
+                <ProfessionalTaxForm />
               ) : (
                 <></>
               )}

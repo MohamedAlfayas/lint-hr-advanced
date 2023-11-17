@@ -42,6 +42,7 @@ import {
   toggleRSBView,
 } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { useDispatch } from "react-redux";
+import InfoTable from "../../component/common/table/InfoTable";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
@@ -102,6 +103,68 @@ const PayRollConfig = () => {
           state: "Kerala",
           tax_cycle: "Half-yearly",
           slabs: 2,
+        },
+      ],
+    },
+    salary_components: {
+      earnings: [
+        {
+          name: "Basic Salary",
+          desc: "",
+          pro_rata: true,
+          tax: true,
+          contribute: true,
+          esi: true,
+          epf: true,
+        },
+        {
+          name: "Special Salary",
+          desc: "",
+          pro_rata: true,
+          tax: true,
+          contribute: true,
+          esi: true,
+          epf: false,
+        },
+      ],
+      allowances: [
+        {
+          name: "HRA",
+          desc: "",
+          pro_rata: true,
+          tax: true,
+          contribute: true,
+          esi: true,
+          epf: true,
+        },
+        {
+          name: "Life Style",
+          desc: "",
+          pro_rata: true,
+          tax: true,
+          contribute: true,
+          esi: true,
+          epf: true,
+        },
+      ],
+      deductions: [
+        {
+          name: "Year End Fund",
+          desc: "",
+          pro_rata: true,
+          tax: true,
+          contribute: true,
+          esi: true,
+          epf: true,
+        },
+        {
+          name: "Activity Fund",
+          desc: "",
+          pro_rata: true,
+          tax: true,
+          contribute: true,
+          esi: true,
+          epf: true,
         },
       ],
     },
@@ -232,6 +295,15 @@ const PayRollConfig = () => {
     dispatch(toggleRSBView(true));
   };
 
+  const handleTaxEdit = ($id, obj) => {
+    const depObj = $id === 0 ? newDepObj : obj;
+    dispatch(setFormTitle("Edit Professional Tax"));
+    dispatch(setFormObj(depObj));
+    dispatch(setFormWidthPercentage("35%"));
+    dispatch(setComponentToShow("ProfessionalTaxForm"));
+    dispatch(toggleRSBView(true));
+  };
+
   const [modal_animationZoom, setmodal_animationZoom] = useState(false);
   const [tax_slabId, setTax_slabId] = useState(0);
 
@@ -242,6 +314,13 @@ const PayRollConfig = () => {
     console.log(tax_slab.find((e) => e.id == $id).range);
     setmodal_animationZoom(!modal_animationZoom);
   }
+
+  let leavetypes = [
+    { id: 1, name: "Casual Leave (CL)", type: "Day" },
+    { id: 2, name: "Earned Leave (EL)", type: "Hour" },
+    { id: 3, name: "Sick Leave (SL)", type: "Day" },
+    { id: 4, name: "Permission", type: "Hour" },
+  ];
 
   document.title = `PayRoll | ${MetaTitle || "Lint HR"} `;
 
@@ -1056,7 +1135,9 @@ const PayRollConfig = () => {
                                                     </div>
                                                     <a
                                                       onClick={() =>
-                                                        handleEPFEdit(0)
+                                                        handleTaxEdit(
+                                                          item.slabs
+                                                        )
                                                       }
                                                       className="text-primary d-inline-block edit-item-btn ms-2"
                                                       href="javascript:void(0)">
@@ -1171,7 +1252,7 @@ const PayRollConfig = () => {
                                                 </div>
                                                 <a
                                                   onClick={() =>
-                                                    handleEPFEdit(0)
+                                                    handleTaxEdit(0)
                                                   }
                                                   className="text-primary d-inline-block edit-item-btn ms-2"
                                                   href="javascript:void(0)">
@@ -1224,32 +1305,278 @@ const PayRollConfig = () => {
 
                         {/* Salary Components Tab Start */}
                         <TabPane tabId="4" id="v-pills-settings">
-                          <div className="d-flex mb-2">
-                            <div className="flex-shrink-0">
-                              <img
-                                src="https://local-lcedu-static.s3.amazonaws.com/dev/employee/profile/18ba4128-f7f0-435b-a841-96c01c829d0b.jpg"
-                                alt=""
-                                width="150"
-                                className="rounded"
-                              />
-                            </div>
-                            <div className="flex-grow-1 ms-3">
-                              <p className="mb-0">
-                                When designing, the goal is to draw someone’s
-                                attention and portray to them what you’re trying
-                                to say. You can make a big statement by using
-                                little tricks, like this one. Use contrasting
-                                fonts. you can use a bold sanserif font with a
-                                cursive.
-                              </p>
-                            </div>
-                          </div>
-                          <p className="mb-0">
-                            If you’re using multiple elements, make sure that
-                            your principal object is larger than the others, as
-                            the eye of your viewer will automatically be drawn
-                            to the larger of the two objects.
-                          </p>
+                          <Row>
+                            <Col xxl={12}>
+                              <Nav
+                                tabs
+                                className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3">
+                                <NavItem>
+                                  <NavLink
+                                    style={{ cursor: "pointer" }}
+                                    className={classnames({
+                                      active: customActiveTab === "1",
+                                    })}
+                                    onClick={() => {
+                                      toggleCustom("1");
+                                    }}>
+                                    Earnings
+                                  </NavLink>
+                                </NavItem>
+                                <NavItem>
+                                  <NavLink
+                                    style={{ cursor: "pointer" }}
+                                    className={classnames({
+                                      active: customActiveTab === "2",
+                                    })}
+                                    onClick={() => {
+                                      toggleCustom("2");
+                                    }}>
+                                    Allowances
+                                  </NavLink>
+                                </NavItem>
+                                <NavItem>
+                                  <NavLink
+                                    style={{ cursor: "pointer" }}
+                                    className={classnames({
+                                      active: customActiveTab === "3",
+                                    })}
+                                    onClick={() => {
+                                      toggleCustom("3");
+                                    }}>
+                                    Deductions
+                                  </NavLink>
+                                </NavItem>
+                              </Nav>
+
+                              <TabContent
+                                activeTab={customActiveTab}
+                                className="text-muted">
+                                {/* Earnings Tab */}
+                                <TabPane tabId="1" id="home1">
+                                  <Row>
+                                    <Col md={12} lg={12} xxl={12}>
+                                      <div className=" mb-2">
+                                        <div className="table-responsive">
+                                          <Table className="table-borderless align-middle table-nowrap mb-0">
+                                            <thead>
+                                              <tr>
+                                                <th scope="col">Name</th>
+                                                <th scope="col">Description</th>
+                                                <th scope="col">Pro-rata</th>
+                                                <th scope="col">Taxable</th>
+                                                <th scope="col">
+                                                  Contribute to Insurance & Fund
+                                                </th>
+                                                <th scope="col">Action</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody>
+                                              {payrollobj.salary_components.earnings.map(
+                                                (item, key) => (
+                                                  <tr key={key}>
+                                                    <td className="fw-medium">
+                                                      {item.name}
+                                                    </td>
+                                                    <td>{item.desc}</td>
+                                                    <td>
+                                                      {item.pro_rata
+                                                        ? "Yes"
+                                                        : "No"}
+                                                    </td>
+                                                    <td>
+                                                      {item.tax ? "Yes" : "No"}
+                                                    </td>
+                                                    <td>
+                                                      {item.contribute
+                                                        ? "Yes : "
+                                                        : "No"}
+                                                      {item.epf ? (
+                                                        <span className="badge border border-light text-body">
+                                                          EPF
+                                                        </span>
+                                                      ) : (
+                                                        ""
+                                                      )}
+                                                      {item.esi ? (
+                                                        <span className="badge border border-light text-body">
+                                                          ESI
+                                                        </span>
+                                                      ) : (
+                                                        ""
+                                                      )}
+                                                    </td>
+                                                    <td>
+                                                      <div className="hstack gap-3 fs-15">
+                                                        <Link
+                                                          to="#"
+                                                          className="link-primary">
+                                                          <i className="ri-edit-2-line"></i>
+                                                        </Link>
+                                                      </div>
+                                                    </td>
+                                                  </tr>
+                                                )
+                                              )}
+                                            </tbody>
+                                          </Table>
+                                        </div>
+                                      </div>
+                                    </Col>
+                                  </Row>
+                                </TabPane>
+
+                                {/* Allowances Tab */}
+                                <TabPane tabId="2">
+                                  {" "}
+                                  <Row>
+                                    <Col md={12} lg={12} xxl={12}>
+                                      <div className=" mb-2">
+                                        <div className="table-responsive">
+                                          <Table className="table-borderless align-middle table-nowrap mb-0">
+                                            <thead>
+                                              <tr>
+                                                <th scope="col">Name</th>
+                                                <th scope="col">Description</th>
+                                                <th scope="col">Pro-rata</th>
+                                                <th scope="col">Taxable</th>
+                                                <th scope="col">
+                                                  Contribute to Insurance & Fund
+                                                </th>
+                                                <th scope="col">Action</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody>
+                                              {payrollobj.salary_components.allowances.map(
+                                                (item, key) => (
+                                                  <tr key={key}>
+                                                    <td className="fw-medium">
+                                                      {item.name}
+                                                    </td>
+                                                    <td>{item.desc}</td>
+                                                    <td>
+                                                      {item.pro_rata
+                                                        ? "Yes"
+                                                        : "No"}
+                                                    </td>
+                                                    <td>
+                                                      {item.tax ? "Yes" : "No"}
+                                                    </td>
+                                                    <td>
+                                                      {item.contribute
+                                                        ? "Yes : "
+                                                        : "No"}
+                                                      {item.epf ? (
+                                                        <span className="badge border border-light text-body">
+                                                          EPF
+                                                        </span>
+                                                      ) : (
+                                                        ""
+                                                      )}
+                                                      {item.esi ? (
+                                                        <span className="badge border border-light text-body">
+                                                          ESI
+                                                        </span>
+                                                      ) : (
+                                                        ""
+                                                      )}
+                                                    </td>
+                                                    <td>
+                                                      <div className="hstack gap-3 fs-15">
+                                                        <Link
+                                                          to="#"
+                                                          className="link-primary">
+                                                          <i className="ri-edit-2-line"></i>
+                                                        </Link>
+                                                      </div>
+                                                    </td>
+                                                  </tr>
+                                                )
+                                              )}
+                                            </tbody>
+                                          </Table>
+                                        </div>
+                                      </div>
+                                    </Col>
+                                  </Row>
+                                </TabPane>
+
+                                {/* Deductions Tab */}
+                                <TabPane tabId="3">
+                                  {" "}
+                                  <Row>
+                                    <Col md={12} lg={12} xxl={12}>
+                                      <div className=" mb-2">
+                                        <div className="table-responsive">
+                                          <Table className="table-borderless align-middle table-nowrap mb-0">
+                                            <thead>
+                                              <tr>
+                                                <th scope="col">Name</th>
+                                                <th scope="col">Description</th>
+                                                <th scope="col">Pro-rata</th>
+                                                <th scope="col">Taxable</th>
+                                                <th scope="col">
+                                                  Contribute to Insurance & Fund
+                                                </th>
+                                                <th scope="col">Action</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody>
+                                              {payrollobj.salary_components.deductions.map(
+                                                (item, key) => (
+                                                  <tr key={key}>
+                                                    <td className="fw-medium">
+                                                      {item.name}
+                                                    </td>
+                                                    <td>{item.desc}</td>
+                                                    <td>
+                                                      {item.pro_rata
+                                                        ? "Yes"
+                                                        : "No"}
+                                                    </td>
+                                                    <td>
+                                                      {item.tax ? "Yes" : "No"}
+                                                    </td>
+                                                    <td>
+                                                      {item.contribute
+                                                        ? "Yes : "
+                                                        : "No"}
+                                                      {item.epf ? (
+                                                        <span className="badge border border-light text-body">
+                                                          EPF
+                                                        </span>
+                                                      ) : (
+                                                        ""
+                                                      )}
+                                                      {item.esi ? (
+                                                        <span className="badge border border-light text-body">
+                                                          ESI
+                                                        </span>
+                                                      ) : (
+                                                        ""
+                                                      )}
+                                                    </td>
+                                                    <td>
+                                                      <div className="hstack gap-3 fs-15">
+                                                        <Link
+                                                          to="#"
+                                                          className="link-primary">
+                                                          <i className="ri-edit-2-line"></i>
+                                                        </Link>
+                                                      </div>
+                                                    </td>
+                                                  </tr>
+                                                )
+                                              )}
+                                            </tbody>
+                                          </Table>
+                                        </div>
+                                      </div>
+                                    </Col>
+                                  </Row>
+                                </TabPane>
+                              </TabContent>
+                            </Col>
+                          </Row>
                         </TabPane>
                         {/* Salary Components Tab End */}
 
