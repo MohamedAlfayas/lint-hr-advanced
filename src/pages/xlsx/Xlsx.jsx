@@ -40,11 +40,15 @@ const Xlsx = () => {
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         const parsedData = XLSX.utils.sheet_to_json(sheet);
+        console.log('Imported XLSX/XLS Data:', parsedData);
+
 
         setData(parsedData);
       } else if (isCsv) {
         Papa.parse(file, {
           complete: (result) => {
+            console.log('Imported CSV Data:', result.data);
+
             setData(result.data);
           },
           header: true,

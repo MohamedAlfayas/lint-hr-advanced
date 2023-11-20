@@ -1826,6 +1826,65 @@ const EmployeeForm = () => {
   const [dob, setDob] = useState([]);
   const [joining_date, setJoinDate] = useState([]);
   const [profileData, setProfileData] = useState([]);
+  const [selectedFileName, setSelectedFileName] = React.useState('');
+  const [selectedFileName1, setSelectedFileName1] = React.useState('');
+  const [selectedFileName2, setSelectedFileName2] = React.useState('');
+  const [selectedFileName3, setSelectedFileName3] = React.useState('');
+  const [selectedFileName4, setSelectedFileName4] = React.useState('');
+  const [selectedFileName5, setSelectedFileName5] = React.useState('');
+
+  const showFileNameIfSelected = () => {
+    const idProofUrl = form_obj.id_proof_url;
+    console.log('Selected File Name 0:', idProofUrl);
+    const fileName = idProofUrl ? idProofUrl.split('/').pop() : '';
+    console.log('Extracted File Name:', fileName);
+    setSelectedFileName(fileName);
+
+  };
+  const handleClearFile = () => {
+    // Clear the selected file
+    setSelectedFileName('');
+  };
+  const showFile1NameIfSelected = () => {
+    const file1Url = form_obj.file_1_url;
+    console.log('Selected File Name 1:', file1Url);
+    const fileName1 = file1Url ? file1Url.split('/').pop() : '';
+    console.log('Extracted File Name1:', fileName1);
+    setSelectedFileName1(fileName1);
+  };
+
+  const showFile2NameIfSelected = () => {
+    const file2Url = form_obj.file_2_url;
+    console.log('Selected File Name 2:', file2Url);
+    const fileName2 = file2Url ? file2Url.split('/').pop() : '';
+    console.log('Extracted File Name2:', fileName2);
+    setSelectedFileName2(fileName2);
+  };
+
+  const showFile3NameIfSelected = () => {
+    const file3Url = form_obj.file_3_url;
+    console.log('Selected File Name 1:', file3Url);
+    const fileName3 = file3Url ? file3Url.split('/').pop() : '';
+    console.log('Extracted File Name1:', fileName3);
+    setSelectedFileName3(fileName3);
+
+  };
+  const showFile4NameIfSelected = () => {
+    const file4Url = form_obj.file_4_url;
+    console.log('Selected File Name 4:', file4Url);
+    const fileName4 = file4Url ? file4Url.split('/').pop() : '';
+    console.log('Extracted File Name4:', fileName4);
+    setSelectedFileName4(fileName4);
+
+  };
+  const showFile5NameIfSelected = () => {
+    const file5Url = form_obj.file_5_url;
+    console.log('Selected File Name 5:', file5Url);
+    const fileName5 = file5Url ? file5Url.split('/').pop() : '';
+    console.log('Extracted File Name5:', fileName5);
+    setSelectedFileName5(fileName5);
+
+  };
 
   useEffect(() => {
     setEmployeeObj({
@@ -1839,6 +1898,12 @@ const EmployeeForm = () => {
     setSubDeptOptions(sub_dep_options);
     setDob([new Date(form_obj.dob)]);
     setJoinDate([new Date(form_obj.joining_date)]);
+    showFileNameIfSelected();
+    showFile1NameIfSelected();
+    showFile2NameIfSelected();
+    showFile3NameIfSelected();
+    showFile4NameIfSelected();
+    showFile5NameIfSelected();
   }, [form_obj]);
 
   const handleInputChange = (e) => {
@@ -2253,8 +2318,8 @@ const EmployeeForm = () => {
                     value={
                       employeeObj.primary_department
                         ? dep_options.find(
-                            (obj) => obj.id === employeeObj.primary_department
-                          )
+                          (obj) => obj.id === employeeObj.primary_department
+                        )
                         : []
                     }
                     onChange={(e) => {
@@ -2328,8 +2393,8 @@ const EmployeeForm = () => {
                     value={
                       employeeObj.sub_department
                         ? subDepOptions.filter((obj) =>
-                            employeeObj.sub_department.includes(obj.id)
-                          )
+                          employeeObj.sub_department.includes(obj.id)
+                        )
                         : []
                     }
                     onChange={(e) => {
@@ -2403,6 +2468,22 @@ const EmployeeForm = () => {
                 </div>
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
+
+                {/* <div>{selectedFileName && `Selected File Name: ${selectedFileName}`}</div> */}
+                {selectedFileName && (
+                  <div>
+                    {/* Show the file name and close button if a file is selected */}
+                    <p>Selected File Name: {selectedFileName}</p>
+                    <button onClick={handleClearFile}>Close File</button>
+                  </div>
+                )}
+                {!selectedFileName && (
+                  <div>
+                    {/* Show the "choose file" column if no file is selected */}
+                    <p>Choose File Column</p>
+                  </div>
+                )}
+
                 Select ID Proof.
               </div>
 
@@ -2421,6 +2502,7 @@ const EmployeeForm = () => {
                 </div>
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
+                <div>{selectedFileName1 && `Selected File Name: ${selectedFileName1}`}</div>
                 Select File 1.
               </div>
               <Col>
@@ -2438,6 +2520,7 @@ const EmployeeForm = () => {
                 </div>
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
+                <div>{selectedFileName2 && `Selected File Name: ${selectedFileName2}`}</div>
                 Select File 2.
               </div>
               <Col>
@@ -2455,6 +2538,7 @@ const EmployeeForm = () => {
                 </div>
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
+                <div>{selectedFileName3 && `Selected File Name: ${selectedFileName3}`}</div>
                 Select File 3.
               </div>
               <Col>
@@ -2472,6 +2556,7 @@ const EmployeeForm = () => {
                 </div>
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
+                <div>{selectedFileName4 && `Selected File Name: ${selectedFileName4}`}</div>
                 Select File 4.
               </div>
               <Col>
@@ -2489,6 +2574,7 @@ const EmployeeForm = () => {
                 </div>
               </Col>
               <div id="passwordHelpBlock" className="form-text mb-3">
+                <div>{selectedFileName5 && `Selected File Name: ${selectedFileName5}`}</div>
                 Select File 5.
               </div>
               {/* <Col lg={12}>
@@ -2570,30 +2656,30 @@ const EmployeeForm = () => {
               <hr></hr>
               {employeeObj.cf_values && employeeObj.cf_values.length
                 ? employeeObj.cf_values.map((obj) => (
-                    <Col lg={12}>
-                      <div>
-                        <Label htmlFor="obj.input_name" className="form-label">
-                          {obj.name}
-                        </Label>
-                        <div className="form-icon right">
-                          <Input
-                            type={obj.type || "text"}
-                            name={obj.input_name}
-                            id={obj.input_name}
-                            className="form-control"
-                            placeholder={`Enter ${obj.name}`}
-                            required={obj.is_required || false}
-                            value={obj.value || ""}
-                            onChange={(e) => handleCFInputChange(e, obj.id)}
-                          />
-                          <i className="ri-user-2-line"></i>
-                        </div>
-                        <div id="passwordHelpBlock" className="form-text">
-                          Enter {obj.name}
-                        </div>
+                  <Col lg={12}>
+                    <div>
+                      <Label htmlFor="obj.input_name" className="form-label">
+                        {obj.name}
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type={obj.type || "text"}
+                          name={obj.input_name}
+                          id={obj.input_name}
+                          className="form-control"
+                          placeholder={`Enter ${obj.name}`}
+                          required={obj.is_required || false}
+                          value={obj.value || ""}
+                          onChange={(e) => handleCFInputChange(e, obj.id)}
+                        />
+                        <i className="ri-user-2-line"></i>
                       </div>
-                    </Col>
-                  ))
+                      <div id="passwordHelpBlock" className="form-text">
+                        Enter {obj.name}
+                      </div>
+                    </div>
+                  </Col>
+                ))
                 : null}
 
               <Col lg={12}>
