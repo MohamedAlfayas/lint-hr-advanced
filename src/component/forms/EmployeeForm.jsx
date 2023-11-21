@@ -2486,14 +2486,29 @@ const EmployeeForm = () => {
 
 
               {/* <div>{selectedFileName && `Selected File Name: ${selectedFileName}`}</div> */}
+              
               {selectedFileName ? (
-                <div>
-                  {/* Show the file name and close button if a file is selected */}
-                  <p>Selected ID Proof: {selectedFileName}</p>
-                  <button onClick={handleClearFile}>
-                    <i className="ri-close-line fs-16"></i>
-                  </button>
-                </div>
+                 <table>
+                 <thead>
+                   <tr>
+                     <th>File</th>
+                     <th>Selected File Name</th>
+                     <th>Action</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   <tr>
+                     <td>ID Proof</td>
+                     <td>{selectedFileName}</td>
+                     <td>
+                       <button onClick={handleClearFile}>
+                         <i className="ri-close-line fs-16"></i>
+                       </button>
+                     </td>
+                   </tr>
+                   {/* You can add more rows for other files if needed */}
+                 </tbody>
+               </table>
               ) : (
                 <Col>
                   <div>
@@ -2531,13 +2546,27 @@ const EmployeeForm = () => {
               </Col> */}
 
               {selectedFileName1 ? (
-                <div>
-                  {/* Show the file name and close button if a file is selected for File 1 */}
-                  <p>Selected File 1 Name: {selectedFileName1}</p>
-                  <button onClick={handleClearFile1}>
-                    <i className="ri-close-line fs-16"></i>
-                  </button>
-                </div>
+                 <table>
+                 <thead>
+                   <tr>
+                     <th>File</th>
+                     <th>Selected File Name</th>
+                     <th>Action</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   <tr>
+                     <td>File 1</td>
+                     <td>{selectedFileName1}</td>
+                     <td>
+                       <button onClick={handleClearFile1}>
+                         <i className="ri-close-line fs-16"></i>
+                       </button>
+                     </td>
+                   </tr>
+                   {/* You can add more rows for other files if needed */}
+                 </tbody>
+               </table>
               ) : (
                 <Col>
                   <div>
@@ -2574,13 +2603,27 @@ const EmployeeForm = () => {
               </Col> */}
 
               {selectedFileName2 ? (
-                <div>
-                  {/* Show the file name and close button if a file is selected */}
-                  <p>Selected File 2 Name: {selectedFileName2}</p>
-                  <button onClick={handleClearFile2}>
-                    <i className="ri-close-line fs-16"></i>
-                  </button>
-                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>File</th>
+                      <th>Selected File Name</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>File 2</td>
+                      <td>{selectedFileName2}</td>
+                      <td>
+                        <button onClick={handleClearFile2}>
+                          <i className="ri-close-line fs-16"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    {/* You can add more rows for other files if needed */}
+                  </tbody>
+                </table>
               ) : (
                 <Col>
                   <div>
@@ -2616,13 +2659,27 @@ const EmployeeForm = () => {
                 </div>
               </Col> */}
               {selectedFileName3 ? (
-                <div>
-                  {/* Show the file name and close button if a file is selected */}
-                  <p>Selected File 3 Name: {selectedFileName3}</p>
-                  <button onClick={handleClearFile3}>
-                    <i className="ri-close-line fs-16"></i>
-                  </button>
-                </div>
+                  <table>
+                  <thead>
+                    <tr>
+                      <th>File</th>
+                      <th>Selected File Name</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>File 3</td>
+                      <td>{selectedFileName3}</td>
+                      <td>
+                        <button onClick={handleClearFile3}>
+                          <i className="ri-close-line fs-16"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    {/* You can add more rows for other files if needed */}
+                  </tbody>
+                </table>
               ) : (
                 <Col>
                   <div>
@@ -2658,13 +2715,27 @@ const EmployeeForm = () => {
                 </div>
               </Col> */}
               {selectedFileName4 ? (
-                <div>
-                  {/* Show the file name and close button if a file is selected */}
-                  <p>Selected File 4 Name: {selectedFileName4}</p>
-                  <button onClick={handleClearFile4}>
-                    <i className="ri-close-line fs-16"></i>
-                  </button>
-                </div>
+                  <table>
+                  <thead>
+                    <tr>
+                      <th>File</th>
+                      <th>Selected File Name</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>File 4</td>
+                      <td>{selectedFileName4}</td>
+                      <td>
+                        <button onClick={handleClearFile4}>
+                          <i className="ri-close-line fs-16"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    {/* You can add more rows for other files if needed */}
+                  </tbody>
+                </table>
               ) : (
                 <Col>
                   <div>
@@ -2700,13 +2771,27 @@ const EmployeeForm = () => {
                 </div>
               </Col> */}
               {selectedFileName5 ? (
-                <div>
-                  {/* Show the file name and close button if a file is selected */}
-                  <p>Selected File 5 Name: {selectedFileName5}</p>
-                  <button onClick={handleClearFile5}>
-                    <i className="ri-close-line fs-16"></i>
-                  </button>
-                </div>
+                 <table>
+                 <thead>
+                   <tr>
+                     <th>File</th>
+                     <th>Selected File Name</th>
+                     <th>Action</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   <tr>
+                     <td>File 5</td>
+                     <td>{selectedFileName5}</td>
+                     <td>
+                       <button onClick={handleClearFile5}>
+                         <i className="ri-close-line fs-16"></i>
+                       </button>
+                     </td>
+                   </tr>
+                   {/* You can add more rows for other files if needed */}
+                 </tbody>
+               </table>
               ) : (
                 <Col>
                   <div>
