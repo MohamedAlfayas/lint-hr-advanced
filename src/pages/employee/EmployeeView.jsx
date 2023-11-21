@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   Card,
   CardBody,
@@ -26,13 +26,42 @@ import {
   UncontrolledDropdown,
 } from "reactstrap";
 import classnames from "classnames";
+import DummyUserImg from "../../assets/images/users/user.png";
 import { Swiper, SwiperSlide } from "swiper/react";
 import SwiperCore, { Autoplay } from "swiper";
+import { MetaTitle } from "../../common/data/MetaTitle";
+import { useSelector } from "react-redux";
+import { useEffect } from "react";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
 const EmployeeView = () => {
-  document.title = "Profile | Velzon - React Admin & Dashboard Template";
-
   SwiperCore.use([Autoplay]);
+
+  const { id } = useParams();
+  const DepartmentData = GetLocalStorageData("department") || [];
+
+  const [profileObj, setProfileObj] = useState({});
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const EmployeeData = GetLocalStorageData("employee") || [];
+    if (id && EmployeeData.length) {
+      console.log("Emp IDDDDD = ", id);
+      console.log("EmployeeData = ", EmployeeData);
+      const thisEmployeeData = EmployeeData.find((d) => d.id === parseInt(id));
+      console.log("This Employee Data = ", thisEmployeeData);
+      if (
+        thisEmployeeData !== undefined &&
+        thisEmployeeData !== null &&
+        Object.keys(thisEmployeeData).length > 0
+      ) {
+        setProfileObj(thisEmployeeData);
+      } else {
+        navigate("/404");
+      }
+    }
+  }, []);
 
   const [activeTab, setActiveTab] = useState("1");
   const [activityTab, setActivityTab] = useState("1");
@@ -49,6 +78,8 @@ const EmployeeView = () => {
     }
   };
 
+  document.title = `Employee View | ${MetaTitle}`;
+
   return (
     <React.Fragment>
       <div className="page-content">
@@ -56,7 +87,9 @@ const EmployeeView = () => {
           <div className="profile-foreground position-relative mx-n4 mt-n4">
             <div className="profile-wid-bg">
               <img
-                src="https://themes.themesbrand.com/velzon/react/default/static/media/profile-bg.9adf95fb1ea25aaaf8df.jpg"
+                src={
+                  profileObj.profile_url ? profileObj.profile_url : DummyUserImg
+                }
                 alt=""
                 className="profile-wid-img"
               />
@@ -67,7 +100,11 @@ const EmployeeView = () => {
               <div className="col-auto">
                 <div className="avatar-lg">
                   <img
-                    src="https://local-lcedu-static.s3.amazonaws.com/dev/employee/profile/18ba4128-f7f0-435b-a841-96c01c829d0b.jpg"
+                    src={
+                      profileObj.profile_url
+                        ? profileObj.profile_url
+                        : DummyUserImg
+                    }
                     alt="Available"
                     className="avatar-lg img-thumbnail rounded-circle mx-auto border-success"
                   />
@@ -76,19 +113,33 @@ const EmployeeView = () => {
 
               <Col>
                 <div className="p-2">
-                  <h3 className="text-white mb-1">Kathir</h3>
-                  <p className="text-white text-opacity-75">Developer</p>
+                  <h3 className="text-white mb-1">{profileObj?.fname || ""}</h3>
+                  <p className="text-white text-opacity-75">
+                    {profileObj?.primary_department
+                      ? DepartmentData.length
+                        ? DepartmentData.find(
+                            (d) => d.id === profileObj?.primary_department
+                          )?.name
+                        : ""
+                      : ""}
+                  </p>
                   <div className="hstack text-white-50 gap-1">
                     <div className="me-2">
                       <i className="ri-at-line me-1 text-white text-opacity-75 fs-16 align-middle"></i>
-                      <Link to="mailto:Kathir@lc.com" className="link-light">
-                        Kathir@lc.com
+                      <Link
+                        to={`mailto:${profileObj?.email || ""}`}
+                        className="link-light"
+                      >
+                        {profileObj?.email || ""}
                       </Link>{" "}
                     </div>
                     <div>
                       <i className="ri-phone-line me-1 text-white text-opacity-75 fs-16 align-middle"></i>
-                      <Link to="tel:+91 9999999999" className="link-light">
-                        +91 9999999999
+                      <Link
+                        to={`tel:${profileObj?.contact_number || ""}`}
+                        className="link-light"
+                      >
+                        {profileObj?.contact_number || ""}
                       </Link>
                     </div>
                   </div>
@@ -104,14 +155,16 @@ const EmployeeView = () => {
                   <Nav
                     pills
                     className="animation-nav profile-nav gap-2 gap-lg-3 flex-grow-1"
-                    role="tablist">
+                    role="tablist"
+                  >
                     <NavItem className="fs-14">
                       <NavLink
                         href="#overview-tab"
                         className={classnames({ active: activeTab === "1" })}
                         onClick={() => {
                           toggleTab("1");
-                        }}>
+                        }}
+                      >
                         <i className="ri-airplay-fill d-inline-block d-md-none"></i>{" "}
                         <span className="d-none d-md-inline-block">
                           Overview
@@ -124,7 +177,8 @@ const EmployeeView = () => {
                         className={classnames({ active: activeTab === "2" })}
                         onClick={() => {
                           toggleTab("2");
-                        }}>
+                        }}
+                      >
                         <i className="ri-list-unordered d-inline-block d-md-none"></i>{" "}
                         <span className="d-none d-md-inline-block">
                           Attendance
@@ -137,7 +191,8 @@ const EmployeeView = () => {
                         className={classnames({ active: activeTab === "3" })}
                         onClick={() => {
                           toggleTab("3");
-                        }}>
+                        }}
+                      >
                         <i className="ri-price-tag-line d-inline-block d-md-none"></i>{" "}
                         <span className="d-none d-md-inline-block">
                           Payroll
@@ -150,7 +205,8 @@ const EmployeeView = () => {
                         className={classnames({ active: activeTab === "4" })}
                         onClick={() => {
                           toggleTab("4");
-                        }}>
+                        }}
+                      >
                         <i className="ri-folder-4-line d-inline-block d-md-none"></i>{" "}
                         <span className="d-none d-md-inline-block">
                           Documents
@@ -161,7 +217,8 @@ const EmployeeView = () => {
                   <div className="flex-shrink-0">
                     <Link
                       to="/pages-profile-settings"
-                      className="btn btn-success">
+                      className="btn btn-success"
+                    >
                       <i className="ri-edit-box-line align-bottom"></i> Account
                       Settings
                     </Link>
@@ -184,7 +241,8 @@ const EmployeeView = () => {
                             />
                             <Label
                               htmlFor="formFile"
-                              className="btn btn-danger">
+                              className="btn btn-danger"
+                            >
                               <i className="ri-upload-2-fill me-1 align-bottom"></i>{" "}
                               Upload File
                             </Label>
@@ -228,7 +286,8 @@ const EmployeeView = () => {
                                           tag="a"
                                           className="btn btn-light btn-icon"
                                           id="dropdownMenuLink15"
-                                          role="button">
+                                          role="button"
+                                        >
                                           <i className="ri-equalizer-fill"></i>
                                         </DropdownToggle>
                                         <DropdownMenu>
@@ -278,7 +337,8 @@ const EmployeeView = () => {
                             />
                             <Label
                               htmlFor="formFile"
-                              className="btn btn-danger">
+                              className="btn btn-danger"
+                            >
                               <i className="ri-upload-2-fill me-1 align-bottom"></i>{" "}
                               Upload File
                             </Label>
@@ -322,7 +382,8 @@ const EmployeeView = () => {
                                           tag="a"
                                           className="btn btn-light btn-icon"
                                           id="dropdownMenuLink15"
-                                          role="button">
+                                          role="button"
+                                        >
                                           <i className="ri-equalizer-fill"></i>
                                         </DropdownToggle>
                                         <DropdownMenu>
@@ -373,7 +434,8 @@ const EmployeeView = () => {
                             />
                             <Label
                               htmlFor="formFile"
-                              className="btn btn-danger">
+                              className="btn btn-danger"
+                            >
                               <i className="ri-upload-2-fill me-1 align-bottom"></i>{" "}
                               Upload File
                             </Label>
@@ -417,7 +479,8 @@ const EmployeeView = () => {
                                           tag="a"
                                           className="btn btn-light btn-icon"
                                           id="dropdownMenuLink15"
-                                          role="button">
+                                          role="button"
+                                        >
                                           <i className="ri-equalizer-fill"></i>
                                         </DropdownToggle>
                                         <DropdownMenu>
@@ -468,7 +531,8 @@ const EmployeeView = () => {
                             />
                             <Label
                               htmlFor="formFile"
-                              className="btn btn-danger">
+                              className="btn btn-danger"
+                            >
                               <i className="ri-upload-2-fill me-1 align-bottom"></i>{" "}
                               Upload File
                             </Label>
@@ -512,7 +576,8 @@ const EmployeeView = () => {
                                           tag="a"
                                           className="btn btn-light btn-icon"
                                           id="dropdownMenuLink15"
-                                          role="button">
+                                          role="button"
+                                        >
                                           <i className="ri-equalizer-fill"></i>
                                         </DropdownToggle>
                                         <DropdownMenu>

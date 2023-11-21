@@ -41,6 +41,7 @@ const Index = () => {
                 </Route>
 
                 <Route path="*" element={<Basic404 />} />
+                <Route path="/404" element={<Basic404 />} />
 
             </Routes>
         </React.Fragment>

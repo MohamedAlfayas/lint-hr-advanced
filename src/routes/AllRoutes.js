@@ -23,7 +23,7 @@ const privateRoutes = [
     { path: "/dashboard", component: <Dashboard /> },
     { path: "/organization", component: <ProjectOverview /> },
     { path: "/employee", component: <Employee /> },
-    { path: "/employeeview", component: <EmployeeView /> },
+    { path: "/employee/view/:id", component: <EmployeeView /> },
     { path: "/roles", component: <Roles /> },
     { path: "/workschedule", component: <WorkSchedule /> },
     { path: "/holidays", component: <Holidays /> },
@@ -38,7 +38,7 @@ const privateRoutes = [
         path: "/",
         exact: true,
         component: <Navigate to="/dashboard" />,
-    },    
+    },
 ]
 
 const publicRoutes = [

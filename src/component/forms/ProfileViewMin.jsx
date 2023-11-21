@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import classnames from "classnames";
 
 import {
@@ -23,9 +23,28 @@ import {
   UncontrolledDropdown,
 } from "reactstrap";
 import SimpleBar from "simplebar-react";
+import DummyUserImg from "../../assets/images/users/user.png";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { ConvertDateFormat } from "../../common/js/ConvertDateFormat";
+import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 
 const ProfileViewMin = () => {
   const dispatch = useDispatch();
+  const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+
+  const DepartmentData = GetLocalStorageData("department") || [];
+  const WorkScheduleData = GetLocalStorageData("work_schedule") || [];
+  console.log("WS Data = ", WorkScheduleData);
+  const [profileObj, setProfileObj] = useState({});
+  const [empId, setEmpId] = useState(0);
+
+  useEffect(() => {
+    console.log("Form Obj = ", form_obj);
+    if (form_obj) {
+      setProfileObj(form_obj);
+      setEmpId(form_obj.id);
+    }
+  }, [form_obj]);
 
   // Custom Tabs Bordered
   const [customActiveTab, setcustomActiveTab] = useState("1");
@@ -36,36 +55,52 @@ const ProfileViewMin = () => {
     console.log(customActiveTab);
   };
 
+  const navigate = useNavigate();
+
   return (
     <React.Fragment>
       <Row>
         <div className="p-2 text-center">
           <img
-            src="https://local-lcedu-static.s3.amazonaws.com/dev/employee/profile/18ba4128-f7f0-435b-a841-96c01c829d0b.jpg"
-            alt="Available"
+            src={profileObj.profile_url ? profileObj.profile_url : DummyUserImg}
+            alt="Employee"
             className="avatar-lg img-thumbnail rounded-circle mx-auto border-success"
           />
           <div className="mt-3">
             <h5 className="fs-15 profile-name">
               <Link to="#" className="link-primary">
-                "Kathir"
+                {profileObj?.fname || ""}
               </Link>
             </h5>
-            <p className="text-muted profile-designation">"Developer"</p>
+            <p className="text-muted profile-designation">
+              {profileObj?.primary_department
+                ? DepartmentData.length
+                  ? DepartmentData.find(
+                      (d) => d.id === profileObj?.primary_department
+                    )?.name
+                  : ""
+                : ""}
+            </p>
             <div className="  mb-3 align-center">
               <span className="text-muted">
                 <i className="ri-at-line me-1 align-bottom"></i>{" "}
                 <span className="view-companyname">
-                  <Link to="mailto:Kathir@lc.com" className="link-primary">
-                    Kathir@lc.com
+                  <Link
+                    to={`mailto:${profileObj?.email || ""}`}
+                    className="link-primary"
+                  >
+                    {profileObj?.email || ""}
                   </Link>
                 </span>
               </span>
               <span className="text-muted">
                 <i className="ri-phone-line me-1 ms-2 align-bottom"></i>{" "}
                 <span className="view-location">
-                  <Link to="tel:+91 9999999999" className="link-primary">
-                    +91 9999999999
+                  <Link
+                    to={`tel:${profileObj?.contact_number || ""}`}
+                    className="link-primary"
+                  >
+                    {profileObj?.contact_number || ""}
                   </Link>
                 </span>
               </span>
@@ -99,48 +134,69 @@ const ProfileViewMin = () => {
             <tbody>
               <tr>
                 <td className="fw-medium">DOB</td>
-                <td>09 Jan, 1992</td>
+                <td>
+                  {(profileObj?.dob && ConvertDateFormat(profileObj?.dob)) ||
+                    ""}
+                </td>
               </tr>
               <tr>
                 <td className="fw-medium">Gender</td>
-                <td>Male</td>
+                <td>{profileObj?.gender || ""}</td>
               </tr>
               <tr>
                 <td className="fw-medium">Work Schedule</td>
-                <td>Morning Shift</td>
-              </tr>
-              <tr>
-                <td className="fw-medium">Custom Field 1</td>
-                <td>Value</td>
+                <td>
+                  {profileObj?.work_schedule
+                    ? WorkScheduleData.length
+                      ? WorkScheduleData.find(
+                          (w) => w.id === profileObj?.work_schedule
+                        ).name
+                      : ""
+                    : ""}
+                </td>
               </tr>
               <tr>
                 <td className="fw-medium">Sub Departments</td>
                 <td>
-                  <span
-                    className="badge bg-primary-subtle text-primary me-1"
-                    key={1}>
-                    Dep 1
-                  </span>
-                  <span
-                    className="badge bg-primary-subtle text-primary me-1"
-                    key={2}>
-                    Dep 2
-                  </span>
+                  {profileObj?.sub_department
+                    ? profileObj?.sub_department.map((d) => (
+                        <span
+                          className="badge bg-primary-subtle text-primary me-1"
+                          key={1}
+                        >
+                          {DepartmentData.length
+                            ? DepartmentData.find((e) => e.id === d).name
+                            : ""}
+                        </span>
+                      ))
+                    : null}
                 </td>
               </tr>
               <tr>
-                <td className="fw-medium">Created Date</td>
+                <td className="fw-medium">Joining Date</td>
                 <td>
-                  <small className="text-muted">2021-04-13T18:30:00.000Z</small>
+                  <small className="text-muted">
+                    {(profileObj?.joining_date &&
+                      ConvertDateFormat(profileObj?.joining_date)) ||
+                      ""}
+                  </small>
                 </td>
               </tr>
+              {profileObj?.cf_values &&
+                (profileObj?.cf_values).map((c) => (
+                  <tr>
+                    <td className="fw-medium">{c.name}</td>
+                    <td>{c.value}</td>
+                  </tr>
+                ))}
             </tbody>
           </Table>
         </div>
         <div className="p-3 border border-dashed border-end-0 border-start-0">
           <Nav
             tabs
-            className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3">
+            className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3"
+          >
             <NavItem>
               <NavLink
                 to="#"
@@ -148,7 +204,8 @@ const ProfileViewMin = () => {
                 className={customActiveTab === "1" ? "active nav-link" : "mt-2"}
                 onClick={() => {
                   toggleCustom("1");
-                }}>
+                }}
+              >
                 Attendance
               </NavLink>
             </NavItem>
@@ -159,7 +216,8 @@ const ProfileViewMin = () => {
                 className={customActiveTab === "2" ? "active nav-link" : "mt-2"}
                 onClick={() => {
                   toggleCustom("2");
-                }}>
+                }}
+              >
                 Payrol
               </NavLink>
             </NavItem>
@@ -170,7 +228,8 @@ const ProfileViewMin = () => {
                 className={customActiveTab === "3" ? "active nav-link" : "mt-2"}
                 onClick={() => {
                   toggleCustom("3");
-                }}>
+                }}
+              >
                 Activity
               </NavLink>
             </NavItem>
@@ -312,9 +371,16 @@ const ProfileViewMin = () => {
           <button className="btn btn-light w-100">
             <i className="ri-at-line align-bottom ms-1"></i> Send Email
           </button>
-          <Link to="/employeeview" className="btn btn-primary w-100">
+          <Button
+            // to={`/employee/view/${empId}`}
+            onClick={() => {
+              dispatch(toggleRSBView(false));
+              navigate(`/employee/view/${empId}`);
+            }}
+            className="btn btn-primary w-100"
+          >
             <i className="ri-user-3-line align-bottom ms-1"></i> View Profile
-          </Link>
+          </Button>
         </div>
       </Row>
     </React.Fragment>

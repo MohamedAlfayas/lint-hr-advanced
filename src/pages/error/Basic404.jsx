@@ -4,8 +4,10 @@ import { Col, Container, Row } from "reactstrap";
 
 // Import Images
 import errorImg from "../../assets/images/error.svg";
+import { MetaTitle } from "../../common/data/MetaTitle";
 
 const Basic404 = () => {
+  document.title = `404 | ${MetaTitle}`;
   return (
     <React.Fragment>
       <div className="auth-page-content mt-lg-5">
