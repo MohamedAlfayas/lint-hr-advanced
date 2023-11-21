@@ -4,6 +4,7 @@ import PrivateRoute from "./PrivateRoute";
 import { privateRoutes, publicRoutes } from "./AllRoutes";
 import Layout from "../layout/Layout";
 import React from "react";
+import Basic404 from "../pages/error/Basic404";
 
 
 const Index = () => {
@@ -38,6 +39,9 @@ const Index = () => {
                         />
                     ))}
                 </Route>
+
+                <Route path="*" element={<Basic404 />} />
+
             </Routes>
         </React.Fragment>
     );
