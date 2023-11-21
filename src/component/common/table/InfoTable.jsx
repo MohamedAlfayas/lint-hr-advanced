@@ -283,8 +283,7 @@ const InfoTable = ({
         Header: "Action",
         Cell: (cellProps) => {
           const orderData = cellProps.row.original;
-          console.log("ORDER DATA = ", orderData);
-
+        
           if (
             formname &&
             formname === "leave_approval" &&

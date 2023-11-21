@@ -1842,9 +1842,24 @@ const EmployeeForm = () => {
 
   };
   const handleClearFile = () => {
-    // Clear the selected file
     setSelectedFileName('');
   };
+  const handleClearFile1 = () => {
+    setSelectedFileName1('');
+  };
+  const handleClearFile2 = () => {
+    setSelectedFileName2('');
+  };
+  const handleClearFile3 = () => {
+    setSelectedFileName3('');
+  };
+  const handleClearFile4 = () => {
+    setSelectedFileName4('');
+  };
+  const handleClearFile5 = () => {
+    setSelectedFileName5('');
+  };
+
   const showFile1NameIfSelected = () => {
     const file1Url = form_obj.file_1_url;
     console.log('Selected File Name 1:', file1Url);
@@ -2151,25 +2166,6 @@ const EmployeeForm = () => {
               </Col>
               <Col lg={12}>
                 <div>
-                  <Label htmlFor="dob" className="form-label">
-                    DOB
-                  </Label>
-                  <Flatpickr
-                    className="form-control"
-                    id="dob"
-                    value={dob}
-                    options={{
-                      dateFormat: "d M, Y",
-                    }}
-                    onChange={handleDateChange}
-                  />
-                </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Select Date Of Birth.
-                </div>
-              </Col>
-              <Col lg={12}>
-                <div>
                   <Label htmlFor="emp_gender" className="form-label">
                     Gender
                   </Label>
@@ -2195,6 +2191,26 @@ const EmployeeForm = () => {
                   Select Gender.
                 </div>
               </Col>
+              <Col lg={12}>
+                <div>
+                  <Label htmlFor="dob" className="form-label">
+                    DOB
+                  </Label>
+                  <Flatpickr
+                    className="form-control"
+                    id="dob"
+                    value={dob}
+                    options={{
+                      dateFormat: "d M, Y",
+                    }}
+                    onChange={handleDateChange}
+                  />
+                </div>
+                <div id="passwordHelpBlock" className="form-text mb-3">
+                  Select Date Of Birth.
+                </div>
+              </Col>
+
               <Col lg={12}>
                 <div>
                   <Label className="form-label">Contact Number*</Label>
@@ -2453,7 +2469,7 @@ const EmployeeForm = () => {
                   Select Your Joining Date.
                 </div>
               </Col>
-              <Col>
+              {/* <Col>
                 <div>
                   <Label htmlFor="formFile" className="form-label">
                     ID Proof
@@ -2466,28 +2482,40 @@ const EmployeeForm = () => {
                     onChange={(e) => handleFileUpload(e, "id_proof")}
                   />
                 </div>
-              </Col>
+              </Col> */}
+
+
+              {/* <div>{selectedFileName && `Selected File Name: ${selectedFileName}`}</div> */}
+              {selectedFileName ? (
+                <div>
+                  {/* Show the file name and close button if a file is selected */}
+                  <p>Selected ID Proof: {selectedFileName}</p>
+                  <button onClick={handleClearFile}>
+                    <i className="ri-close-line fs-16"></i>
+                  </button>
+                </div>
+              ) : (
+                <Col>
+                  <div>
+                    <Label htmlFor="formFile" className="form-label">
+                      ID Proof
+                    </Label>
+                    <Input
+                      className="form-control"
+                      type="file"
+                      accept=".doc, .docx, .xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
+                      id="formFile"
+                      onChange={(e) => handleFileUpload(e, "id_proof")}
+                    />
+                  </div>
+                </Col>
+              )}
               <div id="passwordHelpBlock" className="form-text mb-3">
+                {!selectedFileName && <p>Select ID Proof.</p>}
 
-                {/* <div>{selectedFileName && `Selected File Name: ${selectedFileName}`}</div> */}
-                {selectedFileName && (
-                  <div>
-                    {/* Show the file name and close button if a file is selected */}
-                    <p>Selected File Name: {selectedFileName}</p>
-                    <button onClick={handleClearFile}>Close File</button>
-                  </div>
-                )}
-                {!selectedFileName && (
-                  <div>
-                    {/* Show the "choose file" column if no file is selected */}
-                    <p>Choose File Column</p>
-                  </div>
-                )}
-
-                Select ID Proof.
               </div>
 
-              <Col>
+              {/* <Col>
                 <div>
                   <Label htmlFor="formFile" className="form-label">
                     File 1
@@ -2500,12 +2528,37 @@ const EmployeeForm = () => {
                     onChange={(e) => handleFileUpload(e, "file_1")}
                   />
                 </div>
-              </Col>
+              </Col> */}
+
+              {selectedFileName1 ? (
+                <div>
+                  {/* Show the file name and close button if a file is selected for File 1 */}
+                  <p>Selected File 1 Name: {selectedFileName1}</p>
+                  <button onClick={handleClearFile1}>
+                    <i className="ri-close-line fs-16"></i>
+                  </button>
+                </div>
+              ) : (
+                <Col>
+                  <div>
+                    <Label htmlFor="formFile" className="form-label">
+                      File 1
+                    </Label>
+                    <Input
+                      className="form-control"
+                      type="file"
+                      accept=".doc, .docx,.xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
+                      id="formFile"
+                      onChange={(e) => handleFileUpload(e, "file_1")}
+                    />
+                  </div>
+                </Col>
+              )}
               <div id="passwordHelpBlock" className="form-text mb-3">
-                <div>{selectedFileName1 && `Selected File Name: ${selectedFileName1}`}</div>
-                Select File 1.
+                {!selectedFileName1 && <p>Select File 1.</p>}
+
               </div>
-              <Col>
+              {/* <Col>
                 <div>
                   <Label htmlFor="formFile" className="form-label">
                     File 2
@@ -2518,12 +2571,37 @@ const EmployeeForm = () => {
                     onChange={(e) => handleFileUpload(e, "file_2")}
                   />
                 </div>
-              </Col>
+              </Col> */}
+
+              {selectedFileName2 ? (
+                <div>
+                  {/* Show the file name and close button if a file is selected */}
+                  <p>Selected File 2 Name: {selectedFileName2}</p>
+                  <button onClick={handleClearFile2}>
+                    <i className="ri-close-line fs-16"></i>
+                  </button>
+                </div>
+              ) : (
+                <Col>
+                  <div>
+                    <Label htmlFor="formFile" className="form-label">
+                      File 2
+                    </Label>
+                    <Input
+                      className="form-control"
+                      type="file"
+                      accept=".doc, .docx, .xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
+                      id="formFile"
+                      onChange={(e) => handleFileUpload(e, "file_2")}
+                    />
+                  </div>
+                </Col>
+              )}
               <div id="passwordHelpBlock" className="form-text mb-3">
-                <div>{selectedFileName2 && `Selected File Name: ${selectedFileName2}`}</div>
-                Select File 2.
+                {!selectedFileName2 && <p>Select File 2.</p>}
+
               </div>
-              <Col>
+              {/* <Col>
                 <div>
                   <Label htmlFor="formFile" className="form-label">
                     File 3
@@ -2536,12 +2614,36 @@ const EmployeeForm = () => {
                     onChange={(e) => handleFileUpload(e, "file_3")}
                   />
                 </div>
-              </Col>
+              </Col> */}
+              {selectedFileName3 ? (
+                <div>
+                  {/* Show the file name and close button if a file is selected */}
+                  <p>Selected File 3 Name: {selectedFileName3}</p>
+                  <button onClick={handleClearFile3}>
+                    <i className="ri-close-line fs-16"></i>
+                  </button>
+                </div>
+              ) : (
+                <Col>
+                  <div>
+                    <Label htmlFor="formFile" className="form-label">
+                      File 3
+                    </Label>
+                    <Input
+                      className="form-control"
+                      type="file"
+                      accept=".doc, .docx, .xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
+                      id="formFile"
+                      onChange={(e) => handleFileUpload(e, "file_3")}
+                    />
+                  </div>
+                </Col>
+              )}
               <div id="passwordHelpBlock" className="form-text mb-3">
-                <div>{selectedFileName3 && `Selected File Name: ${selectedFileName3}`}</div>
-                Select File 3.
+                {!selectedFileName3 && <p>Select File 3.</p>}
+
               </div>
-              <Col>
+              {/* <Col>
                 <div>
                   <Label htmlFor="formFile" className="form-label">
                     File 4
@@ -2554,12 +2656,36 @@ const EmployeeForm = () => {
                     onChange={(e) => handleFileUpload(e, "file_4")}
                   />
                 </div>
-              </Col>
+              </Col> */}
+              {selectedFileName4 ? (
+                <div>
+                  {/* Show the file name and close button if a file is selected */}
+                  <p>Selected File 4 Name: {selectedFileName4}</p>
+                  <button onClick={handleClearFile4}>
+                    <i className="ri-close-line fs-16"></i>
+                  </button>
+                </div>
+              ) : (
+                <Col>
+                  <div>
+                    <Label htmlFor="formFile" className="form-label">
+                      File 4
+                    </Label>
+                    <Input
+                      className="form-control"
+                      type="file"
+                      accept=".doc, .docx, .xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
+                      id="formFile"
+                      onChange={(e) => handleFileUpload(e, "file_4")}
+                    />
+                  </div>
+                </Col>
+              )}
               <div id="passwordHelpBlock" className="form-text mb-3">
-                <div>{selectedFileName4 && `Selected File Name: ${selectedFileName4}`}</div>
-                Select File 4.
+                {!selectedFileName4 && <p>Select File 4.</p>}
+
               </div>
-              <Col>
+              {/* <Col>
                 <div>
                   <Label htmlFor="formFile" className="form-label">
                     File 5
@@ -2572,10 +2698,34 @@ const EmployeeForm = () => {
                     onChange={(e) => handleFileUpload(e, "file_5")}
                   />
                 </div>
-              </Col>
+              </Col> */}
+              {selectedFileName5 ? (
+                <div>
+                  {/* Show the file name and close button if a file is selected */}
+                  <p>Selected File 5 Name: {selectedFileName5}</p>
+                  <button onClick={handleClearFile5}>
+                    <i className="ri-close-line fs-16"></i>
+                  </button>
+                </div>
+              ) : (
+                <Col>
+                  <div>
+                    <Label htmlFor="formFile" className="form-label">
+                      File 5
+                    </Label>
+                    <Input
+                      className="form-control"
+                      type="file"
+                      accept=".doc, .docx, .xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
+                      id="formFile"
+                      onChange={(e) => handleFileUpload(e, "file_5")}
+                    />
+                  </div>
+                </Col>
+              )}
               <div id="passwordHelpBlock" className="form-text mb-3">
-                <div>{selectedFileName5 && `Selected File Name: ${selectedFileName5}`}</div>
-                Select File 5.
+                {!selectedFileName5 && <p>Select File 5.</p>}
+
               </div>
               {/* <Col lg={12}>
               <Label htmlFor="formFile" className="form-label"> Other Documents</Label>
