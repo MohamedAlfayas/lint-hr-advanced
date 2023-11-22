@@ -339,7 +339,8 @@ const PayRollConfig = () => {
                       <Nav
                         pills
                         className="flex-column text-left"
-                        id="v-pills-tab">
+                        id="v-pills-tab"
+                      >
                         <NavItem>
                           <NavLink
                             style={{ cursor: "pointer" }}
@@ -350,7 +351,8 @@ const PayRollConfig = () => {
                             onClick={() => {
                               toggleVertical("1");
                             }}
-                            id="v-pills-home-tab">
+                            id="v-pills-home-tab"
+                          >
                             General
                           </NavLink>
                         </NavItem>
@@ -364,7 +366,8 @@ const PayRollConfig = () => {
                             onClick={() => {
                               toggleVertical("2");
                             }}
-                            id="v-pills-profile-tab">
+                            id="v-pills-profile-tab"
+                          >
                             Pay Cycles
                           </NavLink>
                         </NavItem>
@@ -378,7 +381,8 @@ const PayRollConfig = () => {
                             onClick={() => {
                               toggleVertical("3");
                             }}
-                            id="v-pills-messages-tab">
+                            id="v-pills-messages-tab"
+                          >
                             Basic Components
                           </NavLink>
                         </NavItem>
@@ -391,7 +395,8 @@ const PayRollConfig = () => {
                             onClick={() => {
                               toggleVertical("4");
                             }}
-                            id="v-pills-settings-tab">
+                            id="v-pills-settings-tab"
+                          >
                             Salary Components
                           </NavLink>
                         </NavItem>
@@ -404,7 +409,8 @@ const PayRollConfig = () => {
                             onClick={() => {
                               toggleVertical("5");
                             }}
-                            id="v-pills-settings-tab">
+                            id="v-pills-settings-tab"
+                          >
                             Salary Policies
                           </NavLink>
                         </NavItem>
@@ -414,7 +420,8 @@ const PayRollConfig = () => {
                       <TabContent
                         activeTab={verticalTab}
                         className="text-muted mt-4 mt-md-0"
-                        id="v-pills-tabContent">
+                        id="v-pills-tabContent"
+                      >
                         {/* General Tab Start */}
                         <TabPane tabId="1" id="v-pills-home">
                           <div className="d-flex mb-2">
@@ -423,7 +430,8 @@ const PayRollConfig = () => {
                                 <div>
                                   <Label
                                     htmlFor="location"
-                                    className="form-label">
+                                    className="form-label"
+                                  >
                                     Location
                                   </Label>
                                   <div>
@@ -445,7 +453,8 @@ const PayRollConfig = () => {
                                   </div>
                                   <div
                                     id="passwordHelpBlock"
-                                    className="form-text mb-3">
+                                    className="form-text mb-3"
+                                  >
                                     Select Payroll Country.
                                   </div>
                                 </div>
@@ -454,7 +463,8 @@ const PayRollConfig = () => {
                                 <div>
                                   <Label
                                     htmlFor="currency"
-                                    className="form-label">
+                                    className="form-label"
+                                  >
                                     Currency
                                   </Label>
                                   <div>
@@ -476,7 +486,8 @@ const PayRollConfig = () => {
                                   </div>
                                   <div
                                     id="passwordHelpBlock"
-                                    className="form-text mb-3">
+                                    className="form-text mb-3"
+                                  >
                                     Select Payroll Currency.
                                   </div>
                                 </div>
@@ -485,7 +496,8 @@ const PayRollConfig = () => {
                                 <div>
                                   <Label
                                     htmlFor="calculation"
-                                    className="form-label">
+                                    className="form-label"
+                                  >
                                     Calculate Monthly Salary Based On
                                   </Label>
                                   <div>
@@ -507,7 +519,8 @@ const PayRollConfig = () => {
                                   </div>
                                   <div
                                     id="passwordHelpBlock"
-                                    className="form-text mb-3">
+                                    className="form-text mb-3"
+                                  >
                                     Select Calculate Monthly Salary Based On.
                                   </div>
                                 </div>
@@ -517,7 +530,8 @@ const PayRollConfig = () => {
                                   <Button
                                     type="submit"
                                     color="success"
-                                    className="btn-label">
+                                    className="btn-label"
+                                  >
                                     {" "}
                                     <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
                                     Save{" "}
@@ -561,7 +575,8 @@ const PayRollConfig = () => {
                                 <div>
                                   <Label
                                     htmlFor="pc_name"
-                                    className="form-label">
+                                    className="form-label"
+                                  >
                                     Name
                                   </Label>
                                   <div className="form-icon right">
@@ -577,7 +592,8 @@ const PayRollConfig = () => {
                                   </div>
                                   <div
                                     id="passwordHelpBlock"
-                                    className="form-text mb-3">
+                                    className="form-text mb-3"
+                                  >
                                     Enter Pay Cycle Name.
                                   </div>
                                 </div>
@@ -586,7 +602,8 @@ const PayRollConfig = () => {
                                 <div>
                                   <Label
                                     htmlFor="description"
-                                    className="form-label">
+                                    className="form-label"
+                                  >
                                     Description
                                   </Label>
                                   <div className="form-icon right">
@@ -596,12 +613,14 @@ const PayRollConfig = () => {
                                       className="form-control"
                                       id="description"
                                       value={payrollobj.pay_cycle.desc || ""}
-                                      placeholder="Enter description"></textarea>
+                                      placeholder="Enter description"
+                                    ></textarea>
                                     <i className="ri-file-list-3-line"></i>
                                   </div>
                                   <div
                                     id="passwordHelpBlock"
-                                    className="form-text mb-3">
+                                    className="form-text mb-3"
+                                  >
                                     Enter Description Of Pay Cycles.
                                   </div>
                                 </div>
@@ -610,7 +629,8 @@ const PayRollConfig = () => {
                                 <div>
                                   <Label
                                     htmlFor="calculation"
-                                    className="form-label">
+                                    className="form-label"
+                                  >
                                     Effective From
                                   </Label>
                                   <div>
@@ -628,7 +648,8 @@ const PayRollConfig = () => {
                                   </div>
                                   <div
                                     id="passwordHelpBlock"
-                                    className="form-text mb-3">
+                                    className="form-text mb-3"
+                                  >
                                     Choose the day after 30 Nov 2023.
                                   </div>
                                 </div>
@@ -637,7 +658,8 @@ const PayRollConfig = () => {
                                 <div>
                                   <Label
                                     htmlFor="calculation"
-                                    className="form-label">
+                                    className="form-label"
+                                  >
                                     Repeat Every
                                   </Label>
                                   <div>
@@ -659,7 +681,8 @@ const PayRollConfig = () => {
                                   </div>
                                   <div
                                     id="passwordHelpBlock"
-                                    className="form-text mb-3">
+                                    className="form-text mb-3"
+                                  >
                                     Select Calculate Monthly Salary Based On.
                                   </div>
                                 </div>
@@ -668,7 +691,8 @@ const PayRollConfig = () => {
                                 <div>
                                   <Label
                                     htmlFor="calculation"
-                                    className="form-label">
+                                    className="form-label"
+                                  >
                                     Cut-off Date
                                   </Label>
                                   <div>
@@ -690,7 +714,8 @@ const PayRollConfig = () => {
                                   </div>
                                   <div
                                     id="passwordHelpBlock"
-                                    className="form-text mb-3">
+                                    className="form-text mb-3"
+                                  >
                                     This is the latest date that payroll
                                     information should be submitted to calculate
                                     payroll.
@@ -702,7 +727,8 @@ const PayRollConfig = () => {
                                   <Button
                                     type="submit"
                                     color="success"
-                                    className="btn-label">
+                                    className="btn-label"
+                                  >
                                     {" "}
                                     <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
                                     Save{" "}
@@ -745,7 +771,8 @@ const PayRollConfig = () => {
                             <Col xxl={12}>
                               <Nav
                                 tabs
-                                className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3">
+                                className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3"
+                              >
                                 <NavItem>
                                   <NavLink
                                     style={{ cursor: "pointer" }}
@@ -754,7 +781,8 @@ const PayRollConfig = () => {
                                     })}
                                     onClick={() => {
                                       toggleCustom("1");
-                                    }}>
+                                    }}
+                                  >
                                     ESI{" "}
                                     <small>
                                       {"(Employees state insurance)"}
@@ -769,7 +797,8 @@ const PayRollConfig = () => {
                                     })}
                                     onClick={() => {
                                       toggleCustom("2");
-                                    }}>
+                                    }}
+                                  >
                                     EPF{" "}
                                     <small>
                                       {"(Employees' Provident Fund)"}
@@ -784,7 +813,8 @@ const PayRollConfig = () => {
                                     })}
                                     onClick={() => {
                                       toggleCustom("3");
-                                    }}>
+                                    }}
+                                  >
                                     Professional Tax
                                   </NavLink>
                                 </NavItem>
@@ -796,7 +826,8 @@ const PayRollConfig = () => {
                                     })}
                                     onClick={() => {
                                       toggleCustom("4");
-                                    }}>
+                                    }}
+                                  >
                                     LABOUR WELFARE FUND
                                   </NavLink>
                                 </NavItem>
@@ -804,14 +835,16 @@ const PayRollConfig = () => {
 
                               <TabContent
                                 activeTab={customActiveTab}
-                                className="text-muted">
+                                className="text-muted"
+                              >
                                 {/* ESI Tab */}
                                 <TabPane tabId="1" id="home1">
                                   <div className="d-flex">
                                     <Col
                                       xxl={12}
                                       sm={12}
-                                      className="project-card">
+                                      className="project-card"
+                                    >
                                       <Card>
                                         <CardBody>
                                           <div
@@ -819,13 +852,15 @@ const PayRollConfig = () => {
                                               payrollobj.basic_components.esi
                                                 ? "success"
                                                 : "dark"
-                                            }-subtle rounded-top`}>
+                                            }-subtle rounded-top`}
+                                          >
                                             <div className="d-flex align-items-center">
                                               <div className="flex-grow-1">
                                                 <h5 className="mb-0 fs-14">
                                                   <Link
                                                     to="#"
-                                                    className="text-body">
+                                                    className="text-body"
+                                                  >
                                                     ESI
                                                   </Link>
                                                 </h5>
@@ -845,13 +880,15 @@ const PayRollConfig = () => {
                                                     />
                                                     <Label
                                                       className="form-check-label"
-                                                      for="enableESI">
+                                                      for="enableESI"
+                                                    >
                                                       Active
                                                     </Label>
                                                   </div>
                                                   <a
                                                     className="text-primary d-inline-block edit-item-btn ms-2"
-                                                    href="javascript:void(0)">
+                                                    href="javascript:void(0)"
+                                                  >
                                                     <i class="ri-pencil-fill fs-16"></i>
                                                   </a>
                                                 </div>
@@ -945,7 +982,8 @@ const PayRollConfig = () => {
                                     <Col
                                       xxl={12}
                                       sm={12}
-                                      className="project-card">
+                                      className="project-card"
+                                    >
                                       <Card>
                                         <CardBody>
                                           <div
@@ -954,13 +992,15 @@ const PayRollConfig = () => {
                                                 .is_active
                                                 ? "success"
                                                 : "dark"
-                                            }-subtle rounded-top`}>
+                                            }-subtle rounded-top`}
+                                          >
                                             <div className="d-flex align-items-center">
                                               <div className="flex-grow-1">
                                                 <h5 className="mb-0 fs-14">
                                                   <Link
                                                     to="#"
-                                                    className="text-body">
+                                                    className="text-body"
+                                                  >
                                                     EPF
                                                   </Link>
                                                 </h5>
@@ -981,7 +1021,8 @@ const PayRollConfig = () => {
                                                     />
                                                     <Label
                                                       className="form-check-label"
-                                                      for="enableEPF">
+                                                      for="enableEPF"
+                                                    >
                                                       Active
                                                     </Label>
                                                   </div>
@@ -990,7 +1031,8 @@ const PayRollConfig = () => {
                                                       handleEPFEdit(0)
                                                     }
                                                     className="text-primary d-inline-block edit-item-btn ms-2"
-                                                    href="javascript:void(0)">
+                                                    href="javascript:void(0)"
+                                                  >
                                                     <i class="ri-pencil-fill fs-16"></i>
                                                   </a>
                                                 </div>
@@ -1091,7 +1133,8 @@ const PayRollConfig = () => {
                                     <Col
                                       xxl={12}
                                       sm={12}
-                                      className="project-card">
+                                      className="project-card"
+                                    >
                                       {(
                                         payrollobj.basic_components.pro_tax ||
                                         []
@@ -1103,13 +1146,15 @@ const PayRollConfig = () => {
                                                 item.is_active
                                                   ? "success"
                                                   : "dark"
-                                              }-subtle rounded-top`}>
+                                              }-subtle rounded-top`}
+                                            >
                                               <div className="d-flex align-items-center">
                                                 <div className="flex-grow-1">
                                                   <h5 className="mb-0 fs-14">
                                                     <Link
                                                       to="#"
-                                                      className="text-body">
+                                                      className="text-body"
+                                                    >
                                                       {item.company}
                                                       <span className="badge border border-dark text-body ms-2">
                                                         {item.tag}
@@ -1129,7 +1174,8 @@ const PayRollConfig = () => {
                                                       />
                                                       <Label
                                                         className="form-check-label"
-                                                        for="enableEPF">
+                                                        for="enableEPF"
+                                                      >
                                                         Active
                                                       </Label>
                                                     </div>
@@ -1140,7 +1186,8 @@ const PayRollConfig = () => {
                                                         )
                                                       }
                                                       className="text-primary d-inline-block edit-item-btn ms-2"
-                                                      href="javascript:void(0)">
+                                                      href="javascript:void(0)"
+                                                    >
                                                       <i class="ri-pencil-fill fs-16"></i>
                                                     </a>
                                                   </div>
@@ -1194,7 +1241,8 @@ const PayRollConfig = () => {
                                                             item.slabs
                                                           )
                                                         }
-                                                        className="link-success">
+                                                        className="link-success"
+                                                      >
                                                         View Tax Slabs
                                                       </Link>
                                                     </p>
@@ -1219,13 +1267,15 @@ const PayRollConfig = () => {
                                               .labour_fund
                                               ? "success"
                                               : "dark"
-                                          }-subtle rounded-top`}>
+                                          }-subtle rounded-top`}
+                                        >
                                           <div className="d-flex align-items-center">
                                             <div className="flex-grow-1">
                                               <h5 className="mb-0 fs-14">
                                                 <Link
                                                   to="#"
-                                                  className="text-body">
+                                                  className="text-body"
+                                                >
                                                   Tamil Nadu
                                                 </Link>
                                               </h5>
@@ -1246,7 +1296,8 @@ const PayRollConfig = () => {
                                                   />
                                                   <Label
                                                     className="form-check-label"
-                                                    for="enableEPF">
+                                                    for="enableEPF"
+                                                  >
                                                     Active
                                                   </Label>
                                                 </div>
@@ -1255,7 +1306,8 @@ const PayRollConfig = () => {
                                                     handleTaxEdit(0)
                                                   }
                                                   className="text-primary d-inline-block edit-item-btn ms-2"
-                                                  href="javascript:void(0)">
+                                                  href="javascript:void(0)"
+                                                >
                                                   <i class="ri-pencil-fill fs-16"></i>
                                                 </a>
                                               </div>
@@ -1309,7 +1361,8 @@ const PayRollConfig = () => {
                             <Col xxl={12}>
                               <Nav
                                 tabs
-                                className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3">
+                                className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3"
+                              >
                                 <NavItem>
                                   <NavLink
                                     style={{ cursor: "pointer" }}
@@ -1318,7 +1371,8 @@ const PayRollConfig = () => {
                                     })}
                                     onClick={() => {
                                       toggleCustom("1");
-                                    }}>
+                                    }}
+                                  >
                                     Earnings
                                   </NavLink>
                                 </NavItem>
@@ -1330,7 +1384,8 @@ const PayRollConfig = () => {
                                     })}
                                     onClick={() => {
                                       toggleCustom("2");
-                                    }}>
+                                    }}
+                                  >
                                     Allowances
                                   </NavLink>
                                 </NavItem>
@@ -1342,7 +1397,8 @@ const PayRollConfig = () => {
                                     })}
                                     onClick={() => {
                                       toggleCustom("3");
-                                    }}>
+                                    }}
+                                  >
                                     Deductions
                                   </NavLink>
                                 </NavItem>
@@ -1350,7 +1406,8 @@ const PayRollConfig = () => {
 
                               <TabContent
                                 activeTab={customActiveTab}
-                                className="text-muted">
+                                className="text-muted"
+                              >
                                 {/* Earnings Tab */}
                                 <TabPane tabId="1" id="home1">
                                   <Row>
@@ -1409,7 +1466,8 @@ const PayRollConfig = () => {
                                                       <div className="hstack gap-3 fs-15">
                                                         <Link
                                                           to="#"
-                                                          className="link-primary">
+                                                          className="link-primary"
+                                                        >
                                                           <i className="ri-edit-2-line"></i>
                                                         </Link>
                                                       </div>
@@ -1484,7 +1542,8 @@ const PayRollConfig = () => {
                                                       <div className="hstack gap-3 fs-15">
                                                         <Link
                                                           to="#"
-                                                          className="link-primary">
+                                                          className="link-primary"
+                                                        >
                                                           <i className="ri-edit-2-line"></i>
                                                         </Link>
                                                       </div>
@@ -1559,7 +1618,8 @@ const PayRollConfig = () => {
                                                       <div className="hstack gap-3 fs-15">
                                                         <Link
                                                           to="#"
-                                                          className="link-primary">
+                                                          className="link-primary"
+                                                        >
                                                           <i className="ri-edit-2-line"></i>
                                                         </Link>
                                                       </div>
@@ -1627,7 +1687,8 @@ const PayRollConfig = () => {
           show_taxSlabModal();
         }}
         modalClassName="zoomIn"
-        centered>
+        centered
+      >
         <ModalHeader>
           <h5 className="modal-title" id="staticBackdropLabel">
             Tax Slabs for Lintcloud It Service Pvt Ltd
@@ -1666,7 +1727,8 @@ const PayRollConfig = () => {
               <Link
                 to="#"
                 className="btn btn-link link-success fw-medium"
-                onClick={() => setmodal_animationZoom(false)}>
+                onClick={() => setmodal_animationZoom(false)}
+              >
                 <i className="ri-close-line me-1 align-middle"></i> Close
               </Link>
             </div>
