@@ -39,6 +39,12 @@ const RightSideBarReducer = createSlice({
                 form_obj: action.payload
             }
         },
+        setTaxObj: (state, action) => {
+            return {
+                ...state,
+                tax_obj: action.payload
+            }
+        },
         setFormWidthPercentage: (state, action) => {
             return {
                 ...state,
@@ -58,6 +64,7 @@ const RightSideBarReducer = createSlice({
                 showISB: true,
                 form_title: "LC Form",
                 form_obj: {},
+                tax_obj:{},
                 form_width_percentage: "30%",
                 component_to_show : "default"
             }
@@ -70,6 +77,7 @@ export const {
     toggleISBView,
     setFormTitle,
     setFormObj,
+    setTaxObj,
     setFormWidthPercentage,
     resetForm,
     setComponentToShow,

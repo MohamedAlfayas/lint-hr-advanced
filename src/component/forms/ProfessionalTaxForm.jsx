@@ -17,6 +17,7 @@ import {
   Label,
   Row,
   UncontrolledDropdown,
+  Table,
 } from "reactstrap";
 
 const ProfessionalTaxForm = () => {
@@ -29,6 +30,32 @@ const ProfessionalTaxForm = () => {
     ],
     []
   );
+  const [tableData, setTableData] = useState([
+    { id: 1, start: 0, end: 21000, amount: 0 },
+    { id: 2, start: 21001, end: 30000, amount: 135 },
+    { id: 3, start: 30001, end: 45000, amount: 315 },
+    { id: 4, start: 45001, end: 60000, amount: 690 },
+    { id: 5, start: 60001, end: 75000, amount: 1025 },
+    { id: 6, start: 75001, end: 999999999, amount: 1250 },
+  ]);
+
+  // Function to handle adding a new row
+  const addRow = () => {
+    const newRow = {
+      id: tableData.length + 1,
+      start: 0,
+      end: 0,
+      amount: 0,
+    };
+    setTableData([...tableData, newRow]);
+  };
+  const deleteRow = (id) => {
+    setTableData((prevData) => prevData.filter((row) => row.id !== id));
+  };
+  const saveData = () => {
+    
+    console.log('Saving data:', tableData);
+  };
   return (
     <React.Fragment>
       <Row>
@@ -68,7 +95,87 @@ const ProfessionalTaxForm = () => {
                 Please select Deduction Cycle.
               </div>
             </Col>
+            <Table>
+              <thead>
+                <tr>
+                 
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tableData.map((row) => (
+                  <tr key={row.id}>
+                  
+                    <td>
+                      <Input
+                        type="number"
+                        value={row.start}
+                        onChange={(e) =>
+                          setTableData((prevData) =>
+                            prevData.map((prevRow) =>
+                              prevRow.id === row.id
+                                ? { ...prevRow, start: e.target.value }
+                                : prevRow
+                            )
+                          )
+                        }
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        type="number"
+                        value={row.end}
+                        onChange={(e) =>
+                          setTableData((prevData) =>
+                            prevData.map((prevRow) =>
+                              prevRow.id === row.id
+                                ? { ...prevRow, end: e.target.value }
+                                : prevRow
+                            )
+                          )
+                        }
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        type="number"
+                        value={row.amount}
+                        onChange={(e) =>
+                          setTableData((prevData) =>
+                            prevData.map((prevRow) =>
+                              prevRow.id === row.id
+                                ? { ...prevRow, amount: e.target.value }
+                                : prevRow
+                            )
+                          )
+                        }
+                      />
+                    </td>
+                    <td>
+                      <Button color="danger" onClick={() => deleteRow(row.id)}>
+                      <i className="ri-delete-bin-5-fill fs-16"></i>
+                       
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+
+            {/* Add Row and Save buttons */}
+            <Button color="primary" onClick={addRow}>
+            <i className="ri-add-line align-bottom me-1"></i>
+              Add 
+            </Button>{' '}
+            <Button type="submit" color="success" className="btn-label" onClick={saveData}>
+                    {" "}
+                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                    Save{" "}
+                  </Button>{" "}
           </Form>
+
         </Col>
       </Row>
     </React.Fragment>

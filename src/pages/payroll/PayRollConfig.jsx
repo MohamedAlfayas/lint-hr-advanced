@@ -296,10 +296,11 @@ const PayRollConfig = () => {
   };
 
   const handleTaxEdit = ($id, obj) => {
+    console.log('Calling handleTaxEdit with id:', $id, 'and object:', newDepObj);
     const depObj = $id === 0 ? newDepObj : obj;
     dispatch(setFormTitle("Edit Professional Tax"));
     dispatch(setFormObj(depObj));
-    dispatch(setFormWidthPercentage("35%"));
+    dispatch(setFormWidthPercentage("40%"));
     dispatch(setComponentToShow("ProfessionalTaxForm"));
     dispatch(toggleRSBView(true));
   };
