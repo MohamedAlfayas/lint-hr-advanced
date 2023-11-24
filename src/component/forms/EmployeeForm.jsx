@@ -50,6 +50,7 @@ const EmployeeForm = () => {
   const dispatch = useDispatch();
 
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+  // console.log("fgdf",form_obj);
   const [employeeObj, setEmployeeObj] = useState({});
 
   const dep_options = GetLocalStorageData("department") || [];

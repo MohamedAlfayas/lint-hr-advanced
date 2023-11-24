@@ -40,6 +40,7 @@ import {
   setFormTitle,
   setFormWidthPercentage,
   toggleRSBView,
+  setTaxSlab,
 } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { useDispatch } from "react-redux";
 import InfoTable from "../../component/common/table/InfoTable";
@@ -294,12 +295,15 @@ const PayRollConfig = () => {
     dispatch(setComponentToShow("EPFWageForm"));
     dispatch(toggleRSBView(true));
   };
-
+console.log('payroll',payrollobj);
   const handleTaxEdit = ($id, obj) => {
-    console.log('Calling handleTaxEdit with id:', $id, 'and object:', newDepObj);
+    console.log('Calling handleTaxEdit with id:', $id, 'and object:', obj);
     const depObj = $id === 0 ? newDepObj : obj;
     dispatch(setFormTitle("Edit Professional Tax"));
     dispatch(setFormObj(depObj));
+    const tax = $id === 1 ? tax_slab[0] : tax_slab[1]
+    dispatch(setTaxSlab(tax));
+    console.log('taxslap',tax);
     dispatch(setFormWidthPercentage("40%"));
     dispatch(setComponentToShow("ProfessionalTaxForm"));
     dispatch(toggleRSBView(true));
