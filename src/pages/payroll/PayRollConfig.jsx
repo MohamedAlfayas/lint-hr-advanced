@@ -64,6 +64,12 @@ const PayRollConfig = () => {
       setcustomActiveTab(tab);
     }
   };
+  const [customActiveTab1, setcustomActiveTab1] = useState("1");
+  const toggleCustom1 = (tab) => {
+    if (customActiveTab1 !== tab) {
+      setcustomActiveTab1(tab);
+    }
+  };
 
   const payrollobj = {
     general: {
@@ -287,7 +293,6 @@ const PayRollConfig = () => {
 
   const handleEPFEdit = ($id, obj) => {
     console.log("Dep Edit = ", obj);
-
     const depObj = $id === 0 ? newDepObj : obj;
     dispatch(setFormTitle("Edit EPF"));
     dispatch(setFormObj(depObj));
@@ -295,17 +300,25 @@ const PayRollConfig = () => {
     dispatch(setComponentToShow("EPFWageForm"));
     dispatch(toggleRSBView(true));
   };
-console.log('payroll',payrollobj);
+
   const handleTaxEdit = ($id, obj) => {
-    console.log('Calling handleTaxEdit with id:', $id, 'and object:', obj);
-    const depObj = $id === 0 ? newDepObj : obj;
+    console.log('Calling handleTaxEdit with id:', $id, 'and object:', tax_slab);
+    
     dispatch(setFormTitle("Edit Professional Tax"));
-    dispatch(setFormObj(depObj));
-    const tax = $id === 1 ? tax_slab[0] : tax_slab[1]
-    dispatch(setTaxSlab(tax));
-    console.log('taxslap',tax);
+    let tax_slab_obj = tax_slab.filter((data) => data.id == $id);
+    dispatch(setFormObj(tax_slab_obj[0]));
+
+    console.log("test....", tax_slab_obj)
+
     dispatch(setFormWidthPercentage("40%"));
     dispatch(setComponentToShow("ProfessionalTaxForm"));
+    dispatch(toggleRSBView(true));
+  };
+  
+  const handleEaringAdd = () => {
+    dispatch(setFormTitle("Edit Earning"));
+    dispatch(setFormWidthPercentage("40%"));
+    dispatch(setComponentToShow("SalaryCmpntForm"));
     dispatch(toggleRSBView(true));
   };
 
@@ -853,11 +866,10 @@ console.log('payroll',payrollobj);
                                       <Card>
                                         <CardBody>
                                           <div
-                                            className={`p-3 mt-n3 mx-n3 bg-${
-                                              payrollobj.basic_components.esi
+                                            className={`p-3 mt-n3 mx-n3 bg-${payrollobj.basic_components.esi
                                                 ? "success"
                                                 : "dark"
-                                            }-subtle rounded-top`}
+                                              }-subtle rounded-top`}
                                           >
                                             <div className="d-flex align-items-center">
                                               <div className="flex-grow-1">
@@ -881,6 +893,7 @@ console.log('payroll',payrollobj);
                                                       checked={
                                                         payrollobj
                                                           .basic_components.esi
+                                                           .is_active
                                                       }
                                                     />
                                                     <Label
@@ -890,12 +903,7 @@ console.log('payroll',payrollobj);
                                                       Active
                                                     </Label>
                                                   </div>
-                                                  <a
-                                                    className="text-primary d-inline-block edit-item-btn ms-2"
-                                                    href="javascript:void(0)"
-                                                  >
-                                                    <i class="ri-pencil-fill fs-16"></i>
-                                                  </a>
+
                                                 </div>
                                               </div>
                                             </div>
@@ -992,12 +1000,11 @@ console.log('payroll',payrollobj);
                                       <Card>
                                         <CardBody>
                                           <div
-                                            className={`p-3 mt-n3 mx-n3 bg-${
-                                              payrollobj.basic_components.epf
+                                            className={`p-3 mt-n3 mx-n3 bg-${payrollobj.basic_components.epf
                                                 .is_active
                                                 ? "success"
                                                 : "dark"
-                                            }-subtle rounded-top`}
+                                              }-subtle rounded-top`}
                                           >
                                             <div className="d-flex align-items-center">
                                               <div className="flex-grow-1">
@@ -1070,12 +1077,12 @@ console.log('payroll',payrollobj);
                                                     {payrollobj.basic_components
                                                       .epf.epf_cycle
                                                       ? EPFCycle.find(
-                                                          (obj) =>
-                                                            obj.id ===
-                                                            payrollobj
-                                                              .basic_components
-                                                              .epf.epf_cycle
-                                                        ).Employee
+                                                        (obj) =>
+                                                          obj.id ===
+                                                          payrollobj
+                                                            .basic_components
+                                                            .epf.epf_cycle
+                                                      ).Employee
                                                       : []}
                                                   </h5>
                                                 </div>
@@ -1089,12 +1096,12 @@ console.log('payroll',payrollobj);
                                                     {payrollobj.basic_components
                                                       .epf.epf_cycle
                                                       ? EPFCycle.find(
-                                                          (obj) =>
-                                                            obj.id ===
-                                                            payrollobj
-                                                              .basic_components
-                                                              .epf.epf_cycle
-                                                        ).Employer
+                                                        (obj) =>
+                                                          obj.id ===
+                                                          payrollobj
+                                                            .basic_components
+                                                            .epf.epf_cycle
+                                                      ).Employer
                                                       : []}
                                                   </h5>
                                                 </div>
@@ -1147,11 +1154,10 @@ console.log('payroll',payrollobj);
                                         <Card key={key}>
                                           <CardBody>
                                             <div
-                                              className={`p-3 mt-n3 mx-n3 bg-${
-                                                item.is_active
+                                              className={`p-3 mt-n3 mx-n3 bg-${item.is_active
                                                   ? "success"
                                                   : "dark"
-                                              }-subtle rounded-top`}
+                                                }-subtle rounded-top`}
                                             >
                                               <div className="d-flex align-items-center">
                                                 <div className="flex-grow-1">
@@ -1267,12 +1273,11 @@ console.log('payroll',payrollobj);
                                     <Card>
                                       <CardBody>
                                         <div
-                                          className={`p-3 mt-n3 mx-n3 bg-${
-                                            payrollobj.basic_components
+                                          className={`p-3 mt-n3 mx-n3 bg-${payrollobj.basic_components
                                               .labour_fund
                                               ? "success"
                                               : "dark"
-                                          }-subtle rounded-top`}
+                                            }-subtle rounded-top`}
                                         >
                                           <div className="d-flex align-items-center">
                                             <div className="flex-grow-1">
@@ -1306,15 +1311,7 @@ console.log('payroll',payrollobj);
                                                     Active
                                                   </Label>
                                                 </div>
-                                                <a
-                                                  onClick={() =>
-                                                    handleTaxEdit(0)
-                                                  }
-                                                  className="text-primary d-inline-block edit-item-btn ms-2"
-                                                  href="javascript:void(0)"
-                                                >
-                                                  <i class="ri-pencil-fill fs-16"></i>
-                                                </a>
+
                                               </div>
                                             </div>
                                           </div>
@@ -1372,10 +1369,10 @@ console.log('payroll',payrollobj);
                                   <NavLink
                                     style={{ cursor: "pointer" }}
                                     className={classnames({
-                                      active: customActiveTab === "1",
+                                      active: customActiveTab1 === "1",
                                     })}
                                     onClick={() => {
-                                      toggleCustom("1");
+                                      toggleCustom1("1");
                                     }}
                                   >
                                     Earnings
@@ -1385,10 +1382,10 @@ console.log('payroll',payrollobj);
                                   <NavLink
                                     style={{ cursor: "pointer" }}
                                     className={classnames({
-                                      active: customActiveTab === "2",
+                                      active: customActiveTab1 === "2",
                                     })}
                                     onClick={() => {
-                                      toggleCustom("2");
+                                      toggleCustom1("2");
                                     }}
                                   >
                                     Allowances
@@ -1398,10 +1395,10 @@ console.log('payroll',payrollobj);
                                   <NavLink
                                     style={{ cursor: "pointer" }}
                                     className={classnames({
-                                      active: customActiveTab === "3",
+                                      active: customActiveTab1 === "3",
                                     })}
                                     onClick={() => {
-                                      toggleCustom("3");
+                                      toggleCustom1("3");
                                     }}
                                   >
                                     Deductions
@@ -1410,7 +1407,7 @@ console.log('payroll',payrollobj);
                               </Nav>
 
                               <TabContent
-                                activeTab={customActiveTab}
+                                activeTab={customActiveTab1}
                                 className="text-muted"
                               >
                                 {/* Earnings Tab */}
@@ -1473,7 +1470,9 @@ console.log('payroll',payrollobj);
                                                           to="#"
                                                           className="link-primary"
                                                         >
-                                                          <i className="ri-edit-2-line"></i>
+                                                          <i className="ri-pencil-fill fs-16"></i>
+                                                          <span style={{ margin: '0 5px' }}></span>
+                                                          <i className="ri-delete-bin-5-fill fs-16"></i>
                                                         </Link>
                                                       </div>
                                                     </td>
@@ -1482,6 +1481,12 @@ console.log('payroll',payrollobj);
                                               )}
                                             </tbody>
                                           </Table>
+                                          <Button color="primary" onClick={() =>{
+                                                        handleEaringAdd();}
+                                              }>
+                                            <i className="ri-add-line align-bottom me-1"></i>
+                                            Add
+                                          </Button>{' '}
                                         </div>
                                       </div>
                                     </Col>

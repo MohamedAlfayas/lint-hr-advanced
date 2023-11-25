@@ -19,14 +19,16 @@ import {
   UncontrolledDropdown,
   Table,
 } from "reactstrap";
-import { setTaxSlab } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
+
 
 const ProfessionalTaxForm = () => {
-  const dispatch = useDispatch();
-  const { tax_slab} = useSelector((state) => state.RightSideBarReducer);
-  console.log("fghj",tax_slab);
-  const [tableData, setTableData] = useState([]);
+ 
+  const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+  console.log("fghj",form_obj.range.length);
+  const [tableData, setTableData] = useState(form_obj.range);
 
+ 
+ 
   const deduction_cycle_option = useMemo(
     () => [
       { id: "1", label: "Monthly", value: "Monthly" },
@@ -47,12 +49,14 @@ const ProfessionalTaxForm = () => {
   // ]);
 
   // Function to handle adding a new row
+
+ 
   const addRow = () => {
     const newRow = {
       id: tableData.length + 1,
-      start: 0,
-      end: 0,
-      amount: 0,
+      s: 0,
+      e: 0,
+      tax: 0,
     };
     setTableData([...tableData, newRow]);
   };
@@ -72,17 +76,17 @@ const ProfessionalTaxForm = () => {
           <Form action="javascript:void(0)">
             <Col md={12} lg={12} xxl={12}>
               <div className="mb-3">
-                <Label htmlFor="emailid" className="form-label">
+                <Label htmlFor="tax_state" className="form-label">
                   Location
                 </Label>
                 <div className="form-icon right">
                   <Input
                     type="text"
-                    name="emp_id"
-                    id="employeeid"
+                    name="tax_state"
+                    id="tax_state"
                     className="form-control"
-                    placeholder="Employee ID"
-                    value="Tamil Nadu"
+                    placeholder="Tax State"
+                    value={form_obj.state}
                     disabled
                   />
                   <i className="ri-map-pin-user-line"></i>
@@ -120,12 +124,12 @@ const ProfessionalTaxForm = () => {
                     <td>
                       <Input
                         type="number"
-                        value={row.start}
+                        value={row.s}
                         onChange={(e) =>
                           setTableData((prevData) =>
                             prevData.map((prevRow) =>
                               prevRow.id === row.id
-                                ? { ...prevRow, start: e.target.value }
+                                ? { ...prevRow, s: e.target.value }
                                 : prevRow
                             )
                           )
@@ -135,12 +139,12 @@ const ProfessionalTaxForm = () => {
                     <td>
                       <Input
                         type="number"
-                        value={row.end}
+                        value={row.e}
                         onChange={(e) =>
                           setTableData((prevData) =>
                             prevData.map((prevRow) =>
                               prevRow.id === row.id
-                                ? { ...prevRow, end: e.target.value }
+                                ? { ...prevRow, e: e.target.value }
                                 : prevRow
                             )
                           )
@@ -150,12 +154,12 @@ const ProfessionalTaxForm = () => {
                     <td>
                       <Input
                         type="number"
-                        value={row.amount}
+                        value={row.tax}
                         onChange={(e) =>
                           setTableData((prevData) =>
                             prevData.map((prevRow) =>
                               prevRow.id === row.id
-                                ? { ...prevRow, amount: e.target.value }
+                                ? { ...prevRow, tax: e.target.value }
                                 : prevRow
                             )
                           )
@@ -164,7 +168,7 @@ const ProfessionalTaxForm = () => {
                     </td>
                     <td>
                       {index === tableData.length - 1 && ( // Only render delete button for the last row
-                        <Button color="danger" onClick={() => deleteRow(row.id)}>
+                        <Button color="danger" onClick={() => deleteRow(row.id)}  style={{ padding: '0.2rem 0.5rem', fontSize: '12px' }}>
                           <i className="ri-delete-bin-5-fill fs-16"></i>
                         </Button>
                       )}
