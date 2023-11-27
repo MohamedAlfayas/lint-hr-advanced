@@ -39,18 +39,6 @@ const ProfessionalTaxForm = () => {
     []
   );
   
-  // const [tableData, setTableData] = useState([
-  //   { id: 1, start: 0, end: 21000, amount: 0 },
-  //   { id: 2, start: 21001, end: 30000, amount: 135 },
-  //   { id: 3, start: 30001, end: 45000, amount: 315 },
-  //   { id: 4, start: 45001, end: 60000, amount: 690 },
-  //   { id: 5, start: 60001, end: 75000, amount: 1025 },
-  //   { id: 6, start: 75001, end: 999999999, amount: 1250 },
-  // ]);
-
-  // Function to handle adding a new row
-
- 
   const addRow = () => {
     const newRow = {
       id: tableData.length + 1,

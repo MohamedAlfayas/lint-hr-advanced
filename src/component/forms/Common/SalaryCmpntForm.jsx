@@ -23,12 +23,41 @@ import {
 
 const salaryCmpntForm = () => {
     const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+    const [customFieldObj, setCustomFieldObj] = useState(form_obj.name);
+    console.log("fghj", form_obj);
+
+
+    const contributionOptions = useMemo(
+        () => [
+            { id: "1", label: "ESI", value: "ESI" },
+            { id: "2", label: "EPF", value: "EPF" },
+        ],
+        []
+    );
+    useEffect(() => {
+        setCustomFieldObj(form_obj);
+    }, [form_obj]);
 
     return (
         <React.Fragment>
             <Row>
                 <Col md={12} lg={12} xxl={12} className="folder-card" key={1}>
                     <Form action="javascript:void(0)">
+                        <div className="mb-3">
+                            <Label htmlFor="pageSelection" className="form-label">
+                                Selected Page
+                            </Label>
+                            <select
+                                className="form-control"
+                                id="pageSelection"
+                            // value={selectedPage}
+                            // onChange={handlePageChange}
+                            >
+                                <option value="earnings">Earnings</option>
+                                <option value="allowances">Allowances</option>
+                                <option value="deductions">Deductions</option>
+                            </select>
+                        </div>
                         <Col md={12} lg={12} xxl={12}>
                             <div className="mb-3">
                                 <Label htmlFor="tax_state" className="form-label">
@@ -41,11 +70,11 @@ const salaryCmpntForm = () => {
                                         id="name"
                                         className="form-control"
                                         placeholder="Name"
-                                        value={form_obj.state}
-                                       
+                                    // value={form_obj.state}
+
                                     />
                                     <div id="passwordHelpBlock" className="form-text mb-3">
-                                        Select Contribution
+                                        Enter Name
                                     </div>
                                     <Col md={12} lg={12} xxl={12}>
                                         <div className="mb-3">
@@ -55,14 +84,14 @@ const salaryCmpntForm = () => {
                                             <Input
                                                 type="textarea"
                                                 className="form-control"
-                                                id="ws_desc"
-                                                //   value={workScheduleData.description || ""}
-                                                onChange={(e) =>
-                                                    setWorkScheduleData({
-                                                        ...workScheduleData,
-                                                        description: e.target.value,
-                                                    })
-                                                }
+                                                id="earn_desc"
+                                            //   value={workScheduleData.description || ""}
+                                            // onChange={(e) =>
+                                            //     setWorkScheduleData({
+                                            //         ...workScheduleData,
+                                            //         description: e.target.value,
+                                            //     })
+                                            // }
                                             />
                                         </div>
                                     </Col>
@@ -122,25 +151,16 @@ const salaryCmpntForm = () => {
                                     <Col lg={12}>
                                         <div>
                                             <Label htmlFor="subDepartment" className="form-label">
-                                                Sub Contribution
+                                                Contribution
                                             </Label>
                                             <Select
+                                                required
                                                 isMulti={true}
-                                                // options={subDepOptions || []}
+                                                name="contribute"
+                                                options={contributionOptions || []}
                                                 className="basic-multi-select"
-                                            // value={
-                                            //   employeeObj.sub_department
-                                            //     ? subDepOptions.filter((obj) =>
-                                            //       employeeObj.sub_department.includes(obj.id)
-                                            //     )
-                                            //     : []
-                                            // }
-                                            // onChange={(e) => {
-                                            //   setEmployeeObj({
-                                            //     ...employeeObj,
-                                            //     sub_department: e.map((obj) => obj.id),
-                                            //   });
-                                            // }}
+                                                // value={(form_obj.contribute && contributionOptions.filter(e => (form_obj.contribute).includes(e.value)))}
+                                                onChange={(e) => setCustomFieldObj({ ...customFieldObj, contribute: e.map(obj => obj.value) })}
                                             />
                                         </div>
                                         <div id="passwordHelpBlock" className="form-text mb-3">
@@ -150,7 +170,15 @@ const salaryCmpntForm = () => {
                                 </div>
                             </div>
                         </Col>
-
+                        <Col lg={12}>
+                            <div className="text-end">
+                                <Button type="submit" color="success" className="btn-label">
+                                    {" "}
+                                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                                    Save{" "}
+                                </Button>{" "}
+                            </div>
+                        </Col>
                     </Form>
 
                 </Col>

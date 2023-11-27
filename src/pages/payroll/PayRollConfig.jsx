@@ -315,8 +315,13 @@ const PayRollConfig = () => {
     dispatch(toggleRSBView(true));
   };
   
-  const handleEaringAdd = () => {
+  const handleEaringAdd = ($id) => {
     dispatch(setFormTitle("Edit Earning"));
+    
+    let earning_obj = payrollobj.salary_components.earnings.filter((data) => data.id == $id);
+    dispatch(setFormObj(earning_obj[0]));
+
+    console.log("earning",earning_obj);
     dispatch(setFormWidthPercentage("40%"));
     dispatch(setComponentToShow("SalaryCmpntForm"));
     dispatch(toggleRSBView(true));
@@ -339,6 +344,17 @@ const PayRollConfig = () => {
     { id: 3, name: "Sick Leave (SL)", type: "Day" },
     { id: 4, name: "Permission", type: "Hour" },
   ];
+  
+  const handleCreateAndUpdate =(item) => {
+    console.log('getid' , item);
+    dispatch(setFormTitle("Edit Earning"));
+    let earning_obj = payrollobj.salary_components.earnings.filter((data) => data.name == item?.name);
+    console.log("earnings",earning_obj);
+    dispatch(setFormObj(earning_obj[0]));
+    dispatch(setFormWidthPercentage("40%"));
+    dispatch(setComponentToShow("SalaryCmpntForm"));
+    dispatch(toggleRSBView(true));
+  }
 
   document.title = `PayRoll | ${MetaTitle || "Lint HR"} `;
 
@@ -1469,9 +1485,14 @@ const PayRollConfig = () => {
                                                         <Link
                                                           to="#"
                                                           className="link-primary"
+                                                          onClick={() => {
+                                                            handleCreateAndUpdate(item);
+                                                          }}
                                                         >
                                                           <i className="ri-pencil-fill fs-16"></i>
-                                                          <span style={{ margin: '0 5px' }}></span>
+                                                          </Link>
+                                                          <Link>
+                                                          <span style={{ margin: '0 2px' }}></span>
                                                           <i className="ri-delete-bin-5-fill fs-16"></i>
                                                         </Link>
                                                       </div>
@@ -1553,8 +1574,15 @@ const PayRollConfig = () => {
                                                         <Link
                                                           to="#"
                                                           className="link-primary"
+                                                          onClick={() => {
+                                                            handleCreateAndUpdate(item);
+                                                          }}
                                                         >
-                                                          <i className="ri-edit-2-line"></i>
+                                                          <i className="ri-pencil-fill fs-16"></i>
+                                                          </Link>
+                                                          <Link>
+                                                          <span style={{ margin: '0 2px' }}></span>
+                                                          <i className="ri-delete-bin-5-fill fs-16"></i>
                                                         </Link>
                                                       </div>
                                                     </td>
@@ -1563,6 +1591,12 @@ const PayRollConfig = () => {
                                               )}
                                             </tbody>
                                           </Table>
+                                          <Button color="primary" onClick={() =>{
+                                                        handleEaringAdd();}
+                                              }>
+                                            <i className="ri-add-line align-bottom me-1"></i>
+                                            Add
+                                          </Button>{' '}
                                         </div>
                                       </div>
                                     </Col>
@@ -1629,8 +1663,15 @@ const PayRollConfig = () => {
                                                         <Link
                                                           to="#"
                                                           className="link-primary"
+                                                          onClick={() => {
+                                                            handleCreateAndUpdate(item);
+                                                          }}
                                                         >
-                                                          <i className="ri-edit-2-line"></i>
+                                                          <i className="ri-pencil-fill fs-16"></i>
+                                                          </Link>
+                                                          <Link>
+                                                          <span style={{ margin: '0 2px' }}></span>
+                                                          <i className="ri-delete-bin-5-fill fs-16"></i>
                                                         </Link>
                                                       </div>
                                                     </td>
@@ -1639,6 +1680,12 @@ const PayRollConfig = () => {
                                               )}
                                             </tbody>
                                           </Table>
+                                          <Button color="primary" onClick={() =>{
+                                                        handleEaringAdd();}
+                                              }>
+                                            <i className="ri-add-line align-bottom me-1"></i>
+                                            Add
+                                          </Button>{' '}
                                         </div>
                                       </div>
                                     </Col>
