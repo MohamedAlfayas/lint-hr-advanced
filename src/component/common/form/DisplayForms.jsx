@@ -15,6 +15,7 @@ import ProfileViewMin from "../../forms/ProfileViewMin";
 import EPFWageForm from "../../forms/EPFWageForm";
 import ProfessionalTaxForm from "../../forms/ProfessionalTaxForm";
 import SalaryCmpntForm from "../../forms/Common/SalaryCmpntForm";
+import SalaryPloiciesForm from "../../forms/Common/SalaryPoliciesForm";
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
   const { form_title, form_width_percentage, component_to_show } = useSelector(
@@ -62,6 +63,8 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
                 <ProfessionalTaxForm />
               ) : component_to_show === "SalaryCmpntForm" ? (
                 <SalaryCmpntForm />
+              ) : component_to_show === "SalaryPoliciesForm" ? (
+                <SalaryPloiciesForm />
               ) : (
                 <></>
               )}

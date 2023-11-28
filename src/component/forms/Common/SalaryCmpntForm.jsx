@@ -23,7 +23,7 @@ import {
 
 const salaryCmpntForm = () => {
     const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-    const [customFieldObj, setCustomFieldObj] = useState(form_obj.name);
+    const [customFieldObj, setCustomFieldObj] = useState(form_obj);
     console.log("fghj", form_obj);
 
 
@@ -34,6 +34,13 @@ const salaryCmpntForm = () => {
         ],
         []
     );
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setCustomFieldObj({
+          ...customFieldObj,
+          [name]: value,
+        });
+      };
     useEffect(() => {
         setCustomFieldObj(form_obj);
     }, [form_obj]);
@@ -50,12 +57,12 @@ const salaryCmpntForm = () => {
                             <select
                                 className="form-control"
                                 id="pageSelection"
-                            // value={selectedPage}
-                            // onChange={handlePageChange}
+                            value={form_obj.type}
+                         disabled
                             >
-                                <option value="earnings">Earnings</option>
-                                <option value="allowances">Allowances</option>
-                                <option value="deductions">Deductions</option>
+                                <option value="1">Earnings</option>
+                                <option value="2">Allowances</option>
+                                <option value="3">Deductions</option>
                             </select>
                         </div>
                         <Col md={12} lg={12} xxl={12}>
@@ -70,7 +77,8 @@ const salaryCmpntForm = () => {
                                         id="name"
                                         className="form-control"
                                         placeholder="Name"
-                                    // value={form_obj.state}
+                                        value={customFieldObj.name || ""}
+                                    onChange={handleInputChange}
 
                                     />
                                     <div id="passwordHelpBlock" className="form-text mb-3">
@@ -85,22 +93,23 @@ const salaryCmpntForm = () => {
                                                 type="textarea"
                                                 className="form-control"
                                                 id="earn_desc"
-                                            //   value={workScheduleData.description || ""}
-                                            // onChange={(e) =>
-                                            //     setWorkScheduleData({
-                                            //         ...workScheduleData,
-                                            //         description: e.target.value,
-                                            //     })
-                                            // }
+                                                value={customFieldObj.desc || ""}
+                                                onChange={(e) =>
+                                                  setCustomFieldObj({
+                                                    ...customFieldObj,
+                                                    desc: e.target.value,
+                                                  })
+                                                }
                                             />
                                         </div>
                                     </Col>
                                     <div className="mb-3">
+                                        
                                         <Row>
-                                            <Col lg={6} sm={12}>
+                                            <Col lg={3} sm={3}>
                                                 <Label
                                                     className="form-label"
-                                                    htmlFor="gen-info-username-input">
+                                                    htmlFor="earnings_has_pro_rata">
                                                     Pro-rata
                                                 </Label>
                                             </Col>
@@ -110,7 +119,7 @@ const salaryCmpntForm = () => {
                                                     dir="ltr">
                                                     {" "}
                                                     <Input
-                                                        id="company_has_pf"
+                                                        id="earnings_has_pro_rata"
                                                         name="company_has_pf"
                                                         type="checkbox"
                                                         className="form-check-input"
@@ -123,10 +132,10 @@ const salaryCmpntForm = () => {
                                     </div>
                                     <div className="mb-3">
                                         <Row>
-                                            <Col lg={6} sm={12}>
+                                            <Col lg={3} sm={3}>
                                                 <Label
                                                     className="form-label"
-                                                    htmlFor="gen-info-username-input">
+                                                    htmlFor="earnings_has_taxable">
                                                     Taxable
                                                 </Label>
                                             </Col>
@@ -136,7 +145,33 @@ const salaryCmpntForm = () => {
                                                     dir="ltr">
                                                     {" "}
                                                     <Input
-                                                        id="company_has_pf"
+                                                        id="earnings_has_taxable"
+                                                        name="company_has_pf"
+                                                        type="checkbox"
+                                                        className="form-check-input"
+                                                    //   checked={payRollObj.company_has_pf}
+                                                    //   onChange={(e) => setPayRollObj({...payRollObj, company_has_pf : e.target.checked})}
+                                                    />
+                                                </div>
+                                            </Col>
+                                        </Row>
+                                    </div>
+                                    <div className="mb-3">
+                                        <Row>
+                                            <Col lg={3} sm={3}>
+                                                <Label
+                                                    className="form-label"
+                                                    htmlFor="earnings_has_insurance">
+                                                    Insurance&Fund
+                                                </Label>
+                                            </Col>
+                                            <Col lg={6} sm={12}>
+                                                <div
+                                                    className="form-check form-switch form-switch-md form-switch-success"
+                                                    dir="ltr">
+                                                    {" "}
+                                                    <Input
+                                                        id="earnings_has_insurance"
                                                         name="company_has_pf"
                                                         type="checkbox"
                                                         className="form-check-input"

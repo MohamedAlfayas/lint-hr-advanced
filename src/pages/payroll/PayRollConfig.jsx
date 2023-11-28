@@ -303,7 +303,7 @@ const PayRollConfig = () => {
 
   const handleTaxEdit = ($id, obj) => {
     console.log('Calling handleTaxEdit with id:', $id, 'and object:', tax_slab);
-    
+
     dispatch(setFormTitle("Edit Professional Tax"));
     let tax_slab_obj = tax_slab.filter((data) => data.id == $id);
     dispatch(setFormObj(tax_slab_obj[0]));
@@ -314,16 +314,95 @@ const PayRollConfig = () => {
     dispatch(setComponentToShow("ProfessionalTaxForm"));
     dispatch(toggleRSBView(true));
   };
-  
-  const handleEaringAdd = ($id) => {
-    dispatch(setFormTitle("Edit Earning"));
-    
-    let earning_obj = payrollobj.salary_components.earnings.filter((data) => data.id == $id);
-    dispatch(setFormObj(earning_obj[0]));
 
-    console.log("earning",earning_obj);
+
+  const initialFormObj = useMemo(() => {
+    return {
+      id: 0,
+      type: customActiveTab1,
+      name: "",
+      desc: "",
+      is_pro_rata: false,
+      is_taxable: false,
+      contribute: []
+
+    };
+  });
+
+  const handleEaringAdd = ($id) => {
+    const value = customActiveTab1 == 1 ? "Edit Earning" :
+    customActiveTab1 == 2 ? 'Edit Allowance' :
+    customActiveTab1 == 3 ? 'Edit Deduction' : ""
+    // dispatch(setFormTitle("Edit Earning"));
+    dispatch(setFormTitle(value));
+
+    if ($id == 0) {
+
+
+      dispatch(setFormObj(initialFormObj));
+
+
+    } else {
+      dispatch(setFormObj(earning_obj[0]));
+
+
+    }
     dispatch(setFormWidthPercentage("40%"));
     dispatch(setComponentToShow("SalaryCmpntForm"));
+    dispatch(toggleRSBView(true));
+  };
+  // const handleAllowencesAdd = ($id) => {
+  //   dispatch(setFormTitle("Edit Alowences"));
+
+  //   if ($id == 0) {
+
+
+  //     dispatch(setFormObj(initialFormObj));
+
+
+  //   } else {
+  //     dispatch(setFormObj(earning_obj[0]));
+
+
+  //   }
+  //   dispatch(setFormWidthPercentage("40%"));
+  //   dispatch(setComponentToShow("SalaryCmpntForm"));
+  //   dispatch(toggleRSBView(true));
+  // };
+  // const handleDeductionsAdd = ($id) => {
+  //   dispatch(setFormTitle("Edit Deductions"));
+
+  //   if ($id == 0) {
+
+
+  //     dispatch(setFormObj(initialFormObj));
+
+
+  //   } else {
+  //     dispatch(setFormObj(earning_obj[0]));
+
+
+  //   }
+  //   dispatch(setFormWidthPercentage("40%"));
+  //   dispatch(setComponentToShow("SalaryCmpntForm"));
+  //   dispatch(toggleRSBView(true));
+  // };
+  const handleSalaryPoliciesAdd = ($id) => {
+    dispatch(setFormTitle("Create policy"));
+
+    if ($id == 0) {
+
+
+      dispatch(setFormObj(initialFormObj));
+
+
+    } else {
+      dispatch(setFormObj(earning_obj[0]));
+
+
+    }
+    dispatch(setFormWidthPercentage("40%"));
+    dispatch(setComponentToShow("SalaryPoliciesForm"));
     dispatch(toggleRSBView(true));
   };
 
@@ -344,17 +423,34 @@ const PayRollConfig = () => {
     { id: 3, name: "Sick Leave (SL)", type: "Day" },
     { id: 4, name: "Permission", type: "Hour" },
   ];
-  
-  const handleCreateAndUpdate =(item) => {
-    console.log('getid' , item);
-    dispatch(setFormTitle("Edit Earning"));
-    let earning_obj = payrollobj.salary_components.earnings.filter((data) => data.name == item?.name);
-    console.log("earnings",earning_obj);
-    dispatch(setFormObj(earning_obj[0]));
+
+  const handleCreateAndUpdate = (item) => {
+    const value = customActiveTab1 == 1 ? "Edit Earning" :
+    customActiveTab1 == 2 ? 'Edit Allowance' :
+    customActiveTab1 == 3 ? 'Edit Deduction' : ""
+    // dispatch(setFormTitle("Edit Earning"));
+    dispatch(setFormTitle(value));
+    let componentType;
+    let componentObj;
+    
+    if (customActiveTab === 1) {
+      componentType = 'earnings';
+      componentObj = payrollobj.salary_components.earnings.find((data) => data.name === item?.name);
+    } else if (customActiveTab === 2) {
+      componentType = 'allowances';
+      componentObj = payrollobj.salary_components.allowances.find((data) => data.name === item?.name);
+    } else if (customActiveTab === 3) {
+      componentType = 'deductions';
+      componentObj = payrollobj.salary_components.deductions.find((data) => data.name === item?.name);
+    }
+    
+    console.log(`${componentType}:`, componentObj);
+    dispatch(setFormObj( deduction_obj[0]));
     dispatch(setFormWidthPercentage("40%"));
     dispatch(setComponentToShow("SalaryCmpntForm"));
     dispatch(toggleRSBView(true));
   }
+
 
   document.title = `PayRoll | ${MetaTitle || "Lint HR"} `;
 
@@ -883,8 +979,8 @@ const PayRollConfig = () => {
                                         <CardBody>
                                           <div
                                             className={`p-3 mt-n3 mx-n3 bg-${payrollobj.basic_components.esi
-                                                ? "success"
-                                                : "dark"
+                                              ? "success"
+                                              : "dark"
                                               }-subtle rounded-top`}
                                           >
                                             <div className="d-flex align-items-center">
@@ -909,7 +1005,7 @@ const PayRollConfig = () => {
                                                       checked={
                                                         payrollobj
                                                           .basic_components.esi
-                                                           .is_active
+                                                          .is_active
                                                       }
                                                     />
                                                     <Label
@@ -1017,9 +1113,9 @@ const PayRollConfig = () => {
                                         <CardBody>
                                           <div
                                             className={`p-3 mt-n3 mx-n3 bg-${payrollobj.basic_components.epf
-                                                .is_active
-                                                ? "success"
-                                                : "dark"
+                                              .is_active
+                                              ? "success"
+                                              : "dark"
                                               }-subtle rounded-top`}
                                           >
                                             <div className="d-flex align-items-center">
@@ -1171,8 +1267,8 @@ const PayRollConfig = () => {
                                           <CardBody>
                                             <div
                                               className={`p-3 mt-n3 mx-n3 bg-${item.is_active
-                                                  ? "success"
-                                                  : "dark"
+                                                ? "success"
+                                                : "dark"
                                                 }-subtle rounded-top`}
                                             >
                                               <div className="d-flex align-items-center">
@@ -1290,9 +1386,9 @@ const PayRollConfig = () => {
                                       <CardBody>
                                         <div
                                           className={`p-3 mt-n3 mx-n3 bg-${payrollobj.basic_components
-                                              .labour_fund
-                                              ? "success"
-                                              : "dark"
+                                            .labour_fund
+                                            ? "success"
+                                            : "dark"
                                             }-subtle rounded-top`}
                                         >
                                           <div className="d-flex align-items-center">
@@ -1490,8 +1586,8 @@ const PayRollConfig = () => {
                                                           }}
                                                         >
                                                           <i className="ri-pencil-fill fs-16"></i>
-                                                          </Link>
-                                                          <Link>
+                                                        </Link>
+                                                        <Link>
                                                           <span style={{ margin: '0 2px' }}></span>
                                                           <i className="ri-delete-bin-5-fill fs-16"></i>
                                                         </Link>
@@ -1502,9 +1598,10 @@ const PayRollConfig = () => {
                                               )}
                                             </tbody>
                                           </Table>
-                                          <Button color="primary" onClick={() =>{
-                                                        handleEaringAdd();}
-                                              }>
+                                          <Button color="primary" onClick={() => {
+                                            handleEaringAdd(0);
+                                          }
+                                          }>
                                             <i className="ri-add-line align-bottom me-1"></i>
                                             Add
                                           </Button>{' '}
@@ -1579,8 +1676,8 @@ const PayRollConfig = () => {
                                                           }}
                                                         >
                                                           <i className="ri-pencil-fill fs-16"></i>
-                                                          </Link>
-                                                          <Link>
+                                                        </Link>
+                                                        <Link>
                                                           <span style={{ margin: '0 2px' }}></span>
                                                           <i className="ri-delete-bin-5-fill fs-16"></i>
                                                         </Link>
@@ -1591,9 +1688,11 @@ const PayRollConfig = () => {
                                               )}
                                             </tbody>
                                           </Table>
-                                          <Button color="primary" onClick={() =>{
-                                                        handleEaringAdd();}
-                                              }>
+                                          <Button color="primary" onClick={() => {
+                                            // handleAllowencesAdd(0);
+                                            handleEaringAdd(0);
+                                          }
+                                          }>
                                             <i className="ri-add-line align-bottom me-1"></i>
                                             Add
                                           </Button>{' '}
@@ -1668,8 +1767,8 @@ const PayRollConfig = () => {
                                                           }}
                                                         >
                                                           <i className="ri-pencil-fill fs-16"></i>
-                                                          </Link>
-                                                          <Link>
+                                                        </Link>
+                                                        <Link>
                                                           <span style={{ margin: '0 2px' }}></span>
                                                           <i className="ri-delete-bin-5-fill fs-16"></i>
                                                         </Link>
@@ -1680,9 +1779,11 @@ const PayRollConfig = () => {
                                               )}
                                             </tbody>
                                           </Table>
-                                          <Button color="primary" onClick={() =>{
-                                                        handleEaringAdd();}
-                                              }>
+                                          <Button color="primary" onClick={() => {
+                                            // handleDeductionsAdd(0);
+                                            handleEaringAdd(0);
+                                          }
+                                          }>
                                             <i className="ri-add-line align-bottom me-1"></i>
                                             Add
                                           </Button>{' '}
@@ -1708,8 +1809,19 @@ const PayRollConfig = () => {
                                 className="rounded"
                               />
                             </div>
+
                             <div className="flex-grow-1 ms-3">
+                              <Button color="primary"
+                                onClick={() => {
+                                  handleSalaryPoliciesAdd(0)
+
+                                }}
+                              >
+                                <i className="ri-add-line align-bottom me-1"></i>
+                                Add
+                              </Button>{' '}
                               <p className="mb-0">
+                                <br></br>
                                 You always want to make sure that your fonts
                                 work well together and try to limit the number
                                 of fonts you use to three or less. Experiment
