@@ -91,6 +91,7 @@ const PayRollConfig = () => {
         is_active: true,
         epf_cycle: 3,
         epf_type: "Weekly",
+        epf_type_id: "2",
       },
       pro_tax: [
         {
@@ -116,6 +117,8 @@ const PayRollConfig = () => {
     salary_components: {
       earnings: [
         {
+          id:1,
+          type:"1",
           name: "Basic Salary",
           desc: "",
           pro_rata: true,
@@ -125,6 +128,8 @@ const PayRollConfig = () => {
           epf: true,
         },
         {
+          id:2,
+          type:"1",
           name: "Special Salary",
           desc: "",
           pro_rata: true,
@@ -136,6 +141,8 @@ const PayRollConfig = () => {
       ],
       allowances: [
         {
+          id:1,
+          type:"2",
           name: "HRA",
           desc: "",
           pro_rata: true,
@@ -145,6 +152,8 @@ const PayRollConfig = () => {
           epf: true,
         },
         {
+          id:2,
+          type:"2",
           name: "Life Style",
           desc: "",
           pro_rata: true,
@@ -156,6 +165,8 @@ const PayRollConfig = () => {
       ],
       deductions: [
         {
+          id:1,
+          type:"3",
           name: "Year End Fund",
           desc: "",
           pro_rata: true,
@@ -165,6 +176,8 @@ const PayRollConfig = () => {
           epf: true,
         },
         {
+          id:2,
+          type:"3",
           name: "Activity Fund",
           desc: "",
           pro_rata: true,
@@ -291,11 +304,9 @@ const PayRollConfig = () => {
     };
   }, []);
 
-  const handleEPFEdit = ($id, obj) => {
-    console.log("Dep Edit = ", obj);
-    const depObj = $id === 0 ? newDepObj : obj;
+  const handleEPFEdit = (obj) => { 
+    dispatch(setFormObj(obj));
     dispatch(setFormTitle("Edit EPF"));
-    dispatch(setFormObj(depObj));
     dispatch(setFormWidthPercentage("35%"));
     dispatch(setComponentToShow("EPFWageForm"));
     dispatch(toggleRSBView(true));
@@ -305,8 +316,8 @@ const PayRollConfig = () => {
     console.log('Calling handleTaxEdit with id:', $id, 'and object:', tax_slab);
 
     dispatch(setFormTitle("Edit Professional Tax"));
-    let tax_slab_obj = tax_slab.filter((data) => data.id == $id);
-    dispatch(setFormObj(tax_slab_obj[0]));
+    let tax_slab_obj = tax_slab.find((data) => data.id == $id);
+    dispatch(setFormObj(tax_slab_obj));
 
     console.log("test....", tax_slab_obj)
 
@@ -317,6 +328,7 @@ const PayRollConfig = () => {
 
 
   const initialFormObj = useMemo(() => {
+  
     return {
       id: 0,
       type: customActiveTab1,
@@ -331,8 +343,8 @@ const PayRollConfig = () => {
 
   const handleEaringAdd = ($id) => {
     const value = customActiveTab1 == 1 ? "Edit Earning" :
-    customActiveTab1 == 2 ? 'Edit Allowance' :
-    customActiveTab1 == 3 ? 'Edit Deduction' : ""
+      customActiveTab1 == 2 ? 'Edit Allowance' :
+        customActiveTab1 == 3 ? 'Edit Deduction' : ""
     // dispatch(setFormTitle("Edit Earning"));
     dispatch(setFormTitle(value));
 
@@ -401,7 +413,7 @@ const PayRollConfig = () => {
 
 
     }
-    dispatch(setFormWidthPercentage("40%"));
+    dispatch(setFormWidthPercentage("50%"));
     dispatch(setComponentToShow("SalaryPoliciesForm"));
     dispatch(toggleRSBView(true));
   };
@@ -425,27 +437,30 @@ const PayRollConfig = () => {
   ];
 
   const handleCreateAndUpdate = (item) => {
+    console.log('item', item, customActiveTab1);
     const value = customActiveTab1 == 1 ? "Edit Earning" :
-    customActiveTab1 == 2 ? 'Edit Allowance' :
-    customActiveTab1 == 3 ? 'Edit Deduction' : ""
-    // dispatch(setFormTitle("Edit Earning"));
+      customActiveTab1 == 2 ? 'Edit Allowance' :
+        customActiveTab1 == 3 ? 'Edit Deduction' : ""
     dispatch(setFormTitle(value));
     let componentType;
     let componentObj;
-    
-    if (customActiveTab === 1) {
+    console.log('edit clicked');
+    if (customActiveTab1 == 1) {
       componentType = 'earnings';
       componentObj = payrollobj.salary_components.earnings.find((data) => data.name === item?.name);
-    } else if (customActiveTab === 2) {
+      console.log(`${componentType}:`, componentObj);
+    } else if (customActiveTab1 == 2) {
       componentType = 'allowances';
       componentObj = payrollobj.salary_components.allowances.find((data) => data.name === item?.name);
-    } else if (customActiveTab === 3) {
+      console.log(`${componentType}:`, componentObj);
+    } else if (customActiveTab1 == 3) {
       componentType = 'deductions';
       componentObj = payrollobj.salary_components.deductions.find((data) => data.name === item?.name);
+      console.log(`${componentType}:`, componentObj);
     }
-    
-    console.log(`${componentType}:`, componentObj);
-    dispatch(setFormObj( deduction_obj[0]));
+    dispatch(setFormObj(componentObj))
+
+
     dispatch(setFormWidthPercentage("40%"));
     dispatch(setComponentToShow("SalaryCmpntForm"));
     dispatch(toggleRSBView(true));
@@ -1152,7 +1167,8 @@ const PayRollConfig = () => {
                                                   </div>
                                                   <a
                                                     onClick={() =>
-                                                      handleEPFEdit(0)
+                                                      handleEPFEdit(payrollobj
+                                                        .basic_components.epf)
                                                     }
                                                     className="text-primary d-inline-block edit-item-btn ms-2"
                                                     href="javascript:void(0)"

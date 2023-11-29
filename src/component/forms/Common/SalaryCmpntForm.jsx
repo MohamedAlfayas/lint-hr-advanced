@@ -41,6 +41,7 @@ const salaryCmpntForm = () => {
           [name]: value,
         });
       };
+      
     useEffect(() => {
         setCustomFieldObj(form_obj);
     }, [form_obj]);
@@ -123,8 +124,9 @@ const salaryCmpntForm = () => {
                                                         name="company_has_pf"
                                                         type="checkbox"
                                                         className="form-check-input"
-                                                    //   checked={payRollObj.company_has_pf}
-                                                    //   onChange={(e) => setPayRollObj({...payRollObj, company_has_pf : e.target.checked})}
+                                                          value={customFieldObj.id || ""}
+                                                      checked={customFieldObj.id }
+                                                    //   onChange={(0)}
                                                     />
                                                 </div>
                                             </Col>
@@ -149,7 +151,7 @@ const salaryCmpntForm = () => {
                                                         name="company_has_pf"
                                                         type="checkbox"
                                                         className="form-check-input"
-                                                    //   checked={payRollObj.company_has_pf}
+                                                        checked={customFieldObj.id }
                                                     //   onChange={(e) => setPayRollObj({...payRollObj, company_has_pf : e.target.checked})}
                                                     />
                                                 </div>
@@ -175,7 +177,7 @@ const salaryCmpntForm = () => {
                                                         name="company_has_pf"
                                                         type="checkbox"
                                                         className="form-check-input"
-                                                    //   checked={payRollObj.company_has_pf}
+                                                        checked={customFieldObj.id }
                                                     //   onChange={(e) => setPayRollObj({...payRollObj, company_has_pf : e.target.checked})}
                                                     />
                                                 </div>

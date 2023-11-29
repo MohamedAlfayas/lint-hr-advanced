@@ -20,6 +20,12 @@ import {
 } from "reactstrap";
 
 const EPFWageForm = () => {
+
+  const {form_obj} = useSelector((state) => state.RightSideBarReducer);
+  const [EPFField, setEPFField] = useState(form_obj)
+  console.log("llee",form_obj);
+  
+
   const deduction_cycle_option = useMemo(
     () => [
       { id: "1", label: "Monthly", value: "Monthly" },
@@ -27,6 +33,7 @@ const EPFWageForm = () => {
     ],
     []
   );
+  
   return (
     <React.Fragment>
       <Row>
@@ -41,6 +48,7 @@ const EPFWageForm = () => {
                   options={deduction_cycle_option || []}
                   placeholder="Select Leave Type"
                   className="basic-multi-select"
+                  value={EPFField ? deduction_cycle_option.find(d => d.id === EPFField.epf_type_id) : []}
                 />
               </div>
               <div id="passwordHelpBlock" className="form-text">
@@ -54,9 +62,11 @@ const EPFWageForm = () => {
                     <input
                       className="form-check-input"
                       type="radio"
-                      value=""
+                      value={EPFField ? deduction_cycle_option.find(d => d.id === EPFField.epf_cycle) : []}
                       name="EPFmethods"
                       id={"folderlistCheckbox_1"}
+                     checked={EPFField}
+                     
                     />
                     <label
                       className="form-check-label"

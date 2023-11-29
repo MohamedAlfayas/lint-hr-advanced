@@ -88,6 +88,7 @@ const ProfessionalTaxForm = () => {
                   required
                   isMulti={false}
                   options={deduction_cycle_option || []}
+                  // value={form_obj.cycle_option}
                   placeholder="Select Leave Type"
                   className="basic-multi-select"
                 />

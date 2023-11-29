@@ -25,17 +25,14 @@ const salaryPloiciesForm = () => {
     const { form_obj } = useSelector((state) => state.RightSideBarReducer);
     const [customFieldObj, setCustomFieldObj] = useState(form_obj);
     console.log("fghj", form_obj);
-    const [showTable, setShowTable] = useState(false);
+    const [showTable, setShowTable] = useState({
+        earning: false,
+        allowance: false,
+        deduction: false,
+    });
 
 
 
-    const contributionOptions = useMemo(
-        () => [
-            { id: "1", label: "ESI", value: "ESI" },
-            { id: "2", label: "EPF", value: "EPF" },
-        ],
-        []
-    );
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setCustomFieldObj({
@@ -43,9 +40,14 @@ const salaryPloiciesForm = () => {
             [name]: value,
         });
     };
-    const handleSelectEarning = () => {
-        setShowTable(!showTable);
-    }
+    const handleSelectTable = (tableType) => {
+
+        setShowTable((prevShowTable) => ({
+            earning: tableType === "earning" ? !prevShowTable.earning : false,
+            allowance: tableType === "allowance" ? !prevShowTable.allowance : false,
+            deduction: tableType === "deduction" ? !prevShowTable.deduction : false,
+        }));
+    };
     useEffect(() => {
         setCustomFieldObj(form_obj);
     }, [form_obj]);
@@ -100,68 +102,92 @@ const salaryPloiciesForm = () => {
                                         </Label>
                                         <div className="form-icon right">
                                             <Button color="primary"
-                                                onClick={handleSelectEarning}
-                                            >
+                                                onClick={() => handleSelectTable("earning")}>
                                                 <i className="ri-add-line align-bottom me-1"></i>
                                                 Select Components
                                             </Button>{' '}
-                                            {showTable && (
+                                            {showTable.earning && (
                                                 <div>
                                                     <table>
                                                         <thead>
                                                             <tr>
                                                                 <th>Components</th>
                                                                 <th>Calculation Type</th>
-                                                                {/* Add more columns as needed */}
+
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td>Data 1</td>
-                                                                <td>Data 2</td>
-                                                                {/* Add more data rows as needed */}
+                                                                <td>
+                                                                    <input type="text" style={{ width: '100px' }} />
+                                                                </td>
+                                                                <td>
+
+                                                                    <select style={{ width: '100px' }}>
+                                                                        <option value="1">Option 1</option>
+                                                                        <option value="2">Option 2</option>
+                                                                        <option value="3">Option 3</option>
+
+                                                                    </select>
+                                                                </td>
+                                                                <td>
+                                                                    <input type="number" style={{ width: '100px' }} />
+                                                                </td>
+
                                                             </tr>
+
+
                                                         </tbody>
                                                     </table>
 
-                                                    {/* Cancel icon */}
-                                                    <button onClick={handleSelectEarning}>Cancel</button>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                     <div className="mb-3">
                                         <Label htmlFor="tax_state" className="form-label">
-                                            Allowences
+                                            Allowances
                                         </Label>
                                         <div className="form-icon right">
                                             <Button color="primary"
-                                                onClick={handleSelectEarning}
-                                            >
+                                                onClick={() => handleSelectTable("allowance")}>
                                                 <i className="ri-add-line align-bottom me-1"></i>
                                                 Select Components
                                             </Button>{' '}
-                                            {showTable && (
+                                            {showTable.allowance && (
                                                 <div>
                                                     <table>
                                                         <thead>
                                                             <tr>
                                                                 <th>Components</th>
                                                                 <th>Calculation Type</th>
-                                                                {/* Add more columns as needed */}
+
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td>Data 1</td>
-                                                                <td>Data 2</td>
-                                                                {/* Add more data rows as needed */}
+                                                                <td>
+                                                                    <input type="text" style={{ width: '100px' }} />
+                                                                </td>
+                                                                <td>
+
+                                                                    <select style={{ width: '100px' }}>
+                                                                        <option value="1">Option 1</option>
+                                                                        <option value="2">Option 2</option>
+                                                                        <option value="3">Option 3</option>
+
+                                                                    </select>
+                                                                </td>
+                                                                <td>
+                                                                    <input type="number" style={{ width: '100px' }} />
+                                                                </td>
+
                                                             </tr>
+
+
                                                         </tbody>
                                                     </table>
 
-                                                    {/* Cancel icon */}
-                                                    <button onClick={handleSelectEarning}>Cancel</button>
                                                 </div>
                                             )}
                                         </div>
@@ -172,32 +198,45 @@ const salaryPloiciesForm = () => {
                                         </Label>
                                         <div className="form-icon right">
                                             <Button color="primary"
-                                                onClick={handleSelectEarning}
-                                            >
+                                                onClick={() => handleSelectTable("deduction")}>
                                                 <i className="ri-add-line align-bottom me-1"></i>
                                                 Select Components
                                             </Button>{' '}
-                                            {showTable && (
+                                            {showTable.deduction && (
                                                 <div>
                                                     <table>
                                                         <thead>
                                                             <tr>
                                                                 <th>Components</th>
                                                                 <th>Calculation Type</th>
-                                                                {/* Add more columns as needed */}
+
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             <tr>
-                                                                <td>Data 1</td>
-                                                                <td>Data 2</td>
-                                                                <button onClick={handleSelectEarning}>Cancel</button>
-                                                                {/* Add more data rows as needed */}
+                                                                <td>
+                                                                    <input type="text" style={{ width: '100px' }} />
+                                                                </td>
+                                                                <td>
+
+                                                                    <select style={{ width: '100px' }}>
+                                                                        <option value="1">Option 1</option>
+                                                                        <option value="2">Option 2</option>
+                                                                        <option value="3">Option 3</option>
+
+                                                                    </select>
+                                                                </td>
+                                                                <td>
+                                                                    <input type="number" style={{ width: '100px' }} />
+                                                                </td>
+
                                                             </tr>
+
+
                                                         </tbody>
                                                     </table>
 
-                                                    {/* Cancel icon */}
+
 
                                                 </div>
                                             )}
@@ -218,7 +257,7 @@ const salaryPloiciesForm = () => {
                                                     required
                                                 />
                                                 <Label className="form-check-label" htmlFor="lt_day">
-                                                   Profession Tax
+                                                    Profession Tax
                                                 </Label>
                                             </div>
                                         </div>
@@ -233,7 +272,7 @@ const salaryPloiciesForm = () => {
                                                     required
                                                 />
                                                 <Label className="form-check-label" htmlFor="lt_day">
-                                                   Labour Welfare Fund
+                                                    Labour Welfare Fund
                                                 </Label>
                                             </div>
                                         </div>
@@ -242,25 +281,21 @@ const salaryPloiciesForm = () => {
                                 </div>
                             </div>
                         </Col>
-                        
+
                         <Col lg={12}>
-                            
-                            <div className="text-end">
-                            <Button type="submit" color="success" className="btn-label">
-                                    {" "}
-                                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                                    create{" "}
+
+                            <div className="text-start">
+                                <Button color="success" type="submit">
+
+
+                                    create
                                 </Button>{" "}
-                                <Button type="submit" color="success" className="btn-label">
-                                    {" "}
-                                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                                    Cancel{" "}
-                                </Button>{" "}
-                                <Button type="submit" color="success" className="btn-label">
-                                    {" "}
-                                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                                    Save{" "}
-                                </Button>{" "}
+                                <Button color="light" type="submit">
+
+
+                                    Cancel
+                                </Button>
+
                             </div>
                         </Col>
                     </Form>
