@@ -75,15 +75,13 @@ const InfoTable = ({
   const dispatch = useDispatch();
 
   const EmployeeData = GetLocalStorageData("employee");
-  console.log("fsfa",EmployeeData);
+  console.log("fsfa", EmployeeData);
 
   const { activeTableTab } = useSelector((state) => state.TableReducer);
 
-  useEffect(() => {
-    if (activeTableTab && activeTableTab === "all") {
-      toggleTab(1, "all");
-    }
-  }, [activeTableTab]);
+  // useEffect(() => {
+  //   !!activeTableTab && setActiveTab(activeTableTab);
+  // }, [activeTableTab]);
 
   const tabOptions = filterOptions
     ? filterOptions.map((obj, idx) => {
@@ -132,7 +130,7 @@ const InfoTable = ({
     console.log("Click Approve", orderData);
     let employee_fname =
       EmployeeData.find((e) => e.id === orderData.employee).fname || "";
-   
+
     let content = `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To Agent <strong style='color:#7066e0'>  ${employee_fname}</strong>  ? ${orderData.start} to  ${orderData.end} (${orderData.total})</span> `;
     let btnText = "Yes, Approve";
     let btnClass = "Success";
@@ -283,7 +281,7 @@ const InfoTable = ({
         Header: "Action",
         Cell: (cellProps) => {
           const orderData = cellProps.row.original;
-        
+
           if (
             formname &&
             formname === "leave_approval" &&
@@ -428,12 +426,19 @@ const InfoTable = ({
 
   useEffect(() => {
     if (tabledata && tabledata.length) {
-      let type = tabOptions.length
-        ? tabOptions.find((e) => e.idx === parseInt(activeTab))?.option
-        : "";
-      let filtered_table_data = [...tabledata].filter(
-        (data) => data[filterKey] == type
-      ) || [...tabledata];
+      let type = "";
+      if (parseInt(activeTab) === 1) {
+        type = "all";
+      } else {
+        type = tabOptions.length
+          ? tabOptions.find((e) => e.idx === parseInt(activeTab))?.option
+          : "all";
+      }
+      let filtered_table_data =
+        type === "all"
+          ? [...tabledata]
+          : [...tabledata].filter((data) => data[filterKey] == type);
+
       setDataList(filtered_table_data);
     } else {
       setDataList([]);
@@ -481,7 +486,7 @@ const InfoTable = ({
   // CUSTOM FORM
 
   const handleCreateAndUpdate = ($id, table_obj) => {
-    console.log('tabObj',$id, table_obj);
+    console.log("tabObj", $id, table_obj);
 
     let FormObj = {};
 
