@@ -85,8 +85,10 @@ const PayRollConfig = () => {
       cut_off: "Day 28",
     },
     basic_components: {
-      esi: false,
-      labour_fund: true,
+      esi: {
+        is_active: true,
+        labour_fund: true,
+      },
       epf: {
         is_active: true,
         epf_cycle: 3,
@@ -117,72 +119,78 @@ const PayRollConfig = () => {
     salary_components: {
       earnings: [
         {
-          id:1,
-          type:"1",
+          id: 1,
+          type: "1",
           name: "Basic Salary",
           desc: "",
           pro_rata: true,
           tax: true,
-          contribute: true,
+          insurance: true,
+          contribute: [],
           esi: true,
           epf: true,
         },
         {
-          id:2,
-          type:"1",
+          id: 2,
+          type: "1",
           name: "Special Salary",
           desc: "",
           pro_rata: true,
           tax: true,
-          contribute: true,
+          insurance: true,
+          contribute: [],
           esi: true,
           epf: false,
         },
       ],
       allowances: [
         {
-          id:1,
-          type:"2",
+          id: 1,
+          type: "2",
           name: "HRA",
           desc: "",
           pro_rata: true,
           tax: true,
-          contribute: true,
+          insurance: true,
+          contribute: [],
           esi: true,
           epf: true,
         },
         {
-          id:2,
-          type:"2",
+          id: 2,
+          type: "2",
           name: "Life Style",
           desc: "",
           pro_rata: true,
           tax: true,
-          contribute: true,
+          insurance: true,
+          contribute: [],
           esi: true,
           epf: true,
         },
       ],
       deductions: [
         {
-          id:1,
-          type:"3",
+          id: 1,
+          type: "3",
           name: "Year End Fund",
           desc: "",
           pro_rata: true,
           tax: true,
-          contribute: true,
+          insurance: true,
+          contribute: [],
           esi: true,
           epf: true,
         },
         {
-          id:2,
-          type:"3",
+          id: 2,
+          type: "3",
           name: "Activity Fund",
           desc: "",
           pro_rata: true,
           tax: true,
-          contribute: true,
+          insurance: true,
+          contribute: [],
           esi: true,
           epf: true,
         },
@@ -212,6 +220,7 @@ const PayRollConfig = () => {
     {
       id: 1,
       state: "Tamil Nadu",
+      cycle_id: "3",
       range: [
         { s: 0, e: 21000, tax: 0 },
         { s: 21001, e: 30000, tax: 135 },
@@ -224,6 +233,7 @@ const PayRollConfig = () => {
     {
       id: 2,
       state: "Kerala",
+      cycle_id: "3",
       range: [
         { s: 0, e: 11999, tax: 0 },
         { s: 12000, e: 17999, tax: 120 },
@@ -304,7 +314,7 @@ const PayRollConfig = () => {
     };
   }, []);
 
-  const handleEPFEdit = (obj) => { 
+  const handleEPFEdit = (obj) => {
     dispatch(setFormObj(obj));
     dispatch(setFormTitle("Edit EPF"));
     dispatch(setFormWidthPercentage("35%"));
@@ -328,7 +338,7 @@ const PayRollConfig = () => {
 
 
   const initialFormObj = useMemo(() => {
-  
+
     return {
       id: 0,
       type: customActiveTab1,
@@ -336,10 +346,11 @@ const PayRollConfig = () => {
       desc: "",
       is_pro_rata: false,
       is_taxable: false,
-      contribute: []
+      is_insurance: false,
+      contribute: [payrollobj.basic_components]
 
     };
-  });
+  },[]);
 
   const handleEaringAdd = ($id) => {
     const value = customActiveTab1 == 1 ? "Edit Earning" :
@@ -356,6 +367,7 @@ const PayRollConfig = () => {
 
     } else {
       dispatch(setFormObj(earning_obj[0]));
+      
 
 
     }
@@ -458,6 +470,7 @@ const PayRollConfig = () => {
       componentObj = payrollobj.salary_components.deductions.find((data) => data.name === item?.name);
       console.log(`${componentType}:`, componentObj);
     }
+    console.log("jjj",componentObj);
     dispatch(setFormObj(componentObj))
 
 

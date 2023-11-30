@@ -22,13 +22,14 @@ import {
 
 
 const ProfessionalTaxForm = () => {
- 
-  const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-  console.log("fghj",form_obj.range.length);
-  const [tableData, setTableData] = useState(form_obj.range);
 
- 
- 
+  const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+  console.log("fghj", form_obj);
+  const [tableData, setTableData] = useState(form_obj.range);
+  const [cycleOption, setCycleOption] = useState(form_obj);
+
+
+
   const deduction_cycle_option = useMemo(
     () => [
       { id: "1", label: "Monthly", value: "Monthly" },
@@ -38,7 +39,7 @@ const ProfessionalTaxForm = () => {
     ],
     []
   );
-  
+
   const addRow = () => {
     const newRow = {
       id: tableData.length + 1,
@@ -88,7 +89,7 @@ const ProfessionalTaxForm = () => {
                   required
                   isMulti={false}
                   options={deduction_cycle_option || []}
-                  // value={form_obj.cycle_option}
+                  value={cycleOption ? deduction_cycle_option.find(d => d.id === cycleOption.cycle_id) : []}
                   placeholder="Select Leave Type"
                   className="basic-multi-select"
                 />
@@ -156,8 +157,8 @@ const ProfessionalTaxForm = () => {
                       />
                     </td>
                     <td>
-                      {index === tableData.length - 1 && ( // Only render delete button for the last row
-                        <Button color="danger" onClick={() => deleteRow(row.id)}  style={{ padding: '0.2rem 0.5rem', fontSize: '12px' }}>
+                      {(index !== 0 && index === tableData.length - 1) && (
+                        <Button color="danger" onClick={() => deleteRow(row.id)} style={{ padding: '0.2rem 0.5rem', fontSize: '12px' }}>
                           <i className="ri-delete-bin-5-fill fs-16"></i>
                         </Button>
                       )}
@@ -167,7 +168,7 @@ const ProfessionalTaxForm = () => {
               </tbody>
             </Table>
 
-            {/* Add Row and Save buttons */}
+
             <Button color="primary" onClick={addRow}>
               <i className="ri-add-line align-bottom me-1"></i>
               Add

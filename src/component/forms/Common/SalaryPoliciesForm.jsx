@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import Select from "react-select";
+import FeatherIcon from "feather-icons-react/build/FeatherIcon";
 import {
     Button,
     Card,
@@ -43,9 +44,9 @@ const salaryPloiciesForm = () => {
     const handleSelectTable = (tableType) => {
 
         setShowTable((prevShowTable) => ({
-            earning: tableType === "earning" ? !prevShowTable.earning : false,
-            allowance: tableType === "allowance" ? !prevShowTable.allowance : false,
-            deduction: tableType === "deduction" ? !prevShowTable.deduction : false,
+            earning: tableType === "earning" ? !prevShowTable.earning : prevShowTable.earning,
+            allowance: tableType === "allowance" ? !prevShowTable.allowance : prevShowTable.allowance,
+            deduction: tableType === "deduction" ? !prevShowTable.deduction : prevShowTable.deduction,
         }));
     };
     useEffect(() => {
@@ -247,6 +248,10 @@ const salaryPloiciesForm = () => {
                                             Compliances
                                         </Label>
                                         <div className="">
+                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <i className="ri-information-line" style={{ fontSize: '16px' }}></i>
+                                                <h1 className="fs-13" style={{ marginLeft: '5px' }}>Compliances included ESI, EPF</h1>
+                                            </div>
                                             <div className="form-check form-check-inline">
                                                 <Input
                                                     id="p-tax"

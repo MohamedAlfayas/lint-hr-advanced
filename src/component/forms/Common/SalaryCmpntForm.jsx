@@ -24,24 +24,43 @@ import {
 const salaryCmpntForm = () => {
     const { form_obj } = useSelector((state) => state.RightSideBarReducer);
     const [customFieldObj, setCustomFieldObj] = useState(form_obj);
-    console.log("fghj", form_obj);
+    console.log("fghj", form_obj?.contribute);
 
 
-    const contributionOptions = useMemo(
-        () => [
-            { id: "1", label: "ESI", value: "ESI" },
-            { id: "2", label: "EPF", value: "EPF" },
-        ],
-        []
-    );
+    // const contributionOptions = useMemo(
+    //     () => [
+    //         { id: "1", label: "ESI", value: "ESI" },
+    //         { id: "2", label: "EPF", value: "EPF" },
+    //     ],
+    //     []
+    // );
+
+    const contributionOptions = useMemo(() => {
+        console.log("lll",form_obj);
+        const options = [];
+if (form_obj?.contribute.length >0 ) {
+    console.log('yes');
+      // Check if ESI is active and add it to options
+      if (form_obj?.contribute[0].esi && form_obj?.contribute[0].esi.is_active) {
+        options.push({ id: '1', label: 'ESI', value: 'ESI' });
+    }
+    // Check if EPF is active and add it to options
+    if (form_obj?.contribute[0].epf && form_obj?.contribute[0].epf.is_active) {
+        options.push({ id: '2', label: 'EPF', value: 'EPF' });
+    }
+}
+      
+
+        return options;
+    }, []);
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setCustomFieldObj({
-          ...customFieldObj,
-          [name]: value,
+            ...customFieldObj,
+            [name]: value,
         });
-      };
-      
+    };
+
     useEffect(() => {
         setCustomFieldObj(form_obj);
     }, [form_obj]);
@@ -58,8 +77,8 @@ const salaryCmpntForm = () => {
                             <select
                                 className="form-control"
                                 id="pageSelection"
-                            value={form_obj.type}
-                         disabled
+                                value={form_obj.type}
+                                disabled
                             >
                                 <option value="1">Earnings</option>
                                 <option value="2">Allowances</option>
@@ -79,7 +98,7 @@ const salaryCmpntForm = () => {
                                         className="form-control"
                                         placeholder="Name"
                                         value={customFieldObj.name || ""}
-                                    onChange={handleInputChange}
+                                        onChange={handleInputChange}
 
                                     />
                                     <div id="passwordHelpBlock" className="form-text mb-3">
@@ -96,16 +115,16 @@ const salaryCmpntForm = () => {
                                                 id="earn_desc"
                                                 value={customFieldObj.desc || ""}
                                                 onChange={(e) =>
-                                                  setCustomFieldObj({
-                                                    ...customFieldObj,
-                                                    desc: e.target.value,
-                                                  })
+                                                    setCustomFieldObj({
+                                                        ...customFieldObj,
+                                                        desc: e.target.value,
+                                                    })
                                                 }
                                             />
                                         </div>
                                     </Col>
                                     <div className="mb-3">
-                                        
+
                                         <Row>
                                             <Col lg={3} sm={3}>
                                                 <Label
@@ -120,13 +139,18 @@ const salaryCmpntForm = () => {
                                                     dir="ltr">
                                                     {" "}
                                                     <Input
-                                                        id="earnings_has_pro_rata"
-                                                        name="company_has_pf"
+                                                        id="pro_rata"
+                                                        name="earnings_has_pro_rata"
                                                         type="checkbox"
                                                         className="form-check-input"
-                                                          value={customFieldObj.id || ""}
-                                                      checked={customFieldObj.id }
-                                                    //   onChange={(0)}
+                                                        value={customFieldObj.id || ""}
+                                                        checked={customFieldObj.pro_rata}
+                                                        onChange={(e) =>
+                                                            setCustomFieldObj({
+                                                                ...customFieldObj,
+                                                                pro_rata: e.target.checked,
+                                                            })
+                                                        }
                                                     />
                                                 </div>
                                             </Col>
@@ -147,13 +171,17 @@ const salaryCmpntForm = () => {
                                                     dir="ltr">
                                                     {" "}
                                                     <Input
-                                                        id="earnings_has_taxable"
-                                                        name="company_has_pf"
+                                                        id="tax"
+                                                        name="earnings_has_taxable"
                                                         type="checkbox"
                                                         className="form-check-input"
-                                                        checked={customFieldObj.id }
-                                                    //   onChange={(e) => setPayRollObj({...payRollObj, company_has_pf : e.target.checked})}
-                                                    />
+                                                        checked={customFieldObj.tax}
+                                                        onChange={(e) =>
+                                                            setCustomFieldObj({
+                                                                ...customFieldObj,
+                                                                tax: e.target.checked,
+                                                            })
+                                                        } />
                                                 </div>
                                             </Col>
                                         </Row>
@@ -173,13 +201,17 @@ const salaryCmpntForm = () => {
                                                     dir="ltr">
                                                     {" "}
                                                     <Input
-                                                        id="earnings_has_insurance"
-                                                        name="company_has_pf"
+                                                        id="insurance"
+                                                        name="earnings_has_insurance"
                                                         type="checkbox"
                                                         className="form-check-input"
-                                                        checked={customFieldObj.id }
-                                                    //   onChange={(e) => setPayRollObj({...payRollObj, company_has_pf : e.target.checked})}
-                                                    />
+                                                        checked={customFieldObj.insurance}
+                                                        onChange={(e) =>
+                                                            setCustomFieldObj({
+                                                                ...customFieldObj,
+                                                                insurance: e.target.checked,
+                                                            })
+                                                        } />
                                                 </div>
                                             </Col>
                                         </Row>
