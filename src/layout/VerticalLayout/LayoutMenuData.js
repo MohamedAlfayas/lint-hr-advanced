@@ -183,10 +183,12 @@ const Navdata = () => {
                 { id: "roles", label: "Roles", link: "/roles", parentId: "baseUi" },
                 { id: "workschedule", label: "WorkSchedule", link: "/workschedule", parentId: "baseUi" },
                 { id: "holidays", label: "Holidays", link: "/holidays", parentId: "baseUi" },
+                { id: "leaves", label: "Leaves", link: "/leaves", parentId: "baseUi" },
                 { id: "leavetype", label: "Leave Type", link: "/leavetype", parentId: "baseUi" },
                 { id: "leaveapproval", label: "Leave Approval", link: "/leave-approval", parentId: "baseUi" },
                 { id: "customfield", label: "Custom Field", link: "/custom-field", parentId: "baseUi" },
                 { id: "payroll", label: "Pay Roll", link: "/payroll", parentId: "payroll" },
+                { id: "payrollconfig", label: "Pay Roll Configuration", link: "/payrollconfig", parentId: "baseUi" },
 
                 //     { id: "badges", label: "Badges", link: "#", parentId: "baseUi" },
                 //     { id: "buttons", label: "Buttons", link: "#", parentId: "baseUi" },

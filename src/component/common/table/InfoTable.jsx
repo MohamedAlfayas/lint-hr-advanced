@@ -295,8 +295,7 @@ const InfoTable = ({
                     className="text-success d-inline-block edit-item-btn"
                     onClick={() => {
                       handleApproval(orderData);
-                    }}
-                  >
+                    }}>
                     <i className="ri-check-line fs-16"></i>
                   </Link>
                 </li>
@@ -304,8 +303,7 @@ const InfoTable = ({
                   <Link
                     to="javascript:void(0)"
                     className="text-danger d-inline-block remove-item-btn"
-                    onClick={() => handleReject(orderData)}
-                  >
+                    onClick={() => handleReject(orderData)}>
                     <i className="ri-close-line fs-16"></i>
                   </Link>
                 </li>
@@ -319,9 +317,8 @@ const InfoTable = ({
                     tag="a"
                     className="text-reset dropdown-btn"
                     href=""
-                    onClick={(e) => e.preventDefault()}
-                  >
-                    <span className="text-muted fs-18">
+                    onClick={(e) => e.preventDefault()}>
+                    <span className="text-primary d-inline-block edit-item-btn fs-16">
                       <i className="mdi mdi-dots-horizontal"></i>
                     </span>
                   </DropdownToggle>
@@ -329,15 +326,13 @@ const InfoTable = ({
                     <DropdownItem
                       onClick={() => {
                         handleDeactivate(orderData);
-                      }}
-                    >
+                      }}>
                       <i className="ri-shut-down-line"></i> Deactivate
                     </DropdownItem>
                     <DropdownItem
                       onClick={() => {
                         handleResetPassword(orderData);
-                      }}
-                    >
+                      }}>
                       <i className="ri-refresh-line"></i> Reset Password
                     </DropdownItem>
                   </DropdownMenu>
@@ -349,8 +344,7 @@ const InfoTable = ({
                     className="text-primary d-inline-block edit-item-btn"
                     onClick={() => {
                       handleCreateAndUpdate(orderData.id, orderData);
-                    }}
-                  >
+                    }}>
                     <i className="ri-pencil-fill fs-16"></i>
                   </Link>
                 </li>
@@ -360,8 +354,7 @@ const InfoTable = ({
                     className="text-danger d-inline-block remove-item-btn"
                     onClick={() => {
                       const orderData = cellProps.row.original;
-                    }}
-                  >
+                    }}>
                     <i className="ri-delete-bin-5-fill fs-16"></i>
                   </Link>
                 </li>
@@ -381,8 +374,7 @@ const InfoTable = ({
                     className="text-primary d-inline-block edit-item-btn"
                     onClick={() => {
                       handleCreateAndUpdate(orderData.id, orderData);
-                    }}
-                  >
+                    }}>
                     <i className="ri-pencil-fill fs-16"></i>
                   </Link>
                 </li>
@@ -392,8 +384,7 @@ const InfoTable = ({
                     className="text-danger d-inline-block remove-item-btn"
                     onClick={() => {
                       const orderData = cellProps.row.original;
-                    }}
-                  >
+                    }}>
                     <i className="ri-delete-bin-5-fill fs-16"></i>
                   </Link>
                 </li>
@@ -564,8 +555,7 @@ const InfoTable = ({
                 <div className="col-sm">
                   <h5
                     className="card-title mb-0"
-                    style={{ textTransform: "capitalize" }}
-                  >
+                    style={{ textTransform: "capitalize" }}>
                     {formname.split("_").join(" ")}
                   </h5>
 
@@ -592,8 +582,7 @@ const InfoTable = ({
                           <DropdownToggle
                             tag="a"
                             className="text-reset dropdown-btn"
-                            role="button"
-                          >
+                            role="button">
                             <span className="text-muted">
                               01 Jan 2023 to 31 Dec 2023
                               <i className="mdi mdi-chevron-down ms-1"></i>
@@ -628,8 +617,7 @@ const InfoTable = ({
                         style={{ textTransform: "capitalize" }}
                         onClick={() => {
                           handleCreateAndUpdate(0);
-                        }}
-                      >
+                        }}>
                         <i className="ri-add-line align-bottom me-1"></i> Create{" "}
                         {formname.split("_").join(" ")}
                       </button>
@@ -646,8 +634,7 @@ const InfoTable = ({
                             style={{ textTransform: "capitalize" }}
                             onClick={() => {
                               HandleImportExport();
-                            }}
-                          >
+                            }}>
                             <i className="ri-file-download-line align-bottom me-1"></i>{" "}
                             Import
                           </button>
@@ -655,21 +642,18 @@ const InfoTable = ({
                       <div>
                         {formname && formname === "leave_approval" && (
                           <div
-                            style={{ display: "flex", flexDirection: "row" }}
-                          >
+                            style={{ display: "flex", flexDirection: "row" }}>
                             <div style={{ marginBottom: "10px" }}>
                               <div
                                 style={{
                                   display: "flex",
                                   alignItems: "center",
-                                }}
-                              >
+                                }}>
                                 <div
                                   style={{
                                     position: "relative",
                                     width: "200px",
-                                  }}
-                                >
+                                  }}>
                                   <i
                                     className="bx bx-search-alt search-icon"
                                     style={{
@@ -677,8 +661,7 @@ const InfoTable = ({
                                       top: "50%",
                                       left: "10px",
                                       transform: "translateY(-50%)",
-                                    }}
-                                  ></i>
+                                    }}></i>
                                   <input
                                     type="text"
                                     placeholder="Search"
@@ -697,8 +680,10 @@ const InfoTable = ({
                             </div>
 
                             <div
-                              style={{ marginLeft: "10px", marginRight: "5px" }}
-                            >
+                              style={{
+                                marginLeft: "10px",
+                                marginRight: "5px",
+                              }}>
                               <label htmlFor="roleName" className="form-label">
                                 Status:
                               </label>
@@ -711,16 +696,17 @@ const InfoTable = ({
                                   border: "1px solid #ccc",
                                   width: "170px",
                                   outline: "none",
-                                }}
-                              >
+                                }}>
                                 <option value="all">All Status</option>
                                 <option value="approved">Approved</option>
                                 <option value="rejected">Rejected</option>
                               </select>
                             </div>
                             <div
-                              style={{ marginLeft: "10px", marginRight: "5px" }}
-                            >
+                              style={{
+                                marginLeft: "10px",
+                                marginRight: "5px",
+                              }}>
                               <label htmlFor="roleName" className="form-label">
                                 Type:
                               </label>
@@ -733,8 +719,7 @@ const InfoTable = ({
                                   border: "1px solid #ccc",
                                   width: "170px",
                                   outline: "none",
-                                }}
-                              >
+                                }}>
                                 <option value="all">All Types</option>
                                 <option value="type1">Type 1</option>
                                 <option value="type2">Type 2</option>
@@ -754,8 +739,7 @@ const InfoTable = ({
                               textTransform: "capitalize",
                               marginRight: "5px",
                             }}
-                            onClick={() => handleBulkAction("approve")}
-                          >
+                            onClick={() => handleBulkAction("approve")}>
                             <i className="ri-check-line fs-16"></i> Bulk Approve
                           </button>
                           <button
@@ -763,8 +747,7 @@ const InfoTable = ({
                             className="btn btn-danger add-btn"
                             id="bulk-reject-btn"
                             style={{ textTransform: "capitalize" }}
-                            onClick={() => handleBulkAction("reject")}
-                          >
+                            onClick={() => handleBulkAction("reject")}>
                             <i className="ri-close-line fs-16"></i> Bulk Reject
                           </button>
                         </div>
@@ -772,16 +755,14 @@ const InfoTable = ({
                       <button
                         type="button"
                         className="btn btn-info"
-                        onClick={() => setIsExportCSV(true)}
-                      >
+                        onClick={() => setIsExportCSV(true)}>
                         <i className="ri-file-download-line align-bottom me-1"></i>{" "}
                         Export
                       </button>{" "}
                       {isMultiDeleteButton && (
                         <button
                           className="btn btn-soft-danger"
-                          onClick={() => setDeleteModalMulti(true)}
-                        >
+                          onClick={() => setDeleteModalMulti(true)}>
                           <i className="ri-delete-bin-2-line"></i>
                         </button>
                       )}
@@ -795,8 +776,7 @@ const InfoTable = ({
               <div>
                 <Nav
                   className="nav-tabs nav-tabs-custom nav-success"
-                  role="tablist"
-                >
+                  role="tablist">
                   <NavItem>
                     <NavLink
                       className={classnames(
@@ -806,15 +786,13 @@ const InfoTable = ({
                       onClick={() => {
                         toggleTab(1, "all");
                       }}
-                      href="#"
-                    >
+                      href="#">
                       <i className="ri-store-2-fill me-1 align-bottom"></i> All
                       Datas
                       {tabledata && tabledata.length > 0 && (
                         <Badge
                           color={activeTab === 1 ? "success" : "primary"}
-                          style={{ marginLeft: "5px" }}
-                        >
+                          style={{ marginLeft: "5px" }}>
                           {tabledata.length}
                         </Badge>
                       )}
@@ -831,8 +809,7 @@ const InfoTable = ({
                           onClick={() => {
                             toggleTab(String(idx + 2), obj.option);
                           }}
-                          href="#"
-                        >
+                          href="#">
                           <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
                           {obj.label}
                           {obj.count > 0 && (
@@ -842,8 +819,7 @@ const InfoTable = ({
                                   ? "success"
                                   : "primary"
                               }
-                              style={{ marginLeft: "5px" }}
-                            >
+                              style={{ marginLeft: "5px" }}>
                               {obj.count}
                             </Badge>
                           )}
@@ -883,8 +859,7 @@ const InfoTable = ({
                     e.preventDefault();
                     // validation.handleSubmit();
                     return false;
-                  }}
-                >
+                  }}>
                   <ModalBody>
                     <input type="hidden" id="id-field" />
 
@@ -916,8 +891,7 @@ const InfoTable = ({
                     <div className="mb-3">
                       <Label
                         htmlFor="customername-field"
-                        className="form-label"
-                      >
+                        className="form-label">
                         Customer Name
                       </Label>
                       <Input
@@ -955,8 +929,7 @@ const InfoTable = ({
                         // value={
                         //     validation.values.product || ""
                         // }
-                        required
-                      >
+                        required>
                         {/* {productname.map((item, key) => (
                                                         <React.Fragment key={key}>
                                                             {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
@@ -1086,8 +1059,7 @@ const InfoTable = ({
                         className="btn btn-light"
                         onClick={() => {
                           setModal(false);
-                        }}
-                      >
+                        }}>
                         Close
                       </button>
 
