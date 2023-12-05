@@ -13,7 +13,7 @@ import LeaveApplyReducer from "../ChildReducer/LeaveApplyReducer";
 import CustomFieldReducer from "../ChildReducer/CustomFieldReducer";
 import TableReducer from "../ChildReducer/TableReducer";
 import LoaderReducer from "../ChildReducer/LoaderReducer";
-
+import SalaryComponentsReducer from "../ChildReducer/SalaryComponentsReducer";
 export const MainReducer = combineReducers({
     MetaReducer : MetaReducer,
     EmployeeReducer : EmployeeReducer,
@@ -29,4 +29,5 @@ export const MainReducer = combineReducers({
     CustomFieldReducer : CustomFieldReducer,
     TableReducer : TableReducer,
     LoaderReducer : LoaderReducer,
+    SalaryComponentsReducer : SalaryComponentsReducer,
 })

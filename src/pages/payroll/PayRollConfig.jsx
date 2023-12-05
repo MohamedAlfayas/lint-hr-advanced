@@ -44,6 +44,7 @@ import {
 } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { useDispatch } from "react-redux";
 import InfoTable from "../../component/common/table/InfoTable";
+import { setAllowances, setDeductions, setEarnings } from "../../redux/reducers/ChildReducer/SalaryComponentsReducer";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
@@ -350,7 +351,7 @@ const PayRollConfig = () => {
       contribute: [payrollobj.basic_components]
 
     };
-  },[]);
+  }, []);
 
   const handleEaringAdd = ($id) => {
     const value = customActiveTab1 == 1 ? "Edit Earning" :
@@ -367,7 +368,7 @@ const PayRollConfig = () => {
 
     } else {
       dispatch(setFormObj(earning_obj[0]));
-      
+
 
 
     }
@@ -375,56 +376,38 @@ const PayRollConfig = () => {
     dispatch(setComponentToShow("SalaryCmpntForm"));
     dispatch(toggleRSBView(true));
   };
-  // const handleAllowencesAdd = ($id) => {
-  //   dispatch(setFormTitle("Edit Alowences"));
 
-  //   if ($id == 0) {
+  const policiesFormObj = useMemo(() => {
 
+    return {
+      id: 0,
+      name: "",
+      desc: "",
+      earnings: [payrollobj.salary_components.earnings],
+      allowances: "",
+      deductions: "",
+      compliances: "",
 
-  //     dispatch(setFormObj(initialFormObj));
-
-
-  //   } else {
-  //     dispatch(setFormObj(earning_obj[0]));
-
-
-  //   }
-  //   dispatch(setFormWidthPercentage("40%"));
-  //   dispatch(setComponentToShow("SalaryCmpntForm"));
-  //   dispatch(toggleRSBView(true));
-  // };
-  // const handleDeductionsAdd = ($id) => {
-  //   dispatch(setFormTitle("Edit Deductions"));
-
-  //   if ($id == 0) {
-
-
-  //     dispatch(setFormObj(initialFormObj));
-
-
-  //   } else {
-  //     dispatch(setFormObj(earning_obj[0]));
-
-
-  //   }
-  //   dispatch(setFormWidthPercentage("40%"));
-  //   dispatch(setComponentToShow("SalaryCmpntForm"));
-  //   dispatch(toggleRSBView(true));
-  // };
+    };
+  }, []);
   const handleSalaryPoliciesAdd = ($id) => {
     dispatch(setFormTitle("Create policy"));
 
     if ($id == 0) {
 
 
-      dispatch(setFormObj(initialFormObj));
+      dispatch(setFormObj(policiesFormObj));
 
 
     } else {
       dispatch(setFormObj(earning_obj[0]));
-
+    
 
     }
+    dispatch(setEarnings(payrollobj.salary_components.earnings))
+    dispatch(setEarnings(payrollobj.salary_components.earnings))
+    dispatch(setAllowances(payrollobj.salary_components.allowances))
+    dispatch(setDeductions(payrollobj.salary_components.deductions))
     dispatch(setFormWidthPercentage("50%"));
     dispatch(setComponentToShow("SalaryPoliciesForm"));
     dispatch(toggleRSBView(true));
@@ -470,9 +453,10 @@ const PayRollConfig = () => {
       componentObj = payrollobj.salary_components.deductions.find((data) => data.name === item?.name);
       console.log(`${componentType}:`, componentObj);
     }
-    console.log("jjj",componentObj);
-    dispatch(setFormObj(componentObj))
 
+    console.log("jjj", componentObj);
+    dispatch(setFormObj(componentObj))
+  
 
     dispatch(setFormWidthPercentage("40%"));
     dispatch(setComponentToShow("SalaryCmpntForm"));

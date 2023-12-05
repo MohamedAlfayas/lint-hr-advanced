@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import Select from "react-select";
-import FeatherIcon from "feather-icons-react/build/FeatherIcon";
+import { SweetAlert } from "../../common/sweetAlert/SweetAlert";
+import Swal from "sweetalert2";
 import {
     Button,
     Card,
@@ -21,16 +22,17 @@ import {
     Table,
 } from "reactstrap";
 
-
 const salaryPloiciesForm = () => {
     const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+    const { earnings_data } = useSelector((state) => state.SalaryComponentsReducer);
+    console.log("kkk", earnings_data);
+    const { allowances_data } = useSelector((state) => state.SalaryComponentsReducer);
+    // console.log("kkk",allowances_data);
+    const { deductions_data } = useSelector((state) => state.SalaryComponentsReducer);
+    // console.log("kkk",deductions_data);
     const [customFieldObj, setCustomFieldObj] = useState(form_obj);
     console.log("fghj", form_obj);
-    const [showTable, setShowTable] = useState({
-        earning: false,
-        allowance: false,
-        deduction: false,
-    });
+
 
 
 
@@ -41,14 +43,153 @@ const salaryPloiciesForm = () => {
             [name]: value,
         });
     };
-    const handleSelectTable = (tableType) => {
+   
+    const hanldeEarningComponent = () => {
 
-        setShowTable((prevShowTable) => ({
-            earning: tableType === "earning" ? !prevShowTable.earning : prevShowTable.earning,
-            allowance: tableType === "allowance" ? !prevShowTable.allowance : prevShowTable.allowance,
-            deduction: tableType === "deduction" ? !prevShowTable.deduction : prevShowTable.deduction,
-        }));
+        const tableRows = earnings_data.map((item) => `
+          <tr>
+            <td><input type="checkbox" class="earning-checkbox" data-id="${item.id}"></td>
+            <td>${item.name}</td>
+            <td>${item.pro_rata ? "Yes" : "No"}</td>
+            <td>${item.tax ? "Yes" : "No"}</td>
+            <td>${item.insurance ? "Yes" : "No"}</td>
+          </tr>
+        `).join('');
+
+        Swal.fire({
+            title: "Select Earning Components",
+            html: `
+            <table class="table">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="selectAll"></th>
+                  <th>Name</th>
+                  <th>Pro-rata</th>
+                  <th>Taxable</th>
+                  <th>Contribute to insurance&Fund</th>
+                </tr>
+              </thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          `,
+            customClass: {
+                container: 'custom-modal-container',
+            },
+            width: '60%',
+            showCloseButton: true,
+            showCancelButton: true,
+            showConfirmButton: true,
+            confirmButtonText: 'Save',
+            cancelButtonText: 'Cancel',
+            cancelButtonColor: '#d33',
+        });
+
+
+        // Add event listener for the "Select All" checkbox
+        document.getElementById('selectAll').addEventListener('change', function () {
+            const checkboxes = document.querySelectorAll('.earning-checkbox');
+            checkboxes.forEach((checkbox) => {
+                checkbox.checked = document.getElementById('selectAll').checked;
+            });
+        });
     };
+    const hanldeAllowancesComponent = () => {
+        const tableRows = allowances_data.map((item) => `
+          <tr>
+            <td><input type="checkbox" class="earning-checkbox" data-id="${item.id}"></td>
+            <td>${item.name}</td>
+            <td>${item.pro_rata ? "Yes" : "No"}</td>
+            <td>${item.tax ? "Yes" : "No"}</td>
+            <td>${item.insurance ? "Yes" : "No"}</td>
+          </tr>
+        `).join('');
+
+        Swal.fire({
+            title: "Select Allowances Components",
+            html: `
+            <table class="table">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="selectAll"></th>
+                  <th>Name</th>
+                  <th>Pro-rata</th>
+                  <th>Taxable</th>
+                  <th>Contribute to insurance&Fund</th>
+                </tr>
+              </thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          `,
+            customClass: {
+                container: 'custom-modal-container',
+            },
+            width: '60%',
+            showCloseButton: true,
+            showCancelButton: true,
+            showConfirmButton: true,
+            confirmButtonText: 'Save',
+            cancelButtonText: 'Cancel',
+            cancelButtonColor: '#d33',
+        });
+
+        // Add event listener for the "Select All" checkbox
+        document.getElementById('selectAll').addEventListener('change', function () {
+            const checkboxes = document.querySelectorAll('.earning-checkbox');
+            checkboxes.forEach((checkbox) => {
+                checkbox.checked = document.getElementById('selectAll').checked;
+            });
+        });
+    };
+
+    const hanldeDeductionsComponent = () => {
+        const tableRows = deductions_data.map((item) => `
+          <tr>
+            <td><input type="checkbox" class="earning-checkbox" data-id="${item.id}"></td>
+            <td>${item.name}</td>
+            <td>${item.pro_rata ? "Yes" : "No"}</td>
+            <td>${item.tax ? "Yes" : "No"}</td>
+            <td>${item.insurance ? "Yes" : "No"}</td>
+          </tr>
+        `).join('');
+
+        Swal.fire({
+            title: "Select Deductions Components",
+            html: `
+            <table class="table">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="selectAll"></th>
+                  <th>Name</th>
+                  <th>Pro-rata</th>
+                  <th>Taxable</th>
+                  <th>Contribute to insurance&Fund</th>
+                </tr>
+              </thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          `,
+            customClass: {
+                container: 'custom-modal-container',
+            },
+            width: '60%',
+            showCloseButton: true,
+            showCancelButton: true,
+            showConfirmButton: true,
+            confirmButtonText: 'Save',
+            cancelButtonText: 'Cancel',
+            cancelButtonColor: '#d33',
+        });
+
+        // Add event listener for the "Select All" checkbox
+        document.getElementById('selectAll').addEventListener('change', function () {
+            const checkboxes = document.querySelectorAll('.earning-checkbox');
+            checkboxes.forEach((checkbox) => {
+                checkbox.checked = document.getElementById('selectAll').checked;
+            });
+        });
+    };
+
+
     useEffect(() => {
         setCustomFieldObj(form_obj);
     }, [form_obj]);
@@ -103,46 +244,11 @@ const salaryPloiciesForm = () => {
                                         </Label>
                                         <div className="form-icon right">
                                             <Button color="primary"
-                                                onClick={() => handleSelectTable("earning")}>
+                                                onClick={() => hanldeEarningComponent()}>
                                                 <i className="ri-add-line align-bottom me-1"></i>
                                                 Select Components
                                             </Button>{' '}
-                                            {showTable.earning && (
-                                                <div>
-                                                    <table>
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Components</th>
-                                                                <th>Calculation Type</th>
 
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <tr>
-                                                                <td>
-                                                                    <input type="text" style={{ width: '100px' }} />
-                                                                </td>
-                                                                <td>
-
-                                                                    <select style={{ width: '100px' }}>
-                                                                        <option value="1">Option 1</option>
-                                                                        <option value="2">Option 2</option>
-                                                                        <option value="3">Option 3</option>
-
-                                                                    </select>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" style={{ width: '100px' }} />
-                                                                </td>
-
-                                                            </tr>
-
-
-                                                        </tbody>
-                                                    </table>
-
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                     <div className="mb-3">
@@ -151,46 +257,11 @@ const salaryPloiciesForm = () => {
                                         </Label>
                                         <div className="form-icon right">
                                             <Button color="primary"
-                                                onClick={() => handleSelectTable("allowance")}>
+                                                onClick={() => hanldeAllowancesComponent()}>
                                                 <i className="ri-add-line align-bottom me-1"></i>
                                                 Select Components
                                             </Button>{' '}
-                                            {showTable.allowance && (
-                                                <div>
-                                                    <table>
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Components</th>
-                                                                <th>Calculation Type</th>
 
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <tr>
-                                                                <td>
-                                                                    <input type="text" style={{ width: '100px' }} />
-                                                                </td>
-                                                                <td>
-
-                                                                    <select style={{ width: '100px' }}>
-                                                                        <option value="1">Option 1</option>
-                                                                        <option value="2">Option 2</option>
-                                                                        <option value="3">Option 3</option>
-
-                                                                    </select>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" style={{ width: '100px' }} />
-                                                                </td>
-
-                                                            </tr>
-
-
-                                                        </tbody>
-                                                    </table>
-
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                     <div className="mb-3">
@@ -199,48 +270,11 @@ const salaryPloiciesForm = () => {
                                         </Label>
                                         <div className="form-icon right">
                                             <Button color="primary"
-                                                onClick={() => handleSelectTable("deduction")}>
+                                                onClick={() => hanldeDeductionsComponent()}>
                                                 <i className="ri-add-line align-bottom me-1"></i>
                                                 Select Components
                                             </Button>{' '}
-                                            {showTable.deduction && (
-                                                <div>
-                                                    <table>
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Components</th>
-                                                                <th>Calculation Type</th>
 
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <tr>
-                                                                <td>
-                                                                    <input type="text" style={{ width: '100px' }} />
-                                                                </td>
-                                                                <td>
-
-                                                                    <select style={{ width: '100px' }}>
-                                                                        <option value="1">Option 1</option>
-                                                                        <option value="2">Option 2</option>
-                                                                        <option value="3">Option 3</option>
-
-                                                                    </select>
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" style={{ width: '100px' }} />
-                                                                </td>
-
-                                                            </tr>
-
-
-                                                        </tbody>
-                                                    </table>
-
-
-
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                     <div className="mb-3">
@@ -249,7 +283,7 @@ const salaryPloiciesForm = () => {
                                         </Label>
                                         <div className="">
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
-                                            <i className="ri-information-line" style={{ fontSize: '16px' }}></i>
+                                                <i className="ri-information-line" style={{ fontSize: '16px' }}></i>
                                                 <h1 className="fs-13" style={{ marginLeft: '5px' }}>Compliances included ESI, EPF</h1>
                                             </div>
                                             <div className="form-check form-check-inline">
