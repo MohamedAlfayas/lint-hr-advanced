@@ -2032,7 +2032,9 @@ const EmployeeForm = () => {
       .catch((err) => {
         console.log("ERr == ", err);
         dispatch(setLoaderVisible(false));
-        toast.error(err?.response?.data?.message);
+        toast.error(
+          err?.response?.data?.message || err?.response?.data?.detail
+        );
       });
   };
 

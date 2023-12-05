@@ -101,22 +101,24 @@ const CustomFieldForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("employee data = ", customFieldObj);
-    // Api({
-    //     method: 'POST',
-    //     url: 'fields/custom-field/create/',
-    //     data: customFieldObj
-    // })
-    //     .then(res => {
-    //         console.log("REs = ", res);
-    //         customFieldObj.id === 0 ? dispatch(addCustomField(res?.data.data)) : dispatch(editCustomField(res?.data?.data));
-    //         dispatch(toggleRSBView(false));
-    //         dispatch(setActiveTableTab("all"))
-    //         toast.success(res?.data?.message);
-    //     })
-    //     .catch(err => {
-    //         console.log("ERr == ", err);
-    //         toast.success(err?.response?.data?.message);
-    //     })
+    Api({
+      method: "POST",
+      url: "fields/custom-field/create/",
+      data: customFieldObj,
+    })
+      .then((res) => {
+        console.log("REs = ", res);
+        customFieldObj.id === 0
+          ? dispatch(addCustomField(res?.data.data))
+          : dispatch(editCustomField(res?.data?.data));
+        dispatch(toggleRSBView(false));
+        dispatch(setActiveTableTab("all"));
+        toast.success(res?.data?.message);
+      })
+      .catch((err) => {
+        console.log("ERr == ", err);
+        toast.success(err?.response?.data?.message);
+      });
   };
 
   return (

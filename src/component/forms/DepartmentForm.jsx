@@ -32,7 +32,7 @@ const DepartmentForm = () => {
   const toggleHd = () => setHdDropDown((prevState) => !prevState);
   const [departmentData, setDepartmentData] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-  const DepartmentList = GetLocalStorageData('department') || [];
+  const DepartmentList = GetLocalStorageData("department") || [];
 
   const dispatch = useDispatch();
 
@@ -40,7 +40,9 @@ const DepartmentForm = () => {
 
   useEffect(() => {
     setDepartmentData(form_obj);
-    setDepartmentOptions(DepartmentList.filter(obj => obj.pid !== form_obj.id));
+    setDepartmentOptions(
+      DepartmentList.filter((obj) => obj.pid !== form_obj.id)
+    );
   }, [form_obj]);
 
   const handleInputChange = (e) => {
@@ -51,25 +53,26 @@ const DepartmentForm = () => {
     });
   };
 
-  const handleSubmit = async () => {    
+  const handleSubmit = async () => {
     dispatch(setLoaderVisible(true));
     Api({
-      method: 'POST',
-      url: 'department/create/',
-      data: departmentData
+      method: "POST",
+      url: "department/create/",
+      data: departmentData,
     })
-      .then(res => {
+      .then((res) => {
         dispatch(setDepartmentDetails(res?.data?.data));
         dispatch(setLoaderVisible(false));
         dispatch(toggleRSBView(false));
         toast.success(res?.data?.message);
       })
-      .catch(err => {
+      .catch((err) => {
         dispatch(setLoaderVisible(false));
-        toast.error(err?.response?.data?.message);
-      })
+        toast.error(
+          err?.response?.data?.message || err?.response?.data?.detail
+        );
+      });
   };
-
 
   return (
     <React.Fragment>
@@ -105,17 +108,23 @@ const DepartmentForm = () => {
                     tag="div"
                     className="form-control rounded-end flag-input form-select"
                     required
-                    style={{ cursor: "pointer" }}>
-                    {(departmentData.pid) && (departmentOptions.find(obj => obj.id === departmentData.pid)).name || "Select Parent Department"}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {(departmentData.pid &&
+                      departmentOptions.find(
+                        (obj) => obj.id === departmentData.pid
+                      ).name) ||
+                      "Select Parent Department"}
                   </DropdownToggle>
                   <DropdownMenu
                     as="ul"
-                    className="list-unstyled w-100 dropdown-menu-list mb-0">
+                    className="list-unstyled w-100 dropdown-menu-list mb-0"
+                  >
                     <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
                       {(
-                        departmentOptions.filter(
-                          (obj) => obj !== parseInt(departmentData.id)
-                        ).sort((a, b) => a.name.localeCompare(b.name)) || []
+                        departmentOptions
+                          .filter((obj) => obj !== parseInt(departmentData.id))
+                          .sort((a, b) => a.name.localeCompare(b.name)) || []
                       ).map((item, key) => (
                         <DropdownItem
                           as="li"
@@ -126,7 +135,8 @@ const DepartmentForm = () => {
                             });
                           }}
                           key={key}
-                          className="dropdown-item d-flex">
+                          className="dropdown-item d-flex"
+                        >
                           <div className="flex-grow-1">
                             <div className="d-flex">
                               <div className="country-name me-1">
