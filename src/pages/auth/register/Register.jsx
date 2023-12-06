@@ -1,7 +1,7 @@
-import { useFormik } from 'formik';
-import React, { useEffect, useState } from 'react'
-import { useDispatch } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
+import { useFormik } from "formik";
+import React, { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Card,
   CardBody,
@@ -25,22 +25,19 @@ import classnames from "classnames";
 
 import logoLight from "../../../assets/images/logo-light.png";
 
-
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
 
 import * as Yup from "yup";
-import { MetaTitle } from '../../../common/data/MetaTitle';
-import { validate } from '../../../common/js/EmailValidate';
-import AuthParticles from '../../../component/authparticles/AuthParticles';
-
+import { MetaTitle } from "../../../common/data/MetaTitle";
+import { validate } from "../../../common/js/EmailValidate";
+import AuthParticles from "../../../component/authparticles/AuthParticles";
+import { toast } from "react-toastify";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
 
-
 const Register = () => {
-
   const navigate = useNavigate();
 
   // const [userRegister, setuserRegister] = useState([]);
@@ -55,7 +52,7 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [comapnyName, setCompanyName] = useState("");
   const [domain, setDomain] = useState("");
-  const [domainChangeAccess, setDomainChangeAccess] = useState(true)
+  const [domainChangeAccess, setDomainChangeAccess] = useState(true);
 
   function toggleTab(tab, value) {
     if (activeTab !== tab) {
@@ -70,72 +67,69 @@ const Register = () => {
     console.log("Tab = ", tab);
   }
 
-
   const validation = useFormik({
     // enableReinitialize : use this flag when initial values needs to be changed
     enableReinitialize: true,
 
     initialValues: {
-      name: name || '',
-      email: email || '',
-      password: password || '',
-      comapnyName: comapnyName || '',
-      domain: domain || '',
+      name: name || "",
+      email: email || "",
+      password: password || "",
+      comapnyName: comapnyName || "",
+      domain: domain || "",
     },
     validate,
     validationSchema: Yup.object({
-      name: Yup.string().required("Please Enter Your Name"),
-      email: Yup.string().required("Please Enter Your Email"),
-      password: Yup.string().required("Please Enter Your Password"),
-      comapnyName: Yup.string().required("Please Enter Your Company Name"),
-      domain: Yup.string().required("Please Enter Your Domain"),
+      name: Yup.string().trim().required("Please Enter Your Name"),
+      email: Yup.string().trim().required("Please Enter Your Email"),
+      password: Yup.string().trim().required("Please Enter Your Password"),
+      comapnyName: Yup.string()
+        .trim()
+        .required("Please Enter Your Company Name"),
+      domain: Yup.string().trim().required("Please Enter Your Domain"),
     }),
     onSubmit: (values) => {
-      console.log("Values = ",values);
-      if (((name).trim()).length === 0 ||
-        ((email).trim()).length === 0 ||
-        ((password).trim()).length === 0 ||
-        ((comapnyName).trim()).length === 0 ||
-        ((domain).trim().length === 0)
+      console.log("Values = ", values);
+      if (
+        name.trim().length === 0 ||
+        email.trim().length === 0 ||
+        password.trim().length === 0 ||
+        comapnyName.trim().length === 0 ||
+        domain.trim().length === 0
       ) {
-        alert("Please Fill Your Details")
-      }
-      else {        
+        toast.error("Please Fill Your Details");
+      } else {
         toggleTab(activeTab + 1, 100);
         // localStorage.setItem("token", "abc")
         console.log("Form Values = ", values);
         // navigate("/login")
 
-        setTimeout(() =>{
-          navigate("/auth/login")
-        },2000)
-        
+        setTimeout(() => {
+          navigate("/auth/login");
+        }, 2000);
       }
-    }
+    },
   });
 
-  const setDomainFormat = (val) =>{
-    return ((val)
-    .replaceAll(" ", "-")
-    .replaceAll("--", "-")
-    .replaceAll("_", "-")).toLowerCase()
-  }
-
+  const setDomainFormat = (val) => {
+    return val
+      .replaceAll(" ", "-")
+      .replaceAll("--", "-")
+      .replaceAll("_", "-")
+      .toLowerCase();
+  };
 
   useEffect(() => {
-    console.log("Valid values = ",validation.values);
+    console.log("Valid values = ", validation.values);
     if (domainChangeAccess === true) {
-      setDomain(setDomainFormat(comapnyName))
+      setDomain(setDomainFormat(comapnyName));
     }
-  }, [comapnyName])
-
+  }, [comapnyName]);
 
   const handleDomainChange = (e) => {
     setDomainChangeAccess(false);
-    setDomain(setDomainFormat(e.target.value))
-  }
-
-
+    setDomain(setDomainFormat(e.target.value));
+  };
 
   document.title = `Register | ${MetaTitle || "Lint HR"} `;
 
@@ -167,7 +161,7 @@ const Register = () => {
                         validation.handleSubmit();
                         return false;
                       }}
-                      action='#'
+                      action="#"
                       className="form-steps"
                     >
                       <div className="text-center pt-3 pb-4 mb-1">
@@ -184,7 +178,6 @@ const Register = () => {
                           <Nav
                             className="nav-pills progress-bar-tab custom-nav"
                             role="tablist"
-
                           >
                             <NavItem>
                               <NavLink
@@ -200,7 +193,7 @@ const Register = () => {
                                   toggleTab(1, 0);
                                 }}
                                 tag="button"
-                                type='button'
+                                type="button"
                               >
                                 1
                               </NavLink>
@@ -216,19 +209,30 @@ const Register = () => {
                                   "rounded-pill"
                                 )}
                                 onClick={() => {
-                                  console.log("validation.errors.email = ",validation.errors.email);
-                                  if (((name).trim()).length === 0 || (((email).trim()).length === 0 && (!validation.errors.email)) || ((password).trim()).length === 0) {
-                                    alert("Please Enter All Details")
-                                  }
-                                  else if(((email).trim()).length !== 0 && (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(email))){
-                                    alert("Invalid Email Format")
-                                  }
-                                  else {
+                                  console.log(
+                                    "validation.errors.email = ",
+                                    validation.errors.email
+                                  );
+                                  if (
+                                    name.trim().length === 0 ||
+                                    (email.trim().length === 0 &&
+                                      !validation.errors.email) ||
+                                    password.trim().length === 0
+                                  ) {
+                                    toast.error("Please Enter All Details");
+                                  } else if (
+                                    email.trim().length !== 0 &&
+                                    !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(
+                                      email
+                                    )
+                                  ) {
+                                    toast.error("Invalid Email Format");
+                                  } else {
                                     toggleTab(2, 50);
                                   }
                                 }}
                                 tag="button"
-                                type='button'
+                                type="button"
                               >
                                 2
                               </NavLink>
@@ -247,7 +251,7 @@ const Register = () => {
                                 //   toggleTab(3, 100);
                                 // }}
                                 tag="button"
-                                type='button'
+                                type="button"
                               >
                                 3
                               </NavLink>
@@ -280,16 +284,22 @@ const Register = () => {
                                     name="name"
                                     className="form-control"
                                     placeholder="Enter name"
-                                    type="name"
+                                    type="text"
                                     onChange={(e) => setName(e.target.value)}
                                     onBlur={validation.handleBlur}
                                     value={name || ""}
                                     invalid={
-                                      validation.touched.name && validation.errors.name ? true : false
+                                      validation.touched.name &&
+                                      validation.errors.name
+                                        ? true
+                                        : false
                                     }
                                   />
-                                  {validation.touched.name && validation.errors.name ? (
-                                    <FormFeedback type="invalid">{validation.errors.name}</FormFeedback>
+                                  {validation.touched.name &&
+                                  validation.errors.name ? (
+                                    <FormFeedback type="invalid">
+                                      {validation.errors.name}
+                                    </FormFeedback>
                                   ) : null}
                                 </div>
                               </Col>
@@ -310,15 +320,20 @@ const Register = () => {
                                     onBlur={validation.handleBlur}
                                     value={email || ""}
                                     invalid={
-                                      validation.touched.email && validation.errors.email ? true : false
+                                      validation.touched.email &&
+                                      validation.errors.email
+                                        ? true
+                                        : false
                                     }
                                   />
-                                  {validation.touched.email && validation.errors.email ? (
-                                    <FormFeedback type="invalid">{validation.errors.email}</FormFeedback>
+                                  {validation.touched.email &&
+                                  validation.errors.email ? (
+                                    <FormFeedback type="invalid">
+                                      {validation.errors.email}
+                                    </FormFeedback>
                                   ) : null}
                                 </div>
                               </Col>
-
                             </Row>
                             <div className="mb-3">
                               <Label
@@ -337,13 +352,26 @@ const Register = () => {
                                   onChange={(e) => setPassword(e.target.value)}
                                   onBlur={validation.handleBlur}
                                   invalid={
-                                    validation.touched.password && validation.errors.password ? true : false
+                                    validation.touched.password &&
+                                    validation.errors.password
+                                      ? true
+                                      : false
                                   }
                                 />
-                                {validation.touched.password && validation.errors.password ? (
-                                  <FormFeedback type="invalid">{validation.errors.password}</FormFeedback>
+                                {validation.touched.password &&
+                                validation.errors.password ? (
+                                  <FormFeedback type="invalid">
+                                    {validation.errors.password}
+                                  </FormFeedback>
                                 ) : null}
-                                <button className="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted" type="button" id="password-addon" onClick={() => setPasswordShow(!passwordShow)}><i className="ri-eye-fill align-middle"></i></button>
+                                <button
+                                  className="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted"
+                                  type="button"
+                                  id="password-addon"
+                                  onClick={() => setPasswordShow(!passwordShow)}
+                                >
+                                  <i className="ri-eye-fill align-middle"></i>
+                                </button>
                               </div>
                             </div>
                           </div>
@@ -352,17 +380,27 @@ const Register = () => {
                               type="button"
                               className="btn btn-success btn-label right ms-auto nexttab nexttab"
                               onClick={() => {
-                                console.log("validation.errors.email = ",validation.errors);
-                                if (((name).trim()).length === 0 || ((email).trim()).length === 0 || ((password).trim()).length === 0) {
-                                  alert("Please Enter All Details")
-                                }
-                                else if(((email).trim()).length !== 0 && (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(email))){
-                                  alert("Invalid Email Format")
-                                }
-                                else {
+                                console.log(
+                                  "validation.errors.email = ",
+                                  validation.errors
+                                );
+                                if (
+                                  name.trim().length === 0 ||
+                                  email.trim().length === 0 ||
+                                  password.trim().length === 0
+                                ) {
+                                  toast.error("Please Enter All Details");
+                                } else if (
+                                  email.trim().length !== 0 &&
+                                  !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(
+                                    email
+                                  )
+                                ) {
+                                  toast.error("Invalid Email Format");
+                                } else {
                                   toggleTab(activeTab + 1, 50);
                                 }
-                                console.log("Values = ",validation.values);
+                                console.log("Values = ", validation.values);
                               }}
                             >
                               <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
@@ -395,15 +433,23 @@ const Register = () => {
                                     className="form-control"
                                     placeholder="Enter Company Name"
                                     type="text"
-                                    onChange={(e) => setCompanyName(e.target.value)}
+                                    onChange={(e) =>
+                                      setCompanyName(e.target.value)
+                                    }
                                     onBlur={validation.handleBlur}
                                     value={comapnyName || ""}
                                     invalid={
-                                      validation.touched.comapnyName && validation.errors.comapnyName ? true : false
+                                      validation.touched.comapnyName &&
+                                      validation.errors.comapnyName
+                                        ? true
+                                        : false
                                     }
                                   />
-                                  {validation.touched.comapnyName && validation.errors.comapnyName ? (
-                                    <FormFeedback type="invalid">{validation.errors.comapnyName}</FormFeedback>
+                                  {validation.touched.comapnyName &&
+                                  validation.errors.comapnyName ? (
+                                    <FormFeedback type="invalid">
+                                      {validation.errors.comapnyName}
+                                    </FormFeedback>
                                   ) : null}
                                 </div>
                               </Col>
@@ -424,29 +470,38 @@ const Register = () => {
                                       onChange={handleDomainChange}
                                       value={domain || ""}
                                       invalid={
-                                        validation.touched.domain && validation.errors.domain ? true : false
+                                        validation.touched.domain &&
+                                        validation.errors.domain
+                                          ? true
+                                          : false
                                       }
                                     />
-                                    <span className="input-group-text" id="basic-addon2">.linthr.com</span>
-                                    {validation.touched.domain && validation.errors.domain ? (
-                                      <FormFeedback type="invalid">{validation.errors.domain}</FormFeedback>
-                                    ) : null}
-
-                                  </div>
-                                  <div id="passwordHelpBlock" className="form-text">
-
-                                    <span>
-                                      {validation.values.comapnyName ? (
-                                        `Your company domain will be: https://${domain}.linthr.com`
-                                      ) : "(*) We will create a unique company URL for you to log into Lint HR"}
+                                    <span
+                                      className="input-group-text"
+                                      id="basic-addon2"
+                                    >
+                                      .linthr.com
                                     </span>
-
+                                    {validation.touched.domain &&
+                                    validation.errors.domain ? (
+                                      <FormFeedback type="invalid">
+                                        {validation.errors.domain}
+                                      </FormFeedback>
+                                    ) : null}
+                                  </div>
+                                  <div
+                                    id="passwordHelpBlock"
+                                    className="form-text"
+                                  >
+                                    <span>
+                                      {validation.values.comapnyName
+                                        ? `Your company domain will be: https://${domain}.linthr.com`
+                                        : "(*) We will create a unique company URL for you to log into Lint HR"}
+                                    </span>
                                   </div>
                                 </div>
                               </Col>
-
                             </Row>
-
                           </div>
 
                           <div className="d-flex align-items-start gap-3 mt-4">
@@ -461,8 +516,11 @@ const Register = () => {
                               Back to General
                             </button>
                             <Button
-                              onClick={() =>{
-                                console.log("final Values = ",validation.values);
+                              onClick={() => {
+                                console.log(
+                                  "final Values = ",
+                                  validation.values
+                                );
                               }}
                               type="submit"
                               className="btn btn-success btn-label right ms-auto nexttab nexttab"
@@ -488,9 +546,7 @@ const Register = () => {
                               <p className="text-muted">
                                 You have Successfully Signed Up
                               </p>
-                              <p className="text-muted">
-                                Please Wait !!!
-                              </p>
+                              <p className="text-muted">Please Wait !!!</p>
                             </div>
                           </div>
                         </TabPane>
@@ -500,16 +556,24 @@ const Register = () => {
                 </Card>
 
                 <div className="mt-4 text-center">
-                  <p className="mb-0">Already have an account ? <Link to="/auth/login" className="fw-semibold text-primary text-decoration-underline"> Signin </Link> </p>
+                  <p className="mb-0">
+                    Already have an account ?{" "}
+                    <Link
+                      to="/auth/login"
+                      className="fw-semibold text-primary text-decoration-underline"
+                    >
+                      {" "}
+                      Signin{" "}
+                    </Link>{" "}
+                  </p>
                 </div>
-
               </Col>
             </Row>
           </Container>
         </div>
       </AuthParticles>
     </React.Fragment>
-  )
-}
+  );
+};
 
-export default Register
+export default Register;

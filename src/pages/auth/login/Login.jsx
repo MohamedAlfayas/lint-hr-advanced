@@ -312,8 +312,8 @@ const Login = () => {
     },
     validate,
     validationSchema: Yup.object({
-      email: Yup.string().required("Please Enter Your Email"),
-      password: Yup.string().required("Please Enter Your Password"),
+      email: Yup.string().trim().required("Please Enter Your Email"),
+      password: Yup.string().trim().required("Please Enter Your Password"),
     }),
     onSubmit: (values) => {
       console.log("Form Values = ", values);
@@ -328,7 +328,7 @@ const Login = () => {
         data: values,
       })
         .then((res) => {
-          console.log('adminResponse', res);
+          console.log("adminResponse", res);
           localStorage.setItem(
             "lint_hr_token",
             JSON.stringify(res?.data?.token)
@@ -337,7 +337,10 @@ const Login = () => {
             "lcEdu_GlobalData",
             JSON.stringify(tempGlobalData)
           );
-          localStorage.setItem('lint_hr_profile_data', JSON.stringify(res?.data?.profile_data))
+          localStorage.setItem(
+            "lint_hr_profile_data",
+            JSON.stringify(res?.data?.profile_data)
+          );
           toast.success(res?.data?.message);
           navigate("/dashboard");
         })
@@ -385,7 +388,8 @@ const Login = () => {
                           validation.handleSubmit();
                           return false;
                         }}
-                        action="#">
+                        action="#"
+                      >
                         <div className="mb-3">
                           <Label htmlFor="email" className="form-label">
                             Email
@@ -400,13 +404,13 @@ const Login = () => {
                             value={validation.values.email || ""}
                             invalid={
                               validation.touched.email &&
-                                validation.errors.email
+                              validation.errors.email
                                 ? true
                                 : false
                             }
                           />
                           {validation.touched.email &&
-                            validation.errors.email ? (
+                          validation.errors.email ? (
                             <FormFeedback type="invalid">
                               {validation.errors.email}
                             </FormFeedback>
@@ -417,13 +421,15 @@ const Login = () => {
                           <div className="float-end">
                             <Link
                               to="/auth/forgot-password"
-                              className="text-muted">
+                              className="text-muted"
+                            >
                               Forgot password?
                             </Link>
                           </div>
                           <Label
                             className="form-label"
-                            htmlFor="password-input">
+                            htmlFor="password-input"
+                          >
                             Password
                           </Label>
                           <div className="position-relative auth-pass-inputgroup mb-3">
@@ -437,13 +443,13 @@ const Login = () => {
                               onBlur={validation.handleBlur}
                               invalid={
                                 validation.touched.password &&
-                                  validation.errors.password
+                                validation.errors.password
                                   ? true
                                   : false
                               }
                             />
                             {validation.touched.password &&
-                              validation.errors.password ? (
+                            validation.errors.password ? (
                               <FormFeedback type="invalid">
                                 {validation.errors.password}
                               </FormFeedback>
@@ -452,7 +458,8 @@ const Login = () => {
                               className="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted"
                               type="button"
                               id="password-addon"
-                              onClick={() => setPasswordShow(!passwordShow)}>
+                              onClick={() => setPasswordShow(!passwordShow)}
+                            >
                               <i className="ri-eye-fill align-middle"></i>
                             </button>
                           </div>
@@ -467,7 +474,8 @@ const Login = () => {
                           />
                           <Label
                             className="form-check-label"
-                            htmlFor="auth-remember-check">
+                            htmlFor="auth-remember-check"
+                          >
                             Remember me
                           </Label>
                         </div>
@@ -476,7 +484,8 @@ const Login = () => {
                           <Button
                             color="success"
                             className="btn btn-success w-100 text-center"
-                            type="submit">
+                            type="submit"
+                          >
                             Sign In
                           </Button>
                         </div>
@@ -491,7 +500,8 @@ const Login = () => {
                               className="btn btn-primary btn-icon me-1"
                               onClick={(e) => {
                                 e.preventDefault();
-                              }}>
+                              }}
+                            >
                               <i className="ri-facebook-fill fs-16" />
                             </Link>
                             <Link
@@ -499,7 +509,8 @@ const Login = () => {
                               className="btn btn-danger btn-icon me-1"
                               onClick={(e) => {
                                 e.preventDefault();
-                              }}>
+                              }}
+                            >
                               <i className="ri-google-fill fs-16" />
                             </Link>
                             <Button color="dark" className="btn-icon">
@@ -520,7 +531,8 @@ const Login = () => {
                     Don't have an account ?{" "}
                     <Link
                       to="/auth/register"
-                      className="fw-semibold text-primary text-decoration-underline">
+                      className="fw-semibold text-primary text-decoration-underline"
+                    >
                       {" "}
                       Signup{" "}
                     </Link>{" "}
