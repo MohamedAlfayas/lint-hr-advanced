@@ -14,6 +14,7 @@ import {
   DropdownMenu,
   DropdownToggle,
   Form,
+  FormFeedback,
   Input,
   Label,
   Row,
@@ -32,6 +33,8 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 import { ConvertISODateFormat } from "../../common/js/ConvertDateFormat";
 
 import Flatpickr from "react-flatpickr";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
 const HolidayForm = () => {
   const dispatch = useDispatch();
@@ -54,6 +57,41 @@ const HolidayForm = () => {
     );
   }, [form_obj]);
 
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: holidayObj,
+    validationSchema: Yup.object({
+      name: Yup.string().trim().required("Please Enter Holiday Name"),
+      work_schedule_id_list: Yup.array()
+        .required("Select Work Schedule")
+        .min(1, "Select Work Schedule"),
+      date: Yup.string().trim().required("Please Select Date"),
+    }),
+    onSubmit: (values) => {
+      console.log("SUCCESSSS !!!! Formik Values = ", values);
+      dispatch(setLoaderVisible(true));
+      Api({
+        method: "POST",
+        url: "holiday/create/",
+        data: values,
+      })
+        .then((res) => {
+          console.log("REs = ", res);
+          holidayObj.id === 0
+            ? dispatch(addHoliday(res?.data.data))
+            : dispatch(editHoliday(res?.data?.data));
+          dispatch(setLoaderVisible(false));
+          dispatch(toggleRSBView(false));
+          toast.success(res?.data?.message);
+        })
+        .catch((err) => {
+          dispatch(setLoaderVisible(false));
+          console.log("ERr == ", err);
+          toast.success(err?.response?.data?.message);
+        });
+    },
+  });
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setHolidayObj({
@@ -70,28 +108,28 @@ const HolidayForm = () => {
     });
   };
 
-  const handleSubmit = async () => {
-    dispatch(setLoaderVisible(true));
-    Api({
-      method: "POST",
-      url: "holiday/create/",
-      data: holidayObj,
-    })
-      .then((res) => {
-        console.log("REs = ", res);
-        holidayObj.id === 0
-          ? dispatch(addHoliday(res?.data.data))
-          : dispatch(editHoliday(res?.data?.data));
-        dispatch(setLoaderVisible(false));
-        dispatch(toggleRSBView(false));
-        toast.success(res?.data?.message);
-      })
-      .catch((err) => {
-        dispatch(setLoaderVisible(false));
-        console.log("ERr == ", err);
-        toast.success(err?.response?.data?.message);
-      });
-  };
+  // const handleSubmit = async () => {
+  //   dispatch(setLoaderVisible(true));
+  //   Api({
+  //     method: "POST",
+  //     url: "holiday/create/",
+  //     data: holidayObj,
+  //   })
+  //     .then((res) => {
+  //       console.log("REs = ", res);
+  //       holidayObj.id === 0
+  //         ? dispatch(addHoliday(res?.data.data))
+  //         : dispatch(editHoliday(res?.data?.data));
+  //       dispatch(setLoaderVisible(false));
+  //       dispatch(toggleRSBView(false));
+  //       toast.success(res?.data?.message);
+  //     })
+  //     .catch((err) => {
+  //       dispatch(setLoaderVisible(false));
+  //       console.log("ERr == ", err);
+  //       toast.success(err?.response?.data?.message);
+  //     });
+  // };
 
   const handleDateChange = (selectedDates, dateStr, instance) => {
     setDate(selectedDates);
@@ -105,13 +143,13 @@ const HolidayForm = () => {
     <React.Fragment>
       <Row>
         <Col>
-          <Form onSubmit={handleSubmit} action="javascript:void(0)">
+          <Form onSubmit={FormikForm.handleSubmit}>
             <Row className="g-3">
               <Col lg={12}>
                 <label htmlFor="holidayName" className="form-label">
                   Holiday Name
                 </label>
-                <input
+                <Input
                   type="text"
                   name="name"
                   className="form-control"
@@ -119,8 +157,17 @@ const HolidayForm = () => {
                   placeholder="Enter holiday name"
                   value={holidayObj.name || ""}
                   onChange={handleInputChange}
-                  required
+                  invalid={
+                    FormikForm.touched.name && FormikForm.errors.name
+                      ? true
+                      : false
+                  }
                 />
+                {FormikForm.touched.name && FormikForm.errors.name ? (
+                  <FormFeedback type="invalid">
+                    {FormikForm.errors.name}
+                  </FormFeedback>
+                ) : null}
               </Col>
               <Col lg={12}>
                 <div className="mb-3">
@@ -134,20 +181,53 @@ const HolidayForm = () => {
                     }}
                     value={date || []}
                     onChange={handleDateChange}
+                    invalid={
+                      FormikForm.touched.date && FormikForm.errors.date
+                        ? true
+                        : false
+                    }
                   />
+                  {FormikForm.touched.date && FormikForm.errors.date ? (
+                    <FormFeedback type="invalid">
+                      {FormikForm.errors.date}
+                    </FormFeedback>
+                  ) : null}
                 </div>
               </Col>
               <Col lg={12}>
-                <div className="mb-3">
+                <div className={`mb-3`}>
                   <Label>Work Schedule</Label>
                   <Select
-                    required
+                    name="work_schedule_id_list"
                     isMulti={true}
                     options={ws_options || []}
                     className="basic-multi-select"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.work_schedule_id_list &&
+                          FormikForm.errors.work_schedule_id_list
+                            ? "red !important"
+                            : provided.borderColor,
+                      }),
+                    }}
                     value={selectedWS || []}
                     onChange={handleWSChange}
+                    invalid={
+                      FormikForm.touched.work_schedule_id_list &&
+                      FormikForm.errors.work_schedule_id_list
+                        ? true
+                        : false
+                    }
                   />
+                  {FormikForm.touched.work_schedule_id_list &&
+                  FormikForm.errors.work_schedule_id_list ? (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.work_schedule_id_list}
+                    </div>
+                  ) : null}
                 </div>
               </Col>
               <Col lg={12}>
@@ -191,7 +271,7 @@ const HolidayForm = () => {
 
               <Col lg={12}>
                 <div className="text-end">
-                  <Button color="success" className="btn-label">
+                  <Button color="success" type="submit" className="btn-label">
                     {" "}
                     <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
                     Save{" "}

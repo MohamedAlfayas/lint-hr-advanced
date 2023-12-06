@@ -1,37 +1,48 @@
 #resetPasswordForm {
-    text-align: left;
-  }
-  
-  .label-lc {
+  text-align: left;
+}
+
+.label-lc {
+  font-size: 14px;
+  margin-bottom: 5px;
+  margin-left: 25px;
+  display: block;
+}
+
+.swal2-input {
+  width: 400px;
+  margin-bottom: 25px;
+  margin-left: 25px;
+  padding: 10px;
+}
+.custom-input-class {
+  width: 90%;
+}
+.table-lc {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-lc th,
+.table-lc td {
+  border: 1px solid #ddd;
+  padding: 10px 3px 10px 3px;
+  text-align: left;
+}
+@media (max-width: 600px) {
+  /* Adjust styles for smaller screens */
+  .table-lc th,
+  .table-lc td {
+    padding: 8px 2px;
     font-size: 14px;
-    margin-bottom: 5px; 
-    margin-left: 25px;
-    display: block; 
   }
-  
-  .swal2-input {
-    width: 400px;
-    margin-bottom: 25px; 
-    margin-left: 25px; 
-    padding: 10px; 
-  }
-  .custom-input-class {
-    width: 90%;
-  }
-  .table-lc {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  
-  .table-lc th, .table-lc td {
-    border: 1px solid #ddd;
-    padding:10px 3px 10px 3px;
-    text-align: left;
-  }
-  @media (max-width: 600px) {
-    /* Adjust styles for smaller screens */
-    .table-lc th, .table-lc td {
-      padding: 8px 2px;
-      font-size: 14px;
-    }
-  }
+}
+
+/* Form Error Text */
+
+.lc_form_error_text {
+  width: 100%;
+  margin-top: 0.25rem;
+  font-size: 0.875em;
+  color: var(--vz-form-invalid-color);
+}
