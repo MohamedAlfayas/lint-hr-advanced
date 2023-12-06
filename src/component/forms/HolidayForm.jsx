@@ -29,16 +29,24 @@ import {
 } from "../../redux/reducers/ChildReducer/HolidayReducer";
 import { toast } from "react-toastify";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { ConvertISODateFormat } from "../../common/js/ConvertDateFormat";
+
+import Flatpickr from "react-flatpickr";
 
 const HolidayForm = () => {
   const dispatch = useDispatch();
+  const [date, setDate] = useState([]);
   const [holidayObj, setHolidayObj] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const ws_options = GetLocalStorageData("work_schedule") || [];
   const [selectedWS, setSelectedWS] = useState([]);
 
   useEffect(() => {
-    setHolidayObj(form_obj);
+    setHolidayObj({
+      ...form_obj,
+      date: ConvertISODateFormat(form_obj.date),
+    });
+    setDate([new Date(form_obj.date)]);
     setSelectedWS(
       ws_options.filter((data) =>
         form_obj.work_schedule_id_list.includes(data.id)
@@ -85,6 +93,14 @@ const HolidayForm = () => {
       });
   };
 
+  const handleDateChange = (selectedDates, dateStr, instance) => {
+    setDate(selectedDates);
+    setHolidayObj({
+      ...holidayObj,
+      date: ConvertISODateFormat(selectedDates[0]),
+    });
+  };
+
   return (
     <React.Fragment>
       <Row>
@@ -108,15 +124,16 @@ const HolidayForm = () => {
               </Col>
               <Col lg={12}>
                 <div className="mb-3">
-                  <Label>Date</Label>
-                  <input
-                    type="date"
+                  <Label htmlfor="date">Date</Label>
+                  <Flatpickr
                     name="date"
                     id="date"
                     className="form-control"
-                    value={holidayObj.date || ""}
-                    onChange={handleInputChange}
-                    required
+                    options={{
+                      dateFormat: "d M, Y",
+                    }}
+                    value={date || []}
+                    onChange={handleDateChange}
                   />
                 </div>
               </Col>

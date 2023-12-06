@@ -25,7 +25,10 @@ import classnames from "classnames";
 
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
-import { addLeaveType, editLeaveType } from "../../redux/reducers/ChildReducer/LeaveTypeReducer";
+import {
+  addLeaveType,
+  editLeaveType,
+} from "../../redux/reducers/ChildReducer/LeaveTypeReducer";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
@@ -35,14 +38,14 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 defineElement(loadAnimation);
 
 const LeaveTypeForm = () => {
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const [leaveTypeData, setLeaveTypeData] = useState({});
   const [currentUnit, setCurrentUnit] = useState(null);
-  const ws_options = GetLocalStorageData('work_schedule') || [];
+  const ws_options = GetLocalStorageData("work_schedule") || [];
   const [selectedWS, setSelectedWS] = useState([]);
-  const [selectedGenders, setSelectedGenders] = useState([])
+  const [selectedGenders, setSelectedGenders] = useState([]);
 
   let types = [
     { id: 1, label: "Paid", value: 1 },
@@ -68,8 +71,12 @@ const LeaveTypeForm = () => {
     console.log("form_obj = ", form_obj);
     setLeaveTypeData(form_obj);
     setCurrentUnit(form_obj.unit);
-    setSelectedWS(ws_options.filter(data => (form_obj.ws_id).includes(data.id)))
-    setSelectedGenders(gender_option.filter(data => (form_obj.genders).includes(data.id)))
+    setSelectedWS(
+      ws_options.filter((data) => form_obj.ws_id.includes(data.id))
+    );
+    setSelectedGenders(
+      gender_option.filter((data) => form_obj.genders.includes(data.id))
+    );
   }, [form_obj]);
 
   // useEffect(() =>{
@@ -91,22 +98,21 @@ const LeaveTypeForm = () => {
   //   }
   // },[unit])
 
-
   const handleWSChange = (obj) => {
     setSelectedWS(obj);
     setLeaveTypeData({
       ...leaveTypeData,
-      ws_id: obj.map(d => d.id)
+      ws_id: obj.map((d) => d.id),
     });
-  }
+  };
 
   const handleGenderChange = (obj) => {
     setSelectedGenders(obj);
     setLeaveTypeData({
       ...leaveTypeData,
-      genders: obj.map(d => d.id)
+      genders: obj.map((d) => d.id),
     });
-  }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -123,41 +129,43 @@ const LeaveTypeForm = () => {
       setLeaveTypeData({
         ...leaveTypeData,
         unit: e,
-        hour_value: ""
-      })
+        hour_value: "",
+      });
     } else {
       setLeaveTypeData({
         ...leaveTypeData,
         unit: e,
-        day_value: ""
-      })
+        day_value: "",
+      });
     }
-    setCurrentUnit(e)
-  }
+    setCurrentUnit(e);
+  };
 
-  console.log("Leave Data Type = ", leaveTypeData)
+  console.log("Leave Data Type = ", leaveTypeData);
 
   const handleSubmit = (e) => {
-    e.preventDefault()
+    e.preventDefault();
     console.log("employee data = ", leaveTypeData);
     dispatch(setLoaderVisible(true));
     Api({
-      method: 'POST',
-      url: '/leave/leave_type/create/',
-      data: leaveTypeData
+      method: "POST",
+      url: "/leave/leave_type/create/",
+      data: leaveTypeData,
     })
-      .then(res => {
+      .then((res) => {
         console.log("REs = ", res);
-        leaveTypeData.id === 0 ? dispatch(addLeaveType(res?.data.data)) : dispatch(editLeaveType(res?.data?.data));
+        leaveTypeData.id === 0
+          ? dispatch(addLeaveType(res?.data.data))
+          : dispatch(editLeaveType(res?.data?.data));
         dispatch(setLoaderVisible(false));
         dispatch(toggleRSBView(false));
         toast.success(res?.data?.message);
       })
-      .catch(err => {
+      .catch((err) => {
         dispatch(setLoaderVisible(false));
         console.log("ERr == ", err);
         toast.success(err?.response?.data?.message);
-      })
+      });
   };
 
   return (
@@ -227,7 +235,11 @@ const LeaveTypeForm = () => {
                         name="Unit"
                         type="radio"
                         className="form-check-input"
-                        checked={leaveTypeData.unit && leaveTypeData.unit === "Day" ? true : false}
+                        checked={
+                          leaveTypeData.unit && leaveTypeData.unit === "Day"
+                            ? true
+                            : false
+                        }
                         onChange={() => handleUnitChange("Day")}
                         required
                       />
@@ -241,7 +253,11 @@ const LeaveTypeForm = () => {
                         name="Unit"
                         type="radio"
                         className="form-check-input"
-                        checked={leaveTypeData.unit && leaveTypeData.unit === "Hour" ? true : false}
+                        checked={
+                          leaveTypeData.unit && leaveTypeData.unit === "Hour"
+                            ? true
+                            : false
+                        }
                         onChange={() => handleUnitChange("Hour")}
                         required
                       />
@@ -256,7 +272,7 @@ const LeaveTypeForm = () => {
                 </div>
               </Col>
 
-              {(currentUnit && currentUnit === "Day") && (
+              {currentUnit && currentUnit === "Day" && (
                 <Col md={12} lg={12} xxl={12}>
                   <div className="mb-3">
                     <Label htmlFor="lt_days_allow" className="form-label">
@@ -284,7 +300,7 @@ const LeaveTypeForm = () => {
                 </Col>
               )}
 
-              {(currentUnit && currentUnit === "Hour") && (
+              {currentUnit && currentUnit === "Hour" && (
                 <Col md={12} lg={12} xxl={12}>
                   <div className="mb-3">
                     <Label htmlFor="lt_hour_allow" className="form-label">
@@ -349,11 +365,16 @@ const LeaveTypeForm = () => {
                     className="basic-multi-select"
                     value={
                       (leaveTypeData.reset_type &&
-                        reset.find((e) => e.value === leaveTypeData.reset_type)) ||
+                        reset.find(
+                          (e) => e.value === leaveTypeData.reset_type
+                        )) ||
                       []
                     }
                     onChange={(e) => {
-                      setLeaveTypeData({ ...leaveTypeData, reset_type: e.value });
+                      setLeaveTypeData({
+                        ...leaveTypeData,
+                        reset_type: e.value,
+                      });
                     }}
                   />
                 </div>
@@ -406,13 +427,21 @@ const LeaveTypeForm = () => {
                     Weekend Between Leave
                   </Label>
                   <div className="mb-2">
-                    <div className="form-check form-switch form-check-inline">
+                    <div
+                      className="form-check form-switch form-switch-md form-switch-success"
+                      dir="ltr"
+                    >
                       <Input
                         type="checkbox"
                         className="form-check-input form-switch-md"
                         id="lt_weekend"
                         checked={leaveTypeData.weekend_between_leave}
-                        onChange={(e) => setLeaveTypeData({ ...leaveTypeData, weekend_between_leave: e.target.checked })}
+                        onChange={(e) =>
+                          setLeaveTypeData({
+                            ...leaveTypeData,
+                            weekend_between_leave: e.target.checked,
+                          })
+                        }
                       />
                     </div>
                   </div>
@@ -424,13 +453,21 @@ const LeaveTypeForm = () => {
                     Holiday Between Leave
                   </Label>
                   <div className="mb-2">
-                    <div className="form-check form-switch form-check-inline">
+                    <div
+                      className="form-check form-switch form-switch-md form-switch-success"
+                      dir="ltr"
+                    >
                       <Input
                         type="checkbox"
                         className="form-check-input form-switch-md"
                         id="lt_holiday"
                         checked={leaveTypeData.holiday_between_leave}
-                        onChange={(e) => setLeaveTypeData({ ...leaveTypeData, holiday_between_leave: e.target.checked })}
+                        onChange={(e) =>
+                          setLeaveTypeData({
+                            ...leaveTypeData,
+                            holiday_between_leave: e.target.checked,
+                          })
+                        }
                       />
                     </div>
                   </div>
