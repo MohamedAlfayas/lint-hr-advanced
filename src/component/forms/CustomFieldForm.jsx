@@ -14,6 +14,7 @@ import {
   DropdownMenu,
   DropdownToggle,
   Form,
+  FormFeedback,
   Input,
   Label,
   Row,
@@ -29,8 +30,8 @@ import {
 } from "../../redux/reducers/ChildReducer/CustomFieldReducer";
 import { toast } from "react-toastify";
 import { setActiveTableTab } from "../../redux/reducers/ChildReducer/TableReducer";
-import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
-import { PostApi } from "../../common/api/PostApi";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
 const CustomFieldForm = () => {
   const dispatch = useDispatch();
@@ -100,39 +101,55 @@ const CustomFieldForm = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log("employee data = ", customFieldObj);
-    dispatch(setLoaderVisible(true));
-    const Api = await PostApi(
-      "fields/custom-field/create/",
-      customFieldObj,
-      false
-    );
-    console.log("API RES = ", Api);
-    if (Api.status && Api.status === 200) {
-      customFieldObj.id === 0
-        ? dispatch(addCustomField(Api?.data.data))
-        : dispatch(editCustomField(Api?.data?.data));
-      dispatch(toggleRSBView(false));
-      toast.success(Api?.data?.message);
-    } else {
-      toast.error(Api?.data?.message || Api?.data?.detail);
-    }
-    dispatch(setLoaderVisible(false));
-  };
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: customFieldObj,
+    validationSchema: Yup.object({
+      name: Yup.string().trim().required("Please Enter Display Name"),
+      type: Yup.string().required("Select Field Type"),
+      applicable_for_modules: Yup.array()
+        .required("Select Applicable For")
+        .min(1, "Select Applicable For"),
+      option: Yup.array().required("Required").min(1, "Select Work Schedule"),
+    }),
+    onSubmit: (values) => {
+      console.log("SUCCESSSS !!!! Formik Values = ", values);
+    },
+  });
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   console.log("employee data = ", customFieldObj);
+  //   dispatch(setLoaderVisible(true));
+  //   const Api = await PostApi(
+  //     "fields/custom-field/create/",
+  //     customFieldObj,
+  //     false
+  //   );
+  //   console.log("API RES = ", Api);
+  //   if (Api.status && Api.status === 200) {
+  //     customFieldObj.id === 0
+  //       ? dispatch(addCustomField(Api?.data.data))
+  //       : dispatch(editCustomField(Api?.data?.data));
+  //     dispatch(toggleRSBView(false));
+  //     toast.success(Api?.data?.message);
+  //   } else {
+  //     toast.error(Api?.data?.message || Api?.data?.detail);
+  //   }
+  //   dispatch(setLoaderVisible(false));
+  // };
 
   return (
     <React.Fragment>
       <Row>
         <Col>
-          <Form onSubmit={handleSubmit} action="javascript:void(0)">
+          <Form onSubmit={FormikForm.handleSubmit} action="javascript:void(0)">
             <Row className="g-3">
               <Col lg={12}>
                 <label htmlFor="displayName" className="form-label">
                   Display Name
                 </label>
-                <input
+                <Input
                   type="text"
                   name="name"
                   className="form-control"
@@ -140,20 +157,39 @@ const CustomFieldForm = () => {
                   placeholder="Display Name"
                   value={customFieldObj.name || ""}
                   onChange={handleInputChange}
-                  required
+                  invalid={
+                    FormikForm.touched.name && FormikForm.errors.name
+                      ? true
+                      : false
+                  }
                 />
+                {FormikForm.touched.name && FormikForm.errors.name ? (
+                  <FormFeedback type="invalid">
+                    {FormikForm.errors.name}
+                  </FormFeedback>
+                ) : null}
               </Col>
 
               <Col lg={12}>
                 <div className="">
                   <Label>Field Type</Label>
                   <Select
-                    required
                     name="type"
                     id="type"
                     isMulti={false}
                     options={types || []}
                     className="basic-multi-select"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.type &&
+                          FormikForm.errors.type
+                            ? "red !important"
+                            : provided.borderColor,
+                      }),
+                    }}
                     value={
                       (customFieldObj.type &&
                         types.find((e) => e.value === customFieldObj.type)) ||
@@ -162,7 +198,17 @@ const CustomFieldForm = () => {
                     onChange={(e) => {
                       handleFieldTypeChange(e);
                     }}
+                    invalid={
+                      FormikForm.touched.type && FormikForm.errors.type
+                        ? true
+                        : false
+                    }
                   />
+                  {FormikForm.touched.type && FormikForm.errors.type ? (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.type}
+                    </div>
+                  ) : null}
                 </div>
               </Col>
 
@@ -180,6 +226,17 @@ const CustomFieldForm = () => {
                             className="form-control"
                             placeholder="Label"
                             name="options"
+                            styles={{
+                              control: (provided, state) => ({
+                                ...provided,
+                                borderColor:
+                                  !state.isFocused &&
+                                  FormikForm.touched.options &&
+                                  FormikForm.errors.options
+                                    ? "red !important"
+                                    : provided.borderColor,
+                              }),
+                            }}
                             value={data.label}
                             onChange={(e) => {
                               const updatedOptions = [
@@ -194,13 +251,36 @@ const CustomFieldForm = () => {
                                 options: updatedOptions,
                               });
                             }}
+                            invalid={
+                              FormikForm.touched.options &&
+                              FormikForm.errors.options
+                                ? true
+                                : false
+                            }
                           />
+                          {FormikForm.touched.options &&
+                          FormikForm.errors.options ? (
+                            <FormFeedback type="invalid">
+                              {FormikForm.errors.options}
+                            </FormFeedback>
+                          ) : null}
                         </div>
                         <div className="flex-grow-1">
                           <input
                             type="text"
                             name="options"
                             className="form-control"
+                            styles={{
+                              control: (provided, state) => ({
+                                ...provided,
+                                borderColor:
+                                  !state.isFocused &&
+                                  FormikForm.touched.options &&
+                                  FormikForm.errors.options
+                                    ? "red !important"
+                                    : provided.borderColor,
+                              }),
+                            }}
                             placeholder="Value"
                             value={data.value}
                             onChange={(e) => {
@@ -217,7 +297,19 @@ const CustomFieldForm = () => {
                                 options: updatedOptions,
                               });
                             }}
+                            invalid={
+                              FormikForm.touched.options &&
+                              FormikForm.errors.options
+                                ? true
+                                : false
+                            }
                           />
+                          {FormikForm.touched.options &&
+                          FormikForm.errors.options ? (
+                            <FormFeedback type="invalid">
+                              {FormikForm.errors.options}
+                            </FormFeedback>
+                          ) : null}
                         </div>
                         <button
                           type="button"
@@ -257,11 +349,21 @@ const CustomFieldForm = () => {
                 <div className="">
                   <Label>Applicable For</Label>
                   <Select
-                    required
                     name="applicable_for_modules"
                     isMulti={true}
                     options={module_lists || []}
                     className="basic-multi-select"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.applicable_for_modules &&
+                          FormikForm.errors.applicable_for_modules
+                            ? "red !important"
+                            : provided.borderColor,
+                      }),
+                    }}
                     value={
                       customFieldObj.applicable_for_modules &&
                       module_lists.filter((e) =>
@@ -274,7 +376,19 @@ const CustomFieldForm = () => {
                         applicable_for_modules: e.map((obj) => obj.value),
                       })
                     }
+                    invalid={
+                      FormikForm.touched.applicable_for_modules &&
+                      FormikForm.errors.applicable_for_modules
+                        ? true
+                        : false
+                    }
                   />
+                  {FormikForm.touched.applicable_for_modules &&
+                  FormikForm.errors.applicable_for_modules ? (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.applicable_for_modules}
+                    </div>
+                  ) : null}
                 </div>
               </Col>
               <Col lg={12}>

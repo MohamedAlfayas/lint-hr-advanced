@@ -134,7 +134,8 @@ const TableContainer = ({
               <select
                 className="form-select"
                 value={pageSize}
-                onChange={onChangeInSelect}>
+                onChange={onChangeInSelect}
+              >
                 {[10, 20, 30, 40, 50].map((pageSize) => (
                   <option key={pageSize} value={pageSize}>
                     Show {pageSize}
@@ -161,12 +162,14 @@ const TableContainer = ({
               <tr
                 className={trClass}
                 key={headerGroup.id}
-                {...headerGroup.getHeaderGroupProps()}>
+                {...headerGroup.getHeaderGroupProps()}
+              >
                 {headerGroup.headers.map((column) => (
                   <th
                     key={column.id}
                     className={thClass}
-                    {...column.getSortByToggleProps()}>
+                    {...column.getSortByToggleProps()}
+                  >
                     {column.render("Header")}
                     {generateSortingIndicator(column)}
                     {/* <Filter column={column} /> */}
@@ -183,11 +186,13 @@ const TableContainer = ({
                 <Fragment key={row.getRowProps().key}>
                   <tr>
                     {row.cells.map((cell) => {
+                      console.log(cell);
                       return (
                         <td
                           className={tdClass}
                           key={cell.id}
-                          {...cell.getCellProps()}>
+                          {...cell.getCellProps()}
+                        >
                           {cell.render("Cell")}
                         </td>
                       );
@@ -213,7 +218,8 @@ const TableContainer = ({
               <li
                 className={
                   !canPreviousPage ? "page-item disabled" : "page-item"
-                }>
+                }
+              >
                 <Link to="#" className="page-link" onClick={previousPage}>
                   Previous
                 </Link>
@@ -226,7 +232,8 @@ const TableContainer = ({
                       className={
                         pageIndex === item ? "page-link active" : "page-link"
                       }
-                      onClick={() => gotoPage(item)}>
+                      onClick={() => gotoPage(item)}
+                    >
                       {item + 1}
                     </Link>
                   </li>
