@@ -8,13 +8,13 @@ import { MetaTitle } from "../../common/data/MetaTitle";
 import { useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setLeaveType } from "../../redux/reducers/ChildReducer/LeaveTypeReducer";
+import { leave_type_day_unit } from "../../common/constant/Constants";
 
 const LeaveType = () => {
-
   const dispatch = useDispatch();
-  const { leave_type_data } = useSelector(state => state.LeaveTypeReducer);
+  const { leave_type_data } = useSelector((state) => state.LeaveTypeReducer);
   useEffect(() => {
-    dispatch(setLeaveType(GetLocalStorageData('leave_types') || []));
+    dispatch(setLeaveType(GetLocalStorageData("leave_types") || []));
   }, []);
 
   let types = [
@@ -27,7 +27,6 @@ const LeaveType = () => {
     { id: 1, label: "January To December", value: 1 },
     { id: 2, label: "May To April", value: 2 },
   ];
-
 
   // const [leavetype, setLeaveType] = useState([
   //   {
@@ -94,11 +93,13 @@ const LeaveType = () => {
       id: "unit",
       filterable: false,
       accessor: (obj) => {
-        let leave_count = obj.unit === 'Day' ? obj.day_value : obj.hour_value
+        let leave_count =
+          obj.unit === leave_type_day_unit ? obj.day_value : obj.hour_value;
+        let leave_unit = obj.unit === leave_type_day_unit ? "Day" : "Hour";
         return (
           <b>
             {leave_count}
-            <small> {obj.unit} / Year</small>
+            <small> {leave_unit} / Year</small>
           </b>
         );
       },
@@ -112,7 +113,8 @@ const LeaveType = () => {
         let statusClass = obj.status ? "success" : "warning";
         return (
           <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
+            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
+          >
             {" "}
             {status}{" "}
           </span>
@@ -126,7 +128,7 @@ const LeaveType = () => {
       id: 0,
       name: "",
       type: 0,
-      unit: "Day",
+      unit: leave_type_day_unit,
       day_value: "",
       hour_value: "",
       reset_type: 1,
@@ -135,14 +137,22 @@ const LeaveType = () => {
       weekend_between_leave: false,
       holiday_between_leave: false,
       description: "",
-      status : true,
+      status: true,
     };
   }, []);
 
   const filterKey = "status";
   const filterOptions = [
-    { option: true, label: "Active", count : leave_type_data.filter(e => e[filterKey] === true).length || 0 },
-    { option: false, label: "Inactive", count : leave_type_data.filter(e => e[filterKey] === false).length || 0 },
+    {
+      option: true,
+      label: "Active",
+      count: leave_type_data.filter((e) => e[filterKey] === true).length || 0,
+    },
+    {
+      option: false,
+      label: "Inactive",
+      count: leave_type_data.filter((e) => e[filterKey] === false).length || 0,
+    },
   ];
 
   document.title = `Leave Type | ${MetaTitle}`;

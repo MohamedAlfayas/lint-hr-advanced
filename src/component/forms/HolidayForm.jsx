@@ -35,6 +35,7 @@ import { ConvertISODateFormat } from "../../common/js/ConvertDateFormat";
 import Flatpickr from "react-flatpickr";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import { PostApi } from "../../common/api/PostApi";
 
 const HolidayForm = () => {
   const dispatch = useDispatch();
@@ -67,28 +68,23 @@ const HolidayForm = () => {
         .min(1, "Select Work Schedule"),
       date: Yup.string().trim().required("Please Select Date"),
     }),
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
       dispatch(setLoaderVisible(true));
-      Api({
-        method: "POST",
-        url: "holiday/create/",
-        data: values,
-      })
-        .then((res) => {
-          console.log("REs = ", res);
-          holidayObj.id === 0
-            ? dispatch(addHoliday(res?.data.data))
-            : dispatch(editHoliday(res?.data?.data));
-          dispatch(setLoaderVisible(false));
-          dispatch(toggleRSBView(false));
-          toast.success(res?.data?.message);
-        })
-        .catch((err) => {
-          dispatch(setLoaderVisible(false));
-          console.log("ERr == ", err);
-          toast.success(err?.response?.data?.message);
-        });
+
+      const Api = await PostApi("holiday/create/", values, false);
+      console.log("API RES = ", Api);
+      if (Api.status && Api.status === 200) {
+        holidayObj.id === 0
+          ? dispatch(addHoliday(Api?.data.data))
+          : dispatch(editHoliday(Api?.data?.data));
+        dispatch(toggleRSBView(false));
+        toast.success(Api?.data?.message);
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
+      }
+
+      dispatch(setLoaderVisible(false));
     },
   });
 

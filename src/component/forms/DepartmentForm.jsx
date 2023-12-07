@@ -26,6 +26,7 @@ import { setDepartmentDetails } from "../../redux/reducers/ChildReducer/Departme
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { toast } from "react-toastify";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { PostApi } from "../../common/api/PostApi";
 
 const DepartmentForm = () => {
   const [hdDropDown, setHdDropDown] = useState(false);
@@ -55,23 +56,15 @@ const DepartmentForm = () => {
 
   const handleSubmit = async () => {
     dispatch(setLoaderVisible(true));
-    Api({
-      method: "POST",
-      url: "department/create/",
-      data: departmentData,
-    })
-      .then((res) => {
-        dispatch(setDepartmentDetails(res?.data?.data));
-        dispatch(setLoaderVisible(false));
-        dispatch(toggleRSBView(false));
-        toast.success(res?.data?.message);
-      })
-      .catch((err) => {
-        dispatch(setLoaderVisible(false));
-        toast.error(
-          err?.response?.data?.message || err?.response?.data?.detail
-        );
-      });
+    const Api = await PostApi("department/create/", departmentData, false);
+    if (Api.status && Api.status === 200) {
+      dispatch(setDepartmentDetails(Api?.data?.data));
+      dispatch(toggleRSBView(false));
+      toast.success(Api?.data?.message);
+    } else {
+      toast.error(Api?.data?.message || Api?.data?.detail);
+    }
+    dispatch(setLoaderVisible(false));
   };
 
   return (

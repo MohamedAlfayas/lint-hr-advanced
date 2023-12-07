@@ -26,7 +26,8 @@ const TimeTracking = () => {
               src="https://cdn.lordicon.com/kbtmbyzy.json"
               trigger="loop"
               colors="primary:#405189,secondary:#02a8b5"
-              style={{ width: "90px", height: "90px" }}></lord-icon>
+              style={{ width: "90px", height: "90px" }}
+            ></lord-icon>
           </div>
           <h3 className="mb-1">07 : 35 : 15</h3>
           <h5 className="fs-14 mb-4">
@@ -36,7 +37,8 @@ const TimeTracking = () => {
             <Button
               outline
               className="custom-toggle btn-outline-secondary"
-              onClick={(e) => checkInOutToggle(e.target)}>
+              onClick={(e) => checkInOutToggle(e.target)}
+            >
               <span className="icon-on fs-5">
                 <i className="mdi mdi-account-arrow-right-outline align-bottom me-1"></i>{" "}
                 Check IN

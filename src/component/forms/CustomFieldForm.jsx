@@ -29,6 +29,8 @@ import {
 } from "../../redux/reducers/ChildReducer/CustomFieldReducer";
 import { toast } from "react-toastify";
 import { setActiveTableTab } from "../../redux/reducers/ChildReducer/TableReducer";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { PostApi } from "../../common/api/PostApi";
 
 const CustomFieldForm = () => {
   const dispatch = useDispatch();
@@ -101,24 +103,23 @@ const CustomFieldForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("employee data = ", customFieldObj);
-    Api({
-      method: "POST",
-      url: "fields/custom-field/create/",
-      data: customFieldObj,
-    })
-      .then((res) => {
-        console.log("REs = ", res);
-        customFieldObj.id === 0
-          ? dispatch(addCustomField(res?.data.data))
-          : dispatch(editCustomField(res?.data?.data));
-        dispatch(toggleRSBView(false));
-        dispatch(setActiveTableTab("all"));
-        toast.success(res?.data?.message);
-      })
-      .catch((err) => {
-        console.log("ERr == ", err);
-        toast.success(err?.response?.data?.message);
-      });
+    dispatch(setLoaderVisible(true));
+    const Api = await PostApi(
+      "fields/custom-field/create/",
+      customFieldObj,
+      false
+    );
+    console.log("API RES = ", Api);
+    if (Api.status && Api.status === 200) {
+      customFieldObj.id === 0
+        ? dispatch(addCustomField(Api?.data.data))
+        : dispatch(editCustomField(Api?.data?.data));
+      dispatch(toggleRSBView(false));
+      toast.success(Api?.data?.message);
+    } else {
+      toast.error(Api?.data?.message || Api?.data?.detail);
+    }
+    dispatch(setLoaderVisible(false));
   };
 
   return (

@@ -33,6 +33,11 @@ import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarRed
 import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { PostApi } from "../../common/api/PostApi";
+import {
+  leave_type_day_unit,
+  leave_type_hour_unit,
+} from "../../common/constant/Constants";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
@@ -81,7 +86,7 @@ const LeaveTypeForm = () => {
 
   // useEffect(() =>{
   //   if(unit){
-  //     if(unit === "Day"){
+  //     if(unit === 1){
   //       setLeaveTypeData({
   //         ...leaveTypeData,
   //         unit : unit,
@@ -125,7 +130,7 @@ const LeaveTypeForm = () => {
 
   const handleUnitChange = (e) => {
     console.log("Unit Change = ", e);
-    if (e === "Day") {
+    if (e === leave_type_day_unit) {
       setLeaveTypeData({
         ...leaveTypeData,
         unit: e,
@@ -143,29 +148,26 @@ const LeaveTypeForm = () => {
 
   console.log("Leave Data Type = ", leaveTypeData);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("employee data = ", leaveTypeData);
+    console.log("Leave Type data = ", leaveTypeData);
     dispatch(setLoaderVisible(true));
-    Api({
-      method: "POST",
-      url: "/leave/leave_type/create/",
-      data: leaveTypeData,
-    })
-      .then((res) => {
-        console.log("REs = ", res);
-        leaveTypeData.id === 0
-          ? dispatch(addLeaveType(res?.data.data))
-          : dispatch(editLeaveType(res?.data?.data));
-        dispatch(setLoaderVisible(false));
-        dispatch(toggleRSBView(false));
-        toast.success(res?.data?.message);
-      })
-      .catch((err) => {
-        dispatch(setLoaderVisible(false));
-        console.log("ERr == ", err);
-        toast.success(err?.response?.data?.message);
-      });
+    const Api = await PostApi(
+      "/leave/leave_type/create/",
+      leaveTypeData,
+      false
+    );
+    console.log("API RES = ", Api);
+    if (Api.status && Api.status === 200) {
+      leaveTypeData.id === 0
+        ? dispatch(addLeaveType(Api?.data.data))
+        : dispatch(editLeaveType(Api?.data?.data));
+      dispatch(toggleRSBView(false));
+      toast.success(Api?.data?.message);
+    } else {
+      toast.error(Api?.data?.message || Api?.data?.detail);
+    }
+    dispatch(setLoaderVisible(false));
   };
 
   return (
@@ -236,11 +238,11 @@ const LeaveTypeForm = () => {
                         type="radio"
                         className="form-check-input"
                         checked={
-                          leaveTypeData.unit && leaveTypeData.unit === "Day"
+                          leaveTypeData.unit && leaveTypeData.unit === 1
                             ? true
                             : false
                         }
-                        onChange={() => handleUnitChange("Day")}
+                        onChange={() => handleUnitChange(leave_type_day_unit)}
                         required
                       />
                       <Label className="form-check-label" htmlFor="lt_day">
@@ -254,11 +256,11 @@ const LeaveTypeForm = () => {
                         type="radio"
                         className="form-check-input"
                         checked={
-                          leaveTypeData.unit && leaveTypeData.unit === "Hour"
+                          leaveTypeData.unit && leaveTypeData.unit === 2
                             ? true
                             : false
                         }
-                        onChange={() => handleUnitChange("Hour")}
+                        onChange={() => handleUnitChange(leave_type_hour_unit)}
                         required
                       />
                       <Label className="form-check-label" htmlFor="lt_hour">
@@ -272,7 +274,7 @@ const LeaveTypeForm = () => {
                 </div>
               </Col>
 
-              {currentUnit && currentUnit === "Day" && (
+              {currentUnit && currentUnit === leave_type_day_unit && (
                 <Col md={12} lg={12} xxl={12}>
                   <div className="mb-3">
                     <Label htmlFor="lt_days_allow" className="form-label">
@@ -300,7 +302,7 @@ const LeaveTypeForm = () => {
                 </Col>
               )}
 
-              {currentUnit && currentUnit === "Hour" && (
+              {currentUnit && currentUnit === leave_type_hour_unit && (
                 <Col md={12} lg={12} xxl={12}>
                   <div className="mb-3">
                     <Label htmlFor="lt_hour_allow" className="form-label">

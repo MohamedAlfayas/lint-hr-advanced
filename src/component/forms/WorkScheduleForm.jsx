@@ -31,6 +31,7 @@ import {
 import { toast } from "react-toastify";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { PostApi } from "../../common/api/PostApi";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
@@ -117,30 +118,29 @@ const WorkScheduleForm = () => {
     return d < 10 ? "0" + d.toString() : d.toString();
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("employee data = ", workScheduleData);
     toggleArrowTab(activeArrowTab + 1);
     dispatch(setLoaderVisible(true));
-    Api({
-      method: "POST",
-      url: "/work-schedule/create/",
-      data: workScheduleData,
-    })
-      .then((res) => {
-        console.log("Res = ", res);
-        workScheduleData.id === 0
-          ? dispatch(addWorkSchedule(res?.data.data))
-          : dispatch(editWorkSchedule(res?.data?.data));
-        dispatch(setLoaderVisible(false));
-        dispatch(toggleRSBView(false));
-        toast.success(res?.data?.message);
-      })
-      .catch((err) => {
-        dispatch(setLoaderVisible(false));
-        console.log("Err = ", err);
-        toast.error(err?.response?.data?.message);
-      });
+
+    const Api = await PostApi(
+      "/work-schedule/create/",
+      workScheduleData,
+      false
+    );
+    console.log("API RES = ", Api);
+    if (Api.status && Api.status === 200) {
+      workScheduleData.id === 0
+        ? dispatch(addWorkSchedule(Api?.data.data))
+        : dispatch(editWorkSchedule(Api?.data?.data));
+      dispatch(toggleRSBView(false));
+      toast.success(Api?.data?.message);
+    } else {
+      toast.error(Api?.data?.message || Api?.data?.detail);
+    }
+
+    dispatch(setLoaderVisible(false));
   };
 
   document.title = "WorkSchedule | Lint HR";
@@ -153,7 +153,8 @@ const WorkScheduleForm = () => {
             <div className="step-arrow-nav mb-4">
               <Nav
                 className="nav-pills custom-nav nav-justified"
-                role="tablist">
+                role="tablist"
+              >
                 <NavItem>
                   <NavLink
                     href="#"
@@ -164,7 +165,8 @@ const WorkScheduleForm = () => {
                     })}
                     onClick={() => {
                       toggleArrowTab(4);
-                    }}>
+                    }}
+                  >
                     1)Basic Details
                   </NavLink>
                 </NavItem>
@@ -178,7 +180,8 @@ const WorkScheduleForm = () => {
                     })}
                     onClick={() => {
                       toggleArrowTab(5);
-                    }}>
+                    }}
+                  >
                     2)Select Working Hours
                   </NavLink>
                 </NavItem>
@@ -192,7 +195,8 @@ const WorkScheduleForm = () => {
                     })}
                     onClick={() => {
                       toggleArrowTab(6);
-                    }}>
+                    }}
+                  >
                     3)Finish
                   </NavLink>
                 </NavItem>
@@ -301,7 +305,8 @@ const WorkScheduleForm = () => {
                       <div>
                         <Label
                           htmlFor="basiInput"
-                          className="form-label mb-3"></Label>
+                          className="form-label mb-3"
+                        ></Label>
                         <br></br>
                         <span class="form-text text-muted ms-3">Half Day</span>
                         <div style={{ display: "flex" }}>
@@ -447,7 +452,8 @@ const WorkScheduleForm = () => {
                       <div className="form-check form-check-success mb-3 mt-3 w-50">
                         <Label
                           className="form-check-label"
-                          for="auto_clock_out_cb">
+                          for="auto_clock_out_cb"
+                        >
                           Auto Clock Out
                         </Label>
                         <Input
@@ -474,7 +480,8 @@ const WorkScheduleForm = () => {
                     className="btn btn-success btn-label right ms-auto nexttab nexttab"
                     onClick={() => {
                       toggleArrowTab(activeArrowTab + 1);
-                    }}>
+                    }}
+                  >
                     <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
                     NEXT STEP
                   </button>
@@ -540,7 +547,8 @@ const WorkScheduleForm = () => {
                           <th style={{ textTransform: "capitalize" }}>
                             <label
                               className="fw-bold"
-                              htmlFor={`is_day_on_${workday.s_day}`}>
+                              htmlFor={`is_day_on_${workday.s_day}`}
+                            >
                               {workday.s_day}
                             </label>
                           </th>
@@ -675,13 +683,15 @@ const WorkScheduleForm = () => {
                     className="btn btn-light btn-label previestab"
                     onClick={() => {
                       toggleArrowTab(activeArrowTab - 1);
-                    }}>
+                    }}
+                  >
                     <i className="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>{" "}
                     Back to Basic Details
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-success btn-label right ms-auto nexttab nexttab">
+                    className="btn btn-success btn-label right ms-auto nexttab nexttab"
+                  >
                     <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
                     Submit
                   </button>

@@ -43,6 +43,7 @@ import FilePondPluginImageExifOrientation from "filepond-plugin-image-exif-orien
 import FilePondPluginImagePreview from "filepond-plugin-image-preview";
 import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
 import { join } from "lodash";
+import { PostApi } from "../../common/api/PostApi";
 
 // Register the plugins
 // registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
@@ -1899,6 +1900,7 @@ const EmployeeForm = () => {
   };
 
   useEffect(() => {
+    console.log("Form Obj = ", form_obj);
     setEmployeeObj({
       ...form_obj,
       dob: ConvertISODateFormat(form_obj.dob),
@@ -1997,7 +1999,9 @@ const EmployeeForm = () => {
     });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    dispatch(setLoaderVisible(true));
+
     console.log("emp Obj = ", employeeObj);
     let form_data = new FormData();
     employeeImage !== null &&
@@ -2010,32 +2014,45 @@ const EmployeeForm = () => {
       }
     });
 
-    dispatch(setLoaderVisible(true));
-    Api({
-      method: "POST",
-      url: "employee/add-new/",
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      data: form_data,
-    })
-      .then((res) => {
-        console.log("REs = ", res);
-        employeeObj.id === 0
-          ? dispatch(addEmployee(res?.data.data))
-          : dispatch(editEmployee(res?.data?.data));
-        dispatch(toggleRSBView(false));
-        // dispatch(setActiveTableTab("all"));
-        dispatch(setLoaderVisible(false));
-        toast.success(res?.data?.message);
-      })
-      .catch((err) => {
-        console.log("ERr == ", err);
-        dispatch(setLoaderVisible(false));
-        toast.error(
-          err?.response?.data?.message || err?.response?.data?.detail
-        );
-      });
+    const Api = await PostApi("employee/add-new/", form_data, true);
+    console.log("API RES = ", Api);
+    if (Api.status && Api.status === 200) {
+      employeeObj.id === 0
+        ? dispatch(addEmployee(Api?.data.data))
+        : dispatch(editEmployee(Api?.data?.data));
+      dispatch(toggleRSBView(false));
+      toast.success(Api?.data?.message);
+    } else {
+      toast.error(Api?.data?.message || Api?.data?.detail);
+    }
+
+    dispatch(setLoaderVisible(false));
+
+    // Api({
+    //   method: "POST",
+    //   url: "employee/add-new/",
+    //   headers: {
+    //     "Content-Type": "multipart/form-data",
+    //   },
+    //   data: form_data,
+    // })
+    //   .then((res) => {
+    //     console.log("REs = ", res);
+    //     employeeObj.id === 0
+    //       ? dispatch(addEmployee(res?.data.data))
+    //       : dispatch(editEmployee(res?.data?.data));
+    //     dispatch(toggleRSBView(false));
+    //     // dispatch(setActiveTableTab("all"));
+    //     dispatch(setLoaderVisible(false));
+    //     toast.success(res?.data?.message);
+    //   })
+    //   .catch((err) => {
+    //     console.log("ERr == ", err);
+    //     dispatch(setLoaderVisible(false));
+    //     toast.error(
+    //       err?.response?.data?.message || err?.response?.data?.detail
+    //     );
+    //   });
   };
 
   return (
