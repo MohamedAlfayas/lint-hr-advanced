@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardBody, CardHeader, Col, Row } from "reactstrap";
 import CountUp from "react-countup";
+import { AttendanceOverviewChart } from "./AttendanceOverviewChart";
 
 const AttendanceOverview = () => {
   // Inside your component
@@ -10,75 +11,105 @@ const AttendanceOverview = () => {
       <Row>
         <Col xl={12}>
           <Card>
-            <CardHeader className="border-0 align-items-center d-flex">
-              <h4 className="card-title mb-0 flex-grow-1">
-                Attendance Overview
-              </h4>
-            </CardHeader>
-
-            <CardHeader className="p-0 border-0 bg-light-subtle">
+            <CardHeader className="p-0 border-0 bg-light-subtle mt-2">
               <Row className="g-0 text-center">
-                <Col xs={6} sm={3}>
-                  <div className="p-3 border border-dashed border-start-0">
+                <Col xs={4} sm={2}>
+                  <div className="p-2 border border-dashed border-start-0">
                     <h5 className="mb-1">
-                      <span className="counter-value" data-target="9851">
+                      <span className="counter-value" data-target="51">
                         <CountUp
                           start={0}
-                          end={9851}
-                          separator={","}
-                          duration={4}
+                          end={51}
+                          suffix=" Hr"
+                          separator={""}
+                          duration={3}
                         />
                       </span>
                     </h5>
-                    <p className="text-muted mb-0">Number of Projects</p>
+                    <p className="text-muted mb-0">Work Schedule</p>
                   </div>
                 </Col>
-                <Col xs={6} sm={3}>
-                  <div className="p-3 border border-dashed border-start-0">
+                <Col xs={4} sm={2}>
+                  <div className="p-2 border border-dashed border-start-0">
                     <h5 className="mb-1">
-                      <span className="counter-value">
+                      <span className="counter-value" data-target="18">
                         <CountUp
                           start={0}
-                          end={1026}
-                          separator={","}
-                          duration={4}
+                          end={18}
+                          suffix=" Hr"
+                          separator={""}
+                          duration={3}
                         />
                       </span>
                     </h5>
-                    <p className="text-muted mb-0">Active Projects</p>
+                    <p className="text-muted mb-0">Check IN Hours</p>
                   </div>
                 </Col>
-                <Col xs={6} sm={3}>
-                  <div className="p-3 border border-dashed border-start-0">
+                <Col xs={4} sm={2}>
+                  <div className="p-2 border border-dashed border-start-0">
                     <h5 className="mb-1">
-                      $
-                      <span className="counter-value" data-target="228.89">
+                      <span className="counter-value" data-target="0">
                         <CountUp
                           start={0}
-                          end={228.89}
-                          decimals={2}
-                          duration={4}
+                          end={0}
+                          suffix=" Hr"
+                          separator={""}
+                          duration={3}
                         />
                       </span>
-                      k
                     </h5>
-                    <p className="text-muted mb-0">Revenue</p>
+                    <p className="text-muted mb-0">OT Hours</p>
                   </div>
                 </Col>
-                <Col xs={6} sm={3}>
-                  <div className="p-3 border border-dashed border-start-0 border-end-0">
-                    <h5 className="mb-1 text-success">
-                      <span className="counter-value" data-target="10589">
+
+                <Col xs={4} sm={2}>
+                  <div className="p-2 border border-dashed border-start-0">
+                    <h5 className="mb-1">
+                      <span className="counter-value" data-target="18">
                         <CountUp
                           start={0}
-                          end={10589}
-                          separator={","}
-                          duration={4}
+                          end={18}
+                          suffix=" Hr"
+                          separator={""}
+                          duration={3}
                         />
                       </span>
-                      h
                     </h5>
-                    <p className="text-muted mb-0">Working Hours</p>
+                    <p className="text-muted mb-0">Paid Hours</p>
+                  </div>
+                </Col>
+
+                <Col xs={4} sm={2}>
+                  <div className="p-2 border border-dashed border-start-0">
+                    <h5 className="mb-1">
+                      <span className="counter-value" data-target="18">
+                        <CountUp
+                          start={0}
+                          end={18}
+                          suffix=" Hr"
+                          separator={""}
+                          duration={3}
+                        />
+                      </span>
+                    </h5>
+                    <p className="text-muted mb-0">Paid Hours</p>
+                  </div>
+                </Col>
+
+                <Col xs={4} sm={2}>
+                  <div className="p-2 border border-dashed border-start-0 border-end-0">
+                    <h5 className="mb-1">
+                      <span className="counter-value" data-target="33">
+                        <CountUp
+                          start={0}
+                          end={-33}
+                          suffix=" Hr"
+                          separator={""}
+                          duration={3}
+                        />
+                      </span>
+                    </h5>
+                    <p className="text-muted mb-0">Balance Hours</p>
                   </div>
                 </Col>
               </Row>
@@ -86,10 +117,7 @@ const AttendanceOverview = () => {
             <CardBody className="p-0 pb-2">
               <div>
                 <div dir="ltr" className="apex-charts">
-                  {/* <ProjectsOverviewCharts
-                    series={chartData}
-                    dataColors='["--vz-primary", "--vz-warning", "--vz-success"]'
-                  /> */}
+                  <AttendanceOverviewChart dataColors='["--vz-success", "--vz-primary", "--vz-info", "--vz-danger"]' />
                 </div>
               </div>
             </CardBody>

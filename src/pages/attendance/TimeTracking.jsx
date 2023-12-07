@@ -1,13 +1,25 @@
 import React from "react";
-import { Card, CardBody } from "reactstrap";
+import { Button, Card, CardBody } from "reactstrap";
 
 const TimeTracking = () => {
+  const checkInOutToggle = (ele) => {
+    if (ele.closest("button").classList.contains("active")) {
+      ele.closest("button").classList.remove("active");
+      ele.closest("button").classList.remove("btn-outline-warning");
+      ele.closest("button").classList.add("btn-outline-secondary");
+    } else {
+      ele.closest("button").classList.remove("btn-outline-secondary");
+      ele.closest("button").classList.add("active");
+      ele.closest("button").classList.add("btn-outline-warning");
+    }
+  };
+
   return (
     <React.Fragment>
-      <Card>
+      <Card style={{ height: "325px" }}>
         <CardBody className="text-center">
           <h6 className="card-title mb-3 flex-grow-1 text-start">
-            Date
+            Date : 10 Dec 2023
           </h6>
           <div className="mb-2">
             <lord-icon
@@ -16,15 +28,24 @@ const TimeTracking = () => {
               colors="primary:#405189,secondary:#02a8b5"
               style={{ width: "90px", height: "90px" }}></lord-icon>
           </div>
-          <h3 className="mb-1">9 hrs 13 min</h3>
-          <h5 className="fs-14 mb-4">Profile Page Satructure</h5>
+          <h3 className="mb-1">07 : 35 : 15</h3>
+          <h5 className="fs-14 mb-4">
+            First In : <b> 08:25 am</b>
+          </h5>
           <div className="hstack gap-2 justify-content-center">
-            <button className="btn btn-danger btn-sm">
-              <i className="ri-stop-circle-line align-bottom me-1"></i> Stop
-            </button>
-            <button className="btn btn-success btn-sm">
-              <i className="ri-play-circle-line align-bottom me-1"></i> Start
-            </button>
+            <Button
+              outline
+              className="custom-toggle btn-outline-secondary"
+              onClick={(e) => checkInOutToggle(e.target)}>
+              <span className="icon-on fs-5">
+                <i className="mdi mdi-account-arrow-right-outline align-bottom me-1"></i>{" "}
+                Check IN
+              </span>
+              <span className="icon-off fs-5">
+                <i className="mdi mdi-account-arrow-left-outline align-bottom me-1 "></i>{" "}
+                Check OUT
+              </span>
+            </Button>
           </div>
         </CardBody>
       </Card>
