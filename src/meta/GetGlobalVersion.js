@@ -20,6 +20,6 @@ export const GetGlobalVersion = async (dispatch) => {
                 })
         }
     } else {
-        console.log("err = ", err);
+        console.log("err = ", MetaVersionApi?.data?.message);
     }
 }
