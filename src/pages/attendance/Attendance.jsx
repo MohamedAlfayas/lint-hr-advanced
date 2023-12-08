@@ -13,6 +13,7 @@ import { MetaTitle } from "../../common/data/MetaTitle";
 import Select from "react-select";
 import TimeTracking from "./TimeTracking";
 import AttendanceOverview from "./AttendanceOverview";
+import AttendanceEmployeeTable from "../../component/common/table/AttendanceEmployeeTable";
 
 const AttendanceDashboard = () => {
   document.title = `Attendance Overview | ${MetaTitle}`;
@@ -261,7 +262,9 @@ const AttendanceDashboard = () => {
             <Col xxl={9} xl={9} sm={9}>
               <AttendanceOverview />
             </Col>
-            <Col xxl={12}></Col>
+            <Col xxl={12}>
+              <AttendanceEmployeeTable />
+            </Col>
           </Row>
         </Container>
       </div>

@@ -113,10 +113,10 @@ const AttendanceOverviewChart = ({ dataColors }) => {
       //offsetX: 0,
 
       formatter: function (value, { seriesIndex, dataPointIndex, w }) {
-        console.log(value);
-        console.log(dataPointIndex);
-        console.log(seriesIndex);
-        console.log(w.config.series[seriesIndex]);
+        // console.log(value);
+        // console.log(dataPointIndex);
+        // console.log(seriesIndex);
+        // console.log(w.config.series[seriesIndex]);
         if (value != 0) {
           let text =
             w.config.series[seriesIndex].name == "IN Hour"

@@ -12,7 +12,7 @@ const RsuiteTable = () => {
 
   return (
     <Fragment>
-      <Table height={400} data={role_data}>
+      <Table height={400} data={role_data} className="mb-5">
         <Column width={60} align="center" fixed="left">
           <HeaderCell>Id</HeaderCell>
           <Cell dataKey="id" />
@@ -88,8 +88,7 @@ const RsuiteTable = () => {
             {(rowData) => (
               <Button
                 appearance="link"
-                onClick={() => alert(`name:${rowData.name}`)}
-              >
+                onClick={() => alert(`name:${rowData.name}`)}>
                 Edit
               </Button>
             )}
