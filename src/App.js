@@ -2,11 +2,9 @@ import React from 'react';
 
 //import Scss
 import './assets/scss/themes.scss';
-
 import { ToastContainer, toast } from 'react-toastify';
 
 // Rsuite css
-
 import 'rsuite/dist/rsuite-no-reset.min.css';
 
 
@@ -32,7 +30,7 @@ function App() {
         draggable
         pauseOnHover={false}
         theme="light"
-        progressStyle={{height:'2px'}}
+        progressStyle={{ height: '2px' }}
       />
     </React.Fragment>
   );

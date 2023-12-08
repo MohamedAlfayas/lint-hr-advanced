@@ -6,30 +6,29 @@ import InfoTable from "../../component/common/table/InfoTable";
 import { Api } from "../../common/api/Api";
 import { useDispatch, useSelector } from "react-redux";
 import { setRole } from "../../redux/reducers/ChildReducer/RoleReducer";
+import RsuiteTable from "../../component/common/table/RsuiteTable";
 
 const Roles = () => {
   document.title = `Role | ${MetaTitle}`;
 
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
-  const { role_data } = useSelector(state => state.RoleReducer);
+  const { role_data } = useSelector((state) => state.RoleReducer);
   // console.log("Role DAta = ",role_data);
-
 
   useEffect(() => {
     Api({
-      method: 'GET',
-      url: '/role/get-role'
+      method: "GET",
+      url: "/role/get-role",
     })
-      .then(res => {
+      .then((res) => {
         console.log("RES = ", res);
-        dispatch(setRole(res?.data?.data))
+        dispatch(setRole(res?.data?.data));
       })
-      .catch(err => {
+      .catch((err) => {
         console.log("ERR = ", err);
-      })
+      });
   }, []);
-
 
   const [rolelist, setListData] = useState([
     {
@@ -202,7 +201,6 @@ const Roles = () => {
     },
   ]);
 
-
   const additionalColumn = [
     {
       Header: "Name",
@@ -234,7 +232,8 @@ const Roles = () => {
         let statusClass = obj.status === 1 ? "success" : "info";
         return (
           <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
+            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
+          >
             {" "}
             {status}{" "}
           </span>
@@ -256,10 +255,17 @@ const Roles = () => {
 
   const filterKey = "status";
   const filterOptions = [
-    { option: 1, label: "Primary", count : role_data.filter(e => e[filterKey] === 1).length || 0 },
-    { option: 2, label: "Secondary", count : role_data.filter(e => e[filterKey] === 2).length || 0 },
+    {
+      option: 1,
+      label: "Primary",
+      count: role_data.filter((e) => e[filterKey] === 1).length || 0,
+    },
+    {
+      option: 2,
+      label: "Secondary",
+      count: role_data.filter((e) => e[filterKey] === 2).length || 0,
+    },
   ];
-
 
   return (
     <React.Fragment>
@@ -272,6 +278,8 @@ const Roles = () => {
         filterOptions={filterOptions}
         width_per={"60%"}
       />
+
+      <RsuiteTable />
     </React.Fragment>
   );
 };

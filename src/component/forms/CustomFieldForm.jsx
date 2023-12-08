@@ -110,7 +110,6 @@ const CustomFieldForm = () => {
       applicable_for_modules: Yup.array()
         .required("Select Applicable For")
         .min(1, "Select Applicable For"),
-      option: Yup.array().required("Required").min(1, "Select Work Schedule"),
     }),
     onSubmit: (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
