@@ -186,7 +186,6 @@ const TableContainer = ({
                 <Fragment key={row.getRowProps().key}>
                   <tr>
                     {row.cells.map((cell) => {
-                      console.log(cell);
                       return (
                         <td
                           className={tdClass}

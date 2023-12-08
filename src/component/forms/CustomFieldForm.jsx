@@ -32,6 +32,8 @@ import { toast } from "react-toastify";
 import { setActiveTableTab } from "../../redux/reducers/ChildReducer/TableReducer";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { PostApi } from "../../common/api/PostApi";
 
 const CustomFieldForm = () => {
   const dispatch = useDispatch();
@@ -54,7 +56,6 @@ const CustomFieldForm = () => {
     { id: "fayas", label: "FAYAS", value: "fayas" },
   ];
   const labels = options.map((option) => option.label);
-  console.log("labels:", labels);
 
   useEffect(() => {
     setCustomFieldObj(form_obj);
@@ -87,18 +88,18 @@ const CustomFieldForm = () => {
       options: updatedOptions,
     });
   };
-  console.log(" data = ", customFieldObj);
 
   const handleFieldTypeChange = (e) => {
+    let options = [];
     if (e.value === "option") {
-      setCustomFieldObj({
-        ...customFieldObj,
-        type: e.value,
-        options: [{ id: 1, label: "", value: "" }],
-      });
-    } else {
-      setCustomFieldObj({ ...customFieldObj, type: e.value });
+      options = [{ id: 1, label: "", value: "" }];
     }
+    setCustomFieldObj({
+      ...customFieldObj,
+      type: e.value,
+      options: options,
+      max_size: 1,
+    });
   };
 
   const FormikForm = useFormik({
@@ -111,8 +112,41 @@ const CustomFieldForm = () => {
         .required("Select Applicable For")
         .min(1, "Select Applicable For"),
     }),
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
+      let invalid_form_value = false;
+
+      values.options.map((d) => {
+        if (d.label.trim().length === 0 || d.value.trim().length === 0) {
+          invalid_form_value = true;
+        }
+      });
+
+      console.log("invalid_form_value = ", invalid_form_value);
+
+      if (invalid_form_value === true) {
+        toast.error("Please Enter Label Value For Option");
+      } else {
+        console.log("SUCCESS !!!!");
+
+        dispatch(setLoaderVisible(true));
+        const Api = await PostApi(
+          "fields/custom-field/create/",
+          customFieldObj,
+          false
+        );
+        console.log("API RES = ", Api);
+        if (Api.status && Api.status === 200) {
+          customFieldObj.id === 0
+            ? dispatch(addCustomField(Api?.data.data))
+            : dispatch(editCustomField(Api?.data?.data));
+          dispatch(toggleRSBView(false));
+          toast.success(Api?.data?.message);
+        } else {
+          toast.error(Api?.data?.message || Api?.data?.detail);
+        }
+        dispatch(setLoaderVisible(false));
+      }
     },
   });
 
@@ -225,17 +259,6 @@ const CustomFieldForm = () => {
                             className="form-control"
                             placeholder="Label"
                             name="options"
-                            styles={{
-                              control: (provided, state) => ({
-                                ...provided,
-                                borderColor:
-                                  !state.isFocused &&
-                                  FormikForm.touched.options &&
-                                  FormikForm.errors.options
-                                    ? "red !important"
-                                    : provided.borderColor,
-                              }),
-                            }}
                             value={data.label}
                             onChange={(e) => {
                               const updatedOptions = [
@@ -250,36 +273,13 @@ const CustomFieldForm = () => {
                                 options: updatedOptions,
                               });
                             }}
-                            invalid={
-                              FormikForm.touched.options &&
-                              FormikForm.errors.options
-                                ? true
-                                : false
-                            }
                           />
-                          {FormikForm.touched.options &&
-                          FormikForm.errors.options ? (
-                            <FormFeedback type="invalid">
-                              {FormikForm.errors.options}
-                            </FormFeedback>
-                          ) : null}
                         </div>
                         <div className="flex-grow-1">
                           <input
                             type="text"
                             name="options"
                             className="form-control"
-                            styles={{
-                              control: (provided, state) => ({
-                                ...provided,
-                                borderColor:
-                                  !state.isFocused &&
-                                  FormikForm.touched.options &&
-                                  FormikForm.errors.options
-                                    ? "red !important"
-                                    : provided.borderColor,
-                              }),
-                            }}
                             placeholder="Value"
                             value={data.value}
                             onChange={(e) => {
@@ -296,27 +296,18 @@ const CustomFieldForm = () => {
                                 options: updatedOptions,
                               });
                             }}
-                            invalid={
-                              FormikForm.touched.options &&
-                              FormikForm.errors.options
-                                ? true
-                                : false
-                            }
                           />
-                          {FormikForm.touched.options &&
-                          FormikForm.errors.options ? (
-                            <FormFeedback type="invalid">
-                              {FormikForm.errors.options}
-                            </FormFeedback>
-                          ) : null}
                         </div>
-                        <button
-                          type="button"
-                          className="btn btn-danger ms-2"
-                          onClick={() => removeRepeaterValue(data.id)}
-                        >
-                          <i class="bx bx-bx bx-trash"></i>
-                        </button>
+                        {customFieldObj.options.length > 1 &&
+                          index === customFieldObj.options.length - 1 && (
+                            <button
+                              type="button"
+                              className="btn btn-danger ms-2"
+                              onClick={() => removeRepeaterValue(data.id)}
+                            >
+                              <i class="bx bx-bx bx-trash"></i>
+                            </button>
+                          )}
                       </div>
                     ))}
                     <div className="d-flex mb-2">
@@ -334,14 +325,51 @@ const CustomFieldForm = () => {
 
               {customFieldObj.type === "file" && (
                 <Col lg={12}>
-                  <div>
-                    <Label htmlFor="formFile" className="form-label"></Label>
-
-                    <Input className="form-control" type="number" />
-                  </div>
-                  <div id="passwordHelpBlock" className="form-text">
-                    Maximum Size.
-                  </div>
+                  <Col sm={6}>
+                    <div>
+                      <h5 className="fs-13 fw-medium text-muted">
+                        Maximum Size
+                      </h5>
+                      <div className="input-step">
+                        <button
+                          type="button"
+                          className="minus"
+                          onClick={() => {
+                            setCustomFieldObj((prev) => {
+                              return {
+                                ...prev,
+                                max_size:
+                                  prev.max_size === 1 ? 1 : prev.max_size - 1,
+                              };
+                            });
+                          }}
+                        >
+                          –
+                        </button>
+                        <Input
+                          type="text"
+                          style={{ width: "7em" }}
+                          className="product-quantity"
+                          value={customFieldObj.max_size + " MB"}
+                          readOnly
+                        />
+                        <button
+                          type="button"
+                          className="plus"
+                          onClick={() => {
+                            setCustomFieldObj((prev) => {
+                              return {
+                                ...prev,
+                                max_size: prev.max_size + 1,
+                              };
+                            });
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </Col>
                 </Col>
               )}
               <Col lg={12}>

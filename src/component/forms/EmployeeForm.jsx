@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Fragment, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Button,
@@ -44,6 +44,7 @@ import FilePondPluginImagePreview from "filepond-plugin-image-preview";
 import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
 import { join } from "lodash";
 import { PostApi } from "../../common/api/PostApi";
+import { input_types, select_type } from "../../common/constant/Constants";
 
 // Register the plugins
 // registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
@@ -2906,22 +2907,34 @@ const EmployeeForm = () => {
                         <Label htmlFor="obj.input_name" className="form-label">
                           {obj.name}
                         </Label>
-                        <div className="form-icon right">
-                          <Input
-                            type={obj.type || "text"}
+                        {input_types.includes(obj.type) && (
+                          <Fragment>
+                            <div className="form-icon right">
+                              <Input
+                                type={obj.type || "text"}
+                                name={obj.input_name}
+                                id={obj.input_name}
+                                className="form-control"
+                                placeholder={`Enter ${obj.name}`}
+                                required={obj.is_required || false}
+                                value={obj.value || ""}
+                                onChange={(e) => handleCFInputChange(e, obj.id)}
+                              />
+                              <i className="ri-user-2-line"></i>
+                            </div>
+                            <div id="passwordHelpBlock" className="form-text">
+                              Enter {obj.name}
+                            </div>
+                          </Fragment>
+                        )}
+                        {obj.type === select_type && (
+                          <Select
                             name={obj.input_name}
                             id={obj.input_name}
-                            className="form-control"
-                            placeholder={`Enter ${obj.name}`}
-                            required={obj.is_required || false}
-                            value={obj.value || ""}
-                            onChange={(e) => handleCFInputChange(e, obj.id)}
+                            options={obj.options}
+                            placeholder={`Select ${obj.name}`}
                           />
-                          <i className="ri-user-2-line"></i>
-                        </div>
-                        <div id="passwordHelpBlock" className="form-text">
-                          Enter {obj.name}
-                        </div>
+                        )}
                       </div>
                     </Col>
                   ))

@@ -10,6 +10,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 
 import { setCustomField } from "../../redux/reducers/ChildReducer/CustomFieldReducer";
+import {
+  custom_field_applicable_modules,
+  custom_field_types,
+} from "../../common/constant/Constants";
 
 const CustomField = () => {
   // const [CustomData, setCustomdata] = useState([
@@ -70,26 +74,14 @@ const CustomField = () => {
   //   }
   // ])
 
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
-  const { custom_fields } = useSelector(state => state.CustomFieldReducer);
+  const { custom_fields } = useSelector((state) => state.CustomFieldReducer);
 
   useEffect(() => {
-    dispatch(setCustomField(GetLocalStorageData('custom_fields') || []));
+    dispatch(setCustomField(GetLocalStorageData("custom_fields") || []));
   }, []);
 
-  let types = [
-    { id: "text", label: "Text", value: "text" },
-    { id: "number", label: "Number", value: "number" },
-    { id: "date", label: "Date", value: "date" },
-    { id: "option", label: "Option", value: "option" },
-  ];
-
-  let module_lists = [
-    { id: "employee", label: "Employee", value: "employee" },
-    { id: "organization", label: "Organization", value: "organization" },
-  ];
-  
   // Column
   const additionalColumn = [
     {
@@ -104,7 +96,11 @@ const CustomField = () => {
     {
       Header: "Field Type",
       accessor: (obj) => {
-        return <b>{(types.find(e => e.value === obj.type))?.label || ""}</b>;
+        return (
+          <b>
+            {custom_field_types.find((e) => e.value === obj.type)?.label || ""}
+          </b>
+        );
       },
       filterable: false,
       id: "fieldtype",
@@ -114,12 +110,14 @@ const CustomField = () => {
       accessor: (obj) => {
         return (
           <b>
-            {obj.applicable_for_modules.map(e => {
-              return (module_lists.find(m => m.value === e))?.label || ""
+            {obj.applicable_for_modules.map((e) => {
+              return (
+                custom_field_applicable_modules.find((m) => m.value === e)
+                  ?.label || ""
+              );
             })}
           </b>
-        )
-
+        );
       },
       filterable: false,
       id: "applicablefor",
@@ -133,13 +131,13 @@ const CustomField = () => {
         let statusClass = obj.is_required ? "success" : "warning";
         return (
           <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
+            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
+          >
             {" "}
             {status}{" "}
           </span>
         );
-
-      }
+      },
     },
   ];
 
@@ -149,16 +147,24 @@ const CustomField = () => {
       name: "",
       type: "",
       options: [],
+      max_size: 1,
       is_required: false,
-      applicable_for_modules: []
+      applicable_for_modules: [],
     };
   }, []);
 
-
   const filterKey = "is_required";
   const filterOptions = [
-    { option: true, label: "Required", count : custom_fields.filter(e => e[filterKey] === true).length || 0  },
-    { option: false, label: "Optional",  count : custom_fields.filter(e => e[filterKey] === false).length || 0  },
+    {
+      option: true,
+      label: "Required",
+      count: custom_fields.filter((e) => e[filterKey] === true).length || 0,
+    },
+    {
+      option: false,
+      label: "Optional",
+      count: custom_fields.filter((e) => e[filterKey] === false).length || 0,
+    },
   ];
 
   document.title = `Custom Field | ${MetaTitle}`;
@@ -176,6 +182,5 @@ const CustomField = () => {
     </React.Fragment>
   );
 };
-
 
 export default CustomField;
