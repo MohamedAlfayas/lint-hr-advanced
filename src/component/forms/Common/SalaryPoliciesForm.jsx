@@ -40,9 +40,9 @@ const salaryPloiciesForm = () => {
 
 
     const handleCalculationTypeChange = (event) => {
-        const selectedValue = event.target.value;
-        setCalculationType(selectedValue);
-
+        // const selectedValue = event.target.value;
+        console.log("event", event);
+        setCalculationType(event);
 
         setSelectField("option1");
     };
@@ -57,42 +57,45 @@ const salaryPloiciesForm = () => {
         });
     };
 
-    const hanldeEarningComponent = () => {
+    const handleEarningsCB = (id) =>{
+        const obj = earnings_data.find(d => d.id === id)
+        obj['selected'] = !obj['selected']
 
-        //         const tableRow1 = earnings_data?.map((item) => {
-        //     if (selectedItems.length > 0 && selectedItems.find((obj) => obj.name == item.name)) {
-        //         console.log('yes', item);
-        //     } else {
-        //         console.log('no', item);
-        //     }
-        // });
-        // console.log('table1' , tableRow1);
-        const tableRows = earnings_data.map((item) => `
-          <tr>
-            <td><input type="checkbox" class="earning-checkbox" data-id="${item.id}"></td>
-            <td>${item.name}</td>
-            <td>${item.pro_rata ? "Yes" : "No"}</td>
-            <td>${item.tax ? "Yes" : "No"}</td>
-            <td>${item.insurance ? "Yes" : "No"}</td>
-          </tr>
-        `).join('');
+        console.log("Updated Obj = ",obj);
+    }
+
+    const hanldeEarningComponent = () => {
+        const tableRows = earnings_data.map((item) => {
+            let checked = item?.selected ? 'checked' : ''
+            let pro_rata = item?.pro_rata ? 'Yes' : 'No'
+            let tax = item?.tax ? 'Yes' : 'No'
+            let insurance = item?.insurance ? 'Yes' : 'No'
+            return ('<tr>\
+                        <td><Input type="checkbox" onChange={() => handleEarningsCB(item.id)} class="earning-checkbox" '+checked+'></td>\
+                        <td>'+item.name+'</td>\
+                        <td>'+pro_rata+'</td>\
+                        <td>'+tax+'</td>\
+                        <td>'+insurance+'</td>\
+                    </tr>\
+                ')
+        });
 
         Swal.fire({
             title: "Select Earning Components",
             html: `
-            <table class="table">
-              <thead>
-                <tr>
-                  <th><input type="checkbox" id="selectAll"></th>
-                  <th>Name</th>
-                  <th>Pro-rata</th>
-                  <th>Taxable</th>
-                  <th>Contribute to insurance&Fund</th>
-                </tr>
-              </thead>
-              <tbody>${tableRows}</tbody>
-            </table>
-          `,
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll"></th>
+                            <th>Name</th>
+                            <th>Pro-rata</th>
+                            <th>Taxable</th>
+                            <th>Contribute to insurance&Fund</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            `,
             customClass: {
                 container: 'custom-modal-container',
             },
@@ -105,22 +108,24 @@ const salaryPloiciesForm = () => {
             cancelButtonColor: '#d33',
         }).then((result) => {
             if (result.isConfirmed) {
-                const selectedCheckboxes = document.querySelectorAll('.earning-checkbox:checked');
-                const selectedItems = Array.from(selectedCheckboxes).map(checkbox => ({
-                    // id: checkbox.dataset.id,
-                    name: (earnings_data).find((val) => val.id == checkbox.dataset.id)?.name
-                }));
-                console.log('selectedItems', selectedItems);
-                // Update state with selected item names and IDs
-                setSelectedItems(selectedItems);
+                // const selectedCheckboxes = document.querySelectorAll('.earning-checkbox:checked');
+                // // const selectedItems = Array.from(selectedCheckboxes).map(checkbox => ({
+                // //     name: (earnings_data).find((val) => val.id == checkbox.dataset.id)?.name
+                // // }));
+                // const selectedItems = Array.from(selectedCheckboxes).map(checkbox => ({
+                //     item: (earnings_data).find((val) => val.id == checkbox.dataset.id)
+                // }));
+                // // Update state with selected item names and IDs
 
-                // Log selected items to the console
+                console.log("Earnings Data = ",earnings_data);
+
+                // const newSelectedItems = earnings_data
+
+                // setSelectedItems(selectedItems);
             }
         });
 
-
-
-
+        console.log('selectedItems', selectedItems);
         // Add event listener for the "Select All" checkbox
         document.getElementById('selectAll').addEventListener('change', function () {
             const checkboxes = document.querySelectorAll('.earning-checkbox');
@@ -129,33 +134,35 @@ const salaryPloiciesForm = () => {
             });
         });
     };
+
+
     const hanldeAllowancesComponent = () => {
         const tableRows = allowances_data.map((item) => `
-          <tr>
-            <td><input type="checkbox" class="earning-checkbox" data-id="${item.id}"></td>
+            <tr>
+            <td><input type="checkbox" class="earning-checkbox" data-id="${item.id}" ${selectedAllowanceItems.some(selectedAllowanceItems => selectedAllowanceItems?.item.id === item.id) ? 'checked' : ''}></td>
             <td>${item.name}</td>
-            <td>${item.pro_rata ? "Yes" : "No"}</td>
-            <td>${item.tax ? "Yes" : "No"}</td>
-            <td>${item.insurance ? "Yes" : "No"}</td>
-          </tr>
+                <td>${item.pro_rata ? "Yes" : "No"}</td>
+                <td>${item.tax ? "Yes" : "No"}</td>
+                <td>${item.insurance ? "Yes" : "No"}</td>
+            </tr>
         `).join('');
 
         Swal.fire({
-            title: "Select Allowances Components",
+            title: "Select Earning Components",
             html: `
-            <table class="table">
-              <thead>
-                <tr>
-                  <th><input type="checkbox" id="selectAll"></th>
-                  <th>Name</th>
-                  <th>Pro-rata</th>
-                  <th>Taxable</th>
-                  <th>Contribute to insurance&Fund</th>
-                </tr>
-              </thead>
-              <tbody>${tableRows}</tbody>
-            </table>
-          `,
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll"></th>
+                            <th>Name</th>
+                            <th>Pro-rata</th>
+                            <th>Taxable</th>
+                            <th>Contribute to insurance&Fund</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            `,
             customClass: {
                 container: 'custom-modal-container',
             },
@@ -170,17 +177,13 @@ const salaryPloiciesForm = () => {
             if (result.isConfirmed) {
                 const selectedCheckboxes = document.querySelectorAll('.earning-checkbox:checked');
                 const selectedAllowanceItems = Array.from(selectedCheckboxes).map(checkbox => ({
-                    // id: checkbox.dataset.id,
-                    name: (allowances_data).find((val) => val.id == checkbox.dataset.id)?.name
+                    item: (allowances_data).find((val) => val.id == checkbox.dataset.id)
                 }));
                 console.log('selectedItems', selectedAllowanceItems);
                 // Update state with selected item names and IDs
                 setSelectedAlowanceItems(selectedAllowanceItems);
-
-                // Log selected items to the console
             }
         });
-
 
         // Add event listener for the "Select All" checkbox
         document.getElementById('selectAll').addEventListener('change', function () {
@@ -191,33 +194,34 @@ const salaryPloiciesForm = () => {
         });
     };
 
+
     const hanldeDeductionsComponent = () => {
         const tableRows = deductions_data.map((item) => `
-          <tr>
-            <td><input type="checkbox" class="earning-checkbox" data-id="${item.id}"></td>
-            <td>${item.name}</td>
-            <td>${item.pro_rata ? "Yes" : "No"}</td>
-            <td>${item.tax ? "Yes" : "No"}</td>
-            <td>${item.insurance ? "Yes" : "No"}</td>
-          </tr>
+            <tr>
+            <td><input type="checkbox" class="earning-checkbox" data-id="${item.id}" ${selectedDeductionItems.some(selectedDeductionItems => selectedDeductionItems?.item.id === item.id) ? 'checked' : ''}></td>
+                <td>${item.name}</td>
+                <td>${item.pro_rata ? "Yes" : "No"}</td>
+                <td>${item.tax ? "Yes" : "No"}</td>
+                <td>${item.insurance ? "Yes" : "No"}</td>
+            </tr>
         `).join('');
 
         Swal.fire({
-            title: "Select Deductions Components",
+            title: "Select Earning Components",
             html: `
-            <table class="table">
-              <thead>
-                <tr>
-                  <th><input type="checkbox" id="selectAll"></th>
-                  <th>Name</th>
-                  <th>Pro-rata</th>
-                  <th>Taxable</th>
-                  <th>Contribute to insurance&Fund</th>
-                </tr>
-              </thead>
-              <tbody>${tableRows}</tbody>
-            </table>
-          `,
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll"></th>
+                            <th>Name</th>
+                            <th>Pro-rata</th>
+                            <th>Taxable</th>
+                            <th>Contribute to insurance&Fund</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            `,
             customClass: {
                 container: 'custom-modal-container',
             },
@@ -232,14 +236,11 @@ const salaryPloiciesForm = () => {
             if (result.isConfirmed) {
                 const selectedCheckboxes = document.querySelectorAll('.earning-checkbox:checked');
                 const selectedDeductionItems = Array.from(selectedCheckboxes).map(checkbox => ({
-                    // id: checkbox.dataset.id,
-                    name: (deductions_data).find((val) => val.id == checkbox.dataset.id)?.name
+                    item: (deductions_data).find((val) => val.id == checkbox.dataset.id)
                 }));
                 console.log('selectedItems', selectedDeductionItems);
                 // Update state with selected item names and IDs
                 setSelectedDeductionItems(selectedDeductionItems);
-
-                // Log selected items to the console
             }
         });
 
@@ -256,6 +257,30 @@ const salaryPloiciesForm = () => {
     useEffect(() => {
         setCustomFieldObj(form_obj);
     }, [form_obj]);
+    const handleRemove = (indexToRemove, category) => {
+        // Create a new array excluding the item at the specified index
+        const updatedItems = category.filter((item, index) => index !== indexToRemove);
+
+        // Update state with the new array based on the category
+        switch (category) {
+            case selectedItems:
+                setSelectedItems(updatedItems);
+                break;
+            case selectedAllowanceItems:
+                setSelectedAlowanceItems(updatedItems);
+                break;
+            case selectedDeductionItems:
+                setSelectedDeductionItems(updatedItems);
+                break;
+
+            default:
+                break;
+        }
+    };
+
+    const handleEarningCalculationType = (id, val) =>{
+
+    }
 
     return (
         <React.Fragment>
@@ -308,88 +333,78 @@ const salaryPloiciesForm = () => {
 
                                         {selectedItems.length > 0 && (
                                             <div className="mb-3">
-                                                <table className="table">
-                                                    <tbody>
-                                                        <tr>
-                                                            <th>
-                                                                <Label htmlFor="selectedEarnings" className="form-label">
-                                                                    Components
-                                                                </Label>
-                                                            </th>
-                                                            <td>
-                                                                <div className="form-icon right">
-                                                                    {selectedItems.map((item, index) => (
-                                                                        <span key={index}>{item.name} </span>
-                                                                    ))}
-                                                                </div>
-                                                            </td>
-                                                        </tr>
+                                                {selectedItems.map((item, index) => (
+                                                    <div key={index} className="row mb-3">
+                                                        <div className="col-md-2">
+                                                            <label htmlFor={`selectedComponent${index}`} className="form-label">
+                                                                Components
+                                                            </label>
+                                                            <div className="form-icon right">
+                                                                <span>{item?.item.name}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="col-md-3">
+                                                            <label htmlFor={`calculationType${index}`} className="form-label">
+                                                                Calculation Type
+                                                            </label>
+                                                            <select
+                                                                id={`calculationType${index}`}
+                                                                name={`calculationType${index}`}
+                                                                className="form-select"
+                                                                value={item?.item?.calculation_type}
+                                                                onChange={(e) => handleEarningCalculationType(item?.item.id, e.target.value)}
+                                                            >
+                                                                <option value="option1">Flat Amount</option>
+                                                                <option value="option2">Percentage</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="col-md-2">
+                                                            <label htmlFor={`additionalInput${index}`} className="form-label">
 
-                                                        <tr>
-                                                            <th>
-                                                                <Label htmlFor="selectField" className="form-label">
-                                                                    Calculation Type
-                                                                </Label>
-                                                            </th>
-                                                            <td>
-                                                                <select
-                                                                    id="calculationType"
-                                                                    name="calculationType"
-                                                                    className="form-select"
-                                                                    value={calculationType}
-                                                                    onChange={handleCalculationTypeChange}
-                                                                >
-                                                                    <option value="option1">Flat Amount</option>
-                                                                    <option value="option2">Percentage</option>
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                id={`additionalInput${index}`}
+                                                                name={`additionalInput${index}`}
+                                                                className="form-control"
+                                                            />
+                                                        </div>
+                                                        <div className="col-md-3">
+                                                            <label htmlFor={`selectField${index}`} className="form-label">
 
-                                                                </select>
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <th>
-                                                                {/* <Label htmlFor="additionalInput" className="form-label">
-                                                                        Additional Input
-                                                                    </Label> */}
-                                                            </th>
-                                                            <td>
-                                                                <Input
-                                                                    type="text"
-                                                                    id="additionalInput"
-                                                                    name="additionalInput"
-                                                                />
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <th>
-                                                                <Label htmlFor="selectField" className="form-label">
-                                                                    Select Field
-                                                                </Label>
-                                                            </th>
-                                                            <td>
-                                                                <select
-                                                                    id="selectField"
-                                                                    name="selectField"
-                                                                    className="form-select"
-                                                                    value={selectField}
-                                                                    onChange={(e) => setSelectField(e.target.value)}
-                                                                >
-                                                                    {calculationType === "option2" ? (
-                                                                        <option value="option1">Per Year</option>
-                                                                    ) : null}
-                                                                    {calculationType === "option1" ? (
-                                                                        <Fragment>
+                                                            </label>
+                                                            <select
+                                                                id={`selectField${index}`}
+                                                                name={`selectField${index}`}
+                                                                className="form-select"
+                                                                value={selectField}
+                                                                onChange={(e) => setSelectField(e.target.value)}
+                                                            >
+                                                                {calculationType === "option2" ? (
+                                                                    <option value="option1">Per Year</option>
+                                                                ) : null}
+                                                                {calculationType === "option1" ? (
+                                                                    <React.Fragment>
                                                                         <option value="option2">Monthly</option>
                                                                         <option value="option3">Weekly</option>
-                                                                        </Fragment>
-                                                                    ) : null}
-
-                                                                </select>
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
+                                                                    </React.Fragment>
+                                                                ) : null}
+                                                            </select>
+                                                        </div>
+                                                        <div className="col-md-2">
+                                                            <button
+                                                                type="button"
+                                                                className="btn  remove-item-btn"
+                                                                onClick={() => handleRemove(index, selectedItems)}
+                                                            >
+                                                                <i className="ri-close-line fs-16"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
+
 
                                         <div className="form-icon right">
                                             <Button color="primary"
@@ -407,87 +422,78 @@ const salaryPloiciesForm = () => {
                                         </Label>
                                         {selectedAllowanceItems.length > 0 && (
                                             <div className="mb-3">
-                                                <table className="table">
-                                                    <tbody>
-                                                        <tr>
-                                                            <th>
-                                                                <Label htmlFor="selectedEarnings" className="form-label">
-                                                                    Components
-                                                                </Label>
-                                                            </th>
-                                                            <td>
-                                                                <div className="form-icon right">
-                                                                    {selectedAllowanceItems.map((item, index) => (
-                                                                        <span key={index}>{item.name} </span>
-                                                                    ))}
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-
-                                                        <tr>
-                                                            <th>
-                                                                <Label htmlFor="selectField" className="form-label">
-                                                                    Calculation Type
-                                                                </Label>
-                                                            </th>
-                                                            <td>
-                                                                <select
-                                                                    id="calculationType"
-                                                                    name="calculationType"
-                                                                    className="form-select"
-                                                                    value={calculationType}
-                                                                    onChange={handleCalculationTypeChange}
-                                                                >
-                                                                    <option value="option1">Flat Amount</option>
-                                                                    <option value="option2">Percentage</option>
-
-                                                                </select>
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <th>
-                                                                {/* <Label htmlFor="additionalInput" className="form-label">
-                                                                        Additional Input
-                                                                    </Label> */}
-                                                            </th>
-                                                            <td>
-                                                                <Input
-                                                                    type="text"
-                                                                    id="additionalInput"
-                                                                    name="additionalInput"
-                                                                />
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <th>
-                                                                {/* <Label htmlFor="selectField" className="form-label">
-                                                                    Select Field
-                                                                </Label> */}
-                                                            </th>
-                                                            <td>
-                                                                <select
-                                                                    id="selectField"
-                                                                    name="selectField"
-                                                                    className="form-select"
-                                                                    value={selectField}
-                                                                    onChange={(e) => setSelectField(e.target.value)}
-                                                                >
-                                                                    {calculationType === "option2" ? (
-                                                                        <option value="option1">Per Year</option>
-                                                                    ) : null}
-                                                                     {calculationType === "option1" ? (
-                                                                        <Fragment>
+                                                {selectedAllowanceItems.map((item, index) => (
+                                                    <div key={index} className="row mb-3">
+                                                        <div className="col-md-2">
+                                                            <label htmlFor={`selectedComponent${index}`} className="form-label">
+                                                                Components
+                                                            </label>
+                                                            <div className="form-icon right">
+                                                                <span>{item?.item.name}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="col-md-3">
+                                                            <label htmlFor={`calculationType${index}`} className="form-label">
+                                                                Calculation Type
+                                                            </label>
+                                                            <select
+                                                                id={`calculationType${index}`}
+                                                                name={`calculationType${index}`}
+                                                                className="form-select"
+                                                                value={calculationType}
+                                                                onChange={handleCalculationTypeChange}
+                                                            >
+                                                                <option value="option1">Flat Amount</option>
+                                                                <option value="option2">Percentage</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="col-md-2">
+                                                            <label htmlFor={`additionalInput${index}`} className="form-label">
+                                                                Additional Input
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                id={`additionalInput${index}`}
+                                                                name={`additionalInput${index}`}
+                                                                className="form-control"
+                                                            />
+                                                        </div>
+                                                        <div className="col-md-3">
+                                                            <label htmlFor={`selectField${index}`} className="form-label">
+                                                                Select Field
+                                                            </label>
+                                                            <select
+                                                                id={`selectField${index}`}
+                                                                name={`selectField${index}`}
+                                                                className="form-select"
+                                                                value={selectField}
+                                                                onChange={(e) => setSelectField(e.target.value)}
+                                                            >
+                                                                {calculationType === "option2" ? (
+                                                                    <option value="option1">Per Year</option>
+                                                                ) : null}
+                                                                {calculationType === "option1" ? (
+                                                                    <React.Fragment>
                                                                         <option value="option2">Monthly</option>
                                                                         <option value="option3">Weekly</option>
-                                                                        </Fragment>
-                                                                    ) : null}
-                                                                </select>
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
+                                                                    </React.Fragment>
+                                                                ) : null}
+                                                            </select>
+                                                        </div>
+                                                        <div className="col-md-2">
+                                                            <button
+                                                                type="button"
+                                                                className="btn remove-item-btn"
+                                                                onClick={() => handleRemove(index, selectedAllowanceItems)}
+                                                            >
+                                                                <i className="ri-close-line fs-16"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
+
                                         <div className="form-icon right">
                                             <Button color="primary"
                                                 onClick={() => hanldeAllowancesComponent()}>
@@ -504,86 +510,78 @@ const salaryPloiciesForm = () => {
                                         </Label>
                                         {selectedDeductionItems.length > 0 && (
                                             <div className="mb-3">
-                                                <table className="table">
-                                                    <tbody>
-                                                        <tr>
-                                                            <th>
-                                                                <Label htmlFor="selectedEarnings" className="form-label">
-                                                                    Components
-                                                                </Label>
-                                                            </th>
-                                                            <td>
-                                                                <div className="form-icon right">
-                                                                    {selectedDeductionItems.map((item, index) => (
-                                                                        <span key={index}>{item.name} </span>
-                                                                    ))}
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-
-                                                        <tr>
-                                                            <th>
-                                                                <Label htmlFor="selectField" className="form-label">
-                                                                    Calculation Type
-                                                                </Label>
-                                                            </th>
-                                                            <td>
-                                                                <select
-                                                                    id="calculationType"
-                                                                    name="calculationType"
-                                                                    className="form-select"
-                                                                    value={calculationType}
-                                                                    onChange={handleCalculationTypeChange}
-                                                                >
-                                                                    <option value="option1">Flat Amount</option>
-                                                                    <option value="option2">Percentage</option>
-
-                                                                </select>
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <th>
-                                                                {/* <Label htmlFor="additionalInput" className="form-label">
-                                                                        Additional Input
-                                                                    </Label> */}
-                                                            </th>
-                                                            <td>
-                                                                <Input
-                                                                    type="text"
-                                                                    id="additionalInput"
-                                                                    name="additionalInput"
-                                                                />
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <th>
-                                                                {/* <Label htmlFor="selectField" className="form-label">
-                                                                    Select Field
-                                                                </Label> */}
-                                                            </th>
-                                                            <td>
-                                                                <select
-                                                                    id="selectField"
-                                                                    name="selectField"
-                                                                    className="form-select"
-                                                                >
-                                                                    {calculationType === "option2" ? (
-                                                                        <option value="option1">Per Year</option>
-                                                                    ) : null}
-                                                                   {calculationType === "option1" ? (
-                                                                        <Fragment>
+                                                {selectedDeductionItems.map((item, index) => (
+                                                    <div key={index} className="row mb-3">
+                                                        <div className="col-md-2">
+                                                            <label htmlFor={`selectedComponent${index}`} className="form-label">
+                                                                Components
+                                                            </label>
+                                                            <div className="form-icon right">
+                                                                <span>{item?.item.name}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="col-md-3">
+                                                            <label htmlFor={`calculationType${index}`} className="form-label">
+                                                                Calculation Type
+                                                            </label>
+                                                            <select
+                                                                id={`calculationType${index}`}
+                                                                name={`calculationType${index}`}
+                                                                className="form-select"
+                                                                value={calculationType}
+                                                                onChange={handleCalculationTypeChange}
+                                                            >
+                                                                <option value="option1">Flat Amount</option>
+                                                                <option value="option2">Percentage</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="col-md-2">
+                                                            <label htmlFor={`additionalInput${index}`} className="form-label">
+                                                                Additional Input
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                id={`additionalInput${index}`}
+                                                                name={`additionalInput${index}`}
+                                                                className="form-control"
+                                                            />
+                                                        </div>
+                                                        <div className="col-md-3">
+                                                            <label htmlFor={`selectField${index}`} className="form-label">
+                                                                Select Field
+                                                            </label>
+                                                            <select
+                                                                id={`selectField${index}`}
+                                                                name={`selectField${index}`}
+                                                                className="form-select"
+                                                                value={selectField}
+                                                                onChange={(e) => setSelectField(e.target.value)}
+                                                            >
+                                                                {calculationType === "option2" ? (
+                                                                    <option value="option1">Per Year</option>
+                                                                ) : null}
+                                                                {calculationType === "option1" ? (
+                                                                    <React.Fragment>
                                                                         <option value="option2">Monthly</option>
                                                                         <option value="option3">Weekly</option>
-                                                                        </Fragment>
-                                                                    ) : null}
-
-                                                                </select>
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
+                                                                    </React.Fragment>
+                                                                ) : null}
+                                                            </select>
+                                                        </div>
+                                                        <div className="col-md-2">
+                                                            <button
+                                                                type="button"
+                                                                className="btn remove-item-btn"
+                                                                onClick={() => handleRemove(index, selectedDeductionItems)}
+                                                            >
+                                                                <i className="ri-close-line fs-16"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
+
                                         <div className="form-icon right">
                                             <Button color="primary"
                                                 onClick={() => hanldeDeductionsComponent()}>
