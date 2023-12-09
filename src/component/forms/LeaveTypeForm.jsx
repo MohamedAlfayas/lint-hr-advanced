@@ -7,6 +7,7 @@ import {
   Col,
   Container,
   Form,
+  FormFeedback,
   Input,
   Label,
   Nav,
@@ -38,6 +39,8 @@ import {
   leave_type_day_unit,
   leave_type_hour_unit,
 } from "../../common/constant/Constants";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
@@ -148,33 +151,85 @@ const LeaveTypeForm = () => {
 
   console.log("Leave Data Type = ", leaveTypeData);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log("Leave Type data = ", leaveTypeData);
-    dispatch(setLoaderVisible(true));
-    const Api = await PostApi(
-      "/leave/leave_type/create/",
-      leaveTypeData,
-      false
-    );
-    console.log("API RES = ", Api);
-    if (Api.status && Api.status === 200) {
-      leaveTypeData.id === 0
-        ? dispatch(addLeaveType(Api?.data.data))
-        : dispatch(editLeaveType(Api?.data?.data));
-      dispatch(toggleRSBView(false));
-      toast.success(Api?.data?.message);
-    } else {
-      toast.error(Api?.data?.message || Api?.data?.detail);
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: leaveTypeData,
+    validationSchema: Yup.object({
+      name: Yup.string().required("Please Enter Leave Type Name"),
+      type: Yup.number()
+        .required("Select Role")
+        .min(1, "Please Select Leave Type"),
+      genders: Yup.array()
+        .required("Please Select Gender")
+        .min(1, "Please Select Gender"),
+      ws_id: Yup.array()
+        .required("Please Select Work Schedeule")
+        .min(1, "Please Select Work Schedeule"),
+    }),
+    onSubmit: async (values) => {
+      console.log("SUCCESSSS !!!! Formik Values = ", values);
+      dispatch(setLoaderVisible(true));
+      const Api = await PostApi(
+        "/leave/leave_type/create/",
+        leaveTypeData,
+        false
+      );
+      console.log("API RES = ", Api);
+      if (Api.status && Api.status === 200) {
+        leaveTypeData.id === 0
+          ? dispatch(addLeaveType(Api?.data.data))
+          : dispatch(editLeaveType(Api?.data?.data));
+        dispatch(toggleRSBView(false));
+        toast.success(Api?.data?.message);
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
+      }
+      dispatch(setLoaderVisible(false));
+    },
+  });
+
+  useEffect(() => {
+    if (
+      FormikForm.submitCount > 0 &&
+      Object.keys(FormikForm.errors).length > 0
+    ) {
+      const firstErrorField = Object.keys(FormikForm.errors)[0];
+      FormikForm.setFieldTouched(firstErrorField);
+      const errorField = document.querySelector(`[name=${firstErrorField}]`);
+      console.log(firstErrorField);
+      if (errorField) {
+        errorField.focus();
+      }
     }
-    dispatch(setLoaderVisible(false));
-  };
+  }, [FormikForm.submitCount, FormikForm.errors, FormikForm.setFieldTouched]);
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   console.log("Leave Type data = ", leaveTypeData);
+  //   dispatch(setLoaderVisible(true));
+  //   const Api = await PostApi(
+  //     "/leave/leave_type/create/",
+  //     leaveTypeData,
+  //     false
+  //   );
+  //   console.log("API RES = ", Api);
+  //   if (Api.status && Api.status === 200) {
+  //     leaveTypeData.id === 0
+  //       ? dispatch(addLeaveType(Api?.data.data))
+  //       : dispatch(editLeaveType(Api?.data?.data));
+  //     dispatch(toggleRSBView(false));
+  //     toast.success(Api?.data?.message);
+  //   } else {
+  //     toast.error(Api?.data?.message || Api?.data?.detail);
+  //   }
+  //   dispatch(setLoaderVisible(false));
+  // };
 
   return (
     <React.Fragment>
       <Row>
         <Col xl={40}>
-          <Form className="form-steps" onSubmit={handleSubmit}>
+          <Form className="form-steps" onSubmit={FormikForm.handleSubmit}>
             <Row>
               <Col md={12} lg={12} xxl={12}>
                 <div className="mb-3">
@@ -190,13 +245,26 @@ const LeaveTypeForm = () => {
                       placeholder="Casual"
                       value={leaveTypeData.name || ""}
                       onChange={handleInputChange}
-                      required
+                      invalid={
+                        FormikForm.touched.name && FormikForm.errors.name
+                          ? true
+                          : false
+                      }
                     />
-                    <i className="ri-chat-new-line"></i>
+                    {!FormikForm.touched.name && !FormikForm.errors.name && (
+                      <i className="ri-chat-new-line" />
+                    )}
+                    {FormikForm.touched.name && FormikForm.errors.name ? (
+                      <FormFeedback type="invalid">
+                        {FormikForm.errors.name}
+                      </FormFeedback>
+                    ) : null}
                   </div>
-                  <div id="passwordHelpBlock" className="form-text">
-                    Enter Leave Type Name.
-                  </div>
+                  {!FormikForm.errors.name && (
+                    <div id="passwordHelpBlock" className="form-text">
+                      Enter Leave Type Name.
+                    </div>
+                  )}
                 </div>
               </Col>
               <Col md={12} lg={12} xxl={12}>
@@ -206,10 +274,21 @@ const LeaveTypeForm = () => {
                   </Label>
 
                   <Select
-                    required
+                    name="type"
                     isMulti={false}
                     options={types || []}
                     className="basic-multi-select"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.type &&
+                          FormikForm.errors.type
+                            ? "red !important"
+                            : provided.borderColor,
+                      }),
+                    }}
                     value={
                       (leaveTypeData.type &&
                         types.find((e) => e.value === leaveTypeData.type)) ||
@@ -218,11 +297,23 @@ const LeaveTypeForm = () => {
                     onChange={(e) => {
                       setLeaveTypeData({ ...leaveTypeData, type: e.value });
                     }}
+                    invalid={
+                      FormikForm.touched.type && FormikForm.errors.type
+                        ? true
+                        : false
+                    }
                   />
+                  {FormikForm.touched.type && FormikForm.errors.type ? (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.type}
+                    </div>
+                  ) : null}
                 </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Select Leave Type.
-                </div>
+                {!FormikForm.errors.type && (
+                  <div id="passwordHelpBlock" className="form-text mb-3">
+                    Select Leave Type.
+                  </div>
+                )}
               </Col>
 
               <Col md={12} lg={12} xxl={12}>
@@ -243,7 +334,6 @@ const LeaveTypeForm = () => {
                             : false
                         }
                         onChange={() => handleUnitChange(leave_type_day_unit)}
-                        required
                       />
                       <Label className="form-check-label" htmlFor="lt_day">
                         Days
@@ -261,7 +351,6 @@ const LeaveTypeForm = () => {
                             : false
                         }
                         onChange={() => handleUnitChange(leave_type_hour_unit)}
-                        required
                       />
                       <Label className="form-check-label" htmlFor="lt_hour">
                         Hour
@@ -360,7 +449,6 @@ const LeaveTypeForm = () => {
                   </Label>
 
                   <Select
-                    required
                     isMulti={false}
                     options={reset || []}
                     id="lt_reset"
@@ -392,17 +480,40 @@ const LeaveTypeForm = () => {
                   </Label>
 
                   <Select
-                    required
+                    name="ws_id"
                     isMulti={true}
                     options={ws_options || []}
                     className="basic-multi-select"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.ws_id &&
+                          FormikForm.errors.ws_id
+                            ? "red !important"
+                            : provided.borderColor,
+                      }),
+                    }}
                     value={selectedWS || []}
                     onChange={handleWSChange}
+                    invalid={
+                      FormikForm.touched.ws_id && FormikForm.errors.ws_id
+                        ? true
+                        : false
+                    }
                   />
+                  {FormikForm.touched.ws_id && FormikForm.errors.ws_id ? (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.ws_id}
+                    </div>
+                  ) : null}
                 </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Please select associate work schedule.
-                </div>
+                {!FormikForm.errors.ws_id && (
+                  <div id="passwordHelpBlock" className="form-text mb-3">
+                    Please select associate work schedule.
+                  </div>
+                )}
               </Col>
 
               <Col md={12} lg={12} xxl={12}>
@@ -411,16 +522,40 @@ const LeaveTypeForm = () => {
                     Gender *
                   </Label>
                   <Select
+                    name="genders"
                     isMulti={true}
                     options={gender_option || []}
                     className="basic-multi-select"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.genders &&
+                          FormikForm.errors.genders
+                            ? "red !important"
+                            : provided.borderColor,
+                      }),
+                    }}
                     value={selectedGenders || []}
                     onChange={handleGenderChange}
+                    invalid={
+                      FormikForm.touched.genders && FormikForm.errors.genders
+                        ? true
+                        : false
+                    }
                   />
+                  {FormikForm.touched.genders && FormikForm.errors.genders ? (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.genders}
+                    </div>
+                  ) : null}
                 </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Please select applicable Gender.
-                </div>
+                {!FormikForm.errors.genders && (
+                  <div id="passwordHelpBlock" className="form-text mb-3">
+                    Please select applicable Gender.
+                  </div>
+                )}
               </Col>
 
               <Col md={12} lg={12} xxl={12}>
