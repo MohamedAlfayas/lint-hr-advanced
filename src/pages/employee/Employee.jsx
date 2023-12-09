@@ -228,6 +228,7 @@ const Employee = () => {
       emp_id: "",
       fname: "",
       lname: "",
+      email: "",
       dob: String(new Date()),
       joining_date: String(new Date()),
       id_proof: null,

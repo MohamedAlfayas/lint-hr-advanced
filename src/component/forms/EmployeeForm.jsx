@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useMemo, useState } from "react";
+import React, { Fragment, useEffect, useMemo, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Button,
@@ -12,6 +12,7 @@ import {
   DropdownToggle,
   Form,
   FormGroup,
+  FormFeedback,
   Input,
   Label,
   Row,
@@ -23,6 +24,8 @@ import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import DummyUserImg from "../../assets/images/users/user.png";
 
 import Flatpickr from "react-flatpickr";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
 import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
@@ -1835,6 +1838,7 @@ const EmployeeForm = () => {
   const [selectedFileName3, setSelectedFileName3] = React.useState("");
   const [selectedFileName4, setSelectedFileName4] = React.useState("");
   const [selectedFileName5, setSelectedFileName5] = React.useState("");
+  const inputRef = useRef();
 
   const showFileNameIfSelected = () => {
     const idProofUrl = form_obj.id_proof_url;
@@ -2000,67 +2004,143 @@ const EmployeeForm = () => {
     });
   };
 
-  const handleSubmit = async () => {
-    dispatch(setLoaderVisible(true));
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: employeeObj,
+    validationSchema: Yup.object({
+      fname: Yup.string().trim().required("Please Enter First Name"),
+      lname: Yup.string().trim().required("Please Enter Last Name"),
+      email: Yup.string()
+        .email("Please Enter Valid Email")
+        .required("Please Enter Email"),
+      gender: Yup.string().min(1).required("Please Select Gender"),
+      dob: Yup.string().trim().required("Please Select Date"),
+      contact_number: Yup.string().required("Please Enter Phone Number"),
+      role: Yup.number().required("Select Role").min(1, "Please Select Role"),
+      primary_department: Yup.number()
+        .required("Select Department")
+        .min(1, "Please Select Department"),
+      work_schedule: Yup.number()
+        .required("Select Work Schedule")
+        .min(1, "Please Select Work Schedule"),
+    }),
+    onSubmit: async (values) => {
+      console.log("SUCCESSSS !!!! Formik Values = ", values);
+      dispatch(setLoaderVisible(true));
 
-    console.log("emp Obj = ", employeeObj);
-    let form_data = new FormData();
-    employeeImage !== null &&
-      form_data.append("profile", employeeImage, employeeImage.name);
-    Object.entries(employeeObj).map((key, idx) => {
-      if (key[0] === "cf_values") {
-        form_data.append(key[0], JSON.stringify(key[1]));
+      console.log("emp Obj = ", employeeObj);
+      let form_data = new FormData();
+      employeeImage !== null &&
+        form_data.append("profile", employeeImage, employeeImage.name);
+      Object.entries(employeeObj).map((key, idx) => {
+        if (key[0] === "cf_values") {
+          form_data.append(key[0], JSON.stringify(key[1]));
+        } else {
+          form_data.append(key[0], key[1]);
+        }
+      });
+
+      const Api = await PostApi("employee/add-new/", form_data, true);
+      console.log("API RES = ", Api);
+      if (Api.status && Api.status === 200) {
+        employeeObj.id === 0
+          ? dispatch(addEmployee(Api?.data.data))
+          : dispatch(editEmployee(Api?.data?.data));
+        dispatch(toggleRSBView(false));
+        toast.success(Api?.data?.message);
       } else {
-        form_data.append(key[0], key[1]);
+        toast.error(Api?.data?.message || Api?.data?.detail);
       }
-    });
 
-    const Api = await PostApi("employee/add-new/", form_data, true);
-    console.log("API RES = ", Api);
-    if (Api.status && Api.status === 200) {
-      employeeObj.id === 0
-        ? dispatch(addEmployee(Api?.data.data))
-        : dispatch(editEmployee(Api?.data?.data));
-      dispatch(toggleRSBView(false));
-      toast.success(Api?.data?.message);
-    } else {
-      toast.error(Api?.data?.message || Api?.data?.detail);
+      dispatch(setLoaderVisible(false));
+    },
+  });
+
+  useEffect(() => {
+    if (
+      FormikForm.submitCount > 0 &&
+      Object.keys(FormikForm.errors).length > 0
+    ) {
+      const firstErrorField = Object.keys(FormikForm.errors)[0];
+      FormikForm.setFieldTouched(firstErrorField);
+      const errorField = document.querySelector(`[name=${firstErrorField}]`);
+      console.log(firstErrorField);
+      if (errorField) {
+        errorField.focus();
+
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }
     }
+  }, [
+    FormikForm.submitCount,
+    FormikForm.errors,
+    FormikForm.setFieldTouched,
+    inputRef,
+  ]);
 
-    dispatch(setLoaderVisible(false));
+  // const handleSubmit = async () => {
+  //   dispatch(setLoaderVisible(true));
 
-    // Api({
-    //   method: "POST",
-    //   url: "employee/add-new/",
-    //   headers: {
-    //     "Content-Type": "multipart/form-data",
-    //   },
-    //   data: form_data,
-    // })
-    //   .then((res) => {
-    //     console.log("REs = ", res);
-    //     employeeObj.id === 0
-    //       ? dispatch(addEmployee(res?.data.data))
-    //       : dispatch(editEmployee(res?.data?.data));
-    //     dispatch(toggleRSBView(false));
-    //     // dispatch(setActiveTableTab("all"));
-    //     dispatch(setLoaderVisible(false));
-    //     toast.success(res?.data?.message);
-    //   })
-    //   .catch((err) => {
-    //     console.log("ERr == ", err);
-    //     dispatch(setLoaderVisible(false));
-    //     toast.error(
-    //       err?.response?.data?.message || err?.response?.data?.detail
-    //     );
-    //   });
-  };
+  //   console.log("emp Obj = ", employeeObj);
+  //   let form_data = new FormData();
+  //   employeeImage !== null &&
+  //     form_data.append("profile", employeeImage, employeeImage.name);
+  //   Object.entries(employeeObj).map((key, idx) => {
+  //     if (key[0] === "cf_values") {
+  //       form_data.append(key[0], JSON.stringify(key[1]));
+  //     } else {
+  //       form_data.append(key[0], key[1]);
+  //     }
+  //   });
+
+  //   const Api = await PostApi("employee/add-new/", form_data, true);
+  //   console.log("API RES = ", Api);
+  //   if (Api.status && Api.status === 200) {
+  //     employeeObj.id === 0
+  //       ? dispatch(addEmployee(Api?.data.data))
+  //       : dispatch(editEmployee(Api?.data?.data));
+  //     dispatch(toggleRSBView(false));
+  //     toast.success(Api?.data?.message);
+  //   } else {
+  //     toast.error(Api?.data?.message || Api?.data?.detail);
+  //   }
+
+  //   dispatch(setLoaderVisible(false));
+
+  //   // Api({
+  //   //   method: "POST",
+  //   //   url: "employee/add-new/",
+  //   //   headers: {
+  //   //     "Content-Type": "multipart/form-data",
+  //   //   },
+  //   //   data: form_data,
+  //   // })
+  //   //   .then((res) => {
+  //   //     console.log("REs = ", res);
+  //   //     employeeObj.id === 0
+  //   //       ? dispatch(addEmployee(res?.data.data))
+  //   //       : dispatch(editEmployee(res?.data?.data));
+  //   //     dispatch(toggleRSBView(false));
+  //   //     // dispatch(setActiveTableTab("all"));
+  //   //     dispatch(setLoaderVisible(false));
+  //   //     toast.success(res?.data?.message);
+  //   //   })
+  //   //   .catch((err) => {
+  //   //     console.log("ERr == ", err);
+  //   //     dispatch(setLoaderVisible(false));
+  //   //     toast.error(
+  //   //       err?.response?.data?.message || err?.response?.data?.detail
+  //   //     );
+  //   //   });
+  // };
 
   return (
     <React.Fragment>
       <Row>
         <Col>
-          <Form onSubmit={handleSubmit} action="javascript:void(0)">
+          <Form onSubmit={FormikForm.handleSubmit} action="javascript:void(0)">
             <div className="text-center">
               <div className="profile-user position-relative d-inline-block mx-auto mb-4">
                 <img
@@ -2129,12 +2209,26 @@ const EmployeeForm = () => {
                       placeholder="Elon"
                       value={employeeObj.fname || ""}
                       onChange={handleInputChange}
+                      invalid={
+                        FormikForm.touched.fname && FormikForm.errors.fname
+                          ? true
+                          : false
+                      }
                     />
-                    <i className="ri-user-line"></i>
+                    {!FormikForm.touched.fname && !FormikForm.errors.fname && (
+                      <i className="ri-user-line"></i>
+                    )}
+                    {FormikForm.touched.fname && FormikForm.errors.fname ? (
+                      <FormFeedback type="invalid">
+                        {FormikForm.errors.fname}
+                      </FormFeedback>
+                    ) : null}
                   </div>
-                  <div id="passwordHelpBlock" className="form-text mb-3">
-                    Enter First Name.
-                  </div>
+                  {!FormikForm.errors.fname && (
+                    <div id="passwordHelpBlock" className="form-text mb-3">
+                      Enter First Name.
+                    </div>
+                  )}
                 </div>
               </Col>
               <Col md={6} lg={6} xxl={6}>
@@ -2151,12 +2245,26 @@ const EmployeeForm = () => {
                       placeholder="Musk"
                       value={employeeObj.lname || ""}
                       onChange={handleInputChange}
+                      invalid={
+                        FormikForm.touched.lname && FormikForm.errors.lname
+                          ? true
+                          : false
+                      }
                     />
-                    <i className="ri-user-2-line"></i>
+                    {!FormikForm.touched.lname && !FormikForm.errors.lname && (
+                      <i className="ri-user-2-line"></i>
+                    )}
+                    {FormikForm.touched.lname && FormikForm.errors.lname ? (
+                      <FormFeedback type="invalid">
+                        {FormikForm.errors.lname}
+                      </FormFeedback>
+                    ) : null}
                   </div>
-                  <div id="passwordHelpBlock" className="form-text mb-3">
-                    Enter Last Name.
-                  </div>
+                  {!FormikForm.errors.lname && (
+                    <div id="passwordHelpBlock" className="form-text mb-3">
+                      Enter last Name.
+                    </div>
+                  )}
                 </div>
               </Col>
               <Col md={12} lg={12} xxl={12}>
@@ -2166,19 +2274,43 @@ const EmployeeForm = () => {
                   </Label>
                   <div className="form-icon right">
                     <Input
-                      type="email"
                       name="email"
                       id="emailid"
                       className="form-control"
+                      styles={{
+                        control: (provided, state) => ({
+                          ...provided,
+                          borderColor:
+                            !state.isFocused &&
+                            FormikForm.touched.email &&
+                            FormikForm.errors.email
+                              ? "red !important"
+                              : provided.borderColor,
+                        }),
+                      }}
                       placeholder="name@company.com"
                       value={employeeObj.email || ""}
                       onChange={handleInputChange}
+                      invalid={
+                        FormikForm.touched.email && FormikForm.errors.email
+                          ? true
+                          : false
+                      }
                     />
-                    <i className="ri-at-line"></i>
+                    {!FormikForm.touched.email && !FormikForm.errors.email && (
+                      <i className="ri-at-line"></i>
+                    )}
+                    {FormikForm.touched.email && FormikForm.errors.email ? (
+                      <FormFeedback type="invalid">
+                        {FormikForm.errors.email}
+                      </FormFeedback>
+                    ) : null}
                   </div>
-                  <div id="passwordHelpBlock" className="form-text mb-3">
-                    Enter Email.
-                  </div>
+                  {!FormikForm.errors.email && (
+                    <div id="passwordHelpBlock" className="form-text mb-3">
+                      Enter Email.
+                    </div>
+                  )}
                 </div>
               </Col>
               <Col lg={12}>
@@ -2188,10 +2320,23 @@ const EmployeeForm = () => {
                   </Label>
 
                   <Select
-                    id="emp_gender"
+                    id="gender"
+                    name="gender"
+                    innerRef={inputRef}
                     isMulti={false}
                     options={gender_option || []}
                     className="basic-multi-select"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.gender &&
+                          FormikForm.errors.gender
+                            ? "red !important"
+                            : provided.borderColor,
+                      }),
+                    }}
                     value={
                       (employeeObj.gender &&
                         gender_option.find(
@@ -2202,10 +2347,22 @@ const EmployeeForm = () => {
                     onChange={(e) => {
                       setEmployeeObj({ ...employeeObj, gender: e.value });
                     }}
+                    invalid={
+                      FormikForm.touched.gender && FormikForm.errors.gender
+                        ? true
+                        : false
+                    }
                   />
-                </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Select Gender.
+                  {FormikForm.touched.gender && FormikForm.errors.gender ? (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.gender}
+                    </div>
+                  ) : null}
+                  {!FormikForm.errors.gender && (
+                    <div id="passwordHelpBlock" className="form-text mb-3">
+                      Select Gender.
+                    </div>
+                  )}
                 </div>
               </Col>
               <Col lg={12}>
@@ -2216,15 +2373,28 @@ const EmployeeForm = () => {
                   <Flatpickr
                     className="form-control"
                     id="dob"
+                    name="dob"
                     value={dob}
                     options={{
                       dateFormat: "d M, Y",
                     }}
                     onChange={handleDateChange}
+                    invalid={
+                      FormikForm.touched.dob && FormikForm.errors.dob
+                        ? true
+                        : false
+                    }
                   />
-                </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Select Date Of Birth.
+                  {FormikForm.touched.dob && FormikForm.errors.dob ? (
+                    <FormFeedback type="invalid">
+                      {FormikForm.errors.dob}
+                    </FormFeedback>
+                  ) : null}
+                  {!FormikForm.errors.dob && (
+                    <div id="passwordHelpBlock" className="form-text mb-3">
+                      Select DOB.
+                    </div>
+                  )}
                 </div>
               </Col>
 
@@ -2250,15 +2420,39 @@ const EmployeeForm = () => {
                         {contactCountry.countryCode}
                       </span>
                     </DropdownToggle>
-                    <input
+                    <Input
                       type="number"
+                      name="contact_number"
                       className="form-control rounded-end flag-input"
+                      styles={{
+                        control: (provided, state) => ({
+                          ...provided,
+                          borderColor:
+                            !state.isFocused &&
+                            FormikForm.touched.contact_number &&
+                            FormikForm.errors.contact_number
+                              ? "red !important"
+                              : provided.borderColor,
+                        }),
+                      }}
                       placeholder="Enter number"
                       value={employeeObj.contact_number || ""}
                       onChange={(e) =>
                         updateProfileData("contact_number", e.target.value)
                       }
+                      invalid={
+                        FormikForm.touched.contact_number &&
+                        FormikForm.errors.contact_number
+                          ? true
+                          : false
+                      }
                     />
+                    {FormikForm.touched.contact_number &&
+                    FormikForm.errors.contact_number ? (
+                      <FormFeedback type="invalid">
+                        {FormikForm.errors.contact_number}
+                      </FormFeedback>
+                    ) : null}
                     <DropdownMenu
                       as="ul"
                       className="list-unstyled w-100 dropdown-menu-list mb-0"
@@ -2307,9 +2501,11 @@ const EmployeeForm = () => {
                       </SimpleBar>
                     </DropdownMenu>
                   </Dropdown>
-                </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Enter Your Contact number with country code.
+                  {!FormikForm.errors.contact_number && (
+                    <div id="passwordHelpBlock" className="form-text mb-3">
+                      Enter Your Contact number with country code.
+                    </div>
+                  )}
                 </div>
               </Col>
 
@@ -2320,9 +2516,22 @@ const EmployeeForm = () => {
                   </Label>
                   <Select
                     id="role"
+                    name="role"
                     isMulti={false}
+                    innerRef={inputRef}
                     options={role_option || []}
                     className="basic-multi-select"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.role &&
+                          FormikForm.errors.role
+                            ? "red !important"
+                            : provided.borderColor,
+                      }),
+                    }}
                     value={
                       (employeeObj.role &&
                         role_option.find((e) => e.id === employeeObj.role)) ||
@@ -2331,10 +2540,22 @@ const EmployeeForm = () => {
                     onChange={(e) => {
                       setEmployeeObj({ ...employeeObj, role: e.id });
                     }}
+                    invalid={
+                      FormikForm.touched.role && FormikForm.errors.role
+                        ? true
+                        : false
+                    }
                   />
-                </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Select Role
+                  {FormikForm.touched.role && FormikForm.errors.role ? (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.role}
+                    </div>
+                  ) : null}
+                  {!FormikForm.errors.role && (
+                    <div id="passwordHelpBlock" className="form-text mb-3">
+                      Select Role
+                    </div>
+                  )}
                 </div>
               </Col>
               <Col lg={12}>
@@ -2344,9 +2565,22 @@ const EmployeeForm = () => {
                   </Label>
                   <Select
                     id="parentDepartment"
+                    name="primary_department"
+                    innerRef={inputRef}
                     isMulti={false}
                     options={dep_options || []}
                     className="basic-multi-select"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.primary_department &&
+                          FormikForm.errors.primary_department
+                            ? "red !important"
+                            : provided.borderColor,
+                      }),
+                    }}
                     placeholder={"Select Primary Department"}
                     value={
                       employeeObj.primary_department
@@ -2358,10 +2592,24 @@ const EmployeeForm = () => {
                     onChange={(e) => {
                       handlePrimaryDepChange(e);
                     }}
+                    invalid={
+                      FormikForm.touched.primary_department &&
+                      FormikForm.errors.primary_department
+                        ? true
+                        : false
+                    }
                   />
-                </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Select Primary Department
+                  {FormikForm.touched.primary_department &&
+                  FormikForm.errors.primary_department ? (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.primary_department}
+                    </div>
+                  ) : null}
+                  {!FormikForm.errors.primary_department && (
+                    <div id="passwordHelpBlock" className="form-text mb-3">
+                      Select Role
+                    </div>
+                  )}
                 </div>
               </Col>
               {employeeObj.primary_department !== 0 ? (
@@ -2447,10 +2695,22 @@ const EmployeeForm = () => {
                   <Label htmlFor="empWs">Work Schedule</Label>
                   <Select
                     id="empWs"
-                    required
+                    name="work_schedule"
+                    innerRef={inputRef}
                     isMulti={false}
                     options={ws_options || []}
                     className="basic-multi-select"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.work_schedule &&
+                          FormikForm.errors.work_schedule
+                            ? "red !important"
+                            : provided.borderColor,
+                      }),
+                    }}
                     value={
                       (employeeObj.work_schedule &&
                         ws_options.find(
@@ -2461,11 +2721,25 @@ const EmployeeForm = () => {
                     onChange={(e) =>
                       setEmployeeObj({ ...employeeObj, work_schedule: e.id })
                     }
+                    invalid={
+                      FormikForm.touched.work_schedule &&
+                      FormikForm.errors.work_schedule
+                        ? true
+                        : false
+                    }
                   />
+                  {FormikForm.touched.work_schedule &&
+                  FormikForm.errors.work_schedule ? (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.work_schedule}
+                    </div>
+                  ) : null}
                 </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Select Work Schedule
-                </div>
+                {!FormikForm.errors.work_schedule && (
+                  <div id="passwordHelpBlock" className="form-text mb-3">
+                    Select Work Schedule
+                  </div>
+                )}
               </Col>
               <Col lg={12}>
                 <div>
@@ -2916,7 +3190,6 @@ const EmployeeForm = () => {
                                 id={obj.input_name}
                                 className="form-control"
                                 placeholder={`Enter ${obj.name}`}
-                                required={obj.is_required || false}
                                 value={obj.value || ""}
                                 onChange={(e) => handleCFInputChange(e, obj.id)}
                               />
