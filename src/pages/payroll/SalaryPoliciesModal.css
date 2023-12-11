@@ -1,0 +1,32 @@
+/* Add these styles to your CSS file or style section */
+
+/* Modal container */
+.modal-content {
+    border-radius: 10px;
+  }
+  
+  /* Table styles */
+  .table-cmpnt {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  
+  .table-cmpnt th,
+  .table-cmpnt td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #ddd;
+  }
+  
+  /* Checkbox styles */
+  .earning-checkbox {
+    margin: 0;
+  }
+  
+ 
+  .modal-title {
+    text-align: center;
+    font-size: 1.5rem; /* Adjust as needed */
+    margin-bottom: 10px; /* Adjust as needed */
+  }
