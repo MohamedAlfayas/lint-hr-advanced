@@ -1,6 +1,6 @@
 import React from "react";
 import { Button, Card, CardBody } from "reactstrap";
-
+import WebCheckInOut from "../../common/js/WebCheckInOut";
 const TimeTracking = () => {
   const checkInOutToggle = (ele) => {
     if (ele.closest("button").classList.contains("active")) {
@@ -34,7 +34,8 @@ const TimeTracking = () => {
             First In : <b> 08:25 am</b>
           </h5>
           <div className="hstack gap-2 justify-content-center">
-            <Button
+            <WebCheckInOut />
+            {/* <Button
               outline
               className="custom-toggle btn-outline-secondary"
               onClick={(e) => checkInOutToggle(e.target)}
@@ -47,7 +48,7 @@ const TimeTracking = () => {
                 <i className="mdi mdi-account-arrow-left-outline align-bottom me-1 "></i>{" "}
                 Check OUT
               </span>
-            </Button>
+            </Button> */}
           </div>
         </CardBody>
       </Card>
