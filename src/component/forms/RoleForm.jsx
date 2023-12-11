@@ -1,6 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Button, Card, CardBody, Col, Input, Row } from "reactstrap";
+import {
+  Button,
+  Card,
+  CardBody,
+  Col,
+  FormFeedback,
+  Input,
+  Row,
+} from "reactstrap";
 
 import { Link } from "react-router-dom";
 import { Api } from "../../common/api/Api";
@@ -12,6 +20,8 @@ import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarRed
 import { toast } from "react-toastify";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
 const RoleForm = () => {
   const [roleObj, setRoleObj] = useState({});
@@ -21,6 +31,36 @@ const RoleForm = () => {
   useEffect(() => {
     setRoleObj(form_obj);
   }, [form_obj]);
+
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: roleObj,
+    validationSchema: Yup.object({
+      name: Yup.string().trim().required("Please Enter Role Name"),
+    }),
+    onSubmit: async (values) => {
+      console.log("SUCCESSSS !!!! Formik Values = ", values);
+      if (values.roles.length === 0) {
+        toast.error("Please Choose Any Permission");
+      } else {
+        dispatch(setLoaderVisible(true));
+
+        const Api = await PostApi("/role/create-role/", roleObj, false);
+        console.log("API RES = ", Api);
+        if (Api.status && Api.status === 200) {
+          roleObj.id === 0
+            ? dispatch(addRole(Api?.data.data))
+            : dispatch(editRole(Api?.data?.data));
+          dispatch(toggleRSBView(false));
+          toast.success(Api?.data?.message);
+        } else {
+          toast.error(Api?.data?.message || Api?.data?.detail);
+        }
+
+        dispatch(setLoaderVisible(false));
+      }
+    },
+  });
 
   const handleSubmit = async () => {
     console.log("role data = ", roleObj);
@@ -263,38 +303,58 @@ const RoleForm = () => {
   return (
     <React.Fragment>
       <Row className="g-4 mb-3">
-        <div className="col-sm">
+        {/* <Col md={2}>
+          <label htmlFor="roleName" className="form-label">
+            Role Name
+          </label>
+        </Col> */}
+        <Col md={10}>
+          <Input
+            type="text"
+            name="name"
+            className="form-control"
+            id="roleName"
+            placeholder="Enter Role Name"
+            required
+            value={roleObj.name || ""}
+            onChange={(e) => setRoleObj({ ...roleObj, name: e.target.value })}
+            invalid={
+              FormikForm.touched.name && FormikForm.errors.name ? true : false
+            }
+          />
+          {FormikForm.touched.name && FormikForm.errors.name ? (
+            <FormFeedback type="invalid">{FormikForm.errors.name}</FormFeedback>
+          ) : null}
+          {!FormikForm.errors.name && (
+            <div id="roleNameHelpBlock" className="form-text mb-3">
+              Enter Role Name.
+            </div>
+          )}
+        </Col>
+        <Col md={2}>
+          <Button
+            color="success"
+            className="btn-label"
+            onClick={FormikForm.handleSubmit}
+          >
+            {" "}
+            <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+            {roleObj.id === 0 ? "Create" : "Save"}{" "}
+          </Button>{" "}
+        </Col>
+        {/* <div className="col-sm">
           <div className="d-flex">
-            <label htmlFor="roleName" className="form-label">
-              Role Name
-            </label>
-            <input
-              type="text"
-              name="name"
-              className="form-control"
-              id="roleName"
-              placeholder="Enter Role Name"
-              required
-              value={roleObj.name || ""}
-              onChange={(e) => setRoleObj({ ...roleObj, name: e.target.value })}
-            />
+            
+            
           </div>
         </div>
         <div className="col-sm-auto">
           <div>
             <div className="text-end">
-              <Button
-                color="success"
-                className="btn-label"
-                onClick={handleSubmit}
-              >
-                {" "}
-                <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                {roleObj.id === 0 ? "Create" : "Save"}{" "}
-              </Button>{" "}
+              
             </div>
           </div>
-        </div>
+        </div> */}
       </Row>
 
       <Row>
