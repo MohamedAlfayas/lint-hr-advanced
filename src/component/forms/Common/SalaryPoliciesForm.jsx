@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import Select from "react-select";
 import { SweetAlert } from "../../common/sweetAlert/SweetAlert";
 import Swal from "sweetalert2";
-import '../../../pages/payroll/SalaryPoliciesModal.css'
+import "../../../pages/payroll/SalaryPoliciesModal.css";
 import {
   Button,
   Card,
@@ -30,7 +30,16 @@ import {
   setEarnings,
   setAllowances,
   setDeductions,
+  editDeduction,
+  editAllowance,
 } from "../../../redux/reducers/ChildReducer/SalaryComponentsReducer";
+import {
+  allowances_module_name,
+  deductions_module_name,
+  earnings_module_name,
+  payroll_policy_calculation_type,
+  payroll_policy_period,
+} from "../../../common/constant/Constants";
 
 const salaryPloiciesForm = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
@@ -38,37 +47,9 @@ const salaryPloiciesForm = () => {
     (state) => state.SalaryComponentsReducer
   );
 
-
-
   const [EarningsData, setEarningsData] = useState([]);
   const [AllowanceData, setAlowanceData] = useState([]);
   const [DeductionData, setDeductionData] = useState([]);
-
-  useEffect(() => {
-    console.log("USEEFFECT RUNNING");
-    console.log("kkk", earnings_data);
-  }, [earnings_data]);
-
-  useEffect(() => {
-    console.log("EARRRRRNINGGGS DATA = ", EarningsData);
-  }, [EarningsData]);
-  useEffect(() => {
-    console.log("USEEFFECT RUNNING");
-    console.log("kkk", allowances_data);
-  }, [allowances_data]);
-
-  useEffect(() => {
-    console.log("Allowance DATA = ", AllowanceData);
-  }, [AllowanceData]);
-  useEffect(() => {
-    console.log("USEEFFECT RUNNING");
-    console.log("kkk", deductions_data);
-  }, [deductions_data]);
-
-  useEffect(() => {
-    console.log("Allowance DATA = ", DeductionData);
-  }, [DeductionData]);
-
 
   // console.log("kkk",deductions_data);selectedItems
   const [customFieldObj, setCustomFieldObj] = useState(form_obj);
@@ -78,11 +59,53 @@ const salaryPloiciesForm = () => {
   const [calculationType, setCalculationType] = useState("earn-1");
   const [selectField, setSelectField] = useState("earn-1");
 
-  const handleCalculationTypeChange = (event) => {
-    // const selectedValue = event.target.value;
-    setCalculationType(event);
+  const GetModuleData = (module) => {
+    let module_data =
+      module === earnings_module_name
+        ? earnings_data
+        : module === allowances_module_name
+        ? allowances_data
+        : deductions_data;
+    return module_data;
+  };
 
-    setSelectField("earn-1");
+  const DispatchModuleData = (module, changed_obj) => {
+    module === earnings_module_name
+      ? dispatch(editEarnings(changed_obj))
+      : module === allowances_module_name
+      ? dispatch(editAllowance(changed_obj))
+      : dispatch(editDeduction(changed_obj));
+  };
+
+  const handleCalculationTypeChange = (e, id, module) => {
+    console.log("ID = ", id);
+    console.log("MODULE = ", module);
+    let changed_data = GetModuleData(module);
+    console.log("Changed Data = ", changed_data);
+    let changed_obj = {
+      ...changed_data.find((d) => d.id === id),
+      calculation_type: e.value,
+      time_period: 0,
+    };
+    DispatchModuleData(module, changed_obj);
+  };
+
+  const handleTimePeriodChange = (e, id, module) => {
+    let changed_data = GetModuleData(module);
+    let changed_obj = {
+      ...changed_data.find((d) => d.id === id),
+      time_period: e.value,
+    };
+    DispatchModuleData(module, changed_obj);
+  };
+
+  const handleRemove = (id, module) => {
+    let changed_data = GetModuleData(module);
+    let changed_obj = {
+      ...changed_data.find((d) => d.id === id),
+      selected: false,
+    };
+    DispatchModuleData(module, changed_obj);
   };
 
   const handleInputChange = (e) => {
@@ -95,28 +118,38 @@ const salaryPloiciesForm = () => {
 
   const dispatch = useDispatch();
 
-  const handleEarningsCB = (id, checked) => {
+  const handleModuleCB = (id, checked, module) => {
     console.log("Checked = ", checked);
-
-    let updatedEarningsData = [];
-
+    let module_data =
+      module === earnings_module_name
+        ? EarningsData
+        : module === allowances_module_name
+        ? AllowanceData
+        : DeductionData;
+    let updatedData = [];
     if (id === 0) {
-      updatedEarningsData = [...EarningsData].map((d) => {
-        return { ...d, selected: checked };
+      updatedData = [...module_data].map((d) => {
+        return { ...d, selected: checked, calculation_type: 1, time_period: 0 };
       });
     } else {
-      updatedEarningsData = [...EarningsData].map((d) => {
+      updatedData = [...module_data].map((d) => {
         if (d.id === id) {
-          return { ...d, selected: checked };
+          return {
+            ...d,
+            selected: checked,
+            calculation_type: 1,
+            time_period: 0,
+          };
         } else {
           return d;
         }
       });
     }
-
-    setEarningsData(updatedEarningsData);
-
-    // hanldeEarningComponent(updatedEarningsData);
+    module === earnings_module_name
+      ? setEarningsData(updatedData)
+      : module === allowances_module_name
+      ? setAlowanceData(updatedData)
+      : setDeductionData(updatedData);
   };
 
   //   Modal
@@ -124,100 +157,15 @@ const salaryPloiciesForm = () => {
   const [showEarningsModal, setShowEarningsModal] = useState(false);
   const CloseEarningsModal = () => setShowEarningsModal(false);
 
-  //   const hanldeEarningComponent = () => {
-  //     setShowEarningsModal(true);
-  //   };
-  const handleAllowanceCB = (id, checked) => {
-    console.log("Checked = ", checked);
-
-    let updatedAllowanceData = [];
-
-    if (id === 0) {
-      updatedAllowanceData = [...AllowanceData].map((d) => {
-        return { ...d, selected: checked };
-      });
-    } else {
-      updatedAllowanceData = [...AllowanceData].map((d) => {
-        if (d.id === id) {
-          return { ...d, selected: checked };
-        } else {
-          return d;
-        }
-      });
-    }
-
-    setAlowanceData(updatedAllowanceData);
-
-    // hanldeEarningComponent(updatedEarningsData);
-  };
   const [showAllowanceModal, setShowAllowanceModal] = useState(false);
   const CloseAllowanceModal = () => setShowAllowanceModal(false);
 
-  const handleDeductionCB = (id, checked) => {
-    console.log("Checked = ", checked);
-
-    let updatedDeductionData = [];
-
-    if (id === 0) {
-      updatedDeductionData = [...DeductionData].map((d) => {
-        return { ...d, selected: checked };
-      });
-    } else {
-      updatedDeductionData = [...DeductionData].map((d) => {
-        if (d.id === id) {
-          return { ...d, selected: checked };
-        } else {
-          return d;
-        }
-      });
-    }
-
-    setDeductionData(updatedDeductionData);
-
-    // hanldeEarningComponent(updatedEarningsData);
-  };
   const [showDeductionModal, setShowDeductionModal] = useState(false);
   const CloseDeductionModal = () => setShowDeductionModal(false);
 
   useEffect(() => {
     setCustomFieldObj(form_obj);
   }, [form_obj]);
-  console.log("select", selectedItems);
-
-
-  const handleRemove = (category, status) => {
-    console.log('erarninh', EarningsData);
-    const select = { ...category, selected: false }
-   
-   
-    switch (status) {
-      case 1:
-        const updatedStateArray = earnings_data.map((item) =>
-        item.id === category.id ? { ...item, ...select } : item
-      );
-    
-    
-  dispatch(setEarnings(updatedStateArray))
-        break;
-      case 2:
-        const updatedStateArray1 = allowances_data.map((item) =>
-      item.id === category.id ? { ...item, ...select } : item
-    );
-  
-dispatch(setAllowances(updatedStateArray1))
-        break;
-      case 3:
-        const updatedStateArray2 = deductions_data.map((item) =>
-        item.id === category.id ? { ...item, ...select } : item
-      );
-     
-    
-  dispatch(setDeductions(updatedStateArray2))
-        break;
-      default:
-        break;
-    }
-  };
 
   // const handleEarningCalculationType = (id, val) => {};
 
@@ -276,7 +224,7 @@ dispatch(setAllowances(updatedStateArray1))
                             <div key={index} className="row mb-3">
                               <div className="col-md-2">
                                 <label
-                                  htmlFor={`selectedComponent${index}`}
+                                  htmlFor={`selectedComponent_${earnings_module_name}_${index}`}
                                   className="form-label"
                                 >
                                   Components
@@ -287,67 +235,84 @@ dispatch(setAllowances(updatedStateArray1))
                               </div>
                               <div className="col-md-3">
                                 <label
-                                  htmlFor={`calculationType${index}`}
+                                  htmlFor={`calculationType_${earnings_module_name}_${index}`}
                                   className="form-label"
                                 >
                                   Calculation Type
                                 </label>
-                                <select
-                                  id={`calculationType${index}`}
-                                  name={`calculationType${index}`}
-                                  className="form-select"
-                                  value={item?.calculation_type}
-                                  onChange={(e) =>
-                                    setEarningsData({ ...EarningsData, earnings_data: e.id })
+                                <Select
+                                  id={`calculationType_${earnings_module_name}_${index}`}
+                                  name={`calculationType_${earnings_module_name}_${index}`}
+                                  className="basic-multi-select"
+                                  options={payroll_policy_calculation_type}
+                                  value={
+                                    (item?.calculation_type &&
+                                      payroll_policy_calculation_type.find(
+                                        (d) => d.id === item?.calculation_type
+                                      )) ||
+                                    []
                                   }
-                                >
-                                  <option value="earn-1">Flat Amount</option>
-                                  <option value="earn-2">Percentage</option>
-                                </select>
+                                  onChange={(e) =>
+                                    handleCalculationTypeChange(
+                                      e,
+                                      item?.id,
+                                      earnings_module_name
+                                    )
+                                  }
+                                />
                               </div>
                               <div className="col-md-2">
                                 <label
-                                  htmlFor={`additionalInput${index}`}
+                                  htmlFor={`additionalInput_${earnings_module_name}_${index}`}
                                   className="form-label"
                                 ></label>
                                 <input
-                                  type="text"
-                                  id={`additionalInput${index}`}
-                                  name={`additionalInput${index}`}
+                                  type="number"
+                                  id={`additionalInput_${earnings_module_name}_${index}`}
+                                  name={`additionalInput_${earnings_module_name}_${index}`}
                                   className="form-control"
                                 />
                               </div>
                               <div className="col-md-3">
                                 <label
-                                  htmlFor={`selectField${index}`}
+                                  htmlFor={`selectField_${earnings_module_name}_${index}`}
                                   className="form-label"
                                 ></label>
-                                <select
-                                  id={`selectField${index}`}
-                                  name={`selectField${index}`}
-                                  className="form-select"
-                                  value={selectField}
-                                  onChange={(e) =>
-                                    setSelectField(e.target.value)
+                                <Select
+                                  id={`selectField_${earnings_module_name}_${index}`}
+                                  name={`selectField_${earnings_module_name}_${index}`}
+                                  className="basic-multi-select"
+                                  options={
+                                    (item?.calculation_type &&
+                                      payroll_policy_period.filter(
+                                        (d) =>
+                                          d.calculation_type ===
+                                          item?.calculation_type
+                                      )) ||
+                                    []
                                   }
-                                >
-                                  {calculationType === "earn-2" ? (
-                                    <option value="earn-1">Per Year</option>
-                                  ) : null}
-                                  {calculationType === "earn-1" ? (
-                                    <React.Fragment>
-                                      <option value="earn-2">Monthly</option>
-                                      <option value="earn-3">Weekly</option>
-                                    </React.Fragment>
-                                  ) : null}
-                                </select>
+                                  value={
+                                    (item?.time_period &&
+                                      payroll_policy_period.find(
+                                        (d) => d.id === item?.time_period
+                                      )) ||
+                                    []
+                                  }
+                                  onChange={(e) =>
+                                    handleTimePeriodChange(
+                                      e,
+                                      item?.id,
+                                      earnings_module_name
+                                    )
+                                  }
+                                />
                               </div>
                               <div className="col-md-2">
                                 <button
                                   type="button"
                                   className="btn  remove-item-btn"
                                   onClick={() =>
-                                    handleRemove(item, 1)
+                                    handleRemove(item?.id, earnings_module_name)
                                   }
                                 >
                                   <i className="ri-close-line fs-16"></i>
@@ -385,7 +350,7 @@ dispatch(setAllowances(updatedStateArray1))
                             <div key={index} className="row mb-3">
                               <div className="col-md-2">
                                 <label
-                                  htmlFor={`selectedComponent${index}`}
+                                  htmlFor={`selectedComponent_${allowances_module_name}_${index}`}
                                   className="form-label"
                                 >
                                   Components
@@ -396,70 +361,87 @@ dispatch(setAllowances(updatedStateArray1))
                               </div>
                               <div className="col-md-3">
                                 <label
-                                  htmlFor={`calculationType${index}`}
+                                  htmlFor={`calculationType_${allowances_module_name}_${index}`}
                                   className="form-label"
                                 >
                                   Calculation Type
                                 </label>
-                                <select
-                                  id={`calculationType${index}`}
-                                  name={`calculationType${index}`}
-                                  className="form-select"
-                                  value={item?.calculation_type}
+                                <Select
+                                  id={`calculationType_${allowances_module_name}_${index}`}
+                                  name={`calculationType_${allowances_module_name}_${index}`}
+                                  className="basic-multi-select"
+                                  options={payroll_policy_calculation_type}
+                                  value={
+                                    (item?.calculation_type &&
+                                      payroll_policy_calculation_type.find(
+                                        (d) => d.id === item?.calculation_type
+                                      )) ||
+                                    []
+                                  }
                                   onChange={(e) =>
-                                    handleEarningCalculationType(
-                                      item.id,
-                                      e.target.value
+                                    handleCalculationTypeChange(
+                                      e,
+                                      item?.id,
+                                      allowances_module_name
                                     )
                                   }
-                                >
-                                  <option value="allowance-1">Flat Amount</option>
-                                  <option value="allowance-2">Percentage</option>
-                                </select>
+                                />
                               </div>
                               <div className="col-md-2">
                                 <label
-                                  htmlFor={`additionalInput${index}`}
+                                  htmlFor={`additionalInput_${allowances_module_name}_${index}`}
                                   className="form-label"
                                 ></label>
                                 <input
                                   type="text"
-                                  id={`additionalInput${index}`}
-                                  name={`additionalInput${index}`}
+                                  id={`additionalInput_${allowances_module_name}_${index}`}
+                                  name={`additionalInput_${allowances_module_name}_${index}`}
                                   className="form-control"
                                 />
                               </div>
                               <div className="col-md-3">
                                 <label
-                                  htmlFor={`selectField${index}`}
+                                  htmlFor={`selectField_${allowances_module_name}_${index}`}
                                   className="form-label"
                                 ></label>
-                                <select
-                                  id={`selectField${index}`}
-                                  name={`selectField${index}`}
-                                  className="form-select"
-                                  value={selectField}
-                                  onChange={(e) =>
-                                    setSelectField(e.target.value)
+                                <Select
+                                  id={`selectField_${allowances_module_name}_${index}`}
+                                  name={`selectField_${allowances_module_name}_${index}`}
+                                  className="basic-multi-select"
+                                  options={
+                                    (item?.calculation_type &&
+                                      payroll_policy_period.filter(
+                                        (d) =>
+                                          d.calculation_type ===
+                                          item?.calculation_type
+                                      )) ||
+                                    []
                                   }
-                                >
-                                  {calculationType === "allowance-2" ? (
-                                    <option value="allowance-1">Per Year</option>
-                                  ) : null}
-                                  {calculationType === "allowance-1" ? (
-                                    <React.Fragment>
-                                      <option value="allowance-2">Monthly</option>
-                                      <option value="allowance-3">Weekly</option>
-                                    </React.Fragment>
-                                  ) : null}
-                                </select>
+                                  value={
+                                    (item?.time_period &&
+                                      payroll_policy_period.find(
+                                        (d) => d.id === item?.time_period
+                                      )) ||
+                                    []
+                                  }
+                                  onChange={(e) =>
+                                    handleTimePeriodChange(
+                                      e,
+                                      item?.id,
+                                      allowances_module_name
+                                    )
+                                  }
+                                />
                               </div>
                               <div className="col-md-2">
                                 <button
                                   type="button"
                                   className="btn  remove-item-btn"
                                   onClick={() =>
-                                    handleRemove(item, 2)
+                                    handleRemove(
+                                      item?.id,
+                                      allowances_module_name
+                                    )
                                   }
                                 >
                                   <i className="ri-close-line fs-16"></i>
@@ -486,7 +468,7 @@ dispatch(setAllowances(updatedStateArray1))
                   <hr></hr>
                   <div className="mb-3">
                     <Label htmlFor="tax_state" className="form-label">
-                     Deductions
+                      Deductions
                     </Label>
 
                     {deductions_data.length > 0 && (
@@ -513,65 +495,82 @@ dispatch(setAllowances(updatedStateArray1))
                                 >
                                   Calculation Type
                                 </label>
-                                <select
-                                  id={`calculationType${index}`}
-                                  name={`calculationType${index}`}
-                                  className="form-select"
-                                  value={item?.calculation_type}
+                                <Select
+                                  id={`calculationType_${deductions_module_name}_${index}`}
+                                  name={`calculationType_${deductions_module_name}_${index}`}
+                                  className="basic-multi-select"
+                                  options={payroll_policy_calculation_type}
+                                  value={
+                                    (item?.calculation_type &&
+                                      payroll_policy_calculation_type.find(
+                                        (d) => d.id === item?.calculation_type
+                                      )) ||
+                                    []
+                                  }
                                   onChange={(e) =>
-                                    handleEarningCalculationType(
-                                      item.id,
-                                      e.target.value
+                                    handleCalculationTypeChange(
+                                      e,
+                                      item?.id,
+                                      deductions_module_name
                                     )
                                   }
-                                >
-                                  <option value="deduction-1">Flat Amount</option>
-                                  <option value="deduction-2">Percentage</option>
-                                </select>
+                                />
                               </div>
                               <div className="col-md-2">
                                 <label
-                                  htmlFor={`additionalInput${index}`}
+                                  htmlFor={`additionalInput_${deductions_module_name}_${index}${index}`}
                                   className="form-label"
                                 ></label>
                                 <input
                                   type="text"
-                                  id={`additionalInput${index}`}
-                                  name={`additionalInput${index}`}
+                                  id={`additionalInput_${deductions_module_name}_${index}${index}`}
+                                  name={`additionalInput_${deductions_module_name}_${index}${index}`}
                                   className="form-control"
                                 />
                               </div>
                               <div className="col-md-3">
                                 <label
-                                  htmlFor={`selectField${index}`}
+                                  htmlFor={`selectField_${deductions_module_name}_${index}${index}`}
                                   className="form-label"
                                 ></label>
-                                <select
-                                  id={`selectField${index}`}
-                                  name={`selectField${index}`}
-                                  className="form-select"
-                                  value={selectField}
-                                  onChange={(e) =>
-                                    setSelectField(e.target.value)
+                                <Select
+                                  id={`selectField_${deductions_module_name}_${index}${index}`}
+                                  name={`selectField_${deductions_module_name}_${index}${index}`}
+                                  className="basic-multi-select"
+                                  options={
+                                    (item?.calculation_type &&
+                                      payroll_policy_period.filter(
+                                        (d) =>
+                                          d.calculation_type ===
+                                          item?.calculation_type
+                                      )) ||
+                                    []
                                   }
-                                >
-                                  {calculationType === "deduction-2" ? (
-                                    <option value="deduction-1">Per Year</option>
-                                  ) : null}
-                                  {calculationType === "deduction-1" ? (
-                                    <React.Fragment>
-                                      <option value="deduction-2">Monthly</option>
-                                      <option value="deduction-3">Weekly</option>
-                                    </React.Fragment>
-                                  ) : null}
-                                </select>
+                                  value={
+                                    (item?.time_period &&
+                                      payroll_policy_period.find(
+                                        (d) => d.id === item?.time_period
+                                      )) ||
+                                    []
+                                  }
+                                  onChange={(e) =>
+                                    handleTimePeriodChange(
+                                      e,
+                                      item?.id,
+                                      deductions_module_name
+                                    )
+                                  }
+                                />
                               </div>
                               <div className="col-md-2">
                                 <button
                                   type="button"
                                   className="btn  remove-item-btn"
                                   onClick={() =>
-                                    handleRemove(item, 3)
+                                    handleRemove(
+                                      item?.id,
+                                      deductions_module_name
+                                    )
                                   }
                                 >
                                   <i className="ri-close-line fs-16"></i>
@@ -662,7 +661,9 @@ dispatch(setAllowances(updatedStateArray1))
         toggle={CloseEarningsModal}
         centered={true}
       >
-        <ModalTitle className="modal-title">Select Earning Components</ModalTitle>
+        <ModalTitle className="modal-title">
+          Select Earning Components
+        </ModalTitle>
         <ModalBody className="py-3 px-5">
           <div className="mt-2 text-center">
             <table class="table-cmpnt">
@@ -672,7 +673,13 @@ dispatch(setAllowances(updatedStateArray1))
                     <input
                       type="checkbox"
                       id="selectAll"
-                      onChange={(e) => handleEarningsCB(0, e.target.checked)}
+                      onChange={(e) =>
+                        handleModuleCB(
+                          0,
+                          e.target.checked,
+                          earnings_module_name
+                        )
+                      }
                     />
                   </th>
                   <th>Name</th>
@@ -690,7 +697,11 @@ dispatch(setAllowances(updatedStateArray1))
                         class="earning-checkbox"
                         checked={item.selected}
                         onChange={(e) =>
-                          handleEarningsCB(item.id, e.target.checked)
+                          handleModuleCB(
+                            item.id,
+                            e.target.checked,
+                            earnings_module_name
+                          )
                         }
                       />
                     </td>
@@ -732,7 +743,9 @@ dispatch(setAllowances(updatedStateArray1))
         toggle={CloseAllowanceModal}
         centered={true}
       >
-        <ModalTitle className="modal-title">Select Alowances Components</ModalTitle>
+        <ModalTitle className="modal-title">
+          Select Alowances Components
+        </ModalTitle>
         <ModalBody className="py-3 px-5">
           <div className="mt-2 text-center">
             <table class="table-cmpnt">
@@ -742,7 +755,13 @@ dispatch(setAllowances(updatedStateArray1))
                     <input
                       type="checkbox"
                       id="selectAll"
-                      onChange={(e) => handleAllowanceCB(0, e.target.checked)}
+                      onChange={(e) =>
+                        handleModuleCB(
+                          0,
+                          e.target.checked,
+                          allowances_module_name
+                        )
+                      }
                     />
                   </th>
                   <th>Name</th>
@@ -760,7 +779,11 @@ dispatch(setAllowances(updatedStateArray1))
                         class="earning-checkbox"
                         checked={item.selected}
                         onChange={(e) =>
-                          handleAllowanceCB(item.id, e.target.checked)
+                          handleModuleCB(
+                            item.id,
+                            e.target.checked,
+                            allowances_module_name
+                          )
                         }
                       />
                     </td>
@@ -802,7 +825,9 @@ dispatch(setAllowances(updatedStateArray1))
         toggle={CloseDeductionModal}
         centered={true}
       >
-        <ModalTitle className="modal-title">Select Deduction Components</ModalTitle>
+        <ModalTitle className="modal-title">
+          Select Deduction Components
+        </ModalTitle>
         <ModalBody className="py-3 px-5">
           <div className="mt-2 text-center">
             <table class="table-cmpnt">
@@ -812,7 +837,13 @@ dispatch(setAllowances(updatedStateArray1))
                     <input
                       type="checkbox"
                       id="selectAll"
-                      onChange={(e) => handleDeductionCB(0, e.target.checked)}
+                      onChange={(e) =>
+                        handleModuleCB(
+                          0,
+                          e.target.checked,
+                          deductions_module_name
+                        )
+                      }
                     />
                   </th>
                   <th>Name</th>
@@ -830,7 +861,11 @@ dispatch(setAllowances(updatedStateArray1))
                         class="earning-checkbox"
                         checked={item.selected}
                         onChange={(e) =>
-                          handleDeductionCB(item.id, e.target.checked)
+                          handleModuleCB(
+                            item.id,
+                            e.target.checked,
+                            deductions_module_name
+                          )
                         }
                       />
                     </td>

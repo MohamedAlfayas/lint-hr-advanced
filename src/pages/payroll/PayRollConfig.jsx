@@ -44,7 +44,11 @@ import {
 } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { useDispatch } from "react-redux";
 import InfoTable from "../../component/common/table/InfoTable";
-import { setAllowances, setDeductions, setEarnings } from "../../redux/reducers/ChildReducer/SalaryComponentsReducer";
+import {
+  setAllowances,
+  setDeductions,
+  setEarnings,
+} from "../../redux/reducers/ChildReducer/SalaryComponentsReducer";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
@@ -128,6 +132,7 @@ const PayRollConfig = () => {
           tax: true,
           insurance: false,
           calculation_type: 1,
+          time_period: 0,
           selected: false,
           contribute: [],
           esi: true,
@@ -142,6 +147,7 @@ const PayRollConfig = () => {
           tax: true,
           insurance: true,
           calculation_type: 1,
+          time_period: 0,
           selected: false,
           contribute: [],
           esi: true,
@@ -158,6 +164,7 @@ const PayRollConfig = () => {
           tax: true,
           insurance: true,
           calculation_type: 1,
+          time_period: 0,
           selected: false,
           contribute: [],
           esi: true,
@@ -172,6 +179,7 @@ const PayRollConfig = () => {
           tax: true,
           insurance: true,
           calculation_type: 1,
+          time_period: 0,
           selected: false,
           contribute: [],
           esi: true,
@@ -188,6 +196,7 @@ const PayRollConfig = () => {
           tax: true,
           insurance: true,
           calculation_type: 1,
+          time_period: 0,
           selected: false,
           contribute: [],
           esi: true,
@@ -202,6 +211,7 @@ const PayRollConfig = () => {
           tax: true,
           insurance: true,
           calculation_type: 1,
+          time_period: 0,
           selected: false,
           contribute: [],
           esi: true,
@@ -336,22 +346,20 @@ const PayRollConfig = () => {
   };
 
   const handleTaxEdit = ($id, obj) => {
-    console.log('Calling handleTaxEdit with id:', $id, 'and object:', tax_slab);
+    console.log("Calling handleTaxEdit with id:", $id, "and object:", tax_slab);
 
     dispatch(setFormTitle("Edit Professional Tax"));
     let tax_slab_obj = tax_slab.find((data) => data.id == $id);
     dispatch(setFormObj(tax_slab_obj));
 
-    console.log("test....", tax_slab_obj)
+    console.log("test....", tax_slab_obj);
 
     dispatch(setFormWidthPercentage("40%"));
     dispatch(setComponentToShow("ProfessionalTaxForm"));
     dispatch(toggleRSBView(true));
   };
 
-
   const initialFormObj = useMemo(() => {
-
     return {
       id: 0,
       type: customActiveTab1,
@@ -360,29 +368,26 @@ const PayRollConfig = () => {
       is_pro_rata: false,
       is_taxable: false,
       is_insurance: false,
-      contribute: [payrollobj.basic_components]
-
+      contribute: [payrollobj.basic_components],
     };
   }, []);
 
   const handleEaringAdd = ($id) => {
-    const value = customActiveTab1 == 1 ? "Edit Earning" :
-      customActiveTab1 == 2 ? 'Edit Allowance' :
-        customActiveTab1 == 3 ? 'Edit Deduction' : ""
+    const value =
+      customActiveTab1 == 1
+        ? "Edit Earning"
+        : customActiveTab1 == 2
+        ? "Edit Allowance"
+        : customActiveTab1 == 3
+        ? "Edit Deduction"
+        : "";
     // dispatch(setFormTitle("Edit Earning"));
     dispatch(setFormTitle(value));
 
     if ($id == 0) {
-
-
       dispatch(setFormObj(initialFormObj));
-
-
     } else {
       dispatch(setFormObj(earning_obj[0]));
-
-
-
     }
     dispatch(setFormWidthPercentage("40%"));
     dispatch(setComponentToShow("SalaryCmpntForm"));
@@ -390,7 +395,6 @@ const PayRollConfig = () => {
   };
 
   const policiesFormObj = useMemo(() => {
-
     return {
       id: 0,
       name: "",
@@ -399,27 +403,20 @@ const PayRollConfig = () => {
       allowances: "",
       deductions: "",
       compliances: "",
-
     };
   }, []);
   const handleSalaryPoliciesAdd = ($id) => {
     dispatch(setFormTitle("Create policy"));
 
     if ($id == 0) {
-
-
       dispatch(setFormObj(policiesFormObj));
-
-
     } else {
       dispatch(setFormObj(earning_obj[0]));
-    
-
     }
-    dispatch(setEarnings(payrollobj.salary_components.earnings))
-    dispatch(setEarnings(payrollobj.salary_components.earnings))
-    dispatch(setAllowances(payrollobj.salary_components.allowances))
-    dispatch(setDeductions(payrollobj.salary_components.deductions))
+    dispatch(setEarnings(payrollobj.salary_components.earnings));
+    dispatch(setEarnings(payrollobj.salary_components.earnings));
+    dispatch(setAllowances(payrollobj.salary_components.allowances));
+    dispatch(setDeductions(payrollobj.salary_components.deductions));
     dispatch(setFormWidthPercentage("50%"));
     dispatch(setComponentToShow("SalaryPoliciesForm"));
     dispatch(toggleRSBView(true));
@@ -444,37 +441,46 @@ const PayRollConfig = () => {
   ];
 
   const handleCreateAndUpdate = (item) => {
-    console.log('item', item, customActiveTab1);
-    const value = customActiveTab1 == 1 ? "Edit Earning" :
-      customActiveTab1 == 2 ? 'Edit Allowance' :
-        customActiveTab1 == 3 ? 'Edit Deduction' : ""
+    console.log("item", item, customActiveTab1);
+    const value =
+      customActiveTab1 == 1
+        ? "Edit Earning"
+        : customActiveTab1 == 2
+        ? "Edit Allowance"
+        : customActiveTab1 == 3
+        ? "Edit Deduction"
+        : "";
     dispatch(setFormTitle(value));
     let componentType;
     let componentObj;
-    console.log('edit clicked');
+    console.log("edit clicked");
     if (customActiveTab1 == 1) {
-      componentType = 'earnings';
-      componentObj = payrollobj.salary_components.earnings.find((data) => data.name === item?.name);
+      componentType = "earnings";
+      componentObj = payrollobj.salary_components.earnings.find(
+        (data) => data.name === item?.name
+      );
       console.log(`${componentType}:`, componentObj);
     } else if (customActiveTab1 == 2) {
-      componentType = 'allowances';
-      componentObj = payrollobj.salary_components.allowances.find((data) => data.name === item?.name);
+      componentType = "allowances";
+      componentObj = payrollobj.salary_components.allowances.find(
+        (data) => data.name === item?.name
+      );
       console.log(`${componentType}:`, componentObj);
     } else if (customActiveTab1 == 3) {
-      componentType = 'deductions';
-      componentObj = payrollobj.salary_components.deductions.find((data) => data.name === item?.name);
+      componentType = "deductions";
+      componentObj = payrollobj.salary_components.deductions.find(
+        (data) => data.name === item?.name
+      );
       console.log(`${componentType}:`, componentObj);
     }
 
     console.log("jjj", componentObj);
-    dispatch(setFormObj(componentObj))
-  
+    dispatch(setFormObj(componentObj));
 
     dispatch(setFormWidthPercentage("40%"));
     dispatch(setComponentToShow("SalaryCmpntForm"));
     dispatch(toggleRSBView(true));
-  }
-
+  };
 
   document.title = `PayRoll | ${MetaTitle || "Lint HR"} `;
 
@@ -1002,10 +1008,11 @@ const PayRollConfig = () => {
                                       <Card>
                                         <CardBody>
                                           <div
-                                            className={`p-3 mt-n3 mx-n3 bg-${payrollobj.basic_components.esi
-                                              ? "success"
-                                              : "dark"
-                                              }-subtle rounded-top`}
+                                            className={`p-3 mt-n3 mx-n3 bg-${
+                                              payrollobj.basic_components.esi
+                                                ? "success"
+                                                : "dark"
+                                            }-subtle rounded-top`}
                                           >
                                             <div className="d-flex align-items-center">
                                               <div className="flex-grow-1">
@@ -1039,7 +1046,6 @@ const PayRollConfig = () => {
                                                       Active
                                                     </Label>
                                                   </div>
-
                                                 </div>
                                               </div>
                                             </div>
@@ -1136,11 +1142,12 @@ const PayRollConfig = () => {
                                       <Card>
                                         <CardBody>
                                           <div
-                                            className={`p-3 mt-n3 mx-n3 bg-${payrollobj.basic_components.epf
-                                              .is_active
-                                              ? "success"
-                                              : "dark"
-                                              }-subtle rounded-top`}
+                                            className={`p-3 mt-n3 mx-n3 bg-${
+                                              payrollobj.basic_components.epf
+                                                .is_active
+                                                ? "success"
+                                                : "dark"
+                                            }-subtle rounded-top`}
                                           >
                                             <div className="d-flex align-items-center">
                                               <div className="flex-grow-1">
@@ -1176,8 +1183,10 @@ const PayRollConfig = () => {
                                                   </div>
                                                   <a
                                                     onClick={() =>
-                                                      handleEPFEdit(payrollobj
-                                                        .basic_components.epf)
+                                                      handleEPFEdit(
+                                                        payrollobj
+                                                          .basic_components.epf
+                                                      )
                                                     }
                                                     className="text-primary d-inline-block edit-item-btn ms-2"
                                                     href="javascript:void(0)"
@@ -1214,12 +1223,12 @@ const PayRollConfig = () => {
                                                     {payrollobj.basic_components
                                                       .epf.epf_cycle
                                                       ? EPFCycle.find(
-                                                        (obj) =>
-                                                          obj.id ===
-                                                          payrollobj
-                                                            .basic_components
-                                                            .epf.epf_cycle
-                                                      ).Employee
+                                                          (obj) =>
+                                                            obj.id ===
+                                                            payrollobj
+                                                              .basic_components
+                                                              .epf.epf_cycle
+                                                        ).Employee
                                                       : []}
                                                   </h5>
                                                 </div>
@@ -1233,12 +1242,12 @@ const PayRollConfig = () => {
                                                     {payrollobj.basic_components
                                                       .epf.epf_cycle
                                                       ? EPFCycle.find(
-                                                        (obj) =>
-                                                          obj.id ===
-                                                          payrollobj
-                                                            .basic_components
-                                                            .epf.epf_cycle
-                                                      ).Employer
+                                                          (obj) =>
+                                                            obj.id ===
+                                                            payrollobj
+                                                              .basic_components
+                                                              .epf.epf_cycle
+                                                        ).Employer
                                                       : []}
                                                   </h5>
                                                 </div>
@@ -1291,10 +1300,11 @@ const PayRollConfig = () => {
                                         <Card key={key}>
                                           <CardBody>
                                             <div
-                                              className={`p-3 mt-n3 mx-n3 bg-${item.is_active
-                                                ? "success"
-                                                : "dark"
-                                                }-subtle rounded-top`}
+                                              className={`p-3 mt-n3 mx-n3 bg-${
+                                                item.is_active
+                                                  ? "success"
+                                                  : "dark"
+                                              }-subtle rounded-top`}
                                             >
                                               <div className="d-flex align-items-center">
                                                 <div className="flex-grow-1">
@@ -1410,11 +1420,12 @@ const PayRollConfig = () => {
                                     <Card>
                                       <CardBody>
                                         <div
-                                          className={`p-3 mt-n3 mx-n3 bg-${payrollobj.basic_components
-                                            .labour_fund
-                                            ? "success"
-                                            : "dark"
-                                            }-subtle rounded-top`}
+                                          className={`p-3 mt-n3 mx-n3 bg-${
+                                            payrollobj.basic_components
+                                              .labour_fund
+                                              ? "success"
+                                              : "dark"
+                                          }-subtle rounded-top`}
                                         >
                                           <div className="d-flex align-items-center">
                                             <div className="flex-grow-1">
@@ -1448,7 +1459,6 @@ const PayRollConfig = () => {
                                                     Active
                                                   </Label>
                                                 </div>
-
                                               </div>
                                             </div>
                                           </div>
@@ -1607,13 +1617,19 @@ const PayRollConfig = () => {
                                                           to="#"
                                                           className="link-primary"
                                                           onClick={() => {
-                                                            handleCreateAndUpdate(item);
+                                                            handleCreateAndUpdate(
+                                                              item
+                                                            );
                                                           }}
                                                         >
                                                           <i className="ri-pencil-fill fs-16"></i>
                                                         </Link>
                                                         <Link>
-                                                          <span style={{ margin: '0 2px' }}></span>
+                                                          <span
+                                                            style={{
+                                                              margin: "0 2px",
+                                                            }}
+                                                          ></span>
                                                           <i className="ri-delete-bin-5-fill fs-16"></i>
                                                         </Link>
                                                       </div>
@@ -1623,13 +1639,15 @@ const PayRollConfig = () => {
                                               )}
                                             </tbody>
                                           </Table>
-                                          <Button color="primary" onClick={() => {
-                                            handleEaringAdd(0);
-                                          }
-                                          }>
+                                          <Button
+                                            color="primary"
+                                            onClick={() => {
+                                              handleEaringAdd(0);
+                                            }}
+                                          >
                                             <i className="ri-add-line align-bottom me-1"></i>
                                             Add
-                                          </Button>{' '}
+                                          </Button>{" "}
                                         </div>
                                       </div>
                                     </Col>
@@ -1697,13 +1715,19 @@ const PayRollConfig = () => {
                                                           to="#"
                                                           className="link-primary"
                                                           onClick={() => {
-                                                            handleCreateAndUpdate(item);
+                                                            handleCreateAndUpdate(
+                                                              item
+                                                            );
                                                           }}
                                                         >
                                                           <i className="ri-pencil-fill fs-16"></i>
                                                         </Link>
                                                         <Link>
-                                                          <span style={{ margin: '0 2px' }}></span>
+                                                          <span
+                                                            style={{
+                                                              margin: "0 2px",
+                                                            }}
+                                                          ></span>
                                                           <i className="ri-delete-bin-5-fill fs-16"></i>
                                                         </Link>
                                                       </div>
@@ -1713,14 +1737,16 @@ const PayRollConfig = () => {
                                               )}
                                             </tbody>
                                           </Table>
-                                          <Button color="primary" onClick={() => {
-                                            // handleAllowencesAdd(0);
-                                            handleEaringAdd(0);
-                                          }
-                                          }>
+                                          <Button
+                                            color="primary"
+                                            onClick={() => {
+                                              // handleAllowencesAdd(0);
+                                              handleEaringAdd(0);
+                                            }}
+                                          >
                                             <i className="ri-add-line align-bottom me-1"></i>
                                             Add
-                                          </Button>{' '}
+                                          </Button>{" "}
                                         </div>
                                       </div>
                                     </Col>
@@ -1788,13 +1814,19 @@ const PayRollConfig = () => {
                                                           to="#"
                                                           className="link-primary"
                                                           onClick={() => {
-                                                            handleCreateAndUpdate(item);
+                                                            handleCreateAndUpdate(
+                                                              item
+                                                            );
                                                           }}
                                                         >
                                                           <i className="ri-pencil-fill fs-16"></i>
                                                         </Link>
                                                         <Link>
-                                                          <span style={{ margin: '0 2px' }}></span>
+                                                          <span
+                                                            style={{
+                                                              margin: "0 2px",
+                                                            }}
+                                                          ></span>
                                                           <i className="ri-delete-bin-5-fill fs-16"></i>
                                                         </Link>
                                                       </div>
@@ -1804,14 +1836,16 @@ const PayRollConfig = () => {
                                               )}
                                             </tbody>
                                           </Table>
-                                          <Button color="primary" onClick={() => {
-                                            // handleDeductionsAdd(0);
-                                            handleEaringAdd(0);
-                                          }
-                                          }>
+                                          <Button
+                                            color="primary"
+                                            onClick={() => {
+                                              // handleDeductionsAdd(0);
+                                              handleEaringAdd(0);
+                                            }}
+                                          >
                                             <i className="ri-add-line align-bottom me-1"></i>
                                             Add
-                                          </Button>{' '}
+                                          </Button>{" "}
                                         </div>
                                       </div>
                                     </Col>
@@ -1836,15 +1870,15 @@ const PayRollConfig = () => {
                             </div>
 
                             <div className="flex-grow-1 ms-3">
-                              <Button color="primary"
+                              <Button
+                                color="primary"
                                 onClick={() => {
-                                  handleSalaryPoliciesAdd(0)
-
+                                  handleSalaryPoliciesAdd(0);
                                 }}
                               >
                                 <i className="ri-add-line align-bottom me-1"></i>
                                 Add
-                              </Button>{' '}
+                              </Button>{" "}
                               <p className="mb-0">
                                 <br></br>
                                 You always want to make sure that your fonts

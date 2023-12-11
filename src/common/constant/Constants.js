@@ -14,3 +14,17 @@ export const custom_field_applicable_modules = [
     { id: "employee", label: "Employee", value: "employee" },
     { id: "organization", label: "Organization", value: "organization" },
 ];
+export const payroll_policy_calculation_type = [
+    { id: 1, label: "Flat Amount", value: 1 },
+    { id: 2, label: "Percentage", value: 2 },
+]
+
+export const payroll_policy_period = [
+    { id: 1, label: "Weekly", value: 1, calculation_type: 1 },
+    { id: 2, label: "Monthly", value: 2, calculation_type: 1 },
+    { id: 3, label: "Yearly", value: 3, calculation_type: 2 },
+]
+
+export const earnings_module_name = 'earnings'
+export const allowances_module_name = 'allowances'
+export const deductions_module_name = 'deductions'
