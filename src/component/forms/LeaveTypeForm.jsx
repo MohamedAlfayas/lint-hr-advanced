@@ -36,8 +36,11 @@ import { toast } from "react-toastify";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
 import {
+  gender_options,
+  leave_reset_options,
   leave_type_day_unit,
   leave_type_hour_unit,
+  leave_types_options,
 } from "../../common/constant/Constants";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -55,26 +58,6 @@ const LeaveTypeForm = () => {
   const [selectedWS, setSelectedWS] = useState([]);
   const [selectedGenders, setSelectedGenders] = useState([]);
 
-  let types = [
-    { id: 1, label: "Paid", value: 1 },
-    { id: 2, label: "UnPaid", value: 2 },
-    { id: 3, label: "On Duty", value: 3 },
-    { id: 4, label: "Comp Off", value: 4 },
-  ];
-  let reset = [
-    { id: 1, label: "January To December", value: 1 },
-    { id: 2, label: "May To April", value: 2 },
-  ];
-
-  const gender_option = useMemo(
-    () => [
-      { id: "Male", label: "Male", value: "Male" },
-      { id: "Female", label: "Female", value: "Female" },
-      { id: "Other", label: "Other", value: "Other" },
-    ],
-    []
-  );
-
   useEffect(() => {
     console.log("form_obj = ", form_obj);
     setLeaveTypeData(form_obj);
@@ -83,7 +66,7 @@ const LeaveTypeForm = () => {
       ws_options.filter((data) => form_obj.ws_id.includes(data.id))
     );
     setSelectedGenders(
-      gender_option.filter((data) => form_obj.genders.includes(data.id))
+      gender_options.filter((data) => form_obj.genders.includes(data.id))
     );
   }, [form_obj]);
 
@@ -276,7 +259,7 @@ const LeaveTypeForm = () => {
                   <Select
                     name="type"
                     isMulti={false}
-                    options={types || []}
+                    options={leave_types_options || []}
                     className="basic-multi-select"
                     styles={{
                       control: (provided, state) => ({
@@ -291,7 +274,9 @@ const LeaveTypeForm = () => {
                     }}
                     value={
                       (leaveTypeData.type &&
-                        types.find((e) => e.value === leaveTypeData.type)) ||
+                        leave_types_options.find(
+                          (e) => e.value === leaveTypeData.type
+                        )) ||
                       []
                     }
                     onChange={(e) => {
@@ -450,12 +435,12 @@ const LeaveTypeForm = () => {
 
                   <Select
                     isMulti={false}
-                    options={reset || []}
+                    options={leave_reset_options || []}
                     id="lt_reset"
                     className="basic-multi-select"
                     value={
                       (leaveTypeData.reset_type &&
-                        reset.find(
+                        leave_reset_options.find(
                           (e) => e.value === leaveTypeData.reset_type
                         )) ||
                       []
@@ -524,7 +509,7 @@ const LeaveTypeForm = () => {
                   <Select
                     name="genders"
                     isMulti={true}
-                    options={gender_option || []}
+                    options={gender_options || []}
                     className="basic-multi-select"
                     styles={{
                       control: (provided, state) => ({

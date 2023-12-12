@@ -1765,7 +1765,18 @@ export const timzone_options = [
 ]
 
 export const gender_options = [
-    { id: "Male", label: "Male", value: "Male" },
-    { id: "Female", label: "Female", value: "Female" },
-    { id: "Other", label: "Other", value: "Other" },
+    { id: 1, label: "Male", value: 1 },
+    { id: 2, label: "Female", value: 2 }
+]
+
+export const leave_types_options = [
+    { id: 1, label: "Paid", value: 1 },
+    { id: 2, label: "UnPaid", value: 2 },
+    { id: 3, label: "On Duty", value: 3 },
+    { id: 4, label: "Comp Off", value: 4 },
+]
+
+export const leave_reset_options = [
+    { id: 1, label: "January To December", value: 1 },
+    { id: 2, label: "May To April", value: 2 },
 ]

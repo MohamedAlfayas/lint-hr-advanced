@@ -238,7 +238,7 @@ const Employee = () => {
       file_4: null,
       file_5: null,
       contact_number: "",
-      gender: "",
+      gender: 0,
       primary_department: 0,
       sub_department: [],
       role: 0,

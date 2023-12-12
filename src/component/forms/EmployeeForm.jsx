@@ -271,7 +271,9 @@ const EmployeeForm = () => {
       email: Yup.string()
         .email("Please Enter Valid Email")
         .required("Please Enter Email"),
-      gender: Yup.string().min(1).required("Please Select Gender"),
+      gender: Yup.number()
+        .required("Select Gender")
+        .min(1, "Please Select Gender"),
       dob: Yup.string().trim().required("Please Select Date"),
       contact_number: Yup.string().required("Please Enter Phone Number"),
       role: Yup.number().required("Select Role").min(1, "Please Select Role"),
