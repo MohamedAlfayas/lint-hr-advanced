@@ -57,6 +57,7 @@ const Employee = () => {
                 src={obj.profile_url}
                 alt=""
                 className="avatar-xs rounded-circle"
+                style={{ objectFit: "cover" }}
               />
             </div>
             <div className="flex-grow-1">
@@ -119,12 +120,12 @@ const Employee = () => {
     // },
     {
       Header: "Role",
-      id: "role",
+      id: "role_id",
       filterable: false,
       accessor: (obj) => {
         const RoleData = GetLocalStorageData("role");
         let thisRole = RoleData
-          ? RoleData.filter((data) => obj.role === data.id)
+          ? RoleData.filter((data) => obj.role_id === data.id)
           : [];
         return (
           <>
@@ -142,12 +143,14 @@ const Employee = () => {
       accessor: (obj) => {
         const DepartmentData = GetLocalStorageData("department");
         let thisDepartment = DepartmentData
-          ? DepartmentData.filter((data) => obj.primary_department === data.id)
+          ? DepartmentData.filter(
+              (data) => obj.primary_department_id === data.id
+            )
           : [];
 
-        var subDepList = obj.sub_department
+        var subDepList = obj.sub_department_id_list
           ? DepartmentData.filter((datas, index) => {
-              if (obj.sub_department.includes(parseInt(datas.id))) {
+              if (obj.sub_department_id_list.includes(parseInt(datas.id))) {
                 return datas;
               }
             })
@@ -163,7 +166,7 @@ const Employee = () => {
               {thisDepartment.map((d) => (
                 <React.Fragment>{d.name}</React.Fragment>
               ))}
-              {obj.sub_department.length > 0 ? (
+              {obj.sub_department_id_list.length > 0 ? (
                 <span>
                   <Badge
                     //id="tooltipwithHtml"
@@ -171,7 +174,7 @@ const Employee = () => {
                     color="success"
                     className="position-absolute top-0 start-100 translate-middle"
                   >
-                    +{obj.sub_department.length}
+                    +{obj.sub_department_id_list.length}
                     <span className="visually-hidden">Departments</span>
                   </Badge>
 
@@ -239,10 +242,10 @@ const Employee = () => {
       file_5: null,
       contact_number: "",
       gender: 0,
-      primary_department: 0,
-      sub_department: [],
-      role: 0,
-      work_schedule: 0,
+      primary_department_id: 0,
+      sub_department_id_list: [],
+      role_id: 0,
+      work_schedule_id: 0,
       profile_timezone: "Asia/Kolkata",
       is_active: true,
       is_manager: false,

@@ -24,6 +24,7 @@ import {
   DropdownMenu,
   DropdownItem,
   Badge,
+  Button,
 } from "reactstrap";
 
 import TableContainer from "../../../component/common/table/TableContainer";
@@ -57,6 +58,7 @@ import { GetCustomField } from "../../../common/js/GetCustomField";
 import { SweetAlert } from "../sweetAlert/SweetAlert";
 import Swal from "sweetalert2";
 import "../../../common/./css/lc_style.css";
+import { ExportSampleData } from "../../../common/js/ExportSampleData";
 
 const InfoTable = ({
   additionalColumn,
@@ -70,12 +72,12 @@ const InfoTable = ({
   table_col,
   table_class,
 }) => {
-  console.log("Page Refreshing !!!!", tabledata);
+  // console.log("Page Refreshing !!!!", tabledata);
 
   const dispatch = useDispatch();
 
   const EmployeeData = GetLocalStorageData("employee");
-  console.log("fsfa", EmployeeData);
+  // console.log("fsfa", EmployeeData);
 
   const { activeTableTab } = useSelector((state) => state.TableReducer);
 

@@ -1780,3 +1780,7 @@ export const leave_reset_options = [
     { id: 1, label: "January To December", value: 1 },
     { id: 2, label: "May To April", value: 2 },
 ]
+
+export const export_sample_data_info = [
+    { module_name: 'employee', api_url: "employee/get-sample-employee-data/", export_file_name: 'Employee Sample' }
+]

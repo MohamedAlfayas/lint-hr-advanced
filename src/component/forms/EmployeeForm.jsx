@@ -65,7 +65,7 @@ const EmployeeForm = () => {
 
   const dep_options = GetLocalStorageData("department") || [];
   const ws_options = GetLocalStorageData("work_schedule") || [];
-  const role_option = GetLocalStorageData("role") || [];
+  const role_id_option = GetLocalStorageData("role") || [];
 
   const [employeeImage, setEmployeeImage] = useState(null);
   const [subDepOptions, setSubDeptOptions] = useState(dep_options);
@@ -170,7 +170,7 @@ const EmployeeForm = () => {
       joining_date: ConvertISODateFormat(form_obj.joining_date),
     });
     let sub_dep_options = dep_options.filter(
-      (obj) => obj.id !== form_obj.primary_department
+      (obj) => obj.id !== form_obj.primary_department_id
     );
     setSubDeptOptions(sub_dep_options);
     setDob([new Date(form_obj.dob)]);
@@ -207,11 +207,11 @@ const EmployeeForm = () => {
   };
 
   const handlePrimaryDepChange = (obj) => {
-    if (obj.id !== employeeObj.primary_department) {
+    if (obj.id !== employeeObj.primary_department_id) {
       setEmployeeObj({
         ...employeeObj,
-        primary_department: obj.id,
-        sub_department: [],
+        primary_department_id: obj.id,
+        sub_department_id_list: [],
       });
       let sub_dep_options = dep_options.filter((data) => data.id !== obj.id);
       setSubDeptOptions(sub_dep_options);
@@ -276,11 +276,13 @@ const EmployeeForm = () => {
         .min(1, "Please Select Gender"),
       dob: Yup.string().trim().required("Please Select Date"),
       contact_number: Yup.string().required("Please Enter Phone Number"),
-      role: Yup.number().required("Select Role").min(1, "Please Select Role"),
-      primary_department: Yup.number()
+      role_id: Yup.number()
+        .required("Select Role")
+        .min(1, "Please Select Role"),
+      primary_department_id: Yup.number()
         .required("Select Department")
         .min(1, "Please Select Department"),
-      work_schedule: Yup.number()
+      work_schedule_id: Yup.number()
         .required("Select Work Schedule")
         .min(1, "Please Select Work Schedule"),
     }),
@@ -771,47 +773,49 @@ const EmployeeForm = () => {
 
               <Col lg={12}>
                 <div>
-                  <Label htmlFor="role" className="form-label">
+                  <Label htmlFor="role_id" className="form-label">
                     Role
                   </Label>
                   <Select
-                    id="role"
-                    name="role"
+                    id="role_id"
+                    name="role_id"
                     isMulti={false}
                     innerRef={inputRef}
-                    options={role_option || []}
+                    options={role_id_option || []}
                     className="basic-multi-select"
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.role &&
-                          FormikForm.errors.role
+                          FormikForm.touched.role_id &&
+                          FormikForm.errors.role_id
                             ? "red !important"
                             : provided.borderColor,
                       }),
                     }}
                     value={
-                      (employeeObj.role &&
-                        role_option.find((e) => e.id === employeeObj.role)) ||
+                      (employeeObj.role_id &&
+                        role_id_option.find(
+                          (e) => e.id === employeeObj.role_id
+                        )) ||
                       []
                     }
                     onChange={(e) => {
-                      setEmployeeObj({ ...employeeObj, role: e.id });
+                      setEmployeeObj({ ...employeeObj, role_id: e.id });
                     }}
                     invalid={
-                      FormikForm.touched.role && FormikForm.errors.role
+                      FormikForm.touched.role_id && FormikForm.errors.role_id
                         ? true
                         : false
                     }
                   />
-                  {FormikForm.touched.role && FormikForm.errors.role ? (
+                  {FormikForm.touched.role_id && FormikForm.errors.role_id ? (
                     <div className="lc_form_error_text">
-                      {FormikForm.errors.role}
+                      {FormikForm.errors.role_id}
                     </div>
                   ) : null}
-                  {!FormikForm.errors.role && (
+                  {!FormikForm.errors.role_id && (
                     <div id="passwordHelpBlock" className="form-text mb-3">
                       Select Role
                     </div>
@@ -825,7 +829,7 @@ const EmployeeForm = () => {
                   </Label>
                   <Select
                     id="parentDepartment"
-                    name="primary_department"
+                    name="primary_department_id"
                     innerRef={inputRef}
                     isMulti={false}
                     options={dep_options || []}
@@ -835,17 +839,18 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.primary_department &&
-                          FormikForm.errors.primary_department
+                          FormikForm.touched.primary_department_id &&
+                          FormikForm.errors.primary_department_id
                             ? "red !important"
                             : provided.borderColor,
                       }),
                     }}
                     placeholder={"Select Primary Department"}
                     value={
-                      employeeObj.primary_department
+                      employeeObj.primary_department_id
                         ? dep_options.find(
-                            (obj) => obj.id === employeeObj.primary_department
+                            (obj) =>
+                              obj.id === employeeObj.primary_department_id
                           )
                         : []
                     }
@@ -853,26 +858,26 @@ const EmployeeForm = () => {
                       handlePrimaryDepChange(e);
                     }}
                     invalid={
-                      FormikForm.touched.primary_department &&
-                      FormikForm.errors.primary_department
+                      FormikForm.touched.primary_department_id &&
+                      FormikForm.errors.primary_department_id
                         ? true
                         : false
                     }
                   />
-                  {FormikForm.touched.primary_department &&
-                  FormikForm.errors.primary_department ? (
+                  {FormikForm.touched.primary_department_id &&
+                  FormikForm.errors.primary_department_id ? (
                     <div className="lc_form_error_text">
-                      {FormikForm.errors.primary_department}
+                      {FormikForm.errors.primary_department_id}
                     </div>
                   ) : null}
-                  {!FormikForm.errors.primary_department && (
+                  {!FormikForm.errors.primary_department_id && (
                     <div id="passwordHelpBlock" className="form-text mb-3">
                       Select Role
                     </div>
                   )}
                 </div>
               </Col>
-              {employeeObj.primary_department !== 0 ? (
+              {employeeObj.primary_department_id !== 0 ? (
                 <Col md={12} lg={12} xxl={12}>
                   <div>
                     <Label htmlFor="isManager" className="form-label">
@@ -910,7 +915,8 @@ const EmployeeForm = () => {
                       <b>
                         <i>
                           {dep_options.find(
-                            (obj) => obj.id === employeeObj.primary_department
+                            (obj) =>
+                              obj.id === employeeObj.primary_department_id
                           )?.name || ""}
                         </i>
                       </b>{" "}
@@ -932,16 +938,16 @@ const EmployeeForm = () => {
                     options={subDepOptions || []}
                     className="basic-multi-select"
                     value={
-                      employeeObj.sub_department
+                      employeeObj.sub_department_id_list
                         ? subDepOptions.filter((obj) =>
-                            employeeObj.sub_department.includes(obj.id)
+                            employeeObj.sub_department_id_list.includes(obj.id)
                           )
                         : []
                     }
                     onChange={(e) => {
                       setEmployeeObj({
                         ...employeeObj,
-                        sub_department: e.map((obj) => obj.id),
+                        sub_department_id_list: e.map((obj) => obj.id),
                       });
                     }}
                   />
@@ -955,7 +961,7 @@ const EmployeeForm = () => {
                   <Label htmlFor="empWs">Work Schedule</Label>
                   <Select
                     id="empWs"
-                    name="work_schedule"
+                    name="work_schedule_id"
                     innerRef={inputRef}
                     isMulti={false}
                     options={ws_options || []}
@@ -965,37 +971,37 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.work_schedule &&
-                          FormikForm.errors.work_schedule
+                          FormikForm.touched.work_schedule_id &&
+                          FormikForm.errors.work_schedule_id
                             ? "red !important"
                             : provided.borderColor,
                       }),
                     }}
                     value={
-                      (employeeObj.work_schedule &&
+                      (employeeObj.work_schedule_id &&
                         ws_options.find(
-                          (e) => e.id === employeeObj.work_schedule
+                          (e) => e.id === employeeObj.work_schedule_id
                         )) ||
                       []
                     }
                     onChange={(e) =>
-                      setEmployeeObj({ ...employeeObj, work_schedule: e.id })
+                      setEmployeeObj({ ...employeeObj, work_schedule_id: e.id })
                     }
                     invalid={
-                      FormikForm.touched.work_schedule &&
-                      FormikForm.errors.work_schedule
+                      FormikForm.touched.work_schedule_id &&
+                      FormikForm.errors.work_schedule_id
                         ? true
                         : false
                     }
                   />
-                  {FormikForm.touched.work_schedule &&
-                  FormikForm.errors.work_schedule ? (
+                  {FormikForm.touched.work_schedule_id &&
+                  FormikForm.errors.work_schedule_id ? (
                     <div className="lc_form_error_text">
-                      {FormikForm.errors.work_schedule}
+                      {FormikForm.errors.work_schedule_id}
                     </div>
                   ) : null}
                 </div>
-                {!FormikForm.errors.work_schedule && (
+                {!FormikForm.errors.work_schedule_id && (
                   <div id="passwordHelpBlock" className="form-text mb-3">
                     Select Work Schedule
                   </div>
