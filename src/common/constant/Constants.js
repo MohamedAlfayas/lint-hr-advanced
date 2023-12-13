@@ -1781,6 +1781,13 @@ export const leave_reset_options = [
     { id: 2, label: "May To April", value: 2 },
 ]
 
+export const hr_status = [
+    { id: "1", label: "Auto Approval", value: "Auto Approval" },
+    { id: "2", label: "Approval", value: "Approval" },
+    { id: "3", label: "Pending", value: "Pending" },
+    { id: "4", label: "Rejected", value: "Rejected" },
+]
+
 
 export const organization_component_name = "organization"
 export const department_component_name = "department"
