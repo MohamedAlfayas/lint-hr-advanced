@@ -2,21 +2,16 @@ import React, { Fragment, useEffect, useMemo, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Button,
-  Card,
-  CardBody,
-  CardHeader,
   Col,
   Dropdown,
   DropdownItem,
   DropdownMenu,
   DropdownToggle,
   Form,
-  FormGroup,
   FormFeedback,
   Input,
   Label,
   Row,
-  UncontrolledDropdown,
 } from "reactstrap";
 
 import Select from "react-select";
@@ -27,7 +22,6 @@ import Flatpickr from "react-flatpickr";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
-import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
 import {
   addEmployee,
@@ -35,17 +29,12 @@ import {
 } from "../../redux/reducers/ChildReducer/EmployeeReducer";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { ConvertISODateFormat } from "../../common/js/ConvertDateFormat";
-import { setActiveTableTab } from "../../redux/reducers/ChildReducer/TableReducer";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import indflag from "../../assets/images/flags/in.svg";
 import SimpleBar from "simplebar-react";
 import CountryList from "../../common/data/CountryList";
-import { FilePond } from "react-filepond";
 import "filepond/dist/filepond.min.css";
-import FilePondPluginImageExifOrientation from "filepond-plugin-image-exif-orientation";
-import FilePondPluginImagePreview from "filepond-plugin-image-preview";
 import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
-import { join } from "lodash";
 import { PostApi } from "../../common/api/PostApi";
 import {
   gender_options,
@@ -69,27 +58,18 @@ const EmployeeForm = () => {
 
   const [employeeImage, setEmployeeImage] = useState(null);
   const [subDepOptions, setSubDeptOptions] = useState(dep_options);
-  const [stateList, setStateList] = useState([]);
   const [contactCountry, setContactCountry] = useState({
     id: 240,
     flagImg: indflag,
     countryName: "India",
     countryCode: "+91",
   });
-  const [selectedCountry, setSelectedCountry] = useState({});
-
-  const [dropdownOpen3, setDropdownOpen3] = useState(false);
   const [dropdownOpen4, setDropdownOpen4] = useState(false);
-  const [stateDD, setStateDD] = useState(false);
 
-  const toggle3 = () => setDropdownOpen3((prevState) => !prevState);
   const toggle4 = () => setDropdownOpen4((prevState) => !prevState);
-  const stateToggle = () => setStateDD((prevState) => !prevState);
-  const [files, setFiles] = useState([]);
 
   const [dob, setDob] = useState([]);
   const [joining_date, setJoinDate] = useState([]);
-  const [profileData, setProfileData] = useState([]);
   const [selectedFileName, setSelectedFileName] = React.useState("");
   const [selectedFileName1, setSelectedFileName1] = React.useState("");
   const [selectedFileName2, setSelectedFileName2] = React.useState("");
@@ -100,9 +80,7 @@ const EmployeeForm = () => {
 
   const showFileNameIfSelected = () => {
     const idProofUrl = form_obj.id_proof_url;
-    console.log("Selected File Name 0:", idProofUrl);
     const fileName = idProofUrl ? idProofUrl.split("/").pop() : "";
-    console.log("Extracted File Name:", fileName);
     setSelectedFileName(fileName);
   };
   const handleClearFile = () => {
@@ -126,39 +104,29 @@ const EmployeeForm = () => {
 
   const showFile1NameIfSelected = () => {
     const file1Url = form_obj.file_1_url;
-    console.log("Selected File Name 1:", file1Url);
     const fileName1 = file1Url ? file1Url.split("/").pop() : "";
-    console.log("Extracted File Name1:", fileName1);
     setSelectedFileName1(fileName1);
   };
 
   const showFile2NameIfSelected = () => {
     const file2Url = form_obj.file_2_url;
-    console.log("Selected File Name 2:", file2Url);
     const fileName2 = file2Url ? file2Url.split("/").pop() : "";
-    console.log("Extracted File Name2:", fileName2);
     setSelectedFileName2(fileName2);
   };
 
   const showFile3NameIfSelected = () => {
     const file3Url = form_obj.file_3_url;
-    console.log("Selected File Name 1:", file3Url);
     const fileName3 = file3Url ? file3Url.split("/").pop() : "";
-    console.log("Extracted File Name1:", fileName3);
     setSelectedFileName3(fileName3);
   };
   const showFile4NameIfSelected = () => {
     const file4Url = form_obj.file_4_url;
-    console.log("Selected File Name 4:", file4Url);
     const fileName4 = file4Url ? file4Url.split("/").pop() : "";
-    console.log("Extracted File Name4:", fileName4);
     setSelectedFileName4(fileName4);
   };
   const showFile5NameIfSelected = () => {
     const file5Url = form_obj.file_5_url;
-    console.log("Selected File Name 5:", file5Url);
     const fileName5 = file5Url ? file5Url.split("/").pop() : "";
-    console.log("Extracted File Name5:", fileName5);
     setSelectedFileName5(fileName5);
   };
 
@@ -175,6 +143,17 @@ const EmployeeForm = () => {
     setSubDeptOptions(sub_dep_options);
     setDob([new Date(form_obj.dob)]);
     setJoinDate([new Date(form_obj.joining_date)]);
+
+    if (
+      form_obj.country_code !== "" &&
+      form_obj.country_code !== null &&
+      form_obj.country_code !== undefined
+    ) {
+      setContactCountry(
+        CountryList.find((d) => d.countryCode === form_obj.country_code)
+      );
+    }
+
     showFileNameIfSelected();
     showFile1NameIfSelected();
     showFile2NameIfSelected();
@@ -326,7 +305,6 @@ const EmployeeForm = () => {
       const firstErrorField = Object.keys(FormikForm.errors)[0];
       FormikForm.setFieldTouched(firstErrorField);
       const errorField = document.querySelector(`[name=${firstErrorField}]`);
-      console.log(firstErrorField);
       if (errorField) {
         errorField.focus();
 

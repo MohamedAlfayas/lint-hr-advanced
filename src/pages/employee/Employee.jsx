@@ -244,6 +244,7 @@ const Employee = () => {
       file_3: null,
       file_4: null,
       file_5: null,
+      country_code: "+91",
       contact_number: "",
       gender: 0,
       primary_department_id: 0,
