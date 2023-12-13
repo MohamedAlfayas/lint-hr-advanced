@@ -94,6 +94,78 @@ const AttendanceEmployeeTable = () => {
         },
       ],
     },
+    {
+      id: 16,
+      employee: 40,
+      date: "2023-10-26T11:22:20.785092Z",
+      work_schedule: 7,
+      is_present: true,
+      total_work_duration: 224,
+      total_break_duration: 54,
+      currently_checked_in: false,
+      total_no_of_check_in: 3,
+      total_no_of_check_out: 3,
+      status: false,
+      is_properly_closed: true,
+      is_holiday: false,
+      holiday: 0,
+      is_leave_approved: false,
+      leave_approval: 0,
+      is_week_off: false,
+      week_off_day: null,
+      leave_taken_without_approval: false,
+      paid_hr: "",
+      ot_hr: "",
+      is_in_edit: false,
+      is_ot_edit: false,
+      notes: "",
+      hr_status: 1,
+
+      entry_log: [
+        {
+          id: 78,
+          entry_time: "2023-10-26T11:22:20.785092Z",
+          entry_type: 1,
+          punched_by: 2,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 79,
+          entry_time: "2023-10-26T11:23:28.133874Z",
+          entry_type: 2,
+          punched_by: 2,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 80,
+          entry_time: "2023-10-26T11:23:35.009025Z",
+          entry_type: 1,
+          punched_by: 2,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 81,
+          entry_time: "2023-10-26T11:23:54.387661Z",
+          entry_type: 2,
+          punched_by: 2,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 82,
+          entry_time: "2023-10-26T11:24:41.136607Z",
+          entry_type: 1,
+          punched_by: 1,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 83,
+          entry_time: "2023-10-26T11:26:58.080142Z",
+          entry_type: 2,
+          punched_by: 2,
+          location: "Lintcloud, ",
+        },
+      ],
+    },
   ];
 
   const InOutCell = ({ rowData, dataKey, ...props }) => {
@@ -181,9 +253,9 @@ const AttendanceEmployeeTable = () => {
     return (
       <Cell {...props} className="link-group">
         {rowData[dataKey] != 0
-          ? new Date(rowData[dataKey] * 1000).toISOString().slice(11, 16)
+          ? new Date(rowData[dataKey] * 1000).toISOString().slice(11, 16) +
+            " Hr"
           : ""}{" "}
-        Hr
       </Cell>
     );
   };
@@ -233,15 +305,15 @@ const AttendanceEmployeeTable = () => {
         </Column>
         <Column width={100}>
           <HeaderCell>Break</HeaderCell>
-          <Cell dataKey="employee" />
+          <SecondsToTimeCell dataKey="total_break_duration" />
         </Column>
         <Column width={125}>
           <HeaderCell>OT</HeaderCell>
-          <Cell dataKey="employee" />
+          <SecondsToTimeCell dataKey="ot_hr" />
         </Column>
         <Column width={125}>
           <HeaderCell>Paid Hr</HeaderCell>
-          <Cell dataKey="employee" />
+          <SecondsToTimeCell dataKey="paid_hr" />
         </Column>
         <Column width={150}>
           <HeaderCell>Status</HeaderCell>
