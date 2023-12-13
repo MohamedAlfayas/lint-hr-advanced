@@ -59,6 +59,12 @@ import { SweetAlert } from "../sweetAlert/SweetAlert";
 import Swal from "sweetalert2";
 import "../../../common/./css/lc_style.css";
 import { ExportSampleData } from "../../../common/js/ExportSampleData";
+import {
+  component_list_for_import_btn_access,
+  employee_component_name,
+  holiday_component_name,
+  leave_approval_component_name,
+} from "../../../common/constant/Constants";
 
 const InfoTable = ({
   additionalColumn,
@@ -286,7 +292,7 @@ const InfoTable = ({
 
           if (
             formname &&
-            formname === "leave_approval" &&
+            formname === leave_approval_component_name &&
             orderData.status === 1
           ) {
             return (
@@ -313,7 +319,7 @@ const InfoTable = ({
                 </li>
               </ul>
             );
-          } else if (formname && formname === "employee") {
+          } else if (formname && formname === employee_component_name) {
             return (
               <ul className="list-inline hstack gap-2 mb-0">
                 <UncontrolledDropdown className="float-end">
@@ -478,12 +484,12 @@ const InfoTable = ({
     console.log(data);
   };
 
-  const module_list_for_create_btn_access = [
-    "employee",
-    "leave_types",
-    "holiday",
-    "department",
-  ];
+  // const module_list_for_create_btn_access = [
+  //   "employee",
+  //   "leave_types",
+  //   "holiday",
+  //   "department",
+  // ];
 
   // CUSTOM FORM
 
@@ -571,7 +577,7 @@ const InfoTable = ({
                     {formname.split("_").join(" ")}
                   </h5>
 
-                  {formname && formname === "holiday" && (
+                  {formname && formname === holiday_component_name && (
                     // <Datetime
                     //   className="w-20"
                     //   value={selectedYear}
@@ -622,7 +628,7 @@ const InfoTable = ({
                 </div>
                 <div className="col-sm-auto">
                   <div className="d-flex gap-1 flex-wrap">
-                    {formname && formname !== "leave_approval" && (
+                    {formname && formname !== leave_approval_component_name && (
                       <button
                         type="button"
                         className="btn btn-success add-btn"
@@ -638,7 +644,7 @@ const InfoTable = ({
                     )}{" "}
                     <div className="d-flex gap-1 flex-wrap">
                       {formname &&
-                        module_list_for_create_btn_access.includes(
+                        component_list_for_import_btn_access.includes(
                           formname
                         ) && (
                           <button
@@ -655,128 +661,138 @@ const InfoTable = ({
                           </button>
                         )}{" "}
                       <div>
-                        {formname && formname === "leave_approval" && (
-                          <div
-                            style={{ display: "flex", flexDirection: "row" }}
-                          >
-                            <div style={{ marginBottom: "10px" }}>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                }}
-                              >
+                        {formname &&
+                          formname === leave_approval_component_name && (
+                            <div
+                              style={{ display: "flex", flexDirection: "row" }}
+                            >
+                              <div style={{ marginBottom: "10px" }}>
                                 <div
                                   style={{
-                                    position: "relative",
-                                    width: "200px",
+                                    display: "flex",
+                                    alignItems: "center",
                                   }}
                                 >
-                                  <i
-                                    className="bx bx-search-alt search-icon"
+                                  <div
                                     style={{
-                                      position: "absolute",
-                                      top: "50%",
-                                      left: "10px",
-                                      transform: "translateY(-50%)",
+                                      position: "relative",
+                                      width: "200px",
                                     }}
-                                  ></i>
-                                  <input
-                                    type="text"
-                                    placeholder="Search"
-                                    value={search}
-                                    onChange={handleSearchChange}
-                                    style={{
-                                      padding: "6px 30px 6px 30px",
-                                      borderRadius: "4px",
-                                      border: "1px solid #ccc",
-                                      width: "100%",
-                                      outline: "none",
-                                    }}
-                                  />
+                                  >
+                                    <i
+                                      className="bx bx-search-alt search-icon"
+                                      style={{
+                                        position: "absolute",
+                                        top: "50%",
+                                        left: "10px",
+                                        transform: "translateY(-50%)",
+                                      }}
+                                    ></i>
+                                    <input
+                                      type="text"
+                                      placeholder="Search"
+                                      value={search}
+                                      onChange={handleSearchChange}
+                                      style={{
+                                        padding: "6px 30px 6px 30px",
+                                        borderRadius: "4px",
+                                        border: "1px solid #ccc",
+                                        width: "100%",
+                                        outline: "none",
+                                      }}
+                                    />
+                                  </div>
                                 </div>
                               </div>
-                            </div>
 
-                            <div
-                              style={{
-                                marginLeft: "10px",
-                                marginRight: "5px",
-                              }}
-                            >
-                              <label htmlFor="roleName" className="form-label">
-                                Status:
-                              </label>
-                              <select
-                                value={statusFilter}
-                                onChange={handleStatusFilterChange}
+                              <div
                                 style={{
-                                  padding: "6px",
-                                  borderRadius: "4px",
-                                  border: "1px solid #ccc",
-                                  width: "170px",
-                                  outline: "none",
+                                  marginLeft: "10px",
+                                  marginRight: "5px",
                                 }}
                               >
-                                <option value="all">All Status</option>
-                                <option value="approved">Approved</option>
-                                <option value="rejected">Rejected</option>
-                              </select>
-                            </div>
-                            <div
-                              style={{
-                                marginLeft: "10px",
-                                marginRight: "5px",
-                              }}
-                            >
-                              <label htmlFor="roleName" className="form-label">
-                                Type:
-                              </label>
-                              <select
-                                value={typeFilter}
-                                onChange={handleTypeFilterChange}
+                                <label
+                                  htmlFor="roleName"
+                                  className="form-label"
+                                >
+                                  Status:
+                                </label>
+                                <select
+                                  value={statusFilter}
+                                  onChange={handleStatusFilterChange}
+                                  style={{
+                                    padding: "6px",
+                                    borderRadius: "4px",
+                                    border: "1px solid #ccc",
+                                    width: "170px",
+                                    outline: "none",
+                                  }}
+                                >
+                                  <option value="all">All Status</option>
+                                  <option value="approved">Approved</option>
+                                  <option value="rejected">Rejected</option>
+                                </select>
+                              </div>
+                              <div
                                 style={{
-                                  padding: "6px",
-                                  borderRadius: "4px",
-                                  border: "1px solid #ccc",
-                                  width: "170px",
-                                  outline: "none",
+                                  marginLeft: "10px",
+                                  marginRight: "5px",
                                 }}
                               >
-                                <option value="all">All Types</option>
-                                <option value="type1">Type 1</option>
-                                <option value="type2">Type 2</option>
-                              </select>
+                                <label
+                                  htmlFor="roleName"
+                                  className="form-label"
+                                >
+                                  Type:
+                                </label>
+                                <select
+                                  value={typeFilter}
+                                  onChange={handleTypeFilterChange}
+                                  style={{
+                                    padding: "6px",
+                                    borderRadius: "4px",
+                                    border: "1px solid #ccc",
+                                    width: "170px",
+                                    outline: "none",
+                                  }}
+                                >
+                                  <option value="all">All Types</option>
+                                  <option value="type1">Type 1</option>
+                                  <option value="type2">Type 2</option>
+                                </select>
+                              </div>
+                              <div></div>
                             </div>
-                            <div></div>
+                          )}
+                      </div>
+                      {formname &&
+                        formname === leave_approval_component_name && (
+                          <div>
+                            <button
+                              type="button"
+                              className="btn btn-success add-btn"
+                              id="bulk-approve-btn"
+                              style={{
+                                textTransform: "capitalize",
+                                marginRight: "5px",
+                              }}
+                              onClick={() => handleBulkAction("approve")}
+                            >
+                              <i className="ri-check-line fs-16"></i> Bulk
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-danger add-btn"
+                              id="bulk-reject-btn"
+                              style={{ textTransform: "capitalize" }}
+                              onClick={() => handleBulkAction("reject")}
+                            >
+                              <i className="ri-close-line fs-16"></i> Bulk
+                              Reject
+                            </button>
                           </div>
                         )}
-                      </div>
-                      {formname && formname === "leave_approval" && (
-                        <div>
-                          <button
-                            type="button"
-                            className="btn btn-success add-btn"
-                            id="bulk-approve-btn"
-                            style={{
-                              textTransform: "capitalize",
-                              marginRight: "5px",
-                            }}
-                            onClick={() => handleBulkAction("approve")}
-                          >
-                            <i className="ri-check-line fs-16"></i> Bulk Approve
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-danger add-btn"
-                            id="bulk-reject-btn"
-                            style={{ textTransform: "capitalize" }}
-                            onClick={() => handleBulkAction("reject")}
-                          >
-                            <i className="ri-close-line fs-16"></i> Bulk Reject
-                          </button>
-                        </div>
-                      )}
                       <button
                         type="button"
                         className="btn btn-info"

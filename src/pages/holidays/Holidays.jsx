@@ -12,6 +12,7 @@ import Calender from "./Calendar";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { ConvertDateFormat } from "../../common/js/ConvertDateFormat";
 import { setHoliday } from "../../redux/reducers/ChildReducer/HolidayReducer";
+import { holiday_component_name } from "../../common/constant/Constants";
 
 const Holiday = () => {
   document.title = `Holidays | ${MetaTitle}`;
@@ -139,7 +140,7 @@ const Holiday = () => {
         <InfoTable
           additionalColumn={additionalColumn}
           tabledata={holiday_data}
-          formname={"holiday"}
+          formname={holiday_component_name}
           initialFormObj={initialFormObj}
           filterKey={filterKey}
           filterOptions={filterOptions}

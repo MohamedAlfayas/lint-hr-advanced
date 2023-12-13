@@ -1781,6 +1781,43 @@ export const leave_reset_options = [
     { id: 2, label: "May To April", value: 2 },
 ]
 
+
+export const organization_component_name = "organization"
+export const department_component_name = "department"
+export const branch_component_name = "branch"
+export const employee_component_name = "employee"
+export const role_component_name = "role"
+export const work_schedule_component_name = "work_schedule"
+export const holiday_component_name = "holiday"
+export const attendance_component_name = "attendance"
+export const leave_application_component_name = "leave_application"
+export const leave_type_component_name = "leave_types"
+export const leave_approval_component_name = "leave_approval"
+export const custom_field_component_name = "custom_fields"
+export const payroll_component_name = "payroll"
+export const payroll_configuration_component_name = "payroll_configuration"
+export const profile_view_component_name = "profile_view"
+export const epf_wage_form_component_name = "epf_wage_form"
+export const professional_tax_form_component_name = "professional_tax_form"
+export const salary_form_component_name = "salary_form"
+export const salary_policy_form_component_name = "salary_policy_form"
+
+
+export const component_list_for_import_btn_access = [
+    department_component_name,
+    employee_component_name,
+    leave_type_component_name,
+    holiday_component_name
+]
+
+export const component_list_for_import_form_access = [
+    employee_component_name,
+    leave_type_component_name,
+    holiday_component_name
+]
+
+
+
 export const export_sample_data_info = [
-    { module_name: 'employee', api_url: "employee/get-sample-employee-data/", export_file_name: 'Employee Sample' }
+    { module_name: employee_component_name, api_url: "employee/get-sample-employee-data/", export_file_name: 'Employee Sample' }
 ]

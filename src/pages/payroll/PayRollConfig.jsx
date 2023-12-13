@@ -49,6 +49,12 @@ import {
   setDeductions,
   setEarnings,
 } from "../../redux/reducers/ChildReducer/SalaryComponentsReducer";
+import {
+  epf_wage_form_component_name,
+  professional_tax_form_component_name,
+  salary_form_component_name,
+  salary_policy_form_component_name,
+} from "../../common/constant/Constants";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
@@ -341,7 +347,7 @@ const PayRollConfig = () => {
     dispatch(setFormObj(obj));
     dispatch(setFormTitle("Edit EPF"));
     dispatch(setFormWidthPercentage("35%"));
-    dispatch(setComponentToShow("EPFWageForm"));
+    dispatch(setComponentToShow(epf_wage_form_component_name));
     dispatch(toggleRSBView(true));
   };
 
@@ -355,7 +361,7 @@ const PayRollConfig = () => {
     console.log("test....", tax_slab_obj);
 
     dispatch(setFormWidthPercentage("40%"));
-    dispatch(setComponentToShow("ProfessionalTaxForm"));
+    dispatch(setComponentToShow(professional_tax_form_component_name));
     dispatch(toggleRSBView(true));
   };
 
@@ -390,7 +396,7 @@ const PayRollConfig = () => {
       dispatch(setFormObj(earning_obj[0]));
     }
     dispatch(setFormWidthPercentage("40%"));
-    dispatch(setComponentToShow("SalaryCmpntForm"));
+    dispatch(setComponentToShow(salary_form_component_name));
     dispatch(toggleRSBView(true));
   };
 
@@ -418,7 +424,7 @@ const PayRollConfig = () => {
     dispatch(setAllowances(payrollobj.salary_components.allowances));
     dispatch(setDeductions(payrollobj.salary_components.deductions));
     dispatch(setFormWidthPercentage("50%"));
-    dispatch(setComponentToShow("SalaryPoliciesForm"));
+    dispatch(setComponentToShow(salary_policy_form_component_name));
     dispatch(toggleRSBView(true));
   };
 
@@ -478,7 +484,7 @@ const PayRollConfig = () => {
     dispatch(setFormObj(componentObj));
 
     dispatch(setFormWidthPercentage("40%"));
-    dispatch(setComponentToShow("SalaryCmpntForm"));
+    dispatch(setComponentToShow(salary_form_component_name));
     dispatch(toggleRSBView(true));
   };
 

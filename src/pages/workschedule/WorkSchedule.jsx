@@ -9,17 +9,19 @@ import { useMemo } from "react";
 import { UncontrolledTooltip } from "reactstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { setWorkSchedule } from "../../redux/reducers/ChildReducer/WorkScheduleReducer";
+import { work_schedule_component_name } from "../../common/constant/Constants";
 
 const WorkSchedule = () => {
+  const dispatch = useDispatch();
 
-  const dispatch = useDispatch()
+  const { work_schedule_data } = useSelector(
+    (state) => state.WorkScheduleReducer
+  );
 
-  const { work_schedule_data } = useSelector(state => state.WorkScheduleReducer);
+  useEffect(() => {
+    dispatch(setWorkSchedule(GetLocalStorageData("work_schedule") || []));
+  }, []);
 
-  useEffect(() =>{
-    dispatch(setWorkSchedule(GetLocalStorageData('work_schedule') || []))
-  },[])
-  
   const additionalColumn = [
     {
       Header: "Name",
@@ -56,7 +58,8 @@ const WorkSchedule = () => {
         for (let i = 0; i < days.length; i++) {
           for (let j = 0; j < obj.workday.length; j++) {
             if (
-              days[i].desc.toLowerCase() == (obj.workday[j].s_day).toLowerCase() &&
+              days[i].desc.toLowerCase() ==
+                obj.workday[j].s_day.toLowerCase() &&
               obj.workday[j].is_day_on
             ) {
               timings.push(days[i].id);
@@ -73,7 +76,8 @@ const WorkSchedule = () => {
                   : "fw-normal fw-lighter me-1"
               }
               key={day.id}
-              id={`t_${day.desc}`}>
+              id={`t_${day.desc}`}
+            >
               {day.name}
             </span>
             <UncontrolledTooltip placement="top" target={`t_${day.desc}`}>
@@ -95,7 +99,8 @@ const WorkSchedule = () => {
         let statusClass = obj.status ? "success" : "warning";
         return (
           <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
+            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
+          >
             {" "}
             {status}{" "}
           </span>
@@ -120,7 +125,7 @@ const WorkSchedule = () => {
       halfday_min: "00",
       maximum_break_hr: "00",
       maximum_break_min: "00",
-      auto_clock_out : false,
+      auto_clock_out: false,
       status: 1,
       workday: [
         {
@@ -192,8 +197,18 @@ const WorkSchedule = () => {
 
   const filterKey = "status";
   const filterOptions = [
-    { option: true, label: "Active", count : work_schedule_data.filter(e => e[filterKey] === true).length || 0 },
-    { option: false, label: "Inactive", count : work_schedule_data.filter(e => e[filterKey] === false).length || 0 },
+    {
+      option: true,
+      label: "Active",
+      count:
+        work_schedule_data.filter((e) => e[filterKey] === true).length || 0,
+    },
+    {
+      option: false,
+      label: "Inactive",
+      count:
+        work_schedule_data.filter((e) => e[filterKey] === false).length || 0,
+    },
   ];
 
   document.title = `Work Schedule | ${MetaTitle}`;
@@ -202,7 +217,7 @@ const WorkSchedule = () => {
       <InfoTable
         additionalColumn={additionalColumn}
         tabledata={work_schedule_data}
-        formname={"workschedule"}
+        formname={work_schedule_component_name}
         initialFormObj={initialFormObj}
         filterKey={filterKey}
         filterOptions={filterOptions}

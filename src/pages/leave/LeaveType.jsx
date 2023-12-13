@@ -8,7 +8,10 @@ import { MetaTitle } from "../../common/data/MetaTitle";
 import { useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setLeaveType } from "../../redux/reducers/ChildReducer/LeaveTypeReducer";
-import { leave_type_day_unit } from "../../common/constant/Constants";
+import {
+  leave_type_component_name,
+  leave_type_day_unit,
+} from "../../common/constant/Constants";
 
 const LeaveType = () => {
   const dispatch = useDispatch();
@@ -161,7 +164,7 @@ const LeaveType = () => {
       <InfoTable
         additionalColumn={additionalColumn}
         tabledata={leave_type_data}
-        formname={"leave_types"}
+        formname={leave_type_component_name}
         initialFormObj={initialFormObj}
         filterKey={filterKey}
         filterOptions={filterOptions}

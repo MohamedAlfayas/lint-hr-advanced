@@ -7,6 +7,7 @@ import { Api } from "../../common/api/Api";
 import { useDispatch, useSelector } from "react-redux";
 import { setRole } from "../../redux/reducers/ChildReducer/RoleReducer";
 import RsuiteTable from "../../component/common/table/RsuiteTable";
+import { role_component_name } from "../../common/constant/Constants";
 
 const Roles = () => {
   document.title = `Role | ${MetaTitle}`;
@@ -272,7 +273,7 @@ const Roles = () => {
       <InfoTable
         additionalColumn={additionalColumn}
         tabledata={role_data}
-        formname={"role"}
+        formname={role_component_name}
         initialFormObj={initialFormObj}
         filterKey={filterKey}
         filterOptions={filterOptions}

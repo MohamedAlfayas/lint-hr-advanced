@@ -12,6 +12,7 @@ import { useEffect } from "react";
 import { setCustomField } from "../../redux/reducers/ChildReducer/CustomFieldReducer";
 import {
   custom_field_applicable_modules,
+  custom_field_component_name,
   custom_field_types,
 } from "../../common/constant/Constants";
 
@@ -173,7 +174,7 @@ const CustomField = () => {
       <InfoTable
         additionalColumn={additionalColumn}
         tabledata={custom_fields}
-        formname={"custom_fields"}
+        formname={custom_field_component_name}
         initialFormObj={initialFormObj}
         filterKey={filterKey}
         filterOptions={filterOptions}

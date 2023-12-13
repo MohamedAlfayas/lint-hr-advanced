@@ -19,6 +19,10 @@ import {
   setFormWidthPercentage,
   toggleRSBView,
 } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
+import {
+  employee_component_name,
+  profile_view_component_name,
+} from "../../common/constant/Constants";
 
 const Employee = () => {
   const dispatch = useDispatch();
@@ -38,7 +42,7 @@ const Employee = () => {
     dispatch(setFormTitle("Employee Details"));
     dispatch(setFormObj(obj));
     dispatch(setFormWidthPercentage("25%"));
-    dispatch(setComponentToShow("profileViewMin"));
+    dispatch(setComponentToShow(profile_view_component_name));
     dispatch(toggleRSBView(true));
   };
 
@@ -274,7 +278,7 @@ const Employee = () => {
       <InfoTable
         additionalColumn={additionalColumn}
         tabledata={employee_data}
-        formname={"employee"}
+        formname={employee_component_name}
         initialFormObj={initialFormObj}
         filterKey={filterKey}
         filterOptions={filterOptions}

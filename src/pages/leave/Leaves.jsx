@@ -5,6 +5,7 @@ import HolidayCalenderAPi from "../holidays/HolidayCalenderAPi";
 import InfoTable from "../../component/common/table/InfoTable";
 import { useDispatch, useSelector } from "react-redux";
 import { MetaTitle } from "../../common/data/MetaTitle";
+import { leave_application_component_name } from "../../common/constant/Constants";
 
 const LeaveDashboard = () => {
   document.title = `Leave Application | ${MetaTitle}`;
@@ -135,7 +136,8 @@ const LeaveDashboard = () => {
           obj.status == 1 ? "warning" : obj.status == 2 ? "success" : "danger";
         return (
           <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
+            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
+          >
             {" "}
             {status}{" "}
           </span>
@@ -173,7 +175,7 @@ const LeaveDashboard = () => {
           <Row className="project-wrapper">
             <Col xxl={12}>
               <LeaveTypesWidgets
-                formname={"leave_apply"}
+                formname={leave_application_component_name}
                 initialFormObj={initialFormObj}
                 width_per={"35%"}
               />
@@ -181,7 +183,7 @@ const LeaveDashboard = () => {
             <InfoTable
               additionalColumn={additionalColumn}
               tabledata={leaveapplication}
-              formname={"leave_apply"}
+              formname={leave_application_component_name}
               initialFormObj={initialFormObj}
               filterKey={filterKey}
               filterOptions={filterOptions}
