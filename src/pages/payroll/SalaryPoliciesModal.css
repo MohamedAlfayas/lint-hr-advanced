@@ -1,32 +1,43 @@
-/* Add these styles to your CSS file or style section */
-
 /* Modal container */
 .modal-content {
-    border-radius: 10px;
-  }
-  
-  /* Table styles */
-  .table-cmpnt {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-  }
-  
-  .table-cmpnt th,
-  .table-cmpnt td {
-    padding: 10px;
-    text-align: center;
-    border: 1px solid #ddd;
-  }
-  
-  /* Checkbox styles */
-  .earning-checkbox {
-    margin: 0;
-  }
-  
- 
-  .modal-title {
-    text-align: center;
-    font-size: 1.5rem; /* Adjust as needed */
-    margin-bottom: 10px; /* Adjust as needed */
-  }
+  border-radius: 10px;
+  background-color: #fff; /* Set your desired background color */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add a subtle box shadow */
+  padding: 20px; /* Add padding for better spacing */
+}
+
+/* Table styles */
+.table-cmpnt {
+  width: 100%;
+  border: none; /* Remove the border */
+  margin-top: 20px;
+  overflow: hidden; /* Hide the table overflow */
+}
+
+.table-cmpnt th,
+.table-cmpnt td {
+  padding: 15px;
+  text-align: left; /* Align text to the left */
+  border: none; /* Remove the borders between cells */
+  border-bottom: 1px solid #eee; /* Add a bottom border between rows */
+}
+
+/* Checkbox styles */
+.earning-checkbox {
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Modal title */
+.modal-title {
+  text-align: center;
+  font-size: 1.5rem; /* Increase font size */
+  margin-bottom: 5px; /* Increase margin for better spacing */
+  color: #333; /* Set your desired text color */
+}
+
+/* Example of alternating row background color */
+.table-cmpnt tr:nth-child(even) {
+  background-color: #f9f9f9; /* Set your desired background color */
+}

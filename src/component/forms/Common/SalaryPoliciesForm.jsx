@@ -664,7 +664,7 @@ const salaryPloiciesForm = () => {
         <ModalTitle className="modal-title">
           Select Earning Components
         </ModalTitle>
-        <ModalBody className="py-3 px-5">
+        <ModalBody className="py-3 px-10">
           <div className="mt-2 text-center">
             <table class="table-cmpnt">
               <thead>
@@ -746,7 +746,7 @@ const salaryPloiciesForm = () => {
         <ModalTitle className="modal-title">
           Select Alowances Components
         </ModalTitle>
-        <ModalBody className="py-3 px-5">
+        <ModalBody className="py-3 px-10">
           <div className="mt-2 text-center">
             <table class="table-cmpnt">
               <thead>
@@ -828,7 +828,7 @@ const salaryPloiciesForm = () => {
         <ModalTitle className="modal-title">
           Select Deduction Components
         </ModalTitle>
-        <ModalBody className="py-3 px-5">
+        <ModalBody className="py-3 px-10">
           <div className="mt-2 text-center">
             <table class="table-cmpnt">
               <thead>
