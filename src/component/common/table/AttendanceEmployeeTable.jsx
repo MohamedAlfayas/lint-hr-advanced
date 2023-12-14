@@ -1,7 +1,18 @@
 import React, { Fragment, useState } from "react";
 import { Table } from "rsuite";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
-import { Badge, Button, Modal, ModalBody, ModalHeader } from "reactstrap";
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Col,
+  Modal,
+  ModalBody,
+  ModalHeader,
+  Row,
+} from "reactstrap";
 import { hr_status } from "../../../common/constant/Constants";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
@@ -16,9 +27,14 @@ const AttendanceEmployeeTable = () => {
   const leave_types_data = GetLocalStorageData("leave_types") || [];
 
   const [timeline_modal, settimeline_modal] = useState(false);
+  const [notes_modal, setNotes_modal] = useState(false);
 
   function open_timeline(rowData) {
     settimeline_modal(!timeline_modal);
+  }
+
+  function open_notes_modal(rowData) {
+    setNotes_modal(!notes_modal);
   }
 
   const Attendance_data1 = [
@@ -119,7 +135,151 @@ const AttendanceEmployeeTable = () => {
       is_in_edit: false,
       is_ot_edit: false,
       notes: "",
-      hr_status: 1,
+      hr_status: 2,
+
+      entry_log: [
+        {
+          id: 78,
+          entry_time: "2023-10-26T11:22:20.785092Z",
+          entry_type: 1,
+          punched_by: 2,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 79,
+          entry_time: "2023-10-26T11:23:28.133874Z",
+          entry_type: 2,
+          punched_by: 2,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 80,
+          entry_time: "2023-10-26T11:23:35.009025Z",
+          entry_type: 1,
+          punched_by: 2,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 81,
+          entry_time: "2023-10-26T11:23:54.387661Z",
+          entry_type: 2,
+          punched_by: 2,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 82,
+          entry_time: "2023-10-26T11:24:41.136607Z",
+          entry_type: 1,
+          punched_by: 1,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 83,
+          entry_time: "2023-10-26T11:26:58.080142Z",
+          entry_type: 2,
+          punched_by: 2,
+          location: "Lintcloud, ",
+        },
+      ],
+    },
+    {
+      id: 16,
+      employee: 40,
+      date: "2023-10-26T11:22:20.785092Z",
+      work_schedule: 7,
+      is_present: true,
+      total_work_duration: 224,
+      total_break_duration: 54,
+      currently_checked_in: false,
+      total_no_of_check_in: 3,
+      total_no_of_check_out: 3,
+      status: false,
+      is_properly_closed: true,
+      is_holiday: false,
+      holiday: 0,
+      is_leave_approved: false,
+      leave_approval: 0,
+      is_week_off: false,
+      week_off_day: null,
+      leave_taken_without_approval: false,
+      paid_hr: "",
+      ot_hr: "",
+      is_in_edit: false,
+      is_ot_edit: false,
+      notes: "",
+      hr_status: 3,
+
+      entry_log: [
+        {
+          id: 78,
+          entry_time: "2023-10-26T11:22:20.785092Z",
+          entry_type: 1,
+          punched_by: 2,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 79,
+          entry_time: "2023-10-26T11:23:28.133874Z",
+          entry_type: 2,
+          punched_by: 2,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 80,
+          entry_time: "2023-10-26T11:23:35.009025Z",
+          entry_type: 1,
+          punched_by: 2,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 81,
+          entry_time: "2023-10-26T11:23:54.387661Z",
+          entry_type: 2,
+          punched_by: 2,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 82,
+          entry_time: "2023-10-26T11:24:41.136607Z",
+          entry_type: 1,
+          punched_by: 1,
+          location: "Lintcloud, Vallioor",
+        },
+        {
+          id: 83,
+          entry_time: "2023-10-26T11:26:58.080142Z",
+          entry_type: 2,
+          punched_by: 2,
+          location: "Lintcloud, ",
+        },
+      ],
+    },
+    {
+      id: 16,
+      employee: 40,
+      date: "2023-10-26T11:22:20.785092Z",
+      work_schedule: 7,
+      is_present: true,
+      total_work_duration: 224,
+      total_break_duration: 54,
+      currently_checked_in: false,
+      total_no_of_check_in: 3,
+      total_no_of_check_out: 3,
+      status: false,
+      is_properly_closed: true,
+      is_holiday: false,
+      holiday: 0,
+      is_leave_approved: false,
+      leave_approval: 0,
+      is_week_off: false,
+      week_off_day: null,
+      leave_taken_without_approval: false,
+      paid_hr: "",
+      ot_hr: "",
+      is_in_edit: false,
+      is_ot_edit: false,
+      notes: "",
+      hr_status: 4,
 
       entry_log: [
         {
@@ -260,6 +420,56 @@ const AttendanceEmployeeTable = () => {
     );
   };
 
+  const HrStatusCell = ({ rowData, dataKey, ...props }) => {
+    let at_hr_status_data = hr_status.filter(function (i) {
+      return i.id == rowData.hr_status;
+    });
+
+    console.log(at_hr_status_data[0].label);
+
+    return (
+      <Cell {...props} className="link-group">
+        <span
+          className={`badge bg-${at_hr_status_data[0].class}-subtle text-${at_hr_status_data[0].class}`}>
+          <b className="fs-7"> {at_hr_status_data[0].label}</b>
+        </span>
+      </Cell>
+    );
+  };
+
+  const NotesCell = ({ rowData, dataKey, ...props }) => {
+    console.log(rowData[dataKey]);
+    return (
+      <Cell {...props} className="link-group">
+        <Link
+          className="link-opacity-75 ms-1"
+          href="#"
+          onClick={() => open_notes_modal(rowData)}>
+          3 Notes
+        </Link>
+      </Cell>
+    );
+  };
+
+  const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
+    const editing = rowData.status === "EDIT";
+    return (
+      <Cell {...props} className={editing ? "table-content-editing" : ""}>
+        {editing ? (
+          <input
+            className="rs-input"
+            defaultValue={rowData[dataKey]}
+            onChange={(event) => {
+              onChange && onChange(rowData.id, dataKey, event.target.value);
+            }}
+          />
+        ) : (
+          <span className="table-content-edit-span">{rowData[dataKey]}</span>
+        )}
+      </Cell>
+    );
+  };
+
   return (
     <Fragment>
       <Table
@@ -285,7 +495,7 @@ const AttendanceEmployeeTable = () => {
         </Column>
         <Column width={150}>
           <HeaderCell>IN Location</HeaderCell>
-          <LocationCell dataKey="in" />
+          <LocationCell dataKey="in" fullText />
         </Column>
         <Column width={130}>
           <HeaderCell>OUT</HeaderCell>
@@ -293,7 +503,7 @@ const AttendanceEmployeeTable = () => {
         </Column>
         <Column width={150}>
           <HeaderCell>OUT Location</HeaderCell>
-          <LocationCell dataKey="out" />
+          <LocationCell dataKey="out" fullText />
         </Column>
         <Column width={100}>
           <HeaderCell>Work Schedule</HeaderCell>
@@ -317,11 +527,11 @@ const AttendanceEmployeeTable = () => {
         </Column>
         <Column width={150}>
           <HeaderCell>Status</HeaderCell>
-          <Cell dataKey="employee" />
+          <HrStatusCell dataKey="hr_status" />
         </Column>
         <Column width={100}>
           <HeaderCell>Notes</HeaderCell>
-          <Cell dataKey="employee" />
+          <NotesCell dataKey="notes" />
         </Column>
 
         <Column width={80} fixed="right">
@@ -338,6 +548,7 @@ const AttendanceEmployeeTable = () => {
           </Cell>
         </Column>
       </Table>
+      {/* IN/OUT List Modal */}
       <Modal
         isOpen={timeline_modal}
         toggle={() => {
@@ -408,6 +619,108 @@ const AttendanceEmployeeTable = () => {
               }}>
               Continue
             </Button>
+          </div>
+        </ModalBody>
+      </Modal>
+      {/* Notes Modal */}
+      <Modal
+        isOpen={notes_modal}
+        toggle={() => {
+          open_notes_modal();
+        }}
+        centered>
+        <ModalBody className="text-left">
+          <div>
+            <SimpleBar style={{ height: "300px" }} className="px-3 mx-n3 mb-2">
+              <div className="d-flex mb-4">
+                <div className="flex-shrink-0">
+                  <img
+                    src="https://local-lcedu-static.s3.amazonaws.com/dev/employee/72/profile/c436ed58-7f6a-467e-80f0-f2034dad859f.jpg"
+                    alt=""
+                    className="avatar-xs rounded-circle"
+                  />
+                </div>
+                <div className="flex-grow-1 ms-3">
+                  <h5 className="fs-13">
+                    Joseph Parker{" "}
+                    <small className="text-muted ms-2">
+                      20 Dec 2021 - 05:47AM
+                    </small>
+                  </h5>
+                  <p className="text-muted">
+                    I am getting message from customers that when they place
+                    order always get error message .
+                  </p>
+                </div>
+              </div>
+              <div className="d-flex mb-4">
+                <div className="flex-shrink-0">
+                  <img
+                    src="https://local-lcedu-static.s3.amazonaws.com/dev/employee/67/profile/2e06ae27-9238-458c-b0c7-bd4eba75e835.jpg"
+                    alt=""
+                    className="avatar-xs rounded-circle"
+                  />
+                </div>
+                <div className="flex-grow-1 ms-3">
+                  <h5 className="fs-13">
+                    Donald Palmer{" "}
+                    <small className="text-muted ms-2">
+                      24 Dec 2021 - 05:20PM
+                    </small>
+                  </h5>
+                  <p className="text-muted">
+                    If you have further questions, please contact Customer
+                    Support from the “Action Menu” on your .
+                  </p>
+                </div>
+              </div>
+              <div className="d-flex">
+                <div className="flex-shrink-0">
+                  <img
+                    src="https://local-lcedu-static.s3.amazonaws.com/dev/employee/62/profile/8a2e638c-c521-4129-9742-adc05acaae51.webp"
+                    alt=""
+                    className="avatar-xs rounded-circle"
+                  />
+                </div>
+                <div className="flex-grow-1 ms-3">
+                  <h5 className="fs-13">
+                    Alexis Clarke{" "}
+                    <small className="text-muted ms-2">26 min ago</small>
+                  </h5>
+                  <p className="text-muted">
+                    Your provides you with the most current status of your
+                    order. To help manage your order refer to the “Action Menu”
+                    to initiate return, contact Customer Support and more.
+                  </p>
+                </div>
+              </div>
+            </SimpleBar>
+            <form className="mt-4">
+              <Row className="g-3">
+                <Col xs={12}>
+                  <label
+                    htmlFor="exampleFormControlTextarea1"
+                    className="form-label text-body">
+                    Leave a Notes
+                  </label>
+                  <textarea
+                    className="form-control bg-light border-light"
+                    id="exampleFormControlTextarea1"
+                    rows="3"
+                    placeholder="Enter your comment..."></textarea>
+                </Col>
+                <Col xs={12} className="text-end">
+                  <button
+                    type="button"
+                    className="btn btn-ghost-secondary btn-icon waves-effect me-1">
+                    <i className="ri-attachment-line fs-16"></i>
+                  </button>
+                  <Link to="#" className="btn btn-success">
+                    Post Notes
+                  </Link>
+                </Col>
+              </Row>
+            </form>
           </div>
         </ModalBody>
       </Modal>

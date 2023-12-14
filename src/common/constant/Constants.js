@@ -1782,10 +1782,10 @@ export const leave_reset_options = [
 ]
 
 export const hr_status = [
-    { id: "1", label: "Auto Approval", value: "Auto Approval" },
-    { id: "2", label: "Approval", value: "Approval" },
-    { id: "3", label: "Pending", value: "Pending" },
-    { id: "4", label: "Rejected", value: "Rejected" },
+    { id: "1", label: "Auto Approval", value: "Auto Approval", class : "info" },
+    { id: "2", label: "Approved", value: "Approved", class : "success" },
+    { id: "3", label: "Pending", value: "Pending", class : "warning" },
+    { id: "4", label: "Rejected", value: "Rejected", class : "danger" },
 ]
 
 
