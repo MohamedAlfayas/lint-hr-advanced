@@ -6,18 +6,20 @@ export const GetGlobalVersion = async (dispatch) => {
         type: 'GET',
         url: "/api/get/global-meta-version/",
     }).then(res => {
-        Api({
-            method: 'GET',
-            url: "/api/get/global-meta-data/",
-        })
-            .then(master => {
-                localStorage.setItem("lint_hr_globaldata", JSON.stringify(master?.data));
-                localStorage.setItem("lint_hr_v", res?.data?.version);
-                dispatch(setVersion(res?.data?.version))
+        if (localStorage.getItem("lint_hr_v") == null || localStorage.getItem("lint_hr_v") == "" || parseInt(res?.data?.version) != parseInt(localStorage.getItem("lint_hr_v")) || localStorage.getItem("lint_hr_globaldata") == null) {
+            Api({
+                method: 'GET',
+                url: "/api/get/global-meta-data/",
             })
-            .catch(error => {
-                console.log("ERRor == ", error);
-            })
+                .then(master => {
+                    localStorage.setItem("lint_hr_globaldata", JSON.stringify(master?.data));
+                    localStorage.setItem("lint_hr_v", res?.data?.version);
+                    dispatch(setVersion(res?.data?.version))
+                })
+                .catch(error => {
+                    console.log("ERRor == ", error);
+                })
+        }
     }).catch(err => {
         console.log("Meta Version Error = ", err);
     })

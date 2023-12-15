@@ -21,12 +21,14 @@ export const initialState = {
   layoutWidthType: layoutWidthTypes.FLUID,
   layoutPositionType: layoutPositionTypes.FIXED,
   topbarThemeType: topbarThemeTypes.LIGHT,
-  leftsidbarSizeType: leftsidbarSizeTypes.DEFAULT,
+  leftsidbarSizeType: localStorage.getItem('left_side_bar_type'),
   leftSidebarViewType: leftSidebarViewTypes.DEFAULT,
   leftSidebarImageType: leftSidebarImageTypes.NONE,
   preloader: preloaderTypes.DISABLE,
   sidebarVisibilitytype: sidebarVisibilitytypes.SHOW
 };
+
+console.log("left_side_bar_type = ", localStorage.getItem('left_side_bar_type'));
 
 const Layoutreducer = createSlice({
   name: 'Layoutreducer',
@@ -51,6 +53,10 @@ const Layoutreducer = createSlice({
       state.topbarThemeType = action.payload;
     },
     changeLeftsidebarSizeTypeAction(state, action) {
+      localStorage.setItem(
+        "left_side_bar_type",
+        action.payload
+      );
       state.leftsidbarSizeType = action.payload;
     },
     changeLeftsidebarViewTypeAction(state, action) {

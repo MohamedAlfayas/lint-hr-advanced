@@ -34,6 +34,8 @@ import { BaseURL } from "../../../common/api/BaseURL";
 import axios from "axios";
 import { GetGlobalVersion } from "../../../meta/GetGlobalVersion";
 import { toast } from "react-toastify";
+import { leftsidbarSizeTypes } from "../../../layout/Constants";
+import { changeLeftsidebarSizeTypeAction } from "../../../redux/reducers/ChildReducer/LayoutReducer";
 
 const Login = () => {
   let tempGlobalData = {
@@ -297,6 +299,8 @@ const Login = () => {
     },
   };
 
+  const dispatch = useDispatch();
+
   const navigate = useNavigate();
 
   const [userLogin, setUserLogin] = useState([]);
@@ -340,6 +344,13 @@ const Login = () => {
           localStorage.setItem(
             "lint_hr_profile_data",
             JSON.stringify(res?.data?.profile_data)
+          );
+          // localStorage.setItem(
+          //   "left_side_bar_type",
+          //   leftsidbarSizeTypes.DEFAULT
+          // );
+          dispatch(
+            changeLeftsidebarSizeTypeAction(leftsidbarSizeTypes.DEFAULT)
           );
           toast.success(res?.data?.message);
           navigate("/dashboard");
