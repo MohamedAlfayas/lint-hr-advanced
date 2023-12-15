@@ -15,6 +15,7 @@ import TimeTracking from "./TimeTracking";
 import AttendanceOverview from "./AttendanceOverview";
 import AttendanceEmployeeTable from "../../component/common/table/AttendanceEmployeeTable";
 import { hr_status } from "../../common/constant/Constants";
+import AttendanceTeamTable from "../../component/common/table/AttendanceTeamTable";
 
 const AttendanceDashboard = () => {
   document.title = `Attendance Overview | ${MetaTitle}`;
@@ -89,8 +90,7 @@ const AttendanceDashboard = () => {
           obj.status == 1 ? "warning" : obj.status == 2 ? "success" : "danger";
         return (
           <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
-          >
+            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
             {" "}
             {status}{" "}
           </span>
@@ -278,6 +278,9 @@ const AttendanceDashboard = () => {
             </Col>
             <Col xxl={12}>
               <AttendanceEmployeeTable />
+            </Col>
+            <Col xxl={12}>
+              <AttendanceTeamTable />
             </Col>
           </Row>
         </Container>
