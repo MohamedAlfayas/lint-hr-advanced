@@ -18,6 +18,7 @@ import Sidebar from "../component/sidebar/Sidebar";
 import Footer from "../component/footer/Footer";
 import LoadingBar from "react-top-loading-bar";
 import { GetGlobalVersion } from "../meta/GetGlobalVersion";
+import { GetTotalWorkDuration } from "../common/js/GetTotalWorkDuration";
 
 const Layout = ({ children }) => {
   const dispatch = useDispatch();
@@ -103,6 +104,10 @@ const Layout = ({ children }) => {
       GetGlobalVersion(dispatch);
     }, 30000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    GetTotalWorkDuration(dispatch);
   }, []);
 
   const { showLoader } = useSelector((state) => state.LoaderReducer);

@@ -15,7 +15,7 @@ const AttendanceOverviewChart = ({ dataColors }) => {
     {
       name: "Balance Hour",
       data: [
-        0, 1, 0.8, 2, 0, 1, 0, 0, 1, 0.8, 2, 0, 1, 0, 0, 1, 0.8, 2, 0, 1, 0, 0,
+        0, 0, 0.8, 2, 0, 1, 0, 0, 1, 0.8, 2, 0, 1, 0, 0, 1, 0.8, 2, 0, 1, 0, 0,
         1, 0.8, 2, 0, 1, 0, 0, 0,
       ],
     },
@@ -29,7 +29,14 @@ const AttendanceOverviewChart = ({ dataColors }) => {
     {
       name: "Leave",
       data: [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 8, 0,
+      ],
+    },
+    {
+      name: "Weekend",
+      data: [
+        0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 8, 0,
       ],
     },
@@ -127,6 +134,8 @@ const AttendanceOverviewChart = ({ dataColors }) => {
               ? "H"
               : w.config.series[seriesIndex].name == "Leave"
               ? "L"
+              : w.config.series[seriesIndex].name == "Weekend"
+              ? "WF"
               : "";
 
           return text;

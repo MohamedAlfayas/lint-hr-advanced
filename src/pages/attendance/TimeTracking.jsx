@@ -1,6 +1,7 @@
 import React from "react";
 import { Button, Card, CardBody } from "reactstrap";
-import WebCheckInOut from "../../common/js/WebCheckInOut";
+import WebCheckInOut from "../../component/common/timer/WebCheckInOut";
+import { useSelector } from "react-redux";
 const TimeTracking = () => {
   const checkInOutToggle = (ele) => {
     if (ele.closest("button").classList.contains("active")) {
@@ -14,6 +15,25 @@ const TimeTracking = () => {
     }
   };
 
+  const { total_seconds, currently_checked_in } = useSelector(
+    (state) => state.ClockReducer
+  );
+
+  const formatTime = (seconds) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor((seconds % 3600) % 60);
+
+    const hDisplay =
+      h > 0 ? (h < 10 ? "0" + h.toString() : h.toString()) : "00";
+    const mDisplay =
+      m > 0 ? (m < 10 ? "0" + m.toString() : m.toString()) : "00";
+    const sDisplay =
+      s > 0 ? (s < 10 ? "0" + s.toString() : s.toString()) : "00";
+
+    return `${hDisplay} : ${mDisplay} : ${sDisplay}`;
+  };
+
   return (
     <React.Fragment>
       <Card style={{ height: "325px" }}>
@@ -24,17 +44,21 @@ const TimeTracking = () => {
           <div className="mb-2">
             <lord-icon
               src="https://cdn.lordicon.com/kbtmbyzy.json"
-              trigger="loop"
+              trigger={
+                currently_checked_in && currently_checked_in == true
+                  ? "loop"
+                  : ""
+              }
               colors="primary:#405189,secondary:#02a8b5"
               style={{ width: "90px", height: "90px" }}
             ></lord-icon>
           </div>
-          <h3 className="mb-1">07 : 35 : 15</h3>
+          <h3 className="mb-1">{formatTime(total_seconds)}</h3>
           <h5 className="fs-14 mb-4">
             First In : <b> 08:25 am</b>
           </h5>
           <div className="hstack gap-2 justify-content-center">
-            <WebCheckInOut />
+            <WebCheckInOut showTimer={false} />
             {/* <Button
               outline
               className="custom-toggle btn-outline-secondary"

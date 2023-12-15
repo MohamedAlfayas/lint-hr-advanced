@@ -117,7 +117,7 @@ const AttendanceOverview = () => {
             <CardBody className="p-0 pb-2">
               <div>
                 <div dir="ltr" className="apex-charts">
-                  <AttendanceOverviewChart dataColors='["--vz-success", "--vz-primary", "--vz-info", "--vz-danger"]' />
+                  <AttendanceOverviewChart dataColors='["--vz-success", "--vz-primary", "--vz-info", "--vz-danger", "--vz-light"]' />
                 </div>
               </div>
             </CardBody>

@@ -14,9 +14,22 @@ import Select from "react-select";
 import TimeTracking from "./TimeTracking";
 import AttendanceOverview from "./AttendanceOverview";
 import AttendanceEmployeeTable from "../../component/common/table/AttendanceEmployeeTable";
+import { hr_status } from "../../common/constant/Constants";
 
 const AttendanceDashboard = () => {
   document.title = `Attendance Overview | ${MetaTitle}`;
+
+  const initialFilterKeys = useMemo(() => {
+    return {
+      date_range: "",
+      status: "",
+      record: "",
+      type: "",
+      employee: "",
+    };
+  }, []);
+
+  const [filterKeys, setFilterKeys] = useState(initialFilterKeys);
 
   // Column
   const additionalColumn = [
@@ -76,7 +89,8 @@ const AttendanceDashboard = () => {
           obj.status == 1 ? "warning" : obj.status == 2 ? "success" : "danger";
         return (
           <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
+            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
+          >
             {" "}
             {status}{" "}
           </span>
@@ -126,24 +140,24 @@ const AttendanceDashboard = () => {
     },
   ]);
 
-  const status_options = useMemo(() => [
-    {
-      label: "All Status",
-      value: "Africa/Abidjan",
-    },
-    {
-      label: "Approved",
-      value: "Africa/Abidjan",
-    },
-    {
-      label: "Reject",
-      value: "Africa/Abidjan",
-    },
-    {
-      label: "Pending",
-      value: "Africa/Abidjan",
-    },
-  ]);
+  // const status_options = useMemo(() => [
+  //   {
+  //     label: "All Status",
+  //     value: "Africa/Abidjan",
+  //   },
+  //   {
+  //     label: "Approved",
+  //     value: "Africa/Abidjan",
+  //   },
+  //   {
+  //     label: "Reject",
+  //     value: "Africa/Abidjan",
+  //   },
+  //   {
+  //     label: "Pending",
+  //     value: "Africa/Abidjan",
+  //   },
+  // ]);
 
   const record_options = useMemo(() => [
     {
@@ -206,7 +220,7 @@ const AttendanceDashboard = () => {
                     <Select
                       name="status_attendance"
                       id="status_attendance"
-                      options={status_options}
+                      options={hr_status || []}
                       placeholder="Select a Status"
                     />
                   </div>

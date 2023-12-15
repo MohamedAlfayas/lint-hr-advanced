@@ -14,20 +14,22 @@ import CustomFieldReducer from "../ChildReducer/CustomFieldReducer";
 import TableReducer from "../ChildReducer/TableReducer";
 import LoaderReducer from "../ChildReducer/LoaderReducer";
 import SalaryComponentsReducer from "../ChildReducer/SalaryComponentsReducer";
+import ClockReducer from "../ChildReducer/ClockReducer";
 export const MainReducer = combineReducers({
-    MetaReducer : MetaReducer,
-    EmployeeReducer : EmployeeReducer,
-    LayoutReducer : LayoutReducer,
-    RightSideBarReducer : RightSideBarReducer,
-    RoleReducer : RoleReducer,
-    HolidayReducer : HolidayReducer,
-    DepartmentReducer : DepartmentReducer,
-    LeaveApprovalReducer : LeaveApprovalReducer,
-    WorkScheduleReducer : WorkScheduleReducer,
-    LeaveTypeReducer : LeaveTypeReducer,
-    LeaveApplyReducer : LeaveApplyReducer,
-    CustomFieldReducer : CustomFieldReducer,
-    TableReducer : TableReducer,
-    LoaderReducer : LoaderReducer,
-    SalaryComponentsReducer : SalaryComponentsReducer,
+    MetaReducer: MetaReducer,
+    EmployeeReducer: EmployeeReducer,
+    LayoutReducer: LayoutReducer,
+    RightSideBarReducer: RightSideBarReducer,
+    RoleReducer: RoleReducer,
+    HolidayReducer: HolidayReducer,
+    DepartmentReducer: DepartmentReducer,
+    LeaveApprovalReducer: LeaveApprovalReducer,
+    WorkScheduleReducer: WorkScheduleReducer,
+    LeaveTypeReducer: LeaveTypeReducer,
+    LeaveApplyReducer: LeaveApplyReducer,
+    CustomFieldReducer: CustomFieldReducer,
+    TableReducer: TableReducer,
+    LoaderReducer: LoaderReducer,
+    SalaryComponentsReducer: SalaryComponentsReducer,
+    ClockReducer: ClockReducer,
 })

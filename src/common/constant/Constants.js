@@ -1782,10 +1782,34 @@ export const leave_reset_options = [
 ]
 
 export const hr_status = [
-    { id: "1", label: "Auto Approval", value: "Auto Approval", class : "info" },
-    { id: "2", label: "Approved", value: "Approved", class : "success" },
-    { id: "3", label: "Pending", value: "Pending", class : "warning" },
-    { id: "4", label: "Rejected", value: "Rejected", class : "danger" },
+    { id: "0", label: "All Status", value: "0", class: "primary" },
+    { id: "1", label: "Auto Approval", value: "1", class: "info" },
+    { id: "2", label: "Approved", value: "2", class: "success" },
+    { id: "3", label: "Pending", value: "3", class: "warning" },
+    { id: "4", label: "Rejected", value: "4", class: "danger" },
+]
+
+export const record_filter_options = [
+    {
+        label: "All Record",
+        value: "Africa/Abidjan",
+    },
+    {
+        label: "Missing IN/Out",
+        value: "Africa/Abidjan",
+    },
+    {
+        label: "Edited Paid Time",
+        value: "Africa/Abidjan",
+    },
+    {
+        label: "Edited OT",
+        value: "Africa/Abidjan",
+    },
+    {
+        label: "Check IN on Holiday/Leave/Non-Working Days",
+        value: "Africa/Abidjan",
+    },
 ]
 
 
@@ -1827,4 +1851,11 @@ export const component_list_for_import_form_access = [
 
 export const export_sample_data_info = [
     { module_name: employee_component_name, api_url: "employee/get-sample-employee-data/", export_file_name: 'Employee Sample' }
+]
+
+
+
+export const path_list_for_timer_hide = [
+    "/attendance",
+    "/dashboard",
 ]

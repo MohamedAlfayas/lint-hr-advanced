@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 
 //import images
 import logoSm from "../../assets/images/logo-sm.png";
@@ -14,8 +14,10 @@ import ProfileDropdown from "../../common/js/ProfileDropdown";
 import RSBForm from "../common/form/CommonForm";
 import Forms from "../common/form/CommonForm";
 import CommonForm from "../common/form/CommonForm";
-import WebCheckInOut from "../../common/js/WebCheckInOut";
+import WebCheckInOut from "../common/timer/WebCheckInOut";
 import { leftsidbarSizeTypes } from "../../layout/Constants";
+import { path_list_for_timer_hide } from "../../common/constant/Constants";
+import { GetTotalWorkDuration } from "../../common/js/GetTotalWorkDuration";
 
 const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const dispatch = useDispatch();
@@ -69,6 +71,20 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
       }
     }
   };
+
+  const location = useLocation();
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") {
+      console.log("has focus");
+      //LCGetTodaysWorkDuration();
+      //LCGetTodaysWorkDuration.init();
+      GetTotalWorkDuration(dispatch);
+    } else {
+      //clearInterval(interval);
+      console.log("lost focus");
+    }
+  });
 
   return (
     <React.Fragment>
@@ -141,7 +157,9 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
                   </Form>
                 </DropdownMenu>
               </Dropdown>
-              <WebCheckInOut />
+              {path_list_for_timer_hide.includes(location.pathname) ? null : (
+                <WebCheckInOut showTimer={true} />
+              )}
 
               {/* LanguageDropdown */}
               {/* <LanguageDropdown /> */}
