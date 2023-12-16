@@ -187,7 +187,7 @@ const LeaveDashboard = () => {
               initialFormObj={initialFormObj}
               filterKey={filterKey}
               filterOptions={filterOptions}
-              width_per={"35%"}
+              width_per={"45%"}
               table_col={8}
               table_class={"Lc_leave_apply_table me-n3 ms-n3"}
             />
