@@ -25,6 +25,8 @@ const AttendanceTeamTable = () => {
   const ws_data = GetLocalStorageData("work_schedule") || [];
   const holiday_data = GetLocalStorageData("holiday") || [];
   const leave_types_data = GetLocalStorageData("leave_types") || [];
+  const employee_data = GetLocalStorageData("employee") || [];
+  const department_data = GetLocalStorageData("department") || [];
 
   const [timeline_modal, settimeline_modal] = useState(false);
   const [notes_modal, setNotes_modal] = useState(false);
@@ -309,6 +311,109 @@ const AttendanceTeamTable = () => {
     },
   ];
 
+  const TeamAttendance = [
+    {
+      employee_id: 40,
+      department_id: 9,
+      ws_total_hr: "180h",
+      paied_hr: "170h",
+      ot_hr: "5h",
+      hr_status: 1,
+      entry_log: [
+        {
+          date: "01-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "02-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "03-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "04-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "05-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "06-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "07-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "08-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "09-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "10-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+      ],
+    },
+    {
+      employee_id: 42,
+      department_id: 10,
+      ws_total_hr: "180h",
+      paied_hr: "170h",
+      ot_hr: "5h",
+      hr_status: 1,
+      entry_log: [
+        {
+          date: "01-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "02-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "03-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "04-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "05-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "06-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "07-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "08-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "09-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+        {
+          date: "10-12-2023 15:45:56",
+          paid_hr: "08:30 Hr",
+        },
+      ],
+    },
+  ];
+
   const DateCell = ({ rowData, dataKey, ...props }) => {
     let warning_icon =
       rowData?.total_no_of_check_in !== rowData?.total_no_of_check_out ? (
@@ -442,67 +547,126 @@ const AttendanceTeamTable = () => {
     );
   };
 
+  const EmployeeCell = ({ rowData, dataKey, ...props }) => {
+    let at_employee_data = employee_data.find(function (i) {
+      return i.id == rowData.employee_id;
+    });
+
+    console.log("at_employee_data");
+    console.log(at_employee_data);
+
+    let html_tag = at_employee_data.profile_url ? (
+      <div className="d-flex gap-2 align-items-center">
+        <div className="flex-shrink-0">
+          <img
+            src={at_employee_data.profile_url}
+            alt=""
+            className="avatar-xs rounded-circle"
+            style={{ objectFit: "cover" }}
+          />
+        </div>
+        <div className="flex-grow-1">
+          <div>
+            <Link to="#" className="link-body-emphasis mb-0">
+              {" "}
+              <h5 className="fs-14 mb-1">{at_employee_data.fname}</h5>
+            </Link>
+          </div>
+          <div>{at_employee_data.email}</div>
+        </div>
+      </div>
+    ) : (
+      <div className="d-flex gap-2 align-items-center">
+        <div className="flex-shrink-0">
+          <div
+            className="avatar-xs rounded-circle"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              background: "#0ab39c",
+            }}
+            data-bs-toggle="tooltip"
+            title={at_employee_data.fname}>
+            <span className="first_letter" style={{ color: "white" }}>
+              {at_employee_data.fname.charAt(0)}
+            </span>
+          </div>
+        </div>
+        <div className="flex-grow-1">
+          <div>
+            <Link to="#" className="link-body-emphasis mb-0">
+              {" "}
+              <h5 className="fs-14 mb-1">{at_employee_data.fname}</h5>
+            </Link>
+          </div>
+          <div>{at_employee_data.email}</div>
+        </div>
+      </div>
+    );
+
+    return (
+      <Cell {...props} className="link-group">
+        {html_tag}
+      </Cell>
+    );
+  };
+
+  const DepartmentCell = ({ rowData, dataKey, ...props }) => {
+    let at_employee_data = employee_data.find(function (i) {
+      return i.id == rowData.employee_id;
+    });
+    let at_employee_department_data = department_data.find(function (i) {
+      return i.id == at_employee_data.primary_department_id;
+    });
+
+    let is_sub_department =
+      at_employee_data.sub_department_id_list &&
+      at_employee_data.sub_department_id_list.length > 0 ? (
+        <Link
+          className="link-opacity-75 ms-1"
+          href="#"
+          // onClick={() => open_timeline(rowData)}
+        >
+          {at_employee_department_data.name} +{" "}
+          {at_employee_data.sub_department_id_list.length}
+        </Link>
+      ) : (
+        ""
+      );
+
+    console.log("at_employee_department_data");
+    console.log(at_employee_department_data);
+
+    return (
+      <Cell {...props} className="link-group">
+        {is_sub_department}
+      </Cell>
+    );
+  };
+
   return (
     <Fragment>
       <Table
         height={400}
-        data={Attendance_data1}
+        rowHeight={60}
+        data={TeamAttendance}
         autoHeight={true}
         loading={loading}
         bordered={true}
         className="mb-5">
-        <Column width={175} align="center" fixed="left">
-          <HeaderCell>Date</HeaderCell>
-          <DateCell />
-        </Column>
-        <Column width={130}>
-          <HeaderCell>IN</HeaderCell>
-          <InOutCell dataKey="in" />
-        </Column>
-        <Column width={150}>
-          <HeaderCell>IN Location</HeaderCell>
-          <LocationCell dataKey="in" fullText />
-        </Column>
-        <Column width={130}>
-          <HeaderCell>OUT</HeaderCell>
-          <InOutCell dataKey="out" />
-        </Column>
-        <Column width={150}>
-          <HeaderCell>OUT Location</HeaderCell>
-          <LocationCell dataKey="out" fullText />
-        </Column>
-        <Column width={100}>
-          <HeaderCell>Work Schedule</HeaderCell>
-          <WorkScheduleCell dataKey="ws" />
-        </Column>
-        <Column width={100}>
-          <HeaderCell>Total IN</HeaderCell>
-          <SecondsToTimeCell dataKey="total_work_duration" />
-        </Column>
-        <Column width={100}>
-          <HeaderCell>Break</HeaderCell>
-          <SecondsToTimeCell dataKey="total_break_duration" />
-        </Column>
-        <Column width={125}>
-          <HeaderCell>OT</HeaderCell>
-          <SecondsToTimeCell dataKey="ot_hr" />
-        </Column>
-        <Column width={125}>
-          <HeaderCell>Paid Hr</HeaderCell>
-          <SecondsToTimeCell dataKey="paid_hr" />
-        </Column>
-        <Column width={150}>
-          <HeaderCell>Status</HeaderCell>
-          <HrStatusCell dataKey="hr_status" />
-        </Column>
-        <Column width={100}>
+        <Column width={250}>
           <HeaderCell>Notes</HeaderCell>
-          <NotesCell dataKey="notes" />
+          <EmployeeCell dataKey="employee" fullText />
+        </Column>
+
+        <Column width={250}>
+          <HeaderCell>Department</HeaderCell>
+          <DepartmentCell dataKey="department" fullText />
         </Column>
 
         <Column width={80} fixed="right">
           <HeaderCell>Action</HeaderCell>
-
           <Cell style={{ padding: "6px" }}>
             {(rowData) => (
               <Button

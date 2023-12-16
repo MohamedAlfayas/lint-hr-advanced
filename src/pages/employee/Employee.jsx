@@ -69,8 +69,7 @@ const Employee = () => {
                 <Link
                   to="#"
                   onClick={() => viewEmployee(obj)}
-                  className="link-body-emphasis mb-0"
-                >
+                  className="link-body-emphasis mb-0">
                   {" "}
                   <h5 className="fs-14 mb-1">{obj.fname}</h5>
                 </Link>
@@ -90,8 +89,7 @@ const Employee = () => {
                   background: "#0ab39c",
                 }}
                 data-bs-toggle="tooltip"
-                title={obj.fname}
-              >
+                title={obj.fname}>
                 <span className="first_letter" style={{ color: "white" }}>
                   {obj.fname.charAt(0)}
                 </span>
@@ -102,8 +100,7 @@ const Employee = () => {
                 <Link
                   to="#"
                   onClick={() => viewEmployee(obj)}
-                  className="link-body-emphasis mb-0"
-                >
+                  className="link-body-emphasis mb-0">
                   {" "}
                   <h5 className="fs-14 mb-1">{obj.fname}</h5>
                 </Link>
@@ -165,8 +162,7 @@ const Employee = () => {
             <Button
               color="light"
               id={`depListRef-${obj.id}`}
-              className="position-relative"
-            >
+              className="position-relative">
               {thisDepartment.map((d) => (
                 <React.Fragment>{d.name}</React.Fragment>
               ))}
@@ -176,16 +172,14 @@ const Employee = () => {
                     //id="tooltipwithHtml"
                     pill
                     color="success"
-                    className="position-absolute top-0 start-100 translate-middle"
-                  >
+                    className="position-absolute top-0 start-100 translate-middle">
                     +{obj.sub_department_id_list.length}
                     <span className="visually-hidden">Departments</span>
                   </Badge>
 
                   <UncontrolledTooltip
                     placement="bottom"
-                    target={`depListRef-${obj.id}`}
-                  >
+                    target={`depListRef-${obj.id}`}>
                     {" "}
                     <div className="mt-1">
                       {subDepList.map((item, key) => (
@@ -219,8 +213,7 @@ const Employee = () => {
         let statusClass = obj.is_active ? "success" : "warning";
         return (
           <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
-          >
+            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
             {" "}
             {status}{" "}
           </span>
