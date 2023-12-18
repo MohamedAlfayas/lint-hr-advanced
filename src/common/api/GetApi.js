@@ -5,10 +5,10 @@ export const GetApi = (url) => new Promise((resolve, reject) => {
         method: 'GET',
         url: url,
     }).then(res => {
-        console.log("API SUCCESS !!!!!");
+        console.log("GET API SUCCESS !!!!! = ", res);
         resolve(res)
     }).catch(err => {
-        console.log("API FAILURE !!!!!");
+        console.log("GET API FAILURE !!!!! = ", err?.response);
         resolve(err?.response)
     })
 })

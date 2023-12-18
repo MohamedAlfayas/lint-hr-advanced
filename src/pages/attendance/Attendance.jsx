@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Badge,
   Card,
@@ -16,9 +16,15 @@ import AttendanceOverview from "./AttendanceOverview";
 import AttendanceEmployeeTable from "../../component/common/table/AttendanceEmployeeTable";
 import { hr_status } from "../../common/constant/Constants";
 import AttendanceTeamTable from "../../component/common/table/AttendanceTeamTable";
+import { toast } from "react-toastify";
+import { useDispatch } from "react-redux";
+import { setAttendanceReportData } from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
+import { Api } from "../../common/api/Api";
 
 const AttendanceDashboard = () => {
   document.title = `Attendance Overview | ${MetaTitle}`;
+
+  const dispatch = useDispatch();
 
   const initialFilterKeys = useMemo(() => {
     return {
@@ -31,6 +37,25 @@ const AttendanceDashboard = () => {
   }, []);
 
   const [filterKeys, setFilterKeys] = useState(initialFilterKeys);
+
+  useEffect(() => {
+    const today = new Date();
+    const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}`;
+    console.log("thisMonth = ", thisMonth);
+
+    Api({
+      type: "GET",
+      url: "attendance/get_attendance_entry_log/?thisMonth=" + thisMonth,
+    })
+      .then((res) => {
+        dispatch(setAttendanceReportData(res?.data?.data));
+      })
+      .catch((err) => {
+        console.log("Something Went Wrong !!");
+      });
+  }, []);
 
   // Column
   const additionalColumn = [
@@ -90,7 +115,8 @@ const AttendanceDashboard = () => {
           obj.status == 1 ? "warning" : obj.status == 2 ? "success" : "danger";
         return (
           <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
+            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
+          >
             {" "}
             {status}{" "}
           </span>

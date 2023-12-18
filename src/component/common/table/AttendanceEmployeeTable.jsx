@@ -17,6 +17,7 @@ import { hr_status } from "../../../common/constant/Constants";
 import { Link } from "react-router-dom";
 import { parse, format } from "date-fns";
 import SimpleBar from "simplebar-react";
+import { useSelector } from "react-redux";
 
 const AttendanceEmployeeTable = () => {
   const { Column, HeaderCell, Cell } = Table;
@@ -27,9 +28,17 @@ const AttendanceEmployeeTable = () => {
   const leave_types_data = GetLocalStorageData("leave_types") || [];
 
   const [timeline_modal, settimeline_modal] = useState(false);
+  const [timelineList, setTimelineList] = useState([]);
+  const [timelineDate, setTimeLineDate] = useState("");
   const [notes_modal, setNotes_modal] = useState(false);
 
-  function open_timeline(rowData) {
+  const { attendance_report_data } = useSelector(
+    (state) => state.AttendanceReportReducer
+  );
+
+  console.log("attendance_report_data = ", attendance_report_data);
+
+  function open_timeline() {
     settimeline_modal(!timeline_modal);
   }
 
@@ -323,18 +332,16 @@ const AttendanceEmployeeTable = () => {
     );
   };
 
+  const ParseTime = (time) => {
+    return parse(time, "dd-MM-yyyy HH:mm:ss", new Date());
+  };
+
   const InOutCell = ({ rowData, dataKey, ...props }) => {
     let in_time = rowData?.first_check_in
-      ? format(
-          parse(rowData?.first_check_in, "dd-MM-yyyy HH:mm:ss", new Date()),
-          "h:mm a"
-        )
+      ? format(ParseTime(rowData?.first_check_in), "h:mm a")
       : null;
     let out_time = rowData?.last_check_out
-      ? format(
-          parse(rowData?.last_check_out, "dd-MM-yyyy HH:mm:ss", new Date()),
-          "h:mm a"
-        )
+      ? format(ParseTime(rowData?.last_check_out), "h:mm a")
       : null;
     let thisCellTime = dataKey === "in" ? in_time : out_time;
 
@@ -345,7 +352,11 @@ const AttendanceEmployeeTable = () => {
           <Link
             className="link-opacity-75 ms-1"
             href="#"
-            onClick={() => open_timeline(rowData)}
+            onClick={() => {
+              setTimelineList(rowData?.entry_log);
+              setTimeLineDate(format(new Date(rowData?.date), "dd MMM, yyyy"));
+              open_timeline();
+            }}
           >
             +
             {dataKey == "in"
@@ -356,14 +367,19 @@ const AttendanceEmployeeTable = () => {
       </Cell>
     );
   };
+
   const LocationCell = ({ rowData, dataKey, ...props }) => {
     let in_location = rowData?.first_check_in_location || "";
     let out_location = rowData?.last_check_out_location || "";
+    let location_text = dataKey === "in" ? in_location : out_location;
 
     return (
       <Cell {...props} className="link-group">
-        <i className="mdi mdi-map-marker-outline"></i>{" "}
-        {dataKey === "in" ? in_location : out_location}
+        {location_text !== "" && (
+          <>
+            <i className="mdi mdi-map-marker-outline"></i> {location_text}
+          </>
+        )}
       </Cell>
     );
   };
@@ -448,7 +464,7 @@ const AttendanceEmployeeTable = () => {
     <Fragment>
       <Table
         height={400}
-        data={Attendance_data1}
+        data={attendance_report_data || []}
         autoHeight={true}
         loading={loading}
         bordered={true}
@@ -528,29 +544,51 @@ const AttendanceEmployeeTable = () => {
       >
         <ModalHeader>
           <h5 className="modal-title" id="exampleModalToggleLabel">
-            Date :
+            Date : {timelineDate}
           </h5>
         </ModalHeader>
         <ModalBody className="text-left">
           <div>
             <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
               <div className="acitivity-timeline acitivity-main">
-                <div className="acitivity-item d-flex">
-                  <div className="flex-shrink-0 avatar-xs acitivity-avatar">
-                    <div className="avatar-title bg-success-subtle text-success rounded-circle">
-                      <i className="mdi mdi-arrow-right-thick"></i>
-                    </div>
-                  </div>
-                  <div className="flex-grow-1 ms-3">
-                    <h6 className="mb-1 lh-base">Check IN </h6>
-                    <p className="text-muted mb-1">02:14 PM Today </p>
-                    <small className="mb-0 text-muted">
-                      <i className="mdi mdi-map-marker"></i> Lintcloud, Vallioor
-                    </small>
-                  </div>
-                </div>
+                {timelineList.length &&
+                  timelineList.map((data, idx) => {
+                    let py_class =
+                      idx === 0 || idx === data.length - 1 ? "" : "py-3";
+                    let info =
+                      parseInt(data.entry_type) === 1
+                        ? {
+                            class: "success",
+                            text: "IN",
+                          }
+                        : {
+                            class: "warning",
+                            text: "Out",
+                          };
+                    return (
+                      <div className={`acitivity-item  d-flex ${py_class}`}>
+                        <div className="flex-shrink-0 avatar-xs acitivity-avatar">
+                          <div
+                            className={`avatar-title bg-${info?.class}-subtle text-${info?.class} rounded-circle`}
+                          >
+                            <i className="mdi mdi-arrow-right-thick"></i>
+                          </div>
+                        </div>
+                        <div className="flex-grow-1 ms-3">
+                          <h6 className="mb-1 lh-base">Check {info?.text} </h6>
+                          <p className="text-muted mb-1">
+                            {format(ParseTime(data?.entry_time), "h:mm a")}
+                          </p>
+                          <small className="mb-0 text-muted">
+                            <i className="mdi mdi-map-marker"></i>{" "}
+                            {data?.location || ""}
+                          </small>
+                        </div>
+                      </div>
+                    );
+                  })}
 
-                <div className="acitivity-item py-3 d-flex">
+                {/* <div className="acitivity-item py-3 d-flex">
                   <div className="flex-shrink-0">
                     <div className="avatar-xs acitivity-avatar">
                       <div className="avatar-title rounded-circle bg-warning-subtle text-warning">
@@ -580,13 +618,13 @@ const AttendanceEmployeeTable = () => {
                     </p>
                     <small className="mb-0 text-muted">02:14 PM Today</small>
                   </div>
-                </div>
+                </div> */}
               </div>
             </SimpleBar>
             <Button
               className="btn btn-warning"
               onClick={() => {
-                open_timeline(false);
+                open_timeline();
               }}
             >
               Continue
