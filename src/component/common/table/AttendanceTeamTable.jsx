@@ -12,6 +12,7 @@ import {
   ModalBody,
   ModalHeader,
   Row,
+  UncontrolledTooltip,
 } from "reactstrap";
 import { hr_status } from "../../../common/constant/Constants";
 import { Link } from "react-router-dom";
@@ -315,8 +316,8 @@ const AttendanceTeamTable = () => {
     {
       employee_id: 40,
       department_id: 9,
-      ws_total_hr: "180h",
-      paied_hr: "170h",
+      ws_total_hr: "180",
+      paied_hr: "170",
       ot_hr: "5h",
       hr_status: 1,
       entry_log: [
@@ -365,8 +366,8 @@ const AttendanceTeamTable = () => {
     {
       employee_id: 42,
       department_id: 10,
-      ws_total_hr: "180h",
-      paied_hr: "170h",
+      ws_total_hr: "180",
+      paied_hr: "170",
       ot_hr: "5h",
       hr_status: 1,
       entry_log: [
@@ -413,139 +414,6 @@ const AttendanceTeamTable = () => {
       ],
     },
   ];
-
-  const DateCell = ({ rowData, dataKey, ...props }) => {
-    let warning_icon =
-      rowData?.total_no_of_check_in !== rowData?.total_no_of_check_out ? (
-        <i class="ri-error-warning-line text-warning fs-5"></i>
-      ) : null;
-
-    return (
-      <Cell {...props} className="fw-bold">
-        {format(new Date(rowData.date), "dd MMM, yyyy")}
-        <span style={{ marginLeft: "10px" }}>{warning_icon}</span>
-      </Cell>
-    );
-  };
-
-  const InOutCell = ({ rowData, dataKey, ...props }) => {
-    let in_time = rowData?.first_check_in
-      ? format(
-          parse(rowData?.first_check_in, "dd-MM-yyyy HH:mm:ss", new Date()),
-          "h:mm a"
-        )
-      : null;
-    let out_time = rowData?.last_check_out
-      ? format(
-          parse(rowData?.last_check_out, "dd-MM-yyyy HH:mm:ss", new Date()),
-          "h:mm a"
-        )
-      : null;
-    let thisCellTime = dataKey === "in" ? in_time : out_time;
-
-    return (
-      <Cell {...props} className="link-group">
-        {!!thisCellTime && thisCellTime}
-        {!!thisCellTime && (
-          <Link
-            className="link-opacity-75 ms-1"
-            href="#"
-            onClick={() => open_timeline(rowData)}>
-            +
-            {dataKey == "in"
-              ? rowData?.total_no_of_check_in
-              : rowData?.total_no_of_check_out}
-          </Link>
-        )}
-      </Cell>
-    );
-  };
-  const LocationCell = ({ rowData, dataKey, ...props }) => {
-    let in_location = rowData?.first_check_in_location || "";
-    let out_location = rowData?.last_check_out_location || "";
-
-    return (
-      <Cell {...props} className="link-group">
-        <i className="mdi mdi-map-marker-outline"></i>{" "}
-        {dataKey === "in" ? in_location : out_location}
-      </Cell>
-    );
-  };
-
-  const WorkScheduleCell = ({ rowData, dataKey, ...props }) => {
-    let at_ws_data = ws_data.find(function (i) {
-      return i.id == rowData.work_schedule_id;
-    });
-
-    let fullday_hr = at_ws_data?.fullday_hr || "";
-    let fullday_min = at_ws_data?.fullday_min || "";
-
-    return (
-      <Cell {...props} className="link-group">
-        {fullday_hr} : {fullday_min} Hr
-      </Cell>
-    );
-  };
-
-  const SecondsToTimeCell = ({ rowData, dataKey, ...props }) => {
-    return (
-      <Cell {...props} className="link-group">
-        {rowData[dataKey] != 0
-          ? new Date(rowData[dataKey] * 1000).toISOString().slice(11, 16) +
-            " Hr"
-          : ""}{" "}
-      </Cell>
-    );
-  };
-
-  const HrStatusCell = ({ rowData, dataKey, ...props }) => {
-    let at_hr_status_data = hr_status.find(function (i) {
-      return i.id == rowData.hr_status;
-    });
-
-    let class_name = at_hr_status_data?.class || "";
-    let label = at_hr_status_data?.label || "";
-
-    return (
-      <Cell {...props} className="link-group">
-        <span className={`badge bg-${class_name}-subtle text-${class_name}`}>
-          <b className="fs-7"> {label}</b>
-        </span>
-      </Cell>
-    );
-  };
-
-  const NotesCell = ({ rowData, dataKey, ...props }) => {
-    return (
-      <Cell {...props} className="link-group">
-        <Link
-          className="link-opacity-75 ms-1"
-          href="#"
-          onClick={() => open_notes_modal(rowData)}>
-          {rowData.notes.length} Notes
-        </Link>
-      </Cell>
-    );
-  };
-
-  const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
-    const editing = rowData.status === "EDIT";
-    return (
-      <Cell {...props} className={editing ? "table-content-editing" : ""}>
-        {editing ? (
-          <input
-            className="rs-input"
-            defaultValue={rowData[dataKey]}
-            onChange={(event) => {
-              onChange && onChange(rowData.id, dataKey, event.target.value);
-            }}
-          />
-        ) : (
-          <span className="table-content-edit-span">{rowData[dataKey]}</span>
-        )}
-      </Cell>
-    );
-  };
 
   const EmployeeCell = ({ rowData, dataKey, ...props }) => {
     let at_employee_data = employee_data.find(function (i) {
@@ -620,29 +488,114 @@ const AttendanceTeamTable = () => {
       return i.id == at_employee_data.primary_department_id;
     });
 
-    let is_sub_department =
-      at_employee_data.sub_department_id_list &&
-      at_employee_data.sub_department_id_list.length > 0 ? (
-        <Link
-          className="link-opacity-75 ms-1"
-          href="#"
-          // onClick={() => open_timeline(rowData)}
-        >
-          {at_employee_department_data.name} +{" "}
-          {at_employee_data.sub_department_id_list.length}
-        </Link>
-      ) : (
-        ""
-      );
+    let thisDepartment = department_data
+      ? department_data.filter(
+          (data) => at_employee_data.primary_department_id === data.id
+        )
+      : [];
 
-    console.log("at_employee_department_data");
-    console.log(at_employee_department_data);
+    var subDepList = at_employee_data.sub_department_id_list
+      ? department_data.filter((datas, index) => {
+          if (
+            at_employee_data.sub_department_id_list.includes(parseInt(datas.id))
+          ) {
+            return datas;
+          }
+        })
+      : [];
 
     return (
       <Cell {...props} className="link-group">
-        {is_sub_department}
+        <span>
+          <Button
+            color="light"
+            id={`depListRef-${at_employee_data.id}`}
+            className="position-relative">
+            {thisDepartment.map((d) => (
+              <React.Fragment>{d.name}</React.Fragment>
+            ))}
+            {at_employee_data.sub_department_id_list.length > 0 ? (
+              <span>
+                <Badge
+                  //id="tooltipwithHtml"
+                  pill
+                  color="success"
+                  className="position-absolute top-0 start-100 translate-middle">
+                  +{at_employee_data.sub_department_id_list.length}
+                  <span className="visually-hidden">Departments</span>
+                </Badge>
+
+                <UncontrolledTooltip
+                  placement="bottom"
+                  target={`depListRef-${at_employee_data.id}`}>
+                  {" "}
+                  <div className="mt-1">
+                    {subDepList.map((item, key) => (
+                      <p className="mb-1">{item.name}</p>
+                    ))}
+                  </div>{" "}
+                </UncontrolledTooltip>
+              </span>
+            ) : (
+              ""
+            )}
+          </Button>
+        </span>
       </Cell>
     );
+  };
+
+  const WSHourCell = ({ rowData, dataKey, ...props }) => {
+    let at_employee_data = employee_data.find(function (i) {
+      return i.id == rowData.employee_id;
+    });
+    let at_employee_department_data = department_data.find(function (i) {
+      return i.id == at_employee_data.primary_department_id;
+    });
+
+    return (
+      <Cell {...props} className="link-group">
+        <div>
+          <div className="d-flex mb-2">
+            <div className="flex-grow-1">
+              <div>Progress</div>
+            </div>
+            <div className="flex-shrink-0">
+              <div>155 Hr / 180 Hr</div>
+            </div>
+          </div>
+          <div className="progress progress-sm animated-progess">
+            <div
+              className="progress-bar bg-success"
+              role="progressbar"
+              aria-valuenow="0"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              style={{ width: 150 }}></div>
+          </div>
+        </div>
+      </Cell>
+    );
+  };
+
+  const DynamicHourColumn = ({ rowData, dataKey, ...props }) => {
+    let at_employee_data = employee_data.find(function (i) {
+      return i.id == rowData.employee_id;
+    });
+    let at_employee_department_data = department_data.find(function (i) {
+      return i.id == at_employee_data.primary_department_id;
+    });
+
+    {
+      rowData.entry_log.map((item, key) => (
+        <Column width={200}>
+          <HeaderCell>Date</HeaderCell>
+          <Cell dataKey="ws_hours">paid_hr</Cell>
+        </Column>
+      ));
+    }
+
+    return "";
   };
 
   return (
@@ -660,9 +613,14 @@ const AttendanceTeamTable = () => {
           <EmployeeCell dataKey="employee" fullText />
         </Column>
 
-        <Column width={250}>
+        <Column width={150} fixed="left">
           <HeaderCell>Department</HeaderCell>
           <DepartmentCell dataKey="department" fullText />
+        </Column>
+
+        <Column width={200}>
+          <HeaderCell>Paid Time / Work Schedule</HeaderCell>
+          <WSHourCell dataKey="ws_hours" fullText />
         </Column>
 
         <Column width={80} fixed="right">
