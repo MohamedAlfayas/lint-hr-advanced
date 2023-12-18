@@ -73,15 +73,27 @@ const ApplyLeaveForm = () => {
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
   const profileData = GetLocalStorageData("my_profile") || [];
-  // const MyWorkID = ProfileData.find(work_schedule_id);
+  // const thisEmpWSID = ProfileData.find(work_schedule_id);
 
-  // console.log(MyWorkID);
-  const myWork = workScheduleData?.find(
+  console.log("WS DATA = ", workScheduleData);
+  console.log("Profile DATA = ", profileData);
+
+  // console.log(thisEmpWSID);
+  const thisEmpWS = workScheduleData?.find(
     (val) => val.id === profileData.work_schedule_id
   );
 
+  const WeekOffDays = thisEmpWS.workday
+    .map((d) => {
+      if (d.is_day_on === false) {
+        return d.day_id;
+      }
+      return null;
+    })
+    .filter((day_id) => day_id !== null);
+
   const getHourMinData = (dayName) => {
-    const scheduleWeek = myWork.workday.find((d) => d.weekday === dayName);
+    const scheduleWeek = thisEmpWS.workday.find((d) => d.weekday === dayName);
     console.log("====================================");
     console.log("scheduleWeek === ", scheduleWeek);
     console.log("SHR === ", scheduleWeek.s_hr, " SMIN = ", scheduleWeek.s_min);
@@ -95,10 +107,8 @@ const ApplyLeaveForm = () => {
     }
   };
 
-  console.log(workScheduleData);
-  console.log(myWork);
-  console.log(profileData);
-  console.log("*********");
+  console.log("thisEmpWS = ", thisEmpWS);
+  console.log("WeekOffDays = ", WeekOffDays);
 
   const FormikForm = useFormik({
     enableReinitialize: true,
@@ -111,7 +121,7 @@ const ApplyLeaveForm = () => {
     }),
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
-      dispatch(setLoaderVisible(true));
+      // dispatch(setLoaderVisible(true));
 
       // const Api = await PostApi(
       //   "leave/leave-application/create/",
@@ -119,39 +129,19 @@ const ApplyLeaveForm = () => {
       //   false
       // );
       // console.log("API RES = ", Api);
-      if (Api.status && Api.status === 200) {
-        leaveapplyObj.id === 0
-          ? dispatch(addLeaveApplication(Api?.data.data))
-          : dispatch(editLeaveApplication(Api?.data?.data));
-        dispatch(toggleRSBView(false));
-        toast.success(Api?.data?.message);
-      } else {
-        toast.error(Api?.data?.message || Api?.data?.detail);
-      }
+      // if (Api.status && Api.status === 200) {
+      //   leaveapplyObj.id === 0
+      //     ? dispatch(addLeaveApplication(Api?.data.data))
+      //     : dispatch(editLeaveApplication(Api?.data?.data));
+      //   dispatch(toggleRSBView(false));
+      //   toast.success(Api?.data?.message);
+      // } else {
+      //   toast.error(Api?.data?.message || Api?.data?.detail);
+      // }
 
-      dispatch(setLoaderVisible(false));
+      // dispatch(setLoaderVisible(false));
     },
   });
-
-  // const handleSubmit = async () => {
-  //   Api({
-  //     method: "POST",
-  //     url: "holiday/create/",
-  //     data: holidayObj,
-  //   })
-  //     .then((res) => {
-  //       console.log("REs = ", res);
-  //       holidayObj.id === 0
-  //         ? dispatch(addHoliday(res?.data.data))
-  //         : dispatch(editHoliday(res?.data?.data));
-  //       dispatch(toggleRSBView(false));
-  //       toast.success(res?.data?.message);
-  //     })
-  //     .catch((err) => {
-  //       console.log("ERr == ", err);
-  //       toast.success(err?.response?.data?.message);
-  //     });
-  // };
 
   const lt_option = [
     {
@@ -236,52 +226,38 @@ const ApplyLeaveForm = () => {
     },
   ];
   const [daysCount, setDaysCount] = useState(0);
-  const handleDateChange = (selectedDates) => {
-    if (selectedDates.length === 2) {
-      const startDate = selectedDates[0];
-      const endDate = selectedDates[1];
-      console.log(startDate);
-      console.log(endDate);
 
-      const daysDiff = endDate.diff(startDate, "days") + 1;
-      // console.log(timeDiff);
-      // const daysDiff = Math.ceil(timeDiff / (24 * 60 * 60 * 1000)) + 1;
+  const disabledDate = (current) => {
+    // Disable Saturdays and Sundays
+    const dayOfWeek = current.day();
+    return WeekOffDays.includes(dayOfWeek);
+  };
 
-      setDaysCount(daysDiff);
-    } else {
-      setDaysCount(0);
-    }
+  const handleMultiDayChange = (dates, dateStrings) => {
+    const generateIntermediaryDates = () => {
+      const start = new Date(dateStrings[0]);
+      const end = new Date(dateStrings[1]);
+      const dates = [];
 
-    // console.log(leaveapplyObj);
-    // if (startDate != null && endDate != null) {
-    //   setLeaveApplyObj({
-    //     ...leaveapplyObj,
-    //     start: ConvertISODateFormat(startDate),
-    //   });
-    //   setLeaveApplyObj({
-    //     ...leaveapplyObj,
-    //     end: ConvertISODateFormat(endDate),
-    //   });
-    //   console.log(startDate);
-    //   console.log(endDate);
-    //   var diff = new Date(endDate) - new Date(startDate);
-    //   console.log(diff);
-    //   if (!isNaN(diff)) {
-    //     var diffCount = diff / 1000 / 60 / 60 / 24 + 1;
-    //     setLeaveDaysCount(diffCount);
-    //     if (diffCount <= 0) {
-    //       setEndDate(startDate);
-    //       setLeaveDaysCount(0);
-    //       toast.warning("Date Range Error");
-    //     } else if (diffCount > leaveapplyObj.available_count) {
-    //       toast.warning("Date Range is Exceed Your Limit");
-    //       setEndDate(null);
-    //     } else {
-    //       setLeaveDaysCount(diffCount);
-    //     }
-    //     console.log(diffCount);
-    //   }
-    // }
+      // Increment the start date by one day until it reaches the end date
+      while (start <= end) {
+        dates.push(start.toISOString().split("T")[0]);
+        start.setDate(start.getDate() + 1);
+      }
+
+      return dates;
+    };
+
+    const intermediateDates = generateIntermediaryDates() || [];
+
+    const ValidDays = intermediateDates.filter((d) => {
+      if (!WeekOffDays.includes(new Date(d).getDay())) {
+        return d;
+      }
+    });
+
+    const ValidDaysCount = ValidDays.length;
+    setDaysCount(ValidDaysCount);
   };
 
   const handleHourChange = () => {
@@ -374,7 +350,7 @@ const ApplyLeaveForm = () => {
   };
 
   // useEffect(() => {
-  //   handleDateChange(startDate, endDate);
+  //   handleMultiDayChange(startDate, endDate);
   // }, [startDate, endDate]);
 
   const handleInputChange = (e) => {
@@ -429,9 +405,6 @@ const ApplyLeaveForm = () => {
       });
     }
     setCurrentUnit(e);
-  };
-  const disabledDate = (current) => {
-    return current && (current.day() === 0 || current.day() === 6);
   };
 
   return (
@@ -557,7 +530,7 @@ const ApplyLeaveForm = () => {
                       name="selecteDate"
                       className="form-control"
                       placeholder="Select Date"
-                      value={startDate}
+                      // value={startDate}
                       disabledDate={disabledDate}
                       onChange={handleDateSelected}
                     />
@@ -626,17 +599,16 @@ const ApplyLeaveForm = () => {
                 </label> */}
                   <div className="input-group">
                     <RangePicker
-                      className="form-control"
                       format="YYYY-MM-DD"
                       placeholder={["Start Date", "End Date"]}
                       disabledDate={disabledDate}
-                      onChange={handleDateChange}
+                      onChange={handleMultiDayChange}
                     />
                     {/* onChange={(selectedDates, dateStr, instance) => {
                       //   setLeaveApplyObj({ ...leaveapplyObj, end: dateStr });
                       //   setSelectedStartHour(dateStr);
 
-                      //   handleDateChange(selectedDates, dateStr, instance);
+                      //   handleMultiDayChange(selectedDates, dateStr, instance);
                       // }} */}
 
                     <span className="input-group-text">{daysCount} Days</span>
@@ -651,7 +623,7 @@ const ApplyLeaveForm = () => {
                       //setLeaveApplyObj({ ...leaveapplyObj, end: dateStr });
                       setEndHour(dateStr);
 
-                      // handleDateChange(selectedDates, dateStr, instance);
+                      // handleMultiDayChange(selectedDates, dateStr, instance);
                     }}
                   /> */}
                   </div>
