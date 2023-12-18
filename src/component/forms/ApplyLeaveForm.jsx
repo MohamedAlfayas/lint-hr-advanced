@@ -23,6 +23,8 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
+import { DatePicker, Space } from "antd";
+import moment from "moment";
 
 const ApplyLeaveForm = () => {
   const dispatch = useDispatch();
@@ -43,6 +45,7 @@ const ApplyLeaveForm = () => {
   const [selectedStartMinute, setSelectedStartMinute] = useState("30");
   const [selectedEndHour, setSelectedEndHour] = useState("18");
   const [selectedEndMinute, setSelectedEndMinute] = useState("00");
+  const { RangePicker } = DatePicker;
 
   useEffect(() => {
     setLeaveApplyObj(form_obj);
@@ -59,11 +62,10 @@ const ApplyLeaveForm = () => {
     setEndDate(form_obj.end);
   }, [form_obj]);
 
-  const handleDateSelected = (selectedDates, dateStr, instance) => {
-    const selectedDate = new Date(selectedDates[0]);
-    const dayName = selectedDate.toLocaleDateString("en-US", {
-      weekday: "long",
-    });
+  const handleDateSelected = (date, dateString) => {
+    const selectedDate = new Date(date[0]);
+    console.log(selectedDate);
+    const dayName = date ? moment(date).format("dddd") : "";
     console.log("Selected day: " + dayName);
     setSelectedDate(selectedDate);
     getHourMinData(dayName);
@@ -111,12 +113,12 @@ const ApplyLeaveForm = () => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
       dispatch(setLoaderVisible(true));
 
-      const Api = await PostApi(
-        "leave/leave-application/create/",
-        values,
-        false
-      );
-      console.log("API RES = ", Api);
+      // const Api = await PostApi(
+      //   "leave/leave-application/create/",
+      //   values,
+      //   false
+      // );
+      // console.log("API RES = ", Api);
       if (Api.status && Api.status === 200) {
         leaveapplyObj.id === 0
           ? dispatch(addLeaveApplication(Api?.data.data))
@@ -238,9 +240,12 @@ const ApplyLeaveForm = () => {
     if (selectedDates.length === 2) {
       const startDate = selectedDates[0];
       const endDate = selectedDates[1];
+      console.log(startDate);
+      console.log(endDate);
 
-      const timeDiff = endDate.getTime() - startDate.getTime();
-      const daysDiff = Math.ceil(timeDiff / (24 * 60 * 60 * 1000)) + 1;
+      const daysDiff = endDate.diff(startDate, "days") + 1;
+      // console.log(timeDiff);
+      // const daysDiff = Math.ceil(timeDiff / (24 * 60 * 60 * 1000)) + 1;
 
       setDaysCount(daysDiff);
     } else {
@@ -425,6 +430,9 @@ const ApplyLeaveForm = () => {
     }
     setCurrentUnit(e);
   };
+  const disabledDate = (current) => {
+    return current && (current.day() === 0 || current.day() === 6);
+  };
 
   return (
     <React.Fragment>
@@ -545,15 +553,12 @@ const ApplyLeaveForm = () => {
               {currentUnit && currentUnit === leave_type_hour_unit && (
                 <Col lg={12}>
                   <div className="input-group">
-                    <Flatpickr
+                    <DatePicker
                       name="selecteDate"
                       className="form-control"
                       placeholder="Select Date"
                       value={startDate}
-                      disable={["2023-12-12"]}
-                      options={{
-                        dateFormat: "d M, Y",
-                      }}
+                      disabledDate={disabledDate}
                       onChange={handleDateSelected}
                     />
 
@@ -620,20 +625,20 @@ const ApplyLeaveForm = () => {
                   Select Hour *
                 </label> */}
                   <div className="input-group">
-                    <Flatpickr
+                    <RangePicker
                       className="form-control"
-                      placeholder="Select Date"
-                      options={{
-                        mode: "range",
-                      }}
+                      format="YYYY-MM-DD"
+                      placeholder={["Start Date", "End Date"]}
+                      disabledDate={disabledDate}
                       onChange={handleDateChange}
-                      // onChange={(selectedDates, dateStr, instance) => {
+                    />
+                    {/* onChange={(selectedDates, dateStr, instance) => {
                       //   setLeaveApplyObj({ ...leaveapplyObj, end: dateStr });
                       //   setSelectedStartHour(dateStr);
 
                       //   handleDateChange(selectedDates, dateStr, instance);
-                      // }}
-                    />
+                      // }} */}
+
                     <span className="input-group-text">{daysCount} Days</span>
                     {/* <Flatpickr
                     className="form-control"
