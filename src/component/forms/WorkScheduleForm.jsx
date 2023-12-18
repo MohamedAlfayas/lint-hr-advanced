@@ -14,6 +14,7 @@ import {
   NavLink,
   Row,
   TabContent,
+  FormFeedback,
   TabPane,
   Progress,
 } from "reactstrap";
@@ -32,6 +33,8 @@ import { toast } from "react-toastify";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
@@ -117,31 +120,62 @@ const WorkScheduleForm = () => {
   function pad(d) {
     return d < 10 ? "0" + d.toString() : d.toString();
   }
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: workScheduleData,
+    validationSchema: Yup.object({
+      name: Yup.string().trim().required("Please Enter Work Schedule Name"),
+    }),
+    onSubmit: async (values) => {
+      e.preventDefault();
+      console.log("employee data = ", workScheduleData);
+      toggleArrowTab(activeArrowTab + 1);
+      dispatch(setLoaderVisible(true));
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log("employee data = ", workScheduleData);
-    toggleArrowTab(activeArrowTab + 1);
-    dispatch(setLoaderVisible(true));
+      const Api = await PostApi(
+        "/work-schedule/create/",
+        workScheduleData,
+        false
+      );
+      console.log("API RES = ", Api);
+      if (Api.status && Api.status === 200) {
+        workScheduleData.id === 0
+          ? dispatch(addWorkSchedule(Api?.data.data))
+          : dispatch(editWorkSchedule(Api?.data?.data));
+        dispatch(toggleRSBView(false));
+        toast.success(Api?.data?.message);
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
+      }
 
-    const Api = await PostApi(
-      "/work-schedule/create/",
-      workScheduleData,
-      false
-    );
-    console.log("API RES = ", Api);
-    if (Api.status && Api.status === 200) {
-      workScheduleData.id === 0
-        ? dispatch(addWorkSchedule(Api?.data.data))
-        : dispatch(editWorkSchedule(Api?.data?.data));
-      dispatch(toggleRSBView(false));
-      toast.success(Api?.data?.message);
-    } else {
-      toast.error(Api?.data?.message || Api?.data?.detail);
-    }
+      dispatch(setLoaderVisible(false));
+    },
+  });
 
-    dispatch(setLoaderVisible(false));
-  };
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   console.log("employee data = ", workScheduleData);
+  //   toggleArrowTab(activeArrowTab + 1);
+  //   dispatch(setLoaderVisible(true));
+
+  //   const Api = await PostApi(
+  //     "/work-schedule/create/",
+  //     workScheduleData,
+  //     false
+  //   );
+  //   console.log("API RES = ", Api);
+  //   if (Api.status && Api.status === 200) {
+  //     workScheduleData.id === 0
+  //       ? dispatch(addWorkSchedule(Api?.data.data))
+  //       : dispatch(editWorkSchedule(Api?.data?.data));
+  //     dispatch(toggleRSBView(false));
+  //     toast.success(Api?.data?.message);
+  //   } else {
+  //     toast.error(Api?.data?.message || Api?.data?.detail);
+  //   }
+
+  //   dispatch(setLoaderVisible(false));
+  // };
 
   document.title = "WorkSchedule | Lint HR";
 
@@ -149,7 +183,7 @@ const WorkScheduleForm = () => {
     <React.Fragment>
       <Row>
         <Col xl={40}>
-          <Form onSubmit={handleSubmit} className="form-steps">
+          <Form onSubmit={FormikForm.handleSubmit} className="form-steps">
             <div className="step-arrow-nav mb-4">
               <Nav
                 className="nav-pills custom-nav nav-justified"
@@ -218,10 +252,10 @@ const WorkScheduleForm = () => {
                         </Label>
                         <Input
                           type="text"
+                          name="name"
                           className="form-control"
                           id="ws_name"
                           placeholder="Enter Work Schedule Name"
-                          required
                           value={workScheduleData.name || ""}
                           onChange={(e) =>
                             setWorkScheduleData({
@@ -229,7 +263,15 @@ const WorkScheduleForm = () => {
                               name: e.target.value,
                             })
                           }
+                          invalid={
+                            FormikForm.touched.name && FormikForm.errors.name
+                              ? true
+                              : false
+                          }
                         />
+                        <FormFeedback type="invalid">
+                          {FormikForm.errors.name}
+                        </FormFeedback>
                       </div>
                     </Col>
                     <Col md={12} lg={12} xxl={12}>
@@ -479,7 +521,16 @@ const WorkScheduleForm = () => {
                     type="button"
                     className="btn btn-success btn-label right ms-auto nexttab nexttab"
                     onClick={() => {
-                      toggleArrowTab(activeArrowTab + 1);
+                      FormikForm.validateForm().then((errors) => {
+                        if (Object.keys(errors).length === 0) {
+                          // No validation errors, move to the next step
+                          toggleArrowTab(activeArrowTab + 1);
+                        } else {
+                          // Validation errors, display an error message or handle accordingly
+                          console.log("Validation errors:", errors);
+                          toast.error("Please Enter Work Schedule");
+                        }
+                      });
                     }}
                   >
                     <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
