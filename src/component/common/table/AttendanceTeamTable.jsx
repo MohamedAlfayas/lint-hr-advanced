@@ -323,43 +323,43 @@ const AttendanceTeamTable = () => {
       entry_log: [
         {
           date: "01-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "02-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "03-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "04-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "05-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "06-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "07-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "08-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "09-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "10-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
       ],
     },
@@ -373,43 +373,43 @@ const AttendanceTeamTable = () => {
       entry_log: [
         {
           date: "01-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "02-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "03-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "04-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "05-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "06-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "07-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "08-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "09-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 28800,
         },
         {
           date: "10-12-2023 15:45:56",
-          paid_hr: "08:30 Hr",
+          paid_hr: 0,
         },
       ],
     },
@@ -598,6 +598,33 @@ const AttendanceTeamTable = () => {
     return "";
   };
 
+  const columns = [];
+
+  TeamAttendance.forEach((entry, firstIndex) => {
+    console.log("num");
+    console.log(entry);
+
+    entry.entry_log.forEach((rowData, index) => {
+      columns.push(
+        <Column width={100}>
+          <HeaderCell>
+            {" "}
+            {format(new Date(rowData.date), "dd MMM, yyyy")}
+          </HeaderCell>
+          <Cell dataKey={rowData.paid_hr}>
+            {rowData.paid_hr != 0
+              ? new Date(rowData.paid_hr * 1000).toISOString().slice(11, 16) +
+                " Hr"
+              : "0"}{" "}
+          </Cell>
+        </Column>
+      );
+    });
+  });
+
+  console.log("columns");
+  console.log(columns);
+
   return (
     <Fragment>
       <Table
@@ -608,20 +635,21 @@ const AttendanceTeamTable = () => {
         loading={loading}
         bordered={true}
         className="mb-5">
-        <Column width={250}>
-          <HeaderCell>Notes</HeaderCell>
+        <Column width={250} fixed="left">
+          <HeaderCell>Employee</HeaderCell>
           <EmployeeCell dataKey="employee" fullText />
         </Column>
 
-        <Column width={150} fixed="left">
+        <Column width={200} fixed="left">
+          <HeaderCell>Paid Time / Work Schedule</HeaderCell>
+          <WSHourCell dataKey="ws_hours" fullText />
+        </Column>
+        <Column width={150}>
           <HeaderCell>Department</HeaderCell>
           <DepartmentCell dataKey="department" fullText />
         </Column>
 
-        <Column width={200}>
-          <HeaderCell>Paid Time / Work Schedule</HeaderCell>
-          <WSHourCell dataKey="ws_hours" fullText />
-        </Column>
+        {columns}
 
         <Column width={80} fixed="right">
           <HeaderCell>Action</HeaderCell>
