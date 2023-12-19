@@ -13,7 +13,7 @@ import {
   ModalHeader,
   Row,
 } from "reactstrap";
-import { hr_status } from "../../../common/constant/Constants";
+import { hr_status_options } from "../../../common/constant/Constants";
 import { Link } from "react-router-dom";
 import { parse, format } from "date-fns";
 import SimpleBar from "simplebar-react";
@@ -411,7 +411,7 @@ const AttendanceEmployeeTable = () => {
   };
 
   const HrStatusCell = ({ rowData, dataKey, ...props }) => {
-    let at_hr_status_data = hr_status.find(function (i) {
+    let at_hr_status_data = hr_status_options.find(function (i) {
       return i.id == rowData.hr_status;
     });
 
@@ -560,10 +560,12 @@ const AttendanceEmployeeTable = () => {
                         ? {
                             class: "success",
                             text: "IN",
+                            iconClass: "right",
                           }
                         : {
                             class: "warning",
                             text: "Out",
+                            iconClass: "left",
                           };
                     return (
                       <div className={`acitivity-item  d-flex ${py_class}`}>
@@ -571,7 +573,9 @@ const AttendanceEmployeeTable = () => {
                           <div
                             className={`avatar-title bg-${info?.class}-subtle text-${info?.class} rounded-circle`}
                           >
-                            <i className="mdi mdi-arrow-right-thick"></i>
+                            <i
+                              className={`mdi mdi-arrow-${info?.iconClass}-thick`}
+                            ></i>
                           </div>
                         </div>
                         <div className="flex-grow-1 ms-3">

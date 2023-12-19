@@ -1781,7 +1781,7 @@ export const leave_reset_options = [
     { id: 2, label: "May To April", value: 2 },
 ]
 
-export const hr_status = [
+export const hr_status_options = [
     { id: "0", label: "All Status", value: "0", class: "primary" },
     { id: "1", label: "Auto Approval", value: "1", class: "info" },
     { id: "2", label: "Approved", value: "2", class: "success" },
@@ -1789,28 +1789,51 @@ export const hr_status = [
     { id: "4", label: "Rejected", value: "4", class: "danger" },
 ]
 
-export const record_filter_options = [
+export const record_options = [
     {
+        id: "0",
         label: "All Record",
-        value: "Africa/Abidjan",
+        value: "0",
     },
     {
+        id: "1",
         label: "Missing IN/Out",
-        value: "Africa/Abidjan",
+        value: "1",
     },
     {
+        id: "2",
         label: "Edited Paid Time",
-        value: "Africa/Abidjan",
+        value: "2",
     },
     {
+        id: "3",
         label: "Edited OT",
-        value: "Africa/Abidjan",
+        value: "3",
     },
     {
+        id: "4",
         label: "Check IN on Holiday/Leave/Non-Working Days",
-        value: "Africa/Abidjan",
+        value: "4",
     },
 ]
+
+export const type_options = [
+    {
+        id: "1",
+        label: "My Attendance",
+        value: "1",
+    },
+    {
+        id: "2",
+        label: "Team Attendance",
+        value: "2",
+    },
+    {
+        id: "3",
+        label: "Employee Attendance",
+        value: "3",
+    },
+];
 
 
 export const organization_component_name = "organization"
@@ -1869,4 +1892,13 @@ export const week_list = [
     { id: 4, label: 'Thursday', value: 4 },
     { id: 5, label: 'Friday', value: 5 },
     { id: 6, label: 'Saturday', value: 6 },
+]
+
+
+export const attendance_report_day_status = [
+    { id: 1, label: 'Working Day', value: 1 },
+    { id: 2, label: 'WeekOff', value: 2 },
+    { id: 3, label: 'Leave', value: 3 },
+    { id: 4, label: 'Leave Without Approval', value: 4 },
+    { id: 5, label: 'Holiday', value: 5 },
 ]

@@ -14,36 +14,48 @@ import Select from "react-select";
 import TimeTracking from "./TimeTracking";
 import AttendanceOverview from "./AttendanceOverview";
 import AttendanceEmployeeTable from "../../component/common/table/AttendanceEmployeeTable";
-import { hr_status } from "../../common/constant/Constants";
+import {
+  hr_status_options,
+  record_options,
+  type_options,
+} from "../../common/constant/Constants";
 import AttendanceTeamTable from "../../component/common/table/AttendanceTeamTable";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { setAttendanceReportData } from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
 import { Api } from "../../common/api/Api";
+import { DatePicker } from "antd";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+dayjs.extend(customParseFormat);
+
+const monthFormat = "YYYY-MM";
 
 const AttendanceDashboard = () => {
   document.title = `Attendance Overview | ${MetaTitle}`;
 
   const dispatch = useDispatch();
 
-  const initialFilterKeys = useMemo(() => {
-    return {
-      date_range: "",
-      status: "",
-      record: "",
-      type: "",
-      employee: "",
-    };
-  }, []);
+  const [filterKeys, setFilterKeys] = useState({
+    date_range: `${new Date().getFullYear()}-${new Date().getMonth() + 1}`,
+    hr_status: "0",
+    record: "0",
+    type: "1",
+    employee: "0",
+  });
 
-  const [filterKeys, setFilterKeys] = useState(initialFilterKeys);
+  const [employeeOptions, setEmployeeOptions] = useState([]);
+  const [showTeamTable, setShowTeamTable] = useState(false);
+  const [showEmployeeSelect, setShowEmployeeSelect] = useState(false);
+
+  const employee_data = GetLocalStorageData("employee");
 
   useEffect(() => {
     const today = new Date();
     const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
       .toString()
       .padStart(2, "0")}`;
-    console.log("thisMonth = ", thisMonth);
 
     Api({
       type: "GET",
@@ -55,173 +67,109 @@ const AttendanceDashboard = () => {
       .catch((err) => {
         console.log("Something Went Wrong !!");
       });
+
+    Api({
+      type: "GET",
+      url: "employee/get-my-team-members/",
+    })
+      .then((res) => {
+        console.log("EMP ID LIST = ", res?.data?.data);
+        const response = res?.data?.data;
+        setEmployeeOptions(
+          response.map((d) => employee_data.find((e) => e.id === d))
+        );
+      })
+      .catch((err) => {
+        console.log("Something Went Wrong !!");
+      });
   }, []);
 
-  // Column
-  const additionalColumn = [
-    {
-      Header: "Leave Type",
-      filterable: false,
-      id: "name",
-      accessor: (obj) => {
-        let typeName = leavetypes.map((type, i) =>
-          obj.leavetype == type.id ? type.name : ""
-        );
+  const handleDateRangeChange = (e, monthStr) => {
+    console.log("This Month = ", e);
+    console.log("This Month Str = ", monthStr);
 
-        return <b>{typeName}</b>;
-      },
-    },
-    {
-      Header: "Reason",
-      accessor: "reason",
-      filterable: false,
-      id: "reason",
-    },
-    {
-      Header: "Date",
-      id: "Date",
-      filterable: false,
-      accessor: (obj) => {
-        return (
-          <>
-            {obj.start} To {obj.end}
-          </>
-        );
-      },
-    },
-    {
-      Header: "Total",
-      filterable: false,
-      id: "Total",
-      accessor: (obj) => {
-        let leaveUnit = leavetypes.map((type, i) =>
-          obj.leavetype == type.id ? type.type : ""
-        );
-        return (
-          <b>
-            {obj.total} {leaveUnit}{" "}
-          </b>
-        );
-      },
-    },
-    {
-      Header: "Status",
-      id: "status",
-      filterable: false,
-      accessor: (obj) => {
-        let status =
-          obj.status == 1 ? "Pending" : obj.status == 2 ? "Approved" : "Cancel";
-        let statusClass =
-          obj.status == 1 ? "warning" : obj.status == 2 ? "success" : "danger";
-        return (
-          <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
-          >
-            {" "}
-            {status}{" "}
+    setFilterKeys({
+      ...filterKeys,
+      date_range: monthStr,
+    });
+  };
+
+  const handleHRStatusChange = (e) => {
+    setFilterKeys({
+      ...filterKeys,
+      hr_status: e.value,
+    });
+  };
+
+  const handleRecordChange = (e) => {
+    setFilterKeys({
+      ...filterKeys,
+      record: e.value,
+    });
+  };
+
+  const handleTypeChange = (e) => {
+    setFilterKeys({
+      ...filterKeys,
+      type: e.value,
+      employee: 0,
+    });
+
+    if (e.value === "2") {
+      setShowEmployeeSelect(true);
+    } else {
+      setShowEmployeeSelect(false);
+    }
+  };
+
+  const handleEmployeeChange = (e) => {
+    setFilterKeys({
+      ...filterKeys,
+      employee: e.value,
+    });
+  };
+
+  const handleFilter = () => {
+    console.log("FILTER CLICKED !!!! === ", filterKeys);
+    if (filterKeys?.type === "2" && filterKeys?.employee === "0") {
+      setShowTeamTable(true);
+    } else {
+      setShowTeamTable(false);
+    }
+  };
+
+  const EmployeeDisplayOption = ({ innerProps, label, data }) => (
+    <div {...innerProps}>
+      {data?.profile_url ? (
+        <div className="flex-shrink-0">
+          <img
+            src={data.profile_url}
+            alt=""
+            className="avatar-xs rounded-circle"
+            style={{ objectFit: "cover" }}
+          />
+        </div>
+      ) : (
+        <div
+          className="avatar-xs rounded-circle"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            background: "#0ab39c",
+          }}
+          data-bs-toggle="tooltip"
+          title={data.fname}
+        >
+          <span className="first_letter" style={{ color: "white" }}>
+            {data.fname.charAt(0)}
           </span>
-        );
-      },
-    },
-  ];
+        </div>
+      )}
 
-  const initialFormObj = useMemo(() => {
-    return {
-      id: 0,
-      leavetype: 0,
-      reason: "",
-      start: "",
-      end: "",
-      total: 0,
-      status: 1,
-      unit: "Day",
-      leave_count: 12,
-      available_count: 12,
-    };
-  }, []);
-
-  const filterKey = "status";
-  const filterOptions = [
-    { option: true, label: "Approved" },
-    { option: true, label: "Pending" },
-    { option: true, label: "Cancel" },
-  ];
-
-  const date_range_options = useMemo(() => [
-    {
-      label: "This Month",
-      value: "Africa/Abidjan",
-    },
-    {
-      label: "Last Mounth",
-      value: "Africa/Abidjan",
-    },
-    {
-      label: "Oct 1st - Oct 31st",
-      value: "Africa/Abidjan",
-    },
-    {
-      label: "Sep 1st - Sep 31st",
-      value: "Africa/Abidjan",
-    },
-  ]);
-
-  // const status_options = useMemo(() => [
-  //   {
-  //     label: "All Status",
-  //     value: "Africa/Abidjan",
-  //   },
-  //   {
-  //     label: "Approved",
-  //     value: "Africa/Abidjan",
-  //   },
-  //   {
-  //     label: "Reject",
-  //     value: "Africa/Abidjan",
-  //   },
-  //   {
-  //     label: "Pending",
-  //     value: "Africa/Abidjan",
-  //   },
-  // ]);
-
-  const record_options = useMemo(() => [
-    {
-      label: "All Record",
-      value: "Africa/Abidjan",
-    },
-    {
-      label: "Missing IN/Out",
-      value: "Africa/Abidjan",
-    },
-    {
-      label: "Edited Paid Time",
-      value: "Africa/Abidjan",
-    },
-    {
-      label: "Edited OT",
-      value: "Africa/Abidjan",
-    },
-    {
-      label: "Check IN on Holiday/Leave/Non-Working Days",
-      value: "Africa/Abidjan",
-    },
-  ]);
-
-  const type_options = useMemo(() => [
-    {
-      label: "My Attendance",
-      value: "Africa/Abidjan",
-    },
-    {
-      label: "Team Attendance",
-      value: "Africa/Abidjan",
-    },
-    {
-      label: "Employee Attendance",
-      value: "Africa/Abidjan",
-    },
-  ]);
+      {label}
+    </div>
+  );
 
   return (
     <React.Fragment>
@@ -233,11 +181,11 @@ const AttendanceDashboard = () => {
               <Row className="g-2">
                 <Col xl={2}>
                   <div className="form-icon right">
-                    <Select
-                      name="date_range_attendance"
-                      id="date_range_attendance"
-                      options={date_range_options}
-                      placeholder="Select a Date Range"
+                    <DatePicker
+                      defaultValue={dayjs(filterKeys?.date_range, monthFormat)}
+                      format={monthFormat}
+                      picker="month"
+                      onChange={handleDateRangeChange}
                     />
                   </div>
                 </Col>
@@ -246,8 +194,16 @@ const AttendanceDashboard = () => {
                     <Select
                       name="status_attendance"
                       id="status_attendance"
-                      options={hr_status || []}
+                      options={hr_status_options || []}
                       placeholder="Select a Status"
+                      value={
+                        !!filterKeys?.hr_status
+                          ? hr_status_options.find(
+                              (d) => d.id === filterKeys?.hr_status
+                            )
+                          : []
+                      }
+                      onChange={handleHRStatusChange}
                     />
                   </div>
                 </Col>
@@ -256,8 +212,16 @@ const AttendanceDashboard = () => {
                     <Select
                       name="record_attendance"
                       id="record_attendance"
-                      options={record_options}
+                      options={record_options || []}
                       placeholder="Select a Record"
+                      value={
+                        !!filterKeys?.record
+                          ? record_options.find(
+                              (d) => d.id === filterKeys?.record
+                            )
+                          : []
+                      }
+                      onChange={handleRecordChange}
                     />
                   </div>
                 </Col>
@@ -266,25 +230,46 @@ const AttendanceDashboard = () => {
                     <Select
                       name="type_attendance"
                       id="type_attendance"
-                      options={type_options}
+                      options={type_options || []}
                       placeholder="Select a Type"
+                      value={
+                        !!filterKeys?.type
+                          ? type_options.find((d) => d.id === filterKeys?.type)
+                          : []
+                      }
+                      onChange={handleTypeChange}
                     />
                   </div>
                 </Col>
-                <Col xl={2}>
-                  <div className="form-icon right">
-                    <Select
-                      name="employee_attendance"
-                      id="employee_attendance"
-                      options={type_options}
-                      placeholder="Select a Employee"
-                    />
-                  </div>
-                </Col>
+                {showEmployeeSelect && (
+                  <Col xl={2}>
+                    <div className="form-icon right">
+                      <Select
+                        name="employee_attendance"
+                        id="employee_attendance"
+                        options={employeeOptions || []}
+                        components={{ Option: EmployeeDisplayOption }}
+                        placeholder="Select a Employee"
+                        value={
+                          !!filterKeys?.employee
+                            ? employeeOptions.find(
+                                (d) => d.id === filterKeys?.employee
+                              )
+                            : []
+                        }
+                        onChange={handleEmployeeChange}
+                      />
+                    </div>
+                  </Col>
+                )}
 
                 <div className="col-lg-auto">
                   <div className="hstack gap-2">
-                    <button type="button" className="btn btn-danger">
+                    <button
+                      type="button"
+                      onClick={handleFilter}
+                      className="btn btn-danger"
+                    >
                       <i className="ri-equalizer-fill me-1 align-bottom"></i>{" "}
                       Filters
                     </button>
@@ -302,12 +287,16 @@ const AttendanceDashboard = () => {
             <Col xxl={9} xl={9} sm={9}>
               <AttendanceOverview />
             </Col>
-            <Col xxl={12}>
-              <AttendanceEmployeeTable />
-            </Col>
-            <Col xxl={12}>
-              <AttendanceTeamTable />
-            </Col>
+            {!showTeamTable && (
+              <Col xxl={12}>
+                <AttendanceEmployeeTable />
+              </Col>
+            )}
+            {showTeamTable && (
+              <Col xxl={12}>
+                <AttendanceTeamTable />
+              </Col>
+            )}
           </Row>
         </Container>
       </div>
