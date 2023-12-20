@@ -30,17 +30,24 @@ import {
 } from "../../redux/reducers/ChildReducer/HolidayReducer";
 import { toast } from "react-toastify";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
-import { ConvertISODateFormat } from "../../common/js/ConvertDateFormat";
+import {
+  ConvertDateFormat,
+  ConvertISODateFormat,
+} from "../../common/js/ConvertDateFormat";
 
 import Flatpickr from "react-flatpickr";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { PostApi } from "../../common/api/PostApi";
 import { DatePicker } from "antd";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import { DateFormat } from "../../common/constant/Constants";
+dayjs.extend(customParseFormat);
 
 const HolidayForm = () => {
   const dispatch = useDispatch();
-  const [date, setDate] = useState([]);
+  const [date, setDate] = useState("");
   const [holidayObj, setHolidayObj] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const ws_options = GetLocalStorageData("work_schedule") || [];
@@ -51,7 +58,7 @@ const HolidayForm = () => {
       ...form_obj,
       date: ConvertISODateFormat(form_obj.date),
     });
-    setDate([new Date(form_obj.date)]);
+    setDate(ConvertDateFormat(ConvertISODateFormat(form_obj?.date)));
     setSelectedWS(
       ws_options.filter((data) =>
         form_obj.work_schedule_id_list.includes(data.id)
@@ -67,7 +74,6 @@ const HolidayForm = () => {
       work_schedule_id_list: Yup.array()
         .required("Select Work Schedule")
         .min(1, "Select Work Schedule"),
-      date: Yup.string().trim().required("Please Select Date"),
     }),
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
@@ -105,34 +111,11 @@ const HolidayForm = () => {
     });
   };
 
-  // const handleSubmit = async () => {
-  //   dispatch(setLoaderVisible(true));
-  //   Api({
-  //     method: "POST",
-  //     url: "holiday/create/",
-  //     data: holidayObj,
-  //   })
-  //     .then((res) => {
-  //       console.log("REs = ", res);
-  //       holidayObj.id === 0
-  //         ? dispatch(addHoliday(res?.data.data))
-  //         : dispatch(editHoliday(res?.data?.data));
-  //       dispatch(setLoaderVisible(false));
-  //       dispatch(toggleRSBView(false));
-  //       toast.success(res?.data?.message);
-  //     })
-  //     .catch((err) => {
-  //       dispatch(setLoaderVisible(false));
-  //       console.log("ERr == ", err);
-  //       toast.success(err?.response?.data?.message);
-  //     });
-  // };
-
-  const handleDateChange = (selectedDates, dateStr, instance) => {
-    setDate(selectedDates);
+  const handleDateChange = (selectedDates, dateStr) => {
+    setDate(dateStr);
     setHolidayObj({
       ...holidayObj,
-      date: ConvertISODateFormat(selectedDates[0]),
+      date: ConvertISODateFormat(ConvertDateFormat(dateStr)),
     });
   };
 
@@ -173,21 +156,12 @@ const HolidayForm = () => {
                     name="date"
                     id="date"
                     className="form-control"
-                    format={"DD/MM/YYYY"}
+                    format={DateFormat}
+                    value={dayjs(date, DateFormat)}
                     allowClear={false}
                     // value={date || ""}
                     onChange={handleDateChange}
-                    invalid={
-                      FormikForm.touched.date && FormikForm.errors.date
-                        ? true
-                        : false
-                    }
                   />
-                  {FormikForm.touched.date && FormikForm.errors.date ? (
-                    <FormFeedback type="invalid">
-                      {FormikForm.errors.date}
-                    </FormFeedback>
-                  ) : null}
                 </div>
               </Col>
               <Col lg={12}>

@@ -15,6 +15,7 @@ import TimeTracking from "./TimeTracking";
 import AttendanceOverview from "./AttendanceOverview";
 import AttendanceEmployeeTable from "../../component/common/table/AttendanceEmployeeTable";
 import {
+  MonthFormat,
   hr_status_options,
   record_options,
   type_options,
@@ -29,8 +30,6 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 dayjs.extend(customParseFormat);
-
-const monthFormat = "YYYY-MM";
 
 const AttendanceDashboard = () => {
   document.title = `Attendance Overview | ${MetaTitle}`;
@@ -182,9 +181,10 @@ const AttendanceDashboard = () => {
                 <Col xl={2}>
                   <div className="form-icon right">
                     <DatePicker
-                      defaultValue={dayjs(filterKeys?.date_range, monthFormat)}
-                      format={monthFormat}
+                      value={dayjs(filterKeys?.date_range, MonthFormat)}
+                      format={MonthFormat}
                       picker="month"
+                      allowClear={false}
                       onChange={handleDateRangeChange}
                     />
                   </div>

@@ -1902,3 +1902,7 @@ export const attendance_report_day_status = [
     { id: 4, label: 'Leave Without Approval', value: 4 },
     { id: 5, label: 'Holiday', value: 5 },
 ]
+
+
+export const DateFormat = 'DD-MM-YYYY'
+export const MonthFormat = 'YYYY-MM'
