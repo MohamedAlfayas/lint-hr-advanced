@@ -5,16 +5,23 @@ import { Dropdown, DropdownItem, DropdownMenu, DropdownToggle } from 'reactstrap
 //import images
 import avatar1 from "../../assets/images/users/avatar-1.jpg";
 import { toast } from 'react-toastify';
+import { useDispatch } from 'react-redux';
+import { setShowTeamTable } from '../../redux/reducers/ChildReducer/AttendanceReportReducer';
+
 
 const ProfileDropdown = () => {
     const navigate = useNavigate()
 
     const [userName, setUserName] = useState("LC Admin");
+    const dispatch = useDispatch();
 
-    const logout = () =>{
+    const logout = () => {
         localStorage.removeItem("lint_hr_token");
         localStorage.removeItem("lint_hr_v");
         localStorage.removeItem("lint_hr_globaldata");
+
+        dispatch(setShowTeamTable(teamTable?.value))
+
         toast.success("Logged Out Successfully")
         navigate("/auth/login")
     }
@@ -25,7 +32,7 @@ const ProfileDropdown = () => {
         setIsProfileDropdown(!isProfileDropdown);
     };
 
-    
+
     return (
         <React.Fragment>
             <Dropdown isOpen={isProfileDropdown} toggle={toggleProfileDropdown} className="ms-sm-3 header-item topbar-user">

@@ -1,7 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit"
 
 const initialState = {
-    attendance_report_data: []
+    attendance_report_data: [],
+    showTeamTable: false,
 }
 
 const AttendanceReportReducer = createSlice({
@@ -14,11 +15,18 @@ const AttendanceReportReducer = createSlice({
                 ...state,
                 attendance_report_data: payload
             }
-        }
+        },
+        setShowTeamTable: (state, { type, payload }) => {
+            console.log("TTTTT REDUCER = ", payload);
+            return {
+                ...state,
+                showTeamTable: payload
+            }
+        },
     }
 });
 
 
-export const { setAttendanceReportData } = AttendanceReportReducer.actions;
+export const { setAttendanceReportData, setShowTeamTable } = AttendanceReportReducer.actions;
 
 export default AttendanceReportReducer.reducer;
