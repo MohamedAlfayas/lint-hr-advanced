@@ -17,6 +17,22 @@ import {
   Row,
   UncontrolledDropdown,
 } from "reactstrap";
+import {
+  gender_options,
+  form_default_input_types,
+  form_select_type,
+  timzone_options,
+  form_date_type,
+  DateFormat,
+} from "../../common/constant/Constants";
+import {
+  ConvertDateFormat,
+  ConvertISODateFormat,
+} from "../../common/js/ConvertDateFormat";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import { DatePicker } from "antd";
+dayjs.extend(customParseFormat);
 
 //import images
 import avatar8 from "../../assets/images/users/avatar-8.jpg";
@@ -135,7 +151,7 @@ const OrgInfoTab = () => {
       [name]: value,
     });
   };
-  console.log("hhh",profileData);
+  console.log("hhh", profileData);
 
   const [changeId, setChangeId] = useState(1);
 
@@ -173,6 +189,16 @@ const OrgInfoTab = () => {
       ),
     };
     setProfileData(newPD);
+  };
+  const handleCFDateChange = (e, dateStr, cf_id) => {
+    setProfileData({
+      ...profileData,
+      cf_values: [...profileData.cf_values].map((item) =>
+        item.id === cf_id
+          ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
+          : item
+      ),
+    });
   };
 
   const submitProfileForm = (e) => {
@@ -266,10 +292,12 @@ const OrgInfoTab = () => {
                           <Dropdown
                             className="input-group"
                             isOpen={dropdownOpen4}
-                            toggle={toggle4}>
+                            toggle={toggle4}
+                          >
                             <DropdownToggle
                               as="button"
-                              className="btn btn-light border arrow-none">
+                              className="btn btn-light border arrow-none"
+                            >
                               <img
                                 src={contactCountry.flagImg}
                                 alt="country flag"
@@ -294,10 +322,12 @@ const OrgInfoTab = () => {
                             />
                             <DropdownMenu
                               as="ul"
-                              className="list-unstyled w-100 dropdown-menu-list mb-0">
+                              className="list-unstyled w-100 dropdown-menu-list mb-0"
+                            >
                               <SimpleBar
                                 style={{ maxHeight: "220px" }}
-                                className="px-3">
+                                className="px-3"
+                              >
                                 {(
                                   CountryList.filter((obj) => obj.show).sort(
                                     (a, b) =>
@@ -314,7 +344,8 @@ const OrgInfoTab = () => {
                                       setContactCountry(item);
                                     }}
                                     key={key}
-                                    className="dropdown-item d-flex">
+                                    className="dropdown-item d-flex"
+                                  >
                                     <div className="flex-shrink-0 me-2">
                                       <img
                                         src={item.flagImg}
@@ -376,7 +407,8 @@ const OrgInfoTab = () => {
                         <div>
                           <Label
                             htmlFor="exampleFormControlTextarea5"
-                            className="form-label">
+                            className="form-label"
+                          >
                             Company Overview
                           </Label>
                           <textarea
@@ -386,7 +418,8 @@ const OrgInfoTab = () => {
                             value={profileData.about || ""}
                             onChange={(e) =>
                               updateProfileData("about", e.target.value)
-                            }></textarea>
+                            }
+                          ></textarea>
                           <div id="passwordHelpBlock" className="form-text">
                             Company Overview.
                           </div>
@@ -397,7 +430,8 @@ const OrgInfoTab = () => {
                         <div>
                           <Label
                             htmlFor="exampleFormControlTextarea5"
-                            className="form-label">
+                            className="form-label"
+                          >
                             Address
                           </Label>
                           <textarea
@@ -407,7 +441,8 @@ const OrgInfoTab = () => {
                             value={profileData.address || ""}
                             onChange={(e) =>
                               updateProfileData("address", e.target.value)
-                            }></textarea>
+                            }
+                          ></textarea>
                           <div id="passwordHelpBlock" className="form-text">
                             Address.
                           </div>
@@ -418,22 +453,26 @@ const OrgInfoTab = () => {
                         <div>
                           <Label
                             htmlFor="exampleFormControlTextarea5"
-                            className="form-label">
+                            className="form-label"
+                          >
                             Country
                           </Label>
                           <Dropdown isOpen={dropdownOpen3} toggle={toggle3}>
                             <DropdownToggle
                               tag="div"
                               className="form-control rounded-end flag-input form-select"
-                              style={{ cursor: "pointer" }}>
+                              style={{ cursor: "pointer" }}
+                            >
                               {selectedCountry.countryName || "Select country"}
                             </DropdownToggle>
                             <DropdownMenu
                               as="ul"
-                              className="list-unstyled w-100 dropdown-menu-list mb-0">
+                              className="list-unstyled w-100 dropdown-menu-list mb-0"
+                            >
                               <SimpleBar
                                 style={{ maxHeight: "220px" }}
-                                className="px-3">
+                                className="px-3"
+                              >
                                 {(
                                   CountryList.filter((obj) => obj.show).sort(
                                     (a, b) =>
@@ -447,7 +486,8 @@ const OrgInfoTab = () => {
                                       setCountry(item.countryName);
                                     }}
                                     key={key}
-                                    className="dropdown-item d-flex">
+                                    className="dropdown-item d-flex"
+                                  >
                                     <div className="flex-shrink-0 me-2">
                                       <img
                                         src={item.flagImg}
@@ -481,29 +521,34 @@ const OrgInfoTab = () => {
                         <div>
                           <Label
                             htmlFor="exampleFormControlTextarea5"
-                            className="form-label">
+                            className="form-label"
+                          >
                             State
                           </Label>
                           <Dropdown isOpen={stateDD} toggle={stateToggle}>
                             <DropdownToggle
                               tag="div"
                               className="form-control rounded-end flag-input form-select"
-                              style={{ cursor: "pointer" }}>
+                              style={{ cursor: "pointer" }}
+                            >
                               {stateList.find((obj) => obj === state) ||
                                 "Select State"}
                             </DropdownToggle>
                             <DropdownMenu
                               as="ul"
-                              className="list-unstyled w-100 dropdown-menu-list mb-0">
+                              className="list-unstyled w-100 dropdown-menu-list mb-0"
+                            >
                               <SimpleBar
                                 style={{ maxHeight: "220px" }}
-                                className="px-3">
+                                className="px-3"
+                              >
                                 {(stateList || []).map((item, key) => (
                                   <DropdownItem
                                     as="li"
                                     onClick={() => setState(item)}
                                     key={key}
-                                    className="dropdown-item d-flex">
+                                    className="dropdown-item d-flex"
+                                  >
                                     <div className="flex-grow-1">
                                       <div className="d-flex">
                                         <div className="country-name me-1">
@@ -526,7 +571,8 @@ const OrgInfoTab = () => {
                         <div>
                           <Label
                             htmlFor="exampleFormControlTextarea5"
-                            className="form-label">
+                            className="form-label"
+                          >
                             City
                           </Label>
                           <div className="form-icon right">
@@ -552,7 +598,8 @@ const OrgInfoTab = () => {
                         <div>
                           <Label
                             htmlFor="exampleFormControlTextarea5"
-                            className="form-label">
+                            className="form-label"
+                          >
                             Pincode
                           </Label>
                           <div className="form-icon right">
@@ -578,7 +625,8 @@ const OrgInfoTab = () => {
                         <div>
                           <Label
                             htmlFor="exampleFormControlTextarea5"
-                            className="form-label">
+                            className="form-label"
+                          >
                             Time Zone
                           </Label>
                           <div className="form-icon right">
@@ -605,23 +653,48 @@ const OrgInfoTab = () => {
                                 <Label htmlFor="lname" className="form-label">
                                   {obj.name}
                                 </Label>
-                                <div className="form-icon right">
-                                  <Input
-                                    type={obj.type || "text"}
+                                {form_default_input_types.includes(
+                                  obj.type
+                                ) && (
+                                  <div className="form-icon right">
+                                    <Input
+                                      type={obj.type || "text"}
+                                      name={obj.input_name}
+                                      id={obj.input_name}
+                                      className="form-control"
+                                      placeholder={`Enter ${obj.name}`}
+                                      value={obj.value || ""}
+                                      required={obj.is_required || false}
+                                      onChange={(e) =>
+                                        handleCFInputChange(e, obj.id)
+                                      }
+                                    />
+                                  </div>
+                                )}
+                                {obj.type === form_date_type && (
+                                  <DatePicker
                                     name={obj.input_name}
                                     id={obj.input_name}
                                     className="form-control"
-                                    placeholder={`Enter ${obj.name}`}
-                                    value={obj.value || ""}
-                                    required={obj.is_required || false}
-                                    onChange={(e) =>
-                                      handleCFInputChange(e, obj.id)
+                                    format={DateFormat}
+                                    value={
+                                      obj.value === ""
+                                        ? null
+                                        : dayjs(
+                                            ConvertDateFormat(obj.value),
+                                            DateFormat
+                                          )
+                                    }
+                                    allowClear={false}
+                                    onChange={(e, dateStr) =>
+                                      handleCFDateChange(e, dateStr, obj.id)
                                     }
                                   />
-                                </div>
+                                )}
                                 <div
                                   id="passwordHelpBlock"
-                                  className="form-text">
+                                  className="form-text"
+                                >
                                   Enter {obj.name}
                                 </div>
                               </div>
@@ -636,19 +709,22 @@ const OrgInfoTab = () => {
                             <div>
                               <Label
                                 htmlFor="exampleFormControlTextarea5"
-                                className="form-label">
+                                className="form-label"
+                              >
                                 Dark Logo
                               </Label>
                               <Dropzone
                                 multiple={false}
                                 onDrop={(acceptedFiles) => {
                                   handleAcceptedFiles(acceptedFiles, "dark");
-                                }}>
+                                }}
+                              >
                                 {({ getRootProps, getInputProps }) => (
                                   <div className="dropzone dz-clickable">
                                     <div
                                       className="dz-message needsclick"
-                                      {...getRootProps()}>
+                                      {...getRootProps()}
+                                    >
                                       <div className="mb-3">
                                         <i className="display-4 text-muted ri-upload-cloud-2-fill" />
                                       </div>
@@ -662,11 +738,13 @@ const OrgInfoTab = () => {
                               </Dropzone>
                               <div
                                 className="list-unstyled mb-0"
-                                id="file-previews">
+                                id="file-previews"
+                              >
                                 {darkLogoFile && (
                                   <Card
                                     className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete"
-                                    key={darkLogoFile + "-file"}>
+                                    key={darkLogoFile + "-file"}
+                                  >
                                     <div className="p-2">
                                       <Row className="align-items-center">
                                         <Col className="col-auto">
@@ -681,7 +759,8 @@ const OrgInfoTab = () => {
                                         <Col>
                                           <Link
                                             to="#"
-                                            className="text-muted font-weight-bold">
+                                            className="text-muted font-weight-bold"
+                                          >
                                             {darkLogoFile.name}
                                           </Link>
                                           <p className="mb-0">
@@ -720,19 +799,22 @@ const OrgInfoTab = () => {
                             <div>
                               <Label
                                 htmlFor="exampleFormControlTextarea5"
-                                className="form-label">
+                                className="form-label"
+                              >
                                 Light Logo
                               </Label>
                               <Dropzone
                                 multiple={false}
                                 onDrop={(acceptedFiles) => {
                                   handleAcceptedFiles(acceptedFiles, "light");
-                                }}>
+                                }}
+                              >
                                 {({ getRootProps, getInputProps }) => (
                                   <div className="dropzone dz-clickable">
                                     <div
                                       className="dz-message needsclick"
-                                      {...getRootProps()}>
+                                      {...getRootProps()}
+                                    >
                                       <div className="mb-3">
                                         <i className="display-4 text-muted ri-upload-cloud-2-fill" />
                                       </div>
@@ -746,11 +828,13 @@ const OrgInfoTab = () => {
                               </Dropzone>
                               <div
                                 className="list-unstyled mb-0"
-                                id="file-previews">
+                                id="file-previews"
+                              >
                                 {lightLogoFile && (
                                   <Card
                                     className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete"
-                                    key={lightLogoFile + "-file"}>
+                                    key={lightLogoFile + "-file"}
+                                  >
                                     <div className="p-2">
                                       <Row className="align-items-center">
                                         <Col className="col-auto">
@@ -765,7 +849,8 @@ const OrgInfoTab = () => {
                                         <Col>
                                           <Link
                                             to="#"
-                                            className="text-muted font-weight-bold">
+                                            className="text-muted font-weight-bold"
+                                          >
                                             {lightLogoFile.name}
                                           </Link>
                                           <p className="mb-0">
@@ -849,7 +934,8 @@ const OrgInfoTab = () => {
                   type="button"
                   className="btn btn-soft-danger btn-sm"
                   data-bs-toggle="modal"
-                  data-bs-target="#inviteMembersModal">
+                  data-bs-target="#inviteMembersModal"
+                >
                   <i className="ri-share-line me-1 align-bottom"></i> Invite
                   Member
                 </button>
@@ -860,7 +946,8 @@ const OrgInfoTab = () => {
               <SimpleBar
                 data-simplebar
                 style={{ height: "235px" }}
-                className="mx-n3 px-3">
+                className="mx-n3 px-3"
+              >
                 <div className="vstack gap-3">
                   <div className="d-flex align-items-center">
                     <div className="avatar-xs flex-shrink-0 me-3">
@@ -886,7 +973,8 @@ const OrgInfoTab = () => {
                           <DropdownToggle
                             type="button"
                             className="btn btn-icon btn-sm fs-16 text-muted dropdown"
-                            tag="button">
+                            tag="button"
+                          >
                             <i className="ri-more-fill"></i>
                           </DropdownToggle>
                           <DropdownMenu>
@@ -936,7 +1024,8 @@ const OrgInfoTab = () => {
                           <DropdownToggle
                             type="button"
                             className="btn btn-icon btn-sm fs-16 text-muted dropdown"
-                            tag="button">
+                            tag="button"
+                          >
                             <i className="ri-more-fill"></i>
                           </DropdownToggle>
                           <DropdownMenu>
@@ -988,7 +1077,8 @@ const OrgInfoTab = () => {
                           <DropdownToggle
                             type="button"
                             className="btn btn-icon btn-sm fs-16 text-muted dropdown"
-                            tag="button">
+                            tag="button"
+                          >
                             <i className="ri-more-fill"></i>
                           </DropdownToggle>
                           <DropdownMenu>
@@ -1040,7 +1130,8 @@ const OrgInfoTab = () => {
                           <DropdownToggle
                             type="button"
                             className="btn btn-icon btn-sm fs-16 text-muted dropdown"
-                            tag="button">
+                            tag="button"
+                          >
                             <i className="ri-more-fill"></i>
                           </DropdownToggle>
                           <DropdownMenu>
@@ -1089,7 +1180,8 @@ const OrgInfoTab = () => {
                         <UncontrolledDropdown>
                           <DropdownToggle
                             tag="button"
-                            className="btn btn-icon btn-sm fs-16 text-muted dropdown">
+                            className="btn btn-icon btn-sm fs-16 text-muted dropdown"
+                          >
                             <i className="ri-more-fill"></i>
                           </DropdownToggle>
                           <DropdownMenu>
@@ -1140,7 +1232,8 @@ const OrgInfoTab = () => {
                         <UncontrolledDropdown>
                           <DropdownToggle
                             tag="button"
-                            className="btn btn-icon btn-sm fs-16 text-muted dropdown">
+                            className="btn btn-icon btn-sm fs-16 text-muted dropdown"
+                          >
                             <i className="ri-more-fill"></i>
                           </DropdownToggle>
                           <DropdownMenu>
@@ -1196,7 +1289,8 @@ const OrgInfoTab = () => {
                       <h5 className="fs-13 mb-1">
                         <Link
                           to="#"
-                          className="text-body text-truncate d-block">
+                          className="text-body text-truncate d-block"
+                        >
                           App-pages.zip
                         </Link>
                       </h5>
@@ -1206,14 +1300,16 @@ const OrgInfoTab = () => {
                       <div className="d-flex gap-1">
                         <button
                           type="button"
-                          className="btn btn-icon text-muted btn-sm fs-18">
+                          className="btn btn-icon text-muted btn-sm fs-18"
+                        >
                           <i className="ri-download-2-line"></i>
                         </button>
                         <UncontrolledDropdown>
                           <DropdownToggle
                             tag="button"
                             className="btn btn-icon text-muted btn-sm fs-18 dropdown"
-                            type="button">
+                            type="button"
+                          >
                             <i className="ri-more-fill"></i>
                           </DropdownToggle>
                           <DropdownMenu>
@@ -1249,7 +1345,8 @@ const OrgInfoTab = () => {
                       <h5 className="fs-13 mb-1">
                         <Link
                           to="#"
-                          className="text-body text-truncate d-block">
+                          className="text-body text-truncate d-block"
+                        >
                           Velzon-admin.ppt
                         </Link>
                       </h5>
@@ -1259,14 +1356,16 @@ const OrgInfoTab = () => {
                       <div className="d-flex gap-1">
                         <button
                           type="button"
-                          className="btn btn-icon text-muted btn-sm fs-18">
+                          className="btn btn-icon text-muted btn-sm fs-18"
+                        >
                           <i className="ri-download-2-line"></i>
                         </button>
                         <UncontrolledDropdown>
                           <DropdownToggle
                             tag="button"
                             className="btn btn-icon text-muted btn-sm fs-18 dropdown"
-                            type="button">
+                            type="button"
+                          >
                             <i className="ri-more-fill"></i>
                           </DropdownToggle>
                           <DropdownMenu>
@@ -1302,7 +1401,8 @@ const OrgInfoTab = () => {
                       <h5 className="fs-13 mb-1">
                         <Link
                           to="#"
-                          className="text-body text-truncate d-block">
+                          className="text-body text-truncate d-block"
+                        >
                           Images.zip
                         </Link>
                       </h5>
@@ -1312,14 +1412,16 @@ const OrgInfoTab = () => {
                       <div className="d-flex gap-1">
                         <button
                           type="button"
-                          className="btn btn-icon text-muted btn-sm fs-18">
+                          className="btn btn-icon text-muted btn-sm fs-18"
+                        >
                           <i className="ri-download-2-line"></i>
                         </button>
                         <UncontrolledDropdown>
                           <DropdownToggle
                             tag="button"
                             className="btn btn-icon text-muted btn-sm fs-18 dropdown"
-                            type="button">
+                            type="button"
+                          >
                             <i className="ri-more-fill"></i>
                           </DropdownToggle>
                           <DropdownMenu>
@@ -1355,7 +1457,8 @@ const OrgInfoTab = () => {
                       <h5 className="fs-13 mb-1">
                         <Link
                           to="#"
-                          className="text-body text-truncate d-block">
+                          className="text-body text-truncate d-block"
+                        >
                           bg-pattern.png
                         </Link>
                       </h5>
@@ -1365,14 +1468,16 @@ const OrgInfoTab = () => {
                       <div className="d-flex gap-1">
                         <button
                           type="button"
-                          className="btn btn-icon text-muted btn-sm fs-18">
+                          className="btn btn-icon text-muted btn-sm fs-18"
+                        >
                           <i className="ri-download-2-line"></i>
                         </button>
                         <UncontrolledDropdown>
                           <DropdownToggle
                             tag="button"
                             className="btn btn-icon text-muted btn-sm fs-18 dropdown"
-                            type="button">
+                            type="button"
+                          >
                             <i className="ri-more-fill"></i>
                           </DropdownToggle>
                           <DropdownMenu>

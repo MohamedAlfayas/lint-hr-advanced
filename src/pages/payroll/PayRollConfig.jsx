@@ -54,7 +54,12 @@ import {
   professional_tax_form_component_name,
   salary_form_component_name,
   salary_policy_form_component_name,
+  MonthFormat,
 } from "../../common/constant/Constants";
+import { DatePicker } from "antd";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+dayjs.extend(customParseFormat);
 
 // register lottie and define custom element
 defineElement(loadAnimation);
@@ -800,16 +805,17 @@ const PayRollConfig = () => {
                                     Effective From
                                   </Label>
                                   <div>
-                                    <Flatpickr
+                                    <DatePicker
                                       className="form-control"
                                       placeholder="Effective From"
-                                      value={payrollobj.pay_cycle.from}
-                                      options={{
-                                        shorthand: true, //defaults to false https://flatpickr.js.org/plugins/
-                                        dateFormat: "M, y", //defaults to "F Y"
-                                        altFormat: "F Y", //defaults to "F Y"
-                                        theme: "dark", // defaults to "light"
-                                      }}
+                                      // value={payrollobj.pay_cycle.from}
+                                      // value={dayjs(
+                                      //   payrollobj.pay_cycle.from,
+                                      //   MonthFormat
+                                      // )}
+                                      format={MonthFormat}
+                                      picker="month"
+                                      allowClear={false}
                                     />
                                   </div>
                                   <div

@@ -150,8 +150,8 @@ const EmployeeForm = () => {
       (obj) => obj.id !== form_obj.primary_department_id
     );
     setSubDeptOptions(sub_dep_options);
-    setDob([new Date(form_obj.dob)]);
-    setJoinDate([new Date(form_obj.joining_date)]);
+    setDob(ConvertDateFormat(ConvertISODateFormat(form_obj.dob)));
+    setJoinDate(ConvertDateFormat(ConvertISODateFormat(form_obj.joining_date)));
 
     if (
       form_obj.country_code !== "" &&
@@ -207,17 +207,17 @@ const EmployeeForm = () => {
   };
 
   const handleDateChange = (selectedDates, dateStr, instance) => {
-    setDob(selectedDates);
+    setDob(dateStr);
     setEmployeeObj({
       ...employeeObj,
-      dob: selectedDates[0],
+      dob: ConvertISODateFormat(ConvertDateFormat(dateStr)),
     });
   };
   const handleJoinDateChange = (selectedJoinDate, dateStr, instance) => {
-    setJoinDate(selectedJoinDate);
+    setJoinDate(dateStr);
     setEmployeeObj({
       ...employeeObj,
-      joining_date: selectedJoinDate[0],
+      joining_date: ConvertISODateFormat(ConvertDateFormat(dateStr)),
     });
   };
   const handleTimeZoneChange = (selectedTimezone) => {
@@ -579,38 +579,14 @@ const EmployeeForm = () => {
                     placeholder="Select DOB"
                     id="dob"
                     name="dob"
-                    // defaultValue={today}
-                    // value={selectedDates || " "}
+                    value={dayjs(dob, DateFormat)}
                     format={"DD-MM-YYYY"}
                     onChange={handleDateChange}
                     allowClear={false}
-                    styles={{
-                      control: (provided, state) => ({
-                        ...provided,
-                        borderColor:
-                          !state.isFocused &&
-                          FormikForm.touched.dob &&
-                          FormikForm.errors.dob
-                            ? "red !important"
-                            : provided.borderColor,
-                      }),
-                    }}
-                    invalid={
-                      FormikForm.touched.dob && FormikForm.errors.dob
-                        ? true
-                        : false
-                    }
                   />
-                  {FormikForm.touched.dob && FormikForm.errors.dob ? (
-                    <FormFeedback type="invalid">
-                      {FormikForm.errors.dob}
-                    </FormFeedback>
-                  ) : null}
-                  {!FormikForm.errors.dob && (
-                    <div id="passwordHelpBlock" className="form-text mb-3">
-                      Select DOB.
-                    </div>
-                  )}
+                  <div id="passwordHelpBlock" className="form-text mb-3">
+                    Select DOB.
+                  </div>
                 </div>
               </Col>
 
@@ -969,7 +945,7 @@ const EmployeeForm = () => {
                   <DatePicker
                     className="form-control"
                     id="joining_date"
-                    // value={joining_date}
+                    value={dayjs(joining_date, DateFormat)}
                     format={"DD/MM/YYYY"}
                     allowClear={false}
                     onChange={handleJoinDateChange}

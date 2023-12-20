@@ -27,6 +27,7 @@ import * as Yup from "yup";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
 import { DatePicker, Space } from "antd";
+import dayjs from "dayjs";
 import moment from "moment";
 
 const ApplyLeaveForm = () => {
@@ -48,6 +49,7 @@ const ApplyLeaveForm = () => {
   const [selectedStartMinute, setSelectedStartMinute] = useState("");
   const [selectedEndHour, setSelectedEndHour] = useState("");
   const [selectedEndMinute, setSelectedEndMinute] = useState("");
+  const [daysCount, setDaysCount] = useState("");
   const { RangePicker } = DatePicker;
 
   useEffect(() => {
@@ -66,10 +68,12 @@ const ApplyLeaveForm = () => {
   }, [form_obj]);
 
   const handleDateSelected = (date, dateString) => {
-    const selectedDate = new Date(date[0]);
-    console.log("selected Date:", selectedDate);
-    const dayName = date ? moment(date).format("dddd") : "";
-    console.log("Selected day: " + dayName);
+    const selectedDate = dateString;
+
+    const dayName = dayjs(
+      ConvertISODateFormat(ConvertDateFormat(dateString))
+    ).format("dddd");
+
     setSelectedDate(selectedDate);
     getHourMinData(dayName);
   };
@@ -92,11 +96,6 @@ const ApplyLeaveForm = () => {
 
   const getHourMinData = (dayName) => {
     const scheduleWeek = thisEmpWS.workday.find((d) => d.weekday === dayName);
-    console.log("====================================");
-    console.log("scheduleWeek === ", scheduleWeek);
-    console.log("SHR === ", scheduleWeek.s_hr, " SMIN = ", scheduleWeek.s_min);
-    console.log("EHR === ", scheduleWeek.e_hr, " EMIN = ", scheduleWeek.e_min);
-    console.log("====================================");
     if (scheduleWeek) {
       setSelectedStartHour(scheduleWeek.s_hr);
       setSelectedEndHour(scheduleWeek.e_hr);
@@ -220,7 +219,6 @@ const ApplyLeaveForm = () => {
       status: 1,
     },
   ];
-  const [daysCount, setDaysCount] = useState(0);
 
   const disabledDate = (current) => {
     // Disable Saturdays and Sundays
@@ -403,7 +401,7 @@ const ApplyLeaveForm = () => {
       setLeaveApplyObj({
         leaveapplyObj,
         unit: e,
-        select_Dates: "",
+        select_Dates: setDaysCount(""),
       });
     }
     setCurrentUnit(e);
