@@ -41,10 +41,10 @@ const ApplyLeaveForm = () => {
   const [endMinute, setEndMinute] = useState(null);
   const [currentUnit, setCurrentUnit] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedStartHour, setSelectedStartHour] = useState("09");
-  const [selectedStartMinute, setSelectedStartMinute] = useState("30");
-  const [selectedEndHour, setSelectedEndHour] = useState("18");
-  const [selectedEndMinute, setSelectedEndMinute] = useState("00");
+  const [selectedStartHour, setSelectedStartHour] = useState("");
+  const [selectedStartMinute, setSelectedStartMinute] = useState("");
+  const [selectedEndHour, setSelectedEndHour] = useState("");
+  const [selectedEndMinute, setSelectedEndMinute] = useState("");
   const { RangePicker } = DatePicker;
 
   useEffect(() => {
@@ -64,7 +64,7 @@ const ApplyLeaveForm = () => {
 
   const handleDateSelected = (date, dateString) => {
     const selectedDate = new Date(date[0]);
-    console.log(selectedDate);
+    console.log("selected Date:", selectedDate);
     const dayName = date ? moment(date).format("dddd") : "";
     console.log("Selected day: " + dayName);
     setSelectedDate(selectedDate);
@@ -236,7 +236,9 @@ const ApplyLeaveForm = () => {
   const handleMultiDayChange = (dates, dateStrings) => {
     const generateIntermediaryDates = () => {
       const start = new Date(dateStrings[0]);
-      const end = new Date(dateStrings[1]);
+      console.log(start);
+      const end = new Date(ConvertISODateFormat(dateStrings[1]));
+      console.log(end);
       const dates = [];
 
       // Increment the start date by one day until it reaches the end date
@@ -395,13 +397,16 @@ const ApplyLeaveForm = () => {
       setLeaveApplyObj({
         leaveapplyObj,
         unit: e,
-        day_value: "",
+        s_hr: setSelectedStartHour(""),
+        s_min: setSelectedStartMinute(""),
+        e_hr: setSelectedEndHour(""),
+        e_min: setSelectedEndMinute(""),
       });
     } else {
       setLeaveApplyObj({
         leaveapplyObj,
         unit: e,
-        hour_value: "",
+        select_Dates: "",
       });
     }
     setCurrentUnit(e);
@@ -485,7 +490,7 @@ const ApplyLeaveForm = () => {
                     <div className="form-check form-check-inline">
                       <Input
                         id="single"
-                        name="single"
+                        name="unit"
                         type="radio"
                         className="form-check-input"
                         checked={
@@ -502,7 +507,7 @@ const ApplyLeaveForm = () => {
                     <div className="form-check form-check-inline">
                       <Input
                         id="multiple"
-                        name="multiple"
+                        name="unit"
                         type="radio"
                         className="form-check-input"
                         checked={
@@ -518,9 +523,6 @@ const ApplyLeaveForm = () => {
                     </div>
                   </div>
                 </div>
-                {/* <div id="passwordHelpBlock" className="form-text mb-3">
-                  Select Leave Type Unit.
-                </div> */}
               </Col>
 
               {currentUnit && currentUnit === leave_type_hour_unit && (
@@ -532,6 +534,7 @@ const ApplyLeaveForm = () => {
                       placeholder="Select Date"
                       // value={startDate}
                       allowClear={false}
+                      format={"DD-MM-YYYY"}
                       disabledDate={disabledDate}
                       onChange={handleDateSelected}
                     />
@@ -544,7 +547,7 @@ const ApplyLeaveForm = () => {
                       onChange={handleStartTimeChange}
                       options={hours || []}
                       autosize={true}
-                      placeholder="09"
+                      placeholder="00"
                     ></Select>
 
                     <Select
@@ -555,7 +558,7 @@ const ApplyLeaveForm = () => {
                       }
                       onChange={handleStartMinuteChange}
                       options={minutes || []}
-                      placeholder="30"
+                      placeholder="00"
                       autosize={true}
                     ></Select>
                     <span className="input-group-text">To</span>
@@ -568,7 +571,7 @@ const ApplyLeaveForm = () => {
                       onChange={handleEndTimeChange}
                       options={hours || []}
                       autosize={true}
-                      placeholder="18"
+                      placeholder="00"
                     ></Select>
 
                     <Select
@@ -595,39 +598,17 @@ const ApplyLeaveForm = () => {
 
               {currentUnit && currentUnit === leave_type_day_unit && (
                 <Col lg={12}>
-                  {/* <label htmlFor="holidayName" className="form-label">
-                  Select Hour *
-                </label> */}
                   <div className="input-group">
                     <RangePicker
-                      format="YYYY-MM-DD"
+                      name="select_Dates"
+                      format={"DD-MM-YYYY"}
                       allowClear={false}
                       placeholder={["Start Date", "End Date"]}
                       disabledDate={disabledDate}
                       onChange={handleMultiDayChange}
                     />
-                    {/* onChange={(selectedDates, dateStr, instance) => {
-                      //   setLeaveApplyObj({ ...leaveapplyObj, end: dateStr });
-                      //   setSelectedStartHour(dateStr);
-
-                      //   handleMultiDayChange(selectedDates, dateStr, instance);
-                      // }} */}
 
                     <span className="input-group-text">{daysCount} Days</span>
-                    {/* <Flatpickr
-                    className="form-control"
-                    placeholder="End Hour"
-                    value={endHour}
-                    options={{
-                      mode: "range",
-                    }}
-                    onChange={(selectedDates, dateStr, instance) => {
-                      //setLeaveApplyObj({ ...leaveapplyObj, end: dateStr });
-                      setEndHour(dateStr);
-
-                      // handleMultiDayChange(selectedDates, dateStr, instance);
-                    }}
-                  /> */}
                   </div>
                   <div id="passwordHelpBlock" className="form-text">
                     Please select Start & End Date
