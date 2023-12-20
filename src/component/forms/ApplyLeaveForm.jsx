@@ -13,7 +13,10 @@ import {
   editLeaveApplication,
 } from "../../redux/reducers/ChildReducer/LeaveApplyReducer";
 import { toast } from "react-toastify";
-import { ConvertISODateFormat } from "../../common/js/ConvertDateFormat";
+import {
+  ConvertDateFormat,
+  ConvertISODateFormat,
+} from "../../common/js/ConvertDateFormat";
 import Flatpickr from "react-flatpickr";
 import {
   leave_type_day_unit,
@@ -73,12 +76,7 @@ const ApplyLeaveForm = () => {
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
   const profileData = GetLocalStorageData("my_profile") || [];
-  // const thisEmpWSID = ProfileData.find(work_schedule_id);
 
-  console.log("WS DATA = ", workScheduleData);
-  console.log("Profile DATA = ", profileData);
-
-  // console.log(thisEmpWSID);
   const thisEmpWS = workScheduleData?.find(
     (val) => val.id === profileData.work_schedule_id
   );
@@ -106,9 +104,6 @@ const ApplyLeaveForm = () => {
       setSelectedEndMinute(scheduleWeek.e_min);
     }
   };
-
-  console.log("thisEmpWS = ", thisEmpWS);
-  console.log("WeekOffDays = ", WeekOffDays);
 
   const FormikForm = useFormik({
     enableReinitialize: true,
@@ -235,10 +230,12 @@ const ApplyLeaveForm = () => {
 
   const handleMultiDayChange = (dates, dateStrings) => {
     const generateIntermediaryDates = () => {
-      const start = new Date(dateStrings[0]);
-      console.log(start);
-      const end = new Date(ConvertISODateFormat(dateStrings[1]));
-      console.log(end);
+      const start = new Date(
+        ConvertISODateFormat(ConvertDateFormat(dateStrings[0]))
+      );
+      const end = new Date(
+        ConvertISODateFormat(ConvertDateFormat(dateStrings[1]))
+      );
       const dates = [];
 
       // Increment the start date by one day until it reaches the end date
