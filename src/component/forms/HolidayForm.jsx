@@ -36,6 +36,7 @@ import Flatpickr from "react-flatpickr";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { PostApi } from "../../common/api/PostApi";
+import { DatePicker } from "antd";
 
 const HolidayForm = () => {
   const dispatch = useDispatch();
@@ -168,14 +169,13 @@ const HolidayForm = () => {
               <Col lg={12}>
                 <div className="mb-3">
                   <Label htmlfor="date">Date</Label>
-                  <Flatpickr
+                  <DatePicker
                     name="date"
                     id="date"
                     className="form-control"
-                    options={{
-                      dateFormat: "d M, Y",
-                    }}
-                    value={date || []}
+                    format={"DD/MM/YYYY"}
+                    allowClear={false}
+                    // value={date || ""}
                     onChange={handleDateChange}
                     invalid={
                       FormikForm.touched.date && FormikForm.errors.date

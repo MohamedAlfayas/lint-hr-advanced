@@ -531,6 +531,7 @@ const ApplyLeaveForm = () => {
                       className="form-control"
                       placeholder="Select Date"
                       // value={startDate}
+                      allowClear={false}
                       disabledDate={disabledDate}
                       onChange={handleDateSelected}
                     />
@@ -600,6 +601,7 @@ const ApplyLeaveForm = () => {
                   <div className="input-group">
                     <RangePicker
                       format="YYYY-MM-DD"
+                      allowClear={false}
                       placeholder={["Start Date", "End Date"]}
                       disabledDate={disabledDate}
                       onChange={handleMultiDayChange}

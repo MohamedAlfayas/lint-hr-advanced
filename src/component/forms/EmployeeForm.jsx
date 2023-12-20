@@ -42,6 +42,7 @@ import {
   select_type,
   timzone_options,
 } from "../../common/constant/Constants";
+import { DatePicker } from "antd";
 
 // Register the plugins
 // registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
@@ -201,14 +202,14 @@ const EmployeeForm = () => {
     setDob(selectedDates);
     setEmployeeObj({
       ...employeeObj,
-      dob: ConvertISODateFormat(selectedDates[0]),
+      dob: selectedDates[0],
     });
   };
   const handleJoinDateChange = (selectedJoinDate, dateStr, instance) => {
     setJoinDate(selectedJoinDate);
     setEmployeeObj({
       ...employeeObj,
-      joining_date: ConvertISODateFormat(selectedJoinDate[0]),
+      joining_date: selectedJoinDate[0],
     });
   };
   const handleTimeZoneChange = (selectedTimezone) => {
@@ -610,15 +611,27 @@ const EmployeeForm = () => {
                   <Label htmlFor="dob" className="form-label">
                     DOB
                   </Label>
-                  <Flatpickr
+                  <DatePicker
                     className="form-control"
+                    placeholder="Select DOB"
                     id="dob"
                     name="dob"
-                    value={dob}
-                    options={{
-                      dateFormat: "d M, Y",
-                    }}
+                    // defaultValue={today}
+                    // value={selectedDates || " "}
+                    format={"DD-MM-YYYY"}
                     onChange={handleDateChange}
+                    allowClear={false}
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.dob &&
+                          FormikForm.errors.dob
+                            ? "red !important"
+                            : provided.borderColor,
+                      }),
+                    }}
                     invalid={
                       FormikForm.touched.dob && FormikForm.errors.dob
                         ? true
@@ -990,13 +1003,12 @@ const EmployeeForm = () => {
                   <Label htmlFor="joindate" className="form-label">
                     Joining Date
                   </Label>
-                  <Flatpickr
+                  <DatePicker
                     className="form-control"
                     id="joining_date"
-                    value={joining_date}
-                    options={{
-                      dateFormat: "d M, Y",
-                    }}
+                    // value={joining_date}
+                    format={"DD/MM/YYYY"}
+                    allowClear={false}
                     onChange={handleJoinDateChange}
                   />
                 </div>
