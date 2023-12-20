@@ -28,7 +28,10 @@ import {
   editEmployee,
 } from "../../redux/reducers/ChildReducer/EmployeeReducer";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
-import { ConvertISODateFormat } from "../../common/js/ConvertDateFormat";
+import {
+  ConvertDateFormat,
+  ConvertISODateFormat,
+} from "../../common/js/ConvertDateFormat";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import indflag from "../../assets/images/flags/in.svg";
 import SimpleBar from "simplebar-react";
@@ -38,11 +41,16 @@ import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
 import { PostApi } from "../../common/api/PostApi";
 import {
   gender_options,
-  input_types,
-  select_type,
+  form_default_input_types,
+  form_select_type,
   timzone_options,
+  form_date_type,
+  DateFormat,
 } from "../../common/constant/Constants";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import { DatePicker } from "antd";
+dayjs.extend(customParseFormat);
 
 // Register the plugins
 // registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
@@ -268,33 +276,33 @@ const EmployeeForm = () => {
     }),
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
-      dispatch(setLoaderVisible(true));
+      // dispatch(setLoaderVisible(true));
 
-      console.log("emp Obj = ", employeeObj);
-      let form_data = new FormData();
-      employeeImage !== null &&
-        form_data.append("profile", employeeImage, employeeImage.name);
-      Object.entries(employeeObj).map((key, idx) => {
-        if (key[0] === "cf_values") {
-          form_data.append(key[0], JSON.stringify(key[1]));
-        } else {
-          form_data.append(key[0], key[1]);
-        }
-      });
+      // console.log("emp Obj = ", employeeObj);
+      // let form_data = new FormData();
+      // employeeImage !== null &&
+      //   form_data.append("profile", employeeImage, employeeImage.name);
+      // Object.entries(employeeObj).map((key, idx) => {
+      //   if (key[0] === "cf_values") {
+      //     form_data.append(key[0], JSON.stringify(key[1]));
+      //   } else {
+      //     form_data.append(key[0], key[1]);
+      //   }
+      // });
 
-      const Api = await PostApi("employee/add-new/", form_data, true);
-      console.log("API RES = ", Api);
-      if (Api.status && Api.status === 200) {
-        employeeObj.id === 0
-          ? dispatch(addEmployee(Api?.data.data))
-          : dispatch(editEmployee(Api?.data?.data));
-        dispatch(toggleRSBView(false));
-        toast.success(Api?.data?.message);
-      } else {
-        toast.error(Api?.data?.message || Api?.data?.detail);
-      }
+      // const Api = await PostApi("employee/add-new/", form_data, true);
+      // console.log("API RES = ", Api);
+      // if (Api.status && Api.status === 200) {
+      //   employeeObj.id === 0
+      //     ? dispatch(addEmployee(Api?.data.data))
+      //     : dispatch(editEmployee(Api?.data?.data));
+      //   dispatch(toggleRSBView(false));
+      //   toast.success(Api?.data?.message);
+      // } else {
+      //   toast.error(Api?.data?.message || Api?.data?.detail);
+      // }
 
-      dispatch(setLoaderVisible(false));
+      // dispatch(setLoaderVisible(false));
     },
   });
 
@@ -321,61 +329,23 @@ const EmployeeForm = () => {
     inputRef,
   ]);
 
-  // const handleSubmit = async () => {
-  //   dispatch(setLoaderVisible(true));
+  const handleCFDateChange = (e, dateStr, cf_id) => {
+    console.log("dateStr ==== ", dateStr);
+    console.log("Convert dateStr ==== ", ConvertDateFormat(dateStr));
+    console.log(
+      "ISO dateStr ==== ",
+      ConvertISODateFormat(ConvertDateFormat(dateStr))
+    );
 
-  //   console.log("emp Obj = ", employeeObj);
-  //   let form_data = new FormData();
-  //   employeeImage !== null &&
-  //     form_data.append("profile", employeeImage, employeeImage.name);
-  //   Object.entries(employeeObj).map((key, idx) => {
-  //     if (key[0] === "cf_values") {
-  //       form_data.append(key[0], JSON.stringify(key[1]));
-  //     } else {
-  //       form_data.append(key[0], key[1]);
-  //     }
-  //   });
-
-  //   const Api = await PostApi("employee/add-new/", form_data, true);
-  //   console.log("API RES = ", Api);
-  //   if (Api.status && Api.status === 200) {
-  //     employeeObj.id === 0
-  //       ? dispatch(addEmployee(Api?.data.data))
-  //       : dispatch(editEmployee(Api?.data?.data));
-  //     dispatch(toggleRSBView(false));
-  //     toast.success(Api?.data?.message);
-  //   } else {
-  //     toast.error(Api?.data?.message || Api?.data?.detail);
-  //   }
-
-  //   dispatch(setLoaderVisible(false));
-
-  //   // Api({
-  //   //   method: "POST",
-  //   //   url: "employee/add-new/",
-  //   //   headers: {
-  //   //     "Content-Type": "multipart/form-data",
-  //   //   },
-  //   //   data: form_data,
-  //   // })
-  //   //   .then((res) => {
-  //   //     console.log("REs = ", res);
-  //   //     employeeObj.id === 0
-  //   //       ? dispatch(addEmployee(res?.data.data))
-  //   //       : dispatch(editEmployee(res?.data?.data));
-  //   //     dispatch(toggleRSBView(false));
-  //   //     // dispatch(setActiveTableTab("all"));
-  //   //     dispatch(setLoaderVisible(false));
-  //   //     toast.success(res?.data?.message);
-  //   //   })
-  //   //   .catch((err) => {
-  //   //     console.log("ERr == ", err);
-  //   //     dispatch(setLoaderVisible(false));
-  //   //     toast.error(
-  //   //       err?.response?.data?.message || err?.response?.data?.detail
-  //   //     );
-  //   //   });
-  // };
+    setEmployeeObj({
+      ...employeeObj,
+      cf_values: [...employeeObj.cf_values].map((item) =>
+        item.id === cf_id
+          ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
+          : item
+      ),
+    });
+  };
 
   return (
     <React.Fragment>
@@ -1437,7 +1407,7 @@ const EmployeeForm = () => {
                         <Label htmlFor="obj.input_name" className="form-label">
                           {obj.name}
                         </Label>
-                        {input_types.includes(obj.type) && (
+                        {form_default_input_types.includes(obj.type) && (
                           <Fragment>
                             <div className="form-icon right">
                               <Input
@@ -1456,7 +1426,27 @@ const EmployeeForm = () => {
                             </div>
                           </Fragment>
                         )}
-                        {obj.type === select_type && (
+                        {obj.type === form_date_type && (
+                          <DatePicker
+                            name={obj.input_name}
+                            id={obj.input_name}
+                            className="form-control"
+                            format={DateFormat}
+                            value={
+                              obj.value === ""
+                                ? null
+                                : dayjs(
+                                    ConvertDateFormat(obj.value),
+                                    DateFormat
+                                  )
+                            }
+                            allowClear={false}
+                            onChange={(e, dateStr) =>
+                              handleCFDateChange(e, dateStr, obj.id)
+                            }
+                          />
+                        )}
+                        {obj.type === form_select_type && (
                           <Select
                             name={obj.input_name}
                             id={obj.input_name}
