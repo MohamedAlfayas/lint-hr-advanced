@@ -276,33 +276,33 @@ const EmployeeForm = () => {
     }),
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
-      // dispatch(setLoaderVisible(true));
+      dispatch(setLoaderVisible(true));
 
-      // console.log("emp Obj = ", employeeObj);
-      // let form_data = new FormData();
-      // employeeImage !== null &&
-      //   form_data.append("profile", employeeImage, employeeImage.name);
-      // Object.entries(employeeObj).map((key, idx) => {
-      //   if (key[0] === "cf_values") {
-      //     form_data.append(key[0], JSON.stringify(key[1]));
-      //   } else {
-      //     form_data.append(key[0], key[1]);
-      //   }
-      // });
+      console.log("emp Obj = ", employeeObj);
+      let form_data = new FormData();
+      employeeImage !== null &&
+        form_data.append("profile", employeeImage, employeeImage.name);
+      Object.entries(employeeObj).map((key, idx) => {
+        if (key[0] === "cf_values") {
+          form_data.append(key[0], JSON.stringify(key[1]));
+        } else {
+          form_data.append(key[0], key[1]);
+        }
+      });
 
-      // const Api = await PostApi("employee/add-new/", form_data, true);
-      // console.log("API RES = ", Api);
-      // if (Api.status && Api.status === 200) {
-      //   employeeObj.id === 0
-      //     ? dispatch(addEmployee(Api?.data.data))
-      //     : dispatch(editEmployee(Api?.data?.data));
-      //   dispatch(toggleRSBView(false));
-      //   toast.success(Api?.data?.message);
-      // } else {
-      //   toast.error(Api?.data?.message || Api?.data?.detail);
-      // }
+      const Api = await PostApi("employee/add-new/", form_data, true);
+      console.log("API RES = ", Api);
+      if (Api.status && Api.status === 200) {
+        employeeObj.id === 0
+          ? dispatch(addEmployee(Api?.data.data))
+          : dispatch(editEmployee(Api?.data?.data));
+        dispatch(toggleRSBView(false));
+        toast.success(Api?.data?.message);
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
+      }
 
-      // dispatch(setLoaderVisible(false));
+      dispatch(setLoaderVisible(false));
     },
   });
 
@@ -330,13 +330,6 @@ const EmployeeForm = () => {
   ]);
 
   const handleCFDateChange = (e, dateStr, cf_id) => {
-    console.log("dateStr ==== ", dateStr);
-    console.log("Convert dateStr ==== ", ConvertDateFormat(dateStr));
-    console.log(
-      "ISO dateStr ==== ",
-      ConvertISODateFormat(ConvertDateFormat(dateStr))
-    );
-
     setEmployeeObj({
       ...employeeObj,
       cf_values: [...employeeObj.cf_values].map((item) =>
