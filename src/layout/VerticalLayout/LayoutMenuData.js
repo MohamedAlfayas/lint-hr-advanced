@@ -190,6 +190,7 @@ const Navdata = () => {
                 { id: "customfield", label: "Custom Field", link: "/custom-field", parentId: "baseUi" },
                 { id: "payroll", label: "Pay Roll", link: "/payroll", parentId: "payroll" },
                 { id: "payrollconfig", label: "Pay Roll Configuration", link: "/payrollconfig", parentId: "baseUi" },
+                { id: "attendanceconfig", label: "Attendance Configuration", link: "/attendanceconfig", parentId: "baseUi" },
 
                 //     { id: "badges", label: "Badges", link: "#", parentId: "baseUi" },
                 //     { id: "buttons", label: "Buttons", link: "#", parentId: "baseUi" },

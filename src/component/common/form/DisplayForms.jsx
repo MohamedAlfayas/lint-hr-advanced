@@ -16,6 +16,7 @@ import EPFWageForm from "../../forms/EPFWageForm";
 import ProfessionalTaxForm from "../../forms/ProfessionalTaxForm";
 import SalaryCmpntForm from "../../forms/Common/SalaryCmpntForm";
 import SalaryPloiciesForm from "../../forms/Common/SalaryPoliciesForm";
+import LocationEditForm from "../../forms/Common/LocationEditForm"
 import {
   branch_component_name,
   custom_field_component_name,
@@ -31,6 +32,7 @@ import {
   salary_form_component_name,
   salary_policy_form_component_name,
   work_schedule_component_name,
+  location_edit_form_component_name,
 } from "../../../common/constant/Constants";
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
@@ -83,6 +85,8 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
                 <SalaryCmpntForm />
               ) : component_to_show === salary_policy_form_component_name ? (
                 <SalaryPloiciesForm />
+              ) :component_to_show === location_edit_form_component_name ? (
+                <LocationEditForm />
               ) : (
                 <></>
               )}

@@ -1856,6 +1856,7 @@ export const epf_wage_form_component_name = "epf_wage_form"
 export const professional_tax_form_component_name = "professional_tax_form"
 export const salary_form_component_name = "salary_form"
 export const salary_policy_form_component_name = "salary_policy_form"
+export const location_edit_form_component_name = "location_edit_form"
 
 
 export const component_list_for_import_btn_access = [

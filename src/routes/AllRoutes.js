@@ -17,6 +17,7 @@ import PayRoll from "../pages/payroll/PayRoll";
 import Xlsx from "../pages/xlsx/Xlsx"
 import PayRollConfig from "../pages/payroll/PayRollConfig";
 import AttendanceDashboard from "../pages/attendance/Attendance";
+import AttendanceConfig from "../pages/attendanceConfig/attendanceConfiq"
 
 
 
@@ -36,6 +37,7 @@ const privateRoutes = [
     { path: "/payrollconfig", component: <PayRollConfig /> },
     { path: "/attendance", component: <AttendanceDashboard /> },
     { path: "/xlsx", component: <Xlsx /> },
+    { path: "/attendanceconfig", component: <AttendanceConfig /> },
     {
         path: "/",
         exact: true,
