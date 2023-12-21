@@ -17,7 +17,7 @@ import PayRoll from "../pages/payroll/PayRoll";
 import Xlsx from "../pages/xlsx/Xlsx"
 import PayRollConfig from "../pages/payroll/PayRollConfig";
 import AttendanceDashboard from "../pages/attendance/Attendance";
-import AttendanceConfig from "../pages/attendanceConfig/attendanceConfiq"
+import AttendanceConfig from "../pages/attendanceConfig/AttendanceConfig"
 
 
 

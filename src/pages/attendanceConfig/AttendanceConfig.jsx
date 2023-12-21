@@ -221,37 +221,49 @@ const AttendanceConfig = () => {
     };
 
    
-    const tax_slab = [
-        {
-            id: 1,
-            state: "Tamil Nadu",
-            cycle_id: "3",
-            range: [
-                { s: 0, e: 21000, tax: 0 },
-                { s: 21001, e: 30000, tax: 135 },
-                { s: 30001, e: 45000, tax: 315 },
-                { s: 45001, e: 60000, tax: 690 },
-                { s: 60001, e: 75000, tax: 1025 },
-                { s: 75001, e: 999999999, tax: 1250 },
-            ],
-        },
-        {
-            id: 2,
-            state: "Kerala",
-            cycle_id: "3",
-            range: [
-                { s: 0, e: 11999, tax: 0 },
-                { s: 12000, e: 17999, tax: 120 },
-                { s: 18000, e: 29999, tax: 180 },
-                { s: 45001, e: 60000, tax: 690 },
-                { s: 60001, e: 75000, tax: 1025 },
-                { s: 75001, e: 999999999, tax: 1250 },
-            ],
-        },
-    ];
+    
 
-    console.log(payrollobj);
+    const approval_cycle = useMemo(
+        () => [
+          { id: "1", label: "Monthly", value: "Monthly" },
+          { id: "2", label: "Weekly", value: "Weekly" },
+        ],
+        []
+      );
 
+      const repeat_onselect = useMemo(
+        () => [
+          { id: "1", label: "Monthly on day 19", value: "Monthly on day 19" },
+          { id: "2", label: "Monthly on the third Tuesday", value: "Monthly on the third Tuesday" },
+        ],
+        []
+      );
+
+      const security_type = useMemo(
+        () => [
+          { id: "1", label: "Public URL Everyone", value: "Public URL Everyone" },
+          { id: "2", label: "Restricted URL with Password", value: "Restricted URL with Password" },
+        ],
+        []
+      );
+      const generate_qr = useMemo(
+        () => [
+          { id: "1", label: "Second(s)", value: "Second(s)" },
+          { id: "2", label: "Minute(s)", value: "Minute(s)" },
+        ],
+        []
+      );
+    //   const radius_option = useMemo(
+    //     () => [
+    //       { id: "1", label: "10(meters)", value: "10(meters)" },
+    //       { id: "2", label: "25(meters)", value: "25(meters)" },
+    //       { id: "3", label: "50(meters)", value: "50(meters)" },
+    //       { id: "4", label: "100(meters)", value: "100(meters)" },
+    //       { id: "5", label: "200(meters)", value: "200(meters)" },
+    //       { id: "6", label: "500(meters)", value: "500(meters)" },
+    //     ],
+    //     []
+    //   );
     const location_option = useMemo(
         () => [
             { id: "India", label: "India", value: "India" },
@@ -438,29 +450,22 @@ const AttendanceConfig = () => {
                                                                 <TabPane tabId="1">
                                                                     {" "}
                                                                     <Row>
-                                                                        <Col md={3} lg={3} xxl={3}>
+                                                                        <Col md={6} lg={6} xxl={6}>
                                                                             <div>
                                                                                 <Label
-                                                                                    htmlFor="location"
+                                                                                    htmlFor="calculation"
                                                                                     className="form-label"
                                                                                 >
                                                                                     Total Hour Calculation
                                                                                 </Label>
                                                                                 <div>
-                                                                                    <Select
-                                                                                        id="location"
-                                                                                        isMulti={false}
-                                                                                        options={location_option || []}
-                                                                                        value={
-                                                                                            (payrollobj.general.location &&
-                                                                                                location_option.find(
-                                                                                                    (e) =>
-                                                                                                        e.value ===
-                                                                                                        payrollobj.general.location
-                                                                                                )) ||
-                                                                                            []
-                                                                                        }
-                                                                                        className="basic-multi-select "
+                                                                                <Select
+                                                                                           id="calculation"
+                                                                                           isMulti={false}
+                                                                                           options={[{ label: 'Every Valid Check-in&Check-out', value: 'Every Valid Check-in&Check-out' }]}
+                                                                                           defaultValue={{ label: 'Every Valid Check-in&Check-out', value: 'Every Valid Check-in&Check-out' }}
+                                                                                           isDisabled={true} 
+                                                                                           className="basic-multi-select"
                                                                                     />
                                                                                 </div>
                                                                                 <div
@@ -479,25 +484,32 @@ const AttendanceConfig = () => {
                                                                                 </Label>
                                                                                 <div>
                                                                                     <Select
-                                                                                        id="calculation"
+                                                                                        id="approval"
                                                                                         isMulti={false}
-                                                                                        options={salary_calculation_option || []}
-                                                                                        value={
-                                                                                            (payrollobj.general.calc_based_on &&
-                                                                                                salary_calculation_option.find(
-                                                                                                    (e) => e.value === payrollobj.general.calc_based_on
-                                                                                                )) ||
-                                                                                            []
-                                                                                        }
+                                                                                        options={[{ label: '1', value: 1 }]} 
+                                                                                        // value={
+                                                                                        //     (payrollobj.general.calc_based_on &&
+                                                                                        //         salary_calculation_option.find(
+                                                                                        //             (e) => e.value === payrollobj.general.calc_based_on
+                                                                                        //         )) ||
+                                                                                        //     []
+                                                                                        // }
                                                                                         className="basic-multi-select"
                                                                                     />
                                                                                 </div>
                                                                                 <div>
-                                                                                    <Input
-                                                                                        type="text"
-                                                                                        id="additionalInput"
-                                                                                        placeholder="Additional Input"
-                                                                                    // Add other necessary props as needed
+                                                                                <Select
+                                                                                        id="calculation"
+                                                                                        isMulti={false}
+                                                                                        options={approval_cycle || []}
+                                                                                        // value={
+                                                                                        //     (payrollobj.general.calc_based_on &&
+                                                                                        //         salary_calculation_option.find(
+                                                                                        //             (e) => e.value === payrollobj.general.calc_based_on
+                                                                                        //         )) ||
+                                                                                        //     []
+                                                                                        // }
+                                                                                        className="basic-multi-select"
                                                                                     />
                                                                                 </div>
                                                                                 <div id="passwordHelpBlock" className="form-text mb-3">
@@ -515,18 +527,18 @@ const AttendanceConfig = () => {
                                                                                 </Label>
                                                                                 <div>
                                                                                     <Select
-                                                                                        id="calculation"
+                                                                                        id="repeaton"
                                                                                         isMulti={false}
-                                                                                        options={salary_calculation_option || []}
-                                                                                        value={
-                                                                                            (payrollobj.general.calc_based_on &&
-                                                                                                salary_calculation_option.find(
-                                                                                                    (e) =>
-                                                                                                        e.value ===
-                                                                                                        payrollobj.general.calc_based_on
-                                                                                                )) ||
-                                                                                            []
-                                                                                        }
+                                                                                        options={repeat_onselect || []}
+                                                                                        // value={
+                                                                                        //     (payrollobj.general.calc_based_on &&
+                                                                                        //         salary_calculation_option.find(
+                                                                                        //             (e) =>
+                                                                                        //                 e.value ===
+                                                                                        //                 payrollobj.general.calc_based_on
+                                                                                        //         )) ||
+                                                                                        //     []
+                                                                                        // }
                                                                                         className="basic-multi-select "
                                                                                     />
                                                                                 </div>
@@ -541,26 +553,19 @@ const AttendanceConfig = () => {
                                                                         <Col md={6} lg={6} xxl={6}>
                                                                             <div>
                                                                                 <Label
-                                                                                    htmlFor="calculation"
+                                                                                    htmlFor="location"
                                                                                     className="form-label"
                                                                                 >
                                                                                     Locations
                                                                                 </Label>
                                                                                 <div>
-                                                                                    <Select
-                                                                                        id="calculation"
-                                                                                        isMulti={false}
-                                                                                        options={salary_calculation_option || []}
-                                                                                        value={
-                                                                                            (payrollobj.general.calc_based_on &&
-                                                                                                salary_calculation_option.find(
-                                                                                                    (e) =>
-                                                                                                        e.value ===
-                                                                                                        payrollobj.general.calc_based_on
-                                                                                                )) ||
-                                                                                            []
-                                                                                        }
-                                                                                        className="basic-multi-select "
+                                                                                <Select
+                                                                                           id="location"
+                                                                                           isMulti={false}
+                                                                                           options={[{ label: 'All Offices', value: 'All Offices' }]}
+                                                                                           defaultValue={{ label: 'All Offices', value: 'All Offices' }}
+                                                                                           isDisabled={true} 
+                                                                                           className="basic-multi-select"
                                                                                     />
                                                                                 </div>
                                                                                 <div
@@ -649,7 +654,7 @@ const AttendanceConfig = () => {
                                                 </TabPane>
                                                 {/* General Tab End */}
 
-                                                {/* Pay Cycle Tab Start */}
+                                                {/* Locations and Policies Tab Start */}
                                                 <TabPane tabId="2" id="v-pills-profile">
                                                     <div className="d-flex mb-2">
                                                         <Label><strong>Locations and Policies</strong></Label>
@@ -733,11 +738,11 @@ const AttendanceConfig = () => {
                                                         </Card>
                                                     </Col>
                                                 </TabPane>
-                                                {/* Pay Cycle Tab End */}
+                                                {/* Locations and Policies Tab End */}
 
-                                                {/* Basic Components Tab Start */}
+                                                {/* QR Code Tab Start */}
                                                 <TabPane tabId="3" id="v-pills-messages">
-                                                    {/* Tab Inside Tab @Elan */}
+                                                  
                                                     <Row>
                                                         <Nav
                                                             tabs
@@ -765,19 +770,25 @@ const AttendanceConfig = () => {
                                                                                 Auto Generate QR Code Every
                                                                             </Label>
                                                                             <div>
+                                                                                <input
+                                                                                    id="number"
+                                                                                   
+                                                                                   type="number"
+                                                                                    className="basic-multi-select "
+                                                                                />
                                                                                 <Select
                                                                                     id="location"
                                                                                     isMulti={false}
-                                                                                    options={location_option || []}
-                                                                                    value={
-                                                                                        (payrollobj.general.location &&
-                                                                                            location_option.find(
-                                                                                                (e) =>
-                                                                                                    e.value ===
-                                                                                                    payrollobj.general.location
-                                                                                            )) ||
-                                                                                        []
-                                                                                    }
+                                                                                    options={ generate_qr || []}
+                                                                                    // value={
+                                                                                    //     (payrollobj.general.location &&
+                                                                                    //         location_option.find(
+                                                                                    //             (e) =>
+                                                                                    //                 e.value ===
+                                                                                    //                 payrollobj.general.location
+                                                                                    //         )) ||
+                                                                                    //     []
+                                                                                    // }
                                                                                     className="basic-multi-select "
                                                                                 />
                                                                             </div>
@@ -794,25 +805,25 @@ const AttendanceConfig = () => {
                                                                     <Col md={12} lg={12} xxl={12}>
                                                                         <div>
                                                                             <Label
-                                                                                htmlFor="calculation"
+                                                                                htmlFor="security"
                                                                                 className="form-label"
                                                                             >
                                                                                 Security Type
                                                                             </Label>
                                                                             <div>
                                                                                 <Select
-                                                                                    id="calculation"
+                                                                                    id="security"
                                                                                     isMulti={false}
-                                                                                    options={salary_calculation_option || []}
-                                                                                    value={
-                                                                                        (payrollobj.general.calc_based_on &&
-                                                                                            salary_calculation_option.find(
-                                                                                                (e) =>
-                                                                                                    e.value ===
-                                                                                                    payrollobj.general.calc_based_on
-                                                                                            )) ||
-                                                                                        []
-                                                                                    }
+                                                                                    options={ security_type || []}
+                                                                                    // value={
+                                                                                    //     (payrollobj.general.calc_based_on &&
+                                                                                    //         salary_calculation_option.find(
+                                                                                    //             (e) =>
+                                                                                    //                 e.value ===
+                                                                                    //                 payrollobj.general.calc_based_on
+                                                                                    //         )) ||
+                                                                                    //     []
+                                                                                    // }
                                                                                     className="basic-multi-select "
                                                                                 />
                                                                             </div>
