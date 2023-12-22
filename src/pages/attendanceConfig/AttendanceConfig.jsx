@@ -32,6 +32,7 @@ import Select from "react-select";
 import FeatherIcon from "feather-icons-react/build/FeatherIcon";
 import Flatpickr from "react-flatpickr";
 import { Link } from "react-router-dom";
+import { DatePicker } from "antd";
 
 import {
     setDepartmentData,
@@ -83,7 +84,7 @@ const AttendanceConfig = () => {
         }
     };
 
-    const payrollobj = {
+    const attendanceobj = {
         general: {
             location: "India",
             currency: "INR",
@@ -107,17 +108,18 @@ const AttendanceConfig = () => {
                 epf_type: "Weekly",
                 epf_type_id: "2",
             },
-            pro_tax: [
+            loc_pol: [
                 {
                     is_active: true,
                     company: "Lintcloud It Service Pvt Ltd",
                     tag: "HEADQUARTER",
-                    add: "694, C/10, SAHAR COMPLEX, NEAR MATHUMITHA HOSPITAL, OPP BUS STAND, VALLIOOR - 627117",
-                    state: "Tamil Nadu",
-                    tax_cycle: "Half-yearly",
-                    slabs: 1,
+                    add: "694, C/10, SAHAR COMPLEX, NEAR MATHUMITHA HOSPITAL, OPP BUS STAND, VALLIOOR - 627117,Tamil Nadu",
+                    qr_code: "No",
+                    in_out: "Desktop,Mobile",
+                    radius: "25 meters",
+                    policy: "Not allow clock in/out outside the office",
                 },
-               
+
             ],
         },
         salary_components: {
@@ -220,50 +222,40 @@ const AttendanceConfig = () => {
         },
     };
 
-   
-    
+
+
 
     const approval_cycle = useMemo(
         () => [
-          { id: "1", label: "Monthly", value: "Monthly" },
-          { id: "2", label: "Weekly", value: "Weekly" },
+            { id: "1", label: "Monthly", value: "Monthly" },
+            { id: "2", label: "Weekly", value: "Weekly" },
         ],
         []
-      );
+    );
 
-      const repeat_onselect = useMemo(
+    const repeat_onselect = useMemo(
         () => [
-          { id: "1", label: "Monthly on day 19", value: "Monthly on day 19" },
-          { id: "2", label: "Monthly on the third Tuesday", value: "Monthly on the third Tuesday" },
+            { id: "1", label: "Monthly on day 19", value: "Monthly on day 19" },
+            { id: "2", label: "Monthly on the third Tuesday", value: "Monthly on the third Tuesday" },
         ],
         []
-      );
+    );
 
-      const security_type = useMemo(
+    const security_type = useMemo(
         () => [
-          { id: "1", label: "Public URL Everyone", value: "Public URL Everyone" },
-          { id: "2", label: "Restricted URL with Password", value: "Restricted URL with Password" },
+            { id: "1", label: "Public URL Everyone", value: "Public URL Everyone" },
+            { id: "2", label: "Restricted URL with Password", value: "Restricted URL with Password" },
         ],
         []
-      );
-      const generate_qr = useMemo(
+    );
+    const generate_qr = useMemo(
         () => [
-          { id: "1", label: "Second(s)", value: "Second(s)" },
-          { id: "2", label: "Minute(s)", value: "Minute(s)" },
+            { id: "1", label: "Second(s)", value: "Second(s)" },
+            { id: "2", label: "Minute(s)", value: "Minute(s)" },
         ],
         []
-      );
-    //   const radius_option = useMemo(
-    //     () => [
-    //       { id: "1", label: "10(meters)", value: "10(meters)" },
-    //       { id: "2", label: "25(meters)", value: "25(meters)" },
-    //       { id: "3", label: "50(meters)", value: "50(meters)" },
-    //       { id: "4", label: "100(meters)", value: "100(meters)" },
-    //       { id: "5", label: "200(meters)", value: "200(meters)" },
-    //       { id: "6", label: "500(meters)", value: "500(meters)" },
-    //     ],
-    //     []
-    //   );
+    );
+
     const location_option = useMemo(
         () => [
             { id: "India", label: "India", value: "India" },
@@ -273,7 +265,60 @@ const AttendanceConfig = () => {
         []
     );
 
-   
+    const [autoGenerateValue, setAutoGenerateValue] = useState('');
+    const [securityTypeValue, setSecurityTypeValue] = useState('');
+
+    const handleAutoGenerateChange = (value) => {
+        setAutoGenerateValue(value);
+    };
+
+    const handleSecurityTypeChange = (value) => {
+        setSecurityTypeValue(value);
+    };
+
+    const handleStartGeneratingCode = () => {
+
+        if (!autoGenerateValue || !securityTypeValue) {
+            console.error('Please fill in all required fields.');
+            return;
+        }
+
+
+        console.log('Auto Generate QR Code Every:', autoGenerateValue);
+        console.log('Security Type:', securityTypeValue);
+        setAutoGenerateValue('');
+        setSecurityTypeValue('');
+    };
+
+    const [totalHourCalculation, setTotalHourCalculation] = useState(
+        'Every Valid Check-in&Check-out'
+    );
+    const [attendanceStartDate, setAttendanceStartDate] = useState(null);
+    const [attendanceApprovalCycle, setAttendanceApprovalCycle] = useState(1);
+    const [repeatOn, setRepeatOn] = useState('');
+    const [locations, setLocations] = useState('All Offices');
+    const [receiveNotifications, setReceiveNotifications] = useState(false);
+
+    // Function to handle input changes
+    const handleInputChange = (event, setterFunction) => {
+        setterFunction(event.target.value);
+    };
+
+    // Function to handle date change
+    const handleDateChange = (date) => {
+        setAttendanceStartDate(date);
+    };
+
+    const handleSubmit = () => {
+        // Log input values to console
+        console.log('Total Hour Calculation:', totalHourCalculation);
+        console.log('Attendance Start Date:', attendanceStartDate);
+        console.log('Attendance Approval Cycle:', attendanceApprovalCycle);
+        console.log('Repeat On:', repeatOn);
+        console.log('Locations:', locations);
+        console.log('Receive Notifications:', receiveNotifications);
+    };
+
     const salary_calculation_option = useMemo(
         () => [
             { id: "1", label: "Actual Calender Days", value: "Actual Calender Days" },
@@ -281,43 +326,43 @@ const AttendanceConfig = () => {
         ],
         []
     );
-  const dispatch = useDispatch();
-  const handlelocationEdit = ($id) => {
-    dispatch(setFormTitle("Locations and Policies Edit"));
+    const dispatch = useDispatch();
+    const handlelocationEdit = ($id) => {
+        dispatch(setFormTitle("Locations and Policies Edit"));
 
-   
-    dispatch(setFormWidthPercentage("40%"));
-    dispatch(setComponentToShow(location_edit_form_component_name));
-    dispatch(toggleRSBView(true));
-  };
 
-    
+        dispatch(setFormWidthPercentage("40%"));
+        dispatch(setComponentToShow(location_edit_form_component_name));
+        dispatch(toggleRSBView(true));
+    };
 
- 
 
-  
 
-    
 
- 
 
-    const initialFormObj = useMemo(() => {
-        return {
-            id: 0,
-            type: customActiveTab1,
-            name: "",
-            desc: "",
-            is_pro_rata: false,
-            is_taxable: false,
-            is_insurance: false,
-            contribute: [payrollobj.basic_components],
-        };
-    }, []);
 
-   
 
-   
-    
+
+
+
+
+    // const initialFormObj = useMemo(() => {
+    //     return {
+    //         id: 0,
+    //         type: customActiveTab1,
+    //         name: "",
+    //         desc: "",
+    //         is_pro_rata: false,
+    //         is_taxable: false,
+    //         is_insurance: false,
+    //         contribute: [payrollobj.basic_components],
+    //     };
+    // }, []);
+
+
+
+
+
 
     const [modal_animationZoom, setmodal_animationZoom] = useState(false);
     const [tax_slabId, setTax_slabId] = useState(0);
@@ -330,8 +375,8 @@ const AttendanceConfig = () => {
         setmodal_animationZoom(!modal_animationZoom);
     }
 
-  
-   
+
+
 
     document.title = `Attendance-config | ${MetaTitle || "Lint HR"} `;
 
@@ -448,141 +493,139 @@ const AttendanceConfig = () => {
                                                                 className="text-muted"
                                                             >
                                                                 <TabPane tabId="1">
-                                                                    {" "}
                                                                     <Row>
-                                                                        <Col md={6} lg={6} xxl={6}>
-                                                                            <div>
-                                                                                <Label
-                                                                                    htmlFor="calculation"
-                                                                                    className="form-label"
-                                                                                >
-                                                                                    Total Hour Calculation
-                                                                                </Label>
-                                                                                <div>
-                                                                                <Select
-                                                                                           id="calculation"
-                                                                                           isMulti={false}
-                                                                                           options={[{ label: 'Every Valid Check-in&Check-out', value: 'Every Valid Check-in&Check-out' }]}
-                                                                                           defaultValue={{ label: 'Every Valid Check-in&Check-out', value: 'Every Valid Check-in&Check-out' }}
-                                                                                           isDisabled={true} 
-                                                                                           className="basic-multi-select"
+                                                                        <Col md={12} lg={12} xxl={12}>
+                                                                            <Row className="mb-3">
+                                                                                <Col>
+                                                                                    <Label htmlFor="calculation" className="form-label">
+                                                                                        Total Hour Calculation*
+                                                                                    </Label>
+                                                                                </Col>
+                                                                                <Col>
+                                                                                    <Select
+                                                                                        id="calculation"
+                                                                                        isMulti={false}
+                                                                                        options={[
+                                                                                            { label: 'Every Valid Check-in&Check-out', value: 'Every Valid Check-in&Check-out' },
+                                                                                        ]}
+                                                                                        value={{ label: totalHourCalculation, value: totalHourCalculation }}
+                                                                                        isDisabled={true}
+                                                                                        className="basic-multi-select"
                                                                                     />
-                                                                                </div>
-                                                                                <div
-                                                                                    id="passwordHelpBlock"
-                                                                                    className="form-text mb-3"
-                                                                                >
-                                                                                    Select Total Hour Calculation.
-                                                                                </div>
-                                                                            </div>
+                                                                                </Col>
+                                                                            </Row>
                                                                         </Col>
-
-                                                                        <Col md={3} lg={3} xxl={3}>
-                                                                            <div>
-                                                                                <Label htmlFor="calculation" className="form-label">
-                                                                                    Attendance Approval Cycle
-                                                                                </Label>
-                                                                                <div>
+                                                                        <div>
+                                                                            <Col md={12} lg={12} xxl={12}>
+                                                                                <Row className="mb-3">
+                                                                                    <Col>
+                                                                                        <Label htmlFor="date">Attendance Start Date*</Label>
+                                                                                    </Col>
+                                                                                    <Col>
+                                                                                        <div className="mb-3">
+                                                                                            <DatePicker
+                                                                                                name="date"
+                                                                                                id="date"
+                                                                                                className="form-control"
+                                                                                                selected={attendanceStartDate}
+                                                                                                onChange={handleDateChange}
+                                                                                            />
+                                                                                        </div>
+                                                                                    </Col>
+                                                                                </Row>
+                                                                            </Col>
+                                                                        </div>
+                                                                        {/* </div> */}
+                                                                        <Col md={6} lg={6} xxl={6} className="text-start">
+                                                                            <Row className="mb-3">
+                                                                                <Col>
+                                                                                    <Label htmlFor="calculation" className="form-label">
+                                                                                        Attendance Approval Cycle*
+                                                                                    </Label>
+                                                                                </Col>
+                                                                                <Col>
                                                                                     <Select
                                                                                         id="approval"
                                                                                         isMulti={false}
-                                                                                        options={[{ label: '1', value: 1 }]} 
-                                                                                        // value={
-                                                                                        //     (payrollobj.general.calc_based_on &&
-                                                                                        //         salary_calculation_option.find(
-                                                                                        //             (e) => e.value === payrollobj.general.calc_based_on
-                                                                                        //         )) ||
-                                                                                        //     []
-                                                                                        // }
+                                                                                        options={[{ label: '1', value: 1 }]}
+                                                                                        value={{ label: attendanceApprovalCycle.toString(), value: attendanceApprovalCycle }}
                                                                                         className="basic-multi-select"
+                                                                                        onChange={(e) => handleInputChange(e, setAttendanceApprovalCycle)}
                                                                                     />
-                                                                                </div>
-                                                                                <div>
-                                                                                <Select
-                                                                                        id="calculation"
-                                                                                        isMulti={false}
-                                                                                        options={approval_cycle || []}
-                                                                                        // value={
-                                                                                        //     (payrollobj.general.calc_based_on &&
-                                                                                        //         salary_calculation_option.find(
-                                                                                        //             (e) => e.value === payrollobj.general.calc_based_on
-                                                                                        //         )) ||
-                                                                                        //     []
-                                                                                        // }
-                                                                                        className="basic-multi-select"
-                                                                                    />
-                                                                                </div>
-                                                                                <div id="passwordHelpBlock" className="form-text mb-3">
-                                                                                    Select Attendance Approval Cycle.
-                                                                                </div>
-                                                                            </div>
+                                                                                </Col>
+                                                                            </Row>
                                                                         </Col>
-                                                                        <Col md={6} lg={6} xxl={6}>
-                                                                            <div>
-                                                                                <Label
-                                                                                    htmlFor="calculation"
-                                                                                    className="form-label"
-                                                                                >
-                                                                                    Repeat On
-                                                                                </Label>
-                                                                                <div>
+
+                                                                        <Col md={6} lg={6} xxl={6} className="text-start">
+                                                                            <Row className="mb-3">
+                                                                                {/* <Col>
+            <Label htmlFor="anotherField" className="form-label">
+                Another Field*
+            </Label>
+        </Col> */}
+                                                                                <Col>
+                                                                                    <Select
+                                                                                        id="anotherField"
+                                                                                        isMulti={false}
+                                                                                        options={[{ label: 'Monthly', value: 'monthly' }, { label: 'Weekly', value: 'weekly' }]}
+                                                                                        className="basic-multi-select"
+                                                                                    // value={/* set the value based on your state or props */}
+                                                                                    // onChange={(e) => handleAnotherInputChange(e)}
+                                                                                    />
+                                                                                </Col>
+                                                                            </Row>
+                                                                        </Col>
+
+                                                                        <Col md={12} lg={12} xxl={12} className="text-start">
+                                                                            <Row className="mb-3">
+                                                                                <Col>
+                                                                                    <Label htmlFor="repeaton" className="form-label">
+                                                                                        Repeat On*
+                                                                                    </Label>
+                                                                                </Col>
+                                                                                <Col>
                                                                                     <Select
                                                                                         id="repeaton"
                                                                                         isMulti={false}
                                                                                         options={repeat_onselect || []}
-                                                                                        // value={
-                                                                                        //     (payrollobj.general.calc_based_on &&
-                                                                                        //         salary_calculation_option.find(
-                                                                                        //             (e) =>
-                                                                                        //                 e.value ===
-                                                                                        //                 payrollobj.general.calc_based_on
-                                                                                        //         )) ||
-                                                                                        //     []
-                                                                                        // }
-                                                                                        className="basic-multi-select "
+                                                                                        value={{ label: repeatOn, value: repeatOn }}
+                                                                                        className="basic-multi-select"
+                                                                                        onChange={(e) => handleInputChange(e, setRepeatOn)}
                                                                                     />
-                                                                                </div>
-                                                                                <div
-                                                                                    id="passwordHelpBlock"
-                                                                                    className="form-text mb-3"
-                                                                                >
-                                                                                    Select Repeat On.
-                                                                                </div>
-                                                                            </div>
+                                                                                </Col>
+                                                                            </Row>
                                                                         </Col>
-                                                                        <Col md={6} lg={6} xxl={6}>
-                                                                            <div>
-                                                                                <Label
-                                                                                    htmlFor="location"
-                                                                                    className="form-label"
-                                                                                >
-                                                                                    Locations
-                                                                                </Label>
-                                                                                <div>
-                                                                                <Select
-                                                                                           id="location"
-                                                                                           isMulti={false}
-                                                                                           options={[{ label: 'All Offices', value: 'All Offices' }]}
-                                                                                           defaultValue={{ label: 'All Offices', value: 'All Offices' }}
-                                                                                           isDisabled={true} 
-                                                                                           className="basic-multi-select"
+
+                                                                        <Col md={12} lg={12} xxl={12} className="text-start">
+                                                                            <Row className="mb-3">
+                                                                                <Col>
+                                                                                    <Label htmlFor="location" className="form-label">
+                                                                                        Locations*
+                                                                                    </Label>
+                                                                                </Col>
+                                                                                <Col>
+                                                                                    <Select
+                                                                                        id="location"
+                                                                                        isMulti={false}
+                                                                                        options={[{ label: 'All Offices', value: 'All Offices' }]}
+                                                                                        value={{ label: locations, value: locations }}
+                                                                                        isDisabled={true}
+                                                                                        className="basic-multi-select"
                                                                                     />
-                                                                                </div>
-                                                                                <div
-                                                                                    id="passwordHelpBlock"
-                                                                                    className="form-text mb-3"
-                                                                                >
-                                                                                    Select  Locations.
-                                                                                </div>
-                                                                            </div>
+                                                                                    <div id="passwordHelpBlock" className="form-text mb-3">
+                                                                                        Select Locations.
+                                                                                    </div>
+                                                                                </Col>
+                                                                            </Row>
                                                                         </Col>
                                                                         <Col md={12} lg={12} xxl={12}>
                                                                             <div className="form-check form-check-inline">
-                                                                                <Input
+                                                                                <input
                                                                                     id="p-tax"
                                                                                     name="Unit"
                                                                                     type="checkbox"
                                                                                     className="form-check-input"
+                                                                                    onChange={(e) => setReceiveNotifications(e.target.checked)}
                                                                                     required
                                                                                 />
                                                                                 <Label className="form-check-label" htmlFor="lt_day">
@@ -593,15 +636,38 @@ const AttendanceConfig = () => {
                                                                         <Col lg={12}>
                                                                             <div className="text-start">
                                                                                 <Button
-                                                                                    type="submit"
+                                                                                    type="button"
                                                                                     color="success"
                                                                                     className="btn-label"
+                                                                                    onClick={handleSubmit}
                                                                                 >
-                                                                                    {" "}
-                                                                                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                                                                                    Save{" "}
-                                                                                </Button>{" "}
+                                                                                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
+                                                                                    Save
+                                                                                </Button>
                                                                             </div>
+                                                                        </Col>
+                                                                        <Col md={9} lg={9} xxl={9}>
+                                                                            <Card>
+                                                                                <CardBody className="bg-info-subtle">
+                                                                                    <div className="d-flex">
+                                                                                        <div className="flex-shrink-0">
+                                                                                            <FeatherIcon
+                                                                                                icon="info"
+                                                                                                className="text-info icon-dual-info"
+                                                                                            />
+                                                                                        </div>
+                                                                                        <div className="flex-grow-1 ms-3">
+                                                                                            <h6 className="fs-15">
+                                                                                                Attendance General Info Heading @Dinesh!
+                                                                                            </h6>
+                                                                                            <p className="text-muted mb-0 hide">
+                                                                                                Time Attendance
+                                                                                                Keeps track of employees working hours, clock in and out time, and which task they were doing. Time Attendance can be used with Payroll to calculate salary automatically.
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </CardBody>
+                                                                            </Card>
                                                                         </Col>
                                                                     </Row>
                                                                 </TabPane>
@@ -623,20 +689,12 @@ const AttendanceConfig = () => {
                                                                                             ></i>The Person In Charge Will Get Notified Whrn An Employee's Attendance Is Updated
                                                                                         </Label>
                                                                                         <div>
-                                                                                            <Select
-                                                                                                id="location"
-                                                                                                isMulti={false}
-                                                                                                options={location_option || []}
-                                                                                                value={
-                                                                                                    (payrollobj.general.location &&
-                                                                                                        location_option.find(
-                                                                                                            (e) =>
-                                                                                                                e.value ===
-                                                                                                                payrollobj.general.location
-                                                                                                        )) ||
-                                                                                                    []
-                                                                                                }
-                                                                                                className="basic-multi-select "
+                                                                                            <input
+                                                                                                id="text"
+                                                                                                type="text"
+                                                                                                // value={autoGenerateValue}
+                                                                                                // onChange={(e) => handleAutoGenerateChange(e.target.value)}
+                                                                                                className="form-control me-2"
                                                                                             />
                                                                                         </div>
 
@@ -665,53 +723,139 @@ const AttendanceConfig = () => {
                                                         className="project-card"
                                                     >
                                                         {(
-                                                            payrollobj.basic_components.pro_tax ||
+                                                            attendanceobj.basic_components.loc_pol ||
                                                             []
                                                         ).map((item, key) => (
                                                             <Card key={key}>
                                                                 <CardBody>
-                                                                    <div
-                                                                        className={`p-3 mt-n3 mx-n3 bg-${item.is_active
-                                                                                ? "success"
-                                                                                : "dark"
-                                                                            }-subtle rounded-top`}
-                                                                    >
+                                                                    <div className={`p-3 mt-n3 mx-n3 bg-${item.is_active ? "success" : "dark"}-subtle rounded-top`}>
                                                                         <div className="d-flex align-items-center">
                                                                             <div className="flex-grow-1">
                                                                                 <h5 className="mb-0 fs-14">
-                                                                                    <Link
-                                                                                        to="#"
-                                                                                        className="text-body"
-                                                                                    >
+                                                                                    <Link to="#" className="text-body">
                                                                                         {item.company}
-                                                                                        <span className="badge border border-dark text-body ms-2">
-                                                                                            {item.tag}
-                                                                                        </span>
+                                                                                        <span className="badge border border-dark text-body ms-2">{item.tag}</span>
                                                                                     </Link>
                                                                                 </h5>
                                                                             </div>
+
+
+
+
                                                                             <div className="flex-shrink-0">
                                                                                 <div className="d-flex gap-1 align-items-center my-n2">
-                                                                               
                                                                                     <a
-                                                                                        onClick={() =>
-                                                                                            handlelocationEdit(
-                                                                                                item.slabs
-                                                                                            )
-                                                                                        }
+                                                                                        onClick={() => handlelocationEdit()}
                                                                                         className="text-primary d-inline-block edit-item-btn ms-2"
                                                                                         href="javascript:void(0)"
                                                                                     >
-                                                                                        <i class="mdi mdi-dots-vertical"></i>
+                                                                                        <i className="mdi mdi-dots-vertical"></i>
                                                                                     </a>
                                                                                 </div>
                                                                             </div>
+
                                                                         </div>
                                                                     </div>
-
-                                                                  
                                                                 </CardBody>
+                                                                <div className="d-flex mb-2">
+                                                                    <Row>
+                                                                        <Col md={6} lg={6} xxl={6} className="text-start">
+                                                                            <Row className="mb-3">
+                                                                                <Col>
+                                                                                    <Label htmlFor="location" className="form-label">
+                                                                                        Clocking in/out from
+                                                                                    </Label>
+                                                                                </Col>
+                                                                                <Col>
+                                                                                    <div className="d-flex align-items-center">
+                                                                                        <h5 className="fs-14">{item.in_out}</h5>
+                                                                                    </div>
+                                                                                </Col>
+                                                                            </Row>
+                                                                        </Col>
+
+                                                                        <Col md={12} lg={12} xxl={12} className="mb-3">
+                                                                            <Row>
+                                                                                <Col>
+                                                                                    <Label htmlFor="security" className="form-label">
+                                                                                        QR Code
+                                                                                    </Label>
+                                                                                </Col>
+                                                                                <Col>
+                                                                                    <div>
+                                                                                        <h5 className="fs-14">{item.qr_code}</h5>
+                                                                                    </div>
+                                                                                </Col>
+                                                                            </Row>
+                                                                        </Col>
+                                                                        <Col md={12} lg={12} xxl={12} className="mb-3">
+                                                                            <Row>
+                                                                                <Col>
+                                                                                    <Label htmlFor="security" className="form-label">
+                                                                                        Geofencing
+                                                                                    </Label>
+                                                                                </Col>
+                                                                                <Col>
+                                                                                    <div className="form-check form-switch form-switch-success">
+                                                                                        <Input
+                                                                                            className="form-check-input"
+                                                                                            type="checkbox"
+                                                                                            role="switch"
+                                                                                            id="enablegeofencing"
+                                                                                            checked={item.is_active}
+                                                                                        />
+                                                                                    </div>
+                                                                                </Col>
+                                                                            </Row>
+                                                                        </Col>
+                                                                        <Col md={12} lg={12} xxl={12} className="mb-3">
+                                                                            <Row>
+                                                                                <Col>
+                                                                                    <Label htmlFor="security" className="form-label">
+                                                                                        Accurate Address
+                                                                                    </Label>
+                                                                                </Col>
+                                                                                <Col>
+                                                                                    <div>
+                                                                                        <h5 className="fs-14">{item.add}</h5>
+                                                                                    </div>
+                                                                                </Col>
+                                                                            </Row>
+                                                                        </Col>
+                                                                        <Col md={12} lg={12} xxl={12} className="mb-3">
+                                                                            <Row>
+                                                                                <Col>
+                                                                                    <Label htmlFor="security" className="form-label">
+                                                                                        Radius
+                                                                                    </Label>
+                                                                                </Col>
+                                                                                <Col>
+                                                                                    <div>
+                                                                                        <h5 className="fs-14">{item.radius}</h5>
+                                                                                    </div>
+                                                                                </Col>
+                                                                            </Row>
+                                                                        </Col>
+                                                                        <Col md={12} lg={12} xxl={12} className="mb-3">
+                                                                            <Row>
+                                                                                <Col>
+                                                                                    <Label htmlFor="security" className="form-label">
+                                                                                        Policy
+                                                                                    </Label>
+                                                                                </Col>
+                                                                                <Col>
+                                                                                    <div>
+                                                                                        <h5 className="fs-14">{item.policy}</h5>
+                                                                                    </div>
+                                                                                </Col>
+                                                                            </Row>
+                                                                        </Col>
+
+
+                                                                    </Row>
+                                                                </div>
                                                             </Card>
+
                                                         ))}
                                                     </Col>
                                                     <Col md={9} lg={9} xxl={9}>
@@ -741,8 +885,8 @@ const AttendanceConfig = () => {
                                                 {/* Locations and Policies Tab End */}
 
                                                 {/* QR Code Tab Start */}
-                                                <TabPane tabId="3" id="v-pills-messages">
-                                                  
+                                                <TabPane TabPane tabId="3" id="v-pills-messages" >
+
                                                     <Row>
                                                         <Nav
                                                             tabs
@@ -752,88 +896,65 @@ const AttendanceConfig = () => {
                                                                 <Label>
                                                                     <strong>QR Code</strong>
                                                                 </Label>
-                                                                {""}
+                                                               
                                                             </div>
-                                                            <Label> Generate a QR code to let everyone clock in/out easily by scanning with the LintHr app Start displaying QR Code</Label>
+                                                            <p> Generate a QR code to let everyone clock in/out easily by scanning with the LintHr app Start displaying QR Code</p>
 
                                                         </Nav>
 
                                                         <TabPane tabId="1" id="home1">
                                                             <div className="d-flex mb-2">
                                                                 <Row>
-                                                                    <Col md={6} lg={6} xxl={6}>
-                                                                        <div>
-                                                                            <Label
-                                                                                htmlFor="location"
-                                                                                className="form-label"
-                                                                            >
-                                                                                Auto Generate QR Code Every
-                                                                            </Label>
-                                                                            <div>
-                                                                                <input
-                                                                                    id="number"
-                                                                                   
-                                                                                   type="number"
-                                                                                    className="basic-multi-select "
-                                                                                />
-                                                                                <Select
-                                                                                    id="location"
-                                                                                    isMulti={false}
-                                                                                    options={ generate_qr || []}
-                                                                                    // value={
-                                                                                    //     (payrollobj.general.location &&
-                                                                                    //         location_option.find(
-                                                                                    //             (e) =>
-                                                                                    //                 e.value ===
-                                                                                    //                 payrollobj.general.location
-                                                                                    //         )) ||
-                                                                                    //     []
-                                                                                    // }
-                                                                                    className="basic-multi-select "
-                                                                                />
-                                                                            </div>
-
-                                                                            <div
-                                                                                id="passwordHelpBlock"
-                                                                                className="form-text mb-3"
-                                                                            >
-                                                                                Select  Auto Generate QR Code.
-                                                                            </div>
-                                                                        </div>
+                                                                    <Col md={6} lg={6} xxl={6} className="text-start">
+                                                                        <Row className="mb-3">
+                                                                            <Col>
+                                                                                <Label htmlFor="location" className="form-label">
+                                                                                    Auto Generate QR Code Every*
+                                                                                </Label>
+                                                                            </Col>
+                                                                            <Col>
+                                                                                <div className="d-flex align-items-center">
+                                                                                    <input
+                                                                                        id="number"
+                                                                                        type="number"
+                                                                                        value={autoGenerateValue}
+                                                                                        onChange={(e) => handleAutoGenerateChange(e.target.value)}
+                                                                                        className="form-control me-2"
+                                                                                    />
+                                                                                    <Select
+                                                                                        id="time"
+                                                                                        isMulti={false}
+                                                                                        options={generate_qr || []}
+                                                                                        value={autoGenerateValue}
+                                                                                        onChange={(value) => handleAutoGenerateChange(value)}
+                                                                                        className="basic-multi-select"
+                                                                                    />
+                                                                                </div>
+                                                                            </Col>
+                                                                        </Row>
                                                                     </Col>
 
-                                                                    <Col md={12} lg={12} xxl={12}>
-                                                                        <div>
-                                                                            <Label
-                                                                                htmlFor="security"
-                                                                                className="form-label"
-                                                                            >
-                                                                                Security Type
-                                                                            </Label>
-                                                                            <div>
-                                                                                <Select
-                                                                                    id="security"
-                                                                                    isMulti={false}
-                                                                                    options={ security_type || []}
-                                                                                    // value={
-                                                                                    //     (payrollobj.general.calc_based_on &&
-                                                                                    //         salary_calculation_option.find(
-                                                                                    //             (e) =>
-                                                                                    //                 e.value ===
-                                                                                    //                 payrollobj.general.calc_based_on
-                                                                                    //         )) ||
-                                                                                    //     []
-                                                                                    // }
-                                                                                    className="basic-multi-select "
-                                                                                />
-                                                                            </div>
-                                                                            <div
-                                                                                id="passwordHelpBlock"
-                                                                                className="form-text mb-3"
-                                                                            >
-                                                                                Select  Security Type.
-                                                                            </div>
-                                                                        </div>
+                                                                    <Col md={12} lg={12} xxl={12} className="mb-3">
+                                                                        <Row>
+                                                                            <Col>
+                                                                                <Label htmlFor="security" className="form-label">
+                                                                                    Security Type*
+                                                                                </Label>
+                                                                            </Col>
+                                                                            <Col>
+                                                                                <div>
+                                                                                    <Select
+                                                                                        id="security"
+                                                                                        isMulti={false}
+                                                                                        options={security_type || []}
+                                                                                        value={securityTypeValue}
+                                                                                        onChange={(value) => handleSecurityTypeChange(value)}
+                                                                                        className="basic-multi-select"
+
+                                                                                    />
+                                                                                </div>
+                                                                            </Col>
+                                                                        </Row>
                                                                     </Col>
 
                                                                     <Col lg={12}>
@@ -842,6 +963,7 @@ const AttendanceConfig = () => {
                                                                                 type="submit"
                                                                                 color="success"
                                                                                 className="btn-label"
+                                                                                onClick={handleStartGeneratingCode}
                                                                             >
                                                                                 {" "}
                                                                                 <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
@@ -892,7 +1014,7 @@ const AttendanceConfig = () => {
             </div>
 
 
-        </React.Fragment>
+        </React.Fragment >
     );
 };
 
