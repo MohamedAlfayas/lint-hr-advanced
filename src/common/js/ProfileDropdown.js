@@ -20,7 +20,7 @@ const ProfileDropdown = () => {
         localStorage.removeItem("lint_hr_v");
         localStorage.removeItem("lint_hr_globaldata");
 
-        dispatch(setShowTeamTable(teamTable?.value))
+        dispatch(setShowTeamTable(false))
 
         toast.success("Logged Out Successfully")
         navigate("/auth/login")
