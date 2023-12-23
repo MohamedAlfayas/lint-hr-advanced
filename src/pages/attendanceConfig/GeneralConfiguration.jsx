@@ -31,18 +31,32 @@ const GeneralConfiguration = () => {
     "Every Valid Check-in&Check-out"
   );
 
-  const repeat_onselect = useMemo(
-    () => [
-      { id: "1", label: "Monthly on day 19", value: "Monthly on day 19" },
-      {
-        id: "2",
-        label: "Monthly on the third Tuesday",
-        value: "Monthly on the third Tuesday",
-      },
-    ],
-    []
-  );
+  const hourCalculation = [
+    {id:1, label: "Every Valid Check-in&Check-out", value:1}
+  ]
 
+  const approvalCycle = [
+    {id:1, label: "1", value:1}
+  ]
+
+  const approvalOption = [
+    {id:1, label: "Monthly", value:1},
+    {id:2, label: "Weekly", value:2}
+  ]
+
+  const repeat_onselect = [
+    
+      { id:1, label: "Monthly on day 19", value: 1 },
+      {
+        id: 2,
+        label: "Monthly on the third Tuesday",
+        value: 2,
+      },
+  ]
+  const location = [
+    {id:1, label:"All Offices", value:1}
+  ]
+   
   const [repeatOn, setRepeatOn] = useState("");
   const [locations, setLocations] = useState("All Offices");
 
@@ -149,15 +163,12 @@ const GeneralConfiguration = () => {
                       <Select
                         id="calculation"
                         isMulti={false}
-                        options={[
-                          {
-                            label: "Every Valid Check-in&Check-out",
-                            value: "Every Valid Check-in&Check-out",
-                          },
-                        ]}
+                        options={
+                          hourCalculation || []
+                        }
                         value={{
                           label: totalHourCalculation,
-                          value: totalHourCalculation,
+                          value: 1,
                         }}
                         isDisabled={true}
                         className="basic-multi-select"
@@ -197,11 +208,8 @@ const GeneralConfiguration = () => {
                       <Select
                         id="approval"
                         isMulti={false}
-                        options={[{ label: "1", value: 1 }]}
-                        value={{
-                          label: attendanceApprovalCycle.toString(),
-                          value: attendanceApprovalCycle,
-                        }}
+                        options={approvalCycle || []}
+                        value={approvalCycle.value}
                         className="basic-multi-select"
                         onChange={(e) =>
                           handleInputChange(e, setAttendanceApprovalCycle)
@@ -212,16 +220,8 @@ const GeneralConfiguration = () => {
                       <Select
                         id="anotherField"
                         isMulti={false}
-                        options={[
-                          {
-                            label: "Monthly",
-                            value: "monthly",
-                          },
-                          {
-                            label: "Weekly",
-                            value: "weekly",
-                          },
-                        ]}
+                        options={
+                          approvalOption || []}
                         className="basic-multi-select"
                         // value={/* set the value based on your state or props */}
                         // onChange={(e) => handleAnotherInputChange(e)}
@@ -242,10 +242,10 @@ const GeneralConfiguration = () => {
                         id="repeaton"
                         isMulti={false}
                         options={repeat_onselect || []}
-                        value={{
-                          label: repeatOn,
-                          value: repeatOn,
-                        }}
+                        // value={{
+                        //   label: repeatOn,
+                        //   value: repeatOn,
+                        // }}
                         className="basic-multi-select"
                         onChange={(e) => handleInputChange(e, setRepeatOn)}
                       />
@@ -264,12 +264,8 @@ const GeneralConfiguration = () => {
                       <Select
                         id="location"
                         isMulti={false}
-                        options={[
-                          {
-                            label: "All Offices",
-                            value: "All Offices",
-                          },
-                        ]}
+                        options={location || []}
+                        
                         value={{
                           label: locations,
                           value: locations,
