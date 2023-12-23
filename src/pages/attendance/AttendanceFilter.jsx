@@ -111,7 +111,9 @@ const AttendanceFilter = () => {
     );
     console.log("API RES = ", Api);
     if (Api.status && Api.status === 200) {
-      dispatch(setAttendanceReportData(Api?.data?.data));
+      dispatch(
+        setAttendanceReportData(Api?.data?.data?.individual_attendance_report)
+      );
       if (filterKeys?.type === "2" && filterKeys?.employee === "0") {
         dispatch(setShowTeamTable(true));
       } else {
