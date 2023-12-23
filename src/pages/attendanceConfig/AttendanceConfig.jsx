@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-
+import { useDispatch, useSelector } from "react-redux";
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
 import { MetaTitle } from "../../common/data/MetaTitle";
@@ -33,7 +33,14 @@ import FeatherIcon from "feather-icons-react/build/FeatherIcon";
 import Flatpickr from "react-flatpickr";
 import { Link } from "react-router-dom";
 import { DatePicker } from "antd";
-
+import {
+    ConvertDateFormat,
+    ConvertISODateFormat,
+} from "../../common/js/ConvertDateFormat";
+import { DateFormat } from "../../common/constant/Constants";
+dayjs.extend(customParseFormat);
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import {
     setDepartmentData,
     setComponentToShow,
@@ -43,7 +50,7 @@ import {
     toggleRSBView,
     setTaxSlab,
 } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
-import { useDispatch } from "react-redux";
+
 import InfoTable from "../../component/common/table/InfoTable";
 import {
     setAllowances,
@@ -293,11 +300,23 @@ const AttendanceConfig = () => {
     const [totalHourCalculation, setTotalHourCalculation] = useState(
         'Every Valid Check-in&Check-out'
     );
-    const [attendanceStartDate, setAttendanceStartDate] = useState(null);
+    const [attendanceStartDate, setAttendanceStartDate] = useState();
     const [attendanceApprovalCycle, setAttendanceApprovalCycle] = useState(1);
     const [repeatOn, setRepeatOn] = useState('');
     const [locations, setLocations] = useState('All Offices');
     const [receiveNotifications, setReceiveNotifications] = useState(false);
+    const [attendanceObj, setAttendanceObj] = useState({});
+    const [date, setDate] = useState(new Date());
+    const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+
+    useEffect(() => {
+        setAttendanceObj({
+            ...form_obj,
+            date: ConvertISODateFormat(form_obj.date),
+        });
+        // setDate(ConvertDateFormat(ConvertISODateFormat(form_obj?.date)));
+
+    }, [form_obj]);
 
     // Function to handle input changes
     const handleInputChange = (event, setterFunction) => {
@@ -305,10 +324,14 @@ const AttendanceConfig = () => {
     };
 
     // Function to handle date change
-    const handleDateChange = (date) => {
-        setAttendanceStartDate(date);
+    const handleDateChange = (selectedDates, dateStr) => {
+        console.log("ll", dateStr);
+        setDate(dateStr);
+        setAttendanceObj({
+            ...attendanceObj,
+            date: ConvertISODateFormat(ConvertDateFormat(dateStr)),
+        });
     };
-
     const handleSubmit = () => {
         // Log input values to console
         console.log('Total Hour Calculation:', totalHourCalculation);
@@ -318,6 +341,7 @@ const AttendanceConfig = () => {
         console.log('Locations:', locations);
         console.log('Receive Notifications:', receiveNotifications);
     };
+    console.log("date", date);
 
     const salary_calculation_option = useMemo(
         () => [
@@ -346,34 +370,25 @@ const AttendanceConfig = () => {
 
 
 
+
+
+
+
+
+
+
     // const initialFormObj = useMemo(() => {
     //     return {
-    //         id: 0,
-    //         type: customActiveTab1,
-    //         name: "",
-    //         desc: "",
-    //         is_pro_rata: false,
-    //         is_taxable: false,
-    //         is_insurance: false,
-    //         contribute: [payrollobj.basic_components],
+    //       id: 0,
+    //       totalHourCalculation: "",
+    //       date: "",
+    //       approval_cycle: "",
+    //       repeatOn: "",
+    //       locations: "",
+    //       notification: false,
+
     //     };
-    // }, []);
-
-
-
-
-
-
-    const [modal_animationZoom, setmodal_animationZoom] = useState(false);
-    const [tax_slabId, setTax_slabId] = useState(0);
-
-    function show_taxSlabModal($id) {
-        console.log($id);
-        setTax_slabId($id);
-
-        console.log(tax_slab.find((e) => e.id == $id).range);
-        setmodal_animationZoom(!modal_animationZoom);
-    }
+    //   }, []);
 
 
 
@@ -515,35 +530,37 @@ const AttendanceConfig = () => {
                                                                                 </Col>
                                                                             </Row>
                                                                         </Col>
-                                                                        <div>
-                                                                            <Col md={12} lg={12} xxl={12}>
-                                                                                <Row className="mb-3">
-                                                                                    <Col>
-                                                                                        <Label htmlFor="date">Attendance Start Date*</Label>
-                                                                                    </Col>
-                                                                                    <Col>
-                                                                                        <div className="mb-3">
-                                                                                            <DatePicker
-                                                                                                name="date"
-                                                                                                id="date"
-                                                                                                className="form-control"
-                                                                                                selected={attendanceStartDate}
-                                                                                                onChange={handleDateChange}
-                                                                                            />
-                                                                                        </div>
-                                                                                    </Col>
-                                                                                </Row>
-                                                                            </Col>
-                                                                        </div>
-                                                                        {/* </div> */}
-                                                                        <Col md={6} lg={6} xxl={6} className="text-start">
+
+                                                                        <Col md={12} lg={12} xxl={12} className="text-start">
+                                                                            <Row className="mb-3">
+                                                                                <Col>
+                                                                                    <Label htmlFor="calculation" className="form-label">
+                                                                                        Attendance Start Date*
+                                                                                    </Label>
+                                                                                </Col>
+                                                                                <Col>
+                                                                                    <DatePicker
+                                                                                        name="date"
+                                                                                        id="date"
+                                                                                        format={DateFormat}
+                                                                                        // value={dayjs(date)}
+                                                                                        allowClear={false}
+                                                                                        className="form-control"
+                                                                                        selected={attendanceStartDate}
+                                                                                        onChange={handleDateChange}
+
+                                                                                    />
+                                                                                </Col>
+                                                                            </Row>
+                                                                        </Col>
+                                                                        <Col md={12} lg={12} xxl={12} className="text-start">
                                                                             <Row className="mb-3">
                                                                                 <Col>
                                                                                     <Label htmlFor="calculation" className="form-label">
                                                                                         Attendance Approval Cycle*
                                                                                     </Label>
                                                                                 </Col>
-                                                                                <Col>
+                                                                                <Col lg={3}>
                                                                                     <Select
                                                                                         id="approval"
                                                                                         isMulti={false}
@@ -553,17 +570,7 @@ const AttendanceConfig = () => {
                                                                                         onChange={(e) => handleInputChange(e, setAttendanceApprovalCycle)}
                                                                                     />
                                                                                 </Col>
-                                                                            </Row>
-                                                                        </Col>
-
-                                                                        <Col md={6} lg={6} xxl={6} className="text-start">
-                                                                            <Row className="mb-3">
-                                                                                {/* <Col>
-            <Label htmlFor="anotherField" className="form-label">
-                Another Field*
-            </Label>
-        </Col> */}
-                                                                                <Col>
+                                                                                <Col lg={3}>
                                                                                     <Select
                                                                                         id="anotherField"
                                                                                         isMulti={false}
@@ -575,6 +582,8 @@ const AttendanceConfig = () => {
                                                                                 </Col>
                                                                             </Row>
                                                                         </Col>
+
+
 
                                                                         <Col md={12} lg={12} xxl={12} className="text-start">
                                                                             <Row className="mb-3">
@@ -612,9 +621,7 @@ const AttendanceConfig = () => {
                                                                                         isDisabled={true}
                                                                                         className="basic-multi-select"
                                                                                     />
-                                                                                    <div id="passwordHelpBlock" className="form-text mb-3">
-                                                                                        Select Locations.
-                                                                                    </div>
+
                                                                                 </Col>
                                                                             </Row>
                                                                         </Col>
@@ -622,7 +629,7 @@ const AttendanceConfig = () => {
                                                                             <div className="form-check form-check-inline">
                                                                                 <input
                                                                                     id="p-tax"
-                                                                                    name="Unit"
+                                                                                    name="notification"
                                                                                     type="checkbox"
                                                                                     className="form-check-input"
                                                                                     onChange={(e) => setReceiveNotifications(e.target.checked)}
@@ -675,19 +682,20 @@ const AttendanceConfig = () => {
                                                                 <TabPane tabId="2">
                                                                     {" "}
                                                                     <Row>
-                                                                        <Col md={12} lg={12} xxl={12}>
+                                                                        <Label
+                                                                            htmlFor="location"
+                                                                            className="form-label"
+                                                                        >
+                                                                            <i
+                                                                                className="ri-information-line"
+                                                                                style={{ fontSize: "16px" }}
+                                                                            ></i>The Person In Charge Will Get Notified When An Employee's Attendance Is Updated
+                                                                        </Label>
+                                                                        <Col md={8} lg={8} xxl={8}>
                                                                             <div className=" mb-2">
                                                                                 <div className="table-responsive">
                                                                                     <div>
-                                                                                        <Label
-                                                                                            htmlFor="location"
-                                                                                            className="form-label"
-                                                                                        >
-                                                                                            <i
-                                                                                                className="ri-information-line"
-                                                                                                style={{ fontSize: "16px" }}
-                                                                                            ></i>The Person In Charge Will Get Notified Whrn An Employee's Attendance Is Updated
-                                                                                        </Label>
+
                                                                                         <div>
                                                                                             <input
                                                                                                 id="text"
@@ -759,7 +767,7 @@ const AttendanceConfig = () => {
                                                                 </CardBody>
                                                                 <div className="d-flex mb-2">
                                                                     <Row>
-                                                                        <Col md={6} lg={6} xxl={6} className="text-start">
+                                                                        <Col md={12} lg={12} xxl={12} className="text-start">
                                                                             <Row className="mb-3">
                                                                                 <Col>
                                                                                     <Label htmlFor="location" className="form-label">
@@ -896,7 +904,7 @@ const AttendanceConfig = () => {
                                                                 <Label>
                                                                     <strong>QR Code</strong>
                                                                 </Label>
-                                                               
+
                                                             </div>
                                                             <p> Generate a QR code to let everyone clock in/out easily by scanning with the LintHr app Start displaying QR Code</p>
 
@@ -905,34 +913,36 @@ const AttendanceConfig = () => {
                                                         <TabPane tabId="1" id="home1">
                                                             <div className="d-flex mb-2">
                                                                 <Row>
-                                                                    <Col md={6} lg={6} xxl={6} className="text-start">
+
+                                                                    <Col md={12} lg={12} xxl={12} className="text-start">
                                                                         <Row className="mb-3">
                                                                             <Col>
-                                                                                <Label htmlFor="location" className="form-label">
+                                                                                <Label htmlFor="calculation" className="form-label">
                                                                                     Auto Generate QR Code Every*
                                                                                 </Label>
                                                                             </Col>
-                                                                            <Col>
-                                                                                <div className="d-flex align-items-center">
-                                                                                    <input
-                                                                                        id="number"
-                                                                                        type="number"
-                                                                                        value={autoGenerateValue}
-                                                                                        onChange={(e) => handleAutoGenerateChange(e.target.value)}
-                                                                                        className="form-control me-2"
-                                                                                    />
-                                                                                    <Select
-                                                                                        id="time"
-                                                                                        isMulti={false}
-                                                                                        options={generate_qr || []}
-                                                                                        value={autoGenerateValue}
-                                                                                        onChange={(value) => handleAutoGenerateChange(value)}
-                                                                                        className="basic-multi-select"
-                                                                                    />
-                                                                                </div>
+                                                                            <Col lg={3}>
+                                                                                <input
+                                                                                    id="number"
+                                                                                    type="number"
+                                                                                    value={autoGenerateValue}
+                                                                                    onChange={(e) => handleAutoGenerateChange(e.target.value)}
+                                                                                    className="form-control me-2"
+                                                                                />
+                                                                            </Col>
+                                                                            <Col lg={3}>
+                                                                                <Select
+                                                                                    id="time"
+                                                                                    isMulti={false}
+                                                                                    options={generate_qr || []}
+                                                                                    value={autoGenerateValue}
+                                                                                    onChange={(value) => handleAutoGenerateChange(value)}
+                                                                                    className="basic-multi-select"
+                                                                                />
                                                                             </Col>
                                                                         </Row>
                                                                     </Col>
+
 
                                                                     <Col md={12} lg={12} xxl={12} className="mb-3">
                                                                         <Row>
@@ -950,6 +960,7 @@ const AttendanceConfig = () => {
                                                                                         value={securityTypeValue}
                                                                                         onChange={(value) => handleSecurityTypeChange(value)}
                                                                                         className="basic-multi-select"
+
 
                                                                                     />
                                                                                 </div>
