@@ -54,6 +54,7 @@ const HolidayForm = () => {
   const [selectedWS, setSelectedWS] = useState([]);
 
   useEffect(() => {
+    console.log("HODILDAY FORM OBJ = ", form_obj);
     setHolidayObj({
       ...form_obj,
       date: ConvertISODateFormat(form_obj.date),
