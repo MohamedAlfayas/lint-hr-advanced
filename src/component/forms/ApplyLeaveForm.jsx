@@ -28,7 +28,6 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 import { PostApi } from "../../common/api/PostApi";
 import { DatePicker, Space } from "antd";
 import dayjs from "dayjs";
-import moment from "moment";
 
 const ApplyLeaveForm = () => {
   const dispatch = useDispatch();
@@ -36,7 +35,7 @@ const ApplyLeaveForm = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const [selectedLeaveType, setSelectedLeaveType] = useState([]);
   const [leaveDaysCount, setLeaveDaysCount] = useState(0);
-  const [leaveHoursCount, setLeaveHoursCount] = useState([]);
+  const [leaveHoursCount, setLeaveHoursCount] = useState(0);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [startHour, setStartHour] = useState(null);
@@ -104,38 +103,38 @@ const ApplyLeaveForm = () => {
     }
   };
 
-  const FormikForm = useFormik({
-    enableReinitialize: true,
-    initialValues: leaveapplyObj,
-    validationSchema: Yup.object({
-      leavetype: Yup.number()
-        .required("Select Leave Type")
-        .min(1, "Please Select Leave Type"),
-      reason: Yup.string().required("Please enter reason for leave."),
-    }),
-    onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
-      // dispatch(setLoaderVisible(true));
+  const handleMultiDayChange = (dates, dateStrings) => {
+    const generateIntermediaryDates = () => {
+      const start = new Date(
+        ConvertISODateFormat(ConvertDateFormat(dateStrings[0]))
+      );
+      setStartDate(dateStrings[0]);
+      const end = new Date(
+        ConvertISODateFormat(ConvertDateFormat(dateStrings[1]))
+      );
+      setEndDate(dateStrings[1]);
+      const dates = [];
 
-      // const Api = await PostApi(
-      //   "leave/leave-application/create/",
-      //   values,
-      //   false
-      // );
-      // console.log("API RES = ", Api);
-      // if (Api.status && Api.status === 200) {
-      //   leaveapplyObj.id === 0
-      //     ? dispatch(addLeaveApplication(Api?.data.data))
-      //     : dispatch(editLeaveApplication(Api?.data?.data));
-      //   dispatch(toggleRSBView(false));
-      //   toast.success(Api?.data?.message);
-      // } else {
-      //   toast.error(Api?.data?.message || Api?.data?.detail);
-      // }
+      // Increment the start date by one day until it reaches the end date
+      while (start <= end) {
+        dates.push(start.toISOString().split("T")[0]);
+        start.setDate(start.getDate() + 1);
+      }
 
-      // dispatch(setLoaderVisible(false));
-    },
-  });
+      return dates;
+    };
+
+    const intermediateDates = generateIntermediaryDates() || [];
+
+    const ValidDays = intermediateDates.filter((d) => {
+      if (!WeekOffDays.includes(new Date(d).getDay())) {
+        return d;
+      }
+    });
+
+    const ValidDaysCount = ValidDays.length;
+    setDaysCount(ValidDaysCount);
+  };
 
   const lt_option = [
     {
@@ -224,37 +223,6 @@ const ApplyLeaveForm = () => {
     // Disable Saturdays and Sundays
     const dayOfWeek = current.day();
     return WeekOffDays.includes(dayOfWeek);
-  };
-
-  const handleMultiDayChange = (dates, dateStrings) => {
-    const generateIntermediaryDates = () => {
-      const start = new Date(
-        ConvertISODateFormat(ConvertDateFormat(dateStrings[0]))
-      );
-      const end = new Date(
-        ConvertISODateFormat(ConvertDateFormat(dateStrings[1]))
-      );
-      const dates = [];
-
-      // Increment the start date by one day until it reaches the end date
-      while (start <= end) {
-        dates.push(start.toISOString().split("T")[0]);
-        start.setDate(start.getDate() + 1);
-      }
-
-      return dates;
-    };
-
-    const intermediateDates = generateIntermediaryDates() || [];
-
-    const ValidDays = intermediateDates.filter((d) => {
-      if (!WeekOffDays.includes(new Date(d).getDay())) {
-        return d;
-      }
-    });
-
-    const ValidDaysCount = ValidDays.length;
-    setDaysCount(ValidDaysCount);
   };
 
   const handleHourChange = () => {
@@ -363,10 +331,13 @@ const ApplyLeaveForm = () => {
     value: index < 10 ? `0${index}` : `${index}`,
   }));
 
-  const minutes = Array.from({ length: 60 }, (_, index) => ({
-    label: index < 10 ? `0${index}` : `${index}`,
-    value: index < 10 ? `0${index}` : `${index}`,
-  }));
+  const minutes = Array.from({ length: 60 }, (_, index) => {
+    const paddedIndex = index < 10 ? `0${index}` : `${index}`;
+    if (index % 30 === 0) {
+      return { label: paddedIndex, value: paddedIndex };
+    }
+    return null;
+  }).filter(Boolean);
 
   const handleStartTimeChange = (e) => {
     const value = e.value;
@@ -390,7 +361,7 @@ const ApplyLeaveForm = () => {
     console.log("Unit Change = ", e);
     if (e === leave_type_day_unit) {
       setLeaveApplyObj({
-        leaveapplyObj,
+        ...leaveapplyObj,
         unit: e,
         s_hr: setSelectedStartHour(""),
         s_min: setSelectedStartMinute(""),
@@ -399,13 +370,79 @@ const ApplyLeaveForm = () => {
       });
     } else {
       setLeaveApplyObj({
-        leaveapplyObj,
+        ...leaveapplyObj,
         unit: e,
         select_Dates: setDaysCount(""),
       });
     }
     setCurrentUnit(e);
   };
+  let hoursStr = 0;
+  let minutesStr = 0;
+  const singleDate = ConvertISODateFormat(selectedDate);
+  const selectedStartDateTime = `${singleDate} ${selectedStartHour}:${selectedStartMinute}`;
+  const selectedEndDateTime = `${singleDate} ${selectedEndHour}:${selectedEndMinute}`;
+  const leaveHours = handleHourChange();
+  const startingDate = startDate;
+  const endingDate = endDate;
+  const leaveCount = daysCount;
+  console.log("====================================");
+  console.log(selectedDate);
+  console.log(startDate);
+  console.log(endDate);
+  console.log("====================================");
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: leaveapplyObj,
+    validationSchema: Yup.object({
+      leavetype: Yup.number()
+        .required("Select Leave Type")
+        .min(1, "Please Select Leave Type"),
+      reason: Yup.string().required("Please enter reason for leave."),
+    }),
+    onSubmit: async (values) => {
+      console.log("SUCCESSSS !!!! Formik Values = ", values);
+      dispatch(setLoaderVisible(true));
+      let data;
+      if (values.unit === 2) {
+        data = {
+          id: 0,
+          leave_type: values.leavetype,
+          start: selectedStartDateTime,
+          end: selectedEndDateTime,
+          day_type: 1,
+          requested_leave_count: leaveHours,
+          reason: values.reason,
+          status: 1,
+        };
+      } else {
+        data = {
+          id: 0,
+          leave_type: values.leavetype,
+          start: startingDate,
+          end: endingDate,
+          day_type: 2,
+          requested_leave_count: leaveCount,
+          reason: values.reason,
+          status: 1,
+        };
+      }
+
+      const Api = await PostApi("leave/leave-application/create/", data, false);
+      console.log("API RES = ", Api);
+      if (Api.status && Api.status === 200) {
+        leaveapplyObj.id === 0
+          ? dispatch(addLeaveApplication(Api?.data.data))
+          : dispatch(editLeaveApplication(Api?.data?.data));
+        dispatch(toggleRSBView(false));
+        toast.success(Api?.data?.message);
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
+      }
+
+      dispatch(setLoaderVisible(false));
+    },
+  });
 
   return (
     <React.Fragment>
@@ -487,6 +524,7 @@ const ApplyLeaveForm = () => {
                         id="single"
                         name="unit"
                         type="radio"
+                        defaultChecked
                         className="form-check-input"
                         checked={
                           leaveapplyObj.unit && leaveapplyObj.unit === 2
@@ -524,7 +562,7 @@ const ApplyLeaveForm = () => {
                 <Col lg={12}>
                   <div className="input-group">
                     <DatePicker
-                      name="selecteDate"
+                      name="selectDate"
                       className="form-control"
                       placeholder="Select Date"
                       // value={startDate}

@@ -5,7 +5,7 @@ import {
   MonthFormat,
   hr_status_options,
   record_options,
-  type_options,
+  attendance_type_options,
 } from "../../common/constant/Constants";
 import { DatePicker } from "antd";
 import Select from "react-select";
@@ -214,11 +214,13 @@ const AttendanceFilter = () => {
                 <Select
                   name="type_attendance"
                   id="type_attendance"
-                  options={type_options || []}
+                  options={attendance_type_options || []}
                   placeholder="Select a Type"
                   value={
                     !!filterKeys?.type
-                      ? type_options.find((d) => d.id === filterKeys?.type)
+                      ? attendance_type_options.find(
+                          (d) => d.id === filterKeys?.type
+                        )
                       : []
                   }
                   onChange={handleTypeChange}
