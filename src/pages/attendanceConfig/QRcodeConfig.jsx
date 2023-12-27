@@ -7,6 +7,8 @@ import {
     Label,
     Nav,
     NavItem,
+    FormFeedback,
+
     NavLink,
     Row,
     Input,
@@ -21,54 +23,90 @@ import {
     location_edit_form_component_name,
 } from "../../common/constant/Constants";
 import { useDispatch, useSelector } from "react-redux";
-
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 
 const QrcodeConfig = () => {
-
     const [autoGenerateValue, setAutoGenerateValue] = useState("");
     const [securityTypeValue, setSecurityTypeValue] = useState("");
-  
-    const handleAutoGenerateChange = (value) => {
-      setAutoGenerateValue(value);
+
+    const [qrFormData, setQrFormData] = useState({
+        qr_generate_unit: 0,
+        qr_generate_time: 0,
+        security_type: 0,
+    })
+
+    const handleQRTimeChange = (event) => {
+        setQrFormData({
+            ...qrFormData,
+            qr_generate_time: event.target.value
+        })
     };
-  
-    const handleSecurityTypeChange = (value) => {
-      setSecurityTypeValue(value);
+    const handleAutoGenerateChange = (e) => {
+        setQrFormData({
+            ...qrFormData,
+            qr_generate_unit: e.value
+        })
     };
-  
+
+    const handleSecurityTypeChange = (e) => {
+        setQrFormData({
+            ...qrFormData,
+            security_type: e.value
+        })
+    };
+
     const handleStartGeneratingCode = () => {
-      if (!autoGenerateValue || !securityTypeValue) {
-        console.error("Please fill in all required fields.");
-        return;
-      }
-  
-      console.log("Auto Generate QR Code Every:", autoGenerateValue);
-      console.log("Security Type:", securityTypeValue);
-      setAutoGenerateValue("");
-      setSecurityTypeValue("");
-    };
-  
-   
 
- 
+        console.log("QR", qrCode);
+        console.log("Auto Generate QR Code Every:", autoGenerateValue);
+        console.log("Security Type:", securityTypeValue);
+        setAutoGenerateValue("");
+        setSecurityTypeValue("");
+        setQrCode("");
 
-    const initialFormObj = {
-        // qr_code: 1,
-        // qr_: 1,
-        security_type: 1,
-        
-       
     };
 
-const generate_qr = [
-  {id:1, label:"Minute(s)", value:1},
-  {id:2, label:"Second(s)", value:2}
-]
+    const FormikForm = useFormik({
+        enableReinitialize: true,
+        initialValues: qrFormData,
+        validationSchema: Yup.object({
+            qr_generate_time: Yup.number()
+                .typeError('Please enter a valid number')
+                .required('Number is required')
+                .positive('Number must be positive')
+                .integer('Number must be an integer'),
+                qr_generate_unit: Yup.number()
+                .required("Select unit")
+                .min(1, "Please Select Unit"),
+                security_type: Yup.number()
+                .required("Select Security Type")
+                .min(1, "Please Security Type"),
 
-const security_type = [
-    {id:1, label:"Public URL For Everyone", value:1},
-    {id:2, label:"Restricted URL With Password", value:2}
-]
+                
+        }),
+        onSubmit: async (values) => {
+            console.log("SUCCESSSS !!!! Formik Values = ", values);
+            dispatch(setLoaderVisible(true));
+
+        },
+    })
+
+
+
+
+
+
+    const generate_qr = [
+        { id: 1, label: "Minute(s)", value: 1 },
+        { id: 2, label: "Second(s)", value: 2 }
+    ]
+
+    const security_types = [
+        { id: 1, label: "Public URL For Everyone", value: 1 },
+        { id: 2, label: "Restricted URL With Password", value: 2 }
+    ]
 
 
 
@@ -113,29 +151,69 @@ const security_type = [
                                             </Label>
                                         </Col>
                                         <Col lg={3}>
-                                            <input
-                                                id="number"
+                                            <Input
+                                                id="qr_generate_time"
+                                                name="qr_generate_time"
                                                 type="number"
-                                                value={autoGenerateValue}
-                                                onChange={(e) =>
-                                                    handleAutoGenerateChange(
-                                                        e.target.value
-                                                    )
-                                                }
+                                                value={qrFormData?.qr_generate_time}
+                                                onChange={handleQRTimeChange}
                                                 className="form-control me-2"
+                                                invalid={
+                                                    FormikForm.touched.qr_generate_time &&
+                                                        FormikForm.errors.qr_generate_time
+                                                        ? true
+                                                        : false
+                                                }
                                             />
+                                            {FormikForm.touched.qr_generate_time &&
+                                                FormikForm.errors.qr_generate_time ? (
+                                                <FormFeedback type="invalid">
+                                                    {FormikForm.errors.qr_generate_time}
+                                                </FormFeedback>
+                                            ) : null}
                                         </Col>
                                         <Col lg={3}>
                                             <Select
-                                                id=""
+                                                id=" qr_generate_unit"
+                                                name="qr_generate_unit"
                                                 isMulti={false}
                                                 options={generate_qr || []}
-                                                value={autoGenerateValue}
-                                                onChange={(value) =>
-                                                    handleAutoGenerateChange(value)
+                                                value={
+                                                    (qrFormData.qr_generate_unit &&
+                                                        generate_qr.find((e) => e.value === qrFormData.qr_generate_unit)) ||
+                                                    []
                                                 }
+                                                onChange={(e) => {
+                                                    handleAutoGenerateChange(e);
+                                                }}
                                                 className="basic-multi-select"
+                                                styles={{
+                                                    control: (provided, state) => ({
+                                                        ...provided,
+                                                        borderColor:
+                                                            !state.isFocused &&
+                                                                FormikForm.touched.qr_generate_unit &&
+                                                                FormikForm.errors.qr_generate_unit
+                                                                ? "red !important"
+                                                                : provided.borderColor,
+                                                    }),
+                                                }}
+                                                invalid={
+                                                    FormikForm.touched.qr_generate_unit &&
+                                                        FormikForm.errors.qr_generate_unit
+                                                        ? true
+                                                        : false
+                                                }
                                             />
+                                            {FormikForm.touched.qr_generate_unit &&
+                                                FormikForm.errors.qr_generate_unit ? (
+                                                <div className="lc_form_error_text">
+                                                    {FormikForm.errors.qr_generate_unit}
+                                                </div>
+                                            ) : null}
+
+
+
                                         </Col>
                                     </Row>
                                 </Col>
@@ -161,13 +239,43 @@ const security_type = [
                                                     id="security_type"
                                                     name="security_type"
                                                     isMulti={false}
-                                                    options={security_type || []}
-                                                    value={securityTypeValue}
-                                                    onChange={(value) =>
-                                                        handleSecurityTypeChange(value)
+                                                    options={security_types || []}
+                                                    value={
+                                                        (qrFormData.security_type &&
+                                                            security_types.find((e) => e.value === qrFormData.security_type)) ||
+                                                        []
                                                     }
+                                                    onChange={(e) => {
+                                                        handleSecurityTypeChange(e);
+                                                    }}
                                                     className="basic-multi-select"
-                                                />
+                                                     styles={{
+                                                    control: (provided, state) => ({
+                                                        ...provided,
+                                                        borderColor:
+                                                            !state.isFocused &&
+                                                                FormikForm.touched.security_type &&
+                                                                FormikForm.errors.security_type
+                                                                ? "red !important"
+                                                                : provided.borderColor,
+                                                    }),
+                                                }}
+                                                invalid={
+                                                    FormikForm.touched.security_type &&
+                                                        FormikForm.errors.security_type
+                                                        ? true
+                                                        : false
+                                                }
+                                            />
+                                            {FormikForm.touched.security_type &&
+                                                FormikForm.errors.security_type ? (
+                                                <div className="lc_form_error_text">
+                                                    {FormikForm.errors.security_type}
+                                                </div>
+                                            ) : null}
+                                            
+                                                
+
                                             </div>
                                         </Col>
                                     </Row>
@@ -176,10 +284,9 @@ const security_type = [
                                 <Col lg={12}>
                                     <div className="text-start">
                                         <Button
-                                            type="submit"
                                             color="success"
                                             className="btn-label"
-                                            // onClick={handleStartGeneratingCode}
+                                            onClick={FormikForm.handleSubmit}
                                         >
                                             {" "}
                                             <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}

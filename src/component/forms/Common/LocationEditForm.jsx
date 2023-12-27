@@ -2,8 +2,6 @@ import React, { Fragment, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import Select from "react-select";
-import { SweetAlert } from "../../common/sweetAlert/SweetAlert";
-import Swal from "sweetalert2";
 import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
 import "../../../pages/payroll/SalaryPoliciesModal.css";
 import {
@@ -25,28 +23,22 @@ import {
     Modal,
     ModalBody,
 } from "reactstrap";
-import ModalTitle from "rsuite/esm/Modal/ModalTitle";
-import {
-    editEarnings,
-    setEarnings,
-    setAllowances,
-    setDeductions,
-    editDeduction,
-    editAllowance,
-} from "../../../redux/reducers/ChildReducer/SalaryComponentsReducer";
-import {
-    allowances_module_name,
-    deductions_module_name,
-    earnings_module_name,
-    payroll_policy_calculation_type,
-    payroll_policy_period,
-} from "../../../common/constant/Constants";
+
 
 const locationEditForm = () => {
 
     const [address, setAddress] = useState("Lint HQ");
     const [map, setMap] = useState(null);
+    const [geofencingEnabled, setGeofencingEnabled] = useState(false);
 
+    const handleGeofencingChange = () => {
+       
+        const newValue = !geofencingEnabled;
+        setGeofencingEnabled(newValue);
+    
+        
+        console.log("GeoFencing",newValue);
+      };
     // Google Maps API Configuration
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: "YOUR_GOOGLE_MAPS_API_KEY", // Replace with your API key
@@ -105,7 +97,34 @@ const locationEditForm = () => {
         ],
         []
     );
+    const handleCheckboxChange = (event) => {
+        const { id, checked } = event.target;
+    
+       
+        switch (id) {
+          case "webAppCheckbox":
+           
+            console.log("Web App Checkbox is checked:", checked);
+            break;
+          case "mobileAppCheckbox1":
+           
+            console.log("Mobile App Checkbox 1 is checked:", checked);
+            break;
+          case "mobileAppCheckbox2":
+           
+            console.log("Mobile App Checkbox 2 is checked:", checked);
+            break;
 
+            case "allowclockin/out":
+           
+            console.log("Allow clock in/out:", checked);
+            break;  
+          
+    
+          default:
+            break;
+        }
+      };
 
 
 
@@ -133,6 +152,7 @@ const locationEditForm = () => {
                                         name="webAppUnit"
                                         type="checkbox"
                                         className="form-check-input"
+                                        onChange={handleCheckboxChange}
                                         required
                                     />
                                     {" "}
@@ -153,6 +173,7 @@ const locationEditForm = () => {
                                         name="mobileAppUnit1"
                                         type="checkbox"
                                         className="form-check-input"
+                                        onChange={handleCheckboxChange}
                                         required
                                     />
                                     {" "}
@@ -164,6 +185,7 @@ const locationEditForm = () => {
                                         name="mobileAppUnit2"
                                         type="checkbox"
                                         className="form-check-input"
+                                        onChange={handleCheckboxChange}
                                         required
                                     />
                                     {" "}
@@ -192,13 +214,8 @@ const locationEditForm = () => {
                                     name="geofencing"
                                     type="checkbox"
                                     className="form-check-input"
-                                // checked={customFieldObj.insurance}
-                                // onChange={(e) =>
-                                //     setCustomFieldObj({
-                                //         ...customFieldObj,
-                                //         insurance: e.target.checked,
-                                //     })
-                                // } 
+                                    onChange={handleGeofencingChange}
+                                    checked={geofencingEnabled}
                                 />
                             </div>
                         </Col>
@@ -207,10 +224,11 @@ const locationEditForm = () => {
                 <Col md={12} lg={12} xxl={12}>
                     <div className="form-check form-check-inline">
                         <Input
-                            id="p-tax"
-                            name="Unit"
+                            id="allowclockin/out"
+                            name="allowclockin/out"
                             type="checkbox"
                             className="form-check-input"
+                            onChange={handleCheckboxChange}
                             required
                         />
                         <Label className="form-check-label" htmlFor="lt_day">

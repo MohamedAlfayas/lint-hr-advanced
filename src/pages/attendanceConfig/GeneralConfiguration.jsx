@@ -25,8 +25,24 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import FeatherIcon from "feather-icons-react/build/FeatherIcon";
 dayjs.extend(customParseFormat);
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 
 const GeneralConfiguration = () => {
+  const [generalFormData, setGeneralFormData] = useState({
+    total_hour_calculation: 1,
+    attendance_start_date: String(new Date()),
+    approval_cycle_count: 0,
+    approval_cycle_type: 0,
+    repeat_on: {
+      type: 1,
+      date: 22,
+    },
+    receive_notification: false,
+    locations: 1,
+})
+
   const [totalHourCalculation, setTotalHourCalculation] = useState(
     "Every Valid Check-in&Check-out"
   );
@@ -62,31 +78,45 @@ const GeneralConfiguration = () => {
 
   const [generalConfiguration, setGeneralConfiguration] = useState({});
   const [atsdate, setATSDate] = useState("");
-  const [attendanceApprovalCycle, setAttendanceApprovalCycle] = useState(1);
+  // const [attendanceApprovalCycle, setAttendanceApprovalCycle] = useState(1);
+  // const [selectedApprovalCycle, setSelectedApprovalCycle] = useState(null); 
 
-  const initialFormObj = {
-    total_hour_calculation: 1,
-    attendance_start_date: String(new Date()),
-    approval_cycle_count: 1,
-    approval_cycle_type: 1,
-    repeat_on: {
-      type: 1,
-      date: 22,
-    },
-    receive_notification: false,
-    locations: 1,
-  };
+  const handleApprovalCountChange = (e) => {
+    setGeneralFormData({
+      ...generalFormData,
+      approval_cycle_count: e.value
+  })
+};
+
+const handleApprovalTypeChange =(e) => {
+  setGeneralFormData({
+    ...generalFormData,
+    approval_cycle_type: e.value
+})
+}
+  // const initialFormObj = {
+  //   total_hour_calculation: 1,
+  //   attendance_start_date: String(new Date()),
+  //   approval_cycle_count: 0,
+  //   approval_cycle_type: 0,
+  //   repeat_on: {
+  //     type: 1,
+  //     date: 22,
+  //   },
+  //   receive_notification: false,
+  //   locations: 1,
+  // };
 
   useEffect(() => {
     setGeneralConfiguration({
-      ...initialFormObj,
+      ...generalFormData,
       attendance_start_date: ConvertISODateFormat(
-        initialFormObj?.attendance_start_date
+        generalFormData?.attendance_start_date
       ),
     });
     setATSDate(
       ConvertDateFormat(
-        ConvertISODateFormat(initialFormObj?.attendance_start_date)
+        ConvertISODateFormat(generalFormData?.attendance_start_date)
       )
     );
   }, []);
@@ -106,14 +136,32 @@ const GeneralConfiguration = () => {
     });
   };
 
-  const handleInputChange = (event, setterFunction) => {
-    setterFunction(event.target.value);
-  };
+  // const handleInputChange = (event, setterFunction) => {
+  //   setterFunction(event.target.value);
+  // };
 
   const handleSubmit = () => {
     console.log("GENERAL Configuration = ");
   };
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: generalFormData,
+    validationSchema: Yup.object({
+            approval_cycle_count: Yup.number()
+            .required("Approval Cycle Count")
+            .min(1, "Please Select Approval Cycle Count"),
+            approval_cycle_type: Yup.number()
+            .required("Approval Cycle Type")
+            .min(1, "Please Select Approval Cycle Type"),
 
+            
+    }),
+    onSubmit: async (values) => {
+        console.log("SUCCESSSS !!!! Formik Values = ", values);
+        dispatch(setLoaderVisible(true));
+
+    },
+})
   return (
     <React.Fragment>
       <div className="d-flex mb-2">
@@ -206,26 +254,90 @@ const GeneralConfiguration = () => {
                     </Col>
                     <Col lg={3}>
                       <Select
-                        id="approval"
+                        id="approval_cycle_count"
+                        name="approval_cycle_count"
                         isMulti={false}
                         options={approvalCycle || []}
-                        value={approvalCycle.value}
+                        value={
+                          (generalFormData.approval_cycle_count &&
+                            approvalCycle.find((e) => e.value === generalFormData.approval_cycle_count)) ||
+                          []
+                      }
                         className="basic-multi-select"
-                        onChange={(e) =>
-                          handleInputChange(e, setAttendanceApprovalCycle)
-                        }
-                      />
+                        onChange={(e) => {
+                          handleApprovalCountChange(e);
+                      }}
+                      styles={{
+                        control: (provided, state) => ({
+                            ...provided,
+                            borderColor:
+                                !state.isFocused &&
+                                    FormikForm.touched.approval_cycle_count &&
+                                    FormikForm.errors.approval_cycle_count
+                                    ? "red !important"
+                                    : provided.borderColor,
+                        }),
+                    }}
+                    invalid={
+                        FormikForm.touched.approval_cycle_count &&
+                            FormikForm.errors.approval_cycle_count
+                            ? true
+                            : false
+                    }
+                />
+                {FormikForm.touched.approval_cycle_count &&
+                    FormikForm.errors.approval_cycle_count ? (
+                    <div className="lc_form_error_text">
+                        {FormikForm.errors.approval_cycle_count}
+                    </div>
+                ) : null}
+
+
+                   
                     </Col>
                     <Col lg={3}>
                       <Select
-                        id="anotherField"
+                        id="approval_cycle_type"
+                        name="approval_cycle_type"
                         isMulti={false}
                         options={
                           approvalOption || []}
                         className="basic-multi-select"
-                        // value={/* set the value based on your state or props */}
-                        // onChange={(e) => handleAnotherInputChange(e)}
-                      />
+                        value={
+                          (generalFormData.approval_cycle_type &&
+                            approvalOption.find((e) => e.value === generalFormData.approval_cycle_type)) ||
+                          []
+                      }
+                      
+                        onChange={(e) => {
+                          handleApprovalTypeChange(e);
+                      }}
+                      styles={{
+                        control: (provided, state) => ({
+                            ...provided,
+                            borderColor:
+                                !state.isFocused &&
+                                    FormikForm.touched.approval_cycle_type &&
+                                    FormikForm.errors.approval_cycle_type
+                                    ? "red !important"
+                                    : provided.borderColor,
+                        }),
+                    }}
+                    invalid={
+                        FormikForm.touched.approval_cycle_type &&
+                            FormikForm.errors.approval_cycle_type
+                            ? true
+                            : false
+                    }
+                />
+                {FormikForm.touched.approval_cycle_type &&
+                    FormikForm.errors.approval_cycle_type ? (
+                    <div className="lc_form_error_text">
+                        {FormikForm.errors.approval_cycle_type}
+                    </div>
+                ) : null}
+
+                    
                     </Col>
                   </Row>
                 </Col>
@@ -242,12 +354,9 @@ const GeneralConfiguration = () => {
                         id="repeaton"
                         isMulti={false}
                         options={repeat_onselect || []}
-                        // value={{
-                        //   label: repeatOn,
-                        //   value: repeatOn,
-                        // }}
+                       
                         className="basic-multi-select"
-                        onChange={(e) => handleInputChange(e, setRepeatOn)}
+                        // onChange={(e) => handleInputChange(e, setRepeatOn)}
                       />
                     </Col>
                   </Row>
@@ -305,7 +414,7 @@ const GeneralConfiguration = () => {
                       type="button"
                       color="success"
                       className="btn-label"
-                      onClick={handleSubmit}
+                      onClick={FormikForm.handleSubmit}
                     >
                       <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
                       Save
