@@ -32,11 +32,14 @@ const AttendanceEmployeeTable = () => {
   const [timelineDate, setTimeLineDate] = useState("");
   const [notes_modal, setNotes_modal] = useState(false);
 
-  const { attendance_report_data } = useSelector(
+  const { individual_attendance_report_data } = useSelector(
     (state) => state.AttendanceReportReducer
   );
 
-  console.log("attendance_report_data = ", attendance_report_data);
+  console.log(
+    "individual_attendance_report_data = ",
+    individual_attendance_report_data
+  );
 
   function open_timeline() {
     settimeline_modal(!timeline_modal);
@@ -464,7 +467,7 @@ const AttendanceEmployeeTable = () => {
     <Fragment>
       <Table
         height={400}
-        data={attendance_report_data || []}
+        data={individual_attendance_report_data || []}
         autoHeight={true}
         loading={loading}
         bordered={true}
@@ -504,11 +507,11 @@ const AttendanceEmployeeTable = () => {
         </Column>
         <Column width={125}>
           <HeaderCell>OT</HeaderCell>
-          <SecondsToTimeCell dataKey="ot_hr" />
+          <SecondsToTimeCell dataKey="ot_hr_in_seconds" />
         </Column>
         <Column width={125}>
           <HeaderCell>Paid Hr</HeaderCell>
-          <SecondsToTimeCell dataKey="paid_hr" />
+          <SecondsToTimeCell dataKey="paid_hr_in_seconds" />
         </Column>
         <Column width={150}>
           <HeaderCell>Status</HeaderCell>

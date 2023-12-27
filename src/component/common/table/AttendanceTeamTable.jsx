@@ -1,4 +1,4 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { Table } from "rsuite";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import {
@@ -18,6 +18,8 @@ import { hr_status } from "../../../common/constant/Constants";
 import { Link } from "react-router-dom";
 import { parse, format } from "date-fns";
 import SimpleBar from "simplebar-react";
+import { useSelector } from "react-redux";
+import { ConvertSecondsToTime } from "../../../common/js/ConvertSecondsToTime";
 
 const AttendanceTeamTable = () => {
   const { Column, HeaderCell, Cell } = Table;
@@ -31,6 +33,11 @@ const AttendanceTeamTable = () => {
 
   const [timeline_modal, settimeline_modal] = useState(false);
   const [notes_modal, setNotes_modal] = useState(false);
+
+  const { team_attendance_report_data } = useSelector(
+    (state) => state.AttendanceReportReducer
+  );
+  console.log("team_attendance_report_data = ", team_attendance_report_data);
 
   function open_timeline(rowData) {
     settimeline_modal(!timeline_modal);
@@ -71,7 +78,7 @@ const AttendanceTeamTable = () => {
       is_ot_hr_edit: false,
       notes: [],
       hr_status: 1,
-      entry_log: [
+      workday_data: [
         {
           id: 348,
           entry_time: "14-12-2023 10:34:57",
@@ -279,7 +286,7 @@ const AttendanceTeamTable = () => {
       is_ot_hr_edit: false,
       notes: [],
       hr_status: 1,
-      entry_log: [
+      workday_data: [
         {
           id: 344,
           entry_time: "13-12-2023 15:45:56",
@@ -320,7 +327,7 @@ const AttendanceTeamTable = () => {
       paied_hr: "170",
       ot_hr: "5h",
       hr_status: 1,
-      entry_log: [
+      workday_data: [
         {
           date: "01-12-2023 15:45:56",
           paid_hr: 28800,
@@ -370,7 +377,7 @@ const AttendanceTeamTable = () => {
       paied_hr: "170",
       ot_hr: "5h",
       hr_status: 1,
-      entry_log: [
+      workday_data: [
         {
           date: "01-12-2023 15:45:56",
           paid_hr: 28800,
@@ -420,9 +427,6 @@ const AttendanceTeamTable = () => {
       return i.id == rowData.employee_id;
     });
 
-    console.log("at_employee_data");
-    console.log(at_employee_data);
-
     let html_tag = at_employee_data.profile_url ? (
       <div className="d-flex gap-2 align-items-center">
         <div className="flex-shrink-0">
@@ -455,7 +459,8 @@ const AttendanceTeamTable = () => {
               background: "#0ab39c",
             }}
             data-bs-toggle="tooltip"
-            title={at_employee_data.fname}>
+            title={at_employee_data.fname}
+          >
             <span className="first_letter" style={{ color: "white" }}>
               {at_employee_data.fname.charAt(0)}
             </span>
@@ -510,7 +515,8 @@ const AttendanceTeamTable = () => {
           <Button
             color="light"
             id={`depListRef-${at_employee_data.id}`}
-            className="position-relative">
+            className="position-relative"
+          >
             {thisDepartment.map((d) => (
               <React.Fragment>{d.name}</React.Fragment>
             ))}
@@ -520,14 +526,16 @@ const AttendanceTeamTable = () => {
                   //id="tooltipwithHtml"
                   pill
                   color="success"
-                  className="position-absolute top-0 start-100 translate-middle">
+                  className="position-absolute top-0 start-100 translate-middle"
+                >
                   +{at_employee_data.sub_department_id_list.length}
                   <span className="visually-hidden">Departments</span>
                 </Badge>
 
                 <UncontrolledTooltip
                   placement="bottom"
-                  target={`depListRef-${at_employee_data.id}`}>
+                  target={`depListRef-${at_employee_data.id}`}
+                >
                   {" "}
                   <div className="mt-1">
                     {subDepList.map((item, key) => (
@@ -545,23 +553,29 @@ const AttendanceTeamTable = () => {
     );
   };
 
-  const WSHourCell = ({ rowData, dataKey, ...props }) => {
-    let at_employee_data = employee_data.find(function (i) {
-      return i.id == rowData.employee_id;
-    });
-    let at_employee_department_data = department_data.find(function (i) {
-      return i.id == at_employee_data.primary_department_id;
-    });
+  useEffect(() => {
+    console.log("ConvertSecondsToTime = ", ConvertSecondsToTime(168));
+  }, []);
 
+  const WSHourCell = ({ rowData, dataKey, ...props }) => {
     return (
       <Cell {...props} className="link-group">
         <div>
           <div className="d-flex mb-2">
             <div className="flex-grow-1">
-              <div>Progress</div>
+              <div>Progress </div>
             </div>
             <div className="flex-shrink-0">
-              <div>155 Hr / 180 Hr</div>
+              <div>
+                {` ${ConvertSecondsToTime(
+                  rowData.total_paid_hours_in_seconds
+                )}`}
+                {" Hr"}/
+                {` ${ConvertSecondsToTime(
+                  rowData.total_work_hours_in_seconds
+                )}`}
+                {" Hr"}
+              </div>
             </div>
           </div>
           <div className="progress progress-sm animated-progess">
@@ -571,7 +585,15 @@ const AttendanceTeamTable = () => {
               aria-valuenow="0"
               aria-valuemin="0"
               aria-valuemax="100"
-              style={{ width: 150 }}></div>
+              style={{
+                width: Math.round(
+                  (rowData.total_paid_hours_in_seconds /
+                    rowData.total_work_hours_in_seconds) *
+                    100 *
+                    2
+                ),
+              }}
+            ></div>
           </div>
         </div>
       </Cell>
@@ -587,7 +609,7 @@ const AttendanceTeamTable = () => {
     });
 
     {
-      rowData.entry_log.map((item, key) => (
+      rowData.workday_data.map((item, key) => (
         <Column width={200}>
           <HeaderCell>Date</HeaderCell>
           <Cell dataKey="ws_hours">paid_hr</Cell>
@@ -598,71 +620,71 @@ const AttendanceTeamTable = () => {
     return "";
   };
 
-  const columns = [];
+  const fixedColumns = [
+    <Column width={250} fixed="left">
+      <HeaderCell>Employee</HeaderCell>
+      <EmployeeCell dataKey="employee" fullText />
+    </Column>,
+    <Column width={200} fixed="left">
+      <HeaderCell>Paid Time / Work Schedule</HeaderCell>
+      <WSHourCell dataKey="total_work_hours_in_seconds" fullText />
+    </Column>,
+    <Column width={200} fixed="left">
+      <HeaderCell>Department</HeaderCell>
+      <DepartmentCell dataKey="department" fullText />
+    </Column>,
+  ];
 
-  TeamAttendance.forEach((entry, firstIndex) => {
-    console.log("num");
-    console.log(entry);
+  const dynamicColumns =
+    team_attendance_report_data.length > 0
+      ? team_attendance_report_data[0].workday_data.map((day, index) => (
+          <Column key={`dynamic_${index}`} width={100} align="center">
+            <HeaderCell>
+              {" "}
+              {format(new Date(day.date), "dd MMM, yyyy")}
+            </HeaderCell>
+            {/* <Cell dataKey={`workday_data[${index}].paid_hours_in_seconds`} /> */}
+            <Cell>
+              {(rowData) =>
+                ConvertSecondsToTime(
+                  rowData.workday_data[index].paid_hours_in_seconds
+                ) + " Hr"
+              }
+            </Cell>
+          </Column>
+        ))
+      : [];
 
-    entry.entry_log.forEach((rowData, index) => {
-      columns.push(
-        <Column width={100}>
-          <HeaderCell>
-            {" "}
-            {format(new Date(rowData.date), "dd MMM, yyyy")}
-          </HeaderCell>
-          <Cell dataKey={rowData.paid_hr}>
-            {rowData.paid_hr != 0
-              ? new Date(rowData.paid_hr * 1000).toISOString().slice(11, 16) +
-                " Hr"
-              : "0"}{" "}
-          </Cell>
-        </Column>
-      );
-    });
-  });
+  const actionColumn = (
+    <Column width={80} fixed="right">
+      <HeaderCell>Action</HeaderCell>
+      <Cell style={{ padding: "6px" }}>
+        {(rowData) => (
+          <Button
+            appearance="link"
+            onClick={() => alert(`name:${rowData.date}`)}
+          >
+            Edit
+          </Button>
+        )}
+      </Cell>
+    </Column>
+  );
 
-  console.log("columns");
-  console.log(columns);
+  const allColumns = [...fixedColumns, ...dynamicColumns, actionColumn];
 
   return (
     <Fragment>
       <Table
         height={400}
+        data={team_attendance_report_data}
         rowHeight={60}
-        data={TeamAttendance}
         autoHeight={true}
         loading={loading}
         bordered={true}
-        className="mb-5">
-        <Column width={250} fixed="left">
-          <HeaderCell>Employee</HeaderCell>
-          <EmployeeCell dataKey="employee" fullText />
-        </Column>
-
-        <Column width={200} fixed="left">
-          <HeaderCell>Paid Time / Work Schedule</HeaderCell>
-          <WSHourCell dataKey="ws_hours" fullText />
-        </Column>
-        <Column width={150}>
-          <HeaderCell>Department</HeaderCell>
-          <DepartmentCell dataKey="department" fullText />
-        </Column>
-
-        {columns}
-
-        <Column width={80} fixed="right">
-          <HeaderCell>Action</HeaderCell>
-          <Cell style={{ padding: "6px" }}>
-            {(rowData) => (
-              <Button
-                appearance="link"
-                onClick={() => alert(`name:${rowData.date}`)}>
-                Edit
-              </Button>
-            )}
-          </Cell>
-        </Column>
+        className="mb-5"
+      >
+        {allColumns}
       </Table>
       {/* IN/OUT List Modal */}
       <Modal
@@ -670,7 +692,8 @@ const AttendanceTeamTable = () => {
         toggle={() => {
           open_timeline();
         }}
-        centered>
+        centered
+      >
         <ModalHeader>
           <h5 className="modal-title" id="exampleModalToggleLabel">
             Date :
@@ -732,7 +755,8 @@ const AttendanceTeamTable = () => {
               className="btn btn-warning"
               onClick={() => {
                 open_timeline(false);
-              }}>
+              }}
+            >
               Continue
             </Button>
           </div>
@@ -744,7 +768,8 @@ const AttendanceTeamTable = () => {
         toggle={() => {
           open_notes_modal();
         }}
-        centered>
+        centered
+      >
         <ModalBody className="text-left">
           <div>
             <SimpleBar style={{ height: "300px" }} className="px-3 mx-n3 mb-2">
@@ -816,19 +841,22 @@ const AttendanceTeamTable = () => {
                 <Col xs={12}>
                   <label
                     htmlFor="exampleFormControlTextarea1"
-                    className="form-label text-body">
+                    className="form-label text-body"
+                  >
                     Leave a Notes
                   </label>
                   <textarea
                     className="form-control bg-light border-light"
                     id="exampleFormControlTextarea1"
                     rows="3"
-                    placeholder="Enter your comment..."></textarea>
+                    placeholder="Enter your comment..."
+                  ></textarea>
                 </Col>
                 <Col xs={12} className="text-end">
                   <button
                     type="button"
-                    className="btn btn-ghost-secondary btn-icon waves-effect me-1">
+                    className="btn btn-ghost-secondary btn-icon waves-effect me-1"
+                  >
                     <i className="ri-attachment-line fs-16"></i>
                   </button>
                   <Link to="#" className="btn btn-success">

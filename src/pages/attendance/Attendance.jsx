@@ -17,7 +17,7 @@ import AttendanceTeamTable from "../../component/common/table/AttendanceTeamTabl
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  setAttendanceReportData,
+  setIndividualAttendanceReportData,
   setShowTeamTable,
 } from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
 import { Api } from "../../common/api/Api";
@@ -43,7 +43,7 @@ const AttendanceDashboard = () => {
       url: "attendance/get_attendance_entry_log/?thisMonth=" + thisMonth,
     })
       .then((res) => {
-        dispatch(setAttendanceReportData(res?.data?.data));
+        dispatch(setIndividualAttendanceReportData(res?.data?.data));
       })
       .catch((err) => {
         console.log("Something Went Wrong !!");

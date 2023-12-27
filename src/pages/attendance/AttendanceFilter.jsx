@@ -14,11 +14,13 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { useDispatch } from "react-redux";
 import {
-  setAttendanceReportData,
+  setIndividualAttendanceReportData,
   setShowTeamTable,
+  setTeamAttendanceReportData,
 } from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
 import { PostApi } from "../../common/api/PostApi";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { toast } from "react-toastify";
 dayjs.extend(customParseFormat);
 
 const AttendanceFilter = () => {
@@ -112,7 +114,12 @@ const AttendanceFilter = () => {
     console.log("API RES = ", Api);
     if (Api.status && Api.status === 200) {
       dispatch(
-        setAttendanceReportData(Api?.data?.data?.individual_attendance_report)
+        setIndividualAttendanceReportData(
+          Api?.data?.data?.individual_attendance_report
+        )
+      );
+      dispatch(
+        setTeamAttendanceReportData(Api?.data?.data?.team_attendance_report)
       );
       if (filterKeys?.type === "2" && filterKeys?.employee === "0") {
         dispatch(setShowTeamTable(true));

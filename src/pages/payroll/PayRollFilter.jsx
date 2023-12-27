@@ -5,7 +5,7 @@ import {
   MonthFormat,
   hr_status_options,
   record_options,
-  type_options,
+  attendance_type_options,
 } from "../../common/constant/Constants";
 import { DatePicker } from "antd";
 import Select from "react-select";
@@ -214,11 +214,11 @@ const PayRollFilter = () => {
                 <Select
                   name="type_attendance"
                   id="type_attendance"
-                  options={type_options || []}
+                  options={attendance_type_options || []}
                   placeholder="Select a Type"
                   // value={
                   //   !!filterKeys?.type
-                  //     ? type_options.find((d) => d.id === filterKeys?.type)
+                  //     ? attendance_type_options.find((d) => d.id === filterKeys?.type)
                   //     : []
                   // }
                   // onChange={handleTypeChange}
@@ -251,7 +251,8 @@ const PayRollFilter = () => {
                 <button
                   type="button"
                   //  onClick={handleFilter}
-                  className="btn btn-danger">
+                  className="btn btn-danger"
+                >
                   <i className="ri-equalizer-fill me-1 align-bottom"></i>{" "}
                   Filters
                 </button>
