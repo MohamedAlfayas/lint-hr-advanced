@@ -18,6 +18,7 @@ import { Link } from "react-router-dom";
 import { parse, format } from "date-fns";
 import SimpleBar from "simplebar-react";
 import { useSelector } from "react-redux";
+import { ConvertSecondsToTime } from "../../../common/js/ConvertSecondsToTime";
 
 const AttendanceEmployeeTable = () => {
   const { Column, HeaderCell, Cell } = Table;
@@ -405,10 +406,7 @@ const AttendanceEmployeeTable = () => {
   const SecondsToTimeCell = ({ rowData, dataKey, ...props }) => {
     return (
       <Cell {...props} className="link-group">
-        {rowData[dataKey] != 0
-          ? new Date(rowData[dataKey] * 1000).toISOString().slice(11, 16) +
-            " Hr"
-          : ""}{" "}
+        {` ${ConvertSecondsToTime(rowData[dataKey])}`}
       </Cell>
     );
   };

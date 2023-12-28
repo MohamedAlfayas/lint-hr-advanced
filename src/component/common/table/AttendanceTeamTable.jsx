@@ -553,10 +553,6 @@ const AttendanceTeamTable = () => {
     );
   };
 
-  useEffect(() => {
-    console.log("ConvertSecondsToTime = ", ConvertSecondsToTime(168));
-  }, []);
-
   const WSHourCell = ({ rowData, dataKey, ...props }) => {
     return (
       <Cell {...props} className="link-group">
@@ -570,11 +566,10 @@ const AttendanceTeamTable = () => {
                 {` ${ConvertSecondsToTime(
                   rowData.total_paid_hours_in_seconds
                 )}`}
-                {" Hr"}/
+                /
                 {` ${ConvertSecondsToTime(
                   rowData.total_work_hours_in_seconds
                 )}`}
-                {" Hr"}
               </div>
             </div>
           </div>
@@ -648,7 +643,7 @@ const AttendanceTeamTable = () => {
               {(rowData) =>
                 ConvertSecondsToTime(
                   rowData.workday_data[index].paid_hours_in_seconds
-                ) + " Hr"
+                )
               }
             </Cell>
           </Column>
