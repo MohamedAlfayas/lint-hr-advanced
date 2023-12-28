@@ -12,10 +12,11 @@ import {
   addLeaveApplication,
   editLeaveApplication,
 } from "../../redux/reducers/ChildReducer/LeaveApplyReducer";
-import { toast } from "react-toastify";
 import {
   ConvertDateFormat,
   ConvertISODateFormat,
+  ConvertDayNameFromISO,
+  convertHolidayDateFormat,
 } from "../../common/js/ConvertDateFormat";
 import Flatpickr from "react-flatpickr";
 import {
@@ -26,6 +27,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
+import { toast } from "react-toastify";
 import { DatePicker, Space } from "antd";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -44,7 +46,10 @@ const ApplyLeaveForm = () => {
   const [selectedEndHour, setSelectedEndHour] = useState("");
   const [selectedEndMinute, setSelectedEndMinute] = useState("");
   const { RangePicker } = DatePicker;
-  const [hrDiff, setHrDiff] = useState("00:00");
+  const [hrDiff, setHrDiff] = useState("");
+  const [selectedLeave_type, setSelectedLeave_type] = useState("");
+  const [totalMinutes, setTotalMinutes] = useState("");
+  const [daysCount, setDaysCount] = useState("");
 
   useEffect(() => {
     let start_date = !!form_obj?.start
@@ -90,6 +95,7 @@ const ApplyLeaveForm = () => {
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
   const profileData = GetLocalStorageData("my_profile") || [];
+  const holidayData = GetLocalStorageData("holiday") || [];
 
   const thisEmpWS = workScheduleData?.find(
     (val) => val.id === profileData.work_schedule_id
@@ -103,6 +109,12 @@ const ApplyLeaveForm = () => {
       return null;
     })
     .filter((day_id) => day_id !== null);
+
+  const holiday = holidayData.map((d) => {
+    return d.date;
+  });
+
+  const holidayDate = holiday.map((date) => convertHolidayDateFormat(date));
 
   const getHourMinData = (dayName) => {
     const scheduleWeek = thisEmpWS.workday.find((d) => d.weekday === dayName);
@@ -126,7 +138,6 @@ const ApplyLeaveForm = () => {
       setMultipleDayEndDate(dateStrings[1]);
       const dates = [];
 
-      // Increment the start date by one day until it reaches the end date
       while (start <= end) {
         dates.push(start.toISOString().split("T")[0]);
         start.setDate(start.getDate() + 1);
@@ -138,13 +149,37 @@ const ApplyLeaveForm = () => {
     const intermediateDates = generateIntermediaryDates() || [];
 
     const ValidDays = intermediateDates.filter((d) => {
-      if (!WeekOffDays.includes(new Date(d).getDay())) {
+      if (!WeekOffDays.includes(new Date(d).getDay()) && !holiday.includes(d)) {
         return d;
       }
     });
 
+    const multipleDayName = ValidDays.map((d) => {
+      const date = new Date(d);
+      const days = { weekday: "long" };
+      const daysName = date.toLocaleDateString("en-US", days);
+      return daysName;
+    });
+
+    let totalWorkDuration = 0;
+    multipleDayName.forEach((dayNames) => {
+      if (thisEmpWS && thisEmpWS.workday && Array.isArray(thisEmpWS.workday)) {
+        const matchingDay = thisEmpWS.workday.find(
+          (day) => day.weekday.toLowerCase() === dayNames.toLowerCase()
+        );
+
+        if (matchingDay) {
+          totalWorkDuration += matchingDay.total_work_duration;
+        }
+      }
+    });
+
+    console.log("====================================");
+    console.log("totalWorkDuration", totalWorkDuration);
+    console.log("====================================");
+
     const ValidDaysCount = ValidDays.length;
-    // setDaysCount(ValidDaysCount);
+    setDaysCount(ValidDaysCount);
   };
 
   const lt_option = [
@@ -155,7 +190,7 @@ const ApplyLeaveForm = () => {
       type: 1,
       unit: 1,
       leave_count: 12,
-      available_count: 12,
+      available_count: 120,
       status: 1,
     },
     {
@@ -165,7 +200,7 @@ const ApplyLeaveForm = () => {
       type: 1,
       unit: 1,
       leave_count: 12,
-      available_count: 12,
+      available_count: 12000,
       status: 1,
     },
     {
@@ -175,7 +210,7 @@ const ApplyLeaveForm = () => {
       type: 2,
       unit: 1,
       leave_count: 12,
-      available_count: 5,
+      available_count: 5000,
       status: 1,
     },
     {
@@ -185,7 +220,7 @@ const ApplyLeaveForm = () => {
       type: 1,
       unit: 1,
       leave_count: 60,
-      available_count: 30,
+      available_count: 3000,
       status: 1,
     },
     {
@@ -195,7 +230,7 @@ const ApplyLeaveForm = () => {
       type: 1,
       unit: 1,
       leave_count: 15,
-      available_count: 15,
+      available_count: 1500,
       status: 1,
     },
     {
@@ -205,7 +240,7 @@ const ApplyLeaveForm = () => {
       type: 1,
       unit: 1,
       leave_count: 12,
-      available_count: 12,
+      available_count: 1200,
       status: 1,
     },
     {
@@ -215,7 +250,7 @@ const ApplyLeaveForm = () => {
       type: 1,
       unit: 1,
       leave_count: 12,
-      available_count: 12,
+      available_count: 1200,
       status: 1,
     },
     {
@@ -225,15 +260,17 @@ const ApplyLeaveForm = () => {
       type: 1,
       unit: 2,
       leave_count: 48,
-      available_count: 32,
+      available_count: 3200,
       status: 1,
     },
   ];
 
   const disabledDate = (current) => {
-    // Disable Saturdays and Sundays
     const dayOfWeek = current.day();
-    return WeekOffDays.includes(dayOfWeek);
+    return (
+      WeekOffDays.includes(dayOfWeek) ||
+      holidayDate.includes(current.format("DD-MM-YYYY"))
+    );
   };
 
   const handleHourChange = () => {
@@ -279,6 +316,18 @@ const ApplyLeaveForm = () => {
       }
     }
   };
+  useEffect(() => {
+    const [hours, minutes] = hrDiff.split(":");
+    const hoursInMinutes = parseInt(hours, 10) * 3600;
+    const totalMinutes = hoursInMinutes + parseInt(minutes, 10) * 60;
+    setTotalMinutes(totalMinutes);
+    console.log("====================================");
+    console.log(totalMinutes);
+    console.log("====================================");
+    if (leaveapplyObj.available_count <= totalMinutes) {
+      toast.error("Selected Leave Exceeding Available Leave Hours ");
+    }
+  }, [hrDiff]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -360,6 +409,9 @@ const ApplyLeaveForm = () => {
     }),
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
+      if (leaveapplyObj.available_count <= totalMinutes) {
+        toast.error("Selected Leave Exceeding Available Leave Hours ");
+      }
       // dispatch(setLoaderVisible(true));
       // let data;
       // if (values.unit === 2) {
@@ -415,15 +467,13 @@ const ApplyLeaveForm = () => {
                     name="leave_type"
                     isMulti={false}
                     options={lt_option || []}
-                    //value={leaveapplyObj.leavetype || []}
-                    //onChange={handleGenderChange}
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.leavetype &&
-                          FormikForm.errors.leavetype
+                          FormikForm.touched.leave_type &&
+                          FormikForm.errors.leave_type
                             ? "red !important"
                             : provided.borderColor,
                       }),
@@ -438,31 +488,39 @@ const ApplyLeaveForm = () => {
                       []
                     }
                     onChange={(e) => {
-                      setLeaveApplyObj({
+                      setLeaveApplyObj((leaveapplyObj) => ({
                         ...leaveapplyObj,
                         leave_type: e.id,
                         available_count: e.available_count,
-                      });
+                      }));
+                      setSelectedLeave_type(leaveapplyObj.leave_type);
                     }}
                     placeholder="Select Leave Type"
                     className="basic-multi-select"
                     invalid={
-                      FormikForm.touched.leavetype &&
-                      FormikForm.errors.leavetype
+                      FormikForm.touched.leave_type &&
+                      FormikForm.errors.leave_type
                         ? true
                         : false
                     }
                   />
-                  {FormikForm.touched.leavetype &&
-                  FormikForm.errors.leavetype ? (
+                  {FormikForm.touched.leave_type &&
+                  FormikForm.errors.leave_type ? (
                     <div className="lc_form_error_text">
-                      {FormikForm.errors.leavetype}
+                      {FormikForm.errors.leave_type}
                     </div>
                   ) : null}
                 </div>
-                {!FormikForm.errors.leavetype && (
+                {!FormikForm.errors.leave_type && selectedLeave_type === "" && (
                   <div id="passwordHelpBlock" className="form-text">
                     Please select type of leave.
+                  </div>
+                )}
+                {selectedLeave_type && (
+                  <div id="passwordHelpBlock" className="form-text">
+                    Available Leave Count{" "}
+                    {lt_option.find((leave) => leave.id === leaveapplyObj.id)}{" "}
+                    {leaveapplyObj.available_count} min.
                   </div>
                 )}
               </Col>
@@ -606,9 +664,7 @@ const ApplyLeaveForm = () => {
                         onChange={handleMultiDayChange}
                       />
 
-                      <span className="input-group-text">
-                        {leaveapplyObj?.requested_leave_count} Days
-                      </span>
+                      <span className="input-group-text">{daysCount} Days</span>
                     </div>
                     <div id="passwordHelpBlock" className="form-text">
                       Please select Start & End Date
