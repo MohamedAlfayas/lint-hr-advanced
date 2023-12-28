@@ -246,18 +246,25 @@ const PayRollFilter = () => {
               </div>
             </Col>
 
-            <div className="col-lg-auto">
-              <div className="hstack gap-2">
-                <button
-                  type="button"
-                  //  onClick={handleFilter}
-                  className="btn btn-danger"
-                >
-                  <i className="ri-equalizer-fill me-1 align-bottom"></i>{" "}
-                  Filters
-                </button>
-              </div>
-            </div>
+            <Col xl={1}>
+              <button
+                type="button"
+                //  onClick={handleFilter}
+                className="btn btn-danger "
+              >
+                <i className="ri-equalizer-fill me-1 align-bottom"></i> Filters
+              </button>
+            </Col>
+
+            <Col xl={1}>
+              <button
+                type="button"
+                //  onClick={handleFilter}
+                className="btn btn-info add-btn"
+              >
+                <i class="ri-file-download-line align-bottom me-1"></i> Export
+              </button>
+            </Col>
           </Row>
         </CardHeader>
       </Card>

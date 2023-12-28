@@ -13,7 +13,7 @@ import { MetaTitle } from "../../common/data/MetaTitle";
 import PayRollFilter from "./PayRollFilter";
 
 const PayRollDashboard = () => {
-  document.title = `Attendance Overview | ${MetaTitle}`;
+  document.title = `Payroll Overview | ${MetaTitle}`;
 
   // const dispatch = useDispatch();
 
