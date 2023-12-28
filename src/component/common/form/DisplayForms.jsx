@@ -3,7 +3,6 @@ import { Offcanvas, OffcanvasBody, OffcanvasHeader } from "reactstrap";
 import SimpleBar from "simplebar-react";
 import DepartmentForm from "../../forms/DepartmentForm";
 import { useSelector } from "react-redux";
-import BranchForm from "../../forms/BranchForm";
 import EmployeeForm from "../../forms/EmployeeForm";
 import RoleForm from "../../forms/RoleForm";
 import WorkScheduleForm from "../../forms/WorkScheduleForm";
@@ -16,7 +15,7 @@ import EPFWageForm from "../../forms/EPFWageForm";
 import ProfessionalTaxForm from "../../forms/ProfessionalTaxForm";
 import SalaryCmpntForm from "../../forms/Common/SalaryCmpntForm";
 import SalaryPloiciesForm from "../../forms/Common/SalaryPoliciesForm";
-import LocationEditForm from "../../forms/Common/LocationEditForm"
+import LocationEditForm from "../../forms/Common/LocationEditForm";
 import {
   branch_component_name,
   custom_field_component_name,
@@ -34,6 +33,7 @@ import {
   work_schedule_component_name,
   location_edit_form_component_name,
 } from "../../../common/constant/Constants";
+import BranchForm from "../../forms/BranchForm";
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
   const { form_title, form_width_percentage, component_to_show } = useSelector(
@@ -85,7 +85,7 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
                 <SalaryCmpntForm />
               ) : component_to_show === salary_policy_form_component_name ? (
                 <SalaryPloiciesForm />
-              ) :component_to_show === location_edit_form_component_name ? (
+              ) : component_to_show === location_edit_form_component_name ? (
                 <LocationEditForm />
               ) : (
                 <></>

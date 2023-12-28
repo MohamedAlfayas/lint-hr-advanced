@@ -1,426 +1,706 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
+import { Link } from "react-router-dom";
 import {
   Button,
   Card,
   CardBody,
+  CardHeader,
   Col,
+  Dropdown,
   DropdownItem,
   DropdownMenu,
   DropdownToggle,
   Form,
+  FormGroup,
   Input,
   Label,
   Row,
   UncontrolledDropdown,
 } from "reactstrap";
+import {
+  gender_options,
+  form_default_input_types,
+  form_select_type,
+  timzone_options,
+  form_date_type,
+  DateFormat,
+} from "../../common/constant/Constants";
+import {
+  ConvertDateFormat,
+  ConvertISODateFormat,
+} from "../../common/js/ConvertDateFormat";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import { DatePicker } from "antd";
+dayjs.extend(customParseFormat);
 
+//import images
+import avatar8 from "../../assets/images/users/avatar-8.jpg";
+import avatar10 from "../../assets/images/users/avatar-10.jpg";
+import avatar6 from "../../assets/images/users/avatar-6.jpg";
 import avatar2 from "../../assets/images/users/avatar-2.jpg";
 import avatar3 from "../../assets/images/users/avatar-3.jpg";
 import avatar4 from "../../assets/images/users/avatar-4.jpg";
-import avatar5 from "../../assets/images/users/avatar-5.jpg";
-import avatar6 from "../../assets/images/users/avatar-6.jpg";
 import avatar7 from "../../assets/images/users/avatar-7.jpg";
-import avatar8 from "../../assets/images/users/avatar-8.jpg";
-import { Link } from "react-router-dom";
+import image4 from "../../assets/images/small/img-4.jpg";
+import image5 from "../../assets/images/small/img-5.jpg";
 
-const BranchForm = () => {  
+import indflag from "../../assets/images/flags/in.svg";
+//SimpleBar
+import SimpleBar from "simplebar-react";
+import CountryList from "../../common/data/CountryList";
+import Dropzone from "react-dropzone";
+import axios from "axios";
+import { Api } from "../../common/api/Api";
+import { toast } from "react-toastify";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { GetCustomField } from "../../common/js/GetCustomField";
+// import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 
-  const [branchData, setBranchData] = useState({});
-  const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+const BranchForm = () => {
+  const [stateList, setStateList] = useState([]);
+  const [contactCountry, setContactCountry] = useState({
+    id: 240,
+    flagImg: indflag,
+    countryName: "India",
+    countryCode: "+91",
+  });
+
+  const [selectedCountry, setSelectedCountry] = useState({});
+
+  const [dropdownOpen3, setDropdownOpen3] = useState(false);
+  const [dropdownOpen4, setDropdownOpen4] = useState(false);
+  const [stateDD, setStateDD] = useState(false);
+
+  const toggle3 = () => setDropdownOpen3((prevState) => !prevState);
+  const toggle4 = () => setDropdownOpen4((prevState) => !prevState);
+  const stateToggle = () => setStateDD((prevState) => !prevState);
+
+  // Custom Field Option
+
+  const CustomFieldsForThisForm = GetCustomField("organization") || [];
+
+  // Set Empty Data To form
+
+  const initialData = useMemo(() => {
+    return {
+      id: "0",
+      website: "",
+      contact_number: "",
+      country_code: "+91",
+      contact_email: "",
+      about: "",
+      address: "",
+      city: "",
+      pincode: "",
+      cf_values: CustomFieldsForThisForm || [],
+    };
+  }, []);
+
+  const [country, setCountry] = useState("");
+  const [state, setState] = useState("");
+  const [timezone, setTimeZone] = useState("");
+  const [profileData, setProfileData] = useState(initialData);
 
   useEffect(() => {
-    console.log("UseEffect Running !!!!");
-    setBranchData(form_obj);
-  }, [form_obj]);
+    Api({
+      method: "GET",
+      url: "/company/get-profile/",
+    })
+      .then((res) => {
+        console.log("res = ", res);
+        let thisCFValues = [...res?.data?.data?.cf_values];
+        let cf = [];
+        if (thisCFValues && thisCFValues.length) {
+          cf = CustomFieldsForThisForm.map((obj) => {
+            return {
+              ...obj,
+              value:
+                thisCFValues.find((t) => t.id === obj.id)?.value || obj.value,
+            };
+          });
+        } else {
+          cf = CustomFieldsForThisForm;
+        }
+        console.log("CF === ", cf);
+        setCountry(res?.data?.data?.country);
+        setProfileData({ ...res?.data?.data, cf_values: cf });
+        setState(res?.data?.data?.state);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, []);
 
- 
-  const handleSubmit = () => {
-    console.log("branch data = ", branchData);
+  useEffect(() => {
+    if (country !== "" && country !== undefined && country !== null) {
+      let CountryObj = CountryList.find((obj) => obj.countryName === country);
+      setSelectedCountry(CountryObj);
+      setContactCountry(CountryObj);
+      setStateList(CountryObj?.states);
+      setTimeZone(CountryObj?.timezone);
+      if (changeId === 0) {
+        setState("");
+      }
+    }
+  }, [country]);
+
+  const updateProfileData = (name, value) => {
+    setProfileData({
+      ...profileData,
+      [name]: value,
+    });
+  };
+  console.log("hhh", profileData);
+
+  const [changeId, setChangeId] = useState(1);
+
+  const [darkLogoFile, setDarkLogoFile] = useState(null);
+  const [lightLogoFile, setLightLogoFile] = useState(null);
+
+  function handleAcceptedFiles(file, logo_type) {
+    let chosenFile = Object.assign(file[0], {
+      preview: URL.createObjectURL(file[0]),
+      formattedSize: formatBytes(file[0].size),
+    });
+    logo_type === "dark"
+      ? setDarkLogoFile(chosenFile)
+      : setLightLogoFile(chosenFile);
+  }
+
+  /**
+   * Formats the size
+   */
+  function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+  }
+
+  const handleCFInputChange = (e, cf_id) => {
+    const newPD = {
+      ...profileData,
+      cf_values: [...profileData.cf_values].map((item) =>
+        item.id === cf_id ? { ...item, value: e.target.value } : item
+      ),
+    };
+    setProfileData(newPD);
+  };
+  const handleCFDateChange = (e, dateStr, cf_id) => {
+    setProfileData({
+      ...profileData,
+      cf_values: [...profileData.cf_values].map((item) =>
+        item.id === cf_id
+          ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
+          : item
+      ),
+    });
   };
 
-  const [rolelist, setListData] = useState([
-    {
-      id: 1,
-      Name: "Company",
-      priority: 1,
-      note: "COmpany FUll Access",
-      permission: [
-        {
-          id: 1,
-          notes: "User Can View All Branch",
-          element: "per_company_view",
-        },
-        {
-          id: 2,
-          notes: "User Can Create New Branch",
-          element: "per_company_create",
-        },
-        {
-          id: 3,
-          notes: "User Can Edit Branch",
-          element: "per_company_edit",
-        },
-        {
-          id: 4,
-          notes: "User Can Delete Branch",
-          element: "per_company_delete",
-        },
-      ],
-    },
+  const submitProfileForm = (e) => {
+    e.preventDefault();
+    let tempKey = ["country", "state", "timezone"];
+    tempKey.map((obj) => {
+      if (obj in profileData) {
+        delete profileData.obj;
+      }
+    });
 
-    {
-      id: 2,
-      Name: "Employee",
-      priority: 3,
-      note: "",
-      permission: [
-        {
-          id: 5,
-          notes: "User Can View All Employee",
-          element: "per_employee_view",
-        },
-        {
-          id: 6,
-          notes: "User Can Create Employee",
-          element: "per_employee_create",
-        },
-        {
-          id: 7,
-          notes: "User Can Edit Employee",
-          element: "per_employee_edit",
-        },
-        {
-          id: 8,
-          notes: "User Can Delete Employee",
-          element: "per_employee_delete",
-        },
-      ],
-    },
-    {
-      id: 2,
-      Name: "Roles",
-      priority: 1,
-      note: "",
-      permission: [
-        {
-          id: 9,
-          notes: "User Can View All Roles",
-          element: "per_role_view",
-        },
-        {
-          id: 10,
-          notes: "User Can Create New Role",
-          element: "per_role_create",
-        },
-        {
-          id: 11,
-          notes: "User Can Edit Role",
-          element: "per_role_edit",
-        },
-        {
-          id: 12,
-          notes: "User Can Delete Role",
-          element: "per_role_delete",
-        },
-      ],
-    },
-    {
-      id: 3,
-      Name: "Work_Schedule",
-      priority: 1,
-      note: "",
-      permission: [
-        {
-          id: 13,
-          notes: "Can View Work Schedule",
-          element: "per_ws_view",
-        },
-        {
-          id: 14,
-          notes: "Can Create Work Schedule",
-          element: "per_ws_create",
-        },
-        {
-          id: 15,
-          notes: "Can Edit Work Schedule",
-          element: "per_ws_edit",
-        },
-        {
-          id: 16,
-          notes: "Can Delete Work Schedule",
-          element: "per_ws_delete",
-        },
-      ],
-    },
-    {
-      id: 4,
-      Name: "Holiday",
-      priority: 2,
-      note: "",
-      permission: [
-        {
-          id: 17,
-          notes: "User Can View All Holiday",
-          element: "per_holiday_view",
-        },
-        {
-          id: 18,
-          notes: "User Can Create New Holiday",
-          element: "per_holiday_create",
-        },
-        {
-          id: 19,
-          notes: "User Can Edit Holiday",
-          element: "per_holiday_edit",
-        },
-        {
-          id: 20,
-          notes: "User Can Delete Holiday",
-          element: "per_department_delete",
-        },
-      ],
-    },
-    {
-      id: 5,
-      Name: "Department",
-      priority: 2,
-      note: "",
-      permission: [
-        {
-          id: 21,
-          notes: "User Can View All Departments",
-          element: "per_department_view",
-        },
-        {
-          id: 22,
-          notes: "User Can Create New Departments",
-          element: "per_department_create",
-        },
-        {
-          id: 23,
-          notes: "User Can Edit Departments",
-          element: "per_department_edit",
-        },
-        {
-          id: 24,
-          notes: "User Can Delete Departments",
-          element: "per_department_delete",
-        },
-      ],
-    },
-    {
-      id: 0,
-      Name: "Attendance Report",
-      note: "Attendance",
-      priority: 4,
-      permission: [
-        {
-          id: 1,
-          notes: "View Daily Attendance Reports",
-          element: "per_attendance_report",
-        },
-      ],
-    },
-  ]);
+    let form_data = new FormData();
+    darkLogoFile !== null &&
+      form_data.append("dark_logo", darkLogoFile, darkLogoFile.name);
+    lightLogoFile !== null &&
+      form_data.append("light_logo", lightLogoFile, lightLogoFile.name);
+
+    Object.entries(profileData).map((key, idx) => {
+      if (key[0] === "cf_values") {
+        form_data.append(key[0], JSON.stringify(key[1]));
+      } else {
+        form_data.append(key[0], key[1]);
+      }
+    });
+
+    form_data.append("country", country);
+    form_data.append("timezone", timezone);
+    form_data.append("state", state);
+
+    Api({
+      method: "POST",
+      url: "/company/save-profile/",
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      data: form_data,
+    })
+      .then((res) => {
+        console.log("RES ==== ", res);
+        toast.success(res?.data?.message);
+      })
+      .catch((err) => {
+        console.log("ERRR === ", err);
+        toast.error(err?.response?.data?.message);
+      });
+  };
 
   return (
     <React.Fragment>
-      <Row className="g-4 mb-3">
-        <div className="col-sm">
-          <div className="d-flex">
-            <label htmlFor="roleName" className="form-label">
-              Role Name
-            </label>
-            <input
-              type="text"
-              name="name"
-              className="form-control"
-              id="roleName"
-              placeholder="Enter Role Name"
-              required
-            />
-          </div>
-        </div>
-        <div className="col-sm-auto">
-          <div>
-            <div className="text-end">
-              <Button color="success" className="btn-label">
-                {" "}
-                <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                Save{" "}
-              </Button>{" "}
-            </div>
-          </div>
-        </div>
-      </Row>
-
       <Row>
-        <div className="team-list list-view-filter">
-          <Card className="overflow-hidden shadow-none">
-            <CardBody className="bg-secondary-subtle">
-              <Row className="align-items-center team-row text-center">
-                <Col lg={3} className="ml-2">
-                  <b>Access</b>
-                </Col>
-                <Col lg={9} className="ml-2">
-                  <Row className="align-items-center team-row text-center">
-                    <Col lg={3} className="ml-2">
-                      <b> View</b>
-                    </Col>
-                    <Col lg={3} className="ml-2">
-                      <b>Create</b>
-                    </Col>
-                    <Col lg={3} className="ml-2">
-                      <b>Edit</b>
-                    </Col>
-                    <Col lg={3} className="ml-2">
-                      <b> Delete</b>
-                    </Col>
-                  </Row>
-                </Col>
-              </Row>
-            </CardBody>
-          </Card>
+        <Col xl={12} lg={12}>
+          <div>
+            <h6 className="mb-3 fw-semibold text-uppercase">Company Info</h6>
 
-          {rolelist.map((data, idx) => (
-            //const priority = data.priority === 1 ? "Primary" : "Secondary";
-            <>
-              <Card className="team-box ribbon-box">
-                <CardBody className="px-4">
-                  {data.priority === 1 ? (
-                    <div className="ribbon-two ribbon-two-warning">
-                      <span>Master</span>
-                    </div>
-                  ) : data.priority === 2 ? (
-                    <div className="ribbon-two ribbon-two-info">
-                      <span>Access</span>
-                    </div>
-                  ) : data.priority === 3 ? (
-                    ""
-                  ) : data.priority === 4 ? (
-                    <div className="ribbon-two ribbon-two-success">
-                      <span>Report</span>
-                    </div>
-                  ) : (
-                    ""
-                  )}
+            <form onSubmit={submitProfileForm}>
+              <div className="live-preview">
+                <Row className="gy-4">
+                  {/* <WebCheckInOutBtn /> */}
 
-                  <Row className="align-items-center team-row ">
-                    <Col lg={3} className="ml-2">
-                      <div className="team-profile-img">
-                        <div className="team-content">
-                          <Link to="#" className="d-block">
-                            <h5 className="fs-16 mb-1">{data.Name}</h5>
-                          </Link>
-                          <p className="text-muted mb-0">{data.note}</p>
-                        </div>
+                  <Col lg={12}>
+                    <div>
+                      <Label htmlFor="branchName" className="form-label">
+                        Branch Name
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type="text"
+                          className="form-control form-control-icon"
+                          id="branchName"
+                          placeholder="New Branch"
+                        />
+                        <i className="ri-building-2-line"></i>
                       </div>
-                    </Col>
-                    <Col lg={9}>
-                      <Row className="text-muted text-center align-items-center">
-                        {data.permission.length === 1 ? (
-                          <Col xs={3} className="border-end border-end-dashed">
-                            <div
-                              className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                              dir="ltr">
-                              <Input
-                                id={data.permission[0].element}
-                                name={data.permission[0].element}
-                                type="checkbox"
-                                className="form-check-input"
-                                defaultChecked
-                              />
-                            </div>
-                            <p className="text-muted mb-0">
-                              {data.permission[0].notes}
-                            </p>
-                          </Col>
-                        ) : data.permission.length === 4 ? (
-                          <>
-                            <Col
-                              xs={3}
-                              className="border-end border-end-dashed">
-                              <div
-                                className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                                dir="ltr">
-                                <Input
-                                  id={data.permission[0].element}
-                                  name={data.permission[0].element}
-                                  type="checkbox"
-                                  className="form-check-input"
-                                  defaultChecked
-                                />
-                              </div>
-                              <p className="text-muted mb-0">
-                                {data.permission[0].notes}
-                              </p>
-                            </Col>
-                            <Col
-                              xs={3}
-                              className="border-end border-end-dashed">
-                              <div
-                                className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                                dir="ltr">
-                                <Input
-                                  id={data.permission[1].element}
-                                  name={data.permission[1].element}
-                                  type="checkbox"
-                                  className="form-check-input"
-                                  defaultChecked
-                                />
-                              </div>
-                              <p className="text-muted mb-0">
-                                {data.permission[1].notes}
-                              </p>
-                            </Col>
+                      <div id="passwordHelpBlock" className="form-text">
+                        Enter Your Branch Name.
+                      </div>
+                    </div>
+                  </Col>
 
-                            <Col
-                              xs={3}
-                              className="border-end border-end-dashed">
-                              <div
-                                className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                                dir="ltr">
+                  <Col lg={12}>
+                    <div>
+                      <Label>Contact Number*</Label>
+                      <Dropdown
+                        className="input-group"
+                        isOpen={dropdownOpen4}
+                        toggle={toggle4}
+                      >
+                        <DropdownToggle
+                          as="button"
+                          className="btn btn-light border arrow-none"
+                        >
+                          <img
+                            src={contactCountry.flagImg}
+                            alt="country flag"
+                            className="options-flagimg"
+                            height="20"
+                          />
+                          <span className="countrylist-codeno text-muted">
+                            {contactCountry.countryCode}
+                          </span>
+                        </DropdownToggle>
+                        <input
+                          type="number"
+                          className="form-control rounded-end flag-input"
+                          placeholder="Enter number"
+                          value={profileData.contact_number || ""}
+                          onChange={(e) =>
+                            updateProfileData("contact_number", e.target.value)
+                          }
+                        />
+                        <DropdownMenu
+                          as="ul"
+                          className="list-unstyled w-100 dropdown-menu-list mb-0"
+                        >
+                          <SimpleBar
+                            style={{ maxHeight: "220px" }}
+                            className="px-3"
+                          >
+                            {(
+                              CountryList.filter((obj) => obj.show).sort(
+                                (a, b) =>
+                                  a.countryName.localeCompare(b.countryName)
+                              ) || []
+                            ).map((item, key) => (
+                              <DropdownItem
+                                as="li"
+                                onClick={() => {
+                                  updateProfileData(
+                                    "country_code",
+                                    item.countryCode
+                                  );
+                                  setContactCountry(item);
+                                }}
+                                key={key}
+                                className="dropdown-item d-flex"
+                              >
+                                <div className="flex-shrink-0 me-2">
+                                  <img
+                                    src={item.flagImg}
+                                    alt="country flag"
+                                    className="options-flagimg"
+                                    height="20"
+                                  />
+                                </div>
+                                <div className="flex-grow-1">
+                                  <div className="d-flex">
+                                    <div className="country-name me-1">
+                                      {item.countryName}
+                                    </div>
+                                    <span className="countrylist-codeno text-muted">
+                                      {item.countryCode}
+                                    </span>
+                                  </div>
+                                </div>
+                              </DropdownItem>
+                            ))}
+                          </SimpleBar>
+                        </DropdownMenu>
+                      </Dropdown>
+
+                      <div id="passwordHelpBlock" className="form-text">
+                        Enter Your Contact number with country code.
+                      </div>
+                    </div>
+                  </Col>
+
+                  <Col lg={12}>
+                    <div>
+                      <Label htmlFor="companyemail" className="form-label">
+                        Contact Email*
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type="email"
+                          className="form-control form-control-icon"
+                          id="companyemail"
+                          placeholder="user@company.com"
+                          value={profileData.contact_email || ""}
+                          onChange={(e) =>
+                            updateProfileData("contact_email", e.target.value)
+                          }
+                        />
+                        <i className="ri-mail-line"></i>
+                      </div>
+                      <div id="passwordHelpBlock" className="form-text">
+                        Enter Your Email.
+                      </div>
+                    </div>
+                  </Col>
+
+                  <Col lg={12}>
+                    <div>
+                      <Label
+                        htmlFor="exampleFormControlTextarea5"
+                        className="form-label"
+                      >
+                        Company Overview
+                      </Label>
+                      <textarea
+                        className="form-control"
+                        id="exampleFormControlTextarea5"
+                        rows="3"
+                        value={profileData.about || ""}
+                        onChange={(e) =>
+                          updateProfileData("about", e.target.value)
+                        }
+                      ></textarea>
+                      <div id="passwordHelpBlock" className="form-text">
+                        Company Overview.
+                      </div>
+                    </div>
+                  </Col>
+
+                  <Col lg={12}>
+                    <div>
+                      <Label
+                        htmlFor="exampleFormControlTextarea5"
+                        className="form-label"
+                      >
+                        Address
+                      </Label>
+                      <textarea
+                        className="form-control"
+                        id="exampleFormControlTextarea5"
+                        rows="2"
+                        value={profileData.address || ""}
+                        onChange={(e) =>
+                          updateProfileData("address", e.target.value)
+                        }
+                      ></textarea>
+                      <div id="passwordHelpBlock" className="form-text">
+                        Address.
+                      </div>
+                    </div>
+                  </Col>
+
+                  <Col lg={12}>
+                    <div>
+                      <Label
+                        htmlFor="exampleFormControlTextarea5"
+                        className="form-label"
+                      >
+                        Country
+                      </Label>
+                      <Dropdown isOpen={dropdownOpen3} toggle={toggle3}>
+                        <DropdownToggle
+                          tag="div"
+                          className="form-control rounded-end flag-input form-select"
+                          style={{ cursor: "pointer" }}
+                        >
+                          {selectedCountry.countryName || "Select country"}
+                        </DropdownToggle>
+                        <DropdownMenu
+                          as="ul"
+                          className="list-unstyled w-100 dropdown-menu-list mb-0"
+                        >
+                          <SimpleBar
+                            style={{ maxHeight: "220px" }}
+                            className="px-3"
+                          >
+                            {(
+                              CountryList.filter((obj) => obj.show).sort(
+                                (a, b) =>
+                                  a.countryName.localeCompare(b.countryName)
+                              ) || []
+                            ).map((item, key) => (
+                              <DropdownItem
+                                as="li"
+                                onClick={() => {
+                                  setChangeId(0);
+                                  setCountry(item.countryName);
+                                }}
+                                key={key}
+                                className="dropdown-item d-flex"
+                              >
+                                <div className="flex-shrink-0 me-2">
+                                  <img
+                                    src={item.flagImg}
+                                    alt="country flag"
+                                    className="options-flagimg"
+                                    height="20"
+                                  />
+                                </div>
+                                <div className="flex-grow-1">
+                                  <div className="d-flex">
+                                    <div className="country-name me-1">
+                                      {item.countryName}
+                                    </div>
+                                    <span className="countrylist-codeno text-muted">
+                                      {item.countryCode}
+                                    </span>
+                                  </div>
+                                </div>
+                              </DropdownItem>
+                            ))}
+                          </SimpleBar>
+                        </DropdownMenu>
+                      </Dropdown>
+                      <div id="passwordHelpBlock" className="form-text">
+                        Select Country.
+                      </div>
+                    </div>
+                  </Col>
+
+                  <Col lg={12}>
+                    <div>
+                      <Label
+                        htmlFor="exampleFormControlTextarea5"
+                        className="form-label"
+                      >
+                        State
+                      </Label>
+                      <Dropdown isOpen={stateDD} toggle={stateToggle}>
+                        <DropdownToggle
+                          tag="div"
+                          className="form-control rounded-end flag-input form-select"
+                          style={{ cursor: "pointer" }}
+                        >
+                          {stateList.find((obj) => obj === state) ||
+                            "Select State"}
+                        </DropdownToggle>
+                        <DropdownMenu
+                          as="ul"
+                          className="list-unstyled w-100 dropdown-menu-list mb-0"
+                        >
+                          <SimpleBar
+                            style={{ maxHeight: "220px" }}
+                            className="px-3"
+                          >
+                            {(stateList || []).map((item, key) => (
+                              <DropdownItem
+                                as="li"
+                                onClick={() => setState(item)}
+                                key={key}
+                                className="dropdown-item d-flex"
+                              >
+                                <div className="flex-grow-1">
+                                  <div className="d-flex">
+                                    <div className="country-name me-1">
+                                      {item}
+                                    </div>
+                                  </div>
+                                </div>
+                              </DropdownItem>
+                            ))}
+                          </SimpleBar>
+                        </DropdownMenu>
+                      </Dropdown>
+                      <div id="passwordHelpBlock" className="form-text">
+                        Select State.
+                      </div>
+                    </div>
+                  </Col>
+
+                  <Col lg={12}>
+                    <div>
+                      <Label
+                        htmlFor="exampleFormControlTextarea5"
+                        className="form-label"
+                      >
+                        City
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type="text"
+                          className="form-control form-control-icon"
+                          id="companycity"
+                          placeholder="Chennai"
+                          value={profileData.city || ""}
+                          onChange={(e) =>
+                            updateProfileData("city", e.target.value)
+                          }
+                        />
+                        <i className="ri-mail-line"></i>
+                      </div>
+                      <div id="passwordHelpBlock" className="form-text">
+                        Select City.
+                      </div>
+                    </div>
+                  </Col>
+
+                  <Col lg={12}>
+                    <div>
+                      <Label
+                        htmlFor="exampleFormControlTextarea5"
+                        className="form-label"
+                      >
+                        Pincode
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type="number"
+                          className="form-control form-control-icon"
+                          id="companypincode"
+                          placeholder="666666"
+                          value={profileData.pincode || ""}
+                          onChange={(e) =>
+                            updateProfileData("pincode", e.target.value)
+                          }
+                        />
+                        <i className="ri-mail-line"></i>
+                      </div>
+                      <div id="passwordHelpBlock" className="form-text">
+                        Pincode.
+                      </div>
+                    </div>
+                  </Col>
+
+                  <Col lg={12}>
+                    <div>
+                      <Label
+                        htmlFor="exampleFormControlTextarea5"
+                        className="form-label"
+                      >
+                        Time Zone
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type="text"
+                          className="form-control form-control-icon"
+                          id="timezone"
+                          placeholder="Asia/Kolkata"
+                          value={timezone || ""}
+                          onChange={(e) => setTimeZone(e.target.value)}
+                        />
+                        <i className="ri-time-line"></i>
+                      </div>
+                      <div id="passwordHelpBlock" className="form-text">
+                        Time Zone.
+                      </div>
+                    </div>
+                  </Col>
+
+                  {profileData.cf_values && profileData.cf_values.length
+                    ? profileData.cf_values.map((obj) => (
+                        <Col lg={12}>
+                          <div>
+                            <Label htmlFor="lname" className="form-label">
+                              {obj.name}
+                            </Label>
+                            {form_default_input_types.includes(obj.type) && (
+                              <div className="form-icon right">
                                 <Input
-                                  id={data.permission[2].element}
-                                  name={data.permission[2].element}
-                                  type="checkbox"
-                                  className="form-check-input"
-                                  defaultChecked
+                                  type={obj.type || "text"}
+                                  name={obj.input_name}
+                                  id={obj.input_name}
+                                  className="form-control"
+                                  placeholder={`Enter ${obj.name}`}
+                                  value={obj.value || ""}
+                                  required={obj.is_required || false}
+                                  onChange={(e) =>
+                                    handleCFInputChange(e, obj.id)
+                                  }
                                 />
                               </div>
-                              <p className="text-muted mb-0">
-                                {data.permission[2].notes}
-                              </p>
-                            </Col>
-                            <Col xs={3} className=" ">
-                              <div
-                                className="form-check form-check-right form-switch form-switch-md form-switch-success align-items-center mb-1"
-                                dir="ltr">
-                                <Input
-                                  id={data.permission[3].element}
-                                  name={data.permission[3].element}
-                                  type="checkbox"
-                                  className="form-check-input"
-                                  defaultChecked
-                                />
-                              </div>
-                              <p className="text-muted mb-0">
-                                {data.permission[3].notes}
-                              </p>
-                            </Col>
-                          </>
-                        ) : (
-                          ""
-                        )}
-                      </Row>
-                    </Col>
-                  </Row>
-                </CardBody>
-              </Card>
-            </>
-          ))}
-        </div>
+                            )}
+                            {obj.type === form_date_type && (
+                              <DatePicker
+                                name={obj.input_name}
+                                id={obj.input_name}
+                                className="form-control"
+                                format={DateFormat}
+                                value={
+                                  obj.value === ""
+                                    ? null
+                                    : dayjs(
+                                        ConvertDateFormat(obj.value),
+                                        DateFormat
+                                      )
+                                }
+                                allowClear={false}
+                                onChange={(e, dateStr) =>
+                                  handleCFDateChange(e, dateStr, obj.id)
+                                }
+                              />
+                            )}
+                            <div id="passwordHelpBlock" className="form-text">
+                              Enter {obj.name}
+                            </div>
+                          </div>
+                        </Col>
+                      ))
+                    : null}
+
+                  <Col lg={12}>
+                    <div className="text-end">
+                      <Button
+                        color="success"
+                        type="submit"
+                        className="btn-label"
+                      >
+                        {" "}
+                        <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                        Save{" "}
+                      </Button>{" "}
+                    </div>
+                  </Col>
+                </Row>
+              </div>
+            </form>
+          </div>
+        </Col>
       </Row>
     </React.Fragment>
   );

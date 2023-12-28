@@ -1,7 +1,6 @@
 export const leave_type_day_unit = 1;
 export const leave_type_hour_unit = 2;
 
-
 export const single_day_type_leave = 1;
 export const multiple_day_type_leave = 2;
 
@@ -1849,7 +1848,7 @@ export const attendance_type_options = [
 
 export const organization_component_name = "organization";
 export const department_component_name = "department";
-export const branch_component_name = "branch";
+export const branch_component_name = "BranchForm";
 export const employee_component_name = "employee";
 export const role_component_name = "role";
 export const work_schedule_component_name = "work_schedule";

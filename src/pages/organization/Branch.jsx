@@ -1,7 +1,16 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 
-import { Button, Card, CardBody, CardHeader, Col, Row } from "reactstrap";
+import {
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Col,
+  Input,
+  Label,
+  Row,
+} from "reactstrap";
 // import { Table } from 'rsuite';
 import {
   setComponentToShow,
@@ -10,6 +19,7 @@ import {
   setFormWidthPercentage,
   toggleRSBView,
 } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
+import { Link } from "react-router-dom";
 
 // const { Column, HeaderCell, Cell } = Table;
 
@@ -337,7 +347,7 @@ const Branch = () => {
   ]);
 
   const handleBranchEdit = () => {
-    dispatch(setFormTitle("Branch"));
+    dispatch(setFormTitle("Branch Form"));
     dispatch(
       setFormObj({
         id: "0",
@@ -346,8 +356,8 @@ const Branch = () => {
         description: "",
       })
     );
-    dispatch(setFormWidthPercentage("80%"));
-    dispatch(setComponentToShow("branch"));
+    dispatch(setFormWidthPercentage("35%"));
+    dispatch(setComponentToShow("BranchForm"));
     dispatch(toggleRSBView(true));
   };
 
@@ -355,83 +365,195 @@ const Branch = () => {
     <React.Fragment>
       <Card>
         <CardHeader>
+          <span className="float-end">
+            <button
+              type="button"
+              className="btn btn-success add-btn"
+              id="create-btn"
+              style={{ textTransform: "capitalize" }}
+              onClick={() => {
+                handleBranchEdit(0);
+              }}
+            >
+              <i className="ri-add-line align-bottom me-1"></i>New Branch{" "}
+            </button>
+          </span>
+
           <h4 className="card-title mb-0">Branch</h4>
-          <Button onClick={() => handleBranchEdit()}>Edit Branch</Button>
         </CardHeader>
         <CardBody>
           <Row>
-            <Col lg={12}>
-              <div className="card overflow-x-auto">
-                {/* <Table
-                  height={400}
-                  data={data}
-                  onRowClick={rowData => {
-                    console.log(rowData);
-                  }}
-                >
-                  <Column align="center" fixed>
-                    <HeaderCell>Id</HeaderCell>
-                    <Cell dataKey="id" />
-                  </Column>
+            <Col xxl={6}>
+              <Card key={1} className="border card-border-success">
+                <CardBody>
+                  <div
+                    className={`p-3 mt-n3 mx-n3 bg-success-subtle rounded-top`}
+                  >
+                    <div className="d-flex align-items-center">
+                      <div className="flex-grow-1">
+                        <h5 className="mb-0 fs-14">
+                          <Link to="#" className="text-body">
+                            Lintcloud It Service Pvt Ltd
+                            <span className="badge border border-dark text-body ms-2">
+                              HEADQUARTER
+                            </span>
+                          </Link>
+                        </h5>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <div className="d-flex gap-1 align-items-center my-n2">
+                          <div className="form-check form-switch form-switch-success  ">
+                            <Input
+                              className="form-check-input"
+                              type="checkbox"
+                              role="switch"
+                              id="enableEPF"
+                              checked="true"
+                            />
+                            <Label className="form-check-label" for="enableEPF">
+                              Active
+                            </Label>
+                          </div>
+                          <a
+                            //onClick={() => handleTaxEdit(item.slabs)}
+                            className="text-primary d-inline-block edit-item-btn ms-2"
+                            href="javascript:void(0)"
+                          >
+                            <i class="ri-pencil-fill fs-16"></i>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-                  <Column>
-                    <HeaderCell>First Name</HeaderCell>
-                    <Cell dataKey="first_name" />
-                  </Column>
+                  <div className="py-3">
+                    <Row className="gy-3">
+                      <Col xs={12}>
+                        <div>
+                          <p className="text-muted mb-1">Address </p>
+                          <h5 className="fs-14">
+                            694, C/10, SAHAR COMPLEX, NEAR MATHUMITHA HOSPITAL,
+                            OPP BUS STAND, VALLIOOR - 627117
+                          </h5>
+                        </div>
+                        <hr />
+                      </Col>
+                    </Row>
+                    <Row className="gy-3">
+                      <Col xs={2}>
+                        <div>
+                          <p className="text-muted mb-1">Employees</p>
+                          <h5 className="fs-14">25</h5>
+                        </div>
+                      </Col>
+                      <Col xs={4}>
+                        <div>
+                          <p className="text-muted mb-1">Timezone</p>
+                          <h5 className="fs-14">GMT +05:30 Asia/Kolkata</h5>
+                        </div>
+                      </Col>
+                      <Col xs={3}>
+                        <div>
+                          <p className="text-muted mb-1">Contact Number</p>
+                          <h5 className="fs-14">+91 999999999</h5>
+                        </div>
+                      </Col>
+                      <Col xs={3}>
+                        <div>
+                          <p className="text-muted mb-1">Contact Email</p>
+                          <h5 className="fs-14">elan@lintcloud.com</h5>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                </CardBody>
+              </Card>
+            </Col>
+            <Col xxl={6}>
+              <Card key={1} className="border card-border-success">
+                <CardBody>
+                  <div
+                    className={`p-3 mt-n3 mx-n3 bg-success-subtle rounded-top`}
+                  >
+                    <div className="d-flex align-items-center">
+                      <div className="flex-grow-1">
+                        <h5 className="mb-0 fs-14">
+                          <Link to="#" className="text-body">
+                            Lintcloud It Service Pvt Ltd
+                            <span className="badge border border-dark text-body ms-2">
+                              HEADQUARTER
+                            </span>
+                          </Link>
+                        </h5>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <div className="d-flex gap-1 align-items-center my-n2">
+                          <div className="form-check form-switch form-switch-success  ">
+                            <Input
+                              className="form-check-input"
+                              type="checkbox"
+                              role="switch"
+                              id="enableEPF"
+                              checked="true"
+                            />
+                            <Label className="form-check-label" for="enableEPF">
+                              Active
+                            </Label>
+                          </div>
+                          <a
+                            //onClick={() => handleTaxEdit(item.slabs)}
+                            className="text-primary d-inline-block edit-item-btn ms-2"
+                            href="javascript:void(0)"
+                          >
+                            <i class="ri-pencil-fill fs-16"></i>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-                  <Column>
-                    <HeaderCell>Last Name</HeaderCell>
-                    <Cell dataKey="last_name" />
-                  </Column>
-
-                  <Column>
-                    <HeaderCell>Gender</HeaderCell>
-                    <Cell dataKey="gender" />
-                  </Column>
-
-                  <Column>
-                    <HeaderCell>Age</HeaderCell>
-                    <Cell dataKey="age" />
-                  </Column>
-
-                  <Column>
-                    <HeaderCell>Address</HeaderCell>
-                    <Cell dataKey="address" />
-                  </Column>
-
-                  <Column>
-                    <HeaderCell>City</HeaderCell>
-                    <Cell dataKey="city" />
-                  </Column>
-
-                  <Column>
-                    <HeaderCell>State</HeaderCell>
-                    <Cell dataKey="state" />
-                  </Column>
-
-                  <Column>
-                    <HeaderCell>Country</HeaderCell>
-                    <Cell dataKey="country" />
-                  </Column>
-
-                  <Column>
-                    <HeaderCell>Continent</HeaderCell>
-                    <Cell dataKey="continent" />
-                  </Column>
-
-                  <Column fixed="right">
-                    <HeaderCell>Action</HeaderCell>
-
-                    <Cell style={{ padding: '6px' }}>
-                      {rowData => (
-                        <Button appearance="link" onClick={() => alert(`id:${rowData.id}`)}>
-                          Edit
-                        </Button>
-                      )}
-                    </Cell>
-                  </Column>
-                </Table> */}
-              </div>
+                  <div className="py-3">
+                    <Row className="gy-3">
+                      <Col xs={12}>
+                        <div>
+                          <p className="text-muted mb-1">Address </p>
+                          <h5 className="fs-14">
+                            694, C/10, SAHAR COMPLEX, NEAR MATHUMITHA HOSPITAL,
+                            OPP BUS STAND, VALLIOOR - 627117
+                          </h5>
+                        </div>{" "}
+                        <hr />
+                      </Col>
+                    </Row>
+                    <Row className="gy-3">
+                      <Col xs={2}>
+                        <div>
+                          <p className="text-muted mb-1">Employees</p>
+                          <h5 className="fs-14">25</h5>
+                        </div>
+                      </Col>
+                      <Col xs={4}>
+                        <div>
+                          <p className="text-muted mb-1">Timezone</p>
+                          <h5 className="fs-14">GMT +05:30 Asia/Kolkata</h5>
+                        </div>
+                      </Col>
+                      <Col xs={3}>
+                        <div>
+                          <p className="text-muted mb-1">Contact Number</p>
+                          <h5 className="fs-14">+91 999999999</h5>
+                        </div>
+                      </Col>
+                      <Col xs={3}>
+                        <div>
+                          <p className="text-muted mb-1">Contact Email</p>
+                          <h5 className="fs-14">elan@lintcloud.com</h5>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                </CardBody>
+              </Card>
             </Col>
           </Row>
         </CardBody>

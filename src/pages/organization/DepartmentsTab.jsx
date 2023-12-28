@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   CardBody,
+  CardHeader,
   Col,
   Modal,
   ModalBody,
@@ -35,8 +36,7 @@ import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setDepartmentDetails } from "../../redux/reducers/ChildReducer/DepartmentReducer";
 
 const DepartmentsTab = () => {
-
-  const DepartmentData = GetLocalStorageData('department')
+  const DepartmentData = GetLocalStorageData("department");
 
   const dispatch = useDispatch();
 
@@ -45,12 +45,12 @@ const DepartmentsTab = () => {
       id: 0,
       name: "",
       description: "",
-      pid: 0
-    }
-  }, [])
+      pid: 0,
+    };
+  }, []);
 
   const handleDepartmentEdit = ($id, obj) => {
-    console.log("Dep Edit = ",obj);
+    console.log("Dep Edit = ", obj);
 
     const depObj = $id === 0 ? newDepObj : obj;
     dispatch(setFormTitle("Departments"));
@@ -210,12 +210,13 @@ const DepartmentsTab = () => {
     },
   ]);
 
-  const { department_data } = useSelector(state => state.DepartmentReducer);
+  const { department_data } = useSelector((state) => state.DepartmentReducer);
 
   useEffect(() => {
-    dispatch(setDepartmentDetails(GetLocalStorageData('department_details') || []))
+    dispatch(
+      setDepartmentDetails(GetLocalStorageData("department_details") || [])
+    );
   }, []);
-
 
   const item = {
     subItem: [
@@ -253,7 +254,8 @@ const DepartmentsTab = () => {
                       toggleOrgModal();
                       setDataForTable(node);
                     }}
-                    className="text-body  text-truncate d-block">
+                    className="text-body  text-truncate d-block"
+                  >
                     {node.label}
                   </Link>
                 </h5>
@@ -266,7 +268,8 @@ const DepartmentsTab = () => {
                             <Link
                               to="#"
                               className="d-inline-block"
-                              id={item.targetId}>
+                              id={item.targetId}
+                            >
                               <img
                                 src={item.img}
                                 alt={item.name}
@@ -284,7 +287,8 @@ const DepartmentsTab = () => {
                                   className={
                                     "avatar-title rounded-circle text-white " +
                                     item.bgcolor
-                                  }>
+                                  }
+                                >
                                   <small>{item.imgNumber}</small>
                                 </span>
                               </div>
@@ -301,13 +305,15 @@ const DepartmentsTab = () => {
                 <div className="d-flex gap-1">
                   <button
                     type="button"
-                    className="btn btn-icon text-muted btn-sm fs-18">
+                    className="btn btn-icon text-muted btn-sm fs-18"
+                  >
                     <i className="ri-eye-line"></i>
                   </button>
                   <button
                     onClick={() => handleDepartmentEdit(node.id, node)}
                     type="button"
-                    className="btn btn-icon text-muted btn-sm fs-18">
+                    className="btn btn-icon text-muted btn-sm fs-18"
+                  >
                     <i className="ri-pencil-fill"></i>
                   </button>
                 </div>
@@ -324,17 +330,32 @@ const DepartmentsTab = () => {
   return (
     <React.Fragment>
       <Card>
-        <CardBody>
+        <CardHeader>
+          <span className="float-end">
+            <button
+              type="button"
+              className="btn btn-success add-btn"
+              id="create-btn"
+              style={{ textTransform: "capitalize" }}
+              onClick={() => {
+                handleDepartmentEdit(0);
+              }}
+            >
+              <i className="ri-add-line align-bottom me-1"></i>New Department{" "}
+            </button>
+          </span>
           <h5 className="card-title">Department</h5>
-          <Button onClick={() => handleDepartmentEdit(0)}>
-            New Department
-          </Button>
+        </CardHeader>
+        <CardBody>
           <div className="card overflow-x-auto">
             {department_data.length ? (
-              <OrganizationChart value={department_data} nodeTemplate={nodeTemplate1} />
+              <OrganizationChart
+                value={department_data}
+                nodeTemplate={nodeTemplate1}
+              />
             ) : (
               <React.Fragment>
-                <div className='text-center'>
+                <div className="text-center">
                   <h2>No Data</h2>
                 </div>
               </React.Fragment>
