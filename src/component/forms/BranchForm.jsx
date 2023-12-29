@@ -397,7 +397,7 @@ const BranchForm = () => {
                     </div>
                   </Col>
 
-                  <LocationSearch2 />
+                  <LocationSearch />
 
                   <Col lg={12}>
                     <div>

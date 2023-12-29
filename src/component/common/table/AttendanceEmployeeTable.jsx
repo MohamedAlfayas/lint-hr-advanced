@@ -15,10 +15,11 @@ import {
 } from "reactstrap";
 import { hr_status_options } from "../../../common/constant/Constants";
 import { Link } from "react-router-dom";
-import { parse, format } from "date-fns";
+import { format } from "date-fns";
 import SimpleBar from "simplebar-react";
 import { useSelector } from "react-redux";
 import { ConvertSecondsToTime } from "../../../common/js/ConvertSecondsToTime";
+import { ParseTime } from "../../../common/js/ParseTime";
 
 const AttendanceEmployeeTable = () => {
   const { Column, HeaderCell, Cell } = Table;
@@ -334,10 +335,6 @@ const AttendanceEmployeeTable = () => {
         <span style={{ marginLeft: "10px" }}>{warning_icon}</span>
       </Cell>
     );
-  };
-
-  const ParseTime = (time) => {
-    return parse(time, "dd-MM-yyyy HH:mm:ss", new Date());
   };
 
   const InOutCell = ({ rowData, dataKey, ...props }) => {

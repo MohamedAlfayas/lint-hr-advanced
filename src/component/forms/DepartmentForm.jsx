@@ -28,11 +28,10 @@ import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarRed
 import { toast } from "react-toastify";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
-import Select from 'react-select';
-
+import Select from "react-select";
 
 const DepartmentForm = () => {
   const [hdDropDown, setHdDropDown] = useState(false);
@@ -41,7 +40,7 @@ const DepartmentForm = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const DepartmentList = GetLocalStorageData("department") || [];
   console.log("gggg", DepartmentList);
-  const [selectedOption,setSelectedOption] = useState()
+  const [selectedOption, setSelectedOption] = useState();
 
   const dispatch = useDispatch();
 
@@ -70,26 +69,21 @@ const DepartmentForm = () => {
       pid: Yup.number()
         .required("Select Parent Department")
         .min(1, "Please Select Parent Department"),
-
     }),
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
       dispatch(setLoaderVisible(true));
-
+      const Api = await PostApi("department/create/", departmentData, false);
+      if (Api.status && Api.status === 200) {
+        dispatch(setDepartmentDetails(Api?.data?.data));
+        dispatch(toggleRSBView(false));
+        toast.success(Api?.data?.message);
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
+      }
+      dispatch(setLoaderVisible(false));
     },
-  })
-  // const handleSubmit = async () => {
-  //   dispatch(setLoaderVisible(true));
-  //   const Api = await PostApi("department/create/", departmentData, false);
-  //   if (Api.status && Api.status === 200) {
-  //     dispatch(setDepartmentDetails(Api?.data?.data));
-  //     dispatch(toggleRSBView(false));
-  //     toast.success(Api?.data?.message);
-  //   } else {
-  //     toast.error(Api?.data?.message || Api?.data?.detail);
-  //   }
-  //   dispatch(setLoaderVisible(false));
-  // };
+  });
 
   return (
     <React.Fragment>
@@ -131,33 +125,45 @@ const DepartmentForm = () => {
 
                 <Select
                   name="pid"
-                  className={`react-select-container ${FormikForm.touched.pid && FormikForm.errors.pid ? "is-invalid" : ""
-                    }`}
+                  className={`react-select-container ${
+                    FormikForm.touched.pid && FormikForm.errors.pid
+                      ? "is-invalid"
+                      : ""
+                  }`}
                   classNamePrefix="react-select"
                   styles={{
                     control: (provided, state) => ({
                       ...provided,
                       borderColor:
                         !state.isFocused &&
-                          FormikForm.touched.pid &&
-                          FormikForm.errors.pid
+                        FormikForm.touched.pid &&
+                        FormikForm.errors.pid
                           ? "red !important"
                           : provided.borderColor,
                     }),
                   }}
-                  value={departmentOptions.find((opt) => opt.id === departmentData.pid) || null}
+                  value={
+                    departmentOptions.find(
+                      (opt) => opt.id === departmentData.pid
+                    ) || null
+                  }
                   onChange={(selectedOption) => {
                     setDepartmentData({
                       ...departmentData,
                       pid: selectedOption ? selectedOption.value : null,
                     });
                   }}
-                  options={departmentOptions.map((item) => ({ value: item.id, label: item.name }))}
+                  options={departmentOptions.map((item) => ({
+                    value: item.id,
+                    label: item.name,
+                  }))}
                   isClearable
                 />
 
                 {FormikForm.touched.pid && FormikForm.errors.pid ? (
-                  <FormFeedback type="invalid">{FormikForm.errors.pid}</FormFeedback>
+                  <FormFeedback type="invalid">
+                    {FormikForm.errors.pid}
+                  </FormFeedback>
                 ) : null}
 
                 <div id="passwordHelpBlock" className="form-text">

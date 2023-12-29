@@ -28,8 +28,10 @@ import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { ConvertDateFormat } from "../../common/js/ConvertDateFormat";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { Api } from "../../common/api/Api";
+import { parse, format } from "date-fns";
 import Column from "antd/es/table/Column";
 import { ConvertSecondsToTime } from "../../common/js/ConvertSecondsToTime";
+import { ParseTime } from "../../common/js/ParseTime";
 const ProfileViewMin = () => {
   const dispatch = useDispatch();
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
@@ -39,8 +41,8 @@ const ProfileViewMin = () => {
   console.log("WS Data = ", WorkScheduleData);
   const [profileObj, setProfileObj] = useState({});
   const [empId, setEmpId] = useState(0);
-  const [individualAttendanceReportData, setIndividualAttendanceReportData] = useState([]);
-
+  const [individualAttendanceReportData, setIndividualAttendanceReportData] =
+    useState([]);
 
   useEffect(() => {
     const today = new Date();
@@ -69,44 +71,6 @@ const ProfileViewMin = () => {
     }
   }, [form_obj]);
 
-  const AmPmTimeConvertionFunction = (time) => {
-    try {
-        const [datePart, timePart] = time.split(' ');
-        const [hour, minute, second] = timePart.split(':');
-        let formattedHours;
-        if (hour > 12) {
-            formattedHours = hour - 12;
-        } else if (hour === 0) {
-            formattedHours = 12;
-        } else {
-            formattedHours = hour;
-        }
-        const formattedMinutes = minute.toString().padStart(2, "0");
-        const amPm = hour >= 12 ? "pm" : "am";
-        const formattedTime = `${formattedHours > 9 ? formattedHours : `0${formattedHours}`}.${formattedMinutes} ${amPm}`;
-        return formattedTime;
-    } catch (error) {
-        const err = new Error(error)
-        // showAlert && AlertFunction('AmPmConvertioError', err?.message)
-        console.log('AmPmConvertioError', error);
-        return `-`
-    }
-
-}
-const secondsToHMSFunction = (seconds) => {
-  try {
-      const hours = Math.floor(seconds / 3600);
-      const minutes = Math.floor((seconds % 3600) / 60);
-      const remainingSeconds = seconds % 60;
-      const formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-      return formattedTime;
-  } catch (error) {
-      const err = new Error(error)
-      console.log('secondsToHMSFunction Error', error);
-    
-      return `--:--`;
-  }
-};
   // Custom Tabs Bordered
   const [customActiveTab, setcustomActiveTab] = useState("1");
   const toggleCustom = (tab) => {
@@ -115,7 +79,7 @@ const secondsToHMSFunction = (seconds) => {
     }
     console.log(customActiveTab);
   };
-  
+
   const navigate = useNavigate();
 
   return (
@@ -137,8 +101,8 @@ const secondsToHMSFunction = (seconds) => {
               {profileObj?.primary_department
                 ? DepartmentData.length
                   ? DepartmentData.find(
-                    (d) => d.id === profileObj?.primary_department
-                  )?.name
+                      (d) => d.id === profileObj?.primary_department
+                    )?.name
                   : ""
                 : ""}
             </p>
@@ -210,8 +174,8 @@ const secondsToHMSFunction = (seconds) => {
                   {profileObj?.work_schedule
                     ? WorkScheduleData.length
                       ? WorkScheduleData.find(
-                        (w) => w.id === profileObj?.work_schedule
-                      ).name
+                          (w) => w.id === profileObj?.work_schedule
+                        ).name
                       : ""
                     : ""}
                 </td>
@@ -221,15 +185,15 @@ const secondsToHMSFunction = (seconds) => {
                 <td>
                   {profileObj?.sub_department
                     ? profileObj?.sub_department.map((d) => (
-                      <span
-                        className="badge bg-primary-subtle text-primary me-1"
-                        key={1}
-                      >
-                        {DepartmentData.length
-                          ? DepartmentData.find((e) => e.id === d).name
-                          : ""}
-                      </span>
-                    ))
+                        <span
+                          className="badge bg-primary-subtle text-primary me-1"
+                          key={1}
+                        >
+                          {DepartmentData.length
+                            ? DepartmentData.find((e) => e.id === d).name
+                            : ""}
+                        </span>
+                      ))
                     : null}
                 </td>
               </tr>
@@ -318,10 +282,24 @@ const secondsToHMSFunction = (seconds) => {
 
                     {individualAttendanceReportData.map((item) => (
                       <tr key={item.id}>
-                        <td className="fw-medium">{item.date}</td>
-                        <td>{AmPmTimeConvertionFunction(item.first_check_in)}</td>
-                        <td>{AmPmTimeConvertionFunction(item.last_check_out)}</td>
-                        <td className={item.totalColor}>{secondsToHMSFunction(item.total_work_duration)}</td>
+                        <td className="fw-medium">
+                          {format(new Date(item.date), "dd MMM, yyyy")}
+                        </td>
+                        <td>
+                          {!!item?.first_check_in
+                            ? format(ParseTime(item?.first_check_in), "h:mm a")
+                            : null}
+                        </td>
+                        <td>
+                          {!!item?.last_check_out
+                            ? format(ParseTime(item?.last_check_out), "h:mm a")
+                            : null}
+                        </td>
+                        <td
+                          className={item.totalColor}
+                        >{` ${ConvertSecondsToTime(
+                          item?.total_work_duration
+                        )}`}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -399,7 +377,7 @@ const secondsToHMSFunction = (seconds) => {
           </Button>
         </div>
       </Row>
-    </React.Fragment >
+    </React.Fragment>
   );
 };
 
