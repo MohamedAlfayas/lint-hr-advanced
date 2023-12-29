@@ -35,6 +35,7 @@ const Employee = () => {
   }, [version]);
 
   const CustomFieldsForThisForm = GetCustomField("employee") || [];
+  const DepartmentData = GetLocalStorageData("department") || [];
 
   const viewEmployee = (obj) => {
     console.log("Dep Edit = ", obj);
@@ -145,20 +146,23 @@ const Employee = () => {
       id: "department",
       filterable: false,
       accessor: (obj) => {
-        const DepartmentData = GetLocalStorageData("department");
         let thisDepartment = DepartmentData
           ? DepartmentData.filter((data) =>
               obj.primary_department_id_list.includes(data.id)
             )
           : [];
 
-        // var subDepList = obj.sub_department_id_list
-        //   ? DepartmentData.filter((datas, index) => {
-        //       if (obj.sub_department_id_list.includes(parseInt(datas.id))) {
-        //         return datas;
-        //       }
-        //     })
-        //   : [];
+        let firstDep_name = thisDepartment?.length
+          ? thisDepartment[0].name
+          : "";
+
+        let subDepList = thisDepartment?.length
+          ? thisDepartment.filter((datas, index) => {
+              if (index !== 0) {
+                return datas;
+              }
+            })
+          : [];
 
         return (
           <span>
@@ -167,23 +171,23 @@ const Employee = () => {
               id={`depListRef-${obj.id}`}
               className="position-relative"
             >
-              {thisDepartment.map((d) => (
-                <React.Fragment>{d.name}</React.Fragment>
-              ))}
-              {/* {obj.sub_department_id_list.length > 0 ? (
+              <React.Fragment>{firstDep_name}</React.Fragment>
+              {subDepList.length > 0 ? (
                 <span>
                   <Badge
                     //id="tooltipwithHtml"
                     pill
                     color="success"
-                    className="position-absolute top-0 start-100 translate-middle">
-                    +{obj.primary_department_id_list.length}
+                    className="position-absolute top-0 start-100 translate-middle"
+                  >
+                    +{subDepList.length}
                     <span className="visually-hidden">Departments</span>
                   </Badge>
 
                   <UncontrolledTooltip
                     placement="bottom"
-                    target={`depListRef-${obj.id}`}>
+                    target={`depListRef-${obj.id}`}
+                  >
                     {" "}
                     <div className="mt-1">
                       {subDepList.map((item, key) => (
@@ -194,7 +198,7 @@ const Employee = () => {
                 </span>
               ) : (
                 ""
-              )} */}
+              )}
             </Button>
           </span>
         );

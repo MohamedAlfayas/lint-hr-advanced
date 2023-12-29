@@ -198,39 +198,26 @@ const EmployeeForm = () => {
   const [subChildOptions, setSubChildOptions] = useState([]);
 
   const handlePrimaryDepChange = (e) => {
-    const selectedIds = e.map((obj) => obj.id);
+    let valid_dep_ids = [];
+    let valid_dep_obj = [];
+
+    e.filter((obj) => {
+      if (
+        e.some((otherObj) => otherObj.id === obj.pid) === false ||
+        obj.pid === obj.id
+      ) {
+        valid_dep_ids.push(obj.id);
+        valid_dep_obj.push(obj);
+      }
+    });
+
     setEmployeeObj({
       ...employeeObj,
-      primary_department_id_list: selectedIds,
+      primary_department_id_list: valid_dep_ids,
     });
-    const selectedOptions = selectedIds.map((id) =>
-      dep_options.find((option) => option.id === id)
-    );
 
-    const selectedOption = selectedOptions[0];
-
-    const pid = selectedOption ? selectedOption.pid : undefined;
-
-    console.log("Selected Option PID:", pid);
-    if (selectedOptions.length > 0) {
-      const selectedValue = pid;
-      console.log("====================================");
-      console.log("selectedValue", selectedValue);
-      console.log("====================================");
-      const childOptions = dep_options.filter(
-        (option) => option.pid !== selectedValue
-      );
-      setChildOptions(childOptions);
-    } else {
-      setChildOptions([]);
-    }
-
-    setSelectedOptions(e);
+    setSelectedOptions(valid_dep_obj);
   };
-
-  console.log("====================================");
-  console.log("childOptions", childOptions);
-  console.log("====================================");
 
   const handleDateChange = (selectedDates, dateStr, instance) => {
     setDob(dateStr);
