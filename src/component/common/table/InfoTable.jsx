@@ -65,6 +65,9 @@ import {
   holiday_component_name,
   leave_approval_component_name,
 } from "../../../common/constant/Constants";
+import { loadAnimation } from "lottie-web";
+import { defineElement } from "lord-icon-element";
+defineElement(loadAnimation);
 
 const InfoTable = ({
   additionalColumn,
@@ -892,8 +895,36 @@ const InfoTable = ({
                   />
                 ) : (
                   <React.Fragment>
-                    <div className="text-center">
-                      <h2>No Data</h2>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "25vh",
+                      }}
+                    >
+                      <lord-icon
+                        src="https://cdn.lordicon.com/msoeawqm.json"
+                        trigger="loop"
+                        colors="primary:#405189,secondary:#0ab39c"
+                        style={{
+                          marginTop: "20px",
+                          width: "150px",
+                          height: "80px",
+                          marginBottom: "20px",
+                        }}
+                      ></lord-icon>
+                      <p
+                        style={{
+                          width: "300px",
+                          color: "#405189",
+                          fontSize: "20px",
+                          textAlign: "center",
+                        }}
+                      >
+                        Sorry! No Result Found
+                      </p>
                     </div>
                   </React.Fragment>
                 )}
