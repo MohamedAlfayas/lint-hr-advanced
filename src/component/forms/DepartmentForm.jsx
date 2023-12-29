@@ -13,6 +13,7 @@ import {
   DropdownItem,
   DropdownMenu,
   DropdownToggle,
+  FormFeedback,
   Form,
   Input,
   Label,
@@ -27,6 +28,9 @@ import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarRed
 import { toast } from "react-toastify";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import { Select } from "antd";
 
 const DepartmentForm = () => {
   const [hdDropDown, setHdDropDown] = useState(false);
@@ -34,6 +38,7 @@ const DepartmentForm = () => {
   const [departmentData, setDepartmentData] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const DepartmentList = GetLocalStorageData("department") || [];
+  console.log("gggg",DepartmentList);
 
   const dispatch = useDispatch();
 
@@ -45,6 +50,7 @@ const DepartmentForm = () => {
       DepartmentList.filter((obj) => obj.pid !== form_obj.id)
     );
   }, [form_obj]);
+  console.log("fff", form_obj);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -53,31 +59,46 @@ const DepartmentForm = () => {
       [name]: value,
     });
   };
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: departmentData,
+    validationSchema: Yup.object({
+      name: Yup.string().trim().required("Please Enter Department Name"),
+      pid: Yup.number()
+      .required("Select Parent Department")
+      .min(1, "Please Select Parent Department"),
 
-  const handleSubmit = async () => {
-    dispatch(setLoaderVisible(true));
-    const Api = await PostApi("department/create/", departmentData, false);
-    if (Api.status && Api.status === 200) {
-      dispatch(setDepartmentDetails(Api?.data?.data));
-      dispatch(toggleRSBView(false));
-      toast.success(Api?.data?.message);
-    } else {
-      toast.error(Api?.data?.message || Api?.data?.detail);
-    }
-    dispatch(setLoaderVisible(false));
-  };
+    }),
+    onSubmit: async (values) => {
+      console.log("SUCCESSSS !!!! Formik Values = ", values);
+      dispatch(setLoaderVisible(true));
+
+    },
+  })
+  // const handleSubmit = async () => {
+  //   dispatch(setLoaderVisible(true));
+  //   const Api = await PostApi("department/create/", departmentData, false);
+  //   if (Api.status && Api.status === 200) {
+  //     dispatch(setDepartmentDetails(Api?.data?.data));
+  //     dispatch(toggleRSBView(false));
+  //     toast.success(Api?.data?.message);
+  //   } else {
+  //     toast.error(Api?.data?.message || Api?.data?.detail);
+  //   }
+  //   dispatch(setLoaderVisible(false));
+  // };
 
   return (
     <React.Fragment>
       <Row>
         <Col>
-          <Form onSubmit={handleSubmit} action="javascript:void(0)">
+          <Form onSubmit={FormikForm.handleSubmit}>
             <Row className="g-3">
               <Col lg={12}>
                 <label htmlFor="departmentName" className="form-label">
                   Department Name
                 </label>
-                <input
+                <Input
                   type="text"
                   name="name"
                   className="form-control"
@@ -85,8 +106,17 @@ const DepartmentForm = () => {
                   placeholder="Enter department name"
                   value={departmentData.name || ""}
                   onChange={handleInputChange}
-                  required
+                  invalid={
+                    FormikForm.touched.name && FormikForm.errors.name
+                      ? true
+                      : false
+                  }
                 />
+                {FormikForm.touched.name && FormikForm.errors.name ? (
+                  <FormFeedback type="invalid">
+                    {FormikForm.errors.name}
+                  </FormFeedback>
+                ) : null}
                 <div id="passwordHelpBlock" className="form-text">
                   Select Department.
                 </div>
@@ -96,52 +126,36 @@ const DepartmentForm = () => {
                   Parent Department
                 </label>
 
-                <Dropdown isOpen={hdDropDown} toggle={toggleHd}>
-                  <DropdownToggle
-                    tag="div"
-                    className="form-control rounded-end flag-input form-select"
-                    required
-                    style={{ cursor: "pointer" }}
-                  >
-                    {(departmentData.pid &&
-                      departmentOptions.find(
-                        (obj) => obj.id === departmentData.pid
-                      ).name) ||
-                      "Select Parent Department"}
-                  </DropdownToggle>
-                  <DropdownMenu
-                    as="ul"
-                    className="list-unstyled w-100 dropdown-menu-list mb-0"
-                  >
-                    <SimpleBar style={{ maxHeight: "220px" }} className="px-3">
-                      {(
-                        departmentOptions
-                          .filter((obj) => obj !== parseInt(departmentData.id))
-                          .sort((a, b) => a.name.localeCompare(b.name)) || []
-                      ).map((item, key) => (
-                        <DropdownItem
-                          as="li"
-                          onClick={() => {
-                            setDepartmentData({
-                              ...departmentData,
-                              pid: item.id,
-                            });
-                          }}
-                          key={key}
-                          className="dropdown-item d-flex"
-                        >
-                          <div className="flex-grow-1">
-                            <div className="d-flex">
-                              <div className="country-name me-1">
-                                {item.name}
-                              </div>
-                            </div>
-                          </div>
-                        </DropdownItem>
-                      ))}
-                    </SimpleBar>
-                  </DropdownMenu>
-                </Dropdown>
+                <select
+                name="pid"
+                className={`form-control rounded-end flag-input form-select ${
+                  FormikForm.touched.pid && FormikForm.errors.pid ? "is-invalid" : ""
+                }`}
+                 
+                  style={{ cursor: "pointer" }}
+                  value={departmentData.pid || ""}
+                  onChange={(e) => {
+                    setDepartmentData({
+                      ...departmentData,
+                      pid: e.target.value,
+                    });
+                  }}
+                >
+                  <option value="" disabled>
+                    Select Parent Department
+                  </option>
+                  {departmentOptions
+                    .filter((obj) => obj.id !== parseInt(departmentData.id))
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((item, key) => (
+                      <option key={key} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                </select>
+                {FormikForm.touched.pid && FormikForm.errors.pid ? (
+                  <FormFeedback type="invalid">{FormikForm.errors.pid}</FormFeedback>
+                ) : null}
                 <div id="passwordHelpBlock" className="form-text">
                   Select Parent Department.
                 </div>
