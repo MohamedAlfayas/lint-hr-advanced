@@ -277,7 +277,7 @@ const Roles = () => {
         initialFormObj={initialFormObj}
         filterKey={filterKey}
         filterOptions={filterOptions}
-        width_per={"60%"}
+        width_per={"50%"}
       />
 
       <RsuiteTable />
