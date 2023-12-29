@@ -1,6 +1,7 @@
 import React from "react";
 UncontrolledDropdown;
 import { useState } from "react";
+import { useRef } from 'react';
 
 import {
   Card,
@@ -190,9 +191,10 @@ const InfoTable = ({
       }
     });
   };
+ 
   const handleResetPassword = (orderData) => {
     console.log("Deactivaet OD = ", orderData);
-
+  
     const profile_data = JSON.parse(
       localStorage.getItem("lint_hr_profile_data")
     );
@@ -247,6 +249,13 @@ const InfoTable = ({
         }
 
         return { newPassword, confirmPassword };
+      },
+      didOpen: () => {
+        // Focus on the Admin Password input field
+        const adminPasswordInput = document.getElementById("adminPassword");
+        if (adminPasswordInput) {
+          adminPasswordInput.focus();
+        }
       },
     }).then((result) => {
       if (result.isConfirmed) {
