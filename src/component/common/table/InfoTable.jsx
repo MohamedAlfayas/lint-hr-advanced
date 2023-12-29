@@ -879,6 +879,7 @@ const InfoTable = ({
                   <TableContainer
                     columns={columns}
                     data={dataList || []}
+                    isPagination={true}
                     isGlobalFilter={true}
                     isAddUserList={false}
                     customPageSize={50}

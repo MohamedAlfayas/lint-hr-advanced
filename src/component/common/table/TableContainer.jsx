@@ -80,7 +80,7 @@ const TableContainer = ({
     state,
     preGlobalFilteredRows,
     setGlobalFilter,
-    state: { pageIndex, pageSize },
+    state: { pageIndex, pageSize, pageCount },
   } = useTable(
     {
       columns,
@@ -88,7 +88,7 @@ const TableContainer = ({
       defaultColumn: { Filter: DefaultColumnFilter },
       initialState: {
         pageIndex: 0,
-        pageSize: customPageSize,
+        pageSize: 10,
         selectedRowIds: 0,
         sortBy: [
           {
@@ -120,11 +120,14 @@ const TableContainer = ({
   const onChangeInSelect = (event) => {
     setPageSize(Number(event.target.value));
   };
-  const onChangeInInput = (event) => {
-    const page = event.target.value ? Number(event.target.value) - 1 : 0;
-    gotoPage(page);
+  // const onChangeInInput = (event) => {
+  //   const page = event.target.value ? Number(event.target.value) - 1 : 0;
+  //   gotoPage(page);
+  // };
+  const handlePageSizeChange = (e) => {
+    setPageSize(Number(e.target.value));
+    gotoPage(page); 
   };
-
   return (
     <Fragment>
       {(isGlobalSearch || isGlobalFilter) && (
@@ -136,7 +139,7 @@ const TableContainer = ({
                 value={pageSize}
                 onChange={onChangeInSelect}
               >
-                {[10, 20, 30, 40, 50].map((pageSize) => (
+                {[10, 25, 50, 100].map((pageSize) => (
                   <option key={pageSize} value={pageSize}>
                     Show {pageSize}
                   </option>
@@ -204,49 +207,56 @@ const TableContainer = ({
         </Table>
       </div>
 
-      {isPagination && (
-        <Row className="align-items-center g-3 text-center text-sm-start mb-3">
-          <div className="col-sm">
-            <div className="text-muted">
-              Showing<span className="fw-semibold ms-1">{page.length}</span> of{" "}
-              <span className="fw-semibold">{data.length}</span> Results
-            </div>
-          </div>
-          <div className="col-sm-auto">
-            <ul className="pagination pagination-separated pagination-md justify-content-center justify-content-sm-start mb-0">
-              <li
-                className={
-                  !canPreviousPage ? "page-item disabled" : "page-item"
-                }
-              >
-                <Link to="#" className="page-link" onClick={previousPage}>
-                  Previous
+      <Row className="align-items-center g-3 text-center text-sm-start mb-3">
+      <div className="col-sm">
+        <div className="text-muted">
+          Showing
+          <span className="fw-semibold ms-1">{pageSize}</span> of{" "}
+          <span className="fw-semibold">{pageCount * pageSize}</span> Results
+        </div>
+      </div>
+      <div className="col-sm-auto">
+        <ul className="pagination pagination-separated pagination-md justify-content-center justify-content-sm-start mb-0">
+          <li className={!canPreviousPage ? "page-item disabled" : "page-item"}>
+            <Link to="#" className="page-link" onClick={previousPage}>
+              Previous
+            </Link>
+          </li>
+          {pageOptions.map((item, key) => (
+            <React.Fragment key={key}>
+              <li className="page-item">
+                <Link
+                  to="#"
+                  className={pageIndex === item ? "page-link active" : "page-link"}
+                  onClick={() => gotoPage(item)}
+                >
+                  {item + 1}
                 </Link>
               </li>
-              {pageOptions.map((item, key) => (
-                <React.Fragment key={key}>
-                  <li className="page-item">
-                    <Link
-                      to="#"
-                      className={
-                        pageIndex === item ? "page-link active" : "page-link"
-                      }
-                      onClick={() => gotoPage(item)}
-                    >
-                      {item + 1}
-                    </Link>
-                  </li>
-                </React.Fragment>
-              ))}
-              <li className={!canNextPage ? "page-item disabled" : "page-item"}>
-                <Link to="#" className="page-link" onClick={nextPage}>
-                  Next
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </Row>
-      )}
+            </React.Fragment>
+          ))}
+          <li className={!canNextPage ? "page-item disabled" : "page-item"}>
+            <Link to="#" className="page-link" onClick={nextPage}>
+              Next
+            </Link>
+          </li>
+        </ul>
+      </div>
+      <div className="col-sm-auto">
+        <select
+          className="form-select form-select-sm"
+          value={pageSize}
+          onChange={handlePageSizeChange}
+        >
+          {[10, 25, 50, 100].map((size) => (
+            <option key={size} value={size}>
+              Show {size}
+            </option>
+          ))}
+        </select>
+      </div>
+    </Row>
+      
     </Fragment>
   );
 };
