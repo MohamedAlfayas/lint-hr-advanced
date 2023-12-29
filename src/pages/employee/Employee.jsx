@@ -42,7 +42,7 @@ const Employee = () => {
 
     dispatch(setFormTitle("Employee Details"));
     dispatch(setFormObj(obj));
-    dispatch(setFormWidthPercentage("25%"));
+    dispatch(setFormWidthPercentage("30%"));
     dispatch(setComponentToShow(profile_view_component_name));
     dispatch(toggleRSBView(true));
   };

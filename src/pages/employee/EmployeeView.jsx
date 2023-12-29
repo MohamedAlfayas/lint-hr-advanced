@@ -44,6 +44,7 @@ const EmployeeView = () => {
 
   const navigate = useNavigate();
 
+
   useEffect(() => {
     const EmployeeData = GetLocalStorageData("employee") || [];
     if (id && EmployeeData.length) {

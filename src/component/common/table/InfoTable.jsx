@@ -178,7 +178,7 @@ const InfoTable = ({
       text: ` Are you sure to deactivate Agent (${orderData.fname} ${orderData.lname})?`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#d33",
+      confirmButtonColor: "#f06548",
       cancelButtonColor: "#3085d6",
       confirmButtonText: "Yes, deactivate!",
     }).then((result) => {
@@ -219,7 +219,7 @@ const InfoTable = ({
       icon: false,
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
+      cancelButtonColor: "#f06548",
       confirmButtonText: "Reset Password",
       preConfirm: () => {
         const adminPasswordInput = document.getElementById("adminPassword");
