@@ -80,6 +80,7 @@ const TableContainer = ({
     state,
     preGlobalFilteredRows,
     setGlobalFilter,
+    rows,
     state: { pageIndex, pageSize, pageCount },
   } = useTable(
     {
@@ -133,6 +134,10 @@ const TableContainer = ({
     (pageIndex + 1) * pageSize < data.length
       ? (pageIndex + 1) * pageSize
       : data.length;
+      const totalItem =
+    (pageIndex + 1) * pageSize < rows.length
+      ? (pageIndex + 1) * pageSize
+      : rows.length;
   return (
     <Fragment>
       {(isGlobalSearch || isGlobalFilter) && (
@@ -214,10 +219,11 @@ const TableContainer = ({
 
       <Row className="align-items-center g-3 text-center text-sm-start mb-3">
       <div className="col-sm">
-      <div className="text-muted">
+        <div className="text-muted">
           Showing
-          <span className="fw-semibold ms-1">{startItem}</span> of{" "}
-          <span className="fw-semibold">{endItem}</span> Results
+          <span className="fw-semibold ms-1">{startItem}</span> to{" "}
+          <span className="fw-semibold">{endItem}</span>  of{" "}
+          <span className="fw-semibold">{rows.length}</span> 
         </div>
       </div>
       <div className="col-sm-auto">
