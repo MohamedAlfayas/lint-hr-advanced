@@ -73,6 +73,9 @@ const ApplyLeaveForm = () => {
       start: ConvertISODateFormat(ConvertDateFormat(dateString)),
       end: ConvertISODateFormat(ConvertDateFormat(dateString)),
     });
+    if (leaveapplyObj.available_count <= totalMinutes) {
+      toast.error("Selected Leave Exceeding Available Leave Hours ");
+    }
   };
 
   useEffect(() => {
@@ -180,6 +183,9 @@ const ApplyLeaveForm = () => {
 
     const ValidDaysCount = ValidDays.length;
     setDaysCount(ValidDaysCount);
+    if (leaveapplyObj.available_count <= totalWorkDuration) {
+      toast.error("Selected Leave Exceeding Available Leave Hours ");
+    }
   };
 
   const lt_option = [
@@ -493,6 +499,11 @@ const ApplyLeaveForm = () => {
                         leave_type: e.id,
                         available_count: e.available_count,
                       }));
+                      if (leaveapplyObj.available_count <= totalMinutes) {
+                        toast.error(
+                          "Selected Leave Exceeding Available Leave Hours "
+                        );
+                      }
                       setSelectedLeave_type(leaveapplyObj.leave_type);
                     }}
                     placeholder="Select Leave Type"
