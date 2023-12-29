@@ -193,18 +193,44 @@ const EmployeeForm = () => {
       reader.readAsDataURL(e.target.files[0]);
     }
   };
+  const [childOptions, setChildOptions] = useState([]);
+  const [selectedOptions, setSelectedOptions] = useState([]);
+  const [subChildOptions, setSubChildOptions] = useState([]);
 
-  const handlePrimaryDepChange = (obj) => {
-    if (obj.id !== employeeObj.primary_department_id) {
-      setEmployeeObj({
-        ...employeeObj,
-        primary_department_id: obj.id,
-        sub_department_id_list: [],
-      });
-      let sub_dep_options = dep_options.filter((data) => data.id !== obj.id);
-      setSubDeptOptions(sub_dep_options);
+  const handlePrimaryDepChange = (e) => {
+    const selectedIds = e.map((obj) => obj.id);
+    setEmployeeObj({
+      ...employeeObj,
+      primary_department_id_list: selectedIds,
+    });
+    const selectedOptions = selectedIds.map((id) =>
+      dep_options.find((option) => option.id === id)
+    );
+
+    const selectedOption = selectedOptions[0];
+
+    const pid = selectedOption ? selectedOption.pid : undefined;
+
+    console.log("Selected Option PID:", pid);
+    if (selectedOptions.length > 0) {
+      const selectedValue = pid;
+      console.log("====================================");
+      console.log("selectedValue", selectedValue);
+      console.log("====================================");
+      const childOptions = dep_options.filter(
+        (option) => option.pid !== selectedValue
+      );
+      setChildOptions(childOptions);
+    } else {
+      setChildOptions([]);
     }
+
+    setSelectedOptions(e);
   };
+
+  console.log("====================================");
+  console.log("childOptions", childOptions);
+  console.log("====================================");
 
   const handleDateChange = (selectedDates, dateStr, instance) => {
     setDob(dateStr);
@@ -761,7 +787,7 @@ const EmployeeForm = () => {
                     id="parentDepartment"
                     name="primary_department_id"
                     innerRef={inputRef}
-                    isMulti={false}
+                    isMulti={true}
                     options={dep_options || []}
                     className="basic-multi-select"
                     styles={{
@@ -776,17 +802,8 @@ const EmployeeForm = () => {
                       }),
                     }}
                     placeholder={"Select Primary Department"}
-                    value={
-                      employeeObj.primary_department_id
-                        ? dep_options.find(
-                            (obj) =>
-                              obj.id === employeeObj.primary_department_id
-                          )
-                        : []
-                    }
-                    onChange={(e) => {
-                      handlePrimaryDepChange(e);
-                    }}
+                    value={selectedOptions}
+                    onChange={handlePrimaryDepChange}
                     invalid={
                       FormikForm.touched.primary_department_id &&
                       FormikForm.errors.primary_department_id
@@ -858,7 +875,7 @@ const EmployeeForm = () => {
                 ""
               )}
 
-              <Col lg={12}>
+              {/* <Col lg={12}>
                 <div>
                   <Label htmlFor="subDepartment" className="form-label">
                     Sub Department
@@ -885,7 +902,7 @@ const EmployeeForm = () => {
                 <div id="passwordHelpBlock" className="form-text mb-3">
                   Select Sub Department
                 </div>
-              </Col>
+              </Col>*/}
               <Col lg={12}>
                 <div>
                   <Label htmlFor="empWs">Work Schedule</Label>
