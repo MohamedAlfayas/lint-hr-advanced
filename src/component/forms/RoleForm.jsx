@@ -41,7 +41,7 @@ const RoleForm = () => {
 
   const [activeTab, setactiveTab] = useState(1);
   const [activeArrowTab, setactiveArrowTab] = useState(4);
-  const [activeVerticalTab, setactiveVerticalTab] = useState(7);
+  const [activeVerticalTab, setactiveVerticalTab] = useState(1);
   const [progressbarvalue, setprogressbarvalue] = useState(0);
   const [passedSteps, setPassedSteps] = useState([1]);
   const [passedarrowSteps, setPassedarrowSteps] = useState([1]);
@@ -404,7 +404,7 @@ const RoleForm = () => {
     if (activeVerticalTab !== tab) {
       var modifiedSteps = [...passedverticalSteps, tab];
 
-      if (tab >= 7 && tab <= 15) {
+      if (tab >= 1 && tab <= 5) {
         setactiveVerticalTab(tab);
         setPassedverticalSteps(modifiedSteps);
       }
@@ -469,11 +469,11 @@ const RoleForm = () => {
                   <NavLink
                     href="#"
                     className={classnames({
-                      active: activeVerticalTab === 7,
-                      done: activeVerticalTab <= 15 && activeVerticalTab > 7,
+                      active: activeVerticalTab === 1,
+                      done: activeVerticalTab <= 5 && activeVerticalTab > 1,
                     })}
                     onClick={() => {
-                      toggleVerticalTab(7);
+                      toggleVerticalTab(1);
                     }}
                   >
                     <span className="step-title me-1">
@@ -490,101 +490,16 @@ const RoleForm = () => {
                     <span className="visually-hidden">unread messages</span>
                   </Badge>
                 </NavItem>
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    className={classnames({
-                      active: activeVerticalTab === 8,
-                      done: activeVerticalTab <= 15 && activeVerticalTab >= 8,
-                    })}
-                    onClick={() => {
-                      toggleVerticalTab(8);
-                    }}
-                  >
-                    <span className="step-title me-2">
-                      <i className="ri-close-circle-fill step-icon me-2"></i>
-                    </span>
-                    Department
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    className={classnames({
-                      active: activeVerticalTab === 9,
-                      done: activeVerticalTab <= 15 && activeVerticalTab >= 9,
-                    })}
-                    onClick={() => {
-                      toggleVerticalTab(9);
-                    }}
-                  >
-                    <span className="step-title me-2">
-                      <i className="ri-close-circle-fill step-icon me-2"></i>
-                    </span>
-                    Roles
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    className={classnames({
-                      active: activeVerticalTab === 10,
-                      done: activeVerticalTab <= 15 && activeVerticalTab >= 10,
-                    })}
-                    onClick={() => {
-                      toggleVerticalTab(10);
-                    }}
-                  >
-                    <span className="step-title me-2">
-                      <i className="ri-close-circle-fill step-icon me-2"></i>
-                    </span>
-                    Employee
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    className={classnames({
-                      active: activeVerticalTab === 11,
-                      done: activeVerticalTab <= 15 && activeVerticalTab >= 11,
-                    })}
-                    onClick={() => {
-                      toggleVerticalTab(11);
-                    }}
-                  >
-                    <span className="step-title me-2">
-                      <i className="ri-close-circle-fill step-icon me-2"></i>
-                    </span>
-                    Work Schedule
-                  </NavLink>
-                </NavItem>
 
                 <NavItem>
                   <NavLink
                     href="#"
                     className={classnames({
-                      active: activeVerticalTab === 12,
-                      done: activeVerticalTab <= 15 && activeVerticalTab >= 12,
+                      active: activeVerticalTab === 2,
+                      done: activeVerticalTab <= 5 && activeVerticalTab >= 2,
                     })}
                     onClick={() => {
-                      toggleVerticalTab(12);
-                    }}
-                  >
-                    <span className="step-title me-2">
-                      <i className="ri-close-circle-fill step-icon me-2"></i>
-                    </span>
-                    Holiday
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    className={classnames({
-                      active: activeVerticalTab === 13,
-                      done: activeVerticalTab <= 15 && activeVerticalTab >= 13,
-                    })}
-                    onClick={() => {
-                      toggleVerticalTab(13);
+                      toggleVerticalTab(2);
                     }}
                   >
                     <span className="step-title me-2">
@@ -597,11 +512,29 @@ const RoleForm = () => {
                   <NavLink
                     href="#"
                     className={classnames({
-                      active: activeVerticalTab === 14,
-                      done: activeVerticalTab <= 15 && activeVerticalTab >= 14,
+                      active: activeVerticalTab === 3,
+                      done: activeVerticalTab <= 5 && activeVerticalTab >= 3,
                     })}
                     onClick={() => {
-                      toggleVerticalTab(14);
+                      toggleVerticalTab(3);
+                    }}
+                  >
+                    <span className="step-title me-2">
+                      <i className="ri-close-circle-fill step-icon me-2"></i>
+                    </span>
+                    Payroll
+                  </NavLink>
+                </NavItem>
+
+                <NavItem>
+                  <NavLink
+                    href="#"
+                    className={classnames({
+                      active: activeVerticalTab === 4,
+                      done: activeVerticalTab <= 5 && activeVerticalTab >= 4,
+                    })}
+                    onClick={() => {
+                      toggleVerticalTab(4);
                     }}
                   >
                     <span className="step-title me-2">
@@ -614,11 +547,11 @@ const RoleForm = () => {
                   <NavLink
                     href="#"
                     className={classnames({
-                      active: activeVerticalTab === 15,
-                      done: activeVerticalTab <= 15 && activeVerticalTab >= 15,
+                      active: activeVerticalTab === 5,
+                      done: activeVerticalTab <= 5 && activeVerticalTab >= 5,
                     })}
                     onClick={() => {
-                      toggleVerticalTab(15);
+                      toggleVerticalTab(5);
                     }}
                   >
                     <span className="step-title me-2">
@@ -632,7 +565,7 @@ const RoleForm = () => {
             <Col lg={9}>
               <div className="px-lg-4">
                 <TabContent activeTab={activeVerticalTab}>
-                  <TabPane tabId={7}>
+                  <TabPane tabId={1}>
                     <div>
                       <h5>Organization Management</h5>
                       <p className="text-muted">Organization Full Access</p>
@@ -653,17 +586,9 @@ const RoleForm = () => {
                           value=""
                           defaultChecked
                         />
-                        Delivery Error
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                          defaultChecked
-                        />
                         User Can Create New Branch
                       </ListGroupItem>
+
                       <ListGroupItem tag="label">
                         <Input
                           className="form-check-input me-1"
@@ -671,6 +596,54 @@ const RoleForm = () => {
                           value=""
                         />
                         User Can Edit Branch
+                      </ListGroupItem>
+                      <ListGroupItem tag="label">
+                        <Input
+                          className="form-check-input me-1"
+                          type="checkbox"
+                          value=""
+                        />
+                        User Can View All Departments
+                      </ListGroupItem>
+                      <ListGroupItem tag="label">
+                        <Input
+                          className="form-check-input me-1"
+                          type="checkbox"
+                          value=""
+                        />
+                        User Can Create New Departments
+                      </ListGroupItem>
+                      <ListGroupItem tag="label">
+                        <Input
+                          className="form-check-input me-1"
+                          type="checkbox"
+                          value=""
+                        />
+                        User Can Edit Departments
+                      </ListGroupItem>
+                      <ListGroupItem tag="label">
+                        <Input
+                          className="form-check-input me-1"
+                          type="checkbox"
+                          value=""
+                        />
+                        User Can View All Roles
+                      </ListGroupItem>
+                      <ListGroupItem tag="label">
+                        <Input
+                          className="form-check-input me-1"
+                          type="checkbox"
+                          value=""
+                        />
+                        User Can Create New Role
+                      </ListGroupItem>
+                      <ListGroupItem tag="label">
+                        <Input
+                          className="form-check-input me-1"
+                          type="checkbox"
+                          value=""
+                        />
+                        User Can Edit Role
                       </ListGroupItem>
                     </ListGroup>
 
@@ -683,14 +656,14 @@ const RoleForm = () => {
                         }}
                       >
                         <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
-                        Go to Department
+                        Go to Attendance
                       </button>
                     </div>
                   </TabPane>
 
-                  <TabPane tabId={8}>
+                  <TabPane tabId={2}>
                     <div>
-                      <h5>Department Management</h5>
+                      <h5>Attendance Management</h5>
                       <p className="text-muted"></p>
                     </div>
 
@@ -701,7 +674,7 @@ const RoleForm = () => {
                           type="checkbox"
                           value=""
                         />
-                        User Can View All Branch
+                        User Can Configure Attendance
                       </ListGroupItem>
                       <ListGroupItem tag="label">
                         <Input
@@ -710,7 +683,7 @@ const RoleForm = () => {
                           value=""
                           defaultChecked
                         />
-                        Delivery Error
+                        User Can Create Leave Types
                       </ListGroupItem>
                       <ListGroupItem tag="label">
                         <Input
@@ -719,7 +692,7 @@ const RoleForm = () => {
                           value=""
                           defaultChecked
                         />
-                        User Can Create New Branch
+                        User Can Create/Delete Holidays
                       </ListGroupItem>
                       <ListGroupItem tag="label">
                         <Input
@@ -727,7 +700,47 @@ const RoleForm = () => {
                           type="checkbox"
                           value=""
                         />
-                        User Can Edit Branch
+                        User Can View Team Attendance
+                      </ListGroupItem>
+                      <ListGroupItem tag="label">
+                        <Input
+                          className="form-check-input me-1"
+                          type="checkbox"
+                          value=""
+                        />
+                        User Can View All Employee Attendance
+                      </ListGroupItem>
+                      <ListGroupItem tag="label">
+                        <Input
+                          className="form-check-input me-1"
+                          type="checkbox"
+                          value=""
+                        />
+                        User Can Edit Paid/OT Hours
+                      </ListGroupItem>
+                      <ListGroupItem tag="label">
+                        <Input
+                          className="form-check-input me-1"
+                          type="checkbox"
+                          value=""
+                        />
+                        User Can View Work Schedule
+                      </ListGroupItem>
+                      <ListGroupItem tag="label">
+                        <Input
+                          className="form-check-input me-1"
+                          type="checkbox"
+                          value=""
+                        />
+                        User Can Create Work Schedule
+                      </ListGroupItem>
+                      <ListGroupItem tag="label">
+                        <Input
+                          className="form-check-input me-1"
+                          type="checkbox"
+                          value=""
+                        />
+                        User Can Edit Work Schedule
                       </ListGroupItem>
                     </ListGroup>
 
@@ -750,12 +763,12 @@ const RoleForm = () => {
                         }}
                       >
                         <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
-                        Go to Roles
+                        Go to Payroll
                       </button>
                     </div>
                   </TabPane>
 
-                  <TabPane tabId={9}>
+                  <TabPane tabId={3}>
                     <div>
                       <h5>Payment</h5>
                       <p className="text-muted">Fill all information below</p>
@@ -896,7 +909,48 @@ const RoleForm = () => {
                     </div>
                   </TabPane>
 
-                  <TabPane tabId={10}>
+                  <TabPane tabId={4}>
+                    <div>
+                      <h5>Customization</h5>
+                      <p className="text-muted"></p>
+                    </div>
+
+                    <ListGroup>
+                      <ListGroupItem tag="label">
+                        <Input
+                          className="form-check-input me-1"
+                          type="checkbox"
+                          value=""
+                        />
+                        User Can Control Custom Fields
+                      </ListGroupItem>
+                    </ListGroup>
+
+                    <div className="d-flex align-items-start gap-3 mt-4">
+                      <button
+                        type="button"
+                        className="btn btn-light btn-label previestab"
+                        onClick={() => {
+                          toggleVerticalTab(activeVerticalTab - 1);
+                        }}
+                      >
+                        <i className="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>{" "}
+                        Back to Organization
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-success btn-label right ms-auto nexttab"
+                        onClick={() => {
+                          toggleVerticalTab(activeVerticalTab + 1);
+                        }}
+                      >
+                        <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
+                        Go to Payroll
+                      </button>
+                    </div>
+                  </TabPane>
+
+                  <TabPane tabId={5}>
                     <div className="text-center pt-4 pb-2">
                       <div className="mb-4">
                         <lord-icon
@@ -914,97 +968,7 @@ const RoleForm = () => {
                     </div>
                   </TabPane>
 
-                  <TabPane tabId={11}>
-                    <div className="text-center pt-4 pb-2">
-                      <div className="mb-4">
-                        <lord-icon
-                          src="https://cdn.lordicon.com/lupuorrc.json"
-                          trigger="loop"
-                          colors="primary:#0ab39c,secondary:#405189"
-                          style={{ width: "120px", height: "120px" }}
-                        ></lord-icon>
-                      </div>
-                      <h5>Your Order is Completed !</h5>
-                      <p className="text-muted">
-                        You Will receive an order confirmation email with
-                        details of your order.
-                      </p>
-                    </div>
-                  </TabPane>
-
-                  <TabPane tabId={12}>
-                    <div className="text-center pt-4 pb-2">
-                      <div className="mb-4">
-                        <lord-icon
-                          src="https://cdn.lordicon.com/lupuorrc.json"
-                          trigger="loop"
-                          colors="primary:#0ab39c,secondary:#405189"
-                          style={{ width: "120px", height: "120px" }}
-                        ></lord-icon>
-                      </div>
-                      <h5>Your Order is Completed !</h5>
-                      <p className="text-muted">
-                        You Will receive an order confirmation email with
-                        details of your order.
-                      </p>
-                    </div>
-                  </TabPane>
-
-                  <TabPane tabId={13}>
-                    <div className="text-center pt-4 pb-2">
-                      <div className="mb-4">
-                        <lord-icon
-                          src="https://cdn.lordicon.com/lupuorrc.json"
-                          trigger="loop"
-                          colors="primary:#0ab39c,secondary:#405189"
-                          style={{ width: "120px", height: "120px" }}
-                        ></lord-icon>
-                      </div>
-                      <h5>Your Order is Completed !</h5>
-                      <p className="text-muted">
-                        You Will receive an order confirmation email with
-                        details of your order.
-                      </p>
-                    </div>
-                  </TabPane>
-
-                  <TabPane tabId={14}>
-                    <div className="text-center pt-4 pb-2">
-                      <div className="mb-4">
-                        <lord-icon
-                          src="https://cdn.lordicon.com/lupuorrc.json"
-                          trigger="loop"
-                          colors="primary:#0ab39c,secondary:#405189"
-                          style={{ width: "120px", height: "120px" }}
-                        ></lord-icon>
-                      </div>
-                      <h5>Your Order is Completed !</h5>
-                      <p className="text-muted">
-                        You Will receive an order confirmation email with
-                        details of your order.
-                      </p>
-                    </div>
-                  </TabPane>
-
-                  <TabPane tabId={15}>
-                    <div className="text-center pt-4 pb-2">
-                      <div className="mb-4">
-                        <lord-icon
-                          src="https://cdn.lordicon.com/lupuorrc.json"
-                          trigger="loop"
-                          colors="primary:#0ab39c,secondary:#405189"
-                          style={{ width: "120px", height: "120px" }}
-                        ></lord-icon>
-                      </div>
-                      <h5>Your Order is Completed !</h5>
-                      <p className="text-muted">
-                        You Will receive an order confirmation email with
-                        details of your order.
-                      </p>
-                    </div>
-                  </TabPane>
-
-                  <TabPane tabId={16}>
+                  <TabPane tabId={6}>
                     <div className="text-center pt-4 pb-2">
                       <div className="mb-4">
                         <lord-icon
