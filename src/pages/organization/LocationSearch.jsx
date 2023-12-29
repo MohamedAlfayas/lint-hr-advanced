@@ -1,5 +1,6 @@
 import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
-import React from "react";
+import axios from "axios";
+import React, { useEffect, useRef, useState } from "react";
 import { Col, Input, Label } from "reactstrap";
 
 const containerStyle = {
@@ -13,9 +14,50 @@ const center = {
 };
 
 function LocationSearch() {
+  const [locationText, setLocationText] = useState("");
+
+  const [predictions, setPredictions] = useState([]);
+  const autocompleteRef = useRef(null);
+
+  useEffect(() => {
+    const autocomplete = new window.google.maps.places.AutocompleteService();
+
+    if (locationText && autocomplete) {
+      autocomplete.getPlacePredictions(
+        { input: locationText },
+        (predictions, status) => {
+          if (status === "OK") {
+            setPredictions(predictions);
+          } else {
+            setPredictions([]);
+          }
+        }
+      );
+    } else {
+      setPredictions([]);
+    }
+  }, [locationText]);
+
+  const handleSelectPrediction = (placeId) => {
+    const placesService = new window.google.maps.places.PlacesService(
+      document.createElement("div")
+    );
+
+    placesService.getDetails({ placeId }, (place, status) => {
+      if (status === "OK") {
+        console.log("Selected Place:", place);
+        // You can do something with the selected place, e.g., fetch its coordinates.
+      }
+    });
+
+    // Clear predictions and input
+    setPredictions([]);
+    setLocationText("");
+  };
+
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
-    googleMapsApiKey: "AIzaSyCSwfau91w6IEpvHR6BGsnPBfT1PUJ27Vs",
+    googleMapsApiKey: process.env.DEV_MAP_API_KEY,
   });
 
   const [map, setMap] = React.useState(null);
@@ -44,9 +86,25 @@ function LocationSearch() {
             className="form-control form-control-icon"
             id="branchLocation"
             placeholder="Search an address"
+            onChange={(e) => setLocationText(e.target.value)}
+            value={locationText}
+            ref={autocompleteRef}
+            autoComplete={false}
           />
           <i className="ri-map-pin-line"></i>
         </div>
+        {predictions.length > 0 && (
+          <ul>
+            {predictions.map((prediction) => (
+              <li
+                key={prediction.place_id}
+                onClick={() => handleSelectPrediction(prediction.place_id)}
+              >
+                {prediction.description}
+              </li>
+            ))}
+          </ul>
+        )}
         <div id="passwordHelpBlock" className="form-text">
           Company Overview.
         </div>
