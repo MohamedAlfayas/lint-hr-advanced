@@ -34,17 +34,6 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 import { DatePicker } from "antd";
 dayjs.extend(customParseFormat);
 
-//import images
-import avatar8 from "../../assets/images/users/avatar-8.jpg";
-import avatar10 from "../../assets/images/users/avatar-10.jpg";
-import avatar6 from "../../assets/images/users/avatar-6.jpg";
-import avatar2 from "../../assets/images/users/avatar-2.jpg";
-import avatar3 from "../../assets/images/users/avatar-3.jpg";
-import avatar4 from "../../assets/images/users/avatar-4.jpg";
-import avatar7 from "../../assets/images/users/avatar-7.jpg";
-import image4 from "../../assets/images/small/img-4.jpg";
-import image5 from "../../assets/images/small/img-5.jpg";
-
 import indflag from "../../assets/images/flags/in.svg";
 //SimpleBar
 import SimpleBar from "simplebar-react";
@@ -55,6 +44,9 @@ import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { GetCustomField } from "../../common/js/GetCustomField";
+import { GoogleMap, Marker } from "@react-google-maps/api";
+import LocationSearch from "../../pages/organization/LocationSearch";
+import LocationSearch2 from "../../pages/organization/LocationSearch2";
 // import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 
 const BranchForm = () => {
@@ -251,13 +243,9 @@ const BranchForm = () => {
       <Row>
         <Col xl={12} lg={12}>
           <div>
-            <h6 className="mb-3 fw-semibold text-uppercase">Company Info</h6>
-
             <form onSubmit={submitProfileForm}>
               <div className="live-preview">
                 <Row className="gy-4">
-                  {/* <WebCheckInOutBtn /> */}
-
                   <Col lg={12}>
                     <div>
                       <Label htmlFor="branchName" className="form-label">
@@ -391,15 +379,12 @@ const BranchForm = () => {
 
                   <Col lg={12}>
                     <div>
-                      <Label
-                        htmlFor="exampleFormControlTextarea5"
-                        className="form-label"
-                      >
+                      <Label htmlFor="branchOverview" className="form-label">
                         Company Overview
                       </Label>
                       <textarea
                         className="form-control"
-                        id="exampleFormControlTextarea5"
+                        id="branchOverview"
                         rows="3"
                         value={profileData.about || ""}
                         onChange={(e) =>
@@ -411,6 +396,8 @@ const BranchForm = () => {
                       </div>
                     </div>
                   </Col>
+
+                  <LocationSearch2 />
 
                   <Col lg={12}>
                     <div>
