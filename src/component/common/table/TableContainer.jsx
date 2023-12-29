@@ -128,6 +128,11 @@ const TableContainer = ({
     setPageSize(Number(e.target.value));
     gotoPage(page); 
   };
+  const startItem = pageIndex * pageSize + 1;
+  const endItem =
+    (pageIndex + 1) * pageSize < data.length
+      ? (pageIndex + 1) * pageSize
+      : data.length;
   return (
     <Fragment>
       {(isGlobalSearch || isGlobalFilter) && (
@@ -209,10 +214,10 @@ const TableContainer = ({
 
       <Row className="align-items-center g-3 text-center text-sm-start mb-3">
       <div className="col-sm">
-        <div className="text-muted">
+      <div className="text-muted">
           Showing
-          <span className="fw-semibold ms-1">{pageSize}</span> of{" "}
-          <span className="fw-semibold">{pageCount * pageSize}</span> Results
+          <span className="fw-semibold ms-1">{startItem}</span> of{" "}
+          <span className="fw-semibold">{endItem}</span> Results
         </div>
       </div>
       <div className="col-sm-auto">
