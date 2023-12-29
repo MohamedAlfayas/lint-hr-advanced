@@ -30,7 +30,9 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 import { PostApi } from "../../common/api/PostApi";
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { Select } from "antd";
+
+import Select from 'react-select';
+
 
 const DepartmentForm = () => {
   const [hdDropDown, setHdDropDown] = useState(false);
@@ -38,7 +40,8 @@ const DepartmentForm = () => {
   const [departmentData, setDepartmentData] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const DepartmentList = GetLocalStorageData("department") || [];
-  console.log("gggg",DepartmentList);
+  console.log("gggg", DepartmentList);
+  const [selectedOption,setSelectedOption] = useState()
 
   const dispatch = useDispatch();
 
@@ -65,8 +68,8 @@ const DepartmentForm = () => {
     validationSchema: Yup.object({
       name: Yup.string().trim().required("Please Enter Department Name"),
       pid: Yup.number()
-      .required("Select Parent Department")
-      .min(1, "Please Select Parent Department"),
+        .required("Select Parent Department")
+        .min(1, "Please Select Parent Department"),
 
     }),
     onSubmit: async (values) => {
@@ -122,40 +125,41 @@ const DepartmentForm = () => {
                 </div>
               </Col>
               <Col lg={12}>
-                <label htmlFor="parentDepartment" className="form-label">
+                <Label htmlFor="parentDepartment" className="form-label">
                   Parent Department
-                </label>
+                </Label>
 
-                <select
-                name="pid"
-                className={`form-control rounded-end flag-input form-select ${
-                  FormikForm.touched.pid && FormikForm.errors.pid ? "is-invalid" : ""
-                }`}
-                 
-                  style={{ cursor: "pointer" }}
-                  value={departmentData.pid || ""}
-                  onChange={(e) => {
+                <Select
+                  name="pid"
+                  className={`react-select-container ${FormikForm.touched.pid && FormikForm.errors.pid ? "is-invalid" : ""
+                    }`}
+                  classNamePrefix="react-select"
+                  styles={{
+                    control: (provided, state) => ({
+                      ...provided,
+                      borderColor:
+                        !state.isFocused &&
+                          FormikForm.touched.pid &&
+                          FormikForm.errors.pid
+                          ? "red !important"
+                          : provided.borderColor,
+                    }),
+                  }}
+                  value={departmentOptions.find((opt) => opt.id === departmentData.pid) || null}
+                  onChange={(selectedOption) => {
                     setDepartmentData({
                       ...departmentData,
-                      pid: e.target.value,
+                      pid: selectedOption ? selectedOption.value : null,
                     });
                   }}
-                >
-                  <option value="" disabled>
-                    Select Parent Department
-                  </option>
-                  {departmentOptions
-                    .filter((obj) => obj.id !== parseInt(departmentData.id))
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .map((item, key) => (
-                      <option key={key} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                </select>
+                  options={departmentOptions.map((item) => ({ value: item.id, label: item.name }))}
+                  isClearable
+                />
+
                 {FormikForm.touched.pid && FormikForm.errors.pid ? (
                   <FormFeedback type="invalid">{FormikForm.errors.pid}</FormFeedback>
                 ) : null}
+
                 <div id="passwordHelpBlock" className="form-text">
                   Select Parent Department.
                 </div>
@@ -164,8 +168,8 @@ const DepartmentForm = () => {
                 <label htmlFor="description" className="form-label">
                   Description
                 </label>
-                <input
-                  type="text"
+                <Input
+                  type="textarea"
                   name="description"
                   className="form-control"
                   id="description"
@@ -174,7 +178,7 @@ const DepartmentForm = () => {
                   onChange={handleInputChange}
                 />
                 <div id="passwordHelpBlock" className="form-text">
-                  Description.
+                  Enter Description.
                 </div>
               </Col>
 
