@@ -25,7 +25,9 @@ dayjs.extend(customParseFormat);
 
 const AttendanceFilter = () => {
   const [filterKeys, setFilterKeys] = useState({
-    thisMonth: `${new Date().getFullYear()}-${new Date().getMonth() + 1}`,
+    thisMonth: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}`,
     hr_status: "0",
     record: "0",
     type: "1",
