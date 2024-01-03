@@ -125,19 +125,18 @@ const DepartmentForm = () => {
 
                 <Select
                   name="pid"
-                  className={`react-select-container ${
-                    FormikForm.touched.pid && FormikForm.errors.pid
+                  className={`react-select-container ${FormikForm.touched.pid && FormikForm.errors.pid
                       ? "is-invalid"
                       : ""
-                  }`}
+                    }`}
                   classNamePrefix="react-select"
                   styles={{
                     control: (provided, state) => ({
                       ...provided,
                       borderColor:
                         !state.isFocused &&
-                        FormikForm.touched.pid &&
-                        FormikForm.errors.pid
+                          FormikForm.touched.pid &&
+                          FormikForm.errors.pid
                           ? "red !important"
                           : provided.borderColor,
                     }),
@@ -168,6 +167,40 @@ const DepartmentForm = () => {
 
                 <div id="passwordHelpBlock" className="form-text">
                   Select Parent Department.
+                </div>
+              </Col>
+              <Col md={12} lg={12} xxl={12}>
+                <div>
+                  <Label htmlFor="is_location_required" className="form-label">
+                    Is Location Required
+                  </Label>
+
+                  <div className="mb-2">
+                    <div
+                      className="form-check form-switch form-switch-md form-switch-success"
+                      dir="ltr"
+                    >
+                      {" "}
+                      <Input
+                        id="is_location_required"
+                        name="is_location_required"
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={departmentData.is_location_required}
+                        onChange={(e) =>
+                          setDepartmentData({
+                            ...departmentData,
+                            is_location_required: e.target.checked,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div id="passwordHelpBlock" className="form-text mb-3">
+                  
+                  
+                Check if is required location based employee location.
                 </div>
               </Col>
               <Col lg={12}>
