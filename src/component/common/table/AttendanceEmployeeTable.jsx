@@ -8,6 +8,8 @@ import {
   CardBody,
   CardHeader,
   Col,
+  Input,
+  Label,
   Modal,
   ModalBody,
   ModalHeader,
@@ -20,6 +22,7 @@ import SimpleBar from "simplebar-react";
 import { useSelector } from "react-redux";
 import { ConvertSecondsToTime } from "../../../common/js/ConvertSecondsToTime";
 import { ParseTime } from "../../../common/js/ParseTime";
+import { Select } from "antd";
 
 const AttendanceEmployeeTable = () => {
   const { Column, HeaderCell, Cell } = Table;
@@ -33,6 +36,11 @@ const AttendanceEmployeeTable = () => {
   const [timelineList, setTimelineList] = useState([]);
   const [timelineDate, setTimeLineDate] = useState("");
   const [notes_modal, setNotes_modal] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedRowDataForEdit, setSelectedRowDataForEdit] = useState(null);
+  const [paidHours, setPaidHours] = useState("");
+  const [ot, setOT] = useState("");
+  const [totalPaidHours, setTotalPaidHours] = useState('');
 
   const { individual_attendance_report_data } = useSelector(
     (state) => state.AttendanceReportReducer
@@ -51,6 +59,58 @@ const AttendanceEmployeeTable = () => {
     setNotes_modal(!notes_modal);
   }
 
+  const openEditModal = (rowData) => {
+    setSelectedRowDataForEdit(rowData);
+    setEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setSelectedRowDataForEdit(null);
+    setEditModalOpen(false);
+  };
+
+  const handlePaidHoursHrChange = (selectedOption) => {
+    setPaidHours({
+      ...paidHours,
+      paid_hours_hr: selectedOption.value,
+    });
+  };
+
+  const handlePaidHoursMinChange = (selectedOption) => {
+    setPaidHours({
+      ...paidHours,
+      paid_hours_min: selectedOption.value,
+    });
+  };
+
+  const handleOTHoursChange = (selectedOption) => {
+    setOT({
+      ...ot,
+      ot_hr: selectedOption.value,
+    });
+  };
+
+ 
+  const handleOTMinutesChange = (selectedOption) => {
+    setOT({
+      ...ot,
+      ot_min: selectedOption.value,
+    });
+  };
+
+ 
+ 
+  
+  const hourOptions = Array.from({ length: 24 }, (_, i) => ({
+    label: i.toString().padStart(2, "0"),
+    value: i.toString().padStart(2, "0"),
+  }));
+
+  const minuteOptions = Array.from({ length: 60 }, (_, i) => ({
+    label: i.toString().padStart(2, "0"),
+    value: i.toString().padStart(2, "0"),
+  }));
+  
   const Attendance_data1 = [
     {
       id: 31,
@@ -524,7 +584,7 @@ const AttendanceEmployeeTable = () => {
             {(rowData) => (
               <Button
                 appearance="link"
-                onClick={() => alert(`name:${rowData.date}`)}
+                onClick={() => openEditModal(rowData)}
               >
                 Edit
               </Button>
@@ -532,6 +592,179 @@ const AttendanceEmployeeTable = () => {
           </Cell>
         </Column>
       </Table>
+        {/* Edit Modal */}
+        <Modal
+        isOpen={editModalOpen}
+        toggle={closeEditModal}
+        centered
+      >
+        <ModalHeader>
+      
+          
+        </ModalHeader>
+        <ModalBody className="text-left">
+          {/* Display the values based on selectedRowDataForEdit */}
+          {selectedRowDataForEdit && (
+            <div>
+          
+                <Col md={12} lg={12} xxl={12}>
+                  <Row className="mb-2">
+                    <Col>
+                      <Label htmlFor="calculation" className="form-label">
+                      Date: 
+                      </Label>
+                    </Col>
+                    <Col>
+                    <Label>{format(new Date(selectedRowDataForEdit.date), "dd MMM, yyyy")}</Label>
+                    </Col>
+                  </Row>
+                </Col>
+                <Col md={12} lg={12} xxl={12}>
+                  <Row className="mb-2">
+                    <Col>
+                      <Label htmlFor="calculation" className="form-label">
+                      Work Schedule Hour: 
+                      </Label>
+                    </Col>
+                    <Col>
+                    <Label>{selectedRowDataForEdit.work_schedule_id}</Label>
+                    </Col>
+                  </Row>
+                </Col>
+                <Col md={12} lg={12} xxl={12}>
+                  <Row className="mb-2">
+                    <Col>
+                      <Label htmlFor="calculation" className="form-label">
+                      Total IN: 
+                      </Label>
+                    </Col>
+                    <Col>
+                    <Label> {ConvertSecondsToTime(selectedRowDataForEdit.total_work_duration)}</Label>
+                    </Col>
+                  </Row>
+                </Col>
+                <Col md={12} lg={12} xxl={12}>
+                  <Row className="mb-2">
+                    <Col>
+                      <Label htmlFor="calculation" className="form-label">
+                      Paid Hours: 
+                      </Label>
+                    </Col>
+                    <Col>
+                  
+                     <b className="mt-2 me-1 ms-2">H</b>
+                     <Select
+                            id="paid_hours_hr"
+                            name="paid_hours_hr"
+                            placeholder={"00"}
+                            options={hourOptions}
+                            value={hourOptions.find(
+                              (option) => option.value === paidHours.paid_hours_hr
+                            )}
+                            onChange={handlePaidHoursHrChange}
+                          />
+                          <b className="mt-2 me-1 ms-2">M</b>
+                          <Select
+                            id="paid_hours_min"
+                            name="paid_hours_min"
+                            placeholder={"00"}
+                            options={minuteOptions}
+                            value={minuteOptions.find(
+                              (option) => option.value === paidHours.paid_hours_min
+                            )}
+                            onChange={handlePaidHoursMinChange}
+                          />
+                    </Col>
+                  </Row>
+                </Col>
+                <Col md={12} lg={12} xxl={12}>
+                  <Row className="mb-2">
+                    <Col>
+                      <Label htmlFor="calculation" className="form-label">
+                      OT: 
+                      </Label>
+                    </Col>
+                    <Col>
+                  
+                     <b className="mt-2 me-1 ms-2">H</b>
+                     <Select
+                            id="ot_hr"
+                            name="ot_hr"
+                            placeholder={"00"}
+                            options={hourOptions}
+                            value={hourOptions.find(
+                              (option) =>
+                                option.value === ot.ot_hr
+                            )}
+                            onChange={handleOTHoursChange}
+                          />
+                          <b className="mt-2 me-1 ms-2">M</b>
+                          <Select
+                            id="ot_min"
+                            name="ot_min"
+                            placeholder={"00"}
+                            options={minuteOptions}
+                            value={minuteOptions.find(
+                              (option) =>
+                                option.value === ot.ot_min
+                            )}
+                            onChange={handleOTMinutesChange}
+                          />
+                    </Col>
+                  </Row>
+                </Col>
+                <Col md={12} lg={12} xxl={12}>
+                  <Row className="mb-2">
+                    <Col>
+                      <Label htmlFor="calculation" className="form-label">
+                      Total Paid Hours: 
+                      </Label>
+                    </Col>
+                    <Col>
+                     <Label>{totalPaidHours}</Label>
+                    </Col>
+                  </Row>
+                </Col>
+                <Col md={12} lg={12} xxl={12}>
+                  <Row className="mb-2">
+                    <Col>
+                      <Label htmlFor="calculation" className="form-label">
+                      Notes: 
+                      </Label>
+                    </Col>
+                    <Col>
+                    <textarea
+                    className="form-control me-2"
+                    />
+                    </Col>
+                  </Row>
+                </Col>          
+             
+                    <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
+            <button
+              type="button"
+              className="btn w-sm btn-light"
+              data-bs-dismiss="modal"
+              onClick={closeEditModal} 
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              className="btn w-sm btn-success"
+              data-bs-dismiss="modal"
+              // onClick={() => {
+              //   dispatch(setAllowances(AllowanceData));
+              //   CloseAllowanceModal();
+              // }}
+            >
+              <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i> Save
+            </button>
+          </div>
+            </div>
+          )}
+        </ModalBody>
+      </Modal>
       {/* IN/OUT List Modal */}
       <Modal
         isOpen={timeline_modal}
