@@ -1,4 +1,4 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { Table } from "rsuite";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import {
@@ -38,8 +38,11 @@ const AttendanceEmployeeTable = () => {
   const [notes_modal, setNotes_modal] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedRowDataForEdit, setSelectedRowDataForEdit] = useState(null);
-  const [paidHours, setPaidHours] = useState("");
-  const [ot, setOT] = useState("");
+  const [selectedPaidHours, setSelectedPaidHours] = useState({paid_hours_hr: null});
+  const [selectedPaidMinutes, setSelectedPaidMinutes] = useState({ paid_hours_min: null});
+  const [selectedOtHours, setSelectedOtHours] = useState({ot_hr: null});
+  const [selectedOtMinutes, setSelectedOtMinutes] = useState({ot_min: null});
+  const [hrDiff, setHrDiff] = useState("");
   const [totalPaidHours, setTotalPaidHours] = useState('');
 
   const { individual_attendance_report_data } = useSelector(
@@ -60,6 +63,7 @@ const AttendanceEmployeeTable = () => {
   }
 
   const openEditModal = (rowData) => {
+    console.log('rowdataa ===' , rowData);
     setSelectedRowDataForEdit(rowData);
     setEditModalOpen(true);
   };
@@ -69,37 +73,65 @@ const AttendanceEmployeeTable = () => {
     setEditModalOpen(false);
   };
 
+
+  const calculateTotalPaidHours = () => {
+    const paidHoursHr = selectedPaidHours.paid_hours_hr || 0;
+    const paidHoursMin = selectedPaidMinutes.paid_hours_min || 0;
+  
+    const otHoursHr = selectedOtHours.ot_hr || 0;
+    const otHoursMin = selectedOtMinutes.ot_min || 0;
+  
+    const startTime = new Date(0, 0, 0, parseInt(paidHoursHr), parseInt(paidHoursMin));
+    const endTime = new Date(0, 0, 0, parseInt(otHoursHr), parseInt(otHoursMin));
+  
+    console.log('start date ===', startTime);
+    console.log('end date ===', endTime);
+  
+    const totalHours = startTime.getHours() + endTime.getHours();
+    const totalMinutes = startTime.getMinutes() + endTime.getMinutes();
+  
+    const carryOverHours = Math.floor(totalMinutes / 60);
+    const remainingMinutes = totalMinutes % 60;
+  
+    const totalPaidHours = `${totalHours + carryOverHours} H ${remainingMinutes} M`;
+  
+    setTotalPaidHours(totalPaidHours);
+  };
   const handlePaidHoursHrChange = (selectedOption) => {
-    setPaidHours({
-      ...paidHours,
-      paid_hours_hr: selectedOption.value,
+    console.log('Selected Option:', selectedOption);
+  
+    setSelectedPaidHours({
+      ...selectedPaidHours,
+      paid_hours_hr: selectedOption,
     });
   };
-
+  
+  console.log('Updated Selected Paid Hours State:', selectedPaidHours);
+  
   const handlePaidHoursMinChange = (selectedOption) => {
-    setPaidHours({
-      ...paidHours,
-      paid_hours_min: selectedOption.value,
+    setSelectedPaidMinutes({
+      ...selectedPaidMinutes,
+      paid_hours_min: selectedOption,
     });
   };
-
+  
   const handleOTHoursChange = (selectedOption) => {
-    setOT({
-      ...ot,
-      ot_hr: selectedOption.value,
+    setSelectedOtHours({
+      ...selectedOtHours,
+      ot_hr: selectedOption,
     });
   };
-
- 
+  
   const handleOTMinutesChange = (selectedOption) => {
-    setOT({
-      ...ot,
-      ot_min: selectedOption.value,
+    setSelectedOtMinutes({
+      ...selectedOtMinutes,
+      ot_min: selectedOption,
     });
   };
-
- 
- 
+  
+  useEffect(() => {
+    calculateTotalPaidHours();
+  }, [selectedPaidHours,selectedPaidMinutes, selectedOtHours, selectedOtMinutes]);
   
   const hourOptions = Array.from({ length: 24 }, (_, i) => ({
     label: i.toString().padStart(2, "0"),
@@ -111,6 +143,20 @@ const AttendanceEmployeeTable = () => {
     value: i.toString().padStart(2, "0"),
   }));
   
+//  const convertToNumber = (value) => {
+//   return parseInt(value, 10) || 0;
+// };
+
+// Calculate total paid hours function
+// const calculateTotalPaidHours = () => {
+//   const totalHours = convertToNumber(selectedPaidHours.paid_hours_hr) + convertToNumber(selectedOtHours.ot_hr);
+//   const totalMinutes = convertToNumber(selectedPaidHours.paid_hours_min) + convertToNumber(selectedOtHours.ot_min);
+
+//   // Perform conversion if necessary (e.g., handle cases where minutes exceed 60)
+//   // ...
+
+//   return `${totalHours} H ${totalMinutes} M`;
+// };
   const Attendance_data1 = [
     {
       id: 31,
@@ -652,25 +698,25 @@ const AttendanceEmployeeTable = () => {
                     </Col>
                     <Col>
                   
-                     <b className="mt-2 me-1 ms-2">H</b>
+                     <b>H</b>{" "}
                      <Select
                             id="paid_hours_hr"
                             name="paid_hours_hr"
                             placeholder={"00"}
-                            options={hourOptions}
+                            options={hourOptions || []}
                             value={hourOptions.find(
-                              (option) => option.value === paidHours.paid_hours_hr
+                              (option) => option.value === selectedPaidHours.paid_hours_hr
                             )}
                             onChange={handlePaidHoursHrChange}
                           />
-                          <b className="mt-2 me-1 ms-2">M</b>
+                          <b className="mt-1 me-1 ms-1">M</b>
                           <Select
                             id="paid_hours_min"
                             name="paid_hours_min"
                             placeholder={"00"}
                             options={minuteOptions}
                             value={minuteOptions.find(
-                              (option) => option.value === paidHours.paid_hours_min
+                              (option) => option.value === selectedPaidMinutes.paid_hours_min
                             )}
                             onChange={handlePaidHoursMinChange}
                           />
@@ -686,7 +732,7 @@ const AttendanceEmployeeTable = () => {
                     </Col>
                     <Col>
                   
-                     <b className="mt-2 me-1 ms-2">H</b>
+                     <b>H</b> {" "}
                      <Select
                             id="ot_hr"
                             name="ot_hr"
@@ -694,11 +740,11 @@ const AttendanceEmployeeTable = () => {
                             options={hourOptions}
                             value={hourOptions.find(
                               (option) =>
-                                option.value === ot.ot_hr
+                                option.value === selectedOtHours.ot_hr
                             )}
                             onChange={handleOTHoursChange}
                           />
-                          <b className="mt-2 me-1 ms-2">M</b>
+                          <b className="mt-1 me-1 ms-1">M</b>
                           <Select
                             id="ot_min"
                             name="ot_min"
@@ -706,7 +752,7 @@ const AttendanceEmployeeTable = () => {
                             options={minuteOptions}
                             value={minuteOptions.find(
                               (option) =>
-                                option.value === ot.ot_min
+                                option.value === selectedOtMinutes.ot_min
                             )}
                             onChange={handleOTMinutesChange}
                           />
@@ -721,7 +767,7 @@ const AttendanceEmployeeTable = () => {
                       </Label>
                     </Col>
                     <Col>
-                     <Label>{totalPaidHours}</Label>
+                    <span>{totalPaidHours}</span>
                     </Col>
                   </Row>
                 </Col>
