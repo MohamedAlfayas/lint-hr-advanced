@@ -21,6 +21,7 @@ import {
 import { PostApi } from "../../common/api/PostApi";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { toast } from "react-toastify";
+import { EmployeeDisplayInSelect } from "../../common/js/EmployeeDisplayInSelect";
 dayjs.extend(customParseFormat);
 
 const AttendanceFilter = () => {
@@ -135,39 +136,6 @@ const AttendanceFilter = () => {
     dispatch(setLoaderVisible(false));
   };
 
-  const EmployeeDisplayOption = ({ innerProps, label, data }) => (
-    <div {...innerProps}>
-      {data?.profile_url ? (
-        <div className="flex-shrink-0">
-          <img
-            src={data.profile_url}
-            alt=""
-            className="avatar-xs rounded-circle"
-            style={{ objectFit: "cover" }}
-          />
-        </div>
-      ) : (
-        <div
-          className="avatar-xs rounded-circle"
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            background: "#0ab39c",
-          }}
-          data-bs-toggle="tooltip"
-          title={data.fname}
-        >
-          <span className="first_letter" style={{ color: "white" }}>
-            {data.fname.charAt(0)}
-          </span>
-        </div>
-      )}
-
-      {label}
-    </div>
-  );
-
   return (
     <React.Fragment>
       <Card>
@@ -243,7 +211,7 @@ const AttendanceFilter = () => {
                     name="employee_attendance"
                     id="employee_attendance"
                     options={employeeOptions || []}
-                    components={{ Option: EmployeeDisplayOption }}
+                    components={{ Option: EmployeeDisplayInSelect }}
                     placeholder="Select a Employee"
                     value={
                       !!filterKeys?.employee

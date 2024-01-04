@@ -252,6 +252,7 @@ const Employee = () => {
       primary_department_id_list: [],
       branch_id_list: [],
       role_id: 0,
+      reporting_manager_id: 0,
       work_schedule_id: 0,
       profile_timezone: "Asia/Kolkata",
       is_active: true,

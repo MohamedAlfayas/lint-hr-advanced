@@ -50,6 +50,8 @@ import {
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { DatePicker } from "antd";
+import { Api } from "../../common/api/Api";
+import { EmployeeDisplayInSelect } from "../../common/js/EmployeeDisplayInSelect";
 dayjs.extend(customParseFormat);
 
 // Register the plugins
@@ -61,12 +63,15 @@ const EmployeeForm = () => {
   // console.log("fgdf",form_obj);
   const [employeeObj, setEmployeeObj] = useState({});
 
+  const employee_data = GetLocalStorageData("employee");
+  const branch_options = GetLocalStorageData("branch") || [];
   const dep_options = GetLocalStorageData("department") || [];
   const ws_options = GetLocalStorageData("work_schedule") || [];
   const role_id_option = GetLocalStorageData("role") || [];
 
+  const [reportingManagerOptions, setReportingManagerOptions] = useState([]);
+
   const [employeeImage, setEmployeeImage] = useState(null);
-  const [subDepOptions, setSubDeptOptions] = useState(dep_options);
   const [contactCountry, setContactCountry] = useState({
     id: 240,
     flagImg: indflag,
@@ -146,10 +151,6 @@ const EmployeeForm = () => {
       dob: ConvertISODateFormat(form_obj.dob),
       joining_date: ConvertISODateFormat(form_obj.joining_date),
     });
-    let sub_dep_options = dep_options.filter(
-      (obj) => obj.id !== form_obj.primary_department_id
-    );
-    setSubDeptOptions(sub_dep_options);
     setDob(ConvertDateFormat(ConvertISODateFormat(form_obj.dob)));
     setJoinDate(ConvertDateFormat(ConvertISODateFormat(form_obj.joining_date)));
 
@@ -193,30 +194,65 @@ const EmployeeForm = () => {
       reader.readAsDataURL(e.target.files[0]);
     }
   };
-  const [childOptions, setChildOptions] = useState([]);
-  const [selectedOptions, setSelectedOptions] = useState([]);
-  const [subChildOptions, setSubChildOptions] = useState([]);
 
-  const handlePrimaryDepChange = (e) => {
-    let valid_dep_ids = [];
-    let valid_dep_obj = [];
-
-    e.filter((obj) => {
-      if (
-        e.some((otherObj) => otherObj.id === obj.pid) === false ||
-        obj.pid === obj.id
-      ) {
-        valid_dep_ids.push(obj.id);
-        valid_dep_obj.push(obj);
-      }
+  const handleBranchChange = (e) => {
+    let branch_id_list = e.map((d) => d.value);
+    console.log("Branch Change ID List = ", branch_id_list);
+    setEmployeeObj({
+      ...employeeObj,
+      branch_id_list: branch_id_list,
     });
+  };
+
+  const handlePrimaryDepChange = async (e) => {
+    let valid_dep_obj = [];
+    let valid_dep_ids = [];
+
+    for (var i = 0; i < e.length; i++) {
+      var is_child = false;
+      for (var j = 0; j < e.length; j++) {
+        if (i !== j) {
+          if (e[j].child_id_list.includes(e[i].id)) {
+            is_child = true;
+          }
+        }
+      }
+      if (is_child === false) {
+        valid_dep_obj.push(e[i]);
+        valid_dep_ids.push(e[i].id);
+      }
+    }
+
+    console.log("valid_dep_ids = ", valid_dep_ids);
+
+    if (valid_dep_ids.length) {
+      const Api = await PostApi(
+        "employee/get-employee-list-for-reporting-manager/",
+        { dep_id: valid_dep_ids },
+        false
+      );
+      console.log("API RES = ", Api);
+      if (Api.status && Api.status === 200) {
+        const response = Api?.data?.data;
+        console.log("employee id List = ", response);
+        console.log("emp Data = ", employee_data);
+        console.log(
+          "employee Obj = ",
+          employee_data.filter((d) => response.includes(d.id))
+        );
+        setReportingManagerOptions(
+          employee_data.filter((d) => response.includes(d.id))
+        );
+      } else {
+        console.log("ERRR = ", Api?.data?.message);
+      }
+    }
 
     setEmployeeObj({
       ...employeeObj,
       primary_department_id_list: valid_dep_ids,
+      reporting_manager_id: 0,
     });
-
-    setSelectedOptions(valid_dep_obj);
   };
 
   const handleDateChange = (selectedDates, dateStr, instance) => {
@@ -280,9 +316,11 @@ const EmployeeForm = () => {
       role_id: Yup.number()
         .required("Select Role")
         .min(1, "Please Select Role"),
-      primary_department_id: Yup.number()
-        .required("Select Department")
-        .min(1, "Please Select Department"),
+      branch_id_list: Yup.array().min(1, "Please Select Branch"),
+      primary_department_id_list: Yup.array().min(
+        1,
+        "Please Select Department"
+      ),
       work_schedule_id: Yup.number()
         .required("Select Work Schedule")
         .min(1, "Please Select Work Schedule"),
@@ -303,17 +341,17 @@ const EmployeeForm = () => {
         }
       });
 
-      const Api = await PostApi("employee/add-new/", form_data, true);
-      console.log("API RES = ", Api);
-      if (Api.status && Api.status === 200) {
-        employeeObj.id === 0
-          ? dispatch(addEmployee(Api?.data.data))
-          : dispatch(editEmployee(Api?.data?.data));
-        dispatch(toggleRSBView(false));
-        toast.success(Api?.data?.message);
-      } else {
-        toast.error(Api?.data?.message || Api?.data?.detail);
-      }
+      // const Api = await PostApi("employee/add-new/", form_data, true);
+      // console.log("API RES = ", Api);
+      // if (Api.status && Api.status === 200) {
+      //   employeeObj.id === 0
+      //     ? dispatch(addEmployee(Api?.data.data))
+      //     : dispatch(editEmployee(Api?.data?.data));
+      //   dispatch(toggleRSBView(false));
+      //   toast.success(Api?.data?.message);
+      // } else {
+      //   toast.error(Api?.data?.message || Api?.data?.detail);
+      // }
 
       dispatch(setLoaderVisible(false));
     },
@@ -716,6 +754,117 @@ const EmployeeForm = () => {
 
               <Col lg={12}>
                 <div>
+                  <Label htmlFor="branch" className="form-label">
+                    Branch
+                  </Label>
+                  <Select
+                    id="branch"
+                    name="branch"
+                    innerRef={inputRef}
+                    isMulti={true}
+                    options={branch_options || []}
+                    className="basic-multi-select"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.branch_id_list &&
+                          FormikForm.errors.branch_id_list
+                            ? "red !important"
+                            : provided.borderColor,
+                      }),
+                    }}
+                    placeholder={"Select Branch"}
+                    value={
+                      employeeObj?.branch_id_list
+                        ? branch_options.filter((d) =>
+                            (employeeObj?.branch_id_list).includes(d.id)
+                          )
+                        : []
+                    }
+                    onChange={handleBranchChange}
+                    invalid={
+                      FormikForm.touched.branch_id_list &&
+                      FormikForm.errors.branch_id_list
+                        ? true
+                        : false
+                    }
+                  />
+                  {FormikForm.touched.branch_id_list &&
+                  FormikForm.errors.branch_id_list ? (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.branch_id_list}
+                    </div>
+                  ) : null}
+                  {!FormikForm.errors.branch_id_list && (
+                    <div id="passwordHelpBlock" className="form-text mb-3">
+                      Select Branch
+                    </div>
+                  )}
+                </div>
+              </Col>
+
+              <Col lg={12}>
+                <div>
+                  <Label
+                    htmlFor="primary_department_id_list"
+                    className="form-label"
+                  >
+                    Primary Department
+                  </Label>
+                  <Select
+                    id="primary_department_id_list"
+                    name="primary_department_id_list"
+                    innerRef={inputRef}
+                    isMulti={true}
+                    options={dep_options || []}
+                    className="basic-multi-select"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.primary_department_id_list &&
+                          FormikForm.errors.primary_department_id_list
+                            ? "red !important"
+                            : provided.borderColor,
+                      }),
+                    }}
+                    placeholder={"Select Primary Department"}
+                    value={
+                      employeeObj?.primary_department_id_list
+                        ? dep_options.filter((d) =>
+                            (employeeObj?.primary_department_id_list).includes(
+                              d.id
+                            )
+                          )
+                        : []
+                    }
+                    onChange={handlePrimaryDepChange}
+                    invalid={
+                      FormikForm.touched.primary_department_id_list &&
+                      FormikForm.errors.primary_department_id_list
+                        ? true
+                        : false
+                    }
+                  />
+                  {FormikForm.touched.primary_department_id_list &&
+                  FormikForm.errors.primary_department_id_list ? (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.primary_department_id_list}
+                    </div>
+                  ) : null}
+                  {!FormikForm.errors.primary_department_id_list && (
+                    <div id="passwordHelpBlock" className="form-text mb-3">
+                      Select Primary Department
+                    </div>
+                  )}
+                </div>
+              </Col>
+
+              <Col lg={12}>
+                <div>
                   <Label htmlFor="role_id" className="form-label">
                     Role
                   </Label>
@@ -765,53 +914,8 @@ const EmployeeForm = () => {
                   )}
                 </div>
               </Col>
-              <Col lg={12}>
-                <div>
-                  <Label htmlFor="parentDepartment" className="form-label">
-                    Primary Department
-                  </Label>
-                  <Select
-                    id="parentDepartment"
-                    name="primary_department_id"
-                    innerRef={inputRef}
-                    isMulti={true}
-                    options={dep_options || []}
-                    className="basic-multi-select"
-                    styles={{
-                      control: (provided, state) => ({
-                        ...provided,
-                        borderColor:
-                          !state.isFocused &&
-                          FormikForm.touched.primary_department_id &&
-                          FormikForm.errors.primary_department_id
-                            ? "red !important"
-                            : provided.borderColor,
-                      }),
-                    }}
-                    placeholder={"Select Primary Department"}
-                    value={selectedOptions}
-                    onChange={handlePrimaryDepChange}
-                    invalid={
-                      FormikForm.touched.primary_department_id &&
-                      FormikForm.errors.primary_department_id
-                        ? true
-                        : false
-                    }
-                  />
-                  {FormikForm.touched.primary_department_id &&
-                  FormikForm.errors.primary_department_id ? (
-                    <div className="lc_form_error_text">
-                      {FormikForm.errors.primary_department_id}
-                    </div>
-                  ) : null}
-                  {!FormikForm.errors.primary_department_id && (
-                    <div id="passwordHelpBlock" className="form-text mb-3">
-                      Select Role
-                    </div>
-                  )}
-                </div>
-              </Col>
-              {employeeObj.primary_department_id !== 0 ? (
+
+              {/* {employeeObj.primary_department_id !== 0 ? (
                 <Col md={12} lg={12} xxl={12}>
                   <div>
                     <Label htmlFor="isManager" className="form-label">
@@ -860,36 +964,66 @@ const EmployeeForm = () => {
                 </Col>
               ) : (
                 ""
-              )}
+              )}               */}
 
-              {/* <Col lg={12}>
+              <Col lg={12}>
                 <div>
-                  <Label htmlFor="subDepartment" className="form-label">
-                    Sub Department
+                  <Label htmlFor="reporting_manager_id">
+                    Reporting Manager
                   </Label>
                   <Select
-                    isMulti={true}
-                    options={subDepOptions || []}
+                    id="reporting_manager_id"
+                    name="reporting_manager_id"
+                    innerRef={inputRef}
+                    isMulti={false}
+                    options={reportingManagerOptions || []}
+                    components={{ Option: EmployeeDisplayInSelect }}
                     className="basic-multi-select"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.reporting_manager_id &&
+                          FormikForm.errors.reporting_manager_id
+                            ? "red !important"
+                            : provided.borderColor,
+                      }),
+                    }}
                     value={
-                      employeeObj.sub_department_id_list
-                        ? subDepOptions.filter((obj) =>
-                            employeeObj.sub_department_id_list.includes(obj.id)
-                          )
-                        : []
+                      (employeeObj.reporting_manager_id &&
+                        reportingManagerOptions.find(
+                          (e) => e.id === employeeObj.reporting_manager_id
+                        )) ||
+                      []
                     }
-                    onChange={(e) => {
+                    onChange={(e) =>
                       setEmployeeObj({
                         ...employeeObj,
-                        sub_department_id_list: e.map((obj) => obj.id),
-                      });
-                    }}
+                        reporting_manager_id: e.id,
+                      })
+                    }
+                    invalid={
+                      FormikForm.touched.reporting_manager_id &&
+                      FormikForm.errors.reporting_manager_id
+                        ? true
+                        : false
+                    }
                   />
+                  {FormikForm.touched.reporting_manager_id &&
+                  FormikForm.errors.reporting_manager_id ? (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.reporting_manager_id}
+                    </div>
+                  ) : null}
                 </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Select Sub Department
-                </div>
-              </Col>*/}
+                {!FormikForm.errors.reporting_manager_id && (
+                  <div id="passwordHelpBlock" className="form-text mb-3">
+                    Select Reporting Manager
+                  </div>
+                )}
+              </Col>
+
               <Col lg={12}>
                 <div>
                   <Label htmlFor="empWs">Work Schedule</Label>
