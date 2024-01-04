@@ -1846,6 +1846,17 @@ export const attendance_type_options = [
   },
 ];
 
+export const map_radius_options = [
+  { id: 1, label: "10 Meters", value: 10, zoom: 21 },
+  { id: 2, label: "20 Meters", value: 20, zoom: 20 },
+  { id: 3, label: "30 Meters", value: 30, zoom: 19 },
+  { id: 4, label: "50 Meters", value: 50, zoom: 18.5 },
+  { id: 5, label: "100 Meters", value: 100, zoom: 17.5 },
+  { id: 6, label: "200 Meters", value: 200, zoom: 16.5 },
+  { id: 7, label: "300 Meters", value: 300, zoom: 16 },
+  { id: 8, label: "500 Meters", value: 500, zoom: 15.5 },
+];
+
 export const organization_component_name = "organization";
 export const department_component_name = "department";
 export const branch_component_name = "BranchForm";

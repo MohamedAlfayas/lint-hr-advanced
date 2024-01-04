@@ -1,23 +1,60 @@
-import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
+import {
+  Circle,
+  GoogleMap,
+  Marker,
+  useJsApiLoader,
+} from "@react-google-maps/api";
 import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
-import { Col, Input, Label } from "reactstrap";
-
-const containerStyle = {
-  width: "400px",
-  height: "400px",
-};
-
-const center = {
-  lat: -3.745,
-  lng: -38.523,
-};
+import { Col, Input, Label, ListGroup, ListGroupItem, Row } from "reactstrap";
+import { map_radius_options } from "../../common/constant/Constants";
+import Select from "react-select";
 
 function LocationSearch() {
   const [locationText, setLocationText] = useState("");
+  const [mapZoom, setMapZoom] = useState(21);
+
+  const [mapCenter, setMapCenter] = useState({
+    lat: 8.3865046,
+    lng: 77.608336,
+  });
+
+  const [mapCircleOptions, setMapCircleOptions] = useState({
+    strokeColor: "#FF0000",
+    strokeOpacity: 0.3,
+    strokeWeight: 2,
+    fillColor: "#FF0000",
+    fillOpacity: 0.15,
+    clickable: false,
+    draggable: false,
+    editable: false,
+    visible: true,
+    radius: 10,
+    zIndex: 1,
+  });
 
   const [predictions, setPredictions] = useState([]);
   const autocompleteRef = useRef(null);
+
+  const containerStyle = {
+    width: "100%",
+    height: "400px",
+  };
+
+  const formData = {
+    name: "",
+    contact: "",
+    email: "",
+    overview: "",
+    map_add: "",
+    map_radius: "",
+    address: "",
+    country: "",
+    state: "",
+    city: "",
+    pincode: "",
+    timezone: "",
+  };
 
   useEffect(() => {
     const autocomplete = new window.google.maps.places.AutocompleteService();
@@ -47,6 +84,12 @@ function LocationSearch() {
       if (status === "OK") {
         console.log("Selected Place:", place);
         // You can do something with the selected place, e.g., fetch its coordinates.
+
+        setMapCenter({
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng(),
+        });
+        console.log(mapCenter);
       }
     });
 
@@ -64,62 +107,126 @@ function LocationSearch() {
 
   const onLoad = React.useCallback(function callback(map) {
     // This is just an example of getting and using the map instance!!! don't just blindly copy!
-    const bounds = new window.google.maps.LatLngBounds(center);
+    const bounds = new window.google.maps.LatLngBounds(mapCenter);
     map.fitBounds(bounds);
 
     setMap(map);
   }, []);
 
+  const onLoadMarker = (marker) => {
+    console.log("marker: ", marker);
+  };
+
+  const onMarkerDrag = (e) => {
+    console.log("onMarkerDrag: ", e.latLng.lat());
+
+    setMapCenter({
+      lat: e.latLng.lat(),
+      lng: e.latLng.lng(),
+    });
+  };
+
   const onUnmount = React.useCallback(function callback(map) {
     setMap(null);
   }, []);
 
+  const onLoadCircle = (circle) => {
+    console.log("Circle onLoad circle: ", circle);
+  };
+
+  const onUnmountCircle = (circle) => {
+    console.log("Circle onUnmount circle: ", circle);
+  };
+
   return isLoaded ? (
-    <Col lg={12}>
-      <div>
-        <Label htmlFor="branchLocation" className="form-label">
-          Accurate Address
-        </Label>
-        <div className="form-icon right">
-          <Input
-            type="text"
-            className="form-control form-control-icon"
-            id="branchLocation"
-            placeholder="Search an address"
-            onChange={(e) => setLocationText(e.target.value)}
-            value={locationText}
-            ref={autocompleteRef}
-            autoComplete={false}
+    <React.Fragment>
+      <Row className="mt-3 mb-1">
+        <Col lg={9}>
+          <div>
+            <Label htmlFor="branchLocation" className="form-label">
+              Accurate Address
+            </Label>
+            <div className="form-icon right">
+              <Input
+                type="text"
+                className="form-control form-control-icon"
+                id="branchLocation"
+                placeholder="Search an address"
+                onChange={(e) => setLocationText(e.target.value)}
+                value={locationText}
+                ref={autocompleteRef}
+                autoComplete={false}
+              />
+              <i className="ri-map-pin-line"></i>
+            </div>
+            {predictions.length > 0 && (
+              <ListGroup>
+                {predictions.map((prediction) => (
+                  <ListGroupItem
+                    tag="button"
+                    key={prediction.place_id}
+                    onClick={() => handleSelectPrediction(prediction.place_id)}
+                    className="list-group-item-action"
+                  >
+                    <i className="ri-map-pin-user-line align-middle me-2"></i>
+                    {/* <i className="mdi mdi-map-marker-right align-middle me-2"></i> */}
+                    {prediction.description}
+                  </ListGroupItem>
+                ))}
+              </ListGroup>
+            )}
+          </div>
+        </Col>
+        <Col lg={3} className="ps-0 pe-0">
+          <div>
+            <Label htmlFor="map_radius" className="form-label">
+              Radius
+            </Label>
+
+            <Select
+              id="map_radius"
+              name="map_radius"
+              options={map_radius_options || []}
+              className="basic-multi-select"
+              onChange={(e) => {
+                console.log(e);
+                setMapZoom(e.zoom);
+                setMapCircleOptions({ ...mapCircleOptions, radius: e.value });
+              }}
+            />
+          </div>
+        </Col>
+      </Row>
+      <Col lg={12}>
+        {" "}
+        <GoogleMap
+          mapContainerStyle={containerStyle}
+          center={mapCenter}
+          zoom={mapZoom}
+          onLoad={onLoad}
+          onUnmount={onUnmount}
+        >
+          <Marker
+            onLoad={onLoadMarker}
+            onDragEnd={onMarkerDrag}
+            position={mapCenter}
+            draggable={true}
           />
-          <i className="ri-map-pin-line"></i>
-        </div>
-        {predictions.length > 0 && (
-          <ul>
-            {predictions.map((prediction) => (
-              <li
-                key={prediction.place_id}
-                onClick={() => handleSelectPrediction(prediction.place_id)}
-              >
-                {prediction.description}
-              </li>
-            ))}
-          </ul>
-        )}
-        <div id="passwordHelpBlock" className="form-text">
-          Company Overview.
-        </div>
-      </div>
-      <GoogleMap
-        mapContainerStyle={containerStyle}
-        center={center}
-        zoom={10}
-        onLoad={onLoad}
-        onUnmount={onUnmount}
-      >
-        {/* Child components, such as markers, info windows, etc. */}
-        <></>
-      </GoogleMap>
-    </Col>
+          <Circle
+            // optional
+            onLoad={onLoadCircle}
+            // optional
+            onUnmount={onUnmountCircle}
+            // required
+            center={mapCenter}
+            // required
+            options={mapCircleOptions}
+          />
+          {/* Child components, such as markers, info windows, etc. */}
+          <></>
+        </GoogleMap>
+      </Col>
+    </React.Fragment>
   ) : (
     <></>
   );
