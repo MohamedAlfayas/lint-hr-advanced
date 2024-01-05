@@ -517,6 +517,8 @@ const RoleForm = () => {
   };
 
   const handleCheckboxChange = (roleId, element) => {
+    console.log(roleId);
+    console.log(element);
     setCheckboxes((prevCheckboxes) => {
       const updatedCheckboxes = {
         ...prevCheckboxes,
@@ -592,21 +594,25 @@ const RoleForm = () => {
           <Row className="gy-5">
             <Col lg={3} className="border-end">
               <Nav className="flex-column custom-nav nav-pills sticky-top">
+                <div className="mt-1"></div>
                 {rolelist.map((role) => (
                   <NavItem key={role.id}>
                     <NavLink
                       href="#"
                       onClick={() => scrollToSection(role.id)}
-                      style={{
-                        display: "flex",
-                        borderColor:
-                          getCheckedCount(role.id) > 0 ? "#28a745" : "#ccc",
-                      }}
+                      // style={{
+                      //   display: "flex",
+                      //   borderColor:
+                      //     getCheckedCount(role.id) > 0 ? "#28a745" : "#ccc",
+                      // }}
+                      // className={`nav-link ${
+                      //   checkboxes[role.id]?.selected ? "selected" : ""
+                      // }`}
                       className={`nav-link ${
-                        checkboxes[role.id]?.selected ? "selected" : ""
+                        getCheckedCount(role.id) > 0 ? "active done" : ""
                       }`}
                     >
-                      <span className="step-title me-1">
+                      {/* <span className="step-title me-1">
                         <i
                           className={`ri ${
                             getCheckedCount(role.id) > 0
@@ -614,10 +620,14 @@ const RoleForm = () => {
                               : "ri-close-fill text-danger"
                           }`}
                         ></i>{" "}
-                      </span>
+                      </span> */}
 
                       <div>
-                        <h5>{role.Name}</h5>
+                        <span class="step-title me-2">
+                          <i class="ri-close-circle-fill step-icon me-2"></i>
+                          {role.Name}
+                        </span>
+                        {/* <h5>{role.Name}</h5> */}
                       </div>
 
                       <Badge
@@ -673,7 +683,7 @@ const RoleForm = () => {
                 ))}
               </div>
             </Col>
-            <Col lg={12} className="mt-5">
+            <Col lg={12} className="mt-5 ">
               <div className="text-end">
                 <Button color="success" type="submit" className="btn-label">
                   {" "}
