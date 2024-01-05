@@ -154,6 +154,10 @@ const EmployeeForm = () => {
     setDob(ConvertDateFormat(ConvertISODateFormat(form_obj.dob)));
     setJoinDate(ConvertDateFormat(ConvertISODateFormat(form_obj.joining_date)));
 
+    (form_obj?.primary_department_id_list).length
+      ? GetReportingManager(form_obj?.primary_department_id_list)
+      : setReportingManagerOptions([]);
+
     if (
       form_obj.country_code !== "" &&
       form_obj.country_code !== null &&
@@ -204,6 +208,25 @@ const EmployeeForm = () => {
     });
   };
 
+  const GetReportingManager = async (valid_dep_ids) => {
+    const Api = await PostApi(
+      "employee/get-employee-list-for-reporting-manager/",
+      { dep_id: valid_dep_ids },
+      false
+    );
+    console.log("API RES = ", Api);
+    if (Api.status && Api.status === 200) {
+      const response = Api?.data?.data;
+      setReportingManagerOptions(
+        employee_data.filter(
+          (d) => d.id !== form_obj.id && response.includes(d.id)
+        )
+      );
+    } else {
+      console.log("ERRR = ", Api?.data?.message);
+    }
+  };
+
   const handlePrimaryDepChange = async (e) => {
     let valid_dep_obj = [];
     let valid_dep_ids = [];
@@ -226,26 +249,9 @@ const EmployeeForm = () => {
     console.log("valid_dep_ids = ", valid_dep_ids);
 
     if (valid_dep_ids.length) {
-      const Api = await PostApi(
-        "employee/get-employee-list-for-reporting-manager/",
-        { dep_id: valid_dep_ids },
-        false
-      );
-      console.log("API RES = ", Api);
-      if (Api.status && Api.status === 200) {
-        const response = Api?.data?.data;
-        console.log("employee id List = ", response);
-        console.log("emp Data = ", employee_data);
-        console.log(
-          "employee Obj = ",
-          employee_data.filter((d) => response.includes(d.id))
-        );
-        setReportingManagerOptions(
-          employee_data.filter((d) => response.includes(d.id))
-        );
-      } else {
-        console.log("ERRR = ", Api?.data?.message);
-      }
+      GetReportingManager(valid_dep_ids);
+    } else {
+      setReportingManagerOptions([]);
     }
 
     setEmployeeObj({
@@ -299,6 +305,15 @@ const EmployeeForm = () => {
     });
   };
 
+  const handleCFSelectChange = (e, cf_id) => {
+    setEmployeeObj({
+      ...employeeObj,
+      cf_values: [...employeeObj.cf_values].map((item) =>
+        item.id === cf_id ? { ...item, value: e.value } : item
+      ),
+    });
+  };
+
   const FormikForm = useFormik({
     enableReinitialize: true,
     initialValues: employeeObj,
@@ -327,33 +342,44 @@ const EmployeeForm = () => {
     }),
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
-      dispatch(setLoaderVisible(true));
 
-      console.log("emp Obj = ", employeeObj);
-      let form_data = new FormData();
-      employeeImage !== null &&
-        form_data.append("profile", employeeImage, employeeImage.name);
-      Object.entries(employeeObj).map((key, idx) => {
-        if (key[0] === "cf_values") {
-          form_data.append(key[0], JSON.stringify(key[1]));
+      let root_department = dep_options.find((d) => d.is_root === true);
+      let root_department_id = !!root_department && root_department.id;
+
+      if (
+        !(values?.primary_department_id_list).includes(root_department_id) &&
+        values?.reporting_manager_id === 0
+      ) {
+        toast.error("Please Select Reporting Manager");
+      } else {
+        dispatch(setLoaderVisible(true));
+
+        console.log("emp Obj = ", employeeObj);
+        let form_data = new FormData();
+        employeeImage !== null &&
+          form_data.append("profile", employeeImage, employeeImage.name);
+        Object.entries(employeeObj).map((key, idx) => {
+          if (key[0] === "cf_values") {
+            form_data.append(key[0], JSON.stringify(key[1]));
+          } else {
+            form_data.append(key[0], key[1]);
+          }
+        });
+
+        const Api = await PostApi("employee/add-new/", form_data, true);
+        console.log("API RES = ", Api);
+        if (Api.status && Api.status === 200) {
+          employeeObj.id === 0
+            ? dispatch(addEmployee(Api?.data.data))
+            : dispatch(editEmployee(Api?.data?.data));
+          dispatch(toggleRSBView(false));
+          toast.success(Api?.data?.message);
         } else {
-          form_data.append(key[0], key[1]);
+          toast.error(Api?.data?.message || Api?.data?.detail);
         }
-      });
 
-      // const Api = await PostApi("employee/add-new/", form_data, true);
-      // console.log("API RES = ", Api);
-      // if (Api.status && Api.status === 200) {
-      //   employeeObj.id === 0
-      //     ? dispatch(addEmployee(Api?.data.data))
-      //     : dispatch(editEmployee(Api?.data?.data));
-      //   dispatch(toggleRSBView(false));
-      //   toast.success(Api?.data?.message);
-      // } else {
-      //   toast.error(Api?.data?.message || Api?.data?.detail);
-      // }
-
-      dispatch(setLoaderVisible(false));
+        dispatch(setLoaderVisible(false));
+      }
     },
   });
 
@@ -1084,7 +1110,7 @@ const EmployeeForm = () => {
                     className="form-control"
                     id="joining_date"
                     value={dayjs(joining_date, DateFormat)}
-                    format={"DD/MM/YYYY"}
+                    format={DateFormat}
                     allowClear={false}
                     onChange={handleJoinDateChange}
                   />
@@ -1558,6 +1584,12 @@ const EmployeeForm = () => {
                             name={obj.input_name}
                             id={obj.input_name}
                             options={obj.options}
+                            value={
+                              obj.options.find(
+                                (d) => parseInt(d.value) === parseInt(obj.value)
+                              ) || []
+                            }
+                            onChange={(e) => handleCFSelectChange(e, obj.id)}
                             placeholder={`Select ${obj.name}`}
                           />
                         )}
