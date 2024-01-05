@@ -1921,3 +1921,73 @@ export const attendance_report_day_status = [
 
 export const DateFormat = "DD-MM-YYYY";
 export const MonthFormat = "YYYY-MM";
+
+
+
+export const IndiaStates = [
+  { id: 'Andaman and Nicobar Islands', label: 'Andaman and Nicobar Islands', value: 'Andaman and Nicobar Islands' },
+  { id: 'Andhra Pradesh', label: 'Andhra Pradesh', value: 'Andhra Pradesh' },
+  { id: 'Arunachal Pradesh', label: 'Arunachal Pradesh', value: 'Arunachal Pradesh' },
+  { id: 'Assam', label: 'Assam', value: 'Assam' },
+  { id: 'Bihar', label: 'Bihar', value: 'Bihar' },
+  { id: 'Chandigarh', label: 'Chandigarh', value: 'Chandigarh' },
+  { id: 'Chhattisgarh', label: 'Chhattisgarh', value: 'Chhattisgarh' },
+  { id: 'Dadra and Nagar Haveli', label: 'Dadra and Nagar Haveli', value: 'Dadra and Nagar Haveli' },
+  { id: 'Daman and Diu', label: 'Daman and Diu', value: 'Daman and Diu' },
+  { id: 'Delhi', label: 'Delhi', value: 'Delhi' },
+  { id: 'Goa', label: 'Goa', value: 'Goa' },
+  { id: 'Gujarat', label: 'Gujarat', value: 'Gujarat' },
+  { id: 'Haryana', label: 'Haryana', value: 'Haryana' },
+  { id: 'Himachal Pradesh', label: 'Himachal Pradesh', value: 'Himachal Pradesh' },
+  { id: 'Jammu and Kashmir', label: 'Jammu and Kashmir', value: 'Jammu and Kashmir' },
+  { id: 'Jharkhand', label: 'Jharkhand', value: 'Jharkhand' },
+  { id: 'Karnataka', label: 'Karnataka', value: 'Karnataka' },
+  { id: 'Kerala', label: 'Kerala', value: 'Kerala' },
+  { id: 'Lakshadweep', label: 'Lakshadweep', value: 'Lakshadweep' },
+  { id: 'Madhya Pradesh', label: 'Madhya Pradesh', value: 'Madhya Pradesh' },
+  { id: 'Maharashtra', label: 'Maharashtra', value: 'Maharashtra' },
+  { id: 'Manipur', label: 'Manipur', value: 'Manipur' },
+  { id: 'Meghalaya', label: 'Meghalaya', value: 'Meghalaya' },
+  { id: 'Mizoram', label: 'Mizoram', value: 'Mizoram' },
+  { id: 'Nagaland', label: 'Nagaland', value: 'Nagaland' },
+  { id: 'Orissa', label: 'Orissa', value: 'Orissa' },
+  { id: 'Pondicherry', label: 'Pondicherry', value: 'Pondicherry' },
+  { id: 'Punjab', label: 'Punjab', value: 'Punjab' },
+  { id: 'Rajasthan', label: 'Rajasthan', value: 'Rajasthan' },
+  { id: 'Sikkim', label: 'Sikkim', value: 'Sikkim' },
+  { id: 'Tamil Nadu', label: 'Tamil Nadu', value: 'Tamil Nadu' },
+  { id: 'Tripura', label: 'Tripura', value: 'Tripura' },
+  { id: 'Uttar Pradesh', label: 'Uttar Pradesh', value: 'Uttar Pradesh' },
+  { id: 'Uttaranchal', label: 'Uttaranchal', value: 'Uttaranchal' },
+  { id: 'West Bengal', label: 'West Bengal', value: 'West Bengal' }
+]
+
+export const SwitzerlandStates = [
+  { id: 'Aargau', label: 'Aargau', value: 'Aargau' },
+  { id: 'Ausser-Rhoden', label: 'Ausser-Rhoden', value: 'Ausser-Rhoden' },
+  { id: 'Basel-Landschaft', label: 'Basel-Landschaft', value: 'Basel-Landschaft' },
+  { id: 'Basel-Stadt', label: 'Basel-Stadt', value: 'Basel-Stadt' },
+  { id: 'Bern', label: 'Bern', value: 'Bern' },
+  { id: 'Fribourg', label: 'Fribourg', value: 'Fribourg' },
+  { id: 'Geneve', label: 'Geneve', value: 'Geneve' },
+  { id: 'Glarus', label: 'Glarus', value: 'Glarus' },
+  { id: 'Graubunden', label: 'Graubunden', value: 'Graubunden' },
+  { id: 'Inner-Rhoden', label: 'Inner-Rhoden', value: 'Inner-Rhoden' },
+  { id: 'Jura', label: 'Jura', value: 'Jura' },
+  { id: 'Luzern', label: 'Luzern', value: 'Luzern' },
+  { id: 'Neuchatel', label: 'Neuchatel', value: 'Neuchatel' },
+  { id: 'Nidwalden', label: 'Nidwalden', value: 'Nidwalden' },
+  { id: 'Obwalden', label: 'Obwalden', value: 'Obwalden' },
+  { id: 'Sankt Gallen', label: 'Sankt Gallen', value: 'Sankt Gallen' },
+  { id: 'Schaffhausen', label: 'Schaffhausen', value: 'Schaffhausen' },
+  { id: 'Schwyz', label: 'Schwyz', value: 'Schwyz' },
+  { id: 'Solothurn', label: 'Solothurn', value: 'Solothurn' },
+  { id: 'Thurgau', label: 'Thurgau', value: 'Thurgau' },
+  { id: 'Ticino', label: 'Ticino', value: 'Ticino' },
+  { id: 'Uri', label: 'Uri', value: 'Uri' },
+  { id: 'Valais', label: 'Valais', value: 'Valais' },
+  { id: 'Vaud', label: 'Vaud', value: 'Vaud' },
+  { id: 'Zug', label: 'Zug', value: 'Zug' },
+  { id: 'Zurich', label: 'Zurich', value: 'Zurich' }
+]
+

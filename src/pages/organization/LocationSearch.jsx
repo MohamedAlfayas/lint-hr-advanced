@@ -56,24 +56,30 @@ function LocationSearch() {
     timezone: "",
   };
 
-  useEffect(() => {
-    const autocomplete = new window.google.maps.places.AutocompleteService();
+  const handleLocationChange = (e) => {
+    const { value } = e.target;
 
-    if (locationText && autocomplete) {
-      autocomplete.getPlacePredictions(
-        { input: locationText },
-        (predictions, status) => {
-          if (status === "OK") {
-            setPredictions(predictions);
-          } else {
-            setPredictions([]);
+    setLocationText(value);
+
+    if (value.trim().length) {
+      const autocomplete = new window.google.maps.places.AutocompleteService();
+
+      if (autocomplete) {
+        autocomplete.getPlacePredictions(
+          { input: value },
+          (predictions, status) => {
+            if (status === "OK") {
+              setPredictions(predictions);
+            } else {
+              setPredictions([]);
+            }
           }
-        }
-      );
-    } else {
-      setPredictions([]);
+        );
+      } else {
+        setPredictions([]);
+      }
     }
-  }, [locationText]);
+  };
 
   const handleSelectPrediction = (placeId) => {
     const placesService = new window.google.maps.places.PlacesService(
@@ -83,6 +89,7 @@ function LocationSearch() {
     placesService.getDetails({ placeId }, (place, status) => {
       if (status === "OK") {
         console.log("Selected Place:", place);
+        setLocationText(place?.name);
         // You can do something with the selected place, e.g., fetch its coordinates.
 
         setMapCenter({
@@ -152,7 +159,7 @@ function LocationSearch() {
                 className="form-control form-control-icon"
                 id="branchLocation"
                 placeholder="Search an address"
-                onChange={(e) => setLocationText(e.target.value)}
+                onChange={handleLocationChange}
                 value={locationText}
                 ref={autocompleteRef}
                 autoComplete={false}

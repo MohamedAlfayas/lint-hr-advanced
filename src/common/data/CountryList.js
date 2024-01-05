@@ -252,6 +252,7 @@ import yt from "../../assets/images/flags/yt.svg"
 import za from "../../assets/images/flags/za.svg"
 import zm from "../../assets/images/flags/zm.svg"
 import zw from "../../assets/images/flags/zw.svg"
+import { IndiaStates, SwitzerlandStates } from "../constant/Constants"
 
 const CountryList = [
     {
@@ -630,9 +631,7 @@ const CountryList = [
         countryCode: "+41"
         , show: true,
         timezone: "Central European Time",
-        states: [
-            "Aargau", "Ausser-Rhoden", "Basel-Landschaft", "Basel-Stadt", "Bern", "Fribourg", "Geneve", "Glarus", "Graubunden", "Inner-Rhoden", "Jura", "Luzern", "Neuchatel", "Nidwalden", "Obwalden", "Sankt Gallen", "Schaffhausen", "Schwyz", "Solothurn", "Thurgau", "Ticino", "Uri", "Valais", "Vaud", "Zug", "Zurich"
-        ],
+        states: SwitzerlandStates,
     },
     {
         id: 43,
@@ -1262,9 +1261,7 @@ const CountryList = [
         countryCode: "+91"
         , show: true,
         timezone: "Asia/Kolkata",
-        states: [
-            "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli", "Daman and Diu", "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka", "Kerala", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Orissa", "Pondicherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Tripura", "Uttar Pradesh", "Uttaranchal", "West Bengal"
-        ],
+        states: IndiaStates,
     },
     {
         id: 113,

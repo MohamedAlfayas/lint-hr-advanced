@@ -17,6 +17,7 @@ import {
   Row,
   UncontrolledDropdown,
 } from "reactstrap";
+import Select from "react-select";
 import {
   gender_options,
   form_default_input_types,
@@ -24,6 +25,7 @@ import {
   timzone_options,
   form_date_type,
   DateFormat,
+  organization_component_name,
 } from "../../common/constant/Constants";
 import {
   ConvertDateFormat,
@@ -55,30 +57,29 @@ import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { GetCustomField } from "../../common/js/GetCustomField";
+import {
+  CountryCodeDisplayInSelect,
+  CountryCodeDisplayStyles,
+} from "../../common/js/CountryCodeDisplayInSelect";
 // import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 
 const OrgInfoTab = () => {
-  const [stateList, setStateList] = useState([]);
-  const [contactCountry, setContactCountry] = useState({
-    id: 240,
-    flagImg: indflag,
-    countryName: "India",
-    countryCode: "+91",
-  });
+  const [stateListOptions, setStateListOptions] = useState([]);
 
-  const [selectedCountry, setSelectedCountry] = useState({});
-
-  const [dropdownOpen3, setDropdownOpen3] = useState(false);
-  const [dropdownOpen4, setDropdownOpen4] = useState(false);
-  const [stateDD, setStateDD] = useState(false);
-
-  const toggle3 = () => setDropdownOpen3((prevState) => !prevState);
-  const toggle4 = () => setDropdownOpen4((prevState) => !prevState);
-  const stateToggle = () => setStateDD((prevState) => !prevState);
+  const CountryListOptions = CountryList.filter((c) => c.show === true).map(
+    (d) => {
+      return {
+        ...d,
+        label: d.countryName,
+        value: d.countryName,
+      };
+    }
+  );
 
   // Custom Field Option
 
-  const CustomFieldsForThisForm = GetCustomField("organization") || [];
+  const CustomFieldsForThisForm =
+    GetCustomField(organization_component_name) || [];
 
   // Set Empty Data To form
 
@@ -93,12 +94,12 @@ const OrgInfoTab = () => {
       address: "",
       city: "",
       pincode: "",
+      country: "",
+      state: "",
       cf_values: CustomFieldsForThisForm || [],
     };
   }, []);
 
-  const [country, setCountry] = useState("");
-  const [state, setState] = useState("");
   const [timezone, setTimeZone] = useState("");
   const [profileData, setProfileData] = useState(initialData);
 
@@ -108,8 +109,9 @@ const OrgInfoTab = () => {
       url: "/company/get-profile/",
     })
       .then((res) => {
-        console.log("res = ", res);
-        let thisCFValues = [...res?.data?.data?.cf_values];
+        const response = res?.data?.data;
+        console.log("org res = ", response);
+        let thisCFValues = [...response?.cf_values];
         let cf = [];
         if (thisCFValues && thisCFValues.length) {
           cf = CustomFieldsForThisForm.map((obj) => {
@@ -122,28 +124,17 @@ const OrgInfoTab = () => {
         } else {
           cf = CustomFieldsForThisForm;
         }
-        console.log("CF === ", cf);
-        setCountry(res?.data?.data?.country);
-        setProfileData({ ...res?.data?.data, cf_values: cf });
-        setState(res?.data?.data?.state);
+        setProfileData({ ...response, cf_values: cf });
+
+        setStateListOptions(
+          CountryListOptions.find((d) => d.value === response?.country)
+            .states || []
+        );
       })
       .catch((err) => {
         console.log(err);
       });
   }, []);
-
-  useEffect(() => {
-    if (country !== "" && country !== undefined && country !== null) {
-      let CountryObj = CountryList.find((obj) => obj.countryName === country);
-      setSelectedCountry(CountryObj);
-      setContactCountry(CountryObj);
-      setStateList(CountryObj?.states);
-      setTimeZone(CountryObj?.timezone);
-      if (changeId === 0) {
-        setState("");
-      }
-    }
-  }, [country]);
 
   const updateProfileData = (name, value) => {
     setProfileData({
@@ -151,9 +142,35 @@ const OrgInfoTab = () => {
       [name]: value,
     });
   };
-  console.log("hhh", profileData);
 
-  const [changeId, setChangeId] = useState(1);
+  const handleCountryCodeChange = (e) => {
+    console.log("COUntry Code = ", e);
+
+    setProfileData({
+      ...profileData,
+      country: e.value,
+      country_code: e.countryCode,
+    });
+
+    setStateListOptions(
+      CountryListOptions.find((d) => d.value === e.value).states || []
+    );
+  };
+
+  const handleCountryChange = (e) => {
+    console.log("Country Change = ", e);
+
+    setProfileData({
+      ...profileData,
+      country: e.value,
+      country_code: e.countryCode,
+      state: "",
+    });
+
+    setStateListOptions(
+      CountryListOptions.find((d) => d.value === e.value).states || []
+    );
+  };
 
   const [darkLogoFile, setDarkLogoFile] = useState(null);
   const [lightLogoFile, setLightLogoFile] = useState(null);
@@ -203,12 +220,8 @@ const OrgInfoTab = () => {
 
   const submitProfileForm = (e) => {
     e.preventDefault();
-    let tempKey = ["country", "state", "timezone"];
-    tempKey.map((obj) => {
-      if (obj in profileData) {
-        delete profileData.obj;
-      }
-    });
+
+    console.log("company Profile form submit Obj = ", profileData);
 
     let form_data = new FormData();
     darkLogoFile !== null &&
@@ -223,10 +236,6 @@ const OrgInfoTab = () => {
         form_data.append(key[0], key[1]);
       }
     });
-
-    form_data.append("country", country);
-    form_data.append("timezone", timezone);
-    form_data.append("state", state);
 
     Api({
       method: "POST",
@@ -288,87 +297,47 @@ const OrgInfoTab = () => {
 
                       <Col xxl={8} md={7}>
                         <div>
-                          <Label>Contact Number*</Label>
-                          <Dropdown
-                            className="input-group"
-                            isOpen={dropdownOpen4}
-                            toggle={toggle4}
-                          >
-                            <DropdownToggle
-                              as="button"
-                              className="btn btn-light border arrow-none"
-                            >
-                              <img
-                                src={contactCountry.flagImg}
-                                alt="country flag"
-                                className="options-flagimg"
-                                height="20"
+                          <Label htmlFor="country_code">Contact Number*</Label>
+                          <Row>
+                            <Col md={3}>
+                              <Select
+                                id="country_code"
+                                name="country_code"
+                                isMulti={false}
+                                options={CountryListOptions || []}
+                                styles={CountryCodeDisplayStyles}
+                                components={{
+                                  Option: CountryCodeDisplayInSelect,
+                                  SingleValue: CountryCodeDisplayInSelect,
+                                }}
+                                className="basic-multi-select"
+                                value={
+                                  profileData?.country_code !== ""
+                                    ? CountryListOptions.find(
+                                        (d) =>
+                                          d.countryCode ===
+                                          profileData.country_code
+                                      )
+                                    : []
+                                }
+                                onChange={handleCountryCodeChange}
                               />
-                              <span className="countrylist-codeno text-muted">
-                                {contactCountry.countryCode}
-                              </span>
-                            </DropdownToggle>
-                            <input
-                              type="number"
-                              className="form-control rounded-end flag-input"
-                              placeholder="Enter number"
-                              value={profileData.contact_number || ""}
-                              onChange={(e) =>
-                                updateProfileData(
-                                  "contact_number",
-                                  e.target.value
-                                )
-                              }
-                            />
-                            <DropdownMenu
-                              as="ul"
-                              className="list-unstyled w-100 dropdown-menu-list mb-0"
-                            >
-                              <SimpleBar
-                                style={{ maxHeight: "220px" }}
-                                className="px-3"
-                              >
-                                {(
-                                  CountryList.filter((obj) => obj.show).sort(
-                                    (a, b) =>
-                                      a.countryName.localeCompare(b.countryName)
-                                  ) || []
-                                ).map((item, key) => (
-                                  <DropdownItem
-                                    as="li"
-                                    onClick={() => {
-                                      updateProfileData(
-                                        "country_code",
-                                        item.countryCode
-                                      );
-                                      setContactCountry(item);
-                                    }}
-                                    key={key}
-                                    className="dropdown-item d-flex"
-                                  >
-                                    <div className="flex-shrink-0 me-2">
-                                      <img
-                                        src={item.flagImg}
-                                        alt="country flag"
-                                        className="options-flagimg"
-                                        height="20"
-                                      />
-                                    </div>
-                                    <div className="flex-grow-1">
-                                      <div className="d-flex">
-                                        <div className="country-name me-1">
-                                          {item.countryName}
-                                        </div>
-                                        <span className="countrylist-codeno text-muted">
-                                          {item.countryCode}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </DropdownItem>
-                                ))}
-                              </SimpleBar>
-                            </DropdownMenu>
-                          </Dropdown>
+                            </Col>
+                            <Col md={9}>
+                              <Input
+                                type="number"
+                                className="form-control rounded-end flag-input"
+                                placeholder="Enter number"
+                                value={profileData.contact_number || ""}
+                                onChange={(e) =>
+                                  updateProfileData(
+                                    "contact_number",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </Col>
+                          </Row>
 
                           <div id="passwordHelpBlock" className="form-text">
                             Enter Your Contact number with country code.
@@ -451,66 +420,24 @@ const OrgInfoTab = () => {
 
                       <Col xxl={8} md={6}>
                         <div>
-                          <Label
-                            htmlFor="exampleFormControlTextarea5"
-                            className="form-label"
-                          >
+                          <Label htmlFor="country" className="form-label">
                             Country
                           </Label>
-                          <Dropdown isOpen={dropdownOpen3} toggle={toggle3}>
-                            <DropdownToggle
-                              tag="div"
-                              className="form-control rounded-end flag-input form-select"
-                              style={{ cursor: "pointer" }}
-                            >
-                              {selectedCountry.countryName || "Select country"}
-                            </DropdownToggle>
-                            <DropdownMenu
-                              as="ul"
-                              className="list-unstyled w-100 dropdown-menu-list mb-0"
-                            >
-                              <SimpleBar
-                                style={{ maxHeight: "220px" }}
-                                className="px-3"
-                              >
-                                {(
-                                  CountryList.filter((obj) => obj.show).sort(
-                                    (a, b) =>
-                                      a.countryName.localeCompare(b.countryName)
-                                  ) || []
-                                ).map((item, key) => (
-                                  <DropdownItem
-                                    as="li"
-                                    onClick={() => {
-                                      setChangeId(0);
-                                      setCountry(item.countryName);
-                                    }}
-                                    key={key}
-                                    className="dropdown-item d-flex"
-                                  >
-                                    <div className="flex-shrink-0 me-2">
-                                      <img
-                                        src={item.flagImg}
-                                        alt="country flag"
-                                        className="options-flagimg"
-                                        height="20"
-                                      />
-                                    </div>
-                                    <div className="flex-grow-1">
-                                      <div className="d-flex">
-                                        <div className="country-name me-1">
-                                          {item.countryName}
-                                        </div>
-                                        <span className="countrylist-codeno text-muted">
-                                          {item.countryCode}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </DropdownItem>
-                                ))}
-                              </SimpleBar>
-                            </DropdownMenu>
-                          </Dropdown>
+                          <Select
+                            id="country"
+                            name="country"
+                            isMulti={false}
+                            options={CountryListOptions || []}
+                            className="basic-multi-select"
+                            value={
+                              profileData?.country !== ""
+                                ? CountryListOptions.find(
+                                    (d) => d.value === profileData.country
+                                  )
+                                : []
+                            }
+                            onChange={handleCountryChange}
+                          />
                           <div id="passwordHelpBlock" className="form-text">
                             Select Country.
                           </div>
@@ -519,48 +446,24 @@ const OrgInfoTab = () => {
 
                       <Col xxl={8} md={6}>
                         <div>
-                          <Label
-                            htmlFor="exampleFormControlTextarea5"
-                            className="form-label"
-                          >
+                          <Label htmlFor="state" className="form-label">
                             State
                           </Label>
-                          <Dropdown isOpen={stateDD} toggle={stateToggle}>
-                            <DropdownToggle
-                              tag="div"
-                              className="form-control rounded-end flag-input form-select"
-                              style={{ cursor: "pointer" }}
-                            >
-                              {stateList.find((obj) => obj === state) ||
-                                "Select State"}
-                            </DropdownToggle>
-                            <DropdownMenu
-                              as="ul"
-                              className="list-unstyled w-100 dropdown-menu-list mb-0"
-                            >
-                              <SimpleBar
-                                style={{ maxHeight: "220px" }}
-                                className="px-3"
-                              >
-                                {(stateList || []).map((item, key) => (
-                                  <DropdownItem
-                                    as="li"
-                                    onClick={() => setState(item)}
-                                    key={key}
-                                    className="dropdown-item d-flex"
-                                  >
-                                    <div className="flex-grow-1">
-                                      <div className="d-flex">
-                                        <div className="country-name me-1">
-                                          {item}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </DropdownItem>
-                                ))}
-                              </SimpleBar>
-                            </DropdownMenu>
-                          </Dropdown>
+                          <Select
+                            id="state"
+                            name="state"
+                            isMulti={false}
+                            options={stateListOptions || []}
+                            className="basic-multi-select"
+                            value={
+                              stateListOptions.find(
+                                (d) => d.value === profileData.state
+                              ) || []
+                            }
+                            onChange={(e) =>
+                              setProfileData({ ...profileData, state: e.value })
+                            }
+                          />
                           <div id="passwordHelpBlock" className="form-text">
                             Select State.
                           </div>
@@ -623,20 +526,27 @@ const OrgInfoTab = () => {
 
                       <Col xxl={8} md={6}>
                         <div>
-                          <Label
-                            htmlFor="exampleFormControlTextarea5"
-                            className="form-label"
-                          >
+                          <Label htmlFor="timezone" className="form-label">
                             Time Zone
                           </Label>
                           <div className="form-icon right">
-                            <Input
-                              type="text"
-                              className="form-control form-control-icon"
+                            <Select
+                              name="timezone"
                               id="timezone"
-                              placeholder="Asia/Kolkata"
-                              value={timezone || ""}
-                              onChange={(e) => setTimeZone(e.target.value)}
+                              value={
+                                profileData.timezone &&
+                                timzone_options.find(
+                                  (e) => e.value === profileData.timezone
+                                )
+                              }
+                              onChange={(e) =>
+                                setProfileData({
+                                  ...profileData,
+                                  timezone: e.value,
+                                })
+                              }
+                              options={timzone_options}
+                              placeholder="Select a time zone"
                             />
                             <i className="ri-time-line"></i>
                           </div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 
 import {
@@ -20,6 +20,8 @@ import {
   toggleRSBView,
 } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { Link } from "react-router-dom";
+import { GetCustomField } from "../../common/js/GetCustomField";
+import { organization_component_name } from "../../common/constant/Constants";
 
 // const { Column, HeaderCell, Cell } = Table;
 
@@ -346,16 +348,53 @@ const Branch = () => {
     },
   ]);
 
-  const handleBranchEdit = () => {
+  // Custom Field Option
+
+  const CustomFieldsForThisForm = GetCustomField("organization") || [];
+
+  // Set Empty Data To form
+
+  const initialFormObj = useMemo(() => {
+    return {
+      id: "0",
+      website: "",
+      contact_number: "",
+      country_code: "+91",
+      contact_email: "",
+      about: "",
+      address: "",
+      city: "",
+      pincode: "",
+      cf_values: CustomFieldsForThisForm || [],
+    };
+  }, []);
+
+  const handleBranchEdit = (id, obj) => {
+    let FormObj = {};
+
+    if (id === 0) {
+      FormObj = initialFormObj;
+    } else {
+      let thisCFValues = "cf_values" in obj ? [...obj?.cf_values] : [];
+      let cf = [];
+      let CustomFieldsForThisForm = GetCustomField(organization_component_name);
+      if (thisCFValues && thisCFValues.length) {
+        cf = CustomFieldsForThisForm.map((obj) => {
+          return {
+            ...obj,
+            value:
+              thisCFValues.find((t) => t.id === obj.id)?.value || obj.value,
+          };
+        });
+      } else {
+        cf = CustomFieldsForThisForm;
+      }
+
+      FormObj = { ...obj, cf_values: cf };
+    }
+
     dispatch(setFormTitle("Branch Form"));
-    dispatch(
-      setFormObj({
-        id: "0",
-        name: "",
-        total_branches: 1,
-        description: "",
-      })
-    );
+    dispatch(setFormObj(FormObj));
     dispatch(setFormWidthPercentage("35%"));
     dispatch(setComponentToShow("BranchForm"));
     dispatch(toggleRSBView(true));

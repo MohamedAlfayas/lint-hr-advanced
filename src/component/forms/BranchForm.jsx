@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Button,
@@ -17,6 +17,7 @@ import {
   Row,
   UncontrolledDropdown,
 } from "reactstrap";
+import Select from "react-select";
 import {
   gender_options,
   form_default_input_types,
@@ -43,10 +44,10 @@ import axios from "axios";
 import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
-import { GetCustomField } from "../../common/js/GetCustomField";
 import { GoogleMap, Marker } from "@react-google-maps/api";
 import LocationSearch from "../../pages/organization/LocationSearch";
 import LocationSearch2 from "../../pages/organization/LocationSearch2";
+import { useSelector } from "react-redux";
 // import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 
 const BranchForm = () => {
@@ -58,6 +59,24 @@ const BranchForm = () => {
     countryCode: "+91",
   });
 
+  const CountryListOptions = CountryList.map((d) => {
+    return {
+      ...d,
+      label: d.countryName,
+      value: d.countryName,
+    };
+  });
+
+  console.log("CountryListOptions = ", CountryListOptions);
+
+  const inputRef = useRef();
+
+  const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+
+  console.log("Branch Form Obj = ", form_obj);
+
+  const [branchObj, setBranchObj] = useState({});
+
   const [selectedCountry, setSelectedCountry] = useState({});
 
   const [dropdownOpen3, setDropdownOpen3] = useState(false);
@@ -68,101 +87,19 @@ const BranchForm = () => {
   const toggle4 = () => setDropdownOpen4((prevState) => !prevState);
   const stateToggle = () => setStateDD((prevState) => !prevState);
 
-  // Custom Field Option
-
-  const CustomFieldsForThisForm = GetCustomField("organization") || [];
-
-  // Set Empty Data To form
-
-  const initialData = useMemo(() => {
-    return {
-      id: "0",
-      website: "",
-      contact_number: "",
-      country_code: "+91",
-      contact_email: "",
-      about: "",
-      address: "",
-      city: "",
-      pincode: "",
-      cf_values: CustomFieldsForThisForm || [],
-    };
-  }, []);
-
   const [country, setCountry] = useState("");
   const [state, setState] = useState("");
   const [timezone, setTimeZone] = useState("");
-  const [profileData, setProfileData] = useState(initialData);
 
-  useEffect(() => {
-    Api({
-      method: "GET",
-      url: "/company/get-profile/",
-    })
-      .then((res) => {
-        console.log("res = ", res);
-        let thisCFValues = [...res?.data?.data?.cf_values];
-        let cf = [];
-        if (thisCFValues && thisCFValues.length) {
-          cf = CustomFieldsForThisForm.map((obj) => {
-            return {
-              ...obj,
-              value:
-                thisCFValues.find((t) => t.id === obj.id)?.value || obj.value,
-            };
-          });
-        } else {
-          cf = CustomFieldsForThisForm;
-        }
-        console.log("CF === ", cf);
-        setCountry(res?.data?.data?.country);
-        setProfileData({ ...res?.data?.data, cf_values: cf });
-        setState(res?.data?.data?.state);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, []);
-
-  useEffect(() => {
-    if (country !== "" && country !== undefined && country !== null) {
-      let CountryObj = CountryList.find((obj) => obj.countryName === country);
-      setSelectedCountry(CountryObj);
-      setContactCountry(CountryObj);
-      setStateList(CountryObj?.states);
-      setTimeZone(CountryObj?.timezone);
-      if (changeId === 0) {
-        setState("");
-      }
-    }
-  }, [country]);
-
-  const updateProfileData = (name, value) => {
-    setProfileData({
-      ...profileData,
+  const updateBranchObj = (name, value) => {
+    setBranchObj({
+      ...branchObj,
       [name]: value,
     });
   };
-  console.log("hhh", profileData);
 
   const [changeId, setChangeId] = useState(1);
 
-  const [darkLogoFile, setDarkLogoFile] = useState(null);
-  const [lightLogoFile, setLightLogoFile] = useState(null);
-
-  function handleAcceptedFiles(file, logo_type) {
-    let chosenFile = Object.assign(file[0], {
-      preview: URL.createObjectURL(file[0]),
-      formattedSize: formatBytes(file[0].size),
-    });
-    logo_type === "dark"
-      ? setDarkLogoFile(chosenFile)
-      : setLightLogoFile(chosenFile);
-  }
-
-  /**
-   * Formats the size
-   */
   function formatBytes(bytes, decimals = 2) {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -175,17 +112,18 @@ const BranchForm = () => {
 
   const handleCFInputChange = (e, cf_id) => {
     const newPD = {
-      ...profileData,
-      cf_values: [...profileData.cf_values].map((item) =>
+      ...branchObj,
+      cf_values: [...branchObj.cf_values].map((item) =>
         item.id === cf_id ? { ...item, value: e.target.value } : item
       ),
     };
-    setProfileData(newPD);
+    setBranchObj(newPD);
   };
+
   const handleCFDateChange = (e, dateStr, cf_id) => {
-    setProfileData({
-      ...profileData,
-      cf_values: [...profileData.cf_values].map((item) =>
+    setBranchObj({
+      ...branchObj,
+      cf_values: [...branchObj.cf_values].map((item) =>
         item.id === cf_id
           ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
           : item
@@ -193,49 +131,17 @@ const BranchForm = () => {
     });
   };
 
+  const handleCFSelectChange = (e, cf_id) => {
+    setBranchObj({
+      ...branchObj,
+      cf_values: [...branchObj.cf_values].map((item) =>
+        item.id === cf_id ? { ...item, value: e.value } : item
+      ),
+    });
+  };
+
   const submitProfileForm = (e) => {
     e.preventDefault();
-    let tempKey = ["country", "state", "timezone"];
-    tempKey.map((obj) => {
-      if (obj in profileData) {
-        delete profileData.obj;
-      }
-    });
-
-    let form_data = new FormData();
-    darkLogoFile !== null &&
-      form_data.append("dark_logo", darkLogoFile, darkLogoFile.name);
-    lightLogoFile !== null &&
-      form_data.append("light_logo", lightLogoFile, lightLogoFile.name);
-
-    Object.entries(profileData).map((key, idx) => {
-      if (key[0] === "cf_values") {
-        form_data.append(key[0], JSON.stringify(key[1]));
-      } else {
-        form_data.append(key[0], key[1]);
-      }
-    });
-
-    form_data.append("country", country);
-    form_data.append("timezone", timezone);
-    form_data.append("state", state);
-
-    Api({
-      method: "POST",
-      url: "/company/save-profile/",
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      data: form_data,
-    })
-      .then((res) => {
-        console.log("RES ==== ", res);
-        toast.success(res?.data?.message);
-      })
-      .catch((err) => {
-        console.log("ERRR === ", err);
-        toast.error(err?.response?.data?.message);
-      });
   };
 
   return (
@@ -292,9 +198,9 @@ const BranchForm = () => {
                           type="number"
                           className="form-control rounded-end flag-input"
                           placeholder="Enter number"
-                          value={profileData.contact_number || ""}
+                          value={branchObj.contact_number || ""}
                           onChange={(e) =>
-                            updateProfileData("contact_number", e.target.value)
+                            updateBranchObj("contact_number", e.target.value)
                           }
                         />
                         <DropdownMenu
@@ -314,7 +220,7 @@ const BranchForm = () => {
                               <DropdownItem
                                 as="li"
                                 onClick={() => {
-                                  updateProfileData(
+                                  updateBranchObj(
                                     "country_code",
                                     item.countryCode
                                   );
@@ -364,9 +270,9 @@ const BranchForm = () => {
                           className="form-control form-control-icon"
                           id="companyemail"
                           placeholder="user@company.com"
-                          value={profileData.contact_email || ""}
+                          value={branchObj.contact_email || ""}
                           onChange={(e) =>
-                            updateProfileData("contact_email", e.target.value)
+                            updateBranchObj("contact_email", e.target.value)
                           }
                         />
                         <i className="ri-mail-line"></i>
@@ -386,9 +292,9 @@ const BranchForm = () => {
                         className="form-control"
                         id="branchOverview"
                         rows="3"
-                        value={profileData.about || ""}
+                        value={branchObj.about || ""}
                         onChange={(e) =>
-                          updateProfileData("about", e.target.value)
+                          updateBranchObj("about", e.target.value)
                         }
                       ></textarea>
                       <div id="passwordHelpBlock" className="form-text">
@@ -411,9 +317,9 @@ const BranchForm = () => {
                         className="form-control"
                         id="exampleFormControlTextarea5"
                         rows="2"
-                        value={profileData.address || ""}
+                        value={branchObj.address || ""}
                         onChange={(e) =>
-                          updateProfileData("address", e.target.value)
+                          updateBranchObj("address", e.target.value)
                         }
                       ></textarea>
                       <div id="passwordHelpBlock" className="form-text">
@@ -424,10 +330,7 @@ const BranchForm = () => {
 
                   <Col lg={12}>
                     <div>
-                      <Label
-                        htmlFor="exampleFormControlTextarea5"
-                        className="form-label"
-                      >
+                      <Label htmlFor="country" className="form-label">
                         Country
                       </Label>
                       <Dropdown isOpen={dropdownOpen3} toggle={toggle3}>
@@ -484,6 +387,16 @@ const BranchForm = () => {
                           </SimpleBar>
                         </DropdownMenu>
                       </Dropdown>
+
+                      <Select
+                        id="country"
+                        name="country"
+                        innerRef={inputRef}
+                        isMulti={false}
+                        options={CountryList || []}
+                        className="basic-multi-select"
+                      />
+
                       <div id="passwordHelpBlock" className="form-text">
                         Select Country.
                       </div>
@@ -498,7 +411,7 @@ const BranchForm = () => {
                       >
                         State
                       </Label>
-                      <Dropdown isOpen={stateDD} toggle={stateToggle}>
+                      {/* <Dropdown isOpen={stateDD} toggle={stateToggle}>
                         <DropdownToggle
                           tag="div"
                           className="form-control rounded-end flag-input form-select"
@@ -533,7 +446,7 @@ const BranchForm = () => {
                             ))}
                           </SimpleBar>
                         </DropdownMenu>
-                      </Dropdown>
+                      </Dropdown> */}
                       <div id="passwordHelpBlock" className="form-text">
                         Select State.
                       </div>
@@ -554,9 +467,9 @@ const BranchForm = () => {
                           className="form-control form-control-icon"
                           id="companycity"
                           placeholder="Chennai"
-                          value={profileData.city || ""}
+                          value={branchObj.city || ""}
                           onChange={(e) =>
-                            updateProfileData("city", e.target.value)
+                            updateBranchObj("city", e.target.value)
                           }
                         />
                         <i className="ri-mail-line"></i>
@@ -581,9 +494,9 @@ const BranchForm = () => {
                           className="form-control form-control-icon"
                           id="companypincode"
                           placeholder="666666"
-                          value={profileData.pincode || ""}
+                          value={branchObj.pincode || ""}
                           onChange={(e) =>
-                            updateProfileData("pincode", e.target.value)
+                            updateBranchObj("pincode", e.target.value)
                           }
                         />
                         <i className="ri-mail-line"></i>
@@ -619,8 +532,8 @@ const BranchForm = () => {
                     </div>
                   </Col>
 
-                  {profileData.cf_values && profileData.cf_values.length
-                    ? profileData.cf_values.map((obj) => (
+                  {branchObj.cf_values && branchObj.cf_values.length
+                    ? branchObj.cf_values.map((obj) => (
                         <Col lg={12}>
                           <div>
                             <Label htmlFor="lname" className="form-label">
