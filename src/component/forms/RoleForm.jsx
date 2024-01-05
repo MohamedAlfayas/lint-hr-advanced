@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Badge,
@@ -33,6 +33,10 @@ import { PostApi } from "../../common/api/PostApi";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import classnames from "classnames";
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css"
+/>;
 
 const RoleForm = () => {
   const [roleObj, setRoleObj] = useState({});
@@ -107,7 +111,7 @@ const RoleForm = () => {
   const [rolelist, setListData] = useState([
     {
       id: 1,
-      Name: "Organization Management",
+      Name: "Organization",
       priority: 1,
       note: "Organization Full Access",
       icon: "mdi mdi-office-building-marker-outline",
@@ -130,58 +134,38 @@ const RoleForm = () => {
           element: "per_branch_edit",
           dependency: ["per_branch_view"],
         },
-      ],
-    },
-    {
-      id: 5,
-      Name: "Department",
-      priority: 2,
-      note: "",
-      icon: " mdi mdi-family-tree",
-      permission: [
         {
-          id: 21,
+          id: 4,
           notes: "User Can View All Departments",
           element: "per_department_view",
           dependency: [],
         },
         {
-          id: 22,
+          id: 5,
           notes: "User Can Create New Departments",
           element: "per_department_create",
           dependency: ["per_department_view"],
         },
         {
-          id: 23,
+          id: 6,
           notes: "User Can Edit Departments",
           element: "per_department_edit",
           dependency: ["per_department_view"],
         },
-      ],
-    },
-    ,
-    {
-      id: 2,
-      Name: "Roles",
-      priority: 1,
-      note: "",
-      icon: "mdi mdi-security",
-
-      permission: [
         {
-          id: 9,
+          id: 7,
           notes: "User Can View All Roles",
           element: "per_role_view",
           dependency: [],
         },
         {
-          id: 10,
+          id: 8,
           notes: "User Can Create New Role",
           element: "per_role_create",
           dependency: ["per_role_view"],
         },
         {
-          id: 11,
+          id: 9,
           notes: "User Can Edit Role",
           element: "per_role_edit",
           dependency: ["per_role_view"],
@@ -189,76 +173,143 @@ const RoleForm = () => {
       ],
     },
 
+    // {
+    //   id: 2,
+    //   Name: "Employee",
+    //   priority: 3,
+    //   note: "",
+    //   icon: "mdi mdi-account-supervisor-outline",
+
+    //   permission: [
+    //     {
+    //       id: 5,
+    //       notes: "User Can View All Employee With in The Branches & Deartments",
+    //       element: "per_employee_view",
+    //       dependency: [],
+    //     },
+    //     {
+    //       id: 6,
+    //       notes: "User Can Create Employee With in The Branches & Deartments",
+    //       element: "per_employee_create",
+    //       dependency: ["per_employee_view"],
+    //     },
+    //     {
+    //       id: 7,
+    //       notes: "User Can Edit Employee With in The Branches & Deartments",
+    //       element: "per_employee_edit",
+    //       dependency: ["per_employee_view"],
+    //     },
+    //     {
+    //       id: 8,
+    //       notes:
+    //         "User Can Deactivate Employee With in The Branches & Deartments",
+    //       element: "per_employee_dectivate",
+    //       dependency: ["per_employee_view"],
+    //     },
+    //     {
+    //       id: 8,
+    //       notes:
+    //         "User Can Reset Employee Password With in The Branches & Deartments",
+    //       element: "per_employee_password_reset",
+    //       dependency: ["per_employee_view"],
+    //     },
+    //   ],
+    // },
+
+    // {
+    //   id: 4,
+    //   Name: "Holiday",
+    //   priority: 2,
+    //   note: "",
+    //   permission: [
+    //     {
+    //       id: 17,
+    //       notes: "User Can View All Holiday",
+    //       element: "per_holiday_view",
+    //       dependency: [],
+    //     },
+    //     {
+    //       id: 18,
+    //       notes: "User Can Create New Holiday",
+    //       element: "per_holiday_create",
+    //       dependency: ["per_holiday_view"],
+    //     },
+    //     {
+    //       id: 19,
+    //       notes: "User Can Edit Holiday",
+    //       element: "per_holiday_edit",
+    //       dependency: ["per_holiday_view"],
+    //     },
+    //     {
+    //       id: 20,
+    //       notes: "User Can Delete Holiday",
+    //       element: "per_department_delete",
+    //       dependency: ["per_holiday_view"],
+    //     },
+    //   ],
+    // },
     {
       id: 2,
-      Name: "Employee",
-      priority: 3,
+      Name: "Attendance",
+      priority: 2,
       note: "",
-      icon: "mdi mdi-account-supervisor-outline",
-
       permission: [
         {
-          id: 5,
-          notes: "User Can View All Employee With in The Branches & Deartments",
-          element: "per_employee_view",
+          id: 21,
+          notes: "User Can Configure Attendance",
+          element: "per_configure_attendance",
           dependency: [],
         },
         {
-          id: 6,
-          notes: "User Can Create Employee With in The Branches & Deartments",
-          element: "per_employee_create",
-          dependency: ["per_employee_view"],
+          id: 22,
+          notes: "User Can Create Leave Types",
+          element: "per_create_leave_type",
+          dependency: [],
         },
         {
-          id: 7,
-          notes: "User Can Edit Employee With in The Branches & Deartments",
-          element: "per_employee_edit",
-          dependency: ["per_employee_view"],
+          id: 23,
+          notes: "User Can Create/Delete Holidays",
+          element: "per_holiday_create_delete",
+          dependency: [],
         },
         {
-          id: 8,
-          notes:
-            "User Can Deactivate Employee With in The Branches & Deartments",
-          element: "per_employee_dectivate",
-          dependency: ["per_employee_view"],
+          id: 24,
+          notes: "User Can View Team Attendance",
+          element: "per_view_team_attendance",
+          dependency: [],
         },
         {
-          id: 8,
-          notes:
-            "User Can Reset Employee Password With in The Branches & Deartments",
-          element: "per_employee_password_reset",
-          dependency: ["per_employee_view"],
+          id: 25,
+          notes: "User Can View All Employee Attendance",
+          element: "per_view_employee_attendance",
+          dependency: [],
         },
-      ],
-    },
-    {
-      id: 3,
-      Name: "Work_Schedule",
-      priority: 1,
-      note: "",
-      icon: "mdi mdi-av-timer",
-
-      permission: [
         {
-          id: 13,
-          notes: "Can View Work Schedule",
+          id: 26,
+          notes: "User Can Edit Paid/OT Hours",
+          element: "per_edit_paid_ot_hours",
+          dependency: ["per_view_team_attendance"],
+        },
+        {
+          id: 27,
+          notes: "User Can View Work Schedule",
           element: "per_ws_view",
           dependency: [],
         },
         {
-          id: 14,
+          id: 28,
           notes: "Can Create Work Schedule",
           element: "per_ws_create",
           dependency: ["per_ws_view"],
         },
         {
-          id: 15,
+          id: 29,
           notes: "Can Edit Work Schedule",
           element: "per_ws_edit",
           dependency: ["per_ws_view"],
         },
         {
-          id: 16,
+          id: 30,
           notes: "Can Delete Work Schedule",
           element: "per_ws_delete",
           dependency: ["per_ws_view"],
@@ -266,105 +317,63 @@ const RoleForm = () => {
       ],
     },
     {
-      id: 4,
-      Name: "Holiday",
-      priority: 2,
-      note: "",
+      id: 3,
+      Name: "Payroll",
+      note: "Payroll",
+      priority: 3,
       permission: [
         {
-          id: 17,
-          notes: "User Can View All Holiday",
-          element: "per_holiday_view",
+          id: 31,
+          notes: "User Can Configure Payroll",
+          element: "per_configure_payroll",
           dependency: [],
-        },
-        {
-          id: 18,
-          notes: "User Can Create New Holiday",
-          element: "per_holiday_create",
-          dependency: ["per_holiday_view"],
-        },
-        {
-          id: 19,
-          notes: "User Can Edit Holiday",
-          element: "per_holiday_edit",
-          dependency: ["per_holiday_view"],
-        },
-        {
-          id: 20,
-          notes: "User Can Delete Holiday",
-          element: "per_department_delete",
-          dependency: ["per_holiday_view"],
         },
       ],
     },
     {
       id: 4,
-      Name: "Attendance",
-      priority: 2,
-      note: "",
-      permission: [
-        {
-          id: 17,
-          notes: "User Can Configure Attendance",
-          element: "per_configure_attendance",
-          dependency: [],
-        },
-        {
-          id: 17,
-          notes: "User Can Create Leave Types",
-          element: "per_create_leave_type",
-          dependency: [],
-        },
-        {
-          id: 18,
-          notes: "User Can Create/Delete Holidays",
-          element: "per_holiday_create_delete",
-          dependency: [],
-        },
-        {
-          id: 18,
-          notes: "User Can View Team Attendance",
-          element: "per_view_team_attendance",
-          dependency: [],
-        },
-        {
-          id: 19,
-          notes: "User Can View All Employee Attendance",
-          element: "per_view_employee_attendance",
-          dependency: [],
-        },
-        {
-          id: 20,
-          notes: "User Can Edit Paid/OT Hours",
-          element: "per_edit_paid_ot_hours",
-          dependency: ["per_view_team_attendance"],
-        },
-      ],
-    },
-    {
-      id: 0,
       Name: "Customization",
       note: "Custom Fields",
       priority: 4,
       permission: [
         {
-          id: 1,
+          id: 41,
           notes: "User Can Control Custom Fields",
           element: "per_create_custom_fields",
+          dependency: [],
         },
       ],
     },
 
     {
-      id: 0,
-      Name: "Attendance Report",
-      note: "Attendance",
-      priority: 4,
+      id: 5,
+      Name: "Reports",
+      note: "Reports",
+      priority: 5,
       permission: [
         {
-          id: 1,
+          id: 51,
+          notes: "View Employee Reports",
+          element: "per_employee_report",
+          dependency: [],
+        },
+        {
+          id: 52,
+          notes: " View Branch Reports",
+          element: "per_branch_report",
+          dependency: [],
+        },
+        {
+          id: 53,
           notes: "View Daily Attendance Reports",
           element: "per_attendance_report",
+          dependency: [],
+        },
+        {
+          id: 54,
+          notes: "View Payroll Reports",
+          element: "per_payroll_report",
+          dependency: [],
         },
       ],
     },
@@ -411,6 +420,124 @@ const RoleForm = () => {
     }
   }
 
+  const maxTabs = rolelist.length;
+
+  const isPreviousDisabled = activeVerticalTab === 1;
+  const isNextDisabled = activeVerticalTab === maxTabs;
+  const handlePrevious = () => {
+    if (!isPreviousDisabled) {
+      toggleVerticalTab(activeVerticalTab - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (!isNextDisabled) {
+      toggleVerticalTab(activeVerticalTab + 1);
+    }
+  };
+
+  const sectionRefs = rolelist.reduce((acc, role) => {
+    acc[role.id] = useRef(null);
+    return acc;
+  }, {});
+
+  const scrollToSection = (roleId) => {
+    sectionRefs[roleId].current.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
+  const getCheckedCount = (roleId) => {
+    const roleCheckboxes = checkboxes[roleId] || {};
+    return Object.values(roleCheckboxes).filter(Boolean).length;
+  };
+
+  const [checkboxes, setCheckboxes] = useState({});
+  const [disabledCheckboxes, setDisabledCheckboxes] = useState({});
+
+  const checkDependencies = (role, element, isChecked) => {
+    const handleDependencies = (dependencies, isChecked, prevCheckboxes) => {
+      dependencies.forEach((dep) => {
+        setCheckboxes((prevCheckboxes) => ({
+          ...prevCheckboxes,
+          [role.id]: {
+            ...prevCheckboxes[role.id],
+            [dep]: isChecked,
+          },
+        }));
+
+        setDisabledCheckboxes((prevDisabledCheckboxes) => {
+          const updatedDisabledCheckboxes = {
+            ...prevDisabledCheckboxes,
+            [role.id]: {
+              ...prevDisabledCheckboxes[role.id],
+              [dep]: isChecked,
+            },
+          };
+
+          if (
+            isChecked &&
+            Object.values(checkboxes).every((checkedRole) =>
+              dependencies.every((d) => !checkedRole[d])
+            )
+          ) {
+            updatedDisabledCheckboxes[role.id][element] = false;
+          }
+
+          const depPermission = role.permission.find((p) => p.element === dep);
+          if (depPermission && depPermission.dependency.length > 0) {
+            handleDependencies(
+              depPermission.dependency,
+              isChecked,
+              prevCheckboxes
+            );
+          }
+          console.log("depPermission", depPermission);
+
+          return updatedDisabledCheckboxes;
+        });
+      });
+    };
+
+    const selectedPermission = role.permission.find(
+      (p) => p.element === element
+    );
+
+    if (selectedPermission && selectedPermission.dependency.length > 0) {
+      const checkedCounts = { ...(disabledCheckboxes[role.id] || {}) };
+      const prevCheckboxes = checkboxes;
+      handleDependencies(
+        selectedPermission.dependency,
+        isChecked,
+        checkedCounts,
+        prevCheckboxes
+      );
+    }
+  };
+
+  const handleCheckboxChange = (roleId, element) => {
+    setCheckboxes((prevCheckboxes) => {
+      const updatedCheckboxes = {
+        ...prevCheckboxes,
+        [roleId]: {
+          ...prevCheckboxes[roleId],
+          [element]: !prevCheckboxes[roleId]?.[element],
+        },
+      };
+
+      const role = rolelist.find((r) => r.id === roleId);
+
+      if (updatedCheckboxes[roleId][element]) {
+        checkDependencies(role, element, true);
+      } else {
+        checkDependencies(role, element, false);
+      }
+
+      return updatedCheckboxes;
+    });
+  };
+
   return (
     <React.Fragment>
       <form className="vertical-navs-step form-steps">
@@ -425,8 +552,8 @@ const RoleForm = () => {
                   type="text"
                   className="form-control form-control-icon"
                   id="roleName"
-                  placeholder="New Role"
-                  value={"HR"}
+                  placeholder="Enter Role"
+                  // value={"HR"}
                 />
                 <i className="ri-building-2-line"></i>
               </div>
@@ -447,9 +574,9 @@ const RoleForm = () => {
                   className="form-control form-control-icon"
                   id="Description"
                   placeholder="Enter Description"
-                  value={
-                    "HR can manage recruitment, then manage employee profiles, time-off, assigned checklists and reports."
-                  }
+                  // value={
+                  //   "HR can manage recruitment, then manage employee profiles, time-off, assigned checklists and reports."
+                  // }
                 />
                 <i className="ri-building-2-line"></i>
               </div>
@@ -465,527 +592,94 @@ const RoleForm = () => {
           <Row className="gy-5">
             <Col lg={3} className="border-end">
               <Nav className="flex-column custom-nav nav-pills sticky-top">
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    className={classnames({
-                      active: activeVerticalTab === 1,
-                      done: activeVerticalTab <= 5 && activeVerticalTab > 1,
-                    })}
-                    onClick={() => {
-                      toggleVerticalTab(1);
-                    }}
-                  >
-                    <span className="step-title me-1">
-                      <i className="ri-close-circle-fill step-icon me-2"></i>
-                    </span>
-                    Organization
-                  </NavLink>
-                  <Badge
-                    pill
-                    color="success"
-                    className="position-absolute top-0 start-100 translate-middle"
-                  >
-                    4/5
-                    <span className="visually-hidden">unread messages</span>
-                  </Badge>
-                </NavItem>
+                {rolelist.map((role) => (
+                  <NavItem key={role.id}>
+                    <NavLink
+                      href="#"
+                      onClick={() => scrollToSection(role.id)}
+                      style={{
+                        display: "flex",
+                        borderColor:
+                          getCheckedCount(role.id) > 0 ? "#28a745" : "#ccc",
+                      }}
+                      className={`nav-link ${
+                        checkboxes[role.id]?.selected ? "selected" : ""
+                      }`}
+                    >
+                      <span className="step-title me-1">
+                        <i
+                          className={`ri ${
+                            getCheckedCount(role.id) > 0
+                              ? "ri-check-fill text-success"
+                              : "ri-close-fill text-danger"
+                          }`}
+                        ></i>{" "}
+                      </span>
 
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    className={classnames({
-                      active: activeVerticalTab === 2,
-                      done: activeVerticalTab <= 5 && activeVerticalTab >= 2,
-                    })}
-                    onClick={() => {
-                      toggleVerticalTab(2);
-                    }}
-                  >
-                    <span className="step-title me-2">
-                      <i className="ri-close-circle-fill step-icon me-2"></i>
-                    </span>
-                    Attendance
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    className={classnames({
-                      active: activeVerticalTab === 3,
-                      done: activeVerticalTab <= 5 && activeVerticalTab >= 3,
-                    })}
-                    onClick={() => {
-                      toggleVerticalTab(3);
-                    }}
-                  >
-                    <span className="step-title me-2">
-                      <i className="ri-close-circle-fill step-icon me-2"></i>
-                    </span>
-                    Payroll
-                  </NavLink>
-                </NavItem>
+                      <div>
+                        <h5>{role.Name}</h5>
+                      </div>
 
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    className={classnames({
-                      active: activeVerticalTab === 4,
-                      done: activeVerticalTab <= 5 && activeVerticalTab >= 4,
-                    })}
-                    onClick={() => {
-                      toggleVerticalTab(4);
-                    }}
-                  >
-                    <span className="step-title me-2">
-                      <i className="ri-close-circle-fill step-icon me-2"></i>
-                    </span>
-                    Customization
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    className={classnames({
-                      active: activeVerticalTab === 5,
-                      done: activeVerticalTab <= 5 && activeVerticalTab >= 5,
-                    })}
-                    onClick={() => {
-                      toggleVerticalTab(5);
-                    }}
-                  >
-                    <span className="step-title me-2">
-                      <i className="ri-close-circle-fill step-icon me-2"></i>
-                    </span>
-                    Reports
-                  </NavLink>
-                </NavItem>
+                      <Badge
+                        pill
+                        color="success"
+                        className="position-absolute top-0 start-100 translate-middle"
+                      >
+                        {getCheckedCount(role.id)}/{role.permission.length}
+                        <span className="visually-hidden">unread messages</span>
+                      </Badge>
+                    </NavLink>
+                  </NavItem>
+                ))}
               </Nav>
             </Col>
+
             <Col lg={9}>
               <div className="px-lg-4">
-                <TabContent activeTab={activeVerticalTab}>
-                  <TabPane tabId={1}>
-                    <div>
-                      <h5>Organization Management</h5>
-                      <p className="text-muted">Organization Full Access</p>
+                {rolelist.map((role) => (
+                  <div key={role.id} ref={sectionRefs[role.id]}>
+                    <div className="mt-4">
+                      <h5>{role.Name}</h5>
                     </div>
                     <ListGroup>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can View All Branch
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                          defaultChecked
-                        />
-                        User Can Create New Branch
-                      </ListGroupItem>
-
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can Edit Branch
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can View All Departments
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can Create New Departments
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can Edit Departments
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can View All Roles
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can Create New Role
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can Edit Role
-                      </ListGroupItem>
+                      {role.permission.map((permission) => (
+                        <ListGroupItem key={permission.id}>
+                          <label>
+                            <Input
+                              className="form-check-input me-1"
+                              type="checkbox"
+                              disabled={
+                                disabledCheckboxes[role.id]?.[
+                                  permission.element
+                                ]
+                              }
+                              checked={
+                                checkboxes[role.id]?.[permission.element] ||
+                                false
+                              }
+                              onChange={() =>
+                                handleCheckboxChange(
+                                  role.id,
+                                  permission.element
+                                )
+                              }
+                            />
+                            {permission.notes}
+                          </label>
+                        </ListGroupItem>
+                      ))}
                     </ListGroup>
-
-                    <div className="d-flex align-items-start gap-3 mt-4">
-                      <button
-                        type="button"
-                        className="btn btn-success btn-label right ms-auto nexttab nexttab"
-                        onClick={() => {
-                          toggleVerticalTab(activeVerticalTab + 1);
-                        }}
-                      >
-                        <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
-                        Go to Attendance
-                      </button>
-                    </div>
-                  </TabPane>
-
-                  <TabPane tabId={2}>
-                    <div>
-                      <h5>Attendance Management</h5>
-                      <p className="text-muted"></p>
-                    </div>
-
-                    <ListGroup>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can Configure Attendance
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                          defaultChecked
-                        />
-                        User Can Create Leave Types
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                          defaultChecked
-                        />
-                        User Can Create/Delete Holidays
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can View Team Attendance
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can View All Employee Attendance
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can Edit Paid/OT Hours
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can View Work Schedule
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can Create Work Schedule
-                      </ListGroupItem>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can Edit Work Schedule
-                      </ListGroupItem>
-                    </ListGroup>
-
-                    <div className="d-flex align-items-start gap-3 mt-4">
-                      <button
-                        type="button"
-                        className="btn btn-light btn-label previestab"
-                        onClick={() => {
-                          toggleVerticalTab(activeVerticalTab - 1);
-                        }}
-                      >
-                        <i className="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>{" "}
-                        Back to Organization
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-success btn-label right ms-auto nexttab"
-                        onClick={() => {
-                          toggleVerticalTab(activeVerticalTab + 1);
-                        }}
-                      >
-                        <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
-                        Go to Payroll
-                      </button>
-                    </div>
-                  </TabPane>
-
-                  <TabPane tabId={3}>
-                    <div>
-                      <h5>Payment</h5>
-                      <p className="text-muted">Fill all information below</p>
-                    </div>
-
-                    <div>
-                      <div className="my-3">
-                        <div className="form-check form-check-inline">
-                          <Input
-                            id="credit"
-                            name="paymentMethod"
-                            type="radio"
-                            className="form-check-input"
-                            defaultChecked
-                            required
-                          />
-                          <Label className="form-check-label" htmlFor="credit">
-                            Credit card
-                          </Label>
-                        </div>
-                        <div className="form-check form-check-inline">
-                          <Input
-                            id="debit"
-                            name="paymentMethod"
-                            type="radio"
-                            className="form-check-input"
-                            required
-                          />
-                          <Label className="form-check-label" htmlFor="debit">
-                            Debit card
-                          </Label>
-                        </div>
-                        <div className="form-check form-check-inline">
-                          <Input
-                            id="paypal"
-                            name="paymentMethod"
-                            type="radio"
-                            className="form-check-input"
-                            required
-                          />
-                          <Label className="form-check-label" htmlFor="paypal">
-                            PayPal
-                          </Label>
-                        </div>
-                      </div>
-
-                      <Row className="gy-3">
-                        <Col md={12}>
-                          <Label htmlFor="cc-name" className="form-label">
-                            Name on card
-                          </Label>
-                          <Input
-                            type="text"
-                            className="form-control"
-                            id="cc-name"
-                            placeholder=""
-                            required
-                          />
-                          <small className="text-muted">
-                            Full name as displayed on card
-                          </small>
-                          <div className="invalid-feedback">
-                            Name on card is required
-                          </div>
-                        </Col>
-
-                        <Col md={6}>
-                          <Label htmlFor="cc-number" className="form-label">
-                            Credit card number
-                          </Label>
-                          <Input
-                            type="text"
-                            className="form-control"
-                            id="cc-number"
-                            placeholder=""
-                            required
-                          />
-                          <div className="invalid-feedback">
-                            Credit card number is required
-                          </div>
-                        </Col>
-
-                        <Col md={3}>
-                          <Label htmlFor="cc-expiration" className="form-label">
-                            Expiration
-                          </Label>
-                          <Input
-                            type="text"
-                            className="form-control"
-                            id="cc-expiration"
-                            placeholder=""
-                            required
-                          />
-                          <div className="invalid-feedback">
-                            Expiration date required
-                          </div>
-                        </Col>
-
-                        <Col md={3}>
-                          <Label htmlFor="cc-cvv" className="form-label">
-                            CVV
-                          </Label>
-                          <Input
-                            type="text"
-                            className="form-control"
-                            id="cc-cvv"
-                            placeholder=""
-                            required
-                          />
-                          <div className="invalid-feedback">
-                            Security code required
-                          </div>
-                        </Col>
-                      </Row>
-                    </div>
-
-                    <div className="d-flex align-items-start gap-3 mt-4">
-                      <button
-                        type="button"
-                        className="btn btn-light btn-label previestab"
-                        onClick={() => {
-                          toggleVerticalTab(activeVerticalTab - 1);
-                        }}
-                      >
-                        <i className="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>{" "}
-                        Back to Shipping Info
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-success btn-label right ms-auto nexttab"
-                        onClick={() => {
-                          toggleVerticalTab(activeVerticalTab + 1);
-                        }}
-                      >
-                        <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>{" "}
-                        Order Complete
-                      </button>
-                    </div>
-                  </TabPane>
-
-                  <TabPane tabId={4}>
-                    <div>
-                      <h5>Customization</h5>
-                      <p className="text-muted"></p>
-                    </div>
-
-                    <ListGroup>
-                      <ListGroupItem tag="label">
-                        <Input
-                          className="form-check-input me-1"
-                          type="checkbox"
-                          value=""
-                        />
-                        User Can Control Custom Fields
-                      </ListGroupItem>
-                    </ListGroup>
-
-                    <div className="d-flex align-items-start gap-3 mt-4">
-                      <button
-                        type="button"
-                        className="btn btn-light btn-label previestab"
-                        onClick={() => {
-                          toggleVerticalTab(activeVerticalTab - 1);
-                        }}
-                      >
-                        <i className="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>{" "}
-                        Back to Organization
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-success btn-label right ms-auto nexttab"
-                        onClick={() => {
-                          toggleVerticalTab(activeVerticalTab + 1);
-                        }}
-                      >
-                        <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
-                        Go to Payroll
-                      </button>
-                    </div>
-                  </TabPane>
-
-                  <TabPane tabId={5}>
-                    <div className="text-center pt-4 pb-2">
-                      <div className="mb-4">
-                        <lord-icon
-                          src="https://cdn.lordicon.com/lupuorrc.json"
-                          trigger="loop"
-                          colors="primary:#0ab39c,secondary:#405189"
-                          style={{ width: "120px", height: "120px" }}
-                        ></lord-icon>
-                      </div>
-                      <h5>Your Order is Completed !</h5>
-                      <p className="text-muted">
-                        You Will receive an order confirmation email with
-                        details of your order.
-                      </p>
-                    </div>
-                  </TabPane>
-
-                  <TabPane tabId={6}>
-                    <div className="text-center pt-4 pb-2">
-                      <div className="mb-4">
-                        <lord-icon
-                          src="https://cdn.lordicon.com/lupuorrc.json"
-                          trigger="loop"
-                          colors="primary:#0ab39c,secondary:#405189"
-                          style={{ width: "120px", height: "120px" }}
-                        ></lord-icon>
-                      </div>
-                      <h5>Your Order is Completed !</h5>
-                      <p className="text-muted">
-                        You Will receive an order confirmation email with
-                        details of your order.
-                      </p>
-                    </div>
-                  </TabPane>
-                </TabContent>
+                  </div>
+                ))}
+              </div>
+            </Col>
+            <Col lg={12} className="mt-5">
+              <div className="text-end">
+                <Button color="success" type="submit" className="btn-label">
+                  {" "}
+                  <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                  Save{" "}
+                </Button>{" "}
               </div>
             </Col>
           </Row>
