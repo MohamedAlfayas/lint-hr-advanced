@@ -23,6 +23,7 @@ import { useSelector } from "react-redux";
 import { ConvertSecondsToTime } from "../../../common/js/ConvertSecondsToTime";
 import { ParseTime } from "../../../common/js/ParseTime";
 import { Select } from "antd";
+import { ToastContainer, toast } from "react-toastify";
 
 const AttendanceEmployeeTable = () => {
   const { Column, HeaderCell, Cell } = Table;
@@ -43,7 +44,7 @@ const AttendanceEmployeeTable = () => {
   const [selectedOtHours, setSelectedOtHours] = useState({ ot_hr: "00" });
   const [selectedOtMinutes, setSelectedOtMinutes] = useState({ ot_min: "00" });
   const [totalPaidHours, setTotalPaidHours] = useState('');
-  const [selectedNotes, setSelectedNotes] = useState("");
+  const [selectedNotes, setSelectedNotes] = useState({});
 
   const { individual_attendance_report_data } = useSelector(
     (state) => state.AttendanceReportReducer
@@ -62,41 +63,29 @@ const AttendanceEmployeeTable = () => {
     setNotes_modal(!notes_modal);
   }
 
+  //Edit Modal Function
   const openEditModal = (rowData) => {
     console.log('rowdataa ===', rowData);
-    setSelectedRowDataForEdit(rowData);
+  
+    const paidHrFormatted = ConvertSecondsToTime(rowData.paid_hr_in_seconds);
+    const otHrnInSeconds = rowData.ot_hr_in_seconds;
+  
     setEditModalOpen(true);
-    const paidHrInSeconds = rowData.paid_hr_in_seconds
-    const paidHrFormatted = ConvertSecondsToTime(paidHrInSeconds);
-
-    const paidHours = paidHrFormatted.split(":")[0];
-
-    const paidMinutes = paidHrFormatted.split(":")[1].split(' ')[0];
-
-    const otHrnInSeconds = rowData.ot_hr_in_seconds
-    const notes = rowData.notes
-    console.log("notes", notes);
-
-    if (otHrnInSeconds === 0) {
-      setSelectedOtHours({
-        ...selectedOtHours,
-        ot_hr: "00",
-      });
-      setSelectedOtMinutes({
-        ...selectedOtMinutes,
-        ot_min: "00",
-      });
-    }
-
+    setSelectedRowDataForEdit(rowData);
+  
     setSelectedPaidHours({
-      ...selectedPaidHours,
-      paid_hours_hr: paidHours,
+      paid_hours_hr: paidHrFormatted.split(":")[0],
     });
     setSelectedPaidMinutes({
-      ...selectedPaidMinutes,
-      paid_hours_min: paidMinutes,
+      paid_hours_min: paidHrFormatted.split(":")[1].split(' ')[0],
     });
-
+  
+    if (otHrnInSeconds === 0) {
+      setSelectedOtHours({ ot_hr: "00" });
+      setSelectedOtMinutes({ ot_min: "00" });
+    }
+  
+    console.log("notes", rowData.notes);
   };
 
   const closeEditModal = () => {
@@ -104,6 +93,8 @@ const AttendanceEmployeeTable = () => {
     setEditModalOpen(false);
   };
 
+
+  //Calculate Total Hours Paid+Ot
 
   const calculateTotalPaidHours = () => {
     const paidHoursHr = selectedPaidHours.paid_hours_hr || 0;
@@ -121,15 +112,25 @@ const AttendanceEmployeeTable = () => {
     const totalHours = startTime.getHours() + endTime.getHours();
     const totalMinutes = startTime.getMinutes() + endTime.getMinutes();
 
+    const totalHoursInMinutes = totalHours * 60 + totalMinutes;
+
+    if (totalHoursInMinutes > 1440) { 
+      toast.error('Total hours exceeds 24 hours');
+      return;
+  }
+
     const carryOverHours = Math.floor(totalMinutes / 60);
     const remainingMinutes = totalMinutes % 60;
 
-    const totalPaidHours = `${totalHours + carryOverHours} H ${remainingMinutes} M`;
+    const formattedTotalHours = String(totalHours + carryOverHours).padStart(2, '0');
+    const formattedRemainingMinutes = String(remainingMinutes).padStart(2, '0');
+
+    const totalPaidHours = `${formattedTotalHours}:${formattedRemainingMinutes} Hr`;
+
 
     setTotalPaidHours(totalPaidHours);
-  };
+};
   const handlePaidHoursHrChange = (selectedOption) => {
-    console.log('Selected Option:', selectedOption);
 
     setSelectedPaidHours({
       ...selectedPaidHours,
@@ -137,15 +138,12 @@ const AttendanceEmployeeTable = () => {
     });
   };
 
-  console.log('Updated Selected Paid Hours State:', selectedPaidHours);
-
   const handlePaidHoursMinChange = (selectedOption) => {
     setSelectedPaidMinutes({
       ...selectedPaidMinutes,
       paid_hours_min: selectedOption,
     });
   };
-  console.log('Updated Selected Paid Minutes State:', selectedPaidMinutes);
 
   const handleOTHoursChange = (selectedOption) => {
     setSelectedOtHours({
@@ -153,7 +151,7 @@ const AttendanceEmployeeTable = () => {
       ot_hr: selectedOption,
     });
   };
-  console.log('Updated SelectedOtHours State:', selectedOtHours);
+ 
   const handleOTMinutesChange = (selectedOption) => {
     setSelectedOtMinutes({
       ...selectedOtMinutes,
@@ -161,8 +159,13 @@ const AttendanceEmployeeTable = () => {
     });
   };
 
-  const handleNotesChange = (event) => {
-    setSelectedNotes(event.target.value);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    console.log("name = ", name, "   value = ", value);
+    setSelectedNotes({
+      ...selectedNotes,
+      [name]: value,
+    });
   };
 
   useEffect(() => {
@@ -179,7 +182,26 @@ const AttendanceEmployeeTable = () => {
     value: i.toString().padStart(2, "0"),
   }));
 
-
+  // const handleSaveButtonClick = () => {
+  //   // Collect the data you need
+  //   const savedData = {
+  //     paidHours: {
+  //       hr: selectedPaidHours.paid_hours_hr,
+  //       min: selectedPaidMinutes.paid_hours_min,
+  //     },
+  //     ot: {
+  //       hr: selectedOtHours.ot_hr,
+  //       min: selectedOtMinutes.ot_min,
+  //     },
+  //     totalPaidHours: totalPaidHours,
+  //     notes: selectedNotes,
+  //   };
+  
+  //   // Log the data to the console
+  //   console.log('Saved Data:', savedData);
+  
+  //   // Add any additional logic to save the data to your backend or perform other actions as needed.
+  // };
 
   const Attendance_data1 = [
     {
@@ -808,7 +830,7 @@ const AttendanceEmployeeTable = () => {
                     </Label>
                   </Col>
                   <Col>
-                    <span>{totalPaidHours}</span>
+                    <span>{totalPaidHours} </span>
                   </Col>
                 </Row>
               </Col>
@@ -824,8 +846,8 @@ const AttendanceEmployeeTable = () => {
                       className="form-control me-2"
                       id="notes"
                       name="notes"
-                      value={selectedRowDataForEdit.notes || []}
-                      onChange={handleNotesChange}
+                      // value={selectedNotes[selectedRowDataForEdit.notes] || ''}
+                      onChange={handleInputChange}
                     />
                   </Col>
                 </Row>
@@ -844,10 +866,7 @@ const AttendanceEmployeeTable = () => {
                   type="button"
                   className="btn w-sm btn-success"
                   data-bs-dismiss="modal"
-                // onClick={() => {
-                //   dispatch(setAllowances(AllowanceData));
-                //   CloseAllowanceModal();
-                // }}
+                  // onClick={handleSaveButtonClick}
                 >
                   <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i> Save
                 </button>
