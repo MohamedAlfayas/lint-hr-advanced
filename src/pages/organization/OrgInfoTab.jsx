@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   Button,
@@ -12,7 +12,9 @@ import {
   DropdownToggle,
   Form,
   FormGroup,
+  FormFeedback,
   Input,
+  Textarea,
   Label,
   Row,
   UncontrolledDropdown,
@@ -35,6 +37,8 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { DatePicker } from "antd";
 dayjs.extend(customParseFormat);
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
 //import images
 import avatar8 from "../../assets/images/users/avatar-8.jpg";
@@ -228,42 +232,121 @@ const OrgInfoTab = () => {
     });
   };
 
-  const submitProfileForm = (e) => {
-    e.preventDefault();
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: profileData,
+    validationSchema: Yup.object({
+      website: Yup.string().trim().required("Please Enter Your Website"),
+      contact_number: Yup.string().required("Please Enter Phone Number"),
+      contact_email: Yup.string().required("Please Enter Email"),
+      about: Yup.string().required("Please Enter Company Overview"),
+      address: Yup.string().required("Please Enter Address"),
+      country: Yup.string().required("Please Select Country"),
+      state: Yup.string().required("Please Select State"),
+      city: Yup.string().required("Please Enter City"),
+      pincode: Yup.string().required("Please Enter Pincode"),
+      timezone: Yup.string().required("Please Select Time Zone"),
+    }),
+    onSubmit: async (values) => {
+      console.log("SUCCESSSS !!!! Formik Values = ", values);
+      dispatch(setLoaderVisible(true));
 
-    console.log("company Profile form submit Obj = ", profileData);
+      // console.log("company Profile form submit Obj = ", profileData);
 
-    let form_data = new FormData();
-    darkLogoFile !== null &&
-      form_data.append("dark_logo", darkLogoFile, darkLogoFile.name);
-    lightLogoFile !== null &&
-      form_data.append("light_logo", lightLogoFile, lightLogoFile.name);
+      // let form_data = new FormData();
+      // darkLogoFile !== null &&
+      //   form_data.append("dark_logo", darkLogoFile, darkLogoFile.name);
+      // lightLogoFile !== null &&
+      //   form_data.append("light_logo", lightLogoFile, lightLogoFile.name);
 
-    Object.entries(profileData).map((key, idx) => {
-      if (key[0] === "cf_values") {
-        form_data.append(key[0], JSON.stringify(key[1]));
-      } else {
-        form_data.append(key[0], key[1]);
+      // Object.entries(profileData).map((key, idx) => {
+      //   if (key[0] === "cf_values") {
+      //     form_data.append(key[0], JSON.stringify(key[1]));
+      //   } else {
+      //     form_data.append(key[0], key[1]);
+      //   }
+      // });
+
+      // Api({
+      //   method: "POST",
+      //   url: "/company/save-profile/",
+      //   headers: {
+      //     "Content-Type": "multipart/form-data",
+      //   },
+      //   data: form_data,
+      // })
+      //   .then((res) => {
+      //     console.log("RES ==== ", res);
+      //     toast.success(res?.data?.message);
+      //   })
+      //   .catch((err) => {
+      //     console.log("ERRR === ", err);
+      //     toast.error(err?.response?.data?.message);
+      //   });
+      dispatch(setLoaderVisible(false));
+    },
+  });
+
+  const inputRef = useRef();
+  useEffect(() => {
+    if (
+      FormikForm.submitCount > 0 &&
+      Object.keys(FormikForm.errors).length > 0
+    ) {
+      const firstErrorField = Object.keys(FormikForm.errors)[0];
+      FormikForm.setFieldTouched(firstErrorField);
+      const errorField = document.querySelector(`[name=${firstErrorField}]`);
+      if (errorField) {
+        errorField.focus();
+
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
       }
-    });
+    }
+  }, [
+    FormikForm.submitCount,
+    FormikForm.errors,
+    FormikForm.setFieldTouched,
+    inputRef,
+  ]);
 
-    Api({
-      method: "POST",
-      url: "/company/save-profile/",
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      data: form_data,
-    })
-      .then((res) => {
-        console.log("RES ==== ", res);
-        toast.success(res?.data?.message);
-      })
-      .catch((err) => {
-        console.log("ERRR === ", err);
-        toast.error(err?.response?.data?.message);
-      });
-  };
+  // const submitProfileForm = (e) => {
+  //   e.preventDefault();
+
+  //   console.log("company Profile form submit Obj = ", profileData);
+
+  //   let form_data = new FormData();
+  //   darkLogoFile !== null &&
+  //     form_data.append("dark_logo", darkLogoFile, darkLogoFile.name);
+  //   lightLogoFile !== null &&
+  //     form_data.append("light_logo", lightLogoFile, lightLogoFile.name);
+
+  //   Object.entries(profileData).map((key, idx) => {
+  //     if (key[0] === "cf_values") {
+  //       form_data.append(key[0], JSON.stringify(key[1]));
+  //     } else {
+  //       form_data.append(key[0], key[1]);
+  //     }
+  //   });
+
+  //   Api({
+  //     method: "POST",
+  //     url: "/company/save-profile/",
+  //     headers: {
+  //       "Content-Type": "multipart/form-data",
+  //     },
+  //     data: form_data,
+  //   })
+  //     .then((res) => {
+  //       console.log("RES ==== ", res);
+  //       toast.success(res?.data?.message);
+  //     })
+  //     .catch((err) => {
+  //       console.log("ERRR === ", err);
+  //       toast.error(err?.response?.data?.message);
+  //     });
+  // };
 
   return (
     <React.Fragment>
@@ -276,7 +359,7 @@ const OrgInfoTab = () => {
                   Company Info
                 </h6>
 
-                <form onSubmit={submitProfileForm}>
+                <Form onSubmit={FormikForm.handleSubmit}>
                   <div className="live-preview">
                     <Row className="gy-4">
                       {/* <WebCheckInOutBtn /> */}
@@ -289,6 +372,8 @@ const OrgInfoTab = () => {
                           <div className="form-icon right">
                             <Input
                               type="text"
+                              name="website"
+                              innerRef={inputRef}
                               className="form-control form-control-icon"
                               id="orgwebsite"
                               placeholder="www.company.com"
@@ -296,12 +381,29 @@ const OrgInfoTab = () => {
                               onChange={(e) =>
                                 updateProfileData("website", e.target.value)
                               }
+                              invalid={
+                                FormikForm.touched.website &&
+                                FormikForm.errors.website
+                                  ? true
+                                  : false
+                              }
                             />
-                            <i className="ri-global-line"></i>
+                            {!FormikForm.touched.website &&
+                              !FormikForm.errors.website && (
+                                <i className="ri-global-line"></i>
+                              )}
+                            {FormikForm.touched.website &&
+                            FormikForm.errors.website ? (
+                              <FormFeedback type="invalid">
+                                {FormikForm.errors.website}
+                              </FormFeedback>
+                            ) : null}
                           </div>
-                          <div id="passwordHelpBlock" className="form-text">
-                            Enter Your Company Website.
-                          </div>
+                          {!FormikForm.errors.website && (
+                            <div id="passwordHelpBlock" className="form-text">
+                              Enter Your Company Website.
+                            </div>
+                          )}
                         </div>
                       </Col>
 
@@ -332,7 +434,10 @@ const OrgInfoTab = () => {
                             </Col>
                             <Col md={9}>
                               <Input
-                                type="number"
+                                type="text"
+                                id="contact_number"
+                                name="contact_number"
+                                innerRef={inputRef}
                                 className="form-control rounded-end flag-input"
                                 placeholder="Enter number"
                                 value={profileData.contact_number || ""}
@@ -342,13 +447,26 @@ const OrgInfoTab = () => {
                                     e.target.value
                                   )
                                 }
+                                invalid={
+                                  FormikForm.touched.contact_number &&
+                                  FormikForm.errors.contact_number
+                                    ? true
+                                    : false
+                                }
                               />
+                              {FormikForm.touched.contact_number &&
+                              FormikForm.errors.contact_number ? (
+                                <FormFeedback type="invalid">
+                                  {FormikForm.errors.contact_number}
+                                </FormFeedback>
+                              ) : null}
                             </Col>
                           </Row>
-
-                          <div id="passwordHelpBlock" className="form-text">
-                            Enter Your Contact number with country code.
-                          </div>
+                          {!FormikForm.errors.contact_number && (
+                            <div id="passwordHelpBlock" className="form-text">
+                              Enter Your Contact number with country code.
+                            </div>
+                          )}
                         </div>
                       </Col>
 
@@ -360,6 +478,7 @@ const OrgInfoTab = () => {
                           <div className="form-icon right">
                             <Input
                               type="email"
+                              innerRef={inputRef}
                               className="form-control form-control-icon"
                               id="companyemail"
                               placeholder="user@company.com"
@@ -370,12 +489,29 @@ const OrgInfoTab = () => {
                                   e.target.value
                                 )
                               }
+                              invalid={
+                                FormikForm.touched.contact_email &&
+                                FormikForm.errors.contact_email
+                                  ? true
+                                  : false
+                              }
                             />
-                            <i className="ri-mail-line"></i>
+                            {!FormikForm.touched.contact_email &&
+                              !FormikForm.errors.contact_email && (
+                                <i className="ri-mail-line"></i>
+                              )}
+                            {FormikForm.touched.contact_email &&
+                            FormikForm.errors.contact_email ? (
+                              <FormFeedback type="invalid">
+                                {FormikForm.errors.contact_email}
+                              </FormFeedback>
+                            ) : null}
                           </div>
-                          <div id="passwordHelpBlock" className="form-text">
-                            Enter Your Email.
-                          </div>
+                          {!FormikForm.errors.contact_email && (
+                            <div id="passwordHelpBlock" className="form-text">
+                              Enter Your Email.
+                            </div>
+                          )}
                         </div>
                       </Col>
 
@@ -387,7 +523,9 @@ const OrgInfoTab = () => {
                           >
                             Company Overview
                           </Label>
-                          <textarea
+                          <Input
+                            type="textarea"
+                            name="about"
                             className="form-control"
                             id="exampleFormControlTextarea5"
                             rows="3"
@@ -395,10 +533,24 @@ const OrgInfoTab = () => {
                             onChange={(e) =>
                               updateProfileData("about", e.target.value)
                             }
-                          ></textarea>
-                          <div id="passwordHelpBlock" className="form-text">
-                            Company Overview.
-                          </div>
+                            invalid={
+                              FormikForm.touched.about &&
+                              FormikForm.errors.about
+                                ? true
+                                : false
+                            }
+                          />
+                          {FormikForm.touched.about &&
+                          FormikForm.errors.about ? (
+                            <FormFeedback type="invalid">
+                              {FormikForm.errors.about}
+                            </FormFeedback>
+                          ) : null}
+                          {!FormikForm.errors.about && (
+                            <div id="passwordHelpBlock" className="form-text">
+                              Company Overview.
+                            </div>
+                          )}
                         </div>
                       </Col>
 
@@ -410,7 +562,9 @@ const OrgInfoTab = () => {
                           >
                             Address
                           </Label>
-                          <textarea
+                          <Input
+                            type="textarea"
+                            name="address"
                             className="form-control"
                             id="exampleFormControlTextarea5"
                             rows="2"
@@ -418,10 +572,24 @@ const OrgInfoTab = () => {
                             onChange={(e) =>
                               updateProfileData("address", e.target.value)
                             }
-                          ></textarea>
-                          <div id="passwordHelpBlock" className="form-text">
-                            Address.
-                          </div>
+                            invalid={
+                              FormikForm.touched.address &&
+                              FormikForm.errors.address
+                                ? true
+                                : false
+                            }
+                          />
+                          {FormikForm.touched.address &&
+                          FormikForm.errors.address ? (
+                            <FormFeedback type="invalid">
+                              {FormikForm.errors.address}
+                            </FormFeedback>
+                          ) : null}
+                          {!FormikForm.errors.address && (
+                            <div id="passwordHelpBlock" className="form-text">
+                              Address.
+                            </div>
+                          )}
                         </div>
                       </Col>
 
@@ -434,6 +602,7 @@ const OrgInfoTab = () => {
                             id="country"
                             name="country"
                             isMulti={false}
+                            innerRef={inputRef}
                             options={CountryListOptions || []}
                             className="basic-multi-select"
                             value={
@@ -443,11 +612,36 @@ const OrgInfoTab = () => {
                                   )
                                 : []
                             }
+                            styles={{
+                              control: (provided, state) => ({
+                                ...provided,
+                                borderColor:
+                                  !state.isFocused &&
+                                  FormikForm.touched.country &&
+                                  FormikForm.errors.country
+                                    ? "red !important"
+                                    : provided.borderColor,
+                              }),
+                            }}
                             onChange={handleCountryChange}
+                            invalid={
+                              FormikForm.touched.country &&
+                              FormikForm.errors.country
+                                ? true
+                                : false
+                            }
                           />
-                          <div id="passwordHelpBlock" className="form-text">
-                            Select Country.
-                          </div>
+                          {FormikForm.touched.country &&
+                          FormikForm.errors.country ? (
+                            <div className="lc_form_error_text">
+                              {FormikForm.errors.country}
+                            </div>
+                          ) : null}
+                          {!FormikForm.errors.country && (
+                            <div id="passwordHelpBlock" className="form-text">
+                              Select Country.
+                            </div>
+                          )}
                         </div>
                       </Col>
 
@@ -459,6 +653,7 @@ const OrgInfoTab = () => {
                           <Select
                             id="state"
                             name="state"
+                            innerRef={inputRef}
                             isMulti={false}
                             options={stateListOptions || []}
                             className="basic-multi-select"
@@ -467,13 +662,38 @@ const OrgInfoTab = () => {
                                 (d) => d.value === profileData.state
                               ) || []
                             }
+                            styles={{
+                              control: (provided, state) => ({
+                                ...provided,
+                                borderColor:
+                                  !state.isFocused &&
+                                  FormikForm.touched.state &&
+                                  FormikForm.errors.state
+                                    ? "red !important"
+                                    : provided.borderColor,
+                              }),
+                            }}
                             onChange={(e) =>
                               setProfileData({ ...profileData, state: e.value })
                             }
+                            invalid={
+                              FormikForm.touched.state &&
+                              FormikForm.errors.state
+                                ? true
+                                : false
+                            }
                           />
-                          <div id="passwordHelpBlock" className="form-text">
-                            Select State.
-                          </div>
+                          {FormikForm.touched.state &&
+                          FormikForm.errors.state ? (
+                            <div className="lc_form_error_text">
+                              {FormikForm.errors.state}
+                            </div>
+                          ) : null}
+                          {!FormikForm.errors.state && (
+                            <div id="passwordHelpBlock" className="form-text">
+                              Select State.
+                            </div>
+                          )}
                         </div>
                       </Col>
 
@@ -488,6 +708,7 @@ const OrgInfoTab = () => {
                           <div className="form-icon right">
                             <Input
                               type="text"
+                              name="city"
                               className="form-control form-control-icon"
                               id="companycity"
                               placeholder="Chennai"
@@ -495,12 +716,29 @@ const OrgInfoTab = () => {
                               onChange={(e) =>
                                 updateProfileData("city", e.target.value)
                               }
+                              invalid={
+                                FormikForm.touched.city &&
+                                FormikForm.errors.city
+                                  ? true
+                                  : false
+                              }
                             />
-                            <i className="ri-mail-line"></i>
+                            {!FormikForm.touched.city &&
+                              !FormikForm.errors.city && (
+                                <i className="ri-mail-line"></i>
+                              )}
+                            {FormikForm.touched.city &&
+                            FormikForm.errors.city ? (
+                              <FormFeedback type="invalid">
+                                {FormikForm.errors.city}
+                              </FormFeedback>
+                            ) : null}
                           </div>
-                          <div id="passwordHelpBlock" className="form-text">
-                            Select City.
-                          </div>
+                          {!FormikForm.errors.city && (
+                            <div id="passwordHelpBlock" className="form-text">
+                              Select City.
+                            </div>
+                          )}
                         </div>
                       </Col>
 
@@ -515,6 +753,7 @@ const OrgInfoTab = () => {
                           <div className="form-icon right">
                             <Input
                               type="number"
+                              name="pincode"
                               className="form-control form-control-icon"
                               id="companypincode"
                               placeholder="666666"
@@ -522,12 +761,29 @@ const OrgInfoTab = () => {
                               onChange={(e) =>
                                 updateProfileData("pincode", e.target.value)
                               }
+                              invalid={
+                                FormikForm.touched.pincode &&
+                                FormikForm.errors.pincode
+                                  ? true
+                                  : false
+                              }
                             />
-                            <i className="ri-mail-line"></i>
+                            {!FormikForm.touched.pincode &&
+                              !FormikForm.errors.contact_email && (
+                                <i className="ri-mail-line"></i>
+                              )}
+                            {FormikForm.touched.pincode &&
+                            FormikForm.errors.pincode ? (
+                              <FormFeedback type="invalid">
+                                {FormikForm.errors.pincode}
+                              </FormFeedback>
+                            ) : null}
                           </div>
-                          <div id="passwordHelpBlock" className="form-text">
-                            Pincode.
-                          </div>
+                          {!FormikForm.errors.pincode && (
+                            <div id="passwordHelpBlock" className="form-text">
+                              Pincode.
+                            </div>
+                          )}
                         </div>
                       </Col>
 
@@ -546,6 +802,17 @@ const OrgInfoTab = () => {
                                   (e) => e.value === profileData.timezone
                                 )
                               }
+                              styles={{
+                                control: (provided, state) => ({
+                                  ...provided,
+                                  borderColor:
+                                    !state.isFocused &&
+                                    FormikForm.touched.timezone &&
+                                    FormikForm.errors.timezone
+                                      ? "red !important"
+                                      : provided.borderColor,
+                                }),
+                              }}
                               onChange={(e) =>
                                 setProfileData({
                                   ...profileData,
@@ -554,11 +821,28 @@ const OrgInfoTab = () => {
                               }
                               options={timzone_options}
                               placeholder="Select a time zone"
+                              invalid={
+                                FormikForm.touched.timezone &&
+                                FormikForm.errors.timezone
+                                  ? true
+                                  : false
+                              }
                             />
-                            <i className="ri-time-line"></i>
-                          </div>
-                          <div id="passwordHelpBlock" className="form-text">
-                            Time Zone.
+                            {!FormikForm.touched.timezone &&
+                              !FormikForm.errors.timezone && (
+                                <i className="ri-time-line"></i>
+                              )}
+                            {FormikForm.touched.timezone &&
+                            FormikForm.errors.timezone ? (
+                              <div className="lc_form_error_text">
+                                {FormikForm.errors.timezone}
+                              </div>
+                            ) : null}
+                            {!FormikForm.errors.timezone && (
+                              <div id="passwordHelpBlock" className="form-text">
+                                Time Zone.
+                              </div>
+                            )}
                           </div>
                         </div>
                       </Col>
@@ -581,7 +865,7 @@ const OrgInfoTab = () => {
                                       className="form-control"
                                       placeholder={`Enter ${obj.name}`}
                                       value={obj.value || ""}
-                                      required={obj.is_required || false}
+                                      // required={obj.is_required || false}
                                       onChange={(e) =>
                                         handleCFInputChange(e, obj.id)
                                       }
@@ -807,7 +1091,7 @@ const OrgInfoTab = () => {
                       </Col>
                     </Row>
                   </div>
-                </form>
+                </Form>
               </div>
             </CardBody>
           </Card>
