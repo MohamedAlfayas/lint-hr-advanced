@@ -52,12 +52,6 @@ import { useSelector } from "react-redux";
 
 const BranchForm = () => {
   const [stateList, setStateList] = useState([]);
-  const [contactCountry, setContactCountry] = useState({
-    id: 240,
-    flagImg: indflag,
-    countryName: "India",
-    countryCode: "+91",
-  });
 
   const CountryListOptions = CountryList.map((d) => {
     return {
@@ -77,38 +71,12 @@ const BranchForm = () => {
 
   const [branchObj, setBranchObj] = useState({});
 
-  const [selectedCountry, setSelectedCountry] = useState({});
-
-  const [dropdownOpen3, setDropdownOpen3] = useState(false);
-  const [dropdownOpen4, setDropdownOpen4] = useState(false);
-  const [stateDD, setStateDD] = useState(false);
-
-  const toggle3 = () => setDropdownOpen3((prevState) => !prevState);
-  const toggle4 = () => setDropdownOpen4((prevState) => !prevState);
-  const stateToggle = () => setStateDD((prevState) => !prevState);
-
-  const [country, setCountry] = useState("");
-  const [state, setState] = useState("");
-  const [timezone, setTimeZone] = useState("");
-
   const updateBranchObj = (name, value) => {
     setBranchObj({
       ...branchObj,
       [name]: value,
     });
   };
-
-  const [changeId, setChangeId] = useState(1);
-
-  function formatBytes(bytes, decimals = 2) {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
-
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
-  }
 
   const handleCFInputChange = (e, cf_id) => {
     const newPD = {
@@ -140,7 +108,36 @@ const BranchForm = () => {
     });
   };
 
-  const submitProfileForm = (e) => {
+  const handleCountryCodeChange = (e) => {
+    console.log("COUntry Code = ", e);
+
+    setProfileData({
+      ...profileData,
+      country: e.value,
+      country_code: e.countryCode,
+    });
+
+    setStateListOptions(
+      CountryListOptions.find((d) => d.value === e.value).states || []
+    );
+  };
+
+  const handleCountryChange = (e) => {
+    console.log("Country Change = ", e);
+
+    setProfileData({
+      ...profileData,
+      country: e.value,
+      country_code: e.countryCode,
+      state: "",
+    });
+
+    setStateListOptions(
+      CountryListOptions.find((d) => d.value === e.value).states || []
+    );
+  };
+
+  const submitBranchForm = (e) => {
     e.preventDefault();
   };
 
@@ -149,7 +146,7 @@ const BranchForm = () => {
       <Row>
         <Col xl={12} lg={12}>
           <div>
-            <form onSubmit={submitProfileForm}>
+            <form onSubmit={submitBranchForm}>
               <div className="live-preview">
                 <Row className="gy-4">
                   <Col lg={12}>
@@ -175,83 +172,45 @@ const BranchForm = () => {
                   <Col lg={12}>
                     <div>
                       <Label>Contact Number*</Label>
-                      <Dropdown
-                        className="input-group"
-                        isOpen={dropdownOpen4}
-                        toggle={toggle4}
-                      >
-                        <DropdownToggle
-                          as="button"
-                          className="btn btn-light border arrow-none"
-                        >
-                          <img
-                            src={contactCountry.flagImg}
-                            alt="country flag"
-                            className="options-flagimg"
-                            height="20"
+                      <Row>
+                        <Col md={3}>
+                          <Select
+                            id="country_code"
+                            name="country_code"
+                            isMulti={false}
+                            options={CountryListOptions || []}
+                            styles={CountryCodeDisplayStyles}
+                            components={{
+                              Option: CountryCodeDisplayInSelect,
+                              SingleValue: CountryCodeDisplayInSelect,
+                            }}
+                            className="basic-multi-select"
+                            value={
+                              profileData?.country_code !== ""
+                                ? CountryListOptions.find(
+                                    (d) =>
+                                      d.countryCode === profileData.country_code
+                                  )
+                                : []
+                            }
+                            onChange={handleCountryCodeChange}
                           />
-                          <span className="countrylist-codeno text-muted">
-                            {contactCountry.countryCode}
-                          </span>
-                        </DropdownToggle>
-                        <input
-                          type="number"
-                          className="form-control rounded-end flag-input"
-                          placeholder="Enter number"
-                          value={branchObj.contact_number || ""}
-                          onChange={(e) =>
-                            updateBranchObj("contact_number", e.target.value)
-                          }
-                        />
-                        <DropdownMenu
-                          as="ul"
-                          className="list-unstyled w-100 dropdown-menu-list mb-0"
-                        >
-                          <SimpleBar
-                            style={{ maxHeight: "220px" }}
-                            className="px-3"
-                          >
-                            {(
-                              CountryList.filter((obj) => obj.show).sort(
-                                (a, b) =>
-                                  a.countryName.localeCompare(b.countryName)
-                              ) || []
-                            ).map((item, key) => (
-                              <DropdownItem
-                                as="li"
-                                onClick={() => {
-                                  updateBranchObj(
-                                    "country_code",
-                                    item.countryCode
-                                  );
-                                  setContactCountry(item);
-                                }}
-                                key={key}
-                                className="dropdown-item d-flex"
-                              >
-                                <div className="flex-shrink-0 me-2">
-                                  <img
-                                    src={item.flagImg}
-                                    alt="country flag"
-                                    className="options-flagimg"
-                                    height="20"
-                                  />
-                                </div>
-                                <div className="flex-grow-1">
-                                  <div className="d-flex">
-                                    <div className="country-name me-1">
-                                      {item.countryName}
-                                    </div>
-                                    <span className="countrylist-codeno text-muted">
-                                      {item.countryCode}
-                                    </span>
-                                  </div>
-                                </div>
-                              </DropdownItem>
-                            ))}
-                          </SimpleBar>
-                        </DropdownMenu>
-                      </Dropdown>
+                        </Col>
+                        <Col md={9}>
+                          <Input
+                            type="number"
+                            className="form-control rounded-end flag-input"
+                            placeholder="Enter number"
+                            value={profileData.contact_number || ""}
+                            onChange={(e) =>
+                              updateProfileData(
+                                "contact_number",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </Col>
+                      </Row>
 
                       <div id="passwordHelpBlock" className="form-text">
                         Enter Your Contact number with country code.
@@ -333,68 +292,20 @@ const BranchForm = () => {
                       <Label htmlFor="country" className="form-label">
                         Country
                       </Label>
-                      <Dropdown isOpen={dropdownOpen3} toggle={toggle3}>
-                        <DropdownToggle
-                          tag="div"
-                          className="form-control rounded-end flag-input form-select"
-                          style={{ cursor: "pointer" }}
-                        >
-                          {selectedCountry.countryName || "Select country"}
-                        </DropdownToggle>
-                        <DropdownMenu
-                          as="ul"
-                          className="list-unstyled w-100 dropdown-menu-list mb-0"
-                        >
-                          <SimpleBar
-                            style={{ maxHeight: "220px" }}
-                            className="px-3"
-                          >
-                            {(
-                              CountryList.filter((obj) => obj.show).sort(
-                                (a, b) =>
-                                  a.countryName.localeCompare(b.countryName)
-                              ) || []
-                            ).map((item, key) => (
-                              <DropdownItem
-                                as="li"
-                                onClick={() => {
-                                  setChangeId(0);
-                                  setCountry(item.countryName);
-                                }}
-                                key={key}
-                                className="dropdown-item d-flex"
-                              >
-                                <div className="flex-shrink-0 me-2">
-                                  <img
-                                    src={item.flagImg}
-                                    alt="country flag"
-                                    className="options-flagimg"
-                                    height="20"
-                                  />
-                                </div>
-                                <div className="flex-grow-1">
-                                  <div className="d-flex">
-                                    <div className="country-name me-1">
-                                      {item.countryName}
-                                    </div>
-                                    <span className="countrylist-codeno text-muted">
-                                      {item.countryCode}
-                                    </span>
-                                  </div>
-                                </div>
-                              </DropdownItem>
-                            ))}
-                          </SimpleBar>
-                        </DropdownMenu>
-                      </Dropdown>
-
                       <Select
                         id="country"
                         name="country"
-                        innerRef={inputRef}
                         isMulti={false}
-                        options={CountryList || []}
+                        options={CountryListOptions || []}
                         className="basic-multi-select"
+                        value={
+                          profileData?.country !== ""
+                            ? CountryListOptions.find(
+                                (d) => d.value === profileData.country
+                              )
+                            : []
+                        }
+                        onChange={handleCountryChange}
                       />
 
                       <div id="passwordHelpBlock" className="form-text">
@@ -411,42 +322,22 @@ const BranchForm = () => {
                       >
                         State
                       </Label>
-                      {/* <Dropdown isOpen={stateDD} toggle={stateToggle}>
-                        <DropdownToggle
-                          tag="div"
-                          className="form-control rounded-end flag-input form-select"
-                          style={{ cursor: "pointer" }}
-                        >
-                          {stateList.find((obj) => obj === state) ||
-                            "Select State"}
-                        </DropdownToggle>
-                        <DropdownMenu
-                          as="ul"
-                          className="list-unstyled w-100 dropdown-menu-list mb-0"
-                        >
-                          <SimpleBar
-                            style={{ maxHeight: "220px" }}
-                            className="px-3"
-                          >
-                            {(stateList || []).map((item, key) => (
-                              <DropdownItem
-                                as="li"
-                                onClick={() => setState(item)}
-                                key={key}
-                                className="dropdown-item d-flex"
-                              >
-                                <div className="flex-grow-1">
-                                  <div className="d-flex">
-                                    <div className="country-name me-1">
-                                      {item}
-                                    </div>
-                                  </div>
-                                </div>
-                              </DropdownItem>
-                            ))}
-                          </SimpleBar>
-                        </DropdownMenu>
-                      </Dropdown> */}
+                      <Select
+                        id="state"
+                        name="state"
+                        isMulti={false}
+                        options={stateListOptions || []}
+                        className="basic-multi-select"
+                        value={
+                          stateListOptions.find(
+                            (d) => d.value === profileData.state
+                          ) || []
+                        }
+                        onChange={(e) =>
+                          setProfileData({ ...profileData, state: e.value })
+                        }
+                      />
+
                       <div id="passwordHelpBlock" className="form-text">
                         Select State.
                       </div>

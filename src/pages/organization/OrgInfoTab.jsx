@@ -76,6 +76,16 @@ const OrgInfoTab = () => {
     }
   );
 
+  const CountryCodeListOptions = CountryList.filter((c) => c.show === true).map(
+    (d) => {
+      return {
+        ...d,
+        label: d.countryCode,
+        value: d.countryCode,
+      };
+    }
+  );
+
   // Custom Field Option
 
   const CustomFieldsForThisForm =
@@ -148,12 +158,12 @@ const OrgInfoTab = () => {
 
     setProfileData({
       ...profileData,
-      country: e.value,
-      country_code: e.countryCode,
+      country: e.countryName,
+      country_code: e.value,
     });
 
     setStateListOptions(
-      CountryListOptions.find((d) => d.value === e.value).states || []
+      CountryListOptions.find((d) => d.value === e.countryName).states || []
     );
   };
 
@@ -304,19 +314,16 @@ const OrgInfoTab = () => {
                                 id="country_code"
                                 name="country_code"
                                 isMulti={false}
-                                options={CountryListOptions || []}
-                                styles={CountryCodeDisplayStyles}
+                                options={CountryCodeListOptions || []}
+                                className="basic-multi-select"
                                 components={{
                                   Option: CountryCodeDisplayInSelect,
-                                  SingleValue: CountryCodeDisplayInSelect,
                                 }}
-                                className="basic-multi-select"
                                 value={
                                   profileData?.country_code !== ""
-                                    ? CountryListOptions.find(
+                                    ? CountryCodeListOptions.find(
                                         (d) =>
-                                          d.countryCode ===
-                                          profileData.country_code
+                                          d.value === profileData.country_code
                                       )
                                     : []
                                 }
