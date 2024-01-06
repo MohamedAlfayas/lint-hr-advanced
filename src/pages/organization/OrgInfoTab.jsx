@@ -251,38 +251,38 @@ const OrgInfoTab = () => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
       dispatch(setLoaderVisible(true));
 
-      // console.log("company Profile form submit Obj = ", profileData);
+      console.log("company Profile form submit Obj = ", profileData);
 
-      // let form_data = new FormData();
-      // darkLogoFile !== null &&
-      //   form_data.append("dark_logo", darkLogoFile, darkLogoFile.name);
-      // lightLogoFile !== null &&
-      //   form_data.append("light_logo", lightLogoFile, lightLogoFile.name);
+      let form_data = new FormData();
+      darkLogoFile !== null &&
+        form_data.append("dark_logo", darkLogoFile, darkLogoFile.name);
+      lightLogoFile !== null &&
+        form_data.append("light_logo", lightLogoFile, lightLogoFile.name);
 
-      // Object.entries(profileData).map((key, idx) => {
-      //   if (key[0] === "cf_values") {
-      //     form_data.append(key[0], JSON.stringify(key[1]));
-      //   } else {
-      //     form_data.append(key[0], key[1]);
-      //   }
-      // });
+      Object.entries(profileData).map((key, idx) => {
+        if (key[0] === "cf_values") {
+          form_data.append(key[0], JSON.stringify(key[1]));
+        } else {
+          form_data.append(key[0], key[1]);
+        }
+      });
 
-      // Api({
-      //   method: "POST",
-      //   url: "/company/save-profile/",
-      //   headers: {
-      //     "Content-Type": "multipart/form-data",
-      //   },
-      //   data: form_data,
-      // })
-      //   .then((res) => {
-      //     console.log("RES ==== ", res);
-      //     toast.success(res?.data?.message);
-      //   })
-      //   .catch((err) => {
-      //     console.log("ERRR === ", err);
-      //     toast.error(err?.response?.data?.message);
-      //   });
+      Api({
+        method: "POST",
+        url: "/company/save-profile/",
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        data: form_data,
+      })
+        .then((res) => {
+          console.log("RES ==== ", res);
+          toast.success(res?.data?.message);
+        })
+        .catch((err) => {
+          console.log("ERRR === ", err);
+          toast.error(err?.response?.data?.message);
+        });
       dispatch(setLoaderVisible(false));
     },
   });
@@ -310,43 +310,6 @@ const OrgInfoTab = () => {
     FormikForm.setFieldTouched,
     inputRef,
   ]);
-
-  // const submitProfileForm = (e) => {
-  //   e.preventDefault();
-
-  //   console.log("company Profile form submit Obj = ", profileData);
-
-  //   let form_data = new FormData();
-  //   darkLogoFile !== null &&
-  //     form_data.append("dark_logo", darkLogoFile, darkLogoFile.name);
-  //   lightLogoFile !== null &&
-  //     form_data.append("light_logo", lightLogoFile, lightLogoFile.name);
-
-  //   Object.entries(profileData).map((key, idx) => {
-  //     if (key[0] === "cf_values") {
-  //       form_data.append(key[0], JSON.stringify(key[1]));
-  //     } else {
-  //       form_data.append(key[0], key[1]);
-  //     }
-  //   });
-
-  //   Api({
-  //     method: "POST",
-  //     url: "/company/save-profile/",
-  //     headers: {
-  //       "Content-Type": "multipart/form-data",
-  //     },
-  //     data: form_data,
-  //   })
-  //     .then((res) => {
-  //       console.log("RES ==== ", res);
-  //       toast.success(res?.data?.message);
-  //     })
-  //     .catch((err) => {
-  //       console.log("ERRR === ", err);
-  //       toast.error(err?.response?.data?.message);
-  //     });
-  // };
 
   return (
     <React.Fragment>
