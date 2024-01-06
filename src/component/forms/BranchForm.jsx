@@ -47,31 +47,80 @@ import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { GoogleMap, Marker } from "@react-google-maps/api";
 import LocationSearch from "../../pages/organization/LocationSearch";
 import LocationSearch2 from "../../pages/organization/LocationSearch2";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { CountryCodeDisplayInSelect } from "../../common/js/CountryCodeDisplayInSelect";
+import { PostApi } from "../../common/api/PostApi";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 // import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 
 const BranchForm = () => {
-  const [stateList, setStateList] = useState([]);
+  const dispatch = useDispatch();
 
-  const CountryListOptions = CountryList.map((d) => {
-    return {
-      ...d,
-      label: d.countryName,
-      value: d.countryName,
-    };
-  });
+  const [stateListOptions, setStateListOptions] = useState([]);
 
-  console.log("CountryListOptions = ", CountryListOptions);
+  const [CountryCodeListOptions, setCountryCodeListOptions] = useState([]);
+  const [CountryListOptions, setCountryListOptions] = useState([]);
+
+  useEffect(() => {
+    let country_code_list = [];
+    let country_list = [];
+
+    CountryList.filter((c) => c.show === true).map((d) => {
+      country_code_list.push({
+        ...d,
+        label: d.countryCode,
+        value: d.countryCode,
+      });
+      country_list.push({
+        ...d,
+        label: d.countryName,
+        value: d.countryName,
+      });
+    });
+    setCountryCodeListOptions(country_code_list);
+    setCountryListOptions(country_list);
+  }, []);
+
+  // const CountryListOptions1 = CountryList.filter((c) => c.show === true).map(
+  //   (d) => {
+  //     return {
+  //       ...d,
+  //       label: d.countryName,
+  //       value: d.countryName,
+  //     };
+  //   }
+  // );
+
+  // const CountryCodeListOptions1 = CountryList.filter((c) => c.show === true).map(
+  //   (d) => {
+  //     return {
+  //       ...d,
+  //       label: d.countryCode,
+  //       value: d.countryCode,
+  //     };
+  //   }
+  // );
 
   const inputRef = useRef();
 
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
 
-  console.log("Branch Form Obj = ", form_obj);
+  useEffect(() => {
+    console.log("Form Obj = ", form_obj);
+    setBranchObj(form_obj);
+    if (!!form_obj?.country && form_obj?.country !== "") {
+      setStateListOptions(
+        CountryList.find((d) => d.countryName === form_obj?.country).states ||
+          []
+      );
+    }
+  }, [form_obj]);
 
   const [branchObj, setBranchObj] = useState({});
 
-  const updateBranchObj = (name, value) => {
+  const updateBranchObj = (e) => {
+    const { name, value } = e.target;
+
     setBranchObj({
       ...branchObj,
       [name]: value,
@@ -111,25 +160,18 @@ const BranchForm = () => {
   const handleCountryCodeChange = (e) => {
     console.log("COUntry Code = ", e);
 
-    setProfileData({
-      ...profileData,
-      country: e.value,
-      country_code: e.countryCode,
+    setBranchObj({
+      ...branchObj,
+      country_code: e.value,
     });
-
-    setStateListOptions(
-      CountryListOptions.find((d) => d.value === e.value).states || []
-    );
   };
 
   const handleCountryChange = (e) => {
     console.log("Country Change = ", e);
 
-    setProfileData({
-      ...profileData,
+    setBranchObj({
+      ...branchObj,
       country: e.value,
-      country_code: e.countryCode,
-      state: "",
     });
 
     setStateListOptions(
@@ -137,8 +179,21 @@ const BranchForm = () => {
     );
   };
 
-  const submitBranchForm = (e) => {
+  const submitBranchForm = async (e) => {
     e.preventDefault();
+    console.log("Branch Form Submit = ", branchObj);
+
+    dispatch(setLoaderVisible(true));
+
+    const Api = await PostApi("branch/add-new/", branchObj, false);
+    console.log("API RES = ", Api);
+    if (Api.status && Api.status === 200) {
+      toast.success(Api?.data?.message);
+    } else {
+      toast.error(Api?.data?.message || Api?.data?.detail);
+    }
+
+    dispatch(setLoaderVisible(false));
   };
 
   return (
@@ -151,15 +206,18 @@ const BranchForm = () => {
                 <Row className="gy-4">
                   <Col lg={12}>
                     <div>
-                      <Label htmlFor="branchName" className="form-label">
+                      <Label htmlFor="name" className="form-label">
                         Branch Name
                       </Label>
                       <div className="form-icon right">
                         <Input
                           type="text"
                           className="form-control form-control-icon"
-                          id="branchName"
+                          id="name"
+                          name="name"
                           placeholder="New Branch"
+                          value={branchObj.name || ""}
+                          onChange={updateBranchObj}
                         />
                         <i className="ri-building-2-line"></i>
                       </div>
@@ -178,18 +236,16 @@ const BranchForm = () => {
                             id="country_code"
                             name="country_code"
                             isMulti={false}
-                            options={CountryListOptions || []}
-                            styles={CountryCodeDisplayStyles}
+                            options={CountryCodeListOptions || []}
                             components={{
                               Option: CountryCodeDisplayInSelect,
-                              SingleValue: CountryCodeDisplayInSelect,
                             }}
                             className="basic-multi-select"
                             value={
-                              profileData?.country_code !== ""
-                                ? CountryListOptions.find(
+                              branchObj?.country_code !== ""
+                                ? CountryCodeListOptions.find(
                                     (d) =>
-                                      d.countryCode === profileData.country_code
+                                      d.countryCode === branchObj.country_code
                                   )
                                 : []
                             }
@@ -199,15 +255,11 @@ const BranchForm = () => {
                         <Col md={9}>
                           <Input
                             type="number"
+                            name="contact_number"
                             className="form-control rounded-end flag-input"
                             placeholder="Enter number"
-                            value={profileData.contact_number || ""}
-                            onChange={(e) =>
-                              updateProfileData(
-                                "contact_number",
-                                e.target.value
-                              )
-                            }
+                            value={branchObj.contact_number || ""}
+                            onChange={updateBranchObj}
                           />
                         </Col>
                       </Row>
@@ -220,19 +272,18 @@ const BranchForm = () => {
 
                   <Col lg={12}>
                     <div>
-                      <Label htmlFor="companyemail" className="form-label">
+                      <Label htmlFor="contact_email" className="form-label">
                         Contact Email*
                       </Label>
                       <div className="form-icon right">
                         <Input
                           type="email"
+                          name="contact_email"
                           className="form-control form-control-icon"
-                          id="companyemail"
+                          id="contact_email"
                           placeholder="user@company.com"
                           value={branchObj.contact_email || ""}
-                          onChange={(e) =>
-                            updateBranchObj("contact_email", e.target.value)
-                          }
+                          onChange={updateBranchObj}
                         />
                         <i className="ri-mail-line"></i>
                       </div>
@@ -244,17 +295,16 @@ const BranchForm = () => {
 
                   <Col lg={12}>
                     <div>
-                      <Label htmlFor="branchOverview" className="form-label">
+                      <Label htmlFor="about" className="form-label">
                         Company Overview
                       </Label>
                       <textarea
                         className="form-control"
-                        id="branchOverview"
+                        id="about"
+                        name="about"
                         rows="3"
                         value={branchObj.about || ""}
-                        onChange={(e) =>
-                          updateBranchObj("about", e.target.value)
-                        }
+                        onChange={updateBranchObj}
                       ></textarea>
                       <div id="passwordHelpBlock" className="form-text">
                         Company Overview.
@@ -262,24 +312,23 @@ const BranchForm = () => {
                     </div>
                   </Col>
 
-                  <LocationSearch />
+                  <LocationSearch
+                    branchObj={branchObj}
+                    setBranchObj={setBranchObj}
+                  />
 
                   <Col lg={12}>
                     <div>
-                      <Label
-                        htmlFor="exampleFormControlTextarea5"
-                        className="form-label"
-                      >
+                      <Label htmlFor="address" className="form-label">
                         Address
                       </Label>
                       <textarea
                         className="form-control"
-                        id="exampleFormControlTextarea5"
+                        id="address"
+                        name="address"
                         rows="2"
                         value={branchObj.address || ""}
-                        onChange={(e) =>
-                          updateBranchObj("address", e.target.value)
-                        }
+                        onChange={updateBranchObj}
                       ></textarea>
                       <div id="passwordHelpBlock" className="form-text">
                         Address.
@@ -299,17 +348,16 @@ const BranchForm = () => {
                         options={CountryListOptions || []}
                         className="basic-multi-select"
                         value={
-                          profileData?.country !== ""
+                          branchObj?.country !== ""
                             ? CountryListOptions.find(
-                                (d) => d.value === profileData.country
+                                (d) => d.value === branchObj.country
                               )
                             : []
                         }
                         onChange={handleCountryChange}
                       />
-
                       <div id="passwordHelpBlock" className="form-text">
-                        Select Country.
+                        Enter Country.
                       </div>
                     </div>
                   </Col>
@@ -330,11 +378,11 @@ const BranchForm = () => {
                         className="basic-multi-select"
                         value={
                           stateListOptions.find(
-                            (d) => d.value === profileData.state
+                            (d) => d.value === branchObj.state
                           ) || []
                         }
                         onChange={(e) =>
-                          setProfileData({ ...profileData, state: e.value })
+                          setBranchObj({ ...branchObj, state: e.value })
                         }
                       />
 
@@ -346,22 +394,18 @@ const BranchForm = () => {
 
                   <Col lg={12}>
                     <div>
-                      <Label
-                        htmlFor="exampleFormControlTextarea5"
-                        className="form-label"
-                      >
+                      <Label htmlFor="city" className="form-label">
                         City
                       </Label>
                       <div className="form-icon right">
                         <Input
                           type="text"
                           className="form-control form-control-icon"
-                          id="companycity"
-                          placeholder="Chennai"
+                          id="city"
+                          name="city"
+                          placeholder="City"
                           value={branchObj.city || ""}
-                          onChange={(e) =>
-                            updateBranchObj("city", e.target.value)
-                          }
+                          onChange={updateBranchObj}
                         />
                         <i className="ri-mail-line"></i>
                       </div>
@@ -373,22 +417,18 @@ const BranchForm = () => {
 
                   <Col lg={12}>
                     <div>
-                      <Label
-                        htmlFor="exampleFormControlTextarea5"
-                        className="form-label"
-                      >
+                      <Label htmlFor="pincode" className="form-label">
                         Pincode
                       </Label>
                       <div className="form-icon right">
                         <Input
                           type="number"
                           className="form-control form-control-icon"
-                          id="companypincode"
+                          id="pincode"
+                          name="pincode"
                           placeholder="666666"
                           value={branchObj.pincode || ""}
-                          onChange={(e) =>
-                            updateBranchObj("pincode", e.target.value)
-                          }
+                          onChange={updateBranchObj}
                         />
                         <i className="ri-mail-line"></i>
                       </div>
@@ -407,13 +447,23 @@ const BranchForm = () => {
                         Time Zone
                       </Label>
                       <div className="form-icon right">
-                        <Input
-                          type="text"
-                          className="form-control form-control-icon"
+                        <Select
+                          name="timezone"
                           id="timezone"
-                          placeholder="Asia/Kolkata"
-                          value={timezone || ""}
-                          onChange={(e) => setTimeZone(e.target.value)}
+                          value={
+                            branchObj.timezone &&
+                            timzone_options.find(
+                              (e) => e.value === branchObj.timezone
+                            )
+                          }
+                          onChange={(e) =>
+                            setBranchObj({
+                              ...branchObj,
+                              timezone: e.value,
+                            })
+                          }
+                          options={timzone_options}
+                          placeholder="Select a time zone"
                         />
                         <i className="ri-time-line"></i>
                       </div>

@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { useDispatch } from "react-redux";
+import React, { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 import {
   Button,
@@ -22,6 +22,8 @@ import {
 import { Link } from "react-router-dom";
 import { GetCustomField } from "../../common/js/GetCustomField";
 import { organization_component_name } from "../../common/constant/Constants";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { setBranch } from "../../redux/reducers/ChildReducer/BranchReducer";
 
 // const { Column, HeaderCell, Cell } = Table;
 
@@ -29,6 +31,13 @@ import { organization_component_name } from "../../common/constant/Constants";
 
 const Branch = () => {
   const dispatch = useDispatch();
+
+  const { branch_data } = useSelector((state) => state.BranchReducer);
+  console.log("Branch Data = ", branch_data);
+
+  useEffect(() => {
+    dispatch(setBranch(GetLocalStorageData("branch")));
+  }, []);
 
   // Custom Field Option
 
@@ -39,7 +48,7 @@ const Branch = () => {
   const initialFormObj = useMemo(() => {
     return {
       id: "0",
-      website: "",
+      name: "",
       contact_number: "",
       country_code: "+91",
       contact_email: "",
@@ -49,6 +58,13 @@ const Branch = () => {
       pincode: "",
       country: "",
       state: "",
+      timezone: "",
+      accurate_address: "",
+      radius_range: 10,
+      latitude: "8.3865046",
+      longitude: "77.608336",
+      location_id: "",
+      map_data: [],
       cf_values: CustomFieldsForThisForm || [],
     };
   }, []);
@@ -56,7 +72,7 @@ const Branch = () => {
   const handleBranchEdit = (id, obj) => {
     let FormObj = {};
 
-    if (id === 0) {
+    if (parseInt(id) === 0) {
       FormObj = initialFormObj;
     } else {
       let thisCFValues = "cf_values" in obj ? [...obj?.cf_values] : [];
@@ -106,7 +122,101 @@ const Branch = () => {
         </CardHeader>
         <CardBody>
           <Row>
-            <Col xxl={6}>
+            {!!branch_data &&
+              branch_data.length &&
+              branch_data.map((bd) => (
+                <Col xxl={6}>
+                  <Card key={1} className="border card-border-success">
+                    <CardBody>
+                      <div
+                        className={`p-3 mt-n3 mx-n3 bg-success-subtle rounded-top`}
+                      >
+                        <div className="d-flex align-items-center">
+                          <div className="flex-grow-1">
+                            <h5 className="mb-0 fs-14">
+                              <Link to="#" className="text-body">
+                                {bd?.name}
+                                {bd?.type === 1 && (
+                                  <span className="badge border border-dark text-body ms-2">
+                                    HEADQUARTER
+                                  </span>
+                                )}
+                              </Link>
+                            </h5>
+                          </div>
+                          <div className="flex-shrink-0">
+                            <div className="d-flex gap-1 align-items-center my-n2">
+                              <div className="form-check form-switch form-switch-success  ">
+                                <Input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  role="switch"
+                                  id="enableEPF"
+                                  checked="true"
+                                />
+                                <Label
+                                  className="form-check-label"
+                                  for="enableEPF"
+                                >
+                                  Active
+                                </Label>
+                              </div>
+                              <a
+                                onClick={() => handleBranchEdit(bd?.id, bd)}
+                                className="text-primary d-inline-block edit-item-btn ms-2"
+                                href="javascript:void(0)"
+                              >
+                                <i class="ri-pencil-fill fs-16"></i>
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="py-3">
+                        <Row className="gy-3">
+                          <Col xs={12}>
+                            <div>
+                              <p className="text-muted mb-1">Address </p>
+                              <h5 className="fs-14">{bd?.address}</h5>
+                            </div>
+                            <hr />
+                          </Col>
+                        </Row>
+                        <Row className="gy-3">
+                          <Col xs={2}>
+                            <div>
+                              <p className="text-muted mb-1">Employees</p>
+                              <h5 className="fs-14">25</h5>
+                            </div>
+                          </Col>
+                          <Col xs={4}>
+                            <div>
+                              <p className="text-muted mb-1">Timezone</p>
+                              <h5 className="fs-14">{bd?.timezone}</h5>
+                            </div>
+                          </Col>
+                          <Col xs={3}>
+                            <div>
+                              <p className="text-muted mb-1">Contact Number</p>
+                              <h5 className="fs-14">
+                                {bd?.country_code} {bd?.contact_number}{" "}
+                              </h5>
+                            </div>
+                          </Col>
+                          <Col xs={3}>
+                            <div>
+                              <p className="text-muted mb-1">Contact Email</p>
+                              <h5 className="fs-14">{bd?.contact_email}</h5>
+                            </div>
+                          </Col>
+                        </Row>
+                      </div>
+                    </CardBody>
+                  </Card>
+                </Col>
+              ))}
+            {/* <Col xxl={6}>
               <Card key={1} className="border card-border-success">
                 <CardBody>
                   <div
@@ -277,7 +387,7 @@ const Branch = () => {
                   </div>
                 </CardBody>
               </Card>
-            </Col>
+            </Col> */}
           </Row>
         </CardBody>
       </Card>

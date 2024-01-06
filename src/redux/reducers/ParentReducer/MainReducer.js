@@ -16,6 +16,7 @@ import LoaderReducer from "../ChildReducer/LoaderReducer";
 import SalaryComponentsReducer from "../ChildReducer/SalaryComponentsReducer";
 import ClockReducer from "../ChildReducer/ClockReducer";
 import AttendanceReportReducer from "../ChildReducer/AttendanceReportReducer";
+import BranchReducer from "../ChildReducer/BranchReducer";
 export const MainReducer = combineReducers({
     MetaReducer: MetaReducer,
     EmployeeReducer: EmployeeReducer,
@@ -34,4 +35,5 @@ export const MainReducer = combineReducers({
     SalaryComponentsReducer: SalaryComponentsReducer,
     ClockReducer: ClockReducer,
     AttendanceReportReducer: AttendanceReportReducer,
+    BranchReducer: BranchReducer,
 })

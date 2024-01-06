@@ -10,14 +10,32 @@ import { Col, Input, Label, ListGroup, ListGroupItem, Row } from "reactstrap";
 import { map_radius_options } from "../../common/constant/Constants";
 import Select from "react-select";
 
-function LocationSearch() {
-  const [locationText, setLocationText] = useState("");
+function LocationSearch({ branchObj, setBranchObj }) {
   const [mapZoom, setMapZoom] = useState(21);
 
   const [mapCenter, setMapCenter] = useState({
     lat: 8.3865046,
     lng: 77.608336,
   });
+
+  useEffect(() => {
+    if (!!branchObj?.radius_range) {
+      setMapCircleOptions({
+        ...mapCircleOptions,
+        radius: branchObj?.radius_range,
+      });
+      setMapZoom(
+        map_radius_options.find((d) => d.value === branchObj?.radius_range).zoom
+      );
+    }
+
+    if (!!branchObj?.latitude && !!branchObj?.longitude) {
+      setMapCenter({
+        lat: parseFloat(branchObj?.latitude),
+        lng: parseFloat(branchObj?.longitude),
+      });
+    }
+  }, [branchObj?.radius_range, branchObj?.latitude, branchObj?.longitude]);
 
   const [mapCircleOptions, setMapCircleOptions] = useState({
     strokeColor: "#FF0000",
@@ -41,25 +59,13 @@ function LocationSearch() {
     height: "400px",
   };
 
-  const formData = {
-    name: "",
-    contact: "",
-    email: "",
-    overview: "",
-    map_add: "",
-    map_radius: "",
-    address: "",
-    country: "",
-    state: "",
-    city: "",
-    pincode: "",
-    timezone: "",
-  };
-
   const handleLocationChange = (e) => {
     const { value } = e.target;
 
-    setLocationText(value);
+    setBranchObj({
+      ...branchObj,
+      accurate_address: value,
+    });
 
     if (value.trim().length) {
       const autocomplete = new window.google.maps.places.AutocompleteService();
@@ -89,20 +95,23 @@ function LocationSearch() {
     placesService.getDetails({ placeId }, (place, status) => {
       if (status === "OK") {
         console.log("Selected Place:", place);
-        setLocationText(place?.name);
-        // You can do something with the selected place, e.g., fetch its coordinates.
-
-        setMapCenter({
-          lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng(),
+        setBranchObj({
+          ...branchObj,
+          map_data: place,
+          accurate_address: place?.name,
+          location_id: place?.place_id,
+          latitude: String(place.geometry.location.lat()),
+          longitude: String(place.geometry.location.lng()),
         });
-        console.log(mapCenter);
       }
     });
 
     // Clear predictions and input
     setPredictions([]);
-    setLocationText("");
+    setBranchObj({
+      ...branchObj,
+      accurate_address: "",
+    });
   };
 
   const { isLoaded } = useJsApiLoader({
@@ -127,9 +136,10 @@ function LocationSearch() {
   const onMarkerDrag = (e) => {
     console.log("onMarkerDrag: ", e.latLng.lat());
 
-    setMapCenter({
-      lat: e.latLng.lat(),
-      lng: e.latLng.lng(),
+    setBranchObj({
+      ...branchObj,
+      latitude: String(e.latLng.lat()),
+      longitude: String(e.latLng.lng()),
     });
   };
 
@@ -160,7 +170,7 @@ function LocationSearch() {
                 id="branchLocation"
                 placeholder="Search an address"
                 onChange={handleLocationChange}
-                value={locationText}
+                value={branchObj?.accurate_address || ""}
                 ref={autocompleteRef}
                 autoComplete={false}
               />
@@ -195,10 +205,19 @@ function LocationSearch() {
               name="map_radius"
               options={map_radius_options || []}
               className="basic-multi-select"
+              value={
+                branchObj?.radius_range
+                  ? map_radius_options.find(
+                      (d) =>
+                        parseInt(d.value) === parseInt(branchObj?.radius_range)
+                    )
+                  : []
+              }
               onChange={(e) => {
-                console.log(e);
-                setMapZoom(e.zoom);
-                setMapCircleOptions({ ...mapCircleOptions, radius: e.value });
+                setBranchObj({
+                  ...branchObj,
+                  radius_range: e.value,
+                });
               }}
             />
           </div>
