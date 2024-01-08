@@ -1991,3 +1991,247 @@ export const SwitzerlandStates = [
   { id: 'Zurich', label: 'Zurich', value: 'Zurich' }
 ]
 
+
+export const default_roles_list = [
+  {
+    id: 1,
+    Name: "Organization",
+    priority: 1,
+    note: "Organization Full Access",
+    icon: "mdi mdi-office-building-marker-outline",
+    permission: [
+      {
+        id: 101,
+        notes: "User Can View All Branch",
+        element: "per_branch_view",
+        dependency: [],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 102,
+        notes: "User Can Create New Branch",
+        element: "per_branch_create",
+        dependency: ["per_branch_view"],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 103,
+        notes: "User Can Edit Branch",
+        element: "per_branch_edit",
+        dependency: ["per_branch_view"],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 104,
+        notes: "User Can View All Departments",
+        element: "per_department_view",
+        dependency: [],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 105,
+        notes: "User Can Create New Departments",
+        element: "per_department_create",
+        dependency: ["per_department_view"],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 106,
+        notes: "User Can Edit Departments",
+        element: "per_department_edit",
+        dependency: ["per_department_view"],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 107,
+        notes: "User Can View All Roles",
+        element: "per_role_view",
+        dependency: [],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 108,
+        notes: "User Can Create New Role",
+        element: "per_role_create",
+        dependency: ["per_role_view"],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 109,
+        notes: "User Can Edit Role",
+        element: "per_role_edit",
+        dependency: ["per_role_view"],
+        checked: false,
+        disabled: false
+      },
+    ],
+  },
+  {
+    id: 2,
+    Name: "Attendance",
+    priority: 2,
+    note: "",
+    permission: [
+      {
+        id: 201,
+        notes: "User Can Configure Attendance",
+        element: "per_configure_attendance",
+        dependency: [],
+        checked: false, disabled: false
+      },
+      {
+        id: 202,
+        notes: "User Can Create Leave Types",
+        element: "per_create_leave_type",
+        dependency: [],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 203,
+        notes: "User Can Create/Delete Holidays",
+        element: "per_holiday_create_delete",
+        dependency: [],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 204,
+        notes: "User Can View Team Attendance",
+        element: "per_view_team_attendance",
+        dependency: [],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 205,
+        notes: "User Can View All Employee Attendance",
+        element: "per_view_employee_attendance",
+        dependency: [],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 206,
+        notes: "User Can Edit Paid/OT Hours",
+        element: "per_edit_paid_ot_hours",
+        dependency: ["per_view_team_attendance"],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 207,
+        notes: "User Can View Work Schedule",
+        element: "per_ws_view",
+        dependency: [],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 208,
+        notes: "Can Create Work Schedule",
+        element: "per_ws_create",
+        dependency: ["per_ws_view"],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 209,
+        notes: "Can Edit Work Schedule",
+        element: "per_ws_edit",
+        dependency: ["per_ws_view"],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 210,
+        notes: "Can Delete Work Schedule",
+        element: "per_ws_delete",
+        dependency: ["per_ws_view"],
+        checked: false,
+        disabled: false
+      },
+    ],
+  },
+  {
+    id: 3,
+    Name: "Payroll",
+    note: "Payroll",
+    priority: 3,
+    permission: [
+      {
+        id: 301,
+        notes: "User Can Configure Payroll",
+        element: "per_configure_payroll",
+        dependency: [],
+        checked: false,
+        disabled: false
+      },
+    ],
+  },
+  {
+    id: 4,
+    Name: "Customization",
+    note: "Custom Fields",
+    priority: 4,
+    permission: [
+      {
+        id: 401,
+        notes: "User Can Control Custom Fields",
+        element: "per_create_custom_fields",
+        dependency: [],
+        checked: false,
+        disabled: false
+      },
+    ],
+  },
+  {
+    id: 5,
+    Name: "Reports",
+    note: "Reports",
+    priority: 5,
+    permission: [
+      {
+        id: 501,
+        notes: "View Employee Reports",
+        element: "per_employee_report",
+        dependency: [],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 502,
+        notes: " View Branch Reports",
+        element: "per_branch_report",
+        dependency: [],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 503,
+        notes: "View Daily Attendance Reports",
+        element: "per_attendance_report",
+        dependency: [],
+        checked: false,
+        disabled: false
+      },
+      {
+        id: 504,
+        notes: "View Payroll Reports",
+        element: "per_payroll_report",
+        dependency: [],
+        checked: false,
+        disabled: false
+      },
+    ],
+  },
+]
+

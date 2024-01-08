@@ -7,7 +7,10 @@ import { Api } from "../../common/api/Api";
 import { useDispatch, useSelector } from "react-redux";
 import { setRole } from "../../redux/reducers/ChildReducer/RoleReducer";
 import RsuiteTable from "../../component/common/table/RsuiteTable";
-import { role_component_name } from "../../common/constant/Constants";
+import {
+  default_roles_list,
+  role_component_name,
+} from "../../common/constant/Constants";
 
 const Roles = () => {
   document.title = `Role | ${MetaTitle}`;
@@ -221,7 +224,16 @@ const Roles = () => {
       filterable: false,
       id: "roles",
       accessor: (obj) => {
-        return <b>{obj.roles.length}</b>;
+        let total_roles = 0;
+
+        obj.roles_list.map((d) => {
+          let this_dep_role = d.permission.filter(
+            (p) => p.checked === true
+          ).length;
+          total_roles += this_dep_role;
+        });
+
+        return <b>{total_roles}</b>;
       },
     },
     {
@@ -248,7 +260,7 @@ const Roles = () => {
       id: 0,
       name: "",
       total_employees: 0,
-      roles: [],
+      roles_list: default_roles_list,
       status: 1,
       description: "",
     };
