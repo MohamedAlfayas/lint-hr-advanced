@@ -12,6 +12,7 @@ import {
   DropdownToggle,
   Form,
   FormGroup,
+  FormFeedback,
   Input,
   Label,
   Row,
@@ -34,6 +35,8 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { DatePicker } from "antd";
 dayjs.extend(customParseFormat);
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
 import indflag from "../../assets/images/flags/in.svg";
 //SimpleBar
@@ -184,33 +187,76 @@ const BranchForm = () => {
     );
   };
 
-  const submitBranchForm = async (e) => {
-    e.preventDefault();
-    console.log("Branch Form Submit = ", branchObj);
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: branchObj,
+    validationSchema: Yup.object({
+      name: Yup.string().required("Please Enter Branch Name"),
+      country_code: Yup.string().required("Please Select Country Code"),
+      contact_number: Yup.string().required("Please Enter Contact Number"),
+      contact_email: Yup.string()
+        .email("Please Enter Valid Email")
+        .required("Please Enter Email"),
+      address: Yup.string().required("Please Enter Address"),
+      country: Yup.string().required("Please Select Country"),
+      state: Yup.string().required("Please Select State"),
+      city: Yup.string().required("Please Enter City"),
+      pincode: Yup.string().required("Please Enter Pincode"),
+      timezone: Yup.string().required("Please Select Time Zone"),
+      accurate_address: Yup.string().required("Please Enter Accurate Address"),
+    }),
+    onSubmit: async (values) => {
+      console.log("SUCCESSSS !!!! Formik Values = ", values);
+      e.preventDefault();
+      console.log("Branch Form Submit = ", branchObj);
 
-    dispatch(setLoaderVisible(true));
+      dispatch(setLoaderVisible(true));
 
-    const Api = await PostApi("branch/add-new/", branchObj, false);
-    console.log("API RES = ", Api);
-    if (Api.status && Api.status === 200) {
-      branchObj.id === 0
-        ? dispatch(addBranch(Api?.data?.data))
-        : dispatch(editBranch(Api?.data?.data));
-      dispatch(toggleRSBView(false));
-      toast.success(Api?.data?.message);
-    } else {
-      toast.error(Api?.data?.message || Api?.data?.detail);
+      const Api = await PostApi("branch/add-new/", branchObj, false);
+      console.log("API RES = ", Api);
+      if (Api.status && Api.status === 200) {
+        branchObj.id === 0
+          ? dispatch(addBranch(Api?.data?.data))
+          : dispatch(editBranch(Api?.data?.data));
+        dispatch(toggleRSBView(false));
+        toast.success(Api?.data?.message);
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
+      }
+
+      dispatch(setLoaderVisible(false));
+    },
+  });
+
+  useEffect(() => {
+    if (
+      FormikForm.submitCount > 0 &&
+      Object.keys(FormikForm.errors).length > 0
+    ) {
+      const firstErrorField = Object.keys(FormikForm.errors)[0];
+      FormikForm.setFieldTouched(firstErrorField);
+      const errorField = document.querySelector(`[name=${firstErrorField}]`);
+      if (errorField) {
+        errorField.focus();
+
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }
     }
-
-    dispatch(setLoaderVisible(false));
-  };
+  }, [
+    FormikForm.submitCount,
+    FormikForm.errors,
+    FormikForm.setFieldTouched,
+    inputRef,
+  ]);
 
   return (
     <React.Fragment>
       <Row>
         <Col xl={12} lg={12}>
           <div>
-            <form onSubmit={submitBranchForm}>
+            <Form onSubmit={FormikForm.handleSubmit}>
               <div className="live-preview">
                 <Row className="gy-4">
                   <Col lg={12}>
@@ -224,15 +270,31 @@ const BranchForm = () => {
                           className="form-control form-control-icon"
                           id="name"
                           name="name"
+                          innerRef={inputRef}
                           placeholder="New Branch"
                           value={branchObj.name || ""}
                           onChange={updateBranchObj}
+                          invalid={
+                            FormikForm.touched.name && FormikForm.errors.name
+                              ? true
+                              : false
+                          }
                         />
-                        <i className="ri-building-2-line"></i>
+                        {!FormikForm.touched.name &&
+                          !FormikForm.errors.name && (
+                            <i className="ri-building-2-line"></i>
+                          )}
+                        {FormikForm.touched.name && FormikForm.errors.name ? (
+                          <FormFeedback type="invalid">
+                            {FormikForm.errors.name}
+                          </FormFeedback>
+                        ) : null}
                       </div>
-                      <div id="passwordHelpBlock" className="form-text">
-                        Enter Your Branch Name.
-                      </div>
+                      {!FormikForm.errors.name && (
+                        <div id="passwordHelpBlock" className="form-text">
+                          Enter Your Branch Name.
+                        </div>
+                      )}
                     </div>
                   </Col>
 
@@ -258,24 +320,61 @@ const BranchForm = () => {
                                   )
                                 : []
                             }
+                            styles={{
+                              control: (provided, state) => ({
+                                ...provided,
+                                borderColor:
+                                  !state.isFocused &&
+                                  FormikForm.touched.country_code &&
+                                  FormikForm.errors.country_code
+                                    ? "red !important"
+                                    : provided.borderColor,
+                              }),
+                            }}
                             onChange={handleCountryCodeChange}
+                            invalid={
+                              FormikForm.touched.country_code &&
+                              FormikForm.errors.country_code
+                                ? true
+                                : false
+                            }
                           />
+                          {FormikForm.touched.country_code &&
+                          FormikForm.errors.country_code ? (
+                            <div className="lc_form_error_text">
+                              {FormikForm.errors.country_code}
+                            </div>
+                          ) : null}
                         </Col>
                         <Col md={9}>
                           <Input
                             type="number"
                             name="contact_number"
+                            innerRef={inputRef}
                             className="form-control rounded-end flag-input"
                             placeholder="Enter number"
                             value={branchObj.contact_number || ""}
                             onChange={updateBranchObj}
+                            invalid={
+                              FormikForm.touched.contact_number &&
+                              FormikForm.errors.contact_number
+                                ? true
+                                : false
+                            }
                           />
+                          {FormikForm.touched.contact_number &&
+                          FormikForm.errors.contact_number ? (
+                            <FormFeedback type="invalid">
+                              {FormikForm.errors.contact_number}
+                            </FormFeedback>
+                          ) : null}
                         </Col>
                       </Row>
-
-                      <div id="passwordHelpBlock" className="form-text">
-                        Enter Your Contact number with country code.
-                      </div>
+                      {!FormikForm.errors.contact_number && (
+                        <div id="passwordHelpBlock" className="form-text">
+                          Enter Your Contact number with country code.
+                        </div>
+                      )}
                     </div>
                   </Col>
 
@@ -286,19 +385,36 @@ const BranchForm = () => {
                       </Label>
                       <div className="form-icon right">
                         <Input
-                          type="email"
+                          type="text"
                           name="contact_email"
                           className="form-control form-control-icon"
                           id="contact_email"
                           placeholder="user@company.com"
                           value={branchObj.contact_email || ""}
                           onChange={updateBranchObj}
+                          invalid={
+                            FormikForm.touched.contact_email &&
+                            FormikForm.errors.contact_email
+                              ? true
+                              : false
+                          }
                         />
-                        <i className="ri-mail-line"></i>
+                        {!FormikForm.touched.contact_email &&
+                          !FormikForm.errors.contact_email && (
+                            <i className="ri-mail-line"></i>
+                          )}
+                        {FormikForm.touched.contact_email &&
+                        FormikForm.errors.contact_email ? (
+                          <FormFeedback type="invalid">
+                            {FormikForm.errors.contact_email}
+                          </FormFeedback>
+                        ) : null}
                       </div>
-                      <div id="passwordHelpBlock" className="form-text">
-                        Enter Your Email.
-                      </div>
+                      {!FormikForm.errors.contact_email && (
+                        <div id="passwordHelpBlock" className="form-text">
+                          Enter Your Email.
+                        </div>
+                      )}
                     </div>
                   </Col>
 
@@ -324,6 +440,7 @@ const BranchForm = () => {
                   <LocationSearch
                     branchObj={branchObj}
                     setBranchObj={setBranchObj}
+                    FormikForm={FormikForm}
                   />
 
                   <Col lg={12}>
@@ -331,17 +448,32 @@ const BranchForm = () => {
                       <Label htmlFor="address" className="form-label">
                         Address
                       </Label>
-                      <textarea
+                      <Input
+                        type="textarea"
                         className="form-control"
                         id="address"
                         name="address"
                         rows="2"
                         value={branchObj.address || ""}
                         onChange={updateBranchObj}
-                      ></textarea>
-                      <div id="passwordHelpBlock" className="form-text">
-                        Address.
-                      </div>
+                        invalid={
+                          FormikForm.touched.address &&
+                          FormikForm.errors.address
+                            ? true
+                            : false
+                        }
+                      />
+                      {FormikForm.touched.address &&
+                      FormikForm.errors.address ? (
+                        <FormFeedback type="invalid">
+                          {FormikForm.errors.address}
+                        </FormFeedback>
+                      ) : null}
+                      {!FormikForm.errors.address && (
+                        <div id="passwordHelpBlock" className="form-text">
+                          Address.
+                        </div>
+                      )}
                     </div>
                   </Col>
 
@@ -363,11 +495,36 @@ const BranchForm = () => {
                               )
                             : []
                         }
+                        styles={{
+                          control: (provided, state) => ({
+                            ...provided,
+                            borderColor:
+                              !state.isFocused &&
+                              FormikForm.touched.country &&
+                              FormikForm.errors.country
+                                ? "red !important"
+                                : provided.borderColor,
+                          }),
+                        }}
                         onChange={handleCountryChange}
+                        invalid={
+                          FormikForm.touched.country &&
+                          FormikForm.errors.country
+                            ? true
+                            : false
+                        }
                       />
-                      <div id="passwordHelpBlock" className="form-text">
-                        Enter Country.
-                      </div>
+                      {FormikForm.touched.country &&
+                      FormikForm.errors.country ? (
+                        <div className="lc_form_error_text">
+                          {FormikForm.errors.country}
+                        </div>
+                      ) : null}
+                      {!FormikForm.errors.country && (
+                        <div id="passwordHelpBlock" className="form-text">
+                          Enter Country.
+                        </div>
+                      )}
                     </div>
                   </Col>
 
@@ -385,6 +542,17 @@ const BranchForm = () => {
                         isMulti={false}
                         options={stateListOptions || []}
                         className="basic-multi-select"
+                        styles={{
+                          control: (provided, state) => ({
+                            ...provided,
+                            borderColor:
+                              !state.isFocused &&
+                              FormikForm.touched.state &&
+                              FormikForm.errors.state
+                                ? "red !important"
+                                : provided.borderColor,
+                          }),
+                        }}
                         value={
                           stateListOptions.find(
                             (d) => d.value === branchObj.state
@@ -393,11 +561,22 @@ const BranchForm = () => {
                         onChange={(e) =>
                           setBranchObj({ ...branchObj, state: e.value })
                         }
+                        invalid={
+                          FormikForm.touched.state && FormikForm.errors.state
+                            ? true
+                            : false
+                        }
                       />
-
-                      <div id="passwordHelpBlock" className="form-text">
-                        Select State.
-                      </div>
+                      {FormikForm.touched.state && FormikForm.errors.state ? (
+                        <div className="lc_form_error_text">
+                          {FormikForm.errors.state}
+                        </div>
+                      ) : null}
+                      {!FormikForm.errors.state && (
+                        <div id="passwordHelpBlock" className="form-text">
+                          Select State.
+                        </div>
+                      )}
                     </div>
                   </Col>
 
@@ -415,12 +594,27 @@ const BranchForm = () => {
                           placeholder="City"
                           value={branchObj.city || ""}
                           onChange={updateBranchObj}
+                          invalid={
+                            FormikForm.touched.city && FormikForm.errors.city
+                              ? true
+                              : false
+                          }
                         />
-                        <i className="ri-mail-line"></i>
+                        {!FormikForm.touched.city &&
+                          !FormikForm.errors.city && (
+                            <i className="ri-mail-line"></i>
+                          )}
+                        {FormikForm.touched.city && FormikForm.errors.city ? (
+                          <FormFeedback type="invalid">
+                            {FormikForm.errors.city}
+                          </FormFeedback>
+                        ) : null}
                       </div>
-                      <div id="passwordHelpBlock" className="form-text">
-                        Select City.
-                      </div>
+                      {!FormikForm.errors.city && (
+                        <div id="passwordHelpBlock" className="form-text">
+                          Select City.
+                        </div>
+                      )}
                     </div>
                   </Col>
 
@@ -438,12 +632,29 @@ const BranchForm = () => {
                           placeholder="666666"
                           value={branchObj.pincode || ""}
                           onChange={updateBranchObj}
+                          invalid={
+                            FormikForm.touched.pincode &&
+                            FormikForm.errors.pincode
+                              ? true
+                              : false
+                          }
                         />
-                        <i className="ri-mail-line"></i>
+                        {!FormikForm.touched.pincode &&
+                          !FormikForm.errors.pincode && (
+                            <i className="ri-mail-line"></i>
+                          )}
+                        {FormikForm.touched.pincode &&
+                        FormikForm.errors.pincode ? (
+                          <FormFeedback type="invalid">
+                            {FormikForm.errors.pincode}
+                          </FormFeedback>
+                        ) : null}
                       </div>
-                      <div id="passwordHelpBlock" className="form-text">
-                        Pincode.
-                      </div>
+                      {!FormikForm.errors.pincode && (
+                        <div id="passwordHelpBlock" className="form-text">
+                          Pincode.
+                        </div>
+                      )}
                     </div>
                   </Col>
 
@@ -465,6 +676,17 @@ const BranchForm = () => {
                               (e) => e.value === branchObj.timezone
                             )
                           }
+                          styles={{
+                            control: (provided, state) => ({
+                              ...provided,
+                              borderColor:
+                                !state.isFocused &&
+                                FormikForm.touched.timezone &&
+                                FormikForm.errors.timezone
+                                  ? "red !important"
+                                  : provided.borderColor,
+                            }),
+                          }}
                           onChange={(e) =>
                             setBranchObj({
                               ...branchObj,
@@ -473,12 +695,29 @@ const BranchForm = () => {
                           }
                           options={timzone_options}
                           placeholder="Select a time zone"
+                          invalid={
+                            FormikForm.touched.timezone &&
+                            FormikForm.errors.timezone
+                              ? true
+                              : false
+                          }
                         />
-                        <i className="ri-time-line"></i>
+                        {!FormikForm.touched.timezone &&
+                          !FormikForm.errors.timezone && (
+                            <i className="ri-time-line"></i>
+                          )}
+                        {FormikForm.touched.timezone &&
+                        FormikForm.errors.timezone ? (
+                          <FormFeedback type="invalid">
+                            {FormikForm.errors.timezone}
+                          </FormFeedback>
+                        ) : null}
                       </div>
-                      <div id="passwordHelpBlock" className="form-text">
-                        Time Zone.
-                      </div>
+                      {!FormikForm.errors.timezone && (
+                        <div id="passwordHelpBlock" className="form-text">
+                          Time Zone.
+                        </div>
+                      )}
                     </div>
                   </Col>
 
@@ -548,7 +787,7 @@ const BranchForm = () => {
                   </Col>
                 </Row>
               </div>
-            </form>
+            </Form>
           </div>
         </Col>
       </Row>

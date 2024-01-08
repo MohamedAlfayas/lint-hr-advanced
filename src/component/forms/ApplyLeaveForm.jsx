@@ -196,7 +196,7 @@ const ApplyLeaveForm = () => {
       type: 1,
       unit: 1,
       leave_count: 12,
-      available_count: 120,
+      available_count: 120000,
       status: 1,
     },
     {
@@ -206,7 +206,7 @@ const ApplyLeaveForm = () => {
       type: 1,
       unit: 1,
       leave_count: 12,
-      available_count: 12000,
+      available_count: 120000,
       status: 1,
     },
     {
@@ -216,7 +216,7 @@ const ApplyLeaveForm = () => {
       type: 2,
       unit: 1,
       leave_count: 12,
-      available_count: 5000,
+      available_count: 500000,
       status: 1,
     },
     {
@@ -226,7 +226,7 @@ const ApplyLeaveForm = () => {
       type: 1,
       unit: 1,
       leave_count: 60,
-      available_count: 3000,
+      available_count: 300000,
       status: 1,
     },
     {
@@ -236,7 +236,7 @@ const ApplyLeaveForm = () => {
       type: 1,
       unit: 1,
       leave_count: 15,
-      available_count: 1500,
+      available_count: 150000,
       status: 1,
     },
     {
@@ -246,7 +246,7 @@ const ApplyLeaveForm = () => {
       type: 1,
       unit: 1,
       leave_count: 12,
-      available_count: 1200,
+      available_count: 120500,
       status: 1,
     },
     {
@@ -256,7 +256,7 @@ const ApplyLeaveForm = () => {
       type: 1,
       unit: 1,
       leave_count: 12,
-      available_count: 1200,
+      available_count: 120000,
       status: 1,
     },
     {
@@ -266,7 +266,7 @@ const ApplyLeaveForm = () => {
       type: 1,
       unit: 2,
       leave_count: 48,
-      available_count: 3200,
+      available_count: 320000,
       status: 1,
     },
   ];
@@ -374,6 +374,10 @@ const ApplyLeaveForm = () => {
     const value = e.value;
     setSelectedEndMinute(value);
   };
+  const secondsToHours = (seconds) => {
+    const hours = seconds / 3600;
+    return hours.toFixed(2);
+  };
   const handleDayTypeChange = (e) => {
     console.log("Day Type = ", e);
     if (e === multiple_day_type_leave) {
@@ -391,7 +395,7 @@ const ApplyLeaveForm = () => {
         day_type: e,
       });
       setselectedSingleDate(null);
-      setHrDiff("00:00");
+      setHrDiff("");
     }
   };
   // let hoursStr = 0;
@@ -494,17 +498,25 @@ const ApplyLeaveForm = () => {
                       []
                     }
                     onChange={(e) => {
-                      setLeaveApplyObj((leaveapplyObj) => ({
-                        ...leaveapplyObj,
-                        leave_type: e.id,
-                        available_count: e.available_count,
-                      }));
-                      if (leaveapplyObj.available_count <= totalMinutes) {
-                        toast.error(
-                          "Selected Leave Exceeding Available Leave Hours "
-                        );
-                      }
-                      setSelectedLeave_type(leaveapplyObj.leave_type);
+                      setLeaveApplyObj((prevLeaveapplyObj) => {
+                        const updatedLeaveapplyObj = {
+                          ...prevLeaveapplyObj,
+                          leave_type: e.id,
+                          available_count: e.available_count,
+                        };
+
+                        if (
+                          updatedLeaveapplyObj.available_count <= totalMinutes
+                        ) {
+                          toast.error(
+                            "Selected Leave Exceeding Available Leave Hours"
+                          );
+                        }
+
+                        setSelectedLeave_type(updatedLeaveapplyObj.leave_type);
+
+                        return updatedLeaveapplyObj;
+                      });
                     }}
                     placeholder="Select Leave Type"
                     className="basic-multi-select"
@@ -529,9 +541,9 @@ const ApplyLeaveForm = () => {
                 )}
                 {selectedLeave_type && (
                   <div id="passwordHelpBlock" className="form-text">
-                    Available Leave Count{" "}
                     {lt_option.find((leave) => leave.id === leaveapplyObj.id)}{" "}
-                    {leaveapplyObj.available_count} min.
+                    {secondsToHours(leaveapplyObj.available_count)} Hours
+                    Remaining.
                   </div>
                 )}
               </Col>

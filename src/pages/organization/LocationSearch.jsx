@@ -6,11 +6,19 @@ import {
 } from "@react-google-maps/api";
 import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
-import { Col, Input, Label, ListGroup, ListGroupItem, Row } from "reactstrap";
+import {
+  Col,
+  Input,
+  Label,
+  ListGroup,
+  ListGroupItem,
+  FormFeedback,
+  Row,
+} from "reactstrap";
 import { map_radius_options } from "../../common/constant/Constants";
 import Select from "react-select";
 
-function LocationSearch({ branchObj, setBranchObj }) {
+function LocationSearch({ branchObj, setBranchObj, FormikForm }) {
   const [mapZoom, setMapZoom] = useState(21);
 
   const [mapCenter, setMapCenter] = useState({
@@ -175,8 +183,23 @@ function LocationSearch({ branchObj, setBranchObj }) {
                 value={branchObj?.accurate_address || ""}
                 ref={autocompleteRef}
                 autoComplete={false}
+                invalid={
+                  FormikForm.touched.accurate_address &&
+                  FormikForm.errors.accurate_address
+                    ? true
+                    : false
+                }
               />
-              <i className="ri-map-pin-line"></i>
+              {!FormikForm.touched.accurate_address &&
+                !FormikForm.errors.accurate_address && (
+                  <i className="ri-map-pin-line"></i>
+                )}
+              {FormikForm.touched.accurate_address &&
+              FormikForm.errors.accurate_address ? (
+                <FormFeedback type="invalid">
+                  {FormikForm.errors.accurate_address}
+                </FormFeedback>
+              ) : null}
             </div>
             {predictions.length > 0 && (
               <ListGroup>
