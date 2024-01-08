@@ -51,6 +51,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { CountryCodeDisplayInSelect } from "../../common/js/CountryCodeDisplayInSelect";
 import { PostApi } from "../../common/api/PostApi";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import {
+  addBranch,
+  editBranch,
+} from "../../redux/reducers/ChildReducer/BranchReducer";
+import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 // import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 
 const BranchForm = () => {
@@ -188,6 +193,10 @@ const BranchForm = () => {
     const Api = await PostApi("branch/add-new/", branchObj, false);
     console.log("API RES = ", Api);
     if (Api.status && Api.status === 200) {
+      branchObj.id === 0
+        ? dispatch(addBranch(Api?.data?.data))
+        : dispatch(editBranch(Api?.data?.data));
+      dispatch(toggleRSBView(false));
       toast.success(Api?.data?.message);
     } else {
       toast.error(Api?.data?.message || Api?.data?.detail);

@@ -51,6 +51,8 @@ function LocationSearch({ branchObj, setBranchObj }) {
     zIndex: 1,
   });
 
+  console.log("Branch Obj = ", branchObj);
+
   const [predictions, setPredictions] = useState([]);
   const autocompleteRef = useRef(null);
 

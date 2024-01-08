@@ -47,7 +47,7 @@ const Branch = () => {
 
   const initialFormObj = useMemo(() => {
     return {
-      id: "0",
+      id: 0,
       name: "",
       contact_number: "",
       country_code: "+91",
@@ -187,7 +187,9 @@ const Branch = () => {
                           <Col xs={2}>
                             <div>
                               <p className="text-muted mb-1">Employees</p>
-                              <h5 className="fs-14">25</h5>
+                              <h5 className="fs-14">
+                                {bd?.no_of_employees || 0}
+                              </h5>
                             </div>
                           </Col>
                           <Col xs={4}>
