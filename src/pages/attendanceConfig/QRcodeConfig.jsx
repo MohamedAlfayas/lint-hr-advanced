@@ -82,7 +82,7 @@ const QrcodeConfig = () => {
                 .min(1, "Please Select Unit"),
                 security_type: Yup.number()
                 .required("Select Security Type")
-                .min(1, "Please Security Type"),
+                .min(1, "Please Select Security Type"),
 
                 
         }),

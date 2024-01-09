@@ -31,7 +31,7 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 
 const GeneralConfiguration = () => {
   const [generalFormData, setGeneralFormData] = useState({
-    total_hour_calculation: 1,
+    total_hour_calculation: 0,
     attendance_start_date: String(new Date()),
     approval_cycle_count: 0,
     approval_cycle_type: 0,
@@ -43,12 +43,14 @@ const GeneralConfiguration = () => {
     locations: 1,
 })
 
-  const [totalHourCalculation, setTotalHourCalculation] = useState(
-    "Every Valid Check-in&Check-out"
-  );
+  // const [totalHourCalculation, setTotalHourCalculation] = useState(
+  //   "Every Valid Check-in&Check-out"
+  // );
 
   const hourCalculation = [
-    {id:1, label: "Every Valid Check-in&Check-out", value:1}
+    {id:1, label: "Every Valid Check-in", value:1},
+    {id:2, label: "Every Valid Check-out", value:2},
+  
   ]
 
   const approvalCycle = [
@@ -88,10 +90,17 @@ const GeneralConfiguration = () => {
   })
 };
 
+const handleHourCalculationChange =(e) => {
+  setGeneralFormData({
+    ...generalFormData,
+    total_hour_calculation: e.value
+})
+}
 const handleApprovalTypeChange =(e) => {
   setGeneralFormData({
     ...generalFormData,
-    approval_cycle_type: e.value
+    approval_cycle_type: e.value,
+   
 })
 }
   // const initialFormObj = {
@@ -147,6 +156,9 @@ const handleApprovalTypeChange =(e) => {
     enableReinitialize: true,
     initialValues: generalFormData,
     validationSchema: Yup.object({
+      total_hour_calculation: Yup.number()
+      .required("Total Hour Calculation")
+      .min(1, "Please Select Total Hour Calculation"),
             approval_cycle_count: Yup.number()
             .required("Approval Cycle Count")
             .min(1, "Please Select Approval Cycle Count"),
@@ -170,7 +182,7 @@ const handleApprovalTypeChange =(e) => {
             tabs
             className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3"
           >
-            <NavItem>
+            {/* <NavItem>
               <NavLink
                 style={{ cursor: "pointer" }}
                 className={classnames({
@@ -182,8 +194,8 @@ const handleApprovalTypeChange =(e) => {
               >
                 General
               </NavLink>
-            </NavItem>
-            <NavItem>
+            </NavItem> */}
+            {/* <NavItem>
               <NavLink
                 style={{ cursor: "pointer" }}
                 className={classnames({
@@ -195,7 +207,7 @@ const handleApprovalTypeChange =(e) => {
               >
                 Person In Charge
               </NavLink>
-            </NavItem>
+            </NavItem> */}
           </Nav>
           <TabContent activeTab={customActiveTab1} className="text-muted">
             <TabPane tabId="1">
@@ -214,13 +226,39 @@ const handleApprovalTypeChange =(e) => {
                         options={
                           hourCalculation || []
                         }
-                        value={{
-                          label: totalHourCalculation,
-                          value: 1,
-                        }}
-                        isDisabled={true}
-                        className="basic-multi-select"
-                      />
+                        value={
+                          (generalFormData.total_hour_calculation &&
+                            hourCalculation.find((e) => e.value === generalFormData.total_hour_calculation)) ||
+                          []
+                      }
+                      
+                        onChange={(e) => {
+                          handleHourCalculationChange(e);
+                      }}
+                        styles={{
+                        control: (provided, state) => ({
+                            ...provided,
+                            borderColor:
+                                !state.isFocused &&
+                                    FormikForm.touched.total_hour_calculation &&
+                                    FormikForm.errors.total_hour_calculation
+                                    ? "red !important"
+                                    : provided.borderColor,
+                        }),
+                    }}
+                    invalid={
+                        FormikForm.touched.total_hour_calculation &&
+                            FormikForm.errors.total_hour_calculation
+                            ? true
+                            : false
+                    }
+                />
+                {FormikForm.touched.total_hour_calculation &&
+                    FormikForm.errors.total_hour_calculation ? (
+                    <div className="lc_form_error_text">
+                        {FormikForm.errors.total_hour_calculation}
+                    </div>
+                ) : null}
                     </Col>
                   </Row>
                 </Col>
