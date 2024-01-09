@@ -231,21 +231,33 @@ const RoleForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Role List = ", roleObj);
-    dispatch(setLoaderVisible(true));
 
-    const Api = await PostApi("/role/create-role/", roleObj, false);
-    console.log("API RES = ", Api);
-    if (Api.status && Api.status === 200) {
-      roleObj.id === 0
-        ? dispatch(addRole(Api?.data.data))
-        : dispatch(editRole(Api?.data?.data));
-      dispatch(toggleRSBView(false));
-      toast.success(Api?.data?.message);
+    let total_roles_checked = 0;
+
+    roleObj.roles_list.map((d) => {
+      let this_dep_role = d.permission.filter((p) => p.checked === true).length;
+      total_roles_checked += this_dep_role;
+    });
+
+    if (total_roles_checked === 0) {
+      toast.error("Select Atleast One Permission");
     } else {
-      toast.error(Api?.data?.message || Api?.data?.detail);
-    }
+      dispatch(setLoaderVisible(true));
 
-    dispatch(setLoaderVisible(false));
+      const Api = await PostApi("/role/create-role/", roleObj, false);
+      console.log("API RES = ", Api);
+      if (Api.status && Api.status === 200) {
+        roleObj.id === 0
+          ? dispatch(addRole(Api?.data.data))
+          : dispatch(editRole(Api?.data?.data));
+        dispatch(toggleRSBView(false));
+        toast.success(Api?.data?.message);
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
+      }
+
+      dispatch(setLoaderVisible(false));
+    }
   };
 
   return (
