@@ -107,10 +107,20 @@ const LeaveTypeForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    // const numericText = value.replace(/[^0-9]/g, "");
     console.log("name = ", name, "   value = ", value);
     setLeaveTypeData({
       ...leaveTypeData,
       [name]: value,
+    });
+  };
+  const handleInputChangeLeaveCount = (e) => {
+    const { name, value } = e.target;
+    const numericText = value.replace(/[^0-9]/g, "");
+    console.log("name = ", name, "   value = ", value);
+    setLeaveTypeData({
+      ...leaveTypeData,
+      [name]: numericText,
     });
   };
 
@@ -120,19 +130,18 @@ const LeaveTypeForm = () => {
       setLeaveTypeData({
         ...leaveTypeData,
         unit: e,
-        hour_value: "",
+        hour_value_in_year: 0,
+        hour_value: 0,
       });
     } else {
       setLeaveTypeData({
         ...leaveTypeData,
         unit: e,
-        day_value: "",
+        day_value: 0,
       });
     }
     setCurrentUnit(e);
   };
-
-  console.log("Leave Data Type = ", leaveTypeData);
 
   const FormikForm = useFormik({
     enableReinitialize: true,
@@ -152,24 +161,91 @@ const LeaveTypeForm = () => {
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
       dispatch(setLoaderVisible(true));
-      const Api = await PostApi(
-        "/leave/leave_type/create/",
-        leaveTypeData,
-        false
-      );
-      console.log("API RES = ", Api);
-      if (Api.status && Api.status === 200) {
-        leaveTypeData.id === 0
-          ? dispatch(addLeaveType(Api?.data.data))
-          : dispatch(editLeaveType(Api?.data?.data));
-        dispatch(toggleRSBView(false));
-        toast.success(Api?.data?.message);
+      if (
+        values.unit === 1 &&
+        (values.day_value === 0 || values.day_value === "")
+      ) {
+        toast.error("Please Enter Leave Days Allowed in Year");
+      } else if (
+        values.unit === 2 &&
+        (values.hour_value_in_year === 0 ||
+          values.hour_value_in_year === "" ||
+          values.hour_value === 0 ||
+          values.hour_value === "")
+      ) {
+        toast.error("Please Enter Leave Hour Allowed");
       } else {
-        toast.error(Api?.data?.message || Api?.data?.detail);
+        // const Api = await PostApi(
+        //   "/leave/leave_type/create/",
+        //   leaveTypeData,
+        //   false
+        // );
+        // console.log("API RES = ", Api);
+        // if (Api.status && Api.status === 200) {
+        //   leaveTypeData.id === 0
+        //     ? dispatch(addLeaveType(Api?.data.data))
+        //     : dispatch(editLeaveType(Api?.data?.data));
+        //   dispatch(toggleRSBView(false));
+        //   toast.success(Api?.data?.message);
+        // } else {
+        //   toast.error(Api?.data?.message || Api?.data?.detail);
+        // }
       }
+      // const fieldsToValidate = [
+      //   "day_value",
+      //   "hour_value_in_year",
+      //   "hour_value",
+      // ];
+      // let validationError = false;
+
+      // for (const fieldName of fieldsToValidate) {
+      //   if (
+      //     currentUnit &&
+      //     currentUnit === leave_type_day_unit &&
+      //     fieldName === "day_value"
+      //   ) {
+      //     if (isFieldEmpty(values[fieldName])) {
+      //       toast.error(
+      //         "Please enter a value for Leave Days Allowed in a Year"
+      //       );
+      //       validationError = true;
+      //       break;
+      //     }
+      //   }
+
+      //   if (
+      //     currentUnit &&
+      //     currentUnit === leave_type_hour_unit &&
+      //     fieldName === "hour_value_in_year"
+      //   ) {
+      //     if (isFieldEmpty(values[fieldName])) {
+      //       toast.error(
+      //         "Please enter a value for Leave Hour Allowed in a Year"
+      //       );
+      //       validationError = true;
+      //       break;
+      //     }
+      //   }
+
+      //   if (
+      //     currentUnit &&
+      //     currentUnit === leave_type_hour_unit &&
+      //     fieldName === "hour_value"
+      //   ) {
+      //     if (isFieldEmpty(values[fieldName])) {
+      //       toast.error("Please enter a value for Leave Hour Allowed in a Day");
+      //       validationError = true;
+      //       break;
+      //     }
+      //   }
+      // }
+
       dispatch(setLoaderVisible(false));
     },
   });
+  const isFieldEmpty = (fieldValue) => {
+    return fieldValue.trim() === "";
+  };
 
   useEffect(() => {
     if (
@@ -354,7 +430,7 @@ const LeaveTypeForm = () => {
                     <Label htmlFor="lt_days_allow" className="form-label">
                       Leave Days Count{" "}
                       <small>
-                        <i>Leave Days Allowed in a year</i>
+                        <i>Allowed in a year</i>
                       </small>
                     </Label>
                     <div className="form-icon right">
@@ -363,9 +439,9 @@ const LeaveTypeForm = () => {
                         name="day_value"
                         id="lt_days_allow"
                         className="form-control"
-                        placeholder="Casual"
-                        value={leaveTypeData.day_value || ""}
-                        onChange={handleInputChange}
+                        placeholder="Year"
+                        value={leaveTypeData.day_value || 0}
+                        onChange={handleInputChangeLeaveCount}
                       />
                       <i className="ri-calendar-2-line"></i>
                     </div>
@@ -379,21 +455,21 @@ const LeaveTypeForm = () => {
               {currentUnit && currentUnit === leave_type_hour_unit && (
                 <Col md={12} lg={12} xxl={12}>
                   <div className="mb-3">
-                    <Label htmlFor="lt_hour_allow" className="form-label">
+                    <Label htmlFor="lt_hour_allow_year" className="form-label">
                       Leave Hour{" "}
                       <small>
-                        <i>Leave Hour Allowed in a Year</i>
+                        <i>Allowed in a Year</i>
                       </small>
                     </Label>
                     <div className="form-icon right">
                       <Input
                         type="number"
-                        name="hour_value"
-                        id="lt_hour_allow"
+                        name="hour_value_in_year"
+                        id="lt_hour_allow_year"
                         className="form-control"
-                        placeholder="Casual"
-                        value={leaveTypeData.hour_value || ""}
-                        onChange={handleInputChange}
+                        placeholder="Year"
+                        value={leaveTypeData.hour_value_in_year || 0}
+                        onChange={handleInputChangeLeaveCount}
                       />
                       <i className="ri-time-line"></i>
                     </div>
@@ -402,21 +478,21 @@ const LeaveTypeForm = () => {
                     </div>
                   </div>
                   <div className="mb-3">
-                    <Label htmlFor="lt_hour_allow" className="form-label">
+                    <Label htmlFor="lt_hour_allow_day" className="form-label">
                       Leave Hour{" "}
                       <small>
-                        <i>Leave Hour Allowed in a Day</i>
+                        <i>Allowed in a Day</i>
                       </small>
                     </Label>
                     <div className="form-icon right">
                       <Input
                         type="number"
                         name="hour_value"
-                        id="lt_hour_allow"
+                        id="lt_hour_allow_day"
                         className="form-control"
-                        placeholder="Casual"
-                        value={leaveTypeData.hour_value || ""}
-                        onChange={handleInputChange}
+                        placeholder="Day"
+                        value={leaveTypeData.hour_value || 0}
+                        onChange={handleInputChangeLeaveCount}
                       />
                       <i className="ri-time-line"></i>
                     </div>
