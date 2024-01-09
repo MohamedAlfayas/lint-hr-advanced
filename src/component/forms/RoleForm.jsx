@@ -14,6 +14,7 @@ import {
   ListGroupItem,
   Nav,
   NavItem,
+  Form,
   NavLink,
   Row,
   TabContent,
@@ -46,6 +47,7 @@ const RoleForm = () => {
 
   const [activeVerticalTab, setactiveVerticalTab] = useState(1);
   const [passedverticalSteps, setPassedverticalSteps] = useState([1]);
+  const inputRef = useRef();
 
   useEffect(() => {
     setRoleObj(form_obj);
@@ -59,8 +61,19 @@ const RoleForm = () => {
     }),
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
-      if (values.roles.length === 0) {
-        toast.error("Please Choose Any Permission");
+      console.log("Role List = ", roleObj);
+
+      let total_roles_checked = 0;
+
+      roleObj.roles_list.map((d) => {
+        let this_dep_role = d.permission.filter(
+          (p) => p.checked === true
+        ).length;
+        total_roles_checked += this_dep_role;
+      });
+
+      if (total_roles_checked === 0) {
+        toast.error("Select Atleast One Permission");
       } else {
         dispatch(setLoaderVisible(true));
 
@@ -80,6 +93,29 @@ const RoleForm = () => {
       }
     },
   });
+
+  useEffect(() => {
+    if (
+      FormikForm.submitCount > 0 &&
+      Object.keys(FormikForm.errors).length > 0
+    ) {
+      const firstErrorField = Object.keys(FormikForm.errors)[0];
+      FormikForm.setFieldTouched(firstErrorField);
+      const errorField = document.querySelector(`[name=${firstErrorField}]`);
+      if (errorField) {
+        errorField.focus();
+
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }
+    }
+  }, [
+    FormikForm.submitCount,
+    FormikForm.errors,
+    FormikForm.setFieldTouched,
+    inputRef,
+  ]);
 
   const RibbonData = {
     1: {
@@ -228,41 +264,12 @@ const RoleForm = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log("Role List = ", roleObj);
-
-    let total_roles_checked = 0;
-
-    roleObj.roles_list.map((d) => {
-      let this_dep_role = d.permission.filter((p) => p.checked === true).length;
-      total_roles_checked += this_dep_role;
-    });
-
-    if (total_roles_checked === 0) {
-      toast.error("Select Atleast One Permission");
-    } else {
-      dispatch(setLoaderVisible(true));
-
-      const Api = await PostApi("/role/create-role/", roleObj, false);
-      console.log("API RES = ", Api);
-      if (Api.status && Api.status === 200) {
-        roleObj.id === 0
-          ? dispatch(addRole(Api?.data.data))
-          : dispatch(editRole(Api?.data?.data));
-        dispatch(toggleRSBView(false));
-        toast.success(Api?.data?.message);
-      } else {
-        toast.error(Api?.data?.message || Api?.data?.detail);
-      }
-
-      dispatch(setLoaderVisible(false));
-    }
-  };
-
   return (
     <React.Fragment>
-      <form onSubmit={handleSubmit} className="vertical-navs-step form-steps">
+      <Form
+        onSubmit={FormikForm.handleSubmit}
+        className="vertical-navs-step form-steps"
+      >
         <Row>
           <Col lg={6} xl={6} className="mb-2">
             <div>
@@ -272,20 +279,36 @@ const RoleForm = () => {
               <div className="form-icon right">
                 <Input
                   type="text"
+                  name="name"
                   className="form-control form-control-icon"
                   id="roleName"
+                  innerRef={inputRef}
                   placeholder="Enter Role"
                   value={roleObj?.name || ""}
                   onChange={(e) =>
                     setRoleObj({ ...roleObj, name: e.target.value })
                   }
                   // value={"HR"}
+                  invalid={
+                    FormikForm.touched.name && FormikForm.errors.name
+                      ? true
+                      : false
+                  }
                 />
-                <i className="ri-building-2-line"></i>
+                {!FormikForm.touched.name && !FormikForm.errors.name && (
+                  <i className="ri-building-2-line"></i>
+                )}
+                {FormikForm.touched.name && FormikForm.errors.name ? (
+                  <FormFeedback type="invalid">
+                    {FormikForm.errors.name}
+                  </FormFeedback>
+                ) : null}
               </div>
-              <div id="passwordHelpBlock" className="form-text">
-                Enter Your Role Name.
-              </div>
+              {!FormikForm.errors.name && (
+                <div id="passwordHelpBlock" className="form-text">
+                  Enter Your Role Name.
+                </div>
+              )}
             </div>
           </Col>
 
@@ -297,6 +320,7 @@ const RoleForm = () => {
               <div className="form-icon right">
                 <Input
                   type="text"
+                  name="description"
                   className="form-control form-control-icon"
                   id="description"
                   placeholder="Enter Description"
@@ -403,7 +427,7 @@ const RoleForm = () => {
             </Col>
           </Row>
         </Col>
-      </form>
+      </Form>
     </React.Fragment>
   );
 };
