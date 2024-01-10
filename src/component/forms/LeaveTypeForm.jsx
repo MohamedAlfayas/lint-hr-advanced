@@ -117,10 +117,17 @@ const LeaveTypeForm = () => {
   const handleInputChangeLeaveCount = (e) => {
     const { name, value } = e.target;
     const numericText = value.replace(/[^0-9]/g, "");
-    console.log("name = ", name, "   value = ", value);
+    console.log(
+      "name = ",
+      name,
+      "   value = ",
+      value,
+      " parse Value = ",
+      parseInt(numericText)
+    );
     setLeaveTypeData({
       ...leaveTypeData,
-      [name]: numericText,
+      [name]: isNaN(parseInt(numericText)) ? 0 : parseInt(numericText),
     });
   };
 
@@ -165,7 +172,7 @@ const LeaveTypeForm = () => {
         values.unit === 1 &&
         (values.day_value === 0 || values.day_value === "")
       ) {
-        toast.error("Please Enter Leave Days Allowed in Year");
+        toast.error("Leave Days Must not be 0");
       } else if (
         values.unit === 2 &&
         (values.hour_value_in_year === 0 ||
@@ -173,80 +180,27 @@ const LeaveTypeForm = () => {
           values.hour_value === 0 ||
           values.hour_value === "")
       ) {
-        toast.error("Please Enter Leave Hour Allowed");
+        toast.error("Leave Hour Must not be 0");
       } else {
-        // const Api = await PostApi(
-        //   "/leave/leave_type/create/",
-        //   leaveTypeData,
-        //   false
-        // );
-        // console.log("API RES = ", Api);
-        // if (Api.status && Api.status === 200) {
-        //   leaveTypeData.id === 0
-        //     ? dispatch(addLeaveType(Api?.data.data))
-        //     : dispatch(editLeaveType(Api?.data?.data));
-        //   dispatch(toggleRSBView(false));
-        //   toast.success(Api?.data?.message);
-        // } else {
-        //   toast.error(Api?.data?.message || Api?.data?.detail);
-        // }
+        const Api = await PostApi(
+          "/leave/leave_type/create/",
+          leaveTypeData,
+          false
+        );
+        console.log("API RES = ", Api);
+        if (Api.status && Api.status === 200) {
+          leaveTypeData.id === 0
+            ? dispatch(addLeaveType(Api?.data.data))
+            : dispatch(editLeaveType(Api?.data?.data));
+          dispatch(toggleRSBView(false));
+          toast.success(Api?.data?.message);
+        } else {
+          toast.error(Api?.data?.message || Api?.data?.detail);
+        }
       }
-      // const fieldsToValidate = [
-      //   "day_value",
-      //   "hour_value_in_year",
-      //   "hour_value",
-      // ];
-      // let validationError = false;
-
-      // for (const fieldName of fieldsToValidate) {
-      //   if (
-      //     currentUnit &&
-      //     currentUnit === leave_type_day_unit &&
-      //     fieldName === "day_value"
-      //   ) {
-      //     if (isFieldEmpty(values[fieldName])) {
-      //       toast.error(
-      //         "Please enter a value for Leave Days Allowed in a Year"
-      //       );
-      //       validationError = true;
-      //       break;
-      //     }
-      //   }
-
-      //   if (
-      //     currentUnit &&
-      //     currentUnit === leave_type_hour_unit &&
-      //     fieldName === "hour_value_in_year"
-      //   ) {
-      //     if (isFieldEmpty(values[fieldName])) {
-      //       toast.error(
-      //         "Please enter a value for Leave Hour Allowed in a Year"
-      //       );
-      //       validationError = true;
-      //       break;
-      //     }
-      //   }
-
-      //   if (
-      //     currentUnit &&
-      //     currentUnit === leave_type_hour_unit &&
-      //     fieldName === "hour_value"
-      //   ) {
-      //     if (isFieldEmpty(values[fieldName])) {
-      //       toast.error("Please enter a value for Leave Hour Allowed in a Day");
-      //       validationError = true;
-      //       break;
-      //     }
-      //   }
-      // }
-
       dispatch(setLoaderVisible(false));
     },
   });
-  const isFieldEmpty = (fieldValue) => {
-    return fieldValue.trim() === "";
-  };
-
   useEffect(() => {
     if (
       FormikForm.submitCount > 0 &&
