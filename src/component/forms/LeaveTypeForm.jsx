@@ -117,14 +117,7 @@ const LeaveTypeForm = () => {
   const handleInputChangeLeaveCount = (e) => {
     const { name, value } = e.target;
     const numericText = value.replace(/[^0-9]/g, "");
-    console.log(
-      "name = ",
-      name,
-      "   value = ",
-      value,
-      " parse Value = ",
-      parseInt(numericText)
-    );
+
     setLeaveTypeData({
       ...leaveTypeData,
       [name]: isNaN(parseInt(numericText)) ? 0 : parseInt(numericText),
@@ -133,20 +126,12 @@ const LeaveTypeForm = () => {
 
   const handleUnitChange = (e) => {
     console.log("Unit Change = ", e);
-    if (e === leave_type_day_unit) {
-      setLeaveTypeData({
-        ...leaveTypeData,
-        unit: e,
-        hour_value_in_year: 0,
-        hour_value: 0,
-      });
-    } else {
-      setLeaveTypeData({
-        ...leaveTypeData,
-        unit: e,
-        day_value: 0,
-      });
-    }
+    setLeaveTypeData({
+      ...leaveTypeData,
+      unit: e,
+      hour_allowed_in_day: 0,
+      allowed_count: 0,
+    });
     setCurrentUnit(e);
   };
 
@@ -168,18 +153,9 @@ const LeaveTypeForm = () => {
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
       dispatch(setLoaderVisible(true));
-      if (
-        values.unit === 1 &&
-        (values.day_value === 0 || values.day_value === "")
-      ) {
+      if (values.allowed_count === 0) {
         toast.error("Leave Days Must not be 0");
-      } else if (
-        values.unit === 2 &&
-        (values.hour_value_in_year === 0 ||
-          values.hour_value_in_year === "" ||
-          values.hour_value === 0 ||
-          values.hour_value === "")
-      ) {
+      } else if (values.unit === 2 && values.hour_allowed_in_day === 0) {
         toast.error("Leave Hour Must not be 0");
       } else {
         const Api = await PostApi(
@@ -390,11 +366,11 @@ const LeaveTypeForm = () => {
                     <div className="form-icon right">
                       <Input
                         type="number"
-                        name="day_value"
+                        name="allowed_count"
                         id="lt_days_allow"
                         className="form-control"
                         placeholder="Year"
-                        value={leaveTypeData.day_value || 0}
+                        value={leaveTypeData.allowed_count || 0}
                         onChange={handleInputChangeLeaveCount}
                       />
                       <i className="ri-calendar-2-line"></i>
@@ -418,11 +394,11 @@ const LeaveTypeForm = () => {
                     <div className="form-icon right">
                       <Input
                         type="number"
-                        name="hour_value_in_year"
+                        name="allowed_count"
                         id="lt_hour_allow_year"
                         className="form-control"
                         placeholder="Year"
-                        value={leaveTypeData.hour_value_in_year || 0}
+                        value={leaveTypeData.allowed_count || 0}
                         onChange={handleInputChangeLeaveCount}
                       />
                       <i className="ri-time-line"></i>
@@ -441,11 +417,11 @@ const LeaveTypeForm = () => {
                     <div className="form-icon right">
                       <Input
                         type="number"
-                        name="hour_value"
+                        name="hour_allowed_in_day"
                         id="lt_hour_allow_day"
                         className="form-control"
                         placeholder="Day"
-                        value={leaveTypeData.hour_value || 0}
+                        value={leaveTypeData.hour_allowed_in_day || 0}
                         onChange={handleInputChangeLeaveCount}
                       />
                       <i className="ri-time-line"></i>

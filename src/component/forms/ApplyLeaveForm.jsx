@@ -99,6 +99,7 @@ const ApplyLeaveForm = () => {
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
   const profileData = GetLocalStorageData("my_profile") || [];
   const holidayData = GetLocalStorageData("holiday") || [];
+  const leaveType = GetLocalStorageData("leave_types_for_employee") || [];
 
   const thisEmpWS = workScheduleData?.find(
     (val) => val.id === profileData.work_schedule_id
@@ -128,7 +129,9 @@ const ApplyLeaveForm = () => {
       setSelectedEndMinute(scheduleWeek.e_min);
     }
   };
-
+  console.log("====================================");
+  console.log("selectedLeave_type", selectedLeave_type);
+  console.log("====================================");
   const handleMultiDayChange = (dates, dateStrings) => {
     const generateIntermediaryDates = () => {
       const start = new Date(
@@ -187,89 +190,6 @@ const ApplyLeaveForm = () => {
       toast.error("Selected Leave Exceeding Available Leave Hours ");
     }
   };
-
-  const lt_option = [
-    {
-      id: 1,
-      label: "Casual Leave (CL)",
-      value: 1,
-      type: 1,
-      unit: 1,
-      leave_count: 12,
-      available_count: 120000,
-      status: 1,
-    },
-    {
-      id: 2,
-      label: "Earned Leave (EL)",
-      value: 2,
-      type: 1,
-      unit: 1,
-      leave_count: 12,
-      available_count: 120000,
-      status: 1,
-    },
-    {
-      id: 3,
-      label: "Sick Leave (SL)",
-      value: 3,
-      type: 2,
-      unit: 1,
-      leave_count: 12,
-      available_count: 500000,
-      status: 1,
-    },
-    {
-      id: 4,
-      label: "Maternity Leave (ML)",
-      value: 4,
-      type: 1,
-      unit: 1,
-      leave_count: 60,
-      available_count: 300000,
-      status: 1,
-    },
-    {
-      id: 5,
-      label: "Marriage Leave",
-      value: 5,
-      type: 1,
-      unit: 1,
-      leave_count: 15,
-      available_count: 150000,
-      status: 1,
-    },
-    {
-      id: 6,
-      label: "Compensatory Off",
-      value: 6,
-      type: 1,
-      unit: 1,
-      leave_count: 12,
-      available_count: 120500,
-      status: 1,
-    },
-    {
-      id: 7,
-      label: "Loss Of Pay Leave",
-      value: 7,
-      type: 1,
-      unit: 1,
-      leave_count: 12,
-      available_count: 120000,
-      status: 1,
-    },
-    {
-      id: 8,
-      label: "Permission",
-      value: 8,
-      type: 1,
-      unit: 2,
-      leave_count: 48,
-      available_count: 320000,
-      status: 1,
-    },
-  ];
 
   const disabledDate = (current) => {
     const dayOfWeek = current.day();
@@ -407,6 +327,41 @@ const ApplyLeaveForm = () => {
   // const startingDate = multipleDayStartDate;
   // const endingDate = multipleDayEndDate;
   // const leaveCount = daysCount;
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
+  const [hourDiff, setHourDiff] = useState(null);
+
+  const handleFromDateChange = (date) => {
+    setFromDate(date);
+    calculateHourDiff(date, toDate);
+  };
+
+  const handleToDateChange = (date) => {
+    setToDate(date);
+    calculateHourDiff(fromDate, date);
+  };
+
+  const calculateHourDiff = (start, end) => {
+    if (start && end) {
+      let diffInMilliseconds;
+      if (start > end) {
+        const midnight = new Date(start);
+        midnight.setHours(24, 0, 0, 0);
+        diffInMilliseconds = midnight - start + end - midnight;
+      } else {
+        diffInMilliseconds = end - start;
+      }
+      const hours = diffInMilliseconds / (1000 * 60 * 60);
+      const roundedMinutes = Math.round((hours * 60) / 30) * 30;
+      const roundedHours = Math.floor(roundedMinutes / 60);
+      const remainingMinutes = roundedMinutes % 60;
+      const formattedResult = `${String(roundedHours).padStart(
+        2,
+        "0"
+      )}:${String(remainingMinutes).padStart(2, "0")}`;
+      setHourDiff(formattedResult);
+    }
+  };
 
   const FormikForm = useFormik({
     enableReinitialize: true,
@@ -476,7 +431,7 @@ const ApplyLeaveForm = () => {
                   <Select
                     name="leave_type"
                     isMulti={false}
-                    options={lt_option || []}
+                    options={leaveType || []}
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
@@ -490,11 +445,11 @@ const ApplyLeaveForm = () => {
                     }}
                     value={
                       (leaveapplyObj.leave_type &&
-                        lt_option.find(
+                        leaveType.find(
                           (e) => e.id === leaveapplyObj.leave_type
                         )) ||
                       (leaveapplyObj.id &&
-                        lt_option.find((e) => e.id === leaveapplyObj.id)) ||
+                        leaveType.find((e) => e.id === leaveapplyObj.id)) ||
                       []
                     }
                     onChange={(e) => {
@@ -502,16 +457,15 @@ const ApplyLeaveForm = () => {
                         const updatedLeaveapplyObj = {
                           ...prevLeaveapplyObj,
                           leave_type: e.id,
-                          available_count: e.available_count,
                         };
 
-                        if (
-                          updatedLeaveapplyObj.available_count <= totalMinutes
-                        ) {
-                          toast.error(
-                            "Selected Leave Exceeding Available Leave Hours"
-                          );
-                        }
+                        // if (
+                        //   updatedLeaveapplyObj.available_count <= totalMinutes
+                        // ) {
+                        //   toast.error(
+                        //     "Selected Leave Exceeding Available Leave Hours"
+                        //   );
+                        // }
 
                         setSelectedLeave_type(updatedLeaveapplyObj.leave_type);
 
@@ -539,15 +493,73 @@ const ApplyLeaveForm = () => {
                     Please select type of leave.
                   </div>
                 )}
-                {selectedLeave_type && (
+
+                {/* {selectedLeave_type && (
                   <div id="passwordHelpBlock" className="form-text">
                     {lt_option.find((leave) => leave.id === leaveapplyObj.id)}{" "}
                     {secondsToHours(leaveapplyObj.available_count)} Hours
                     Remaining.
                   </div>
-                )}
+                )} */}
               </Col>
-              <Col md={12} lg={12} xxl={12}>
+              {leaveType.map((type) => {
+                if (type.id === selectedLeave_type) {
+                  if (type.unit === 1) {
+                    return (
+                      <Col lg={12}>
+                        <div className="input-group">
+                          <Label className="form-label">Select Date</Label>
+                          <RangePicker
+                            name="select_Dates"
+                            format={"DD-MM-YYYY"}
+                            placeholder={["Start Date", "End Date"]}
+                            disabledDate={disabledDate}
+                            onChange={handleMultiDayChange}
+                          />
+                          <span className="input-group-text">
+                            {daysCount} Days
+                          </span>
+                        </div>
+
+                        <div id="passwordHelpBlock" className="form-text">
+                          Please select Start & End Date
+                        </div>
+                      </Col>
+                    );
+                  } else if (type.unit === 2) {
+                    return (
+                      <Col lg={12}>
+                        <div className="input-group">
+                          <Label className="form-label">Select Hour</Label>
+                          <Label className="form-label">From</Label>
+
+                          <DatePicker
+                            showTime={{ minuteStep: 30 }}
+                            format="DD-MM-YYYY HH:mm"
+                            disabledDate={disabledDate}
+                            onChange={handleFromDateChange}
+                          />
+                          <Label className="form-label">To</Label>
+
+                          <DatePicker
+                            showTime={{ minuteStep: 30 }}
+                            format="DD-MM-YYYY HH:mm"
+                            disabledDate={disabledDate}
+                            onChange={handleToDateChange}
+                          />
+
+                          <span className="input-group-text">{hourDiff} h</span>
+                        </div>
+                        <div id="passwordHelpBlock" className="form-text">
+                          Please select Date and Hour
+                        </div>
+                      </Col>
+                    );
+                  }
+                }
+                return null; // No match found
+              })}
+              {/* <Col md={12} lg={12} xxl={12}>
                 <div>
                   <Label htmlFor="day_type" className="form-label">
                     Select Day
@@ -693,8 +705,7 @@ const ApplyLeaveForm = () => {
                       Please select Start & End Date
                     </div>
                   </Col>
-                )}
-
+                )} */}
               <Col lg={12}>
                 <label htmlFor="reason" className="form-label">
                   Reason *
@@ -725,7 +736,6 @@ const ApplyLeaveForm = () => {
                   </div>
                 )}
               </Col>
-
               <Col lg={12}>
                 <div className="text-end">
                   <Button color="success" className="btn-label" type="submit">

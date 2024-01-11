@@ -96,8 +96,7 @@ const LeaveType = () => {
       id: "unit",
       filterable: false,
       accessor: (obj) => {
-        let leave_count =
-          obj.unit === leave_type_day_unit ? obj.day_value : obj.hour_value;
+        let leave_count = obj.allowed_count;
         let leave_unit = obj.unit === leave_type_day_unit ? "Day" : "Hour";
         return (
           <b>
@@ -132,9 +131,8 @@ const LeaveType = () => {
       name: "",
       type: 0,
       unit: leave_type_day_unit,
-      day_value: 0,
-      hour_value_in_year: 0,
-      hour_value: 0,
+      allowed_count: 0,
+      hour_allowed_in_day: 0,
       reset_type: 1,
       ws_id: [],
       genders: [],
