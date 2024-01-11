@@ -153,11 +153,6 @@ const LeaveDashboard = () => {
       reason: "",
       start: null,
       end: null,
-      s_hr: "00",
-      s_min: "00",
-      e_hr: "00",
-      e_min: "00",
-      day_type: 1,
       requested_leave_count: 0,
       status: 1,
     };
