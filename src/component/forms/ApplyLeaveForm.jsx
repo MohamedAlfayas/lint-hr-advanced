@@ -494,13 +494,18 @@ const ApplyLeaveForm = () => {
                   </div>
                 )}
 
-                {/* {selectedLeave_type && (
+                {selectedLeave_type && (
                   <div id="passwordHelpBlock" className="form-text">
-                    {lt_option.find((leave) => leave.id === leaveapplyObj.id)}{" "}
-                    {secondsToHours(leaveapplyObj.available_count)} Hours
+                    {leaveType.find(
+                      (leave) => leave.id === selectedLeave_type.id
+                    )}{" "}
+                    {
+                      leaveType.find((leave) => leave.id === selectedLeave_type)
+                        ?.balance_leave_count
+                    }{" "}
                     Remaining.
                   </div>
-                )} */}
+                )}
               </Col>
               {leaveType.map((type) => {
                 if (type.id === selectedLeave_type) {
