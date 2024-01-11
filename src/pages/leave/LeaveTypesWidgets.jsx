@@ -37,93 +37,10 @@ import usdtCoin from "../../assets/images/svg/crypto-icons/usdt.svg";
 import dashCoin from "../../assets/images/svg/crypto-icons/dash.svg";
 import neoCoin from "../../assets/images/svg/crypto-icons/neo.svg";
 import { GetCustomField } from "../../common/js/GetCustomField";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+const leaveType = GetLocalStorageData("leave_types_for_employee") || [];
 
-const leaveTypeSlider = [
-  {
-    id: 1,
-    name: "Casual Leave (CL)",
-    type: 1,
-    unit: "Day",
-    leave_count: 12,
-    available_count: 12,
-    status: 1,
-  },
-  {
-    id: 2,
-    name: "Earned Leave (EL)",
-    type: 1,
-    unit: "Day",
-    leave_count: 12,
-    available_count: 12,
-    status: 1,
-  },
-  {
-    id: 3,
-    name: "Sick Leave (SL)",
-    type: 2,
-    unit: "Day",
-    leave_count: 12,
-    available_count: 5,
-    status: 1,
-  },
-  {
-    id: 4,
-    name: "Maternity Leave (ML)",
-    type: 1,
-    unit: "Day",
-    leave_count: 60,
-    available_count: 30,
-    status: 1,
-  },
-  {
-    id: 5,
-    name: "Marriage Leave",
-    type: 1,
-    unit: "Day",
-    leave_count: 15,
-    available_count: 15,
-    status: 1,
-  },
-  {
-    id: 6,
-    name: "Compensatory Off",
-    type: 1,
-    unit: "Day",
-    leave_count: 12,
-    available_count: 12,
-    status: 1,
-  },
-  {
-    id: 7,
-    name: "Loss Of Pay Leave",
-    type: 1,
-    unit: "Day",
-    leave_count: 12,
-    available_count: 12,
-    status: 1,
-  },
-  {
-    id: 8,
-    name: "Permission",
-    type: 1,
-    unit: "Hour",
-    leave_count: 48,
-    available_count: 32,
-    status: 1,
-  },
-];
 
-const leaveTypes = [
-  {
-    id: 1,
-    name: "Casual Leave",
-    type: 1,
-    unit: "Day",
-    leave_count: 12,
-    available_count: 12,
-    status: 1,
-  },
-];
 
 const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
   const dispatch = useDispatch();
@@ -193,13 +110,13 @@ const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
           }}
           modules={[Autoplay, Mousewheel]}
           className="leaveTypeSlider">
-          {(leaveTypeSlider || []).map((item, key) => (
+          {(leaveType || []).map((item, key) => (
             <SwiperSlide key={key}>
               <Card>
                 <CardBody>
                   <div className="align-items-center">
                     <h6 className="mb-0 fs-14">{item.name}</h6>
-                    <span class="text-muted">{item.type}</span>
+                   
                   </div>
                   <Row className="align-items-start g-0">
                     <Col xs={7}>
@@ -207,14 +124,14 @@ const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
                         <p class="mb-1 fs-6 text">
                           Total
                           <span class="float-end fw-bolder mb-0">
-                            {item.leave_count} <small>{item.unit} / Year</small>{" "}
+                            {item.allowed_count}  <small>{item.unit === 1 ? '/Year' : '/Month'} </small>{" "}
                           </span>
                         </p>
                         <p class="mb-1 fs-6 text">
                           Avail
                           <span class="float-end fw-bolder mb-0">
-                            {item.available_count}{" "}
-                            <small> {item.unit} / Year</small>{" "}
+                            {item.balance_leave_count}{" "}
+                            <small>{item.unit === 1 ? '/Year' : '/Month'} </small>{" "}
                           </span>
                         </p>
                       </div>
@@ -235,11 +152,11 @@ const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
                         <LeaveTypeWidgetsCharts
                           seriesData={[
                             Math.round(
-                              (item.available_count / item.leave_count) * 100
+                              (item.balance_leave_count / item.allowed_count) * 100
                             ),
                           ]}
                           chartsColor={
-                            (item.available_count / item.leave_count) * 100 <=
+                            (item.balance_leave_count / item.allowed_count) * 100 <=
                             50
                               ? "#ffa159"
                               : "#59ffa7"
