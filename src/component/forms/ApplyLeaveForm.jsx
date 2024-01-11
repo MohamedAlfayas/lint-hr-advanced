@@ -22,6 +22,8 @@ import Flatpickr from "react-flatpickr";
 import {
   single_day_type_leave,
   multiple_day_type_leave,
+  leave_type_day_unit,
+  leave_type_hour_unit,
 } from "../../common/constant/Constants";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -375,12 +377,15 @@ const ApplyLeaveForm = () => {
                 {!!selectedLeaveTypeObj?.balance_leave_count && (
                   <>
                     {selectedLeaveTypeObj?.balance_leave_count}{" "}
-                    {selectedLeaveTypeObj?.unit === 1 ? "Days" : "Hr"} Remaining
+                    {selectedLeaveTypeObj?.unit === leave_type_day_unit
+                      ? "Days"
+                      : "Hr"}{" "}
+                    Remaining
                   </>
                 )}
               </Col>
               {!!selectedLeaveTypeObj?.unit &&
-                selectedLeaveTypeObj?.unit === 1 && (
+                selectedLeaveTypeObj?.unit === leave_type_day_unit && (
                   <Col lg={12}>
                     <div className="input-group">
                       <Label className="form-label">Select Date</Label>
@@ -401,7 +406,7 @@ const ApplyLeaveForm = () => {
                 )}
 
               {!!selectedLeaveTypeObj?.unit &&
-                selectedLeaveTypeObj?.unit === 2 && (
+                selectedLeaveTypeObj?.unit === leave_type_hour_unit && (
                   <Col lg={12}>
                     <div className="input-group">
                       <Label className="form-label">Select Hour</Label>
