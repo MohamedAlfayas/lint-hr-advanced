@@ -24,6 +24,7 @@ import {
   multiple_day_type_leave,
   leave_type_day_unit,
   leave_type_hour_unit,
+  leave_day_type,
 } from "../../common/constant/Constants";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -43,13 +44,9 @@ const ApplyLeaveForm = () => {
   const [multipleDayStartDate, setMultipleDayStartDate] = useState(null);
   const [multipleDayEndDate, setMultipleDayEndDate] = useState(null);
   const [selectedSingleDate, setselectedSingleDate] = useState(null);
-  const [selectedStartHour, setSelectedStartHour] = useState("");
-  const [selectedStartMinute, setSelectedStartMinute] = useState("");
-  const [selectedEndHour, setSelectedEndHour] = useState("");
-  const [selectedEndMinute, setSelectedEndMinute] = useState("");
+
   const { RangePicker } = DatePicker;
-  const [hrDiff, setHrDiff] = useState("");
-  const [selectedLeave_type, setSelectedLeave_type] = useState("");
+
   const [totalMinutes, setTotalMinutes] = useState("");
   const [daysCount, setDaysCount] = useState("");
   const [selectedLeaveTypeObj, setSelectedLeaveTypeObj] = useState({});
@@ -57,6 +54,9 @@ const ApplyLeaveForm = () => {
   const [WeekOffDays, setWeekOffDays] = useState([]);
 
   const [HolidayDays, setHolidayDays] = useState([]);
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
+  const [hourDiff, setHourDiff] = useState(null);
 
   useEffect(() => {
     setWeekOffDays(
@@ -100,6 +100,12 @@ const ApplyLeaveForm = () => {
       ...leaveapplyObj,
       leave_type: e.id,
     });
+    setHourDiff("");
+    setDaysCount("");
+    setMultipleDayStartDate(null);
+    setMultipleDayEndDate(null);
+    setFromDate("");
+    setToDate("");
   };
 
   useEffect(() => {
@@ -226,10 +232,6 @@ const ApplyLeaveForm = () => {
       [name]: value,
     });
   };
-
-  const [fromDate, setFromDate] = useState(null);
-  const [toDate, setToDate] = useState(null);
-  const [hourDiff, setHourDiff] = useState(null);
 
   const handleFromDateChange = (date) => {
     setFromDate(date);
@@ -390,7 +392,7 @@ const ApplyLeaveForm = () => {
                     <div className="input-group">
                       <Label className="form-label">Select Date</Label>
                       <RangePicker
-                        name="select_Dates"
+                        name="multiple_date"
                         format={"DD-MM-YYYY"}
                         placeholder={["Start Date", "End Date"]}
                         disabledDate={disabledDate}
@@ -398,6 +400,19 @@ const ApplyLeaveForm = () => {
                       />
                       <span className="input-group-text">{daysCount} Days</span>
                     </div>
+                    {daysCount === 1 && (
+                      <div className="input-group">
+                        <Label className="form-label">Select Day Type</Label>
+
+                        <Select
+                          name="leavae_day_type"
+                          isMulti={false}
+                          options={leave_day_type || []}
+                          placeholder="Select Day Type"
+                          className="basic-multi-select"
+                        />
+                      </div>
+                    )}
 
                     <div id="passwordHelpBlock" className="form-text">
                       Please select Start & End Date
