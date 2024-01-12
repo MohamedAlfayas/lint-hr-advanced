@@ -30,8 +30,10 @@ const Employee = () => {
 
   const { version } = useSelector((state) => state.MetaReducer);
 
+  const EmployeeData = GetLocalStorageData("employee") || [];
+
   useEffect(() => {
-    dispatch(setEmployee(GetLocalStorageData("employee") || []));
+    dispatch(setEmployee(EmployeeData));
   }, [version]);
 
   const CustomFieldsForThisForm = GetCustomField("employee") || [];
@@ -117,12 +119,6 @@ const Employee = () => {
       // filterable: false,
       // id: "nameAndEmail",
     },
-    // {
-    //   Header: "Email",
-    //   accessor: "email",
-    //   filterable: false,
-    //   id: "email",
-    // },
     {
       Header: "Role",
       id: "role_id",
@@ -211,6 +207,131 @@ const Employee = () => {
           </>
         );
       },
+    },
+    {
+      Header: "Reporting Manager",
+      filterable: false,
+      id: "reporting_manager_id",
+      accessor: (obj) => {
+        let rm_obj =
+          EmployeeData.find((d) => d.id === obj.reporting_manager_id) || null;
+
+        return !!rm_obj ? (
+          rm_obj.profile_url ? (
+            <div className="d-flex gap-2 align-items-center">
+              <div className="flex-shrink-0">
+                <img
+                  src={rm_obj.profile_url}
+                  alt=""
+                  className="avatar-xs rounded-circle"
+                  style={{ objectFit: "cover" }}
+                />
+              </div>
+              <div className="flex-grow-1">
+                <div>
+                  <Link to="#" className="link-body-emphasis mb-0">
+                    {" "}
+                    <h5 className="fs-14 mb-1">{rm_obj.fname}</h5>
+                  </Link>
+                </div>
+                <div>{rm_obj.email}</div>
+              </div>
+            </div>
+          ) : (
+            <div className="d-flex gap-2 align-items-center">
+              <div className="flex-shrink-0">
+                <div
+                  className="avatar-xs rounded-circle"
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    background: "#0ab39c",
+                  }}
+                  data-bs-toggle="tooltip"
+                  title={rm_obj.fname}
+                >
+                  <span className="first_letter" style={{ color: "white" }}>
+                    {rm_obj.fname.charAt(0)}
+                  </span>
+                </div>
+              </div>
+              <div className="flex-grow-1">
+                <div>
+                  <Link to="#" className="link-body-emphasis mb-0">
+                    {" "}
+                    <h5 className="fs-14 mb-1">{rm_obj.fname}</h5>
+                  </Link>
+                </div>
+                <div>{rm_obj.email}</div>
+              </div>
+            </div>
+          )
+        ) : (
+          "-----------------"
+        );
+
+        // return obj.profile_url ? (
+        //   <div className="d-flex gap-2 align-items-center">
+        //     <div className="flex-shrink-0">
+        //       <img
+        //         src={obj.profile_url}
+        //         alt=""
+        //         className="avatar-xs rounded-circle"
+        //         style={{ objectFit: "cover" }}
+        //       />
+        //     </div>
+        //     <div className="flex-grow-1">
+        //       <div>
+        //         <Link
+        //           to="#"
+        //           onClick={() => viewEmployee(obj)}
+        //           className="link-body-emphasis mb-0"
+        //         >
+        //           {" "}
+        //           <h5 className="fs-14 mb-1">{obj.fname}</h5>
+        //         </Link>
+        //       </div>
+        //       <div>{obj.email}</div>
+        //     </div>
+        //   </div>
+        // ) : (
+        //   <div className="d-flex gap-2 align-items-center">
+        //     <div className="flex-shrink-0">
+        //       <div
+        //         className="avatar-xs rounded-circle"
+        //         style={{
+        //           display: "flex",
+        //           justifyContent: "center",
+        //           alignItems: "center",
+        //           background: "#0ab39c",
+        //         }}
+        //         data-bs-toggle="tooltip"
+        //         title={obj.fname}
+        //       >
+        //         <span className="first_letter" style={{ color: "white" }}>
+        //           {obj.fname.charAt(0)}
+        //         </span>
+        //       </div>
+        //     </div>
+        //     <div className="flex-grow-1">
+        //       <div>
+        //         <Link
+        //           to="#"
+        //           onClick={() => viewEmployee(obj)}
+        //           className="link-body-emphasis mb-0"
+        //         >
+        //           {" "}
+        //           <h5 className="fs-14 mb-1">{obj.fname}</h5>
+        //         </Link>
+        //       </div>
+        //       <div>{obj.email}</div>
+        //     </div>
+        //   </div>
+        // );
+      },
+      // filterable: false,
+      // id: "nameAndEmail",
     },
     {
       Header: "Status",
