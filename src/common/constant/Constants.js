@@ -1918,7 +1918,7 @@ export const attendance_report_day_status = [
   { id: 4, label: "Leave Without Approval", value: 4 },
   { id: 5, label: "Holiday", value: 5 },
 ];
-export const leave_day_type = [
+export const day_type = [
   { id: 1, label: "Full Day", value: 1 },
   { id: 2, label: "Half Day", value: 2 },
 ];

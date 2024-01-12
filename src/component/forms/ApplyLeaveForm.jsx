@@ -24,7 +24,7 @@ import {
   multiple_day_type_leave,
   leave_type_day_unit,
   leave_type_hour_unit,
-  leave_day_type,
+  day_type,
 } from "../../common/constant/Constants";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -43,11 +43,9 @@ const ApplyLeaveForm = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const [multipleDayStartDate, setMultipleDayStartDate] = useState(null);
   const [multipleDayEndDate, setMultipleDayEndDate] = useState(null);
-  const [selectedSingleDate, setselectedSingleDate] = useState(null);
 
   const { RangePicker } = DatePicker;
 
-  const [totalMinutes, setTotalMinutes] = useState("");
   const [daysCount, setDaysCount] = useState("");
   const [selectedLeaveTypeObj, setSelectedLeaveTypeObj] = useState({});
 
@@ -57,6 +55,14 @@ const ApplyLeaveForm = () => {
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
   const [hourDiff, setHourDiff] = useState(null);
+
+  const workScheduleData = GetLocalStorageData("work_schedule") || [];
+  const profileData = GetLocalStorageData("my_profile") || [];
+  const holidayData = GetLocalStorageData("holiday") || [];
+  const leaveType = GetLocalStorageData("leave_types_for_employee") || [];
+  useEffect(() => {
+    setLeaveApplyObj(form_obj);
+  }, [form_obj]);
 
   useEffect(() => {
     setWeekOffDays(
@@ -75,8 +81,6 @@ const ApplyLeaveForm = () => {
 
   const handleLeaveTypeChange = (e) => {
     let leave_type_obj = leaveType.find((d) => d.id === e.id);
-
-    console.log("leave_type_obj = ", leave_type_obj);
 
     leave_type_obj?.weekend_between_leave === true
       ? setWeekOffDays([])
@@ -99,86 +103,35 @@ const ApplyLeaveForm = () => {
     setLeaveApplyObj({
       ...leaveapplyObj,
       leave_type: e.id,
+      start: null,
+      end: null,
     });
     setHourDiff("");
     setDaysCount("");
-    setMultipleDayStartDate(null);
-    setMultipleDayEndDate(null);
-    setFromDate("");
-    setToDate("");
   };
-
-  useEffect(() => {
-    let start_date = !!form_obj?.start
-      ? ConvertISODateFormat(form_obj.start)
-      : null;
-    let selectedSingleDate = !!form_obj?.start
-      ? ConvertDateFormat(ConvertISODateFormat(form_obj?.start))
-      : null;
-
-    setLeaveApplyObj({
-      ...form_obj,
-      start: start_date,
-    });
-    setselectedSingleDate(selectedSingleDate);
-  }, [form_obj]);
-
-  const handleDateSelected = (date, dateString) => {
-    setselectedSingleDate(dateString);
-    setLeaveApplyObj({
-      ...leaveapplyObj,
-      start: ConvertISODateFormat(ConvertDateFormat(dateString)),
-      end: ConvertISODateFormat(ConvertDateFormat(dateString)),
-    });
-    if (leaveapplyObj.available_count <= totalMinutes) {
-      toast.error("Selected Leave Exceeding Available Leave Hours ");
-    }
-  };
-
-  useEffect(() => {
-    if (!!selectedSingleDate) {
-      const dayName = dayjs(
-        ConvertISODateFormat(ConvertDateFormat(selectedSingleDate))
-      ).format("dddd");
-      getHourMinData(dayName);
-    }
-  }, [selectedSingleDate]);
-
-  const workScheduleData = GetLocalStorageData("work_schedule") || [];
-  const profileData = GetLocalStorageData("my_profile") || [];
-  const holidayData = GetLocalStorageData("holiday") || [];
-  const leaveType = GetLocalStorageData("leave_types_for_employee") || [];
-
-  const holiday = holidayData.map((d) => d.date);
 
   const thisEmpWS = workScheduleData?.find(
     (val) => val.id === profileData.work_schedule_id
   );
 
-  const handleMultiDayChange = (dates, dateStrings) => {
+  const handleMultiDayChange = (dates, dateStrings, daysCount) => {
     const generateIntermediaryDates = () => {
       const start = new Date(
         ConvertISODateFormat(ConvertDateFormat(dateStrings[0]))
       );
-      setMultipleDayStartDate(dateStrings[0]);
       const end = new Date(
         ConvertISODateFormat(ConvertDateFormat(dateStrings[1]))
       );
-      setMultipleDayEndDate(dateStrings[1]);
       const dates = [];
-
       while (start <= end) {
         dates.push(start.toISOString().split("T")[0]);
         start.setDate(start.getDate() + 1);
       }
-
       return dates;
     };
 
     const intermediateDates = generateIntermediaryDates() || [];
-
     const ValidDays = intermediateDates.filter((d) => {
-      console.log("HolidayDays", HolidayDays);
       if (
         !WeekOffDays.includes(new Date(d).getDay()) &&
         !HolidayDays.includes(d)
@@ -186,7 +139,6 @@ const ApplyLeaveForm = () => {
         return d;
       }
     });
-    console.log("valid Days", ValidDays);
 
     const multipleDayName = ValidDays.map((d) => {
       const date = new Date(d);
@@ -210,9 +162,14 @@ const ApplyLeaveForm = () => {
 
     const ValidDaysCount = ValidDays.length;
     setDaysCount(ValidDaysCount);
-    if (leaveapplyObj.available_count <= totalWorkDuration) {
-      toast.error("Selected Leave Exceeding Available Leave Hours ");
-    }
+
+    setLeaveApplyObj({
+      ...leaveapplyObj,
+      start: ConvertISODateFormat(ConvertDateFormat(dateStrings[0])),
+      end: ConvertISODateFormat(ConvertDateFormat(dateStrings[1])),
+      requested_leave_count: ValidDaysCount,
+      day_type: 1,
+    });
   };
 
   const disabledDate = (current) => {
@@ -233,6 +190,24 @@ const ApplyLeaveForm = () => {
     });
   };
 
+  const handleDayType = (e) => {
+    const value = e?.value || null;
+    let updatedDaysCount;
+    if (value === 1) {
+      updatedDaysCount = 1;
+    } else if (value === 2) {
+      updatedDaysCount = 0.5;
+    } else {
+      updatedDaysCount = 0;
+    }
+    setLeaveApplyObj((prevLeaveapplyObj) => ({
+      ...prevLeaveapplyObj,
+      day_type: value,
+      requested_leave_count: value === 1 ? 1 : value === 2 ? 0.5 : 0,
+    }));
+    setDaysCount(updatedDaysCount);
+  };
+
   const handleFromDateChange = (date) => {
     setFromDate(date);
     calculateHourDiff(date, toDate);
@@ -240,7 +215,11 @@ const ApplyLeaveForm = () => {
 
   const handleToDateChange = (date) => {
     setToDate(date);
-    calculateHourDiff(fromDate, date);
+    if (date && fromDate && date.isBefore(fromDate)) {
+      toast.error("Selected end date cannot be less than the start date");
+    } else {
+      calculateHourDiff(fromDate, date);
+    }
   };
 
   const calculateHourDiff = (start, end) => {
@@ -261,7 +240,15 @@ const ApplyLeaveForm = () => {
         2,
         "0"
       )}:${String(remainingMinutes).padStart(2, "0")}`;
+      const formattedResultForSetting = roundedHours + remainingMinutes / 60;
       setHourDiff(formattedResult);
+      setLeaveApplyObj((prevLeaveapplyObj) => ({
+        ...prevLeaveapplyObj,
+        start: start.format("YYYY-MM-DD HH:mm:00"),
+        end: end.format("YYYY-MM-DD HH:mm:00"),
+        requested_leave_count: formattedResultForSetting,
+        day_type: 1,
+      }));
     }
   };
 
@@ -276,48 +263,24 @@ const ApplyLeaveForm = () => {
     }),
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
-      if (leaveapplyObj.available_count <= totalMinutes) {
-        toast.error("Selected Leave Exceeding Available Leave Hours ");
+      dispatch(setLoaderVisible(true));
+      const Api = await PostApi(
+        "leave/leave-application/create/",
+        values,
+        false
+      );
+      console.log("API RES = ", Api);
+      if (Api.status && Api.status === 200) {
+        leaveapplyObj.id === 0
+          ? dispatch(addLeaveApplication(Api?.data.data))
+          : dispatch(editLeaveApplication(Api?.data?.data));
+        dispatch(toggleRSBView(false));
+        toast.success(Api?.data?.message);
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
       }
-      // dispatch(setLoaderVisible(true));
-      // let data;
-      // if (values.unit === 2) {
-      //   data = {
-      //     id: 0,
-      //     leave_type: values.leavetype,
-      //     start: selectedMultipleDayStartDateTime,
-      //     end: selectedMultipleDayEndDateTime,
-      //     day_type: 1,
-      //     requested_leave_count: leaveHours,
-      //     reason: values.reason,
-      //     status: 1,
-      //   };
-      // } else {
-      //   data = {
-      //     id: 0,
-      //     leave_type: values.leavetype,
-      //     start: startingDate,
-      //     end: endingDate,
-      //     day_type: 2,
-      //     requested_leave_count: leaveCount,
-      //     reason: values.reason,
-      //     status: 1,
-      //   };
-      // }
 
-      // const Api = await PostApi("leave/leave-application/create/", data, false);
-      // console.log("API RES = ", Api);
-      // if (Api.status && Api.status === 200) {
-      //   leaveapplyObj.id === 0
-      //     ? dispatch(addLeaveApplication(Api?.data.data))
-      //     : dispatch(editLeaveApplication(Api?.data?.data));
-      //   dispatch(toggleRSBView(false));
-      //   toast.success(Api?.data?.message);
-      // } else {
-      //   toast.error(Api?.data?.message || Api?.data?.detail);
-      // }
-
-      // dispatch(setLoaderVisible(false));
+      dispatch(setLoaderVisible(false));
     },
   });
 
@@ -381,7 +344,7 @@ const ApplyLeaveForm = () => {
                     {selectedLeaveTypeObj?.balance_leave_count}{" "}
                     {selectedLeaveTypeObj?.unit === leave_type_day_unit
                       ? "Days"
-                      : "Hr"}{" "}
+                      : "Hours"}{" "}
                     Remaining
                   </>
                 )}
@@ -400,16 +363,24 @@ const ApplyLeaveForm = () => {
                       />
                       <span className="input-group-text">{daysCount} Days</span>
                     </div>
-                    {daysCount === 1 && (
+                    {(daysCount === 1 || daysCount === 0.5) && (
                       <div className="input-group">
                         <Label className="form-label">Select Day Type</Label>
 
                         <Select
-                          name="leavae_day_type"
+                          name="day_type"
                           isMulti={false}
-                          options={leave_day_type || []}
+                          options={day_type || []}
                           placeholder="Select Day Type"
                           className="basic-multi-select"
+                          value={
+                            leaveapplyObj?.day_type
+                              ? day_type.find(
+                                  (d) => d.id === leaveapplyObj?.day_type
+                                )
+                              : []
+                          }
+                          onChange={handleDayType}
                         />
                       </div>
                     )}
@@ -428,6 +399,7 @@ const ApplyLeaveForm = () => {
                       <Label className="form-label">From</Label>
 
                       <DatePicker
+                        name="start"
                         showTime={{ minuteStep: 30 }}
                         format="DD-MM-YYYY HH:mm"
                         disabledDate={disabledDate}
@@ -436,6 +408,7 @@ const ApplyLeaveForm = () => {
                       <Label className="form-label">To</Label>
 
                       <DatePicker
+                        name="end"
                         showTime={{ minuteStep: 30 }}
                         format="DD-MM-YYYY HH:mm"
                         disabledDate={disabledDate}

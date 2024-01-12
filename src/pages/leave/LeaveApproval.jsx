@@ -10,51 +10,54 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { setLeaveApproval } from "../../redux/reducers/ChildReducer/LeaveApprovalReducer";
 import { Api } from "../../common/api/Api";
+import { Badge, Button, UncontrolledTooltip } from "reactstrap";
 
 const LeaveApproval = () => {
+  const dispatch = useDispatch();
 
-  const dispatch = useDispatch()
-
-  const { leave_approval_data } = useSelector(data => data.LeaveApprovalReducer);
-
-  const { version } = useSelector(data => data.MetaReducer);
+  const { leave_approval_data } = useSelector(
+    (data) => data.LeaveApprovalReducer
+  );
+  const DepartmentData = GetLocalStorageData("department") || [];
+  const { version } = useSelector((data) => data.MetaReducer);
 
   useEffect(() => {
     Api({
-      method : 'GET',
-      url : 'leave/leave-approval/get/',
+      method: "GET",
+      url: "leave/leave-application/get/",
     })
-    .then(res =>{
-      dispatch(setLeaveApproval(res?.data?.data))      
-    })
-    .catch(err =>{
-      dispatch(setLeaveApproval([]))
-    })
-  }, [version])
+      .then((res) => {
+        dispatch(setLeaveApproval(res?.data?.data));
+      })
+      .catch((err) => {
+        dispatch(setLeaveApproval([]));
+      });
+  }, [version]);
 
   const [LeaveData, setLeavedata] = useState([
     {
-      "id": 1,
-      "employee": 41,
-      "department": 15,
-      "start_date": "2023-05-01",
-      "end_date": "2023-05-03",
-      "total_days": "3 Days",
-      "leave_type": 1,
-      "reason": "Family Function",
-      "status": 1
-    }, {
-      "id": 2,
-      "employee": 43,
-      "department": 14,
-      "start_date": "2023-05-30 ",
-      "end_date": "2023-05-30 ",
-      "total_days": "2 Hours",
-      "leave_type": 3,
-      "reason": "Traffic",
-      "status": 2
-    }
-  ])
+      id: 1,
+      employee: 41,
+      department: 15,
+      start_date: "2023-05-01",
+      end_date: "2023-05-03",
+      total_days: "3 Days",
+      leave_type: 1,
+      reason: "Family Function",
+      status: 1,
+    },
+    {
+      id: 2,
+      employee: 43,
+      department: 14,
+      start_date: "2023-05-30 ",
+      end_date: "2023-05-30 ",
+      total_days: "2 Hours",
+      leave_type: 3,
+      reason: "Traffic",
+      status: 2,
+    },
+  ]);
   // Column
   const additionalColumn = [
     {
@@ -62,37 +65,52 @@ const LeaveApproval = () => {
       accessor: "employee",
       filterable: false,
       id: "employee",
-      
+
       accessor: (obj) => {
         const EmployeeData = GetLocalStorageData("employee");
-        const thisEmployee = EmployeeData.find(data => data.id === obj.employee);
+        const thisEmployee = EmployeeData.find(
+          (data) => data.id === obj.employee
+        );
         console.log("This Emp = ", thisEmployee);
-        return (
-          thisEmployee.profile_url ? (
-            <div className="d-flex gap-2 align-items-center">
-              <div className="flex-shrink-0">
-                <img src={thisEmployee.profile_url} alt="" className="avatar-xs rounded-circle" />
-              </div>
-              <div className="flex-grow-1">
-                <div>{thisEmployee.fname}</div>
-                <div>{thisEmployee.email}</div>
+        return thisEmployee.profile_url ? (
+          <div className="d-flex gap-2 align-items-center">
+            <div className="flex-shrink-0">
+              <img
+                src={thisEmployee.profile_url}
+                alt=""
+                className="avatar-xs rounded-circle"
+              />
+            </div>
+            <div className="flex-grow-1">
+              <div>{thisEmployee.fname}</div>
+              <div>{thisEmployee.email}</div>
+            </div>
+          </div>
+        ) : (
+          <div className="d-flex gap-2 align-items-center">
+            <div className="flex-shrink-0">
+              <div
+                className="avatar-xs rounded-circle"
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  background: "#0ab39c",
+                }}
+                data-bs-toggle="tooltip"
+                title={thisEmployee.fname}
+              >
+                <span className="first_letter" style={{ color: "white" }}>
+                  {thisEmployee.fname.charAt(0)}
+                </span>
               </div>
             </div>
-          ) : (
-            <div className="d-flex gap-2 align-items-center">
-              <div className="flex-shrink-0">
-                <div className="avatar-xs rounded-circle" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0ab39c' }} data-bs-toggle="tooltip" title={(thisEmployee.fname)}>
-                  <span className="first_letter" style={{ color: 'white' }} >{(thisEmployee.fname).charAt(0)}</span>
-                </div>
-              </div>
-              <div className="flex-grow-1">
-                <div>{thisEmployee.fname}</div>
-                <div>{thisEmployee.email}</div>
-              </div>
+            <div className="flex-grow-1">
+              <div>{thisEmployee.fname}</div>
+              <div>{thisEmployee.email}</div>
             </div>
-
-          )
-        )
+          </div>
+        );
       },
     },
     {
@@ -100,10 +118,69 @@ const LeaveApproval = () => {
       id: "department",
       filterable: false,
       accessor: (obj) => {
-        const DepartmentData = GetLocalStorageData("department");
-        const thisDepartment = DepartmentData.find(data => data.id === obj.department);
+        let thisDepartment = DepartmentData
+          ? DepartmentData.filter((data) =>
+              obj.primary_department_id_list.includes(data.id)
+            )
+          : [];
+
+        let firstDep_name = thisDepartment?.length
+          ? thisDepartment[0].name
+          : "";
+
+        let subDepList = thisDepartment?.length
+          ? thisDepartment.filter((datas, index) => {
+              if (index !== 0) {
+                return datas;
+              }
+            })
+          : [];
+
         return (
-          <React.Fragment>{thisDepartment && thisDepartment.name}</React.Fragment>
+          <span>
+            <Button
+              color="light"
+              id={`depListRef-${obj.id}`}
+              className="position-relative"
+            >
+              <React.Fragment>{firstDep_name}</React.Fragment>
+              {subDepList.length > 0 ? (
+                <span>
+                  <Badge
+                    //id="tooltipwithHtml"
+                    pill
+                    color="success"
+                    className="position-absolute top-0 start-100 translate-middle"
+                  >
+                    +{subDepList.length}
+                    <span className="visually-hidden">Departments</span>
+                  </Badge>
+
+                  <UncontrolledTooltip
+                    placement="bottom"
+                    target={`depListRef-${obj.id}`}
+                  >
+                    {" "}
+                    <div className="mt-1">
+                      {subDepList.map((item, key) => (
+                        <p className="mb-1">{item.name}</p>
+                      ))}
+                    </div>{" "}
+                  </UncontrolledTooltip>
+                </span>
+              ) : (
+                ""
+              )}
+            </Button>
+          </span>
+        );
+
+        return (
+          <>
+            {thisDepartment.map((d) => (
+              <React.Fragment>{d.name}</React.Fragment>
+            ))}
+          </>
         );
       },
     },
@@ -131,7 +208,7 @@ const LeaveApproval = () => {
       filterable: false,
       id: "total",
       accessor: (obj) => {
-        return <b>{obj.total}</b>;
+        return <b>{obj.requested_leave_count}</b>;
       },
     },
     {
@@ -141,7 +218,9 @@ const LeaveApproval = () => {
       id: "leave_type",
       accessor: (obj) => {
         const LeaveTypeData = GetLocalStorageData("leave_types");
-        const thisLeaveType = LeaveTypeData.find(data => data.id === obj.leave_type)
+        const thisLeaveType = LeaveTypeData.find(
+          (data) => data.id === obj.leave_type
+        );
         return (
           <React.Fragment>{thisLeaveType && thisLeaveType.name}</React.Fragment>
         );
@@ -162,14 +241,24 @@ const LeaveApproval = () => {
       id: "status",
       filterable: false,
       accessor: (obj) => {
-        let status = obj.status === 1 ? "Pending" : obj.status === 2 ? "Approved" : "Rejected";
-        let statusClass = obj.status === 1 ? "primary" : obj.status === 2 ? "success" : "danger";
+        let status =
+          obj.status === 1
+            ? "Pending"
+            : obj.status === 2
+            ? "Approved"
+            : "Rejected";
+        let statusClass =
+          obj.status === 1
+            ? "primary"
+            : obj.status === 2
+            ? "success"
+            : "danger";
         return (
           <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}>
+            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
+          >
             {" "}
             {status}{" "}
-
           </span>
         );
       },
@@ -177,36 +266,49 @@ const LeaveApproval = () => {
   ];
 
   const initialFormObj = useMemo(() => {
-    return {
-
-      id: 1,
-      employee: 16,
-      department: 15,
-      start_date: "2023-05-30 ",
-      end_date: "2023-05-30",
-      total_days: "2 Hours",
-      leave_type: 3,
-      reason: "Traffic",
-      status: 1
-    }, {
-      id: 2,
-      employee: 32,
-      department: 14,
-      start_date: "2023-05-01",
-      end_date: "2023-05-03",
-      total_days: "3 Days",
-      leave_type: 1,
-      reason: "Family Function",
-      status: 1
-    }
+    return (
+      {
+        id: 1,
+        employee: 16,
+        department: 15,
+        start_date: "2023-05-30 ",
+        end_date: "2023-05-30",
+        total_days: "2 Hours",
+        leave_type: 3,
+        reason: "Traffic",
+        status: 1,
+      },
+      {
+        id: 2,
+        employee: 32,
+        department: 14,
+        start_date: "2023-05-01",
+        end_date: "2023-05-03",
+        total_days: "3 Days",
+        leave_type: 1,
+        reason: "Family Function",
+        status: 1,
+      }
+    );
   }, []);
-
 
   const filterKey = "status";
   const filterOptions = [
-    { option: 1, label: "Pending", count : leave_approval_data.filter(e => e[filterKey] === 1).length || 0  },
-    { option: 2, label: "Approved", count : leave_approval_data.filter(e => e[filterKey] === 2).length || 0  },
-    { option: 3, label: "Rejected", count : leave_approval_data.filter(e => e[filterKey] === 3).length || 0  },
+    {
+      option: 1,
+      label: "Pending",
+      count: leave_approval_data.filter((e) => e[filterKey] === 1).length || 0,
+    },
+    {
+      option: 2,
+      label: "Approved",
+      count: leave_approval_data.filter((e) => e[filterKey] === 2).length || 0,
+    },
+    {
+      option: 3,
+      label: "Rejected",
+      count: leave_approval_data.filter((e) => e[filterKey] === 3).length || 0,
+    },
   ];
 
   document.title = `Leave Approval | ${MetaTitle}`;
