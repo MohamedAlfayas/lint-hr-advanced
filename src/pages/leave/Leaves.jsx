@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Badge, Col, Container, Row } from "reactstrap";
 import LeaveTypesWidgets from "./LeaveTypesWidgets";
 import HolidayCalenderAPi from "../holidays/HolidayCalenderAPi";
@@ -6,8 +6,20 @@ import InfoTable from "../../component/common/table/InfoTable";
 import { useDispatch, useSelector } from "react-redux";
 import { MetaTitle } from "../../common/data/MetaTitle";
 import { leave_application_component_name } from "../../common/constant/Constants";
+import { Api } from "../../common/api/Api";
+import { GetApi } from "../../common/api/GetApi";
 
 const LeaveDashboard = () => {
+  const [leaveData, setLeaveData] = useState(null);
+  useEffect(() => {
+    const fetchLeaveData = async () => {
+      const getApiResult = GetApi('leave/leave-application/get/');
+      console.log('getApiResult ===' , getApiResult);
+      setLeaveData(getApiResult);
+    };
+
+    fetchLeaveData();
+  }, []);
   document.title = `Leave Application | ${MetaTitle}`;
 
   // const dispatch = useDispatch();
@@ -18,18 +30,18 @@ const LeaveDashboard = () => {
   //   dispatch(setLeaveApplication(GetLocalStorageData("leave_types") || []));
   // }, []);
 
-  let leavetypes = [
-    { id: 1, name: "Casual Leave (CL)", type: "Day" },
-    { id: 2, name: "Earned Leave (EL)", type: "Hour" },
-    { id: 3, name: "Sick Leave (SL)", type: "Day" },
-    { id: 4, name: "Permission", type: "Hour" },
-  ];
+  // let leavetypes = [
+  //   { id: 1, name: "Casual Leave (CL)", type: "Day" },
+  //   { id: 2, name: "Earned Leave (EL)", type: "Hour" },
+  //   { id: 3, name: "Sick Leave (SL)", type: "Day" },
+  //   { id: 4, name: "Permission", type: "Hour" },
+  // ];
 
-  let statusObj = [
-    { id: 1, name: "Pending", class: "warning" },
-    { id: 2, name: "Approved", class: "success" },
-    { id: 3, name: "Cancel", class: "danger" },
-  ];
+  // let statusObj = [
+  //   { id: 1, name: "Pending", class: "warning" },
+  //   { id: 2, name: "Approved", class: "success" },
+  //   { id: 3, name: "Cancel", class: "danger" },
+  // ];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -40,43 +52,43 @@ const LeaveDashboard = () => {
     });
   };
 
-  const handleTypeChange = (obj) => {
-    setSelectedGenders(obj);
-    setLeaveTypeData({
-      ...leaveTypeData,
-      genders: obj.map((d) => d.id),
-    });
-  };
+  // const handleTypeChange = (obj) => {
+  //   setSelectedGenders(obj);
+  //   setLeaveTypeData({
+  //     ...leaveTypeData,
+  //     genders: obj.map((d) => d.id),
+  //   });
+  // };
 
-  const [leaveapplication, setLeaveApplication] = useState([
-    {
-      id: 1,
-      leavetype: 2,
-      reason: "Testing",
-      start: "30-05-2023 10:00",
-      end: "30-05-2023 12:00",
-      total: 2,
-      status: 1,
-    },
-    {
-      id: 2,
-      leavetype: 1,
-      reason: "Testing",
-      start: "01-05-2023",
-      end: "03-05-2023",
-      total: 2,
-      status: 2,
-    },
-    {
-      id: 3,
-      leavetype: 3,
-      reason: "Testing",
-      start: "01-05-2023",
-      end: "03-05-2023",
-      total: 2,
-      status: 3,
-    },
-  ]);
+  // const [leaveapplication, setLeaveApplication] = useState([
+  //   {
+  //     id: 1,
+  //     leavetype: 2,
+  //     reason: "Testing",
+  //     start: "30-05-2023 10:00",
+  //     end: "30-05-2023 12:00",
+  //     total: 2,
+  //     status: 1,
+  //   },
+  //   {
+  //     id: 2,
+  //     leavetype: 1,
+  //     reason: "Testing",
+  //     start: "01-05-2023",
+  //     end: "03-05-2023",
+  //     total: 2,
+  //     status: 2,
+  //   },
+  //   {
+  //     id: 3,
+  //     leavetype: 3,
+  //     reason: "Testing",
+  //     start: "01-05-2023",
+  //     end: "03-05-2023",
+  //     total: 2,
+  //     status: 3,
+  //   },
+  // ]);
 
   // Column
   const additionalColumn = [
@@ -155,6 +167,7 @@ const LeaveDashboard = () => {
       end: null,
       requested_leave_count: 0,
       status: 1,
+      day_type: 1,
     };
   }, []);
 
@@ -162,7 +175,7 @@ const LeaveDashboard = () => {
   const filterOptions = [
     { option: true, label: "Approved" },
     { option: true, label: "Pending" },
-    { option: true, label: "Cancel" },
+    { option: true, label: "Rejected" },
   ];
 
   return (
@@ -179,7 +192,7 @@ const LeaveDashboard = () => {
             </Col>
             <InfoTable
               additionalColumn={additionalColumn}
-              tabledata={leaveapplication}
+              // tabledata={leaveapplication}
               formname={leave_application_component_name}
               initialFormObj={initialFormObj}
               filterKey={filterKey}

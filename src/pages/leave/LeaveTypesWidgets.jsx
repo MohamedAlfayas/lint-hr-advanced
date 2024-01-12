@@ -79,6 +79,7 @@ const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
 
     dispatch(setFormTitle(formname));
     dispatch(setFormObj(FormObj));
+    console.log("lkhlg",FormObj);
     dispatch(setFormWidthPercentage(width_per));
     dispatch(setComponentToShow(formname));
     dispatch(toggleRSBView(true));
@@ -124,14 +125,14 @@ const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
                         <p class="mb-1 fs-6 text">
                           Total
                           <span class="float-end fw-bolder mb-0">
-                            {item.allowed_count}  <small>{item.unit === 1 ? '/Year' : '/Month'} </small>{" "}
+                            {item.allowed_count}  <small>{item.unit === 1 ? 'Day/Year' : 'Hour/Year'} </small>{" "}
                           </span>
                         </p>
                         <p class="mb-1 fs-6 text">
                           Avail
                           <span class="float-end fw-bolder mb-0">
                             {item.balance_leave_count}{" "}
-                            <small>{item.unit === 1 ? '/Year' : '/Month'} </small>{" "}
+                            <small>{item.unit === 1 ? 'Day/Year' : 'Hour/Year'} </small>{" "}
                           </span>
                         </p>
                       </div>
