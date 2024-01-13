@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import { setLeaveApproval } from "../../redux/reducers/ChildReducer/LeaveApprovalReducer";
 import { Api } from "../../common/api/Api";
 import { Badge, Button, UncontrolledTooltip } from "reactstrap";
+import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
 
 const LeaveApproval = () => {
   const dispatch = useDispatch();
@@ -19,12 +20,18 @@ const LeaveApproval = () => {
     (data) => data.LeaveApprovalReducer
   );
   const DepartmentData = GetLocalStorageData("department") || [];
+  const LeaveTypeData = GetLocalStorageData("leave_types") || [];
   const { version } = useSelector((data) => data.MetaReducer);
+
+  const getUnitId = (id) => {
+    const day_type = LeaveTypeData?.find((val) => val?.value === id)?.unit;
+    return day_type;
+  };
 
   useEffect(() => {
     Api({
       method: "GET",
-      url: "leave/leave-application/get/",
+      url: "leave/leave-application-for-approval/get/",
     })
       .then((res) => {
         dispatch(setLeaveApproval(res?.data?.data));
@@ -190,7 +197,13 @@ const LeaveApproval = () => {
       filterable: false,
       id: "start",
       accessor: (obj) => {
-        return <b>{obj.start}</b>;
+        const date = convertDate(new Date(obj.start).toDateString());
+        const time = convertTime(new Date(obj.start).toTimeString());
+        return (
+          <b>{`${
+            getUnitId(obj.leave_type) === 1 ? date : `${date} - ${time}`
+          }`}</b>
+        );
       },
     },
     {
@@ -199,7 +212,13 @@ const LeaveApproval = () => {
       filterable: false,
       id: "end",
       accessor: (obj) => {
-        return <b>{obj.end}</b>;
+        const date = convertDate(new Date(obj.end).toDateString());
+        const time = convertTime(new Date(obj.end).toTimeString());
+        return (
+          <b>{`${
+            getUnitId(obj.leave_type) === 1 ? date : `${date} - ${time}`
+          }`}</b>
+        );
       },
     },
     {
@@ -208,7 +227,12 @@ const LeaveApproval = () => {
       filterable: false,
       id: "total",
       accessor: (obj) => {
-        return <b>{obj.requested_leave_count}</b>;
+        let leave_count = obj.requested_leave_count;
+        return (
+          <b>{`${leave_count} ${
+            getUnitId(obj.leave_type) === 1 ? "Days" : "Hour"
+          }`}</b>
+        );
       },
     },
     {
@@ -217,7 +241,6 @@ const LeaveApproval = () => {
       filterable: false,
       id: "leave_type",
       accessor: (obj) => {
-        const LeaveTypeData = GetLocalStorageData("leave_types");
         const thisLeaveType = LeaveTypeData.find(
           (data) => data.id === obj.leave_type
         );

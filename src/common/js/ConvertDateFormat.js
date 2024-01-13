@@ -37,3 +37,22 @@ export const ConvertISODateFormat = (dateString) => {
 
   return formattedDate;
 };
+
+export const convertDate = (inputDateString) => {
+  const inputDate = new Date(inputDateString);
+
+  const day = inputDate.getDate().toString().padStart(2, "0");
+  const month = (inputDate.getMonth() + 1).toString().padStart(2, "0"); // Months are zero-based
+  const year = inputDate.getFullYear();
+
+  const formattedDate = `${day}-${month}-${year}`;
+
+  return formattedDate;
+};
+export const convertTime = (inputTimeString) => {
+  const [hours, minutes] = inputTimeString.match(/\d+/g);
+
+  const formattedTime = `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
+
+  return formattedTime;
+};

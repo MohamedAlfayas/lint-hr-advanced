@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useState } from "react";
 import {
   Button,
@@ -29,22 +29,20 @@ import {
 } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 
 // Import Images
-import btcCoin from "../../assets/images/svg/crypto-icons/btc.svg";
-import ltcCoin from "../../assets/images/svg/crypto-icons/ltc.svg";
-import etcCoin from "../../assets/images/svg/crypto-icons/etc.svg";
-import bnbCoin from "../../assets/images/svg/crypto-icons/bnb.svg";
-import usdtCoin from "../../assets/images/svg/crypto-icons/usdt.svg";
-import dashCoin from "../../assets/images/svg/crypto-icons/dash.svg";
-import neoCoin from "../../assets/images/svg/crypto-icons/neo.svg";
+
 import { GetCustomField } from "../../common/js/GetCustomField";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
-const leaveType = GetLocalStorageData("leave_types_for_employee") || [];
-
-
 
 const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
   const dispatch = useDispatch();
   const [intialFormObj, setIntialFormObj] = useState(null);
+  const [leaveTypeData, setLeaveTypeData] = useState([]);
+
+  const { version } = useSelector((state) => state.MetaReducer);
+
+  useEffect(() => {
+    setLeaveTypeData(GetLocalStorageData("leave_types_for_employee") || []);
+  }, [version]);
 
   const handleCreateAndUpdate = ($id, table_obj) => {
     console.log(table_obj);
@@ -79,7 +77,7 @@ const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
 
     dispatch(setFormTitle(formname));
     dispatch(setFormObj(FormObj));
-    console.log("lkhlg",FormObj);
+    console.log("lkhlg", FormObj);
     dispatch(setFormWidthPercentage(width_per));
     dispatch(setComponentToShow(formname));
     dispatch(toggleRSBView(true));
@@ -110,14 +108,14 @@ const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
             },
           }}
           modules={[Autoplay, Mousewheel]}
-          className="leaveTypeSlider">
-          {(leaveType || []).map((item, key) => (
+          className="leaveTypeSlider"
+        >
+          {(leaveTypeData || []).map((item, key) => (
             <SwiperSlide key={key}>
               <Card>
                 <CardBody>
                   <div className="align-items-center">
                     <h6 className="mb-0 fs-14">{item.name}</h6>
-                   
                   </div>
                   <Row className="align-items-start g-0">
                     <Col xs={7}>
@@ -125,14 +123,19 @@ const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
                         <p class="mb-1 fs-6 text">
                           Total
                           <span class="float-end fw-bolder mb-0">
-                            {item.allowed_count}  <small>{item.unit === 1 ? 'Day/Year' : 'Hour/Year'} </small>{" "}
+                            {item.allowed_count}{" "}
+                            <small>
+                              {item.unit === 1 ? "Day/Year" : "Hour/Year"}{" "}
+                            </small>{" "}
                           </span>
                         </p>
                         <p class="mb-1 fs-6 text">
                           Avail
                           <span class="float-end fw-bolder mb-0">
                             {item.balance_leave_count}{" "}
-                            <small>{item.unit === 1 ? 'Day/Year' : 'Hour/Year'} </small>{" "}
+                            <small>
+                              {item.unit === 1 ? "Day/Year" : "Hour/Year"}{" "}
+                            </small>{" "}
                           </span>
                         </p>
                       </div>
@@ -142,7 +145,8 @@ const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
                         size="sm"
                         onClick={() => {
                           handleCreateAndUpdate(item.id, item);
-                        }}>
+                        }}
+                      >
                         {" "}
                         <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
                         Apply{" "}
@@ -153,11 +157,13 @@ const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
                         <LeaveTypeWidgetsCharts
                           seriesData={[
                             Math.round(
-                              (item.balance_leave_count / item.allowed_count) * 100
+                              (item.balance_leave_count / item.allowed_count) *
+                                100
                             ),
                           ]}
                           chartsColor={
-                            (item.balance_leave_count / item.allowed_count) * 100 <=
+                            (item.balance_leave_count / item.allowed_count) *
+                              100 <=
                             50
                               ? "#ffa159"
                               : "#59ffa7"
