@@ -13,6 +13,7 @@ import {
 import { Table, Row, Col, Button, Input, CardBody } from "reactstrap";
 import { DefaultColumnFilter } from "./Filters";
 import { Link } from "react-router-dom";
+import OrderGlobalFilter from "./GlobalFilter";
 
 // Define a default UI for filtering
 function GlobalFilter({ globalFilter, setGlobalFilter, SearchPlaceholder }) {
@@ -27,7 +28,7 @@ function GlobalFilter({ globalFilter, setGlobalFilter, SearchPlaceholder }) {
         <form>
           <Row className="g-3">
             <Col>
-              <div className="search-box me-2 mb-2 d-inline-block col-12">
+              <div className="search-box me-2 mb-2 d-inline-block col-4">
                 <input
                   onChange={(e) => {
                     setValue(e.target.value);
@@ -55,6 +56,7 @@ const TableContainer = ({
   isPagination,
   isGlobalSearch,
   isGlobalFilter,
+  isOrderFilter,
   customPageSize,
   tableClass,
   theadClass,
@@ -167,7 +169,9 @@ const TableContainer = ({
           )}
         </Row>
       )}
-
+          {isOrderFilter && (
+              <OrderGlobalFilter />
+            )}
       <div className={divClass}>
         <Table hover {...getTableProps()} className={tableClass}>
           <thead className={theadClass}>
