@@ -814,12 +814,36 @@ const InfoTable = ({
                         Export
                       </button>{" "}
                       {isMultiDeleteButton && (
+                        <div>
                         <button
                           className="btn btn-soft-danger"
                           onClick={() => setDeleteModalMulti(true)}
                         >
                           <i className="ri-delete-bin-2-line"></i>
                         </button>
+                        {" "}
+                        <button
+                           type="button"
+                           className="btn btn-success add-btn"
+                           id="bulk-approve-btn"
+                           onClick={() => handleBulkAction("approve")}
+                        >
+                           <i className="ri-check-line fs-16"></i> Bulk
+                              Approve
+                        </button>
+                        {" "}
+                        <button
+                           type="button"
+                           className="btn btn-danger add-btn"
+                           id="bulk-reject-btn"
+                           onClick={() => handleBulkAction("reject")}
+                        >
+                            <i className="ri-close-line fs-16"></i> Bulk
+                              Reject
+                        </button>
+                        </div>
+                        
+                        
                       )}
                     </div>
                   </div>

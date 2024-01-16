@@ -17,8 +17,10 @@ import EmployeeTableFilter from "../tableFilter/EmployeeTableFilter";
 import {
   employee_component_name,
   leave_approval_component_name,
+  leave_type_component_name,
 } from "../../../common/constant/Constants";
 import LeaveApprovalFilter from "../tableFilter/LeaveApprovalFilter";
+import LeaveTypeFilter from "../tableFilter/LeaveTypeFilter";
 
 const TableContainer = ({
   columns,
@@ -143,6 +145,9 @@ const TableContainer = ({
               {formname === employee_component_name && <EmployeeTableFilter />}
               {formname === leave_approval_component_name && (
                 <LeaveApprovalFilter />
+              )}
+                 {formname === leave_type_component_name && (
+                <LeaveTypeFilter />
               )}
               <Col md={2}>
                 <div>
