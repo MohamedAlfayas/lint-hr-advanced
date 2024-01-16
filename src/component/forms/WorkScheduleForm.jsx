@@ -206,10 +206,33 @@ const WorkScheduleForm = () => {
       var Temp1 = new Date("2020-01-01" + " " + StartTime).getTime();
       var Temp2 = new Date("2020-01-01" + " " + EndTime).getTime();
       var DiffSec = Temp2 - Temp1;
+      console.log(DiffSec);
 
+      workScheduleData.workday[i].total_work_duration = DiffSec;
+
+      // setWorkScheduleData({
+      //   ...workScheduleData,
+      //   total_work_duration: DiffSec,
+      // });
       //total_work_duration: 0,
 
       //obj.workday[i].total_work_duration = DiffSec;
+
+      // let updatedWorkDay = [...workScheduleData?.workday].map((d, idx) => {
+      //   if (i === idx) {
+      //     return {
+      //       ...d,
+      //       total_work_duration: DiffSec,
+      //     };
+      //   } else {
+      //     return d;
+      //   }
+      // });
+
+      // setWorkScheduleData({
+      //   ...workScheduleData,
+      //   total_work_duration: DiffSec,
+      // });
 
       var mins = Math.floor(DiffSec / 60000);
       var hrs = Math.floor(mins / 60);
@@ -229,6 +252,9 @@ const WorkScheduleForm = () => {
           : "text-danger";
 
       var actualHr = pad(Math.abs(hrs)) + ":" + pad(Math.abs(mins));
+
+      console.log("calculateTime.apply.........workScheduleData");
+      console.log(workScheduleData);
 
       return (
         <span className={colorCLass}>
