@@ -1,7 +1,7 @@
 import React from "react";
 UncontrolledDropdown;
 import { useState } from "react";
-import { useRef } from 'react';
+import { useRef } from "react";
 
 import {
   Card,
@@ -97,11 +97,11 @@ const InfoTable = ({
 
   const tabOptions = filterOptions
     ? filterOptions.map((obj, idx) => {
-      return {
-        ...obj,
-        idx: idx + 2,
-      };
-    })
+        return {
+          ...obj,
+          idx: idx + 2,
+        };
+      })
     : [];
 
   const [activeTab, setActiveTab] = useState("2");
@@ -555,8 +555,6 @@ const InfoTable = ({
     }
   }, [modal]);
 
-  const isOrderFilterEnabled = formname === leave_approval_component_name;
-
   return (
     <Col lg={table_col || 12}>
       <div className={table_class || "page-content"}>
@@ -895,14 +893,13 @@ const InfoTable = ({
                     data={dataList || []}
                     isPagination={true}
                     isGlobalFilter={true}
-                    isAddUserList={false}
+                    formname={formname}
                     customPageSize={50}
                     divClass="table-responsive table-card"
                     tableClass="align-middle table-nowrap"
                     theadClass="table-light text-muted"
                     handleDataClick={handleDataClicks}
                     isDataFilter={true}
-                    isOrderFilter={isOrderFilterEnabled}
                     SearchPlaceholder="Search for data ID, customer, data status or something..."
                   />
                 ) : (
@@ -966,15 +963,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Order Id"
                         type="text"
-                      // validate={{
-                      //     required: { value: true },
-                      // }}
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={validation.values.orderId || ""}
-                      // invalid={
-                      //     validation.touched.orderId && validation.errors.orderId ? true : false
-                      // }
+                        // validate={{
+                        //     required: { value: true },
+                        // }}
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={validation.values.orderId || ""}
+                        // invalid={
+                        //     validation.touched.orderId && validation.errors.orderId ? true : false
+                        // }
                       />
                       {/* {validation.touched.orderId && validation.errors.orderId ? (
                                                     <FormFeedback type="invalid">{validation.errors.orderId}</FormFeedback>
@@ -994,15 +991,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Name"
                         type="text"
-                      // validate={{
-                      //     required: { value: true },
-                      // }}
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={validation.values.customer || ""}
-                      // invalid={
-                      //     validation.touched.customer && validation.errors.customer ? true : false
-                      // }
+                        // validate={{
+                        //     required: { value: true },
+                        // }}
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={validation.values.customer || ""}
+                        // invalid={
+                        //     validation.touched.customer && validation.errors.customer ? true : false
+                        // }
                       />
                       {/* {validation.touched.customer && validation.errors.customer ? (
                                                     <FormFeedback type="invalid">{validation.errors.customer}</FormFeedback>
@@ -1074,12 +1071,12 @@ const InfoTable = ({
                           <Input
                             name="amount"
                             type="text"
-                          // onChange={validation.handleChange}
-                          // onBlur={validation.handleBlur}
-                          // value={validation.values.amount || ""}
-                          // invalid={
-                          //     validation.touched.amount && validation.errors.amount ? true : false
-                          // }
+                            // onChange={validation.handleChange}
+                            // onBlur={validation.handleBlur}
+                            // value={validation.values.amount || ""}
+                            // invalid={
+                            //     validation.touched.amount && validation.errors.amount ? true : false
+                            // }
                           />
                           {/* {validation.touched.amount && validation.errors.amount ? (
                                                             <FormFeedback type="invalid">{validation.errors.amount}</FormFeedback>
@@ -1096,11 +1093,11 @@ const InfoTable = ({
                             name="payment"
                             type="select"
                             className="form-select"
-                          // onChange={validation.handleChange}
-                          // onBlur={validation.handleBlur}
-                          // value={
-                          //     validation.values.payment || ""
-                          // }
+                            // onChange={validation.handleChange}
+                            // onBlur={validation.handleBlur}
+                            // value={
+                            //     validation.values.payment || ""
+                            // }
                           >
                             {/* {orderpayement.map((item, key) => (
                                                                 <React.Fragment key={key}>
@@ -1127,11 +1124,11 @@ const InfoTable = ({
                         name="status"
                         type="select"
                         className="form-select"
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={
-                      //     validation.values.status || ""
-                      // }
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={
+                        //     validation.values.status || ""
+                        // }
                       >
                         {/* {orderstatus.map((item, key) => (
                                                         <React.Fragment key={key}>

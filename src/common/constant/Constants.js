@@ -2260,3 +2260,11 @@ export const default_roles_list = [
     ],
   },
 ];
+
+
+export const leave_approval_status_options = [
+  { id: "0", label: 'All Status', value: '0' },
+  { id: "1", label: 'Pending', value: '1' },
+  { id: "2", label: 'Approved', value: '2' },
+  { id: "3", label: 'Rejected', value: '3' },
+]

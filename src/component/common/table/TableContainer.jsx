@@ -13,51 +13,19 @@ import {
 import { Table, Row, Col, Button, Input, CardBody } from "reactstrap";
 import { DefaultColumnFilter } from "./Filters";
 import { Link } from "react-router-dom";
-import OrderGlobalFilter from "./GlobalFilter";
-
-// Define a default UI for filtering
-function GlobalFilter({ globalFilter, setGlobalFilter, SearchPlaceholder }) {
-  const [value, setValue] = React.useState(globalFilter);
-  const onChange = useAsyncDebounce((value) => {
-    setGlobalFilter(value || undefined);
-  }, 200);
-
-  return (
-    <React.Fragment>
-      <CardBody>
-        <form>
-          <Row className="g-3">
-            <Col>
-              <div className="search-box me-2 mb-2 d-inline-block col-4">
-                <input
-                  onChange={(e) => {
-                    setValue(e.target.value);
-                    onChange(e.target.value);
-                  }}
-                  id="search-bar-0"
-                  type="text"
-                  className="form-control search /"
-                  placeholder={SearchPlaceholder}
-                  value={value || ""}
-                />
-                <i className="bx bx-search-alt search-icon"></i>
-              </div>
-            </Col>
-          </Row>
-        </form>
-      </CardBody>
-    </React.Fragment>
-  );
-}
+import EmployeeTableFilter from "../tableFilter/EmployeeTableFilter";
+import {
+  employee_component_name,
+  leave_approval_component_name,
+} from "../../../common/constant/Constants";
+import LeaveApprovalFilter from "../tableFilter/LeaveApprovalFilter";
 
 const TableContainer = ({
   columns,
   data,
-  isPagination,
+  formname,
   isGlobalSearch,
   isGlobalFilter,
-  isOrderFilter,
-  customPageSize,
   tableClass,
   theadClass,
   trClass,
@@ -129,20 +97,20 @@ const TableContainer = ({
   // };
   const handlePageSizeChange = (e) => {
     setPageSize(Number(e.target.value));
-    gotoPage(page); 
+    gotoPage(page);
   };
   const startItem = pageIndex * pageSize + 1;
   const endItem =
     (pageIndex + 1) * pageSize < data.length
       ? (pageIndex + 1) * pageSize
       : data.length;
-      const totalItem =
+  const totalItem =
     (pageIndex + 1) * pageSize < rows.length
       ? (pageIndex + 1) * pageSize
       : rows.length;
   return (
     <Fragment>
-      {(isGlobalSearch || isGlobalFilter) && (
+      {isGlobalFilter && (
         <Row className="mb-3">
           {isGlobalSearch && (
             <Col md={1}>
@@ -159,19 +127,37 @@ const TableContainer = ({
               </select>
             </Col>
           )}
-          {isGlobalFilter && (
-            <GlobalFilter
-              preGlobalFilteredRows={preGlobalFilteredRows}
-              globalFilter={state.globalFilter}
-              setGlobalFilter={setGlobalFilter}
-              SearchPlaceholder={SearchPlaceholder}
-            />
-          )}
+          <CardBody className="border border-dashed border-end-0 border-start-0">
+            <Row>
+              <Col md={4}>
+                <div className="search-box me-2 mb-2 d-inline-block col-12">
+                  <input
+                    id="search-bar-0"
+                    type="text"
+                    className="form-control search /"
+                    placeholder={`Search ${formname.split("_").join(" ")}`}
+                  />
+                  <i className="bx bx-search-alt search-icon"></i>
+                </div>
+              </Col>
+              {formname === employee_component_name && <EmployeeTableFilter />}
+              {formname === leave_approval_component_name && (
+                <LeaveApprovalFilter />
+              )}
+              <Col md={2}>
+                <div>
+                  <button type="button" className="btn btn-primary w-100">
+                    {" "}
+                    <i className="ri-equalizer-fill me-1 align-bottom"></i>
+                    Filters
+                  </button>
+                </div>
+              </Col>
+            </Row>
+          </CardBody>
         </Row>
       )}
-          {isOrderFilter && (
-              <OrderGlobalFilter />
-            )}
+
       <div className={divClass}>
         <Table hover {...getTableProps()} className={tableClass}>
           <thead className={theadClass}>
@@ -222,56 +208,59 @@ const TableContainer = ({
       </div>
 
       <Row className="align-items-center g-3 text-center text-sm-start mb-3">
-      <div className="col-sm">
-        <div className="text-muted">
-          Showing
-          <span className="fw-semibold ms-1">{startItem}</span> to{" "}
-          <span className="fw-semibold">{endItem}</span>  of{" "}
-          <span className="fw-semibold">{rows.length}</span> 
+        <div className="col-sm">
+          <div className="text-muted">
+            Showing
+            <span className="fw-semibold ms-1">{startItem}</span> to{" "}
+            <span className="fw-semibold">{endItem}</span> of{" "}
+            <span className="fw-semibold">{rows.length}</span>
+          </div>
         </div>
-      </div>
-      <div className="col-sm-auto">
-        <ul className="pagination pagination-separated pagination-md justify-content-center justify-content-sm-start mb-0">
-          <li className={!canPreviousPage ? "page-item disabled" : "page-item"}>
-            <Link to="#" className="page-link" onClick={previousPage}>
-              Previous
-            </Link>
-          </li>
-          {pageOptions.map((item, key) => (
-            <React.Fragment key={key}>
-              <li className="page-item">
-                <Link
-                  to="#"
-                  className={pageIndex === item ? "page-link active" : "page-link"}
-                  onClick={() => gotoPage(item)}
-                >
-                  {item + 1}
-                </Link>
-              </li>
-            </React.Fragment>
-          ))}
-          <li className={!canNextPage ? "page-item disabled" : "page-item"}>
-            <Link to="#" className="page-link" onClick={nextPage}>
-              Next
-            </Link>
-          </li>
-        </ul>
-      </div>
-      <div className="col-sm-auto">
-        <select
-          className="form-select form-select-sm"
-          value={pageSize}
-          onChange={handlePageSizeChange}
-        >
-          {[10, 25, 50, 100].map((size) => (
-            <option key={size} value={size}>
-              Show {size}
-            </option>
-          ))}
-        </select>
-      </div>
-    </Row>
-      
+        <div className="col-sm-auto">
+          <ul className="pagination pagination-separated pagination-md justify-content-center justify-content-sm-start mb-0">
+            <li
+              className={!canPreviousPage ? "page-item disabled" : "page-item"}
+            >
+              <Link to="#" className="page-link" onClick={previousPage}>
+                Previous
+              </Link>
+            </li>
+            {pageOptions.map((item, key) => (
+              <React.Fragment key={key}>
+                <li className="page-item">
+                  <Link
+                    to="#"
+                    className={
+                      pageIndex === item ? "page-link active" : "page-link"
+                    }
+                    onClick={() => gotoPage(item)}
+                  >
+                    {item + 1}
+                  </Link>
+                </li>
+              </React.Fragment>
+            ))}
+            <li className={!canNextPage ? "page-item disabled" : "page-item"}>
+              <Link to="#" className="page-link" onClick={nextPage}>
+                Next
+              </Link>
+            </li>
+          </ul>
+        </div>
+        <div className="col-sm-auto">
+          <select
+            className="form-select form-select-sm"
+            value={pageSize}
+            onChange={handlePageSizeChange}
+          >
+            {[10, 25, 50, 100].map((size) => (
+              <option key={size} value={size}>
+                Show {size}
+              </option>
+            ))}
+          </select>
+        </div>
+      </Row>
     </Fragment>
   );
 };
