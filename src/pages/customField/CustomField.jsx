@@ -151,6 +151,7 @@ const CustomField = () => {
       max_size: 1,
       is_required: false,
       applicable_for_modules: [],
+      img_url: "",
     };
   }, []);
 

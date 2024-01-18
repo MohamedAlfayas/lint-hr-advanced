@@ -8,11 +8,11 @@ export const form_default_input_types = [
   "text",
   "radio",
   "number",
-  "file",
   "checkbox",
 ];
 export const form_date_type = "date";
 export const form_select_type = "option";
+export const form_file_type = "file";
 export const custom_field_types = [
   { id: "text", label: "Text", value: "text" },
   { id: "number", label: "Number", value: "number" },
@@ -1925,7 +1925,6 @@ export const day_type = [
 
 export const DateFormat = "DD-MM-YYYY";
 export const MonthFormat = "YYYY-MM";
-export const DateTimeFormat = "DD-MM-YYYY HH:mm"
 
 export const IndiaStates = [
   {
@@ -2270,7 +2269,7 @@ export const leave_approval_status_options = [
   { id: "3", label: 'Rejected', value: '3' },
 ]
 export const leave_type_options = [
-  { id: 1, label: 'Leave Type', value: 1 },
-  { id: 2, label: 'Permission Type', value: 2 },
-  
+  { id: 1, label: 'Leave Type', value: '0' },
+  { id: 2, label: 'Permission Type', value: '1' },
+
 ]

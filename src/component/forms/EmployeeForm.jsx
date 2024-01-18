@@ -46,6 +46,7 @@ import {
   timzone_options,
   form_date_type,
   DateFormat,
+  form_file_type,
 } from "../../common/constant/Constants";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -300,7 +301,7 @@ const EmployeeForm = () => {
     setEmployeeObj({
       ...employeeObj,
       cf_values: [...employeeObj.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: e.target.value } : item
+        item.id === cf_id ? { ...item, value: e.target.value } : { ...item }
       ),
     });
   };
@@ -310,6 +311,17 @@ const EmployeeForm = () => {
       ...employeeObj,
       cf_values: [...employeeObj.cf_values].map((item) =>
         item.id === cf_id ? { ...item, value: e.value } : item
+      ),
+    });
+  };
+
+  const handleCFFileChange = (e, cf_id) => {
+    const file = e.target.files[0];
+    console.log("CF FILE Change = ", file);
+    setEmployeeObj({
+      ...employeeObj,
+      cf_values: [...employeeObj.cf_values].map((item) =>
+        item.id === cf_id ? { ...item, value: file } : item
       ),
     });
   };
@@ -358,7 +370,7 @@ const EmployeeForm = () => {
         let form_data = new FormData();
         employeeImage !== null &&
           form_data.append("profile", employeeImage, employeeImage.name);
-        Object.entries(employeeObj).map((key, idx) => {
+        Object.entries(employeeObj).map((key, value) => {
           if (key[0] === "cf_values") {
             form_data.append(key[0], JSON.stringify(key[1]));
           } else {
@@ -1557,6 +1569,27 @@ const EmployeeForm = () => {
                             <div id="passwordHelpBlock" className="form-text">
                               Enter {obj.name}
                             </div>
+                          </Fragment>
+                        )}
+                        {obj.type === form_file_type && (
+                          <Fragment>
+                            <div className="form-icon right">
+                              <Input
+                                type={"file"}
+                                name={obj.input_name}
+                                id={obj.input_name}
+                                className="form-control"
+                                placeholder={`Enter ${obj.name}`}
+                                onChange={(e) => handleCFFileChange(e, obj.id)}
+                              />
+                              <i className="ri-user-2-line"></i>
+                            </div>
+                            <div id="passwordHelpBlock" className="form-text">
+                              Choose {obj.name}
+                            </div>
+                            {obj.img_url && obj.img_url !== "" && (
+                              <Fragment>Chosen File {obj.img_url}</Fragment>
+                            )}
                           </Fragment>
                         )}
                         {obj.type === form_date_type && (
