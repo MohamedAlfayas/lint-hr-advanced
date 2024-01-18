@@ -97,11 +97,11 @@ const InfoTable = ({
 
   const tabOptions = filterOptions
     ? filterOptions.map((obj, idx) => {
-        return {
-          ...obj,
-          idx: idx + 2,
-        };
-      })
+      return {
+        ...obj,
+        idx: idx + 2,
+      };
+    })
     : [];
 
   const [activeTab, setActiveTab] = useState("2");
@@ -815,35 +815,33 @@ const InfoTable = ({
                       </button>{" "}
                       {isMultiDeleteButton && (
                         <div>
-                        <button
-                          className="btn btn-soft-danger"
-                          onClick={() => setDeleteModalMulti(true)}
-                        >
-                          <i className="ri-delete-bin-2-line"></i>
-                        </button>
-                        {" "}
-                        <button
-                           type="button"
-                           className="btn btn-success add-btn"
-                           id="bulk-approve-btn"
-                           onClick={() => handleBulkAction("approve")}
-                        >
-                           <i className="ri-check-line fs-16"></i> Bulk
-                              Approve
-                        </button>
-                        {" "}
-                        <button
-                           type="button"
-                           className="btn btn-danger add-btn"
-                           id="bulk-reject-btn"
-                           onClick={() => handleBulkAction("reject")}
-                        >
-                            <i className="ri-close-line fs-16"></i> Bulk
-                              Reject
-                        </button>
+                          <button
+                            className="btn btn-soft-danger"
+                            onClick={() => setDeleteModalMulti(true)}
+                          >
+                            <i className="ri-delete-bin-2-line"></i>
+                          </button>{" "}
+                          {formname === leave_approval_component_name && (
+                            <>
+                              <button
+                                type="button"
+                                className="btn btn-success add-btn"
+                                id="bulk-approve-btn"
+                                onClick={() => handleBulkAction("approve")}
+                              >
+                                <i className="ri-check-line fs-16"></i> Bulk Approve
+                              </button>{" "}
+                              <button
+                                type="button"
+                                className="btn btn-danger add-btn"
+                                id="bulk-reject-btn"
+                                onClick={() => handleBulkAction("reject")}
+                              >
+                                <i className="ri-close-line fs-16"></i> Bulk Reject
+                              </button>{" "}
+                            </>
+                          )}
                         </div>
-                        
-                        
                       )}
                     </div>
                   </div>
@@ -987,15 +985,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Order Id"
                         type="text"
-                        // validate={{
-                        //     required: { value: true },
-                        // }}
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={validation.values.orderId || ""}
-                        // invalid={
-                        //     validation.touched.orderId && validation.errors.orderId ? true : false
-                        // }
+                      // validate={{
+                      //     required: { value: true },
+                      // }}
+                      // onChange={validation.handleChange}
+                      // onBlur={validation.handleBlur}
+                      // value={validation.values.orderId || ""}
+                      // invalid={
+                      //     validation.touched.orderId && validation.errors.orderId ? true : false
+                      // }
                       />
                       {/* {validation.touched.orderId && validation.errors.orderId ? (
                                                     <FormFeedback type="invalid">{validation.errors.orderId}</FormFeedback>
@@ -1015,15 +1013,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Name"
                         type="text"
-                        // validate={{
-                        //     required: { value: true },
-                        // }}
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={validation.values.customer || ""}
-                        // invalid={
-                        //     validation.touched.customer && validation.errors.customer ? true : false
-                        // }
+                      // validate={{
+                      //     required: { value: true },
+                      // }}
+                      // onChange={validation.handleChange}
+                      // onBlur={validation.handleBlur}
+                      // value={validation.values.customer || ""}
+                      // invalid={
+                      //     validation.touched.customer && validation.errors.customer ? true : false
+                      // }
                       />
                       {/* {validation.touched.customer && validation.errors.customer ? (
                                                     <FormFeedback type="invalid">{validation.errors.customer}</FormFeedback>
@@ -1095,12 +1093,12 @@ const InfoTable = ({
                           <Input
                             name="amount"
                             type="text"
-                            // onChange={validation.handleChange}
-                            // onBlur={validation.handleBlur}
-                            // value={validation.values.amount || ""}
-                            // invalid={
-                            //     validation.touched.amount && validation.errors.amount ? true : false
-                            // }
+                          // onChange={validation.handleChange}
+                          // onBlur={validation.handleBlur}
+                          // value={validation.values.amount || ""}
+                          // invalid={
+                          //     validation.touched.amount && validation.errors.amount ? true : false
+                          // }
                           />
                           {/* {validation.touched.amount && validation.errors.amount ? (
                                                             <FormFeedback type="invalid">{validation.errors.amount}</FormFeedback>
@@ -1117,11 +1115,11 @@ const InfoTable = ({
                             name="payment"
                             type="select"
                             className="form-select"
-                            // onChange={validation.handleChange}
-                            // onBlur={validation.handleBlur}
-                            // value={
-                            //     validation.values.payment || ""
-                            // }
+                          // onChange={validation.handleChange}
+                          // onBlur={validation.handleBlur}
+                          // value={
+                          //     validation.values.payment || ""
+                          // }
                           >
                             {/* {orderpayement.map((item, key) => (
                                                                 <React.Fragment key={key}>
@@ -1148,11 +1146,11 @@ const InfoTable = ({
                         name="status"
                         type="select"
                         className="form-select"
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={
-                        //     validation.values.status || ""
-                        // }
+                      // onChange={validation.handleChange}
+                      // onBlur={validation.handleBlur}
+                      // value={
+                      //     validation.values.status || ""
+                      // }
                       >
                         {/* {orderstatus.map((item, key) => (
                                                         <React.Fragment key={key}>

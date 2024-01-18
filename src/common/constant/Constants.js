@@ -1925,6 +1925,7 @@ export const day_type = [
 
 export const DateFormat = "DD-MM-YYYY";
 export const MonthFormat = "YYYY-MM";
+export const DateTimeFormat = "DD-MM-YYYY HH:mm"
 
 export const IndiaStates = [
   {
@@ -2269,7 +2270,7 @@ export const leave_approval_status_options = [
   { id: "3", label: 'Rejected', value: '3' },
 ]
 export const leave_type_options = [
-  { id: 1, label: 'Leave Type', value: '0' },
-  { id: 2, label: 'Permission Type', value: '1' },
+  { id: 1, label: 'Leave Type', value: 1 },
+  { id: 2, label: 'Permission Type', value: 2 },
   
 ]
