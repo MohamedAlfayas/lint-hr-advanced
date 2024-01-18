@@ -59,16 +59,16 @@ const WorkScheduleForm = () => {
     is_default: false,
     fullday_hr: 0,
     fullday_min: 0,
-    fullday_work_duration: 30600,
+    fullday_work_duration: 0,
     grace_in_time_hr: 0,
     grace_in_time_min: 0,
-    grace_time_duration: 1800,
+    grace_time_duration: 0,
     halfday_hr: 0,
     halfday_min: 0,
-    halfday_work_duration: 15600,
+    halfday_work_duration: 0,
     maximum_break_hr: 0,
     maximum_break_min: 0,
-    maximum_break_duration: 1800,
+    maximum_break_duration: 0,
     workday: [
       {
         day_id: 1,
@@ -311,6 +311,8 @@ const WorkScheduleForm = () => {
     console.log(seconds);
 
     console.log(hours * 3600 + minutes * 60 + seconds);
+    console.log(".....................");
+    console.log(workScheduleData);
     return hours * 3600 + minutes * 60 + seconds;
   }
 
@@ -497,10 +499,7 @@ const WorkScheduleForm = () => {
                             options={hourOptions}
                             value={hourOptions.find(
                               (option) =>
-                                //option.value === workScheduleData.fullday_hr fullday_work_duration
                                 option.value === workScheduleData.fullday_hr
-
-                              //Math.floor(workScheduleData.fullday_hr / 3600)
                             )}
                             onChange={(e) => {
                               setWorkScheduleData({
@@ -517,7 +516,6 @@ const WorkScheduleForm = () => {
                                   s: 0,
                                 }),
                               });
-                              console.log(workScheduleData);
                             }}
                           />
                           <b className="mt-2 me-1 ms-2">M</b>
@@ -568,10 +566,9 @@ const WorkScheduleForm = () => {
                             options={hourOptions}
                             value={hourOptions.find(
                               (option) =>
-                                option.value ===
-                                Math.floor(workScheduleData.halfday_hr / 3600)
+                                option.value === workScheduleData.halfday_hr
                             )}
-                            onChange={(e) =>
+                            onChange={(e) => {
                               setWorkScheduleData({
                                 ...workScheduleData,
                                 halfday_hr: toHrSeconds({
@@ -579,8 +576,14 @@ const WorkScheduleForm = () => {
                                   m: 0,
                                   s: 0,
                                 }),
-                              })
-                            }
+
+                                halfday_work_duration: toHrSeconds({
+                                  h: e.value,
+                                  m: workScheduleData.halfday_min,
+                                  s: 0,
+                                }),
+                              });
+                            }}
                           />
                           <b className="mt-2 me-1 ms-2">M</b>
                           <Select
@@ -590,16 +593,18 @@ const WorkScheduleForm = () => {
                             options={minuteOptions}
                             value={minuteOptions.find(
                               (option) =>
-                                option.value ===
-                                Math.floor(
-                                  (workScheduleData.halfday_min % 3600) / 60
-                                )
+                                option.value === workScheduleData.halfday_min
                             )}
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
                                 halfday_min: toHrSeconds({
                                   h: 0,
+                                  m: e.value,
+                                  s: 0,
+                                }),
+                                halfday_work_duration: toHrSeconds({
+                                  h: workScheduleData.halfday_hr,
                                   m: e.value,
                                   s: 0,
                                 }),
@@ -629,11 +634,9 @@ const WorkScheduleForm = () => {
                             value={hourOptions.find(
                               (option) =>
                                 option.value ===
-                                Math.floor(
-                                  workScheduleData.grace_in_time_hr / 3600
-                                )
+                                workScheduleData.grace_in_time_hr
                             )}
-                            onChange={(e) =>
+                            onChange={(e) => {
                               setWorkScheduleData({
                                 ...workScheduleData,
                                 grace_in_time_hr: toHrSeconds({
@@ -641,8 +644,14 @@ const WorkScheduleForm = () => {
                                   m: 0,
                                   s: 0,
                                 }),
-                              })
-                            }
+
+                                grace_time_duration: toHrSeconds({
+                                  h: e.value,
+                                  m: workScheduleData.grace_in_time_min,
+                                  s: 0,
+                                }),
+                              });
+                            }}
                           />
                           <b className="mt-2 me-1 ms-2">M</b>
                           <Select
@@ -653,16 +662,18 @@ const WorkScheduleForm = () => {
                             value={minuteOptions.find(
                               (option) =>
                                 option.value ===
-                                Math.floor(
-                                  (workScheduleData.grace_in_time_min % 3600) /
-                                    60
-                                )
+                                workScheduleData.grace_in_time_min
                             )}
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
                                 grace_in_time_min: toHrSeconds({
                                   h: 0,
+                                  m: e.value,
+                                  s: 0,
+                                }),
+                                grace_time_duration: toHrSeconds({
+                                  h: workScheduleData.grace_in_time_hr,
                                   m: e.value,
                                   s: 0,
                                 }),
@@ -690,11 +701,9 @@ const WorkScheduleForm = () => {
                             value={hourOptions.find(
                               (option) =>
                                 option.value ===
-                                Math.floor(
-                                  workScheduleData.maximum_break_hr / 3600
-                                )
+                                workScheduleData.maximum_break_hr
                             )}
-                            onChange={(e) =>
+                            onChange={(e) => {
                               setWorkScheduleData({
                                 ...workScheduleData,
                                 maximum_break_hr: toHrSeconds({
@@ -702,8 +711,13 @@ const WorkScheduleForm = () => {
                                   m: 0,
                                   s: 0,
                                 }),
-                              })
-                            }
+                                maximum_break_duration: toHrSeconds({
+                                  h: e.value,
+                                  m: workScheduleData.maximum_break_min,
+                                  s: 0,
+                                }),
+                              });
+                            }}
                           />
                           <b className="mt-2 me-1 ms-2">M</b>
                           <Select
@@ -714,16 +728,18 @@ const WorkScheduleForm = () => {
                             value={minuteOptions.find(
                               (option) =>
                                 option.value ===
-                                Math.floor(
-                                  (workScheduleData.maximum_break_min % 3600) /
-                                    60
-                                )
+                                workScheduleData.maximum_break_min
                             )}
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
                                 maximum_break_min: toHrSeconds({
                                   h: 0,
+                                  m: e.value,
+                                  s: 0,
+                                }),
+                                maximum_break_duration: toHrSeconds({
+                                  h: workScheduleData.maximum_break_hr,
                                   m: e.value,
                                   s: 0,
                                 }),
