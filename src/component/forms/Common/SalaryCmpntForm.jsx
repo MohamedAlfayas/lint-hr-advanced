@@ -18,8 +18,10 @@ import {
     Row,
     UncontrolledDropdown,
     Table,
+    FormFeedback,
 } from "reactstrap";
-
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
 const salaryCmpntForm = () => {
     const { form_obj } = useSelector((state) => state.RightSideBarReducer);
@@ -36,20 +38,20 @@ const salaryCmpntForm = () => {
     // );
 
     const contributionOptions = useMemo(() => {
-        console.log("lll",form_obj);
+        console.log("lll", form_obj);
         const options = [];
-if (form_obj?.contribute.length >0 ) {
-    console.log('yes');
-      // Check if ESI is active and add it to options
-      if (form_obj?.contribute[0].esi && form_obj?.contribute[0].esi.is_active) {
-        options.push({ id: '1', label: 'ESI', value: 'ESI' });
-    }
-    // Check if EPF is active and add it to options
-    if (form_obj?.contribute[0].epf && form_obj?.contribute[0].epf.is_active) {
-        options.push({ id: '2', label: 'EPF', value: 'EPF' });
-    }
-}
-      
+        if (form_obj?.contribute.length > 0) {
+            console.log('yes');
+            // Check if ESI is active and add it to options
+            if (form_obj?.contribute[0].esi && form_obj?.contribute[0].esi.is_active) {
+                options.push({ id: '1', label: 'ESI', value: 'ESI' });
+            }
+            // Check if EPF is active and add it to options
+            if (form_obj?.contribute[0].epf && form_obj?.contribute[0].epf.is_active) {
+                options.push({ id: '2', label: 'EPF', value: 'EPF' });
+            }
+        }
+
 
         return options;
     }, []);
@@ -65,11 +67,40 @@ if (form_obj?.contribute.length >0 ) {
         setCustomFieldObj(form_obj);
     }, [form_obj]);
 
+    const FormikForm = useFormik({
+        enableReinitialize: true,
+        initialValues: customFieldObj,
+        validationSchema: Yup.object({
+            name: Yup.string().trim().required("Please Enter Name"),
+            contribute: Yup.array()
+                .required("Select Contribute")
+                .min(1, "Select Contribute"),
+        }),
+        onSubmit: async (values) => {
+            console.log("SUCCESSSS !!!! Formik Values = ", values);
+            dispatch(setLoaderVisible(true));
+
+            //   const Api = await PostApi("holiday/create/", values, false);
+            //   console.log("API RES = ", Api);
+            //   if (Api.status && Api.status === 200) {
+            //     holidayObj.id === 0
+            //       ? dispatch(addHoliday(Api?.data.data))
+            //       : dispatch(editHoliday(Api?.data?.data));
+            //     dispatch(toggleRSBView(false));
+            //     toast.success(Api?.data?.message);
+            //   } else {
+            //     toast.error(Api?.data?.message || Api?.data?.detail);
+            //   }
+
+            //   dispatch(setLoaderVisible(false));
+        },
+    });
+
     return (
         <React.Fragment>
             <Row>
                 <Col md={12} lg={12} xxl={12} className="folder-card" key={1}>
-                    <Form action="javascript:void(0)">
+                    <Form onSubmit={FormikForm.handleSubmit}>
                         <div className="mb-3">
                             <Label htmlFor="pageSelection" className="form-label">
                                 Selected Page
@@ -99,8 +130,17 @@ if (form_obj?.contribute.length >0 ) {
                                         placeholder="Name"
                                         value={customFieldObj.name || ""}
                                         onChange={handleInputChange}
-
+                                        invalid={
+                                            FormikForm.touched.name && FormikForm.errors.name
+                                                ? true
+                                                : false
+                                        }
                                     />
+                                    {FormikForm.touched.name && FormikForm.errors.name ? (
+                                        <FormFeedback type="invalid">
+                                            {FormikForm.errors.name}
+                                        </FormFeedback>
+                                    ) : null}
                                     <div id="passwordHelpBlock" className="form-text mb-3">
                                         Enter Name
                                     </div>
@@ -129,7 +169,7 @@ if (form_obj?.contribute.length >0 ) {
                                             <Col lg={3} sm={3}>
                                                 <Label
                                                     className="form-label"
-                                                    htmlFor="earnings_has_pro_rata">
+                                                    htmlFor="pro_rata">
                                                     Pro-rata
                                                 </Label>
                                             </Col>
@@ -161,7 +201,7 @@ if (form_obj?.contribute.length >0 ) {
                                             <Col lg={3} sm={3}>
                                                 <Label
                                                     className="form-label"
-                                                    htmlFor="earnings_has_taxable">
+                                                    htmlFor="tax">
                                                     Taxable
                                                 </Label>
                                             </Col>
@@ -191,7 +231,7 @@ if (form_obj?.contribute.length >0 ) {
                                             <Col lg={3} sm={3}>
                                                 <Label
                                                     className="form-label"
-                                                    htmlFor="earnings_has_insurance">
+                                                    htmlFor="insurance">
                                                     Insurance&Fund
                                                 </Label>
                                             </Col>
@@ -223,14 +263,37 @@ if (form_obj?.contribute.length >0 ) {
                                                 Contribution
                                             </Label>
                                             <Select
-                                                required
+
                                                 isMulti={true}
                                                 name="contribute"
                                                 options={contributionOptions || []}
                                                 className="basic-multi-select"
+                                                styles={{
+                                                    control: (provided, state) => ({
+                                                        ...provided,
+                                                        borderColor:
+                                                            !state.isFocused &&
+                                                                FormikForm.touched.contribute &&
+                                                                FormikForm.errors.contribute
+                                                                ? "red !important"
+                                                                : provided.borderColor,
+                                                    }),
+                                                }}
                                                 // value={(form_obj.contribute && contributionOptions.filter(e => (form_obj.contribute).includes(e.value)))}
                                                 onChange={(e) => setCustomFieldObj({ ...customFieldObj, contribute: e.map(obj => obj.value) })}
+                                                invalid={
+                                                    FormikForm.touched.contribute &&
+                                                        FormikForm.errors.contribute
+                                                        ? true
+                                                        : false
+                                                }
                                             />
+                                            {FormikForm.touched.contribute&&
+                                                FormikForm.errors.contribute ? (
+                                                <div className="lc_form_error_text">
+                                                    {FormikForm.errors.contribute}
+                                                </div>
+                                            ) : null}
                                         </div>
                                         <div id="passwordHelpBlock" className="form-text mb-3">
                                             Select Contribution

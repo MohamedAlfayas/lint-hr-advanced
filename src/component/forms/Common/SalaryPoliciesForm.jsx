@@ -23,6 +23,7 @@ import {
   Table,
   Modal,
   ModalBody,
+  FormFeedback,
 } from "reactstrap";
 import ModalTitle from "rsuite/esm/Modal/ModalTitle";
 import {
@@ -40,6 +41,8 @@ import {
   payroll_policy_calculation_type,
   payroll_policy_period,
 } from "../../../common/constant/Constants";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
 const salaryPloiciesForm = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
@@ -168,12 +171,37 @@ const salaryPloiciesForm = () => {
   }, [form_obj]);
 
   // const handleEarningCalculationType = (id, val) => {};
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: customFieldObj,
+    validationSchema: Yup.object({
+      name: Yup.string().trim().required("Please Enter Name"),
+    }),
+    onSubmit: async (values) => {
+      console.log("SUCCESSSS !!!! Formik Values = ", values);
+      dispatch(setLoaderVisible(true));
 
+      // const Api = await PostApi("holiday/create/", values, false);
+      // console.log("API RES = ", Api);
+      // if (Api.status && Api.status === 200) {
+      //   holidayObj.id === 0
+      //     ? dispatch(addHoliday(Api?.data.data))
+      //     : dispatch(editHoliday(Api?.data?.data));
+      //   dispatch(toggleRSBView(false));
+      //   toast.success(Api?.data?.message);
+      // } else {
+      //   toast.error(Api?.data?.message || Api?.data?.detail);
+      // }
+
+      // dispatch(setLoaderVisible(false));
+    },
+  });
   return (
     <React.Fragment>
       <Row>
         <Col md={12} lg={12} xxl={12} className="folder-card" key={1}>
-          <Form action="javascript:void(0)">
+        <Form onSubmit={FormikForm.handleSubmit}>
+        
             <Col md={12} lg={12} xxl={12}>
               <div className="mb-3">
                 <Label htmlFor="tax_state" className="form-label">
@@ -188,7 +216,17 @@ const salaryPloiciesForm = () => {
                     placeholder="Name"
                     value={customFieldObj.name || ""}
                     onChange={handleInputChange}
+                    invalid={
+                      FormikForm.touched.name && FormikForm.errors.name
+                        ? true
+                        : false
+                    }
                   />
+                   {FormikForm.touched.name && FormikForm.errors.name ? (
+                  <FormFeedback type="invalid">
+                    {FormikForm.errors.name}
+                  </FormFeedback>
+                ) : null}
                   <div id="passwordHelpBlock" className="form-text mb-3">
                     Enter Name
                   </div>
@@ -270,7 +308,7 @@ const salaryPloiciesForm = () => {
                                   type="number"
                                   id={`additionalInput_${earnings_module_name}_${index}`}
                                   name={`additionalInput_${earnings_module_name}_${index}`}
-                                  className="form-control"
+                                  className="form-control position-absolute bottom-0 start-0"
                                 />
                               </div>
                               <div className="col-md-3">
@@ -281,7 +319,7 @@ const salaryPloiciesForm = () => {
                                 <Select
                                   id={`selectField_${earnings_module_name}_${index}`}
                                   name={`selectField_${earnings_module_name}_${index}`}
-                                  className="basic-multi-select"
+                                  className="basic-multi-select position-absolute bottom-0 "
                                   options={
                                     (item?.calculation_type &&
                                       payroll_policy_period.filter(
@@ -310,7 +348,7 @@ const salaryPloiciesForm = () => {
                               <div className="col-md-2">
                                 <button
                                   type="button"
-                                  className="btn  remove-item-btn"
+                                  className="btn  remove-item-btn "
                                   onClick={() =>
                                     handleRemove(item?.id, earnings_module_name)
                                   }
@@ -331,9 +369,10 @@ const salaryPloiciesForm = () => {
                           setShowEarningsModal(true);
                         }}
                       >
-                        <i className="ri-add-line align-bottom me-1"></i>
+                        {/* <i className="ri-add-line align-bottom me-1"></i> */}
                         Select Components
                       </Button>{" "}
+                      
                     </div>
                   </div>
                   <hr></hr>
@@ -396,7 +435,7 @@ const salaryPloiciesForm = () => {
                                   type="text"
                                   id={`additionalInput_${allowances_module_name}_${index}`}
                                   name={`additionalInput_${allowances_module_name}_${index}`}
-                                  className="form-control"
+                                  className="form-control position-absolute bottom-0 start-0"
                                 />
                               </div>
                               <div className="col-md-3">
@@ -407,7 +446,7 @@ const salaryPloiciesForm = () => {
                                 <Select
                                   id={`selectField_${allowances_module_name}_${index}`}
                                   name={`selectField_${allowances_module_name}_${index}`}
-                                  className="basic-multi-select"
+                                  className="basic-multi-select position-absolute bottom-0 "
                                   options={
                                     (item?.calculation_type &&
                                       payroll_policy_period.filter(
@@ -433,7 +472,7 @@ const salaryPloiciesForm = () => {
                                   }
                                 />
                               </div>
-                              <div className="col-md-2">
+                              <div className="col-md-2 ">
                                 <button
                                   type="button"
                                   className="btn  remove-item-btn"
@@ -460,7 +499,7 @@ const salaryPloiciesForm = () => {
                           setShowAllowanceModal(true);
                         }}
                       >
-                        <i className="ri-add-line align-bottom me-1"></i>
+                        {/* <i className="ri-add-line align-bottom me-1"></i> */}
                         Select Components
                       </Button>{" "}
                     </div>
@@ -525,7 +564,7 @@ const salaryPloiciesForm = () => {
                                   type="text"
                                   id={`additionalInput_${deductions_module_name}_${index}${index}`}
                                   name={`additionalInput_${deductions_module_name}_${index}${index}`}
-                                  className="form-control"
+                                  className="form-control position-absolute bottom-0 start-0"
                                 />
                               </div>
                               <div className="col-md-3">
@@ -536,7 +575,7 @@ const salaryPloiciesForm = () => {
                                 <Select
                                   id={`selectField_${deductions_module_name}_${index}${index}`}
                                   name={`selectField_${deductions_module_name}_${index}${index}`}
-                                  className="basic-multi-select"
+                                  className="basic-multi-select position-absolute bottom-0 "
                                   options={
                                     (item?.calculation_type &&
                                       payroll_policy_period.filter(
@@ -589,7 +628,7 @@ const salaryPloiciesForm = () => {
                           setShowDeductionModal(true);
                         }}
                       >
-                        <i className="ri-add-line align-bottom me-1"></i>
+                        {/* <i className="ri-add-line align-bottom me-1"></i> */}
                         Select Components
                       </Button>{" "}
                     </div>
@@ -601,10 +640,10 @@ const salaryPloiciesForm = () => {
                     </Label>
                     <div className="">
                       <div style={{ display: "flex", alignItems: "center" }}>
-                        <i
+                        {/* <i
                           className="ri-information-line"
                           style={{ fontSize: "16px" }}
-                        ></i>
+                        ></i> */}
                         <h1 className="fs-13" style={{ marginLeft: "5px" }}>
                           Compliances included ESI, EPF
                         </h1>
@@ -615,7 +654,7 @@ const salaryPloiciesForm = () => {
                           name="Unit"
                           type="checkbox"
                           className="form-check-input"
-                          required
+                          
                         />
                         <Label className="form-check-label" htmlFor="lt_day">
                           Profession Tax
@@ -629,7 +668,7 @@ const salaryPloiciesForm = () => {
                           name="Unit"
                           type="checkbox"
                           className="form-check-input"
-                          required
+                         
                         />
                         <Label className="form-check-label" htmlFor="lt_day">
                           Labour Welfare Fund

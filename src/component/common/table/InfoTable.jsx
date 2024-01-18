@@ -143,7 +143,7 @@ const InfoTable = ({
     let employee_fname =
       EmployeeData.find((e) => e.id === orderData.employee).fname || "";
 
-    let content = `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To Agent <strong style='color:#7066e0'>  ${employee_fname}</strong>  ? ${orderData.start} to  ${orderData.end} (${orderData.total})</span> `;
+    let content = `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To Employee <strong style='color:#7066e0'>  ${employee_fname}</strong>  ? ${orderData.start} to  ${orderData.end} (${orderData.total})</span> `;
     let btnText = "Yes, Approve";
     let btnClass = "Success";
     SweetAlert(true, content, btnText, btnClass);
@@ -153,13 +153,35 @@ const InfoTable = ({
     console.log("Click Approve", orderData);
     let employee_fname =
       EmployeeData.find((e) => e.id === orderData.employee).fname || "";
-    let content = `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To Agent<strong style='color:#7066e0'> ${employee_fname} </strong> ? ${orderData.start} to  ${orderData.end} (${orderData.total})</span>`;
+    let content = `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To Employee<strong style='color:#7066e0'> ${employee_fname} </strong> ? ${orderData.start} to  ${orderData.end} (${orderData.total})</span>`;
     let btnText = "Yes, Reject";
     let btnClass = "Danger";
     let input = "text";
     let inputValue = "";
     SweetAlert(true, content, btnText, btnClass, input, inputValue);
   };
+
+  // const handleBulkAction = (actionType) => {
+  //   let content;
+  //   let btnText;
+  //   let btnClass;
+  //   let input;
+  //   let inputValue;
+    
+  //   if (actionType === "approve") {
+  //     content = "Are You Sure to <strong style='color:green'>Accept </strong>  Leave To Selected Employees?";
+  //     btnText = "Yes, Approve";
+  //     btnClass = "Success";
+  //   } else if (actionType === "reject") {
+  //     content = "Are You Sure to <strong style='color:red'>Reject</strong> Leave To Selected Employees?";
+  //     btnText = "Yes, Reject";
+  //     btnClass = "Danger";
+  //     input = "text";
+  //     inputValue = "";
+  //   }
+  
+  //   SweetAlert(true, content, btnText, btnClass, input, inputValue);
+  // };
 
   const handleSearchChange = (event) => {
     setSearch(event.target.value);
@@ -472,6 +494,7 @@ const InfoTable = ({
   // Delete Multiple
   const [selectedCheckBoxDelete, setSelectedCheckBoxDelete] = useState([]);
   const [isMultiDeleteButton, setIsMultiDeleteButton] = useState(false);
+  const [selectApproveReject, setSelectApproveReject] = useState(false)
 
   const deleteMultiple = () => {
     const checkall = document.getElementById("checkBoxAll");
@@ -484,6 +507,8 @@ const InfoTable = ({
     setIsMultiDeleteButton(false);
   };
 
+  
+
   const deleteCheckbox = (id) => {
     const ele = document.querySelectorAll(".dataCheckBox:checked");
     ele.length > 0
@@ -493,7 +518,7 @@ const InfoTable = ({
   };
 
   const handleDeleteData = (data) => {
-    console.log(data);
+    console.log("data",data);
   };
 
   // const module_list_for_create_btn_access = [
@@ -827,7 +852,9 @@ const InfoTable = ({
                                 type="button"
                                 className="btn btn-success add-btn"
                                 id="bulk-approve-btn"
-                                onClick={() => handleBulkAction("approve")}
+                                onClick={() => {
+                                  handleApproval(orderData);
+                                }}
                               >
                                 <i className="ri-check-line fs-16"></i> Bulk Approve
                               </button>{" "}
