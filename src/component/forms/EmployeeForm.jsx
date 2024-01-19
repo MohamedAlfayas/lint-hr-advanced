@@ -315,13 +315,33 @@ const EmployeeForm = () => {
     });
   };
 
-  const handleCFFileChange = (e, cf_id) => {
+  const handleCFFileChange = async (e, cf_id) => {
     const file = e.target.files[0];
     console.log("CF FILE Change = ", file);
+
+    let img_url = "";
+
+    let cf_form_data = new FormData();
+    cf_form_data.append("cf_file", file);
+
+    const Api = await PostApi(
+      "fields/upload-custom-field-file/",
+      cf_form_data,
+      true
+    );
+    console.log("API RES = ", Api);
+    if (Api.status && Api.status === 200) {
+      console.log("CF File Upload RES = ", Api?.data?.data);
+      img_url = String(Api?.data?.data);
+    } else {
+      img_url = "";
+      toast.error(Api?.data?.message || Api?.data?.detail);
+    }
+
     setEmployeeObj({
       ...employeeObj,
       cf_values: [...employeeObj.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: file } : item
+        item.id === cf_id ? { ...item, value: img_url } : item
       ),
     });
   };
@@ -1587,8 +1607,8 @@ const EmployeeForm = () => {
                             <div id="passwordHelpBlock" className="form-text">
                               Choose {obj.name}
                             </div>
-                            {obj.img_url && obj.img_url !== "" && (
-                              <Fragment>Chosen File {obj.img_url}</Fragment>
+                            {!!obj.value && obj.value !== "" && (
+                              <Fragment>{obj.name} Uploaded</Fragment>
                             )}
                           </Fragment>
                         )}
