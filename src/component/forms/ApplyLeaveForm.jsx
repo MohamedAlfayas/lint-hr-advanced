@@ -46,8 +46,6 @@ const ApplyLeaveForm = () => {
   const dispatch = useDispatch();
   const [leaveapplyObj, setLeaveApplyObj] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-  const [multipleDayStartDate, setMultipleDayStartDate] = useState(null);
-  const [multipleDayEndDate, setMultipleDayEndDate] = useState(null);
 
   const { RangePicker } = DatePicker;
 
@@ -60,8 +58,6 @@ const ApplyLeaveForm = () => {
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
   const [hourDiff, setHourDiff] = useState(null);
-  const [start, setStart] = useState(null);
-  const [end, setEnd] = useState(null);
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
   const profileData = GetLocalStorageData("my_profile") || [];
@@ -75,17 +71,6 @@ const ApplyLeaveForm = () => {
   useEffect(() => {
     if (!!form_obj) {
       console.log("Form Obj = ", form_obj);
-      setLeaveApplyObj({
-        ...form_obj,
-        start: ConvertISODateFormat(form_obj.start),
-        end: ConvertISODateFormat(form_obj.end),
-      });
-      // setStart(dayjs(form_obj.start, "YYYY-MM-DD"));
-      // setEnd(dayjs(form_obj.end, "YYYY-MM-DD"));
-      // setFromDate(convertDateTimeFormat(form_obj.start));.
-      // setToDate(convertDateTimeFormat(form_obj.end));
-      console.log("thisEmpWS", thisEmpWS);
-
       !!thisEmpWS &&
         setWeekOffDays(
           thisEmpWS.workday
@@ -107,6 +92,14 @@ const ApplyLeaveForm = () => {
         );
         handleStartEndDatesChange(thisLeaveTypeObj);
       }
+
+      setLeaveApplyObj({
+        ...form_obj,
+        start: !!form_obj.start
+          ? ConvertISODateFormat(form_obj.start)
+          : form_obj.start,
+        end: !!form_obj.end ? ConvertISODateFormat(form_obj.end) : form_obj.end,
+      });
     }
   }, [form_obj]);
 
@@ -176,6 +169,8 @@ const ApplyLeaveForm = () => {
       return dates;
     };
 
+    console.log("dateStrings = ", dateStrings);
+
     const intermediateDates = generateIntermediaryDates() || [];
     const ValidDays = intermediateDates.filter((d) => {
       if (
@@ -185,8 +180,6 @@ const ApplyLeaveForm = () => {
         return d;
       }
     });
-
-    console.log("validDays", ValidDays);
 
     const ValidDaysCount = ValidDays.length;
     setDaysCount(ValidDaysCount);
@@ -385,18 +378,28 @@ const ApplyLeaveForm = () => {
                       <Label className="form-label">Select Date</Label>
                       <RangePicker
                         name="multiple_date"
-                        format={"DD-MM-YYYY"}
+                        format={DateFormat}
                         placeholder={["Start Date", "End Date"]}
                         disabledDate={disabledDate}
                         onChange={handleMultiDayChange}
-                        // value={
-                        //   ConvertDateFormat(
-                        //     ConvertISODateFormat([
-                        //       leaveapplyObj.start,
-                        //       leaveapplyObj.end,
-                        //     ])
-                        //   ) || null
-                        // }
+                        value={
+                          !!leaveapplyObj?.start && !!leaveapplyObj?.end
+                            ? [
+                                dayjs(
+                                  ConvertDateFormat(
+                                    ConvertISODateFormat(leaveapplyObj?.start)
+                                  ),
+                                  DateFormat
+                                ),
+                                dayjs(
+                                  ConvertDateFormat(
+                                    ConvertISODateFormat(leaveapplyObj?.end)
+                                  ),
+                                  DateFormat
+                                ),
+                              ]
+                            : null
+                        }
                       />
                       <span className="input-group-text">{daysCount} Days</span>
                     </div>
@@ -441,9 +444,6 @@ const ApplyLeaveForm = () => {
                         format={"DD-MM-YYYY HH:mm"}
                         disabledDate={disabledDate}
                         onChange={handleFromDateChange}
-                        // value={
-                        //   convertDateTimeFormat(leaveapplyObj.start) || null
-                        // }
                       />
                       <Label className="form-label">To</Label>
 
@@ -453,7 +453,6 @@ const ApplyLeaveForm = () => {
                         format={"DD-MM-YYYY HH:mm"}
                         disabledDate={disabledDate}
                         onChange={handleToDateChange}
-                        // value={convertDateTimeFormat(leaveapplyObj.end) || null}
                       />
 
                       <span className="input-group-text">{hourDiff} h</span>
