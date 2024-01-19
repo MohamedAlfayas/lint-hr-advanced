@@ -4,12 +4,7 @@ export const leave_type_hour_unit = 2;
 export const single_day_type_leave = 1;
 export const multiple_day_type_leave = 2;
 
-export const form_default_input_types = [
-  "text",
-  "radio",
-  "number",
-  "checkbox",
-];
+export const form_default_input_types = ["text", "radio", "number", "checkbox"];
 export const form_date_type = "date";
 export const form_select_type = "option";
 export const form_file_type = "file";
@@ -1925,6 +1920,7 @@ export const day_type = [
 
 export const DateFormat = "DD-MM-YYYY";
 export const MonthFormat = "YYYY-MM";
+export const DateTimeFormat = "DD-MM-YYYY HH:mm";
 
 export const IndiaStates = [
   {
@@ -2261,15 +2257,13 @@ export const default_roles_list = [
   },
 ];
 
-
 export const leave_approval_status_options = [
-  { id: "0", label: 'All Status', value: '0' },
-  { id: "1", label: 'Pending', value: '1' },
-  { id: "2", label: 'Approved', value: '2' },
-  { id: "3", label: 'Rejected', value: '3' },
-]
+  { id: "0", label: "All Status", value: "0" },
+  { id: "1", label: "Pending", value: "1" },
+  { id: "2", label: "Approved", value: "2" },
+  { id: "3", label: "Rejected", value: "3" },
+];
 export const leave_type_options = [
-  { id: 1, label: 'Leave Type', value: '0' },
-  { id: 2, label: 'Permission Type', value: '1' },
-
-]
+  { id: 1, label: "Leave Type", value: "0" },
+  { id: 2, label: "Permission Type", value: "1" },
+];

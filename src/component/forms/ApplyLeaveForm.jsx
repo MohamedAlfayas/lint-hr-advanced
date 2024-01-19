@@ -190,7 +190,7 @@ const ApplyLeaveForm = () => {
       end: ConvertISODateFormat(ConvertDateFormat(dateStrings[1])),
       requested_leave_count: ValidDaysCount,
       day_type: 1,
-      in_between_dates: day_type === 1 ? ValidDays : [],
+      in_between_dates: ValidDays,
     });
   };
 
@@ -441,18 +441,34 @@ const ApplyLeaveForm = () => {
                       <DatePicker
                         name="start"
                         showTime={{ minuteStep: 30 }}
-                        format={"DD-MM-YYYY HH:mm"}
+                        format={DateTimeFormat}
                         disabledDate={disabledDate}
                         onChange={handleFromDateChange}
+                        value={
+                          !!leaveapplyObj?.start
+                            ? dayjs(
+                                convertDateTimeFormat(leaveapplyObj?.start),
+                                DateTimeFormat
+                              )
+                            : null
+                        }
                       />
                       <Label className="form-label">To</Label>
 
                       <DatePicker
                         name="end"
                         showTime={{ minuteStep: 30 }}
-                        format={"DD-MM-YYYY HH:mm"}
+                        format={DateTimeFormat}
                         disabledDate={disabledDate}
                         onChange={handleToDateChange}
+                        value={
+                          !!leaveapplyObj?.end
+                            ? dayjs(
+                                convertDateTimeFormat(leaveapplyObj?.end),
+                                DateTimeFormat
+                              )
+                            : null
+                        }
                       />
 
                       <span className="input-group-text">{hourDiff} h</span>

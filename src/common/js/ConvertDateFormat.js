@@ -67,9 +67,16 @@ export const convertFromToDateFormat = (originalDate) => {
 };
 
 export const convertDateTimeFormat = (originalDate) => {
-  const formattedDate = dayjs(originalDate, "YYYY-MM-DD HH:mm:ss").format(
-    "DD-MM-YYYY HH:mm"
-  );
+  const dateObject = new Date(originalDate);
+
+  const day = String(dateObject.getDate()).padStart(2, "0");
+  const month = String(dateObject.getMonth() + 1).padStart(2, "0"); // Months are zero-based
+  const year = dateObject.getFullYear();
+
+  const hours = String(dateObject.getHours()).padStart(2, "0");
+  const minutes = String(dateObject.getMinutes()).padStart(2, "0");
+
+  const formattedDate = `${day}-${month}-${year} ${hours}:${minutes}`;
   return formattedDate;
 };
 
