@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useState } from "react";
 import {
   Button,
@@ -35,7 +35,6 @@ import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
 const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
   const dispatch = useDispatch();
-  const [intialFormObj, setIntialFormObj] = useState(null);
   const [leaveTypeData, setLeaveTypeData] = useState([]);
 
   const { version } = useSelector((state) => state.MetaReducer);
@@ -44,40 +43,11 @@ const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
     setLeaveTypeData(GetLocalStorageData("leave_types_for_employee") || []);
   }, [version]);
 
-  const handleCreateAndUpdate = ($id, table_obj) => {
-    console.log(table_obj);
-    setIntialFormObj({
-      ...intialFormObj,
-      end: initialFormObj.id,
-    });
-
-    let FormObj = {};
-
-    if ($id === 0) {
-      FormObj = initialFormObj;
-    } else {
-      let thisCFValues =
-        "cf_values" in table_obj ? [...table_obj?.cf_values] : [];
-      let cf = [];
-      let CustomFieldsForThisForm = GetCustomField(formname);
-      if (thisCFValues && thisCFValues.length) {
-        cf = CustomFieldsForThisForm.map((obj) => {
-          return {
-            ...obj,
-            value:
-              thisCFValues.find((t) => t.id === obj.id)?.value || obj.value,
-          };
-        });
-      } else {
-        cf = CustomFieldsForThisForm;
-      }
-
-      FormObj = { ...table_obj, cf_values: cf };
-    }
+  const handleApplyLeave = (lt) => {
+    let FormObj = { ...initialFormObj, leave_type: lt };
 
     dispatch(setFormTitle(formname));
     dispatch(setFormObj(FormObj));
-    console.log("lkhlg", FormObj);
     dispatch(setFormWidthPercentage(width_per));
     dispatch(setComponentToShow(formname));
     dispatch(toggleRSBView(true));
@@ -144,7 +114,7 @@ const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
                         className="btn-label ms-0 mt-2"
                         size="sm"
                         onClick={() => {
-                          handleCreateAndUpdate(item.id, item);
+                          handleApplyLeave(item?.id);
                         }}
                       >
                         {" "}

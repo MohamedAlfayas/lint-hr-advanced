@@ -140,6 +140,7 @@ const LeaveDashboard = () => {
       requested_leave_count: 0,
       status: 1,
       day_type: 1,
+      in_between_dates: [],
     };
   }, []);
 

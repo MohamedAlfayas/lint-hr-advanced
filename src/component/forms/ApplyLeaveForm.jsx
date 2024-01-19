@@ -16,6 +16,11 @@ import {
   ConvertDateFormat,
   ConvertISODateFormat,
   ConvertDayNameFromISO,
+  convertFromToDateFormat,
+  convertDate,
+  convertDateTimeFormat,
+  timeConvert,
+  DateFormated,
   // ConvertDateFormat,
 } from "../../common/js/ConvertDateFormat";
 import Flatpickr from "react-flatpickr";
@@ -34,7 +39,7 @@ import { toast } from "react-toastify";
 import { DatePicker, Space } from "antd";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { DateFormat } from "../../common/constant/Constants";
+import { DateFormat, DateTimeFormat } from "../../common/constant/Constants";
 dayjs.extend(customParseFormat);
 
 const ApplyLeaveForm = () => {
@@ -55,37 +60,80 @@ const ApplyLeaveForm = () => {
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
   const [hourDiff, setHourDiff] = useState(null);
+  const [start, setStart] = useState(null);
+  const [end, setEnd] = useState(null);
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
   const profileData = GetLocalStorageData("my_profile") || [];
   const holidayData = GetLocalStorageData("holiday") || [];
   const leaveType = GetLocalStorageData("leave_types_for_employee") || [];
+
   useEffect(() => {
-    setLeaveApplyObj(form_obj);
+    console.log("leaveapplyObj = ", leaveapplyObj);
+  }, [leaveapplyObj]);
+
+  useEffect(() => {
+    if (!!form_obj) {
+      console.log("Form Obj = ", form_obj);
+      setLeaveApplyObj({
+        ...form_obj,
+        start: ConvertISODateFormat(form_obj.start),
+        end: ConvertISODateFormat(form_obj.end),
+      });
+      // setStart(dayjs(form_obj.start, "YYYY-MM-DD"));
+      // setEnd(dayjs(form_obj.end, "YYYY-MM-DD"));
+      // setFromDate(convertDateTimeFormat(form_obj.start));.
+      // setToDate(convertDateTimeFormat(form_obj.end));
+      console.log("thisEmpWS", thisEmpWS);
+
+      !!thisEmpWS &&
+        setWeekOffDays(
+          thisEmpWS.workday
+
+            .map((d) => {
+              if (d.is_day_on === false) {
+                return d.day_id;
+              }
+              return null;
+            })
+            .filter((day_id) => day_id !== null)
+        );
+
+      setHolidayDays(holidayData.map((d) => d?.date));
+
+      if (form_obj?.leave_type !== 0) {
+        let thisLeaveTypeObj = leaveType.find(
+          (d) => d.id === form_obj?.leave_type
+        );
+        handleStartEndDatesChange(thisLeaveTypeObj);
+      }
+    }
   }, [form_obj]);
 
   useEffect(() => {
-    setWeekOffDays(
-      thisEmpWS.workday
-        .map((d) => {
-          if (d.is_day_on === false) {
-            return d.day_id;
-          }
-          return null;
-        })
-        .filter((day_id) => day_id !== null)
-    );
-
-    setHolidayDays(holidayData.map((d) => d?.date));
-  }, []);
+    setHourDiff(timeConvert(form_obj.requested_leave_count));
+    setDaysCount(form_obj.requested_leave_count);
+  }, [form_obj]);
 
   const handleLeaveTypeChange = (e) => {
     let leave_type_obj = leaveType.find((d) => d.id === e.id);
 
+    handleStartEndDatesChange(leave_type_obj);
+  };
+
+  const thisEmpWS = workScheduleData?.find(
+    (val) => val.id === profileData.work_schedule_id
+  );
+
+  const handleStartEndDatesChange = (leave_type_obj) => {
+    console.log("Leave Type Obj = ", leave_type_obj);
+
     leave_type_obj?.weekend_between_leave === true
       ? setWeekOffDays([])
-      : setWeekOffDays(
+      : !!thisEmpWS &&
+        setWeekOffDays(
           thisEmpWS.workday
+
             .map((d) => {
               if (d.is_day_on === false) {
                 return d.day_id;
@@ -100,19 +148,17 @@ const ApplyLeaveForm = () => {
       : setHolidayDays(holidayData.map((d) => d?.date));
 
     setSelectedLeaveTypeObj(leave_type_obj);
-    setLeaveApplyObj({
-      ...leaveapplyObj,
-      leave_type: e.id,
-      start: null,
-      end: null,
+    setLeaveApplyObj((prev) => {
+      return {
+        ...prev,
+        leave_type: leave_type_obj?.id,
+        start: null,
+        end: null,
+      };
     });
     setHourDiff("");
     setDaysCount("");
   };
-
-  const thisEmpWS = workScheduleData?.find(
-    (val) => val.id === profileData.work_schedule_id
-  );
 
   const handleMultiDayChange = (dates, dateStrings, daysCount) => {
     const generateIntermediaryDates = () => {
@@ -140,25 +186,7 @@ const ApplyLeaveForm = () => {
       }
     });
 
-    const multipleDayName = ValidDays.map((d) => {
-      const date = new Date(d);
-      const days = { weekday: "long" };
-      const daysName = date.toLocaleDateString("en-US", days);
-      return daysName;
-    });
-
-    let totalWorkDuration = 0;
-    multipleDayName.forEach((dayNames) => {
-      if (thisEmpWS && thisEmpWS.workday && Array.isArray(thisEmpWS.workday)) {
-        const matchingDay = thisEmpWS.workday.find(
-          (day) => day.weekday.toLowerCase() === dayNames.toLowerCase()
-        );
-
-        if (matchingDay) {
-          totalWorkDuration += matchingDay.total_work_duration;
-        }
-      }
-    });
+    console.log("validDays", ValidDays);
 
     const ValidDaysCount = ValidDays.length;
     setDaysCount(ValidDaysCount);
@@ -169,6 +197,7 @@ const ApplyLeaveForm = () => {
       end: ConvertISODateFormat(ConvertDateFormat(dateStrings[1])),
       requested_leave_count: ValidDaysCount,
       day_type: 1,
+      in_between_dates: day_type === 1 ? ValidDays : [],
     });
   };
 
@@ -183,6 +212,7 @@ const ApplyLeaveForm = () => {
   };
 
   const handleInputChange = (e) => {
+    console.log("Input Change = ", e);
     const { name, value } = e.target;
     setLeaveApplyObj({
       ...leaveapplyObj,
@@ -200,11 +230,11 @@ const ApplyLeaveForm = () => {
     } else {
       updatedDaysCount = 0;
     }
-    setLeaveApplyObj((prevLeaveapplyObj) => ({
-      ...prevLeaveapplyObj,
+    setLeaveApplyObj({
+      ...leaveapplyObj,
       day_type: value,
       requested_leave_count: value === 1 ? 1 : value === 2 ? 0.5 : 0,
-    }));
+    });
     setDaysCount(updatedDaysCount);
   };
 
@@ -242,13 +272,13 @@ const ApplyLeaveForm = () => {
       )}:${String(remainingMinutes).padStart(2, "0")}`;
       const formattedResultForSetting = roundedHours + remainingMinutes / 60;
       setHourDiff(formattedResult);
-      setLeaveApplyObj((prevLeaveapplyObj) => ({
-        ...prevLeaveapplyObj,
+      setLeaveApplyObj({
+        ...leaveapplyObj,
         start: start.format("YYYY-MM-DD HH:mm:00"),
         end: end.format("YYYY-MM-DD HH:mm:00"),
         requested_leave_count: formattedResultForSetting,
         day_type: 1,
-      }));
+      });
     }
   };
 
@@ -259,7 +289,6 @@ const ApplyLeaveForm = () => {
       leave_type: Yup.number()
         .required("Select Leave Type")
         .min(1, "Please Select Leave Type"),
-      reason: Yup.string().required("Please enter reason for leave."),
     }),
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
@@ -360,6 +389,14 @@ const ApplyLeaveForm = () => {
                         placeholder={["Start Date", "End Date"]}
                         disabledDate={disabledDate}
                         onChange={handleMultiDayChange}
+                        // value={
+                        //   ConvertDateFormat(
+                        //     ConvertISODateFormat([
+                        //       leaveapplyObj.start,
+                        //       leaveapplyObj.end,
+                        //     ])
+                        //   ) || null
+                        // }
                       />
                       <span className="input-group-text">{daysCount} Days</span>
                     </div>
@@ -401,18 +438,22 @@ const ApplyLeaveForm = () => {
                       <DatePicker
                         name="start"
                         showTime={{ minuteStep: 30 }}
-                        format="DD-MM-YYYY HH:mm"
+                        format={"DD-MM-YYYY HH:mm"}
                         disabledDate={disabledDate}
                         onChange={handleFromDateChange}
+                        // value={
+                        //   convertDateTimeFormat(leaveapplyObj.start) || null
+                        // }
                       />
                       <Label className="form-label">To</Label>
 
                       <DatePicker
                         name="end"
                         showTime={{ minuteStep: 30 }}
-                        format="DD-MM-YYYY HH:mm"
+                        format={"DD-MM-YYYY HH:mm"}
                         disabledDate={disabledDate}
                         onChange={handleToDateChange}
+                        // value={convertDateTimeFormat(leaveapplyObj.end) || null}
                       />
 
                       <span className="input-group-text">{hourDiff} h</span>
@@ -427,31 +468,14 @@ const ApplyLeaveForm = () => {
                 <label htmlFor="reason" className="form-label">
                   Reason *
                 </label>
-                <Input
-                  type="textarea"
+                <textarea
                   name="reason"
                   className="form-control"
-                  id="description"
+                  id="reason"
                   placeholder="Enter Reason"
-                  value={leaveapplyObj.reason || ""}
+                  value={leaveapplyObj?.reason || ""}
                   onChange={handleInputChange}
-                  invalid={
-                    FormikForm.touched.reason && FormikForm.errors.reason
-                      ? true
-                      : false
-                  }
                 />
-                {FormikForm.touched.reason && FormikForm.errors.reason ? (
-                  <FormFeedback type="invalid">
-                    {FormikForm.errors.reason}
-                  </FormFeedback>
-                ) : null}
-
-                {!FormikForm.errors.reason && (
-                  <div id="passwordHelpBlock" className="form-text">
-                    Please enter reason for leave.
-                  </div>
-                )}
               </Col>
               <Col lg={12}>
                 <div className="text-end">

@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+
 export const ConvertDateFormat = (inputDate) => {
   // Assuming inputDate is in the 'dd-mm-yyyy' format
   const parts = inputDate.split("-");
@@ -55,4 +57,37 @@ export const convertTime = (inputTimeString) => {
   const formattedTime = `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
 
   return formattedTime;
+};
+
+export const convertFromToDateFormat = (originalDate) => {
+  const [datePart, timePart] = originalDate.split(" ");
+  const [year, month, day] = datePart.split("-");
+  const formattedDate = `${day}-${month}-${year} ${timePart}`;
+  return formattedDate;
+};
+
+export const convertDateTimeFormat = (originalDate) => {
+  const formattedDate = dayjs(originalDate, "YYYY-MM-DD HH:mm:ss").format(
+    "DD-MM-YYYY HH:mm"
+  );
+  return formattedDate;
+};
+
+export const timeConvert = (decimalHours) => {
+  const hours = Math.floor(decimalHours);
+  const minutes = (decimalHours - hours) * 60;
+  const formattedTime = `${String(hours).padStart(2, "0")}:${String(
+    minutes
+  ).padStart(2, "0")}`;
+  return formattedTime;
+};
+
+export const DateFormated = (inputDate) => {
+  // Assuming inputDate is in the format "yyyy-mm-dd"
+  const [year, month, day] = inputDate.split("-");
+
+  // Format the date as "dd-mm-yyyy"
+  const formattedDate = `${day}-${month}-${year}`;
+
+  return formattedDate;
 };
