@@ -18,7 +18,6 @@ import {
   ConvertDayNameFromISO,
   convertFromToDateFormat,
   convertDate,
-  convertDateTimeFormat,
   timeConvert,
   DateFormated,
   // ConvertDateFormat,
@@ -40,6 +39,10 @@ import { DatePicker, Space } from "antd";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { DateFormat, DateTimeFormat } from "../../common/constant/Constants";
+import {
+  ConvertToDateTimeFormat,
+  ConvertToISODateTimeFormat,
+} from "../../common/js/ConvertDateTimeFormat";
 dayjs.extend(customParseFormat);
 
 const ApplyLeaveForm = () => {
@@ -95,18 +98,18 @@ const ApplyLeaveForm = () => {
 
       setLeaveApplyObj({
         ...form_obj,
-        start: !!form_obj.start
-          ? ConvertISODateFormat(form_obj.start)
-          : form_obj.start,
-        end: !!form_obj.end ? ConvertISODateFormat(form_obj.end) : form_obj.end,
+        start: form_obj?.start,
+        end: form_obj?.end,
       });
+
+      setHourDiff(timeConvert(form_obj.requested_leave_count));
+      setDaysCount(form_obj.requested_leave_count);
     }
   }, [form_obj]);
 
-  useEffect(() => {
-    setHourDiff(timeConvert(form_obj.requested_leave_count));
-    setDaysCount(form_obj.requested_leave_count);
-  }, [form_obj]);
+  // useEffect(() => {
+
+  // }, [form_obj]);
 
   const handleLeaveTypeChange = (e) => {
     let leave_type_obj = leaveType.find((d) => d.id === e.id);
@@ -231,49 +234,64 @@ const ApplyLeaveForm = () => {
     setDaysCount(updatedDaysCount);
   };
 
-  const handleFromDateChange = (date) => {
+  const handleFromDateChange = (date, dateStr) => {
+    console.log("FRom Date Str = ", dateStr);
+    setLeaveApplyObj({
+      ...leaveapplyObj,
+      start: ConvertToISODateTimeFormat(ConvertToDateTimeFormat(dateStr)),
+    });
     setFromDate(date);
-    calculateHourDiff(date, toDate);
+    // calculateHourDiff(date, toDate);
   };
 
-  const handleToDateChange = (date) => {
+  const handleToDateChange = (date, dateStr) => {
+    console.log("To Date = ", date);
     setToDate(date);
-    if (date && fromDate && date.isBefore(fromDate)) {
-      toast.error("Selected end date cannot be less than the start date");
-    } else {
-      calculateHourDiff(fromDate, date);
-    }
+    // if (date && leaveapplyObj?.start && date.isBefore(leaveapplyObj?.start)) {
+    //   toast.error("Selected end date cannot be less than the start date");
+    // } else {
+    //   // calculateHourDiff(fromDate, date);
+    //   setLeaveApplyObj({
+    //     ...leaveapplyObj,
+    //     end : ConvertToISODateTimeFormat(dateStr)
+    //   })
+    // }
+
+    setLeaveApplyObj({
+      ...leaveapplyObj,
+      end: ConvertToISODateTimeFormat(ConvertToDateTimeFormat(dateStr)),
+    });
   };
 
-  const calculateHourDiff = (start, end) => {
-    if (start && end) {
-      let diffInMilliseconds;
-      if (start > end) {
-        const midnight = new Date(start);
-        midnight.setHours(24, 0, 0, 0);
-        diffInMilliseconds = midnight - start + end - midnight;
-      } else {
-        diffInMilliseconds = end - start;
-      }
-      const hours = diffInMilliseconds / (1000 * 60 * 60);
-      const roundedMinutes = Math.round((hours * 60) / 30) * 30;
-      const roundedHours = Math.floor(roundedMinutes / 60);
-      const remainingMinutes = roundedMinutes % 60;
-      const formattedResult = `${String(roundedHours).padStart(
-        2,
-        "0"
-      )}:${String(remainingMinutes).padStart(2, "0")}`;
-      const formattedResultForSetting = roundedHours + remainingMinutes / 60;
-      setHourDiff(formattedResult);
-      setLeaveApplyObj({
-        ...leaveapplyObj,
-        start: start.format("YYYY-MM-DD HH:mm:00"),
-        end: end.format("YYYY-MM-DD HH:mm:00"),
-        requested_leave_count: formattedResultForSetting,
-        day_type: 1,
-      });
-    }
-  };
+  // const calculateHourDiff = (start, end) => {
+  //   if (start && end) {
+  //     let diffInMilliseconds;
+  //     if (start > end) {
+  //       const midnight = new Date(start);
+  //       midnight.setHours(24, 0, 0, 0);
+  //       diffInMilliseconds = midnight - start + end - midnight;
+  //     } else {
+  //       diffInMilliseconds = end - start;
+  //     }
+  //     const hours = diffInMilliseconds / (1000 * 60 * 60);
+  //     const roundedMinutes = Math.round((hours * 60) / 30) * 30;
+  //     const roundedHours = Math.floor(roundedMinutes / 60);
+  //     const remainingMinutes = roundedMinutes % 60;
+  //     const formattedResult = `${String(roundedHours).padStart(
+  //       2,
+  //       "0"
+  //     )}:${String(remainingMinutes).padStart(2, "0")}`;
+  //     const formattedResultForSetting = roundedHours + remainingMinutes / 60;
+  //     setHourDiff(formattedResult);
+  //     setLeaveApplyObj({
+  //       ...leaveapplyObj,
+  //       start: start.format("YYYY-MM-DD HH:mm:00"),
+  //       end: end.format("YYYY-MM-DD HH:mm:00"),
+  //       requested_leave_count: formattedResultForSetting,
+  //       day_type: 1,
+  //     });
+  //   }
+  // };
 
   const FormikForm = useFormik({
     enableReinitialize: true,
@@ -447,7 +465,11 @@ const ApplyLeaveForm = () => {
                         value={
                           !!leaveapplyObj?.start
                             ? dayjs(
-                                convertDateTimeFormat(leaveapplyObj?.start),
+                                ConvertToDateTimeFormat(
+                                  ConvertToISODateTimeFormat(
+                                    leaveapplyObj?.start
+                                  )
+                                ),
                                 DateTimeFormat
                               )
                             : null
@@ -464,7 +486,9 @@ const ApplyLeaveForm = () => {
                         value={
                           !!leaveapplyObj?.end
                             ? dayjs(
-                                convertDateTimeFormat(leaveapplyObj?.end),
+                                ConvertToDateTimeFormat(
+                                  ConvertToISODateTimeFormat(leaveapplyObj?.end)
+                                ),
                                 DateTimeFormat
                               )
                             : null
