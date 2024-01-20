@@ -68,6 +68,7 @@ import {
 } from "../../../common/constant/Constants";
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
+import { PostApi } from "../../../common/api/PostApi";
 defineElement(loadAnimation);
 
 const InfoTable = ({
@@ -115,6 +116,7 @@ const InfoTable = ({
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [showContainer, setShowContainer] = useState(false);
+  const [selectedGroupIds, setSelectedGroupIds] = useState([]);
 
   const tog_list = () => {
     setmodal_list(!modal_list);
@@ -126,23 +128,133 @@ const InfoTable = ({
   const checkedAll = useCallback(() => {
     const checkall = document.getElementById("checkBoxAll");
     const ele = document.querySelectorAll(".dataCheckBox");
-    if (checkall.checked) {
-      ele.forEach((ele) => {
-        ele.checked = true;
-      });
-    } else {
-      ele.forEach((ele) => {
-        ele.checked = false;
-      });
-    }
+    const checkboxes = document.querySelectorAll('.dataCheckBox.form-check-input');
+    const checkboxesArray = Array.from(checkboxes);
+    // checkboxesArray.map((checkbox) => {
+    //   // Do something with each checkbox
+    //   if (checkall.checked) {
+    //     ele.forEach((ele) => {
+    //       ele.checked = true;
+    //       setSelectedGroupIds((prevIds) => [...prevIds, parseInt(checkbox.defaultValue)]);
+    //     });
+    //   } else {
+    //     ele.forEach((ele) => {
+    //       ele.checked = false;
+    //       setSelectedGroupIds([])
+    //     });
+    //   }
+    //   // Perform other actions based on the checkbox
+    // });
+
+    checkboxesArray.forEach((checkbox) => {
+      // Do something with each checkbox
+      if (checkall.checked) {
+        ele.forEach((ele) => {
+          ele.checked = true;
+        });
+        setSelectedGroupIds((prevIds) => [...prevIds, parseInt(checkbox.value)]);
+      } else {
+        ele.forEach((ele) => {
+          ele.checked = false;
+        });
+        setSelectedGroupIds([]);
+      }
+      // Perform other actions based on the checkbox
+    });
     deleteCheckbox();
+    approveRejectCheckbox();
   }, []);
 
-  const handleApproval = (orderData) => {
+  const handleApproval = async (orderData) => {
+    let employee_fname =
+      EmployeeData.find((e) => e.id === orderData.employee)?.fname || "";
+  
+    let content = `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To Employee <strong style='color:#7066e0'>  ${employee_fname}</strong>  ? ${orderData.start} to  ${orderData.end} (${orderData.total})</span> `;
+    let btnText = "Yes, Approve";
+  
+    Swal.fire({
+      title: 'Confirmation',
+      html: content,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: btnText,
+      cancelButtonText: 'Cancel',
+      confirmButtonClass: 'btn btn-success',
+      cancelButtonClass: 'btn btn-danger',
+    }).then(async (result) => {
+      if (result.value) {
+        const data = {
+          "leave_application_id_list": [orderData.id],
+          "status": 2,
+          "reason_from_authority": ""
+        };
+  
+        console.log('data ====', data);
+  
+        // const Api = await PostApi("leave/approve-or-reject/", data, false);
+        // console.log("API RES = ", Api);
+        // if (Api.status && Api.status === 200) {
+        //   toast.success(Api?.data?.message);
+        // } else {
+        //   toast.error(Api?.data?.message || Api?.data?.detail);
+        // }
+
+      }
+    });
+  };
+
+  const handleReject = async (orderData) => {
+
+
     let employee_fname =
       EmployeeData.find((e) => e.id === orderData.employee)?.fname || "";
 
-    let content = `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To Employee <strong style='color:#7066e0'>  ${employee_fname}</strong>  ? ${orderData.start} to  ${orderData.end} (${orderData.total})</span> `;
+    let content = `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To Employee<strong style='color:#7066e0'> ${employee_fname} </strong> ? ${orderData.start} to  ${orderData.end} (${orderData.total})</span>`;
+    let btnText = "Yes, Reject";
+
+    Swal.fire({
+      title: 'Confirmation',
+      html: content,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: btnText,
+      cancelButtonText: 'Cancel',
+      confirmButtonClass: 'btn btn-danger',
+      cancelButtonClass: 'btn btn-secondary',
+      input: 'text',
+      inputPlaceholder: 'Enter reason for rejection',
+      inputValidator: (value) => {
+
+        if (!value) {
+          return 'Reason is required!';
+        }
+      },
+    }).then(async(result) => {
+      if (result.value) {
+        const data = {
+          "leave_application_id_list": [orderData.id],
+          "status": 3,
+          "reason_from_authority": result.value,
+        };
+
+        console.log('data ====', data);
+
+
+        // const Api = await PostApi("leave/approve-or-reject/", data, false);
+        // console.log("API RES = ", Api);
+        // if (Api.status && Api.status === 200) {
+        //   toast.success(Api?.data?.message);
+        // } else {
+        //   toast.error(Api?.data?.message || Api?.data?.detail);
+        // }
+
+      }
+    });
+  };
+  const handleBulkApproval = async() => {
+    console.log("id", selectedGroupIds);
+
+    let content = "Are You Sure to <strong style='color:green'>Accept </strong>  Leave To Selected Employees?";
     let btnText = "Yes, Approve";
 
     Swal.fire({
@@ -154,49 +266,74 @@ const InfoTable = ({
       cancelButtonText: 'Cancel',
       confirmButtonClass: 'btn btn-success',
       cancelButtonClass: 'btn btn-danger',
-    }).then((result) => {
+    }).then(async(result) => {
       if (result.value) {
-        console.log(`[${orderData.id}]`);
-       
+        const data = {
+          "leave_application_id_list": selectedGroupIds,
+          "status": 2,
+          "reason_from_authority": ""
+        }
+        console.log('data ====', data);
+
+        // const Api = await PostApi("leave/approve-or-reject/", data, false);
+        // console.log("API RES = ", Api);
+        // if (Api.status && Api.status === 200) {
+        //   toast.success(Api?.data?.message);
+        // } else {
+        //   toast.error(Api?.data?.message || Api?.data?.detail);
+        // }
+
       }
     });
   }
-  
-  const handleReject = (orderData) => {
-    console.log("Click Reject");
-    console.log("Click Approve", orderData);
-    let employee_fname =
-      EmployeeData.find((e) => e.id === orderData.employee).fname || "";
-    let content = `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To Employee<strong style='color:#7066e0'> ${employee_fname} </strong> ? ${orderData.start} to  ${orderData.end} (${orderData.total})</span>`;
+  const handleBulkReject = async() => {
+
+    let content = "Are You Sure to <strong style='color:red'>Reject</strong> Leave To Selected Employees?";
     let btnText = "Yes, Reject";
-    let btnClass = "Danger";
-    let input = "text";
-    let inputValue = "";
-    SweetAlert(true, content, btnText, btnClass, input, inputValue);
+
+    Swal.fire({
+      title: 'Confirmation',
+      html: content,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: btnText,
+      cancelButtonText: 'Cancel',
+      confirmButtonClass: 'btn btn-danger',
+      cancelButtonClass: 'btn btn-secondary',
+      input: 'text',
+      inputPlaceholder: 'Enter reason for rejection',
+      inputValidator: (value) => {
+
+        if (!value) {
+          return 'Reason is required!';
+        }
+      },
+    }).then(async(result) => {
+      if (result.value) {
+        const data = {
+          "leave_application_id_list": selectedGroupIds,
+          "status": 3,
+          "reason_from_authority": result.value,
+        };
+
+        console.log('data ====', data);
+
+
+        // const Api = await PostApi("leave/approve-or-reject/", data, false);
+        // console.log("API RES = ", Api);
+        // if (Api.status && Api.status === 200) {
+        //   toast.success(Api?.data?.message);
+        // } else {
+        //   toast.error(Api?.data?.message || Api?.data?.detail);
+        // }
+
+
+      }
+    });
   };
 
-  const handleBulkAction = (actionType) => {
-    let content;
-    let btnText;
-    let btnClass;
-    let input;
-    let inputValue;
-    
-    if (actionType === "approve") {
-      content = "Are You Sure to <strong style='color:green'>Accept </strong>  Leave To Selected Employees?";
-      btnText = "Yes, Approve";
-      btnClass = "Success";
-    } else if (actionType === "reject") {
-      content = "Are You Sure to <strong style='color:red'>Reject</strong> Leave To Selected Employees?";
-      btnText = "Yes, Reject";
-      btnClass = "Danger";
-      input = "text";
-      inputValue = "";
-    }
-  
-    SweetAlert(true, content, btnText, btnClass, input, inputValue);
-  };
-
+  // 
+  console.log('selectedItem ===', selectedGroupIds);
   const handleSearchChange = (event) => {
     setSearch(event.target.value);
   };
@@ -311,6 +448,7 @@ const InfoTable = ({
     () => [
       {
         Header: (
+
           <input
             type="checkbox"
             id="checkBoxAll"
@@ -319,28 +457,32 @@ const InfoTable = ({
           />
         ),
         Cell: (cellProps) => {
-          const orderDataChecked = cellProps.row.original;
-          
-          
+          const orderDataChecked = cellProps.row.original.id;
+
+
           return (
             <input
-            type="checkbox"
-            className="dataCheckBox form-check-input"
-            id={`checkbox-${cellProps.row.original.id}`}
-            value={cellProps.row.original.id}
-            onClick={(event) => {
-              const isChecked = event.target.checked;
-      
-              if (isChecked) {
-                console.log("OrderData Checked:", orderDataChecked);
-              } else {
-                // Checkbox is unchecked
-                console.log("Checkbox unchecked");
-              }
-      
-              deleteCheckbox(`checkbox-${cellProps.row.original.id}`);
-            }}
-          />
+              type="checkbox"
+              className="dataCheckBox form-check-input"
+              id={`checkbox-${cellProps.row.original.id}`}
+              value={cellProps.row.original.id}
+              onClick={(event) => {
+                const isChecked = event.target.checked;
+
+                if (isChecked) {
+                  console.log("OrderData Checked:", orderDataChecked);
+                  setSelectedGroupIds((prevIds) => [...prevIds, orderDataChecked]);
+                }
+                else {
+                  console.log("OrderData Unchecked:", orderDataChecked);
+                  setSelectedGroupIds((prevIds) => prevIds.filter((id) => id !== orderDataChecked));
+                }
+
+
+                deleteCheckbox(`checkbox-${cellProps.row.original.id}`);
+                approveRejectCheckbox(`checkbox-${cellProps.row.original.id}`);
+              }}
+            />
           );
         },
         id: "#",
@@ -519,6 +661,7 @@ const InfoTable = ({
 
   // Delete Multiple
   const [selectedCheckBoxDelete, setSelectedCheckBoxDelete] = useState([]);
+  const [selectedCheckBoxApproveReject, setSelectedCheckBoxApproveReject] = useState([]);
   const [isMultiDeleteButton, setIsMultiDeleteButton] = useState(false);
   const [selectApproveReject, setSelectApproveReject] = useState(false)
 
@@ -533,7 +676,18 @@ const InfoTable = ({
     setIsMultiDeleteButton(false);
   };
 
-  
+  const approveReject = () => {
+    const checkall = document.getElementById("checkBoxAll");
+    selectedCheckBoxApproveReject.forEach((element) => {
+      setTimeout(() => {
+        toast.clearWaitingQueue();
+      }, 3000);
+    });
+    checkall.checked = false;
+    setSelectApproveReject(false);
+  };
+
+
 
   const deleteCheckbox = (id) => {
     const ele = document.querySelectorAll(".dataCheckBox:checked");
@@ -543,8 +697,16 @@ const InfoTable = ({
     setSelectedCheckBoxDelete(ele);
   };
 
+  const approveRejectCheckbox = (id) => {
+    const ele = document.querySelectorAll(".dataCheckBox:checked");
+    ele.length > 0
+      ? setSelectApproveReject(true)
+      : setSelectApproveReject(false);
+    setSelectedCheckBoxApproveReject(ele);
+  };
+
   const handleDeleteData = (data) => {
-    console.log("data",data);
+    console.log("data", data);
   };
 
   // const module_list_for_create_btn_access = [
@@ -872,7 +1034,7 @@ const InfoTable = ({
                           >
                             <i className="ri-delete-bin-2-line"></i>
                           </button>{" "}
-                          {formname === leave_approval_component_name && (
+                          {/* {formname === leave_approval_component_name && (
                             <>
                               <button
                                 type="button"
@@ -891,9 +1053,30 @@ const InfoTable = ({
                                 <i className="ri-close-line fs-16"></i> Bulk Reject
                               </button>{" "}
                             </>
-                          )}
+                          )} */}
                         </div>
                       )}
+                      {selectApproveReject && formname === leave_approval_component_name && (
+                        <div>
+                          <button
+                            type="button"
+                            className="btn btn-success add-btn"
+                            id="bulk-approve-btn"
+                            onClick={() => handleBulkApproval()}
+                          >
+                            <i className="ri-check-line fs-16"></i> Bulk Approve
+                          </button>{" "}
+                          <button
+                            type="button"
+                            className="btn btn-danger add-btn"
+                            id="bulk-reject-btn"
+                            onClick={() => handleBulkReject()}
+                          >
+                            <i className="ri-close-line fs-16"></i> Bulk Reject
+                          </button>{" "}
+                        </div>
+                      )}
+
                     </div>
                   </div>
                 </div>
