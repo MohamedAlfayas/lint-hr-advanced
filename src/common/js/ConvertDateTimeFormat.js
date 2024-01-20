@@ -1,24 +1,22 @@
 export const ConvertToISODateTimeFormat = (date) => {
-    console.log("Date = ", date);
-    const [datePart, timePart] = String(date).split(' ');
-    const [day, month, year] = datePart.split('-');
-    const [hour, minute] = timePart.split(':');
+  console.log("Date = ", date);
+  const [datePart, timePart] = String(date).split(" ");
+  const [day, month, year] = datePart.split("-");
+  const [hour, minute] = timePart.split(":");
 
-    // Forming the new date string in yyyy-mm-dd HH:MM format
-    const newDateFormat = `${year}-${month}-${day} ${hour}:${minute}`;
+  // Forming the new date string in yyyy-mm-dd HH:MM format
+  const newDateFormat = `${year}-${month}-${day} ${hour}:${minute}:00`;
 
-    return newDateFormat;
+  return newDateFormat;
 };
 
-
 export const ConvertToDateTimeFormat = (date) => {
-    const [datePart, timePart] = String(date).split(' ');
-    const [day, month, year] = datePart.split('-');
-    const [hour, minute] = timePart.split(':');
+  const [datePart, timePart] = String(date).split(" ");
+  const [day, month, year] = datePart.split("-");
+  const [hour, minute] = timePart.split(":");
 
-    // Forming the new date string in yyyy-mm-dd HH:MM format
-    const newDateFormat = `${day}-${month}-${year} ${hour}:${minute}`;
+  // Forming the new date string in yyyy-mm-dd HH:MM format
+  const newDateFormat = `${day}-${month}-${year} ${hour}:${minute}`;
 
-    return newDateFormat;
-}
-
+  return newDateFormat;
+};

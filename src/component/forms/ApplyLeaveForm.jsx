@@ -107,10 +107,6 @@ const ApplyLeaveForm = () => {
     }
   }, [form_obj]);
 
-  // useEffect(() => {
-
-  // }, [form_obj]);
-
   const handleLeaveTypeChange = (e) => {
     let leave_type_obj = leaveType.find((d) => d.id === e.id);
 
@@ -157,17 +153,32 @@ const ApplyLeaveForm = () => {
   };
 
   const handleMultiDayChange = (dates, dateStrings, daysCount) => {
+    let startDate =
+      dateStrings[0] === "" ||
+      dateStrings[0] === null ||
+      dateStrings[0] === undefined
+        ? null
+        : dateStrings[0];
+    let endDate =
+      dateStrings[1] === "" ||
+      dateStrings[1] === null ||
+      dateStrings[1] === undefined
+        ? null
+        : dateStrings[1];
+
     const generateIntermediaryDates = () => {
-      const start = new Date(
-        ConvertISODateFormat(ConvertDateFormat(dateStrings[0]))
-      );
-      const end = new Date(
-        ConvertISODateFormat(ConvertDateFormat(dateStrings[1]))
-      );
+      const start = !!startDate
+        ? new Date(ConvertISODateFormat(ConvertDateFormat(startDate)))
+        : null;
+      const end = !!endDate
+        ? new Date(ConvertISODateFormat(ConvertDateFormat(endDate)))
+        : null;
       const dates = [];
-      while (start <= end) {
-        dates.push(start.toISOString().split("T")[0]);
-        start.setDate(start.getDate() + 1);
+      if (!!startDate && !!endDate) {
+        while (start <= end) {
+          dates.push(start.toISOString().split("T")[0]);
+          start.setDate(start.getDate() + 1);
+        }
       }
       return dates;
     };
@@ -189,8 +200,10 @@ const ApplyLeaveForm = () => {
 
     setLeaveApplyObj({
       ...leaveapplyObj,
-      start: ConvertISODateFormat(ConvertDateFormat(dateStrings[0])),
-      end: ConvertISODateFormat(ConvertDateFormat(dateStrings[1])),
+      start: !!startDate
+        ? ConvertISODateFormat(ConvertDateFormat(startDate))
+        : null,
+      end: !!endDate ? ConvertISODateFormat(ConvertDateFormat(endDate)) : null,
       requested_leave_count: ValidDaysCount,
       day_type: 1,
       in_between_dates: ValidDays,
@@ -234,64 +247,96 @@ const ApplyLeaveForm = () => {
     setDaysCount(updatedDaysCount);
   };
 
+  useEffect(() => {
+    if (toDate && fromDate) {
+      const [fromDateDay, fromDateMonth, fromDateYear, fromDateTime] =
+        fromDate.split(/[\s-:]/);
+      const [toDateDay, toDateMonth, toDateYear, toDateTime] =
+        toDate.split(/[\s-:]/);
+
+      const fromDateObj = new Date(
+        fromDateYear,
+        fromDateMonth - 1,
+        fromDateDay,
+        fromDateTime
+      );
+      const toDateObj = new Date(
+        toDateYear,
+        toDateMonth - 1,
+        toDateDay,
+        toDateTime
+      );
+      if (toDateObj < fromDateObj) {
+        toast.error("Selected end date cannot be less than the start date");
+      } else {
+        calculateHourDiff(fromDate, toDate);
+      }
+    }
+  }, [toDate, fromDate]);
+
   const handleFromDateChange = (date, dateStr) => {
-    console.log("FRom Date Str = ", dateStr);
+    setFromDate(dateStr);
     setLeaveApplyObj({
       ...leaveapplyObj,
-      start: ConvertToISODateTimeFormat(ConvertToDateTimeFormat(dateStr)),
+      start:
+        dateStr === "" || dateStr === null || dateStr === undefined
+          ? null
+          : ConvertToISODateTimeFormat(ConvertToDateTimeFormat(dateStr)),
     });
-    setFromDate(date);
-    // calculateHourDiff(date, toDate);
   };
 
   const handleToDateChange = (date, dateStr) => {
-    console.log("To Date = ", date);
-    setToDate(date);
-    // if (date && leaveapplyObj?.start && date.isBefore(leaveapplyObj?.start)) {
-    //   toast.error("Selected end date cannot be less than the start date");
-    // } else {
-    //   // calculateHourDiff(fromDate, date);
-    //   setLeaveApplyObj({
-    //     ...leaveapplyObj,
-    //     end : ConvertToISODateTimeFormat(dateStr)
-    //   })
-    // }
-
+    setToDate(dateStr);
     setLeaveApplyObj({
       ...leaveapplyObj,
-      end: ConvertToISODateTimeFormat(ConvertToDateTimeFormat(dateStr)),
+      end:
+        dateStr === "" || dateStr === null || dateStr === undefined
+          ? null
+          : ConvertToISODateTimeFormat(ConvertToDateTimeFormat(dateStr)),
     });
   };
 
-  // const calculateHourDiff = (start, end) => {
-  //   if (start && end) {
-  //     let diffInMilliseconds;
-  //     if (start > end) {
-  //       const midnight = new Date(start);
-  //       midnight.setHours(24, 0, 0, 0);
-  //       diffInMilliseconds = midnight - start + end - midnight;
-  //     } else {
-  //       diffInMilliseconds = end - start;
-  //     }
-  //     const hours = diffInMilliseconds / (1000 * 60 * 60);
-  //     const roundedMinutes = Math.round((hours * 60) / 30) * 30;
-  //     const roundedHours = Math.floor(roundedMinutes / 60);
-  //     const remainingMinutes = roundedMinutes % 60;
-  //     const formattedResult = `${String(roundedHours).padStart(
-  //       2,
-  //       "0"
-  //     )}:${String(remainingMinutes).padStart(2, "0")}`;
-  //     const formattedResultForSetting = roundedHours + remainingMinutes / 60;
-  //     setHourDiff(formattedResult);
-  //     setLeaveApplyObj({
-  //       ...leaveapplyObj,
-  //       start: start.format("YYYY-MM-DD HH:mm:00"),
-  //       end: end.format("YYYY-MM-DD HH:mm:00"),
-  //       requested_leave_count: formattedResultForSetting,
-  //       day_type: 1,
-  //     });
-  //   }
-  // };
+  const calculateHourDiff = (start, end) => {
+    if (start && end) {
+      const parseDateString = (dateString) => {
+        const [day, month, year, hours, minutes] = dateString.split(/\D+/);
+        return new Date(year, month - 1, day, hours, minutes);
+      };
+
+      const startDate = parseDateString(start);
+      const endDate = parseDateString(end);
+
+      let diffInMilliseconds;
+
+      if (startDate > endDate) {
+        const midnight = new Date(startDate);
+        midnight.setHours(24, 0, 0, 0);
+        diffInMilliseconds = midnight - startDate + +(endDate - new Date(0));
+      } else {
+        diffInMilliseconds = endDate - startDate;
+      }
+
+      const hours = diffInMilliseconds / (1000 * 60 * 60);
+      const roundedMinutes = Math.round((hours * 60) / 30) * 30;
+      const roundedHours = Math.floor(roundedMinutes / 60);
+      const remainingMinutes = roundedMinutes % 60;
+
+      const formattedResult = `${String(roundedHours).padStart(
+        2,
+        "0"
+      )}:${String(remainingMinutes).padStart(2, "0")}`;
+
+      const formattedResultForSetting = roundedHours + remainingMinutes / 60;
+
+      setHourDiff(formattedResult);
+
+      setLeaveApplyObj({
+        ...leaveapplyObj,
+        requested_leave_count: formattedResultForSetting,
+        day_type: 1,
+      });
+    }
+  };
 
   const FormikForm = useFormik({
     enableReinitialize: true,
@@ -304,20 +349,24 @@ const ApplyLeaveForm = () => {
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
       dispatch(setLoaderVisible(true));
-      const Api = await PostApi(
-        "leave/leave-application/create/",
-        values,
-        false
-      );
-      console.log("API RES = ", Api);
-      if (Api.status && Api.status === 200) {
-        leaveapplyObj.id === 0
-          ? dispatch(addLeaveApplication(Api?.data.data))
-          : dispatch(editLeaveApplication(Api?.data?.data));
-        dispatch(toggleRSBView(false));
-        toast.success(Api?.data?.message);
+      if (values.requested_leave_count === 0) {
+        toast.error("Total Hour Can Not Be Zero");
       } else {
-        toast.error(Api?.data?.message || Api?.data?.detail);
+        const Api = await PostApi(
+          "leave/leave-application/create/",
+          values,
+          false
+        );
+        console.log("API RES = ", Api);
+        if (Api.status && Api.status === 200) {
+          leaveapplyObj.id === 0
+            ? dispatch(addLeaveApplication(Api?.data.data))
+            : dispatch(editLeaveApplication(Api?.data?.data));
+          dispatch(toggleRSBView(false));
+          toast.success(Api?.data?.message);
+        } else {
+          toast.error(Api?.data?.message || Api?.data?.detail);
+        }
       }
 
       dispatch(setLoaderVisible(false));
