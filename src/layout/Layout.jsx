@@ -19,6 +19,9 @@ import Footer from "../component/footer/Footer";
 import LoadingBar from "react-top-loading-bar";
 import { GetGlobalVersion } from "../meta/GetGlobalVersion";
 import { GetTotalWorkDuration } from "../common/js/GetTotalWorkDuration";
+import { setMyProfileDataReducer } from "../redux/reducers/ChildReducer/MyProfileReducer";
+import { GetLocalStorageData } from "../meta/GetLocalStorageData";
+import { useNavigate } from "react-router-dom";
 
 const Layout = ({ children }) => {
   const dispatch = useDispatch();
@@ -108,6 +111,35 @@ const Layout = ({ children }) => {
 
   useEffect(() => {
     GetTotalWorkDuration(dispatch);
+
+    // let my_profile_data = GetLocalStorageData("my_profile");
+
+    // !!my_profile_data && dispatch(setMyProfileDataReducer(my_profile_data))
+
+    // console.log("my_profile_data = ", my_profile_data);
+
+    dispatch(
+      setMyProfileDataReducer(
+        JSON.parse(localStorage.getItem("lint_hr_profile_data"))
+      )
+    );
+  }, []);
+
+  useEffect(() => {
+    const handleLogoutEvent = (event) => {
+      window.location.reload();
+    };
+
+    // Create a broadcast channel
+    window.logoutChannel = new BroadcastChannel("logoutChannel");
+
+    // Listen for messages on the broadcast channel
+    window.logoutChannel.addEventListener("message", handleLogoutEvent);
+
+    return () => {
+      // Cleanup the broadcast channel
+      window.logoutChannel.close();
+    };
   }, []);
 
   const { showLoader } = useSelector((state) => state.LoaderReducer);

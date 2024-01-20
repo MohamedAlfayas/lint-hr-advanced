@@ -18,6 +18,7 @@ import WebCheckInOut from "../common/timer/WebCheckInOut";
 import { leftsidbarSizeTypes } from "../../layout/Constants";
 import { path_list_for_timer_hide } from "../../common/constant/Constants";
 import { GetTotalWorkDuration } from "../../common/js/GetTotalWorkDuration";
+import { setMyProfileDataReducer } from "../../redux/reducers/ChildReducer/MyProfileReducer";
 
 const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const dispatch = useDispatch();
@@ -79,6 +80,11 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
       console.log("has focus");
       //LCGetTodaysWorkDuration();
       //LCGetTodaysWorkDuration.init();
+      dispatch(
+        setMyProfileDataReducer(
+          JSON.parse(localStorage.getItem("lint_hr_profile_data"))
+        )
+      );
       GetTotalWorkDuration(dispatch);
     } else {
       //clearInterval(interval);

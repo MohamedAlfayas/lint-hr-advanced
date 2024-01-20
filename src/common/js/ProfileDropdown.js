@@ -1,24 +1,42 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Dropdown, DropdownItem, DropdownMenu, DropdownToggle } from 'reactstrap';
 
 //import images
 import avatar1 from "../../assets/images/users/avatar-1.jpg";
 import { toast } from 'react-toastify';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setShowTeamTable } from '../../redux/reducers/ChildReducer/AttendanceReportReducer';
 
 
 const ProfileDropdown = () => {
     const navigate = useNavigate()
 
-    const [userName, setUserName] = useState("LC Admin");
+    const [userName, setUserName] = useState("");
+
+    const { profile_data } = useSelector(state => state.MyProfileReducer);
+
+    useEffect(() => {
+        !!profile_data?.fname ? setUserName(profile_data?.fname) : setUserName('Admin')
+    }, [profile_data])
+
     const dispatch = useDispatch();
 
     const logout = () => {
         localStorage.removeItem("lint_hr_token");
         localStorage.removeItem("lint_hr_v");
         localStorage.removeItem("lint_hr_globaldata");
+        localStorage.removeItem("lint_hr_profile_data");
+
+        if (window.logoutChannel) {
+            window.logoutChannel.close();
+        }
+
+        // Create a new broadcast channel
+        window.logoutChannel = new BroadcastChannel('logoutChannel');
+
+        // Broadcast logout event to other tabs
+        window.logoutChannel.postMessage('logoutEvent');
 
         dispatch(setShowTeamTable(false))
 
@@ -38,11 +56,30 @@ const ProfileDropdown = () => {
             <Dropdown isOpen={isProfileDropdown} toggle={toggleProfileDropdown} className="ms-sm-3 header-item topbar-user">
                 <DropdownToggle tag="button" type="button" className="btn">
                     <span className="d-flex align-items-center">
-                        <img className="rounded-circle header-profile-user" src={avatar1}
-                            alt="Header Avatar" />
+                        {!!profile_data?.profile_url ? (
+                            <img className="rounded-circle header-profile-user" src={profile_data?.profile_url}
+                                alt={profile_data?.fname} />
+                        ) : (
+                            <div
+                                className="avatar-xs rounded-circle"
+                                style={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    background: "#0ab39c",
+                                }}
+                                data-bs-toggle="tooltip"
+                                title={userName}
+                            >
+                                <span className="first_letter" style={{ color: "white" }}>
+                                    {userName.charAt(0)}
+                                </span>
+                            </div>
+                        )}
+
                         <span className="text-start ms-xl-2">
                             <span className="d-none d-xl-inline-block ms-1 fw-medium user-name-text">{userName}</span>
-                            <span className="d-none d-xl-block ms-1 fs-12 text-muted user-name-sub-text">Founder</span>
+                            {/* <span className="d-none d-xl-block ms-1 fs-12 text-muted user-name-sub-text">Founder</span> */}
                         </span>
                     </span>
                 </DropdownToggle>
