@@ -139,15 +139,29 @@ const InfoTable = ({
   }, []);
 
   const handleApproval = (orderData) => {
-    console.log("Click Approve", orderData);
     let employee_fname =
-      EmployeeData.find((e) => e.id === orderData.employee).fname || "";
+      EmployeeData.find((e) => e.id === orderData.employee)?.fname || "";
 
     let content = `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To Employee <strong style='color:#7066e0'>  ${employee_fname}</strong>  ? ${orderData.start} to  ${orderData.end} (${orderData.total})</span> `;
     let btnText = "Yes, Approve";
-    let btnClass = "Success";
-    SweetAlert(true, content, btnText, btnClass);
-  };
+
+    Swal.fire({
+      title: 'Confirmation',
+      html: content,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: btnText,
+      cancelButtonText: 'Cancel',
+      confirmButtonClass: 'btn btn-success',
+      cancelButtonClass: 'btn btn-danger',
+    }).then((result) => {
+      if (result.value) {
+        console.log(`[${orderData.id}]`);
+       
+      }
+    });
+  }
+  
   const handleReject = (orderData) => {
     console.log("Click Reject");
     console.log("Click Approve", orderData);
@@ -161,27 +175,27 @@ const InfoTable = ({
     SweetAlert(true, content, btnText, btnClass, input, inputValue);
   };
 
-  // const handleBulkAction = (actionType) => {
-  //   let content;
-  //   let btnText;
-  //   let btnClass;
-  //   let input;
-  //   let inputValue;
+  const handleBulkAction = (actionType) => {
+    let content;
+    let btnText;
+    let btnClass;
+    let input;
+    let inputValue;
     
-  //   if (actionType === "approve") {
-  //     content = "Are You Sure to <strong style='color:green'>Accept </strong>  Leave To Selected Employees?";
-  //     btnText = "Yes, Approve";
-  //     btnClass = "Success";
-  //   } else if (actionType === "reject") {
-  //     content = "Are You Sure to <strong style='color:red'>Reject</strong> Leave To Selected Employees?";
-  //     btnText = "Yes, Reject";
-  //     btnClass = "Danger";
-  //     input = "text";
-  //     inputValue = "";
-  //   }
+    if (actionType === "approve") {
+      content = "Are You Sure to <strong style='color:green'>Accept </strong>  Leave To Selected Employees?";
+      btnText = "Yes, Approve";
+      btnClass = "Success";
+    } else if (actionType === "reject") {
+      content = "Are You Sure to <strong style='color:red'>Reject</strong> Leave To Selected Employees?";
+      btnText = "Yes, Reject";
+      btnClass = "Danger";
+      input = "text";
+      inputValue = "";
+    }
   
-  //   SweetAlert(true, content, btnText, btnClass, input, inputValue);
-  // };
+    SweetAlert(true, content, btnText, btnClass, input, inputValue);
+  };
 
   const handleSearchChange = (event) => {
     setSearch(event.target.value);
@@ -305,16 +319,28 @@ const InfoTable = ({
           />
         ),
         Cell: (cellProps) => {
+          const orderDataChecked = cellProps.row.original;
+          
+          
           return (
             <input
-              type="checkbox"
-              className="dataCheckBox form-check-input"
-              id={`checkbox-${cellProps.row.original.id}`}
-              value={cellProps.row.original.id}
-              onClick={() => {
-                deleteCheckbox(`checkbox-${cellProps.row.original.id}`);
-              }}
-            />
+            type="checkbox"
+            className="dataCheckBox form-check-input"
+            id={`checkbox-${cellProps.row.original.id}`}
+            value={cellProps.row.original.id}
+            onClick={(event) => {
+              const isChecked = event.target.checked;
+      
+              if (isChecked) {
+                console.log("OrderData Checked:", orderDataChecked);
+              } else {
+                // Checkbox is unchecked
+                console.log("Checkbox unchecked");
+              }
+      
+              deleteCheckbox(`checkbox-${cellProps.row.original.id}`);
+            }}
+          />
           );
         },
         id: "#",
@@ -852,9 +878,7 @@ const InfoTable = ({
                                 type="button"
                                 className="btn btn-success add-btn"
                                 id="bulk-approve-btn"
-                                onClick={() => {
-                                  handleApproval(orderData);
-                                }}
+                                onClick={() => handleBulkAction("approve")}
                               >
                                 <i className="ri-check-line fs-16"></i> Bulk Approve
                               </button>{" "}
