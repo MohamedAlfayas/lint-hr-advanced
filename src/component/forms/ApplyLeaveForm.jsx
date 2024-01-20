@@ -104,6 +104,17 @@ const ApplyLeaveForm = () => {
 
       setHourDiff(timeConvert(form_obj.requested_leave_count));
       setDaysCount(form_obj.requested_leave_count);
+
+      if (form_obj?.unit === 2 && form_obj?.start !== null) {
+        setFromDate(
+          ConvertToDateTimeFormat(ConvertToISODateTimeFormat(form_obj.start))
+        );
+      }
+      if (form_obj?.unit === 2 && form_obj?.end !== null) {
+        setToDate(
+          ConvertToDateTimeFormat(ConvertToISODateTimeFormat(form_obj.end))
+        );
+      }
     }
   }, [form_obj]);
 
@@ -249,6 +260,9 @@ const ApplyLeaveForm = () => {
 
   useEffect(() => {
     if (toDate && fromDate) {
+      console.log("From Date = ", fromDate);
+      console.log("To Date = ", toDate);
+
       const [fromDateDay, fromDateMonth, fromDateYear, fromDateTime] =
         fromDate.split(/[\s-:]/);
       const [toDateDay, toDateMonth, toDateYear, toDateTime] =
