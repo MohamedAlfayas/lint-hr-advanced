@@ -61,6 +61,7 @@ const ApplyLeaveForm = () => {
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
   const [hourDiff, setHourDiff] = useState(null);
+  const [inBetweenDays, setInBetweenDays] = useState([]);
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
   const profileData = GetLocalStorageData("my_profile") || [];
@@ -104,6 +105,7 @@ const ApplyLeaveForm = () => {
 
       setHourDiff(timeConvert(form_obj.requested_leave_count));
       setDaysCount(form_obj.requested_leave_count);
+      setInBetweenDays(form_obj.in_between_dates);
 
       if (form_obj?.unit === 2 && form_obj?.start !== null) {
         setFromDate(
@@ -157,10 +159,12 @@ const ApplyLeaveForm = () => {
         leave_type: leave_type_obj?.id,
         start: null,
         end: null,
+        in_between_dates: [],
       };
     });
     setHourDiff("");
     setDaysCount("");
+    setInBetweenDays([]);
   };
 
   const handleMultiDayChange = (dates, dateStrings, daysCount) => {
@@ -206,6 +210,7 @@ const ApplyLeaveForm = () => {
       }
     });
 
+    setInBetweenDays(ValidDays);
     const ValidDaysCount = ValidDays.length;
     setDaysCount(ValidDaysCount);
 
@@ -217,7 +222,7 @@ const ApplyLeaveForm = () => {
       end: !!endDate ? ConvertISODateFormat(ConvertDateFormat(endDate)) : null,
       requested_leave_count: ValidDaysCount,
       day_type: 1,
-      in_between_dates: ValidDays,
+      in_between_dates: daysCount < 1 ? [] : ValidDays,
     });
   };
 
@@ -254,8 +259,11 @@ const ApplyLeaveForm = () => {
       ...leaveapplyObj,
       day_type: value,
       requested_leave_count: value === 1 ? 1 : value === 2 ? 0.5 : 0,
+      in_between_dates:
+        value === 1 ? [leaveapplyObj.start] : value === 2 ? [] : [],
     });
     setDaysCount(updatedDaysCount);
+    console.log("InbetweenDays", inBetweenDays);
   };
 
   useEffect(() => {
@@ -364,7 +372,7 @@ const ApplyLeaveForm = () => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
       dispatch(setLoaderVisible(true));
       if (values.requested_leave_count === 0) {
-        toast.error("Total Hour Can Not Be Zero");
+        toast.error("Total Hour Can't Be Zero");
       } else {
         const Api = await PostApi(
           "leave/leave-application/create/",
@@ -452,11 +460,14 @@ const ApplyLeaveForm = () => {
                   </>
                 )}
               </Col>
+
               {!!selectedLeaveTypeObj?.unit &&
                 selectedLeaveTypeObj?.unit === leave_type_day_unit && (
-                  <Col lg={12}>
+                  <Col>
                     <div className="input-group">
-                      <Label className="form-label">Select Date</Label>
+                      <div className="input-group">
+                        <Label className="form-label">Select Date</Label>
+                      </div>
                       <RangePicker
                         name="multiple_date"
                         format={DateFormat}
@@ -484,27 +495,6 @@ const ApplyLeaveForm = () => {
                       />
                       <span className="input-group-text">{daysCount} Days</span>
                     </div>
-                    {(daysCount === 1 || daysCount === 0.5) && (
-                      <div className="input-group">
-                        <Label className="form-label">Select Day Type</Label>
-
-                        <Select
-                          name="day_type"
-                          isMulti={false}
-                          options={day_type || []}
-                          placeholder="Select Day Type"
-                          className="basic-multi-select"
-                          value={
-                            leaveapplyObj?.day_type
-                              ? day_type.find(
-                                  (d) => d.id === leaveapplyObj?.day_type
-                                )
-                              : []
-                          }
-                          onChange={handleDayType}
-                        />
-                      </div>
-                    )}
 
                     <div id="passwordHelpBlock" className="form-text">
                       Please select Start & End Date
@@ -512,56 +502,92 @@ const ApplyLeaveForm = () => {
                   </Col>
                 )}
 
+              {(daysCount === 1 || daysCount === 0.5) && (
+                <Col>
+                  <div className="input-group">
+                    <Col>
+                      <Label className="form-label">Select Day Type</Label>
+                    </Col>
+                    <Select
+                      name="day_type"
+                      isMulti={false}
+                      options={day_type || []}
+                      placeholder="Select Day Type"
+                      className="basic-multi-select"
+                      value={
+                        leaveapplyObj?.day_type
+                          ? day_type.find(
+                              (d) => d.id === leaveapplyObj?.day_type
+                            )
+                          : []
+                      }
+                      onChange={handleDayType}
+                    />
+                  </div>
+                </Col>
+              )}
+
               {!!selectedLeaveTypeObj?.unit &&
                 selectedLeaveTypeObj?.unit === leave_type_hour_unit && (
                   <Col lg={12}>
-                    <div className="input-group">
-                      <Label className="form-label">Select Hour</Label>
-                      <Label className="form-label">From</Label>
-
-                      <DatePicker
-                        name="start"
-                        showTime={{ minuteStep: 30 }}
-                        format={DateTimeFormat}
-                        disabledDate={disabledDate}
-                        onChange={handleFromDateChange}
-                        value={
-                          !!leaveapplyObj?.start
-                            ? dayjs(
-                                ConvertToDateTimeFormat(
-                                  ConvertToISODateTimeFormat(
-                                    leaveapplyObj?.start
+                    <div className="row">
+                      <div className="input-group">
+                        <div className="input-group">
+                          <Label className="form-label">
+                            Select Start And End Hour
+                          </Label>
+                        </div>
+                        <Col>
+                          <DatePicker
+                            name="start"
+                            showTime={{ minuteStep: 30 }}
+                            format={DateTimeFormat}
+                            disabledDate={disabledDate}
+                            onChange={handleFromDateChange}
+                            value={
+                              !!leaveapplyObj?.start
+                                ? dayjs(
+                                    ConvertToDateTimeFormat(
+                                      ConvertToISODateTimeFormat(
+                                        leaveapplyObj?.start
+                                      )
+                                    ),
+                                    DateTimeFormat
                                   )
-                                ),
-                                DateTimeFormat
-                              )
-                            : null
-                        }
-                      />
-                      <Label className="form-label">To</Label>
+                                : null
+                            }
+                          />
+                        </Col>
+                        <Col lg={4}>
+                          <Label className="form-label"> To </Label>
+                        </Col>
+                        <Col mg={3}>
+                          <DatePicker
+                            name="end"
+                            showTime={{ minuteStep: 30 }}
+                            format={DateTimeFormat}
+                            disabledDate={disabledDate}
+                            onChange={handleToDateChange}
+                            value={
+                              !!leaveapplyObj?.end
+                                ? dayjs(
+                                    ConvertToDateTimeFormat(
+                                      ConvertToISODateTimeFormat(
+                                        leaveapplyObj?.end
+                                      )
+                                    ),
+                                    DateTimeFormat
+                                  )
+                                : null
+                            }
+                          />
 
-                      <DatePicker
-                        name="end"
-                        showTime={{ minuteStep: 30 }}
-                        format={DateTimeFormat}
-                        disabledDate={disabledDate}
-                        onChange={handleToDateChange}
-                        value={
-                          !!leaveapplyObj?.end
-                            ? dayjs(
-                                ConvertToDateTimeFormat(
-                                  ConvertToISODateTimeFormat(leaveapplyObj?.end)
-                                ),
-                                DateTimeFormat
-                              )
-                            : null
-                        }
-                      />
-
-                      <span className="input-group-text">{hourDiff} h</span>
-                    </div>
-                    <div id="passwordHelpBlock" className="form-text">
-                      Please select Date and Hour
+                          <span className="input-group-text">{hourDiff} h</span>
+                        </Col>
+                      </div>
+                      <div id="passwordHelpBlock" className="form-text">
+                        Please select Date and Hour
+                      </div>
                     </div>
                   </Col>
                 )}
