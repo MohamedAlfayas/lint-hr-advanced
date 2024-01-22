@@ -69,6 +69,7 @@ import {
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
 import { PostApi } from "../../../common/api/PostApi";
+import { editLeaveApproval } from "../../../redux/reducers/ChildReducer/LeaveApprovalReducer";
 defineElement(loadAnimation);
 
 const InfoTable = ({
@@ -190,14 +191,16 @@ const InfoTable = ({
         };
   
         console.log('data ====', data);
+        dispatch(editLeaveApproval(data))
   
-        // const Api = await PostApi("leave/approve-or-reject/", data, false);
-        // console.log("API RES = ", Api);
-        // if (Api.status && Api.status === 200) {
-        //   toast.success(Api?.data?.message);
-        // } else {
-        //   toast.error(Api?.data?.message || Api?.data?.detail);
-        // }
+        const Api = await PostApi("leave/approve-or-reject/", data, false);
+        console.log("API RES = ", Api);
+        if (Api.status && Api.status === 200) {
+          dispatch(editLeaveApproval(data))
+          toast.success(Api?.data?.message);
+        } else {
+          toast.error(Api?.data?.message || Api?.data?.detail);
+        }
 
       }
     });
@@ -238,19 +241,23 @@ const InfoTable = ({
         };
 
         console.log('data ====', data);
+        
 
 
-        // const Api = await PostApi("leave/approve-or-reject/", data, false);
-        // console.log("API RES = ", Api);
-        // if (Api.status && Api.status === 200) {
-        //   toast.success(Api?.data?.message);
-        // } else {
-        //   toast.error(Api?.data?.message || Api?.data?.detail);
-        // }
+        const Api = await PostApi("leave/approve-or-reject/", data, false);
+        console.log("API RES = ", Api);
+        if (Api.status && Api.status === 200) {
+          dispatch(editLeaveApproval(data))
+          toast.success(Api?.data?.message);
+        } else {
+          toast.error(Api?.data?.message || Api?.data?.detail);
+        }
 
       }
     });
   };
+
+
   const handleBulkApproval = async() => {
     console.log("id", selectedGroupIds);
 
@@ -274,14 +281,16 @@ const InfoTable = ({
           "reason_from_authority": ""
         }
         console.log('data ====', data);
+      
 
-        // const Api = await PostApi("leave/approve-or-reject/", data, false);
-        // console.log("API RES = ", Api);
-        // if (Api.status && Api.status === 200) {
-        //   toast.success(Api?.data?.message);
-        // } else {
-        //   toast.error(Api?.data?.message || Api?.data?.detail);
-        // }
+        const Api = await PostApi("leave/approve-or-reject/", data, false);
+        console.log("API RES = ", Api);
+        if (Api.status && Api.status === 200) {
+          dispatch(editLeaveApproval(data))
+          toast.success(Api?.data?.message);
+        } else {
+          toast.error(Api?.data?.message || Api?.data?.detail);
+        }
 
       }
     });
@@ -317,15 +326,17 @@ const InfoTable = ({
         };
 
         console.log('data ====', data);
+      
 
 
-        // const Api = await PostApi("leave/approve-or-reject/", data, false);
-        // console.log("API RES = ", Api);
-        // if (Api.status && Api.status === 200) {
-        //   toast.success(Api?.data?.message);
-        // } else {
-        //   toast.error(Api?.data?.message || Api?.data?.detail);
-        // }
+        const Api = await PostApi("leave/approve-or-reject/", data, false);
+        console.log("API RES = ", Api);
+        if (Api.status && Api.status === 200) {
+          dispatch(editLeaveApproval(data))
+          toast.success(Api?.data?.message);
+        } else {
+          toast.error(Api?.data?.message || Api?.data?.detail);
+        }
 
 
       }
