@@ -591,34 +591,39 @@ const InfoTable = ({
           } else {
             return (
               <ul className="list-inline hstack gap-2 mb-0">
+              {orderData.status === 2 || orderData.status === 3 ? (
                 <li className="list-inline-item">
                   <Link to="#" className="text-primary d-inline-block">
                     <i className="ri-eye-fill fs-16"></i>
                   </Link>
                 </li>
-                <li className="list-inline-item edit">
-                  <Link
-                    to="javascript:void(0)"
-                    className="text-primary d-inline-block edit-item-btn"
-                    onClick={() => {
-                      handleCreateAndUpdate(orderData.id, orderData);
-                    }}
-                  >
-                    <i className="ri-pencil-fill fs-16"></i>
-                  </Link>
-                </li>
-                <li className="list-inline-item">
-                  <Link
-                    to="#"
-                    className="text-danger d-inline-block remove-item-btn"
-                    onClick={() => {
-                      const orderData = cellProps.row.original;
-                    }}
-                  >
-                    <i className="ri-delete-bin-5-fill fs-16"></i>
-                  </Link>
-                </li>
-              </ul>
+              ) : (
+                <>
+                  <li className="list-inline-item edit">
+                    <Link
+                      to="javascript:void(0)"
+                      className="text-primary d-inline-block edit-item-btn"
+                      onClick={() => {
+                        handleCreateAndUpdate(orderData.id, orderData);
+                      }}
+                    >
+                      <i className="ri-pencil-fill fs-16"></i>
+                    </Link>
+                  </li>
+                  <li className="list-inline-item">
+                    <Link
+                      to="#"
+                      className="text-danger d-inline-block remove-item-btn"
+                      onClick={() => {
+                        const orderData = cellProps.row.original;
+                      }}
+                    >
+                      <i className="ri-delete-bin-5-fill fs-16"></i>
+                    </Link>
+                  </li>
+                </>
+              )}
+            </ul>
             );
           }
         },
