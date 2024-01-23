@@ -3,7 +3,9 @@ import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 export const GetCustomField = (formname) => {
     // Custom Field Option
 
-    let customFieldOptions = ((GetLocalStorageData('custom_fields')).filter(obj => {
+    let custom_field_data = GetLocalStorageData('custom_fields') || []
+
+    let customFieldOptions = (custom_field_data.filter(obj => {
         if ((obj.status === true) && (obj.applicable_for_modules).includes(formname)) {
             return obj
         }

@@ -207,8 +207,6 @@ const BranchForm = () => {
     }),
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
-      e.preventDefault();
-      console.log("Branch Form Submit = ", branchObj);
 
       dispatch(setLoaderVisible(true));
 

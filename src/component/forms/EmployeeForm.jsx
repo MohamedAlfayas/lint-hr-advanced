@@ -1638,9 +1638,8 @@ const EmployeeForm = () => {
                             id={obj.input_name}
                             options={obj.options}
                             value={
-                              obj.options.find(
-                                (d) => parseInt(d.value) === parseInt(obj.value)
-                              ) || []
+                              obj.options.find((d) => d.value === obj.value) ||
+                              []
                             }
                             onChange={(e) => handleCFSelectChange(e, obj.id)}
                             placeholder={`Select ${obj.name}`}

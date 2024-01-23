@@ -45,6 +45,7 @@ const DepartmentsTab = () => {
       id: 0,
       name: "",
       description: "",
+      is_location_required: false,
       pid: 0,
     };
   }, []);
