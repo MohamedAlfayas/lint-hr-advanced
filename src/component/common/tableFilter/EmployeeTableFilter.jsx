@@ -1,6 +1,7 @@
 import React, { useMemo, useRef } from "react";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { Col, Label } from "reactstrap";
+import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
 import Select from "react-select";
 
 const EmployeeTableFilter = () => {
@@ -10,6 +11,7 @@ const EmployeeTableFilter = () => {
     () => GetLocalStorageData("department") || [],
     []
   );
+  const manager_options = useMemo(() => GetLocalStorageData("employee") || []);
 
   return (
     <React.Fragment>
@@ -22,6 +24,19 @@ const EmployeeTableFilter = () => {
           options={dep_options || []}
           className="basic-multi-select"
           placeholder="Select Department"
+        />
+      </Col>
+
+      <Col md={4}>
+        <Select
+          id="manager_filter"
+          name="manager_filter"
+          components={{ Option: EmployeeDisplayInSelect }}
+          innerRef={inputRef}
+          isMulti={true}
+          options={manager_options || []}
+          className="basic-multi-select"
+          placeholder="Select Reporting Manager"
         />
       </Col>
     </React.Fragment>

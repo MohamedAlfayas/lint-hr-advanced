@@ -1,5 +1,6 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect } from "react";
 import PropTypes from "prop-types";
+import { useState } from "react";
 import {
   useTable,
   useGlobalFilter,
@@ -77,6 +78,9 @@ const TableContainer = ({
     usePagination,
     useRowSelect
   );
+  const [search, setSearch] = useState("");
+
+  console.log("Search", search);
 
   const generateSortingIndicator = (column) => {
     return column.isSorted ? (
@@ -138,6 +142,7 @@ const TableContainer = ({
                     type="text"
                     className="form-control search /"
                     placeholder={`Search ${formname.split("_").join(" ")}`}
+                    onChange={(e) => setSearch(e.target.value)}
                   />
                   <i className="bx bx-search-alt search-icon"></i>
                 </div>
@@ -146,10 +151,8 @@ const TableContainer = ({
               {formname === leave_approval_component_name && (
                 <LeaveApprovalFilter />
               )}
-                 {formname === leave_type_component_name && (
-                <LeaveTypeFilter />
-              )}
-              <Col md={2}>
+              {formname === leave_type_component_name && <LeaveTypeFilter />}
+              {/* <Col md={2}>
                 <div>
                   <button type="button" className="btn btn-primary w-100">
                     {" "}
@@ -157,7 +160,7 @@ const TableContainer = ({
                     Filters
                   </button>
                 </div>
-              </Col>
+              </Col> */}
             </Row>
           </CardBody>
         </Row>

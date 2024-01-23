@@ -52,6 +52,20 @@ const Employee = () => {
   // Column
   const additionalColumn = [
     {
+      Header: "ID",
+      accessor: "emp_id",
+      filterable: false,
+      id: "emp_id",
+      accessor: (obj) => {
+        return (
+          <>
+            <React.Fragment>{obj.emp_id}</React.Fragment>
+          </>
+        );
+      },
+    },
+
+    {
       Header: "Name",
       accessor: "fname",
       filterable: false,
