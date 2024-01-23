@@ -4,8 +4,8 @@ export const CountryCodeDisplayInSelect = ({ innerProps, label, data }) => (
       <img
         src={data.flagImg}
         alt=""
-        className="avatar-xs rounded-circle"
-        style={{ objectFit: "cover" }}
+        className="avatar-xs"
+        style={{ objectFit: "cover", width: "20px", height: "20px", marginBottom: "5px",  marginLeft: "5px" }}
       />{" "}
       {data?.countryCode}
     </div>

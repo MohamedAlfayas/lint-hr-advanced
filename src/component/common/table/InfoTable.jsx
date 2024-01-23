@@ -167,10 +167,12 @@ const InfoTable = ({
   }, []);
 
   const handleApproval = async (orderData) => {
+    console.log("data",orderData);
     let employee_fname =
       EmployeeData.find((e) => e.id === orderData.employee)?.fname || "";
+     
   
-    let content = `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To Employee <strong style='color:#7066e0'>  ${employee_fname}</strong>  ? ${orderData.start} to  ${orderData.end} (${orderData.total})</span> `;
+    let content = `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To Employee <strong style='color:#7066e0'>  ${employee_fname}</strong>  ? ${orderData.start} to  ${orderData.end} </span> `;
     let btnText = "Yes, Approve";
   
     Swal.fire({
@@ -211,8 +213,9 @@ const InfoTable = ({
 
     let employee_fname =
       EmployeeData.find((e) => e.id === orderData.employee)?.fname || "";
+      // const unitLabel = orderData.unit === 1 ? 'day' : 'hour';
 
-    let content = `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To Employee<strong style='color:#7066e0'> ${employee_fname} </strong> ? ${orderData.start} to  ${orderData.end} (${orderData.total})</span>`;
+    let content = `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To Employee<strong style='color:#7066e0'> ${employee_fname} </strong> ? ${orderData.start} to  ${orderData.end} </span>`;
     let btnText = "Yes, Reject";
 
     Swal.fire({
@@ -226,6 +229,9 @@ const InfoTable = ({
       cancelButtonClass: 'btn btn-secondary',
       input: 'text',
       inputPlaceholder: 'Enter reason for rejection',
+      inputAttributes: {
+        style: 'margin: 10px auto; padding: 10px; border-radius: 5px; display: block;', 
+      },
       inputValidator: (value) => {
 
         if (!value) {
@@ -311,6 +317,9 @@ const InfoTable = ({
       cancelButtonClass: 'btn btn-secondary',
       input: 'text',
       inputPlaceholder: 'Enter reason for rejection',
+      inputAttributes: {
+        style: 'margin: 10px auto; padding: 10px; border-radius: 5px; display: block;', 
+      },
       inputValidator: (value) => {
 
         if (!value) {

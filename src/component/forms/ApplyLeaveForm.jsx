@@ -136,17 +136,17 @@ const ApplyLeaveForm = () => {
     leave_type_obj?.weekend_between_leave === true
       ? setWeekOffDays([])
       : !!thisEmpWS &&
-        setWeekOffDays(
-          thisEmpWS.workday
+      setWeekOffDays(
+        thisEmpWS.workday
 
-            .map((d) => {
-              if (d.is_day_on === false) {
-                return d.day_id;
-              }
-              return null;
-            })
-            .filter((day_id) => day_id !== null)
-        );
+          .map((d) => {
+            if (d.is_day_on === false) {
+              return d.day_id;
+            }
+            return null;
+          })
+          .filter((day_id) => day_id !== null)
+      );
 
     leave_type_obj?.holiday_between_leave === true
       ? setHolidayDays([])
@@ -170,14 +170,14 @@ const ApplyLeaveForm = () => {
   const handleMultiDayChange = (dates, dateStrings, daysCount) => {
     let startDate =
       dateStrings[0] === "" ||
-      dateStrings[0] === null ||
-      dateStrings[0] === undefined
+        dateStrings[0] === null ||
+        dateStrings[0] === undefined
         ? null
         : dateStrings[0];
     let endDate =
       dateStrings[1] === "" ||
-      dateStrings[1] === null ||
-      dateStrings[1] === undefined
+        dateStrings[1] === null ||
+        dateStrings[1] === undefined
         ? null
         : dateStrings[1];
 
@@ -413,8 +413,8 @@ const ApplyLeaveForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.leave_type &&
-                          FormikForm.errors.leave_type
+                            FormikForm.touched.leave_type &&
+                            FormikForm.errors.leave_type
                             ? "red !important"
                             : provided.borderColor,
                       }),
@@ -422,8 +422,8 @@ const ApplyLeaveForm = () => {
                     value={
                       leaveapplyObj?.leave_type
                         ? leaveType.find(
-                            (d) => d.id === leaveapplyObj?.leave_type
-                          )
+                          (d) => d.id === leaveapplyObj?.leave_type
+                        )
                         : []
                     }
                     onChange={handleLeaveTypeChange}
@@ -431,13 +431,13 @@ const ApplyLeaveForm = () => {
                     className="basic-multi-select"
                     invalid={
                       FormikForm.touched.leave_type &&
-                      FormikForm.errors.leave_type
+                        FormikForm.errors.leave_type
                         ? true
                         : false
                     }
                   />
                   {FormikForm.touched.leave_type &&
-                  FormikForm.errors.leave_type ? (
+                    FormikForm.errors.leave_type ? (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.leave_type}
                     </div>
@@ -477,19 +477,19 @@ const ApplyLeaveForm = () => {
                         value={
                           !!leaveapplyObj?.start && !!leaveapplyObj?.end
                             ? [
-                                dayjs(
-                                  ConvertDateFormat(
-                                    ConvertISODateFormat(leaveapplyObj?.start)
-                                  ),
-                                  DateFormat
+                              dayjs(
+                                ConvertDateFormat(
+                                  ConvertISODateFormat(leaveapplyObj?.start)
                                 ),
-                                dayjs(
-                                  ConvertDateFormat(
-                                    ConvertISODateFormat(leaveapplyObj?.end)
-                                  ),
-                                  DateFormat
+                                DateFormat
+                              ),
+                              dayjs(
+                                ConvertDateFormat(
+                                  ConvertISODateFormat(leaveapplyObj?.end)
                                 ),
-                              ]
+                                DateFormat
+                              ),
+                            ]
                             : null
                         }
                       />
@@ -517,8 +517,8 @@ const ApplyLeaveForm = () => {
                       value={
                         leaveapplyObj?.day_type
                           ? day_type.find(
-                              (d) => d.id === leaveapplyObj?.day_type
-                            )
+                            (d) => d.id === leaveapplyObj?.day_type
+                          )
                           : []
                       }
                       onChange={handleDayType}
@@ -529,69 +529,126 @@ const ApplyLeaveForm = () => {
 
               {!!selectedLeaveTypeObj?.unit &&
                 selectedLeaveTypeObj?.unit === leave_type_hour_unit && (
-                  <Col lg={12}>
-                    <div className="row">
-                      <div className="input-group">
-                        <div className="input-group">
-                          <Label className="form-label">
-                            Select Start And End Hour
-                          </Label>
-                        </div>
-                        <Col>
-                          <DatePicker
-                            name="start"
-                            showTime={{ minuteStep: 30 }}
-                            format={DateTimeFormat}
-                            disabledDate={disabledDate}
-                            onChange={handleFromDateChange}
-                            value={
-                              !!leaveapplyObj?.start
-                                ? dayjs(
-                                    ConvertToDateTimeFormat(
-                                      ConvertToISODateTimeFormat(
-                                        leaveapplyObj?.start
-                                      )
-                                    ),
-                                    DateTimeFormat
-                                  )
-                                : null
-                            }
-                          />
-                        </Col>
-                        <Col lg={4}>
-                          <Label className="form-label"> To </Label>
-                        </Col>
-                        <Col mg={3}>
-                          <DatePicker
-                            name="end"
-                            showTime={{ minuteStep: 30 }}
-                            format={DateTimeFormat}
-                            disabledDate={disabledDate}
-                            onChange={handleToDateChange}
-                            value={
-                              !!leaveapplyObj?.end
-                                ? dayjs(
-                                    ConvertToDateTimeFormat(
-                                      ConvertToISODateTimeFormat(
-                                        leaveapplyObj?.end
-                                      )
-                                    ),
-                                    DateTimeFormat
-                                  )
-                                : null
-                            }
-                          />
-
-                          <span className="input-group-text">{hourDiff} h</span>
-                        </Col>
-                      </div>
-                      <div id="passwordHelpBlock" className="form-text">
-                        Please select Date and Hour
-                      </div>
+                  <Col lg={16}>
+                  <div className="row">
+                    <Col md={4} lg={4} xxl={4}>
+                      <DatePicker
+                        name="start"
+                        showTime={{ minuteStep: 30 }}
+                        format={DateTimeFormat}
+                        disabledDate={disabledDate}
+                        onChange={handleFromDateChange}
+                        value={
+                          !!leaveapplyObj?.start
+                            ? dayjs(
+                                ConvertToDateTimeFormat(
+                                  ConvertToISODateTimeFormat(leaveapplyObj?.start)
+                                ),
+                                DateTimeFormat
+                              )
+                            : null
+                        }
+                      />
+                    </Col>
+                    <Col md={2} lg={2} xxl={2}>
+                      <Label className="form-label">To</Label>
+                    </Col>
+                    <Col md={4} lg={4} xxl={4}>
+                      <DatePicker
+                        name="end"
+                        showTime={{ minuteStep: 30 }}
+                        format={DateTimeFormat}
+                        disabledDate={disabledDate}
+                        onChange={handleToDateChange}
+                        value={
+                          !!leaveapplyObj?.end
+                            ? dayjs(
+                                ConvertToDateTimeFormat(
+                                  ConvertToISODateTimeFormat(leaveapplyObj?.end)
+                                ),
+                                DateTimeFormat
+                              )
+                            : null
+                        }
+                      />
+                    </Col>
+                    <Col md={2} lg={2} xxl={2}>
+                      <span className="input-group-text">{hourDiff} h</span>
+                    </Col>
+                    <div id="passwordHelpBlock" className="form-text">
+                      Please select Date and Hour
                     </div>
-                  </Col>
-                )}
+                  </div>
+                </Col>
+                
 
+                )}
+              {/* <Col md={6} lg={6} xxl={6}>
+                                <div>
+                                  <Label
+                                    htmlFor="location"
+                                    className="form-label"
+                                  >
+                                    Location
+                                  </Label>
+                                  <div>
+                                    <Select
+                                      id="location"
+                                      isMulti={false}
+                                      // options={location_option || []}
+                                      // value={
+                                      //   (payrollobj.general.location &&
+                                      //     location_option.find(
+                                      //       (e) =>
+                                      //         e.value ===
+                                      //         payrollobj.general.location
+                                      //     )) ||
+                                      //   []
+                                      // }
+                                      className="basic-multi-select "
+                                    />
+                                  </div>
+                                  <div
+                                    id="passwordHelpBlock"
+                                    className="form-text mb-3"
+                                  >
+                                    Select Payroll Country.
+                                  </div>
+                                </div>
+                              </Col> */}
+              {/* <Col md={6} lg={6} xxl={6}>
+                                <div>
+                                  <Label
+                                    htmlFor="currency"
+                                    className="form-label"
+                                  >
+                                    Currency
+                                  </Label>
+                                  <div>
+                                    <Select
+                                      id="currency"
+                                      isMulti={false}
+                                      // options={currency_option || []}
+                                      // value={
+                                      //   (payrollobj.general.currency &&
+                                      //     currency_option.find(
+                                      //       (e) =>
+                                      //         e.value ===
+                                      //         payrollobj.general.currency
+                                      //     )) ||
+                                      //   []
+                                      // }
+                                      className="basic-multi-select "
+                                    />
+                                  </div>
+                                  <div
+                                    id="passwordHelpBlock"
+                                    className="form-text mb-3"
+                                  >
+                                    Select Payroll Currency.
+                                  </div>
+                                </div>
+                              </Col> */}
               <Col lg={12}>
                 <label htmlFor="reason" className="form-label">
                   Reason *

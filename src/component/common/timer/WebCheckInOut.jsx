@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button, Col } from "reactstrap";
+import { Button, Col, Spinner } from "reactstrap";
 import { Api } from "../../../common/api/Api";
 import { useDispatch, useSelector } from "react-redux";
 import { PostApi } from "../../../common/api/PostApi";
@@ -7,6 +7,8 @@ import { toast } from "react-toastify";
 import { GetTotalWorkDuration } from "../../../common/js/GetTotalWorkDuration";
 import { setTimer } from "../../../redux/reducers/ChildReducer/ClockReducer";
 const WebCheckInOut = ({ showTimer }) => {
+  const [loading, setLoading] = useState(false);
+  const [currentlyCheckedIn, setCurrentlyCheckedIn] = useState(false);
   const { total_seconds, currently_checked_in } = useSelector(
     (state) => state.ClockReducer
   );
@@ -29,6 +31,7 @@ const WebCheckInOut = ({ showTimer }) => {
   const dispatch = useDispatch();
 
   const handleToggleClick = async () => {
+    setLoading(true);
     let payload = {
       entry_type: currently_checked_in === true ? 2 : 1,
       punched_by: 1,
@@ -42,10 +45,12 @@ const WebCheckInOut = ({ showTimer }) => {
 
     if (Api.status && Api.status === 200) {
       toast.success(Api?.data?.message);
+      setCurrentlyCheckedIn(!currently_checked_in);
       GetTotalWorkDuration(dispatch);
     } else {
       toast.error(Api?.data?.message);
     }
+    setLoading(false);
   };
 
   const formatTime = (seconds) => {
@@ -88,39 +93,41 @@ const WebCheckInOut = ({ showTimer }) => {
 
   return (
     <Col xxl={6} md={6}>
-      <Button
-        outline
-        className={`custom-toggle ${
-          currently_checked_in && currently_checked_in === true
-            ? "btn-outline-warning"
-            : "btn-outline-secondary"
-        }`}
-        onClick={handleToggleClick}
-      >
-        <span className="icon-on">
-          <i className="ri-time-line align-bottom me-1"></i>{" "}
-          {currently_checked_in && currently_checked_in === true
-            ? "Check OUT"
-            : "Check IN"}
-        </span>
-        <span className="icon-off">
-          <i className="ri-time-fill align-bottom me-1"></i>{" "}
-          {currently_checked_in && currently_checked_in === true
-            ? "Check IN"
-            : "Check OUT"}
-        </span>
-      </Button>
+      {loading ? (
+        <Button color="primary" className="btn-load" outline>
+          <span className="d-flex align-items-center">
+            <Spinner size="sm" className="flex-shrink-0"> Loading... </Spinner>
+            <span className="flex-grow-1 ms-2">
+              Loading...
+            </span>
+          </span>
+        </Button>
+      ) : (
+        <Button
+          color={currently_checked_in ? "warning" : "secondary"}
+          className="custom-toggle"
+          onClick={handleToggleClick}
+          outline
+        >
+          <span className="d-flex align-items-center">
+            {currently_checked_in ? (
+              <>
+                <i className="ri-time-line align-bottom me-1" />
+                <span className="flex-grow-1 ms-2">Check Out</span>
+              </>
+            ) : (
+              <span className="icon-on">
+                <i className="ri-time-line align-bottom me-1" />{' '}
+                {currently_checked_in ? 'Check OUT' : 'Check IN'}
+              </span>
+            )}
+          </span>
+        </Button>
+      )}
 
       {showTimer && (
-        <span
-          className="ms-1 mt-1"
-          style={{
-            fontSize: "initial",
-            fontWeight: 700,
-          }}
-        >
-          &nbsp;
-          <span className="timer">{formatTime(total_seconds)}</span>
+        <span className="ms-1 mt-1" style={{ fontSize: 'initial', fontWeight: 700 }}>
+          &nbsp;<span className="timer">{formatTime(total_seconds)}</span>
         </span>
       )}
     </Col>
