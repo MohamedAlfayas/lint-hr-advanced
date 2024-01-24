@@ -69,16 +69,15 @@ const LeaveApproval = () => {
   const additionalColumn = [
     {
       Header: "Name",
-      accessor: "employee",
+      accessor: "employee_id",
       filterable: false,
-      id: "employee",
+      id: "employee_id",
 
       accessor: (obj) => {
-        const EmployeeData = GetLocalStorageData("employee");
+        const EmployeeData = GetLocalStorageData("employee") || [];
         const thisEmployee = EmployeeData.find(
-          (data) => data.id === obj.employee
+          (data) => data.id === obj.employee_id
         );
-        console.log("This Emp = ", thisEmployee);
         return thisEmployee.profile_url ? (
           <div className="d-flex gap-2 align-items-center">
             <div className="flex-shrink-0">
