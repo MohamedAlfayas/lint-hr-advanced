@@ -463,7 +463,7 @@ const ApplyLeaveForm = () => {
 
               {!!selectedLeaveTypeObj?.unit &&
                 selectedLeaveTypeObj?.unit === leave_type_day_unit && (
-                  <Col>
+                  <Col lg={10}>
                     <div className="input-group">
                       <div className="input-group">
                         <Label className="form-label">Select Date</Label>
@@ -494,18 +494,44 @@ const ApplyLeaveForm = () => {
                         }
                       />
                       <span className="input-group-text">{daysCount} Days</span>
-                    </div>
-
+                   
                     <div id="passwordHelpBlock" className="form-text">
                       Please select Start & End Date
                     </div>
+                    {(daysCount === 1 || daysCount === 0.5) && (
+              
+                  <div className="input-group">
+                    <Col lg={12}>
+                      <Label className="form-label">Select Day Type</Label>
+                    </Col>
+                    <Select
+                      name="day_type"
+                      isMulti={false}
+                      options={day_type || []}
+                      placeholder="Select Day Type"
+                      className="basic-multi-select"
+                      value={
+                        leaveapplyObj?.day_type
+                          ? day_type.find(
+                            (d) => d.id === leaveapplyObj?.day_type
+                          )
+                          : []
+                      }
+                      onChange={handleDayType}
+                    />
+                  </div>
+          
+              )}
+               </div>
+
                   </Col>
+                  
                 )}
 
-              {(daysCount === 1 || daysCount === 0.5) && (
+              {/* {(daysCount === 1 || daysCount === 0.5) && (
                 <Col>
                   <div className="input-group">
-                    <Col>
+                    <Col lg={12}>
                       <Label className="form-label">Select Day Type</Label>
                     </Col>
                     <Select
@@ -525,15 +551,16 @@ const ApplyLeaveForm = () => {
                     />
                   </div>
                 </Col>
-              )}
+              )} */}
 
               {!!selectedLeaveTypeObj?.unit &&
                 selectedLeaveTypeObj?.unit === leave_type_hour_unit && (
-                  <Col lg={16}>
+                  <Col lg={12}>
                   <div className="row">
                     <Col md={4} lg={4} xxl={4}>
                       <DatePicker
                         name="start"
+                        placeholder="Select Start Time"
                         showTime={{ minuteStep: 30 }}
                         format={DateTimeFormat}
                         disabledDate={disabledDate}
@@ -548,14 +575,13 @@ const ApplyLeaveForm = () => {
                               )
                             : null
                         }
-                      />
+                      />    
                     </Col>
-                    <Col md={2} lg={2} xxl={2}>
-                      <Label className="form-label">To</Label>
-                    </Col>
+        
                     <Col md={4} lg={4} xxl={4}>
                       <DatePicker
                         name="end"
+                        placeholder="Select End Time"
                         showTime={{ minuteStep: 30 }}
                         format={DateTimeFormat}
                         disabledDate={disabledDate}
@@ -573,7 +599,7 @@ const ApplyLeaveForm = () => {
                       />
                     </Col>
                     <Col md={2} lg={2} xxl={2}>
-                      <span className="input-group-text">{hourDiff} h</span>
+                    <span className="input-group-text" style={{ fontSize: '12px' }}>{hourDiff} h</span>
                     </Col>
                     <div id="passwordHelpBlock" className="form-text">
                       Please select Date and Hour
