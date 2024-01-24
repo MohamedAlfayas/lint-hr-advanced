@@ -22,9 +22,12 @@ import {
 } from "../../../common/constant/Constants";
 import LeaveApprovalFilter from "../tableFilter/LeaveApprovalFilter";
 import LeaveTypeFilter from "../tableFilter/LeaveTypeFilter";
+import { useSelector } from "react-redux";
 
 const TableContainer = ({
   columns,
+  search,
+  setSearch,
   data,
   formname,
   isGlobalSearch,
@@ -37,6 +40,10 @@ const TableContainer = ({
   divClass,
   SearchPlaceholder,
 }) => {
+  const [tableData, setTableData] = useState([]);
+
+  const { table_data } = useSelector((state) => state.TableDataReducer);
+
   const {
     getTableProps,
     getTableBodyProps,
@@ -78,9 +85,6 @@ const TableContainer = ({
     usePagination,
     useRowSelect
   );
-  const [search, setSearch] = useState("");
-
-  console.log("Search", search);
 
   const generateSortingIndicator = (column) => {
     return column.isSorted ? (
