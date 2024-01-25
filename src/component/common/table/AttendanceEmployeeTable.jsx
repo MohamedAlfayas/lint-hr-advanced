@@ -39,11 +39,15 @@ const AttendanceEmployeeTable = () => {
   const [notes_modal, setNotes_modal] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedRowDataForEdit, setSelectedRowDataForEdit] = useState(null);
-  const [selectedPaidHours, setSelectedPaidHours] = useState({ paid_hours_hr: null });
-  const [selectedPaidMinutes, setSelectedPaidMinutes] = useState({ paid_hours_min: null });
+  const [selectedPaidHours, setSelectedPaidHours] = useState({
+    paid_hours_hr: null,
+  });
+  const [selectedPaidMinutes, setSelectedPaidMinutes] = useState({
+    paid_hours_min: null,
+  });
   const [selectedOtHours, setSelectedOtHours] = useState({ ot_hr: "00" });
   const [selectedOtMinutes, setSelectedOtMinutes] = useState({ ot_min: "00" });
-  const [totalPaidHours, setTotalPaidHours] = useState('');
+  const [totalPaidHours, setTotalPaidHours] = useState("");
   const [selectedNotes, setSelectedNotes] = useState({});
 
   const { individual_attendance_report_data } = useSelector(
@@ -65,26 +69,26 @@ const AttendanceEmployeeTable = () => {
 
   //Edit Modal Function
   const openEditModal = (rowData) => {
-    console.log('rowdataa ===', rowData);
-  
+    console.log("rowdataa ===", rowData);
+
     const paidHrFormatted = ConvertSecondsToTime(rowData.paid_hr_in_seconds);
     const otHrnInSeconds = rowData.ot_hr_in_seconds;
-  
+
     setEditModalOpen(true);
     setSelectedRowDataForEdit(rowData);
-  
+
     setSelectedPaidHours({
       paid_hours_hr: paidHrFormatted.split(":")[0],
     });
     setSelectedPaidMinutes({
-      paid_hours_min: paidHrFormatted.split(":")[1].split(' ')[0],
+      paid_hours_min: paidHrFormatted.split(":")[1].split(" ")[0],
     });
-  
+
     if (otHrnInSeconds === 0) {
       setSelectedOtHours({ ot_hr: "00" });
       setSelectedOtMinutes({ ot_min: "00" });
     }
-  
+
     console.log("notes", rowData.notes);
   };
 
@@ -92,7 +96,6 @@ const AttendanceEmployeeTable = () => {
     setSelectedRowDataForEdit(null);
     setEditModalOpen(false);
   };
-
 
   //Calculate Total Hours Paid+Ot
 
@@ -103,35 +106,48 @@ const AttendanceEmployeeTable = () => {
     const otHoursHr = selectedOtHours.ot_hr || 0;
     const otHoursMin = selectedOtMinutes.ot_min || 0;
 
-    const startTime = new Date(0, 0, 0, parseInt(paidHoursHr), parseInt(paidHoursMin));
-    const endTime = new Date(0, 0, 0, parseInt(otHoursHr), parseInt(otHoursMin));
+    const startTime = new Date(
+      0,
+      0,
+      0,
+      parseInt(paidHoursHr),
+      parseInt(paidHoursMin)
+    );
+    const endTime = new Date(
+      0,
+      0,
+      0,
+      parseInt(otHoursHr),
+      parseInt(otHoursMin)
+    );
 
-    console.log('start date ===', startTime);
-    console.log('end date ===', endTime);
+    console.log("start date ===", startTime);
+    console.log("end date ===", endTime);
 
     const totalHours = startTime.getHours() + endTime.getHours();
     const totalMinutes = startTime.getMinutes() + endTime.getMinutes();
 
     const totalHoursInMinutes = totalHours * 60 + totalMinutes;
 
-    if (totalHoursInMinutes > 1440) { 
-      toast.error('Total hours exceeds 24 hours');
+    if (totalHoursInMinutes > 1440) {
+      toast.error("Total hours exceeds 24 hours");
       return;
-  }
+    }
 
     const carryOverHours = Math.floor(totalMinutes / 60);
     const remainingMinutes = totalMinutes % 60;
 
-    const formattedTotalHours = String(totalHours + carryOverHours).padStart(2, '0');
-    const formattedRemainingMinutes = String(remainingMinutes).padStart(2, '0');
+    const formattedTotalHours = String(totalHours + carryOverHours).padStart(
+      2,
+      "0"
+    );
+    const formattedRemainingMinutes = String(remainingMinutes).padStart(2, "0");
 
     const totalPaidHours = `${formattedTotalHours}:${formattedRemainingMinutes} Hr`;
 
-
     setTotalPaidHours(totalPaidHours);
-};
+  };
   const handlePaidHoursHrChange = (selectedOption) => {
-
     setSelectedPaidHours({
       ...selectedPaidHours,
       paid_hours_hr: selectedOption,
@@ -151,7 +167,7 @@ const AttendanceEmployeeTable = () => {
       ot_hr: selectedOption,
     });
   };
- 
+
   const handleOTMinutesChange = (selectedOption) => {
     setSelectedOtMinutes({
       ...selectedOtMinutes,
@@ -170,7 +186,12 @@ const AttendanceEmployeeTable = () => {
 
   useEffect(() => {
     calculateTotalPaidHours();
-  }, [selectedPaidHours, selectedPaidMinutes, selectedOtHours, selectedOtMinutes]);
+  }, [
+    selectedPaidHours,
+    selectedPaidMinutes,
+    selectedOtHours,
+    selectedOtMinutes,
+  ]);
 
   const hourOptions = Array.from({ length: 24 }, (_, i) => ({
     label: i.toString().padStart(2, "0"),
@@ -196,10 +217,10 @@ const AttendanceEmployeeTable = () => {
   //     totalPaidHours: totalPaidHours,
   //     notes: selectedNotes,
   //   };
-  
+
   //   // Log the data to the console
   //   console.log('Saved Data:', savedData);
-  
+
   //   // Add any additional logic to save the data to your backend or perform other actions as needed.
   // };
 
@@ -541,13 +562,44 @@ const AttendanceEmployeeTable = () => {
     let at_ws_data = ws_data.find(function (i) {
       return i.id == rowData.work_schedule_id;
     });
+    const date = new Date(rowData?.date);
+    const dayOfWeek = new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+    }).format(date);
 
-    let fullday_hr = at_ws_data?.fullday_hr || "";
-    let fullday_min = at_ws_data?.fullday_min || "";
+    const work_hr = at_ws_data?.workday.find(
+      (val) => val.weekday.toLowerCase() === dayOfWeek.toLowerCase()
+    );
+    let total_work_duration = work_hr ? work_hr.total_work_duration : 0;
+
+    let work_schedule_hr = ConvertSecondsToTime(total_work_duration);
 
     return (
       <Cell {...props} className="link-group">
-        {fullday_hr} : {fullday_min} Hr
+        {work_schedule_hr}
+      </Cell>
+    );
+  };
+
+  const BreakHourCell = ({ rowData, dataKey, ...props }) => {
+    let at_ws_data = ws_data.find(function (i) {
+      return i.id == rowData.work_schedule_id;
+    });
+    const date = new Date(rowData?.date);
+    const dayOfWeek = new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+    }).format(date);
+
+    const work_hr = at_ws_data?.workday.find(
+      (val) => val.weekday.toLowerCase() === dayOfWeek.toLowerCase()
+    );
+    let break_hr_duration = work_hr ? work_hr.break_duration : 0;
+
+    let break_schedule_hr = ConvertSecondsToTime(break_hr_duration);
+
+    return (
+      <Cell {...props} className="link-group">
+        {break_schedule_hr}
       </Cell>
     );
   };
@@ -566,7 +618,6 @@ const AttendanceEmployeeTable = () => {
       </Label>
     );
   };
-
 
   const SecondsToTimeCell = ({ rowData, dataKey, ...props }) => {
     return (
@@ -666,7 +717,7 @@ const AttendanceEmployeeTable = () => {
         </Column>
         <Column width={100}>
           <HeaderCell>Break</HeaderCell>
-          <SecondsToTimeCell dataKey="total_break_duration" />
+          <BreakHourCell dataKey="total_break_duration" />
         </Column>
         <Column width={125}>
           <HeaderCell>OT</HeaderCell>
@@ -690,10 +741,7 @@ const AttendanceEmployeeTable = () => {
 
           <Cell style={{ padding: "6px" }}>
             {(rowData) => (
-              <Button
-                appearance="link"
-                onClick={() => openEditModal(rowData)}
-              >
+              <Button appearance="link" onClick={() => openEditModal(rowData)}>
                 Edit
               </Button>
             )}
@@ -701,30 +749,24 @@ const AttendanceEmployeeTable = () => {
         </Column>
       </Table>
       {/* Edit Modal */}
-      <Modal
-        isOpen={editModalOpen}
-        toggle={closeEditModal}
-        centered
-      >
-        <ModalHeader>
-
-
-        </ModalHeader>
+      <Modal isOpen={editModalOpen} toggle={closeEditModal} centered>
         <ModalBody className="text-left">
           {/* Display the values based on selectedRowDataForEdit */}
           {selectedRowDataForEdit && (
             <div>
-
               <Col md={12} lg={12} xxl={12}>
                 <Row className="mb-2">
-                  <Col>
-                    <Label htmlFor="calculation" className="form-label">
+                  <ModalHeader>
+                    <Col>
                       Date:
-                    </Label>
-                  </Col>
-                  <Col>
-                    <Label>{format(new Date(selectedRowDataForEdit.date), "dd MMM, yyyy")}</Label>
-                  </Col>
+                      <Label>
+                        {format(
+                          new Date(selectedRowDataForEdit.date),
+                          "dd MMM, yyyy"
+                        )}
+                      </Label>
+                    </Col>
+                  </ModalHeader>
                 </Row>
               </Col>
               <Col md={12} lg={12} xxl={12}>
@@ -735,7 +777,13 @@ const AttendanceEmployeeTable = () => {
                     </Label>
                   </Col>
                   <Col>
-                    <Label>  <WorkScheduleData rowData={selectedRowDataForEdit} dataKey="work_schedule_id" /></Label>
+                    <Label>
+                      {" "}
+                      <WorkScheduleData
+                        rowData={selectedRowDataForEdit}
+                        dataKey="work_schedule_id"
+                      />
+                    </Label>
                   </Col>
                 </Row>
               </Col>
@@ -747,7 +795,12 @@ const AttendanceEmployeeTable = () => {
                     </Label>
                   </Col>
                   <Col>
-                    <Label> {ConvertSecondsToTime(selectedRowDataForEdit.total_work_duration)}</Label>
+                    <Label>
+                      {" "}
+                      {ConvertSecondsToTime(
+                        selectedRowDataForEdit.total_work_duration
+                      )}
+                    </Label>
                   </Col>
                 </Row>
               </Col>
@@ -759,7 +812,6 @@ const AttendanceEmployeeTable = () => {
                     </Label>
                   </Col>
                   <Col>
-
                     <b>H</b>{" "}
                     <Select
                       id="paid_hours_hr"
@@ -767,10 +819,10 @@ const AttendanceEmployeeTable = () => {
                       placeholder={"00"}
                       options={hourOptions || []}
                       value={hourOptions.find(
-                        (option) => option.value === selectedPaidHours.paid_hours_hr
+                        (option) =>
+                          option.value === selectedPaidHours.paid_hours_hr
                       )}
                       onChange={handlePaidHoursHrChange}
-
                     />
                     <b className="mt-1 me-1 ms-1">M</b>
                     <Select
@@ -779,7 +831,8 @@ const AttendanceEmployeeTable = () => {
                       placeholder={"00"}
                       options={minuteOptions || []}
                       value={minuteOptions.find(
-                        (option) => option.value === selectedPaidMinutes.paid_hours_min
+                        (option) =>
+                          option.value === selectedPaidMinutes.paid_hours_min
                       )}
                       onChange={handlePaidHoursMinChange}
                     />
@@ -794,16 +847,14 @@ const AttendanceEmployeeTable = () => {
                     </Label>
                   </Col>
                   <Col>
-
-                    <b>H</b> {" "}
+                    <b>H</b>{" "}
                     <Select
                       id="ot_hr"
                       name="ot_hr"
                       placeholder={"00"}
                       options={hourOptions}
                       value={hourOptions.find(
-                        (option) =>
-                          option.value === selectedOtHours.ot_hr
+                        (option) => option.value === selectedOtHours.ot_hr
                       )}
                       onChange={handleOTHoursChange}
                     />
@@ -814,8 +865,7 @@ const AttendanceEmployeeTable = () => {
                       placeholder={"00"}
                       options={minuteOptions}
                       value={minuteOptions.find(
-                        (option) =>
-                          option.value === selectedOtMinutes.ot_min
+                        (option) => option.value === selectedOtMinutes.ot_min
                       )}
                       onChange={handleOTMinutesChange}
                     />
@@ -868,7 +918,8 @@ const AttendanceEmployeeTable = () => {
                   data-bs-dismiss="modal"
                   // onClick={handleSaveButtonClick}
                 >
-                  <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i> Save
+                  <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                  Save
                 </button>
               </div>
             </div>
@@ -899,15 +950,15 @@ const AttendanceEmployeeTable = () => {
                     let info =
                       parseInt(data.entry_type) === 1
                         ? {
-                          class: "success",
-                          text: "IN",
-                          iconClass: "right",
-                        }
+                            class: "success",
+                            text: "IN",
+                            iconClass: "right",
+                          }
                         : {
-                          class: "warning",
-                          text: "Out",
-                          iconClass: "left",
-                        };
+                            class: "warning",
+                            text: "Out",
+                            iconClass: "left",
+                          };
                     return (
                       <div className={`acitivity-item  d-flex ${py_class}`}>
                         <div className="flex-shrink-0 avatar-xs acitivity-avatar">

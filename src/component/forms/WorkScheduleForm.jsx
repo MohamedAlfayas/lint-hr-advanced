@@ -43,13 +43,13 @@ defineElement(loadAnimation);
 const WorkScheduleForm = () => {
   const dispatch = useDispatch();
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-  //const [workScheduleData, setWorkScheduleData] = useState({});
+  const [workScheduleData, setWorkScheduleData] = useState({});
   const [activeArrowTab, setactiveArrowTab] = useState(4);
   useEffect(() => {
-    //setWorkScheduleData(form_obj);
+    setWorkScheduleData(form_obj);
   }, [form_obj]);
 
-  const [workScheduleData, setWorkScheduleData] = useState({
+  const [workScheduleDatas, setWorkScheduleDatas] = useState({
     id: 0,
     name: "",
     description: "",
@@ -208,7 +208,28 @@ const WorkScheduleForm = () => {
       var DiffSec = Temp2 - Temp1;
       console.log(DiffSec);
 
-      workScheduleData.workday[i].total_work_duration = DiffSec;
+      const startDate = new Date(
+        2020,
+        0,
+        1,
+        obj.workday[i].s_hr,
+        obj.workday[i].s_min
+      );
+
+      const endDate = new Date(
+        2020,
+        0,
+        1,
+        obj.workday[i].e_hr,
+        obj.workday[i].e_min
+      );
+      const secondDifference =
+        endDate >= startDate
+          ? (endDate - startDate) / 1000
+          : (endDate - new Date(2020, 0, 1, 0, 0).getTime()) / 1000 +
+            (new Date(2020, 0, 2, 0, 0) - startDate) / 1000;
+
+      workScheduleData.workday[i].total_work_duration = secondDifference;
 
       // setWorkScheduleData({
       //   ...workScheduleData,
@@ -231,7 +252,7 @@ const WorkScheduleForm = () => {
 
       // setWorkScheduleData({
       //   ...workScheduleData,
-      //   total_work_duration: DiffSec,
+      //   total_work_duration: secondDifference,
       // });
 
       var mins = Math.floor(DiffSec / 60000);
@@ -280,8 +301,8 @@ const WorkScheduleForm = () => {
       name: Yup.string().trim().required("Please Enter Work Schedule Name"),
     }),
     onSubmit: async (values) => {
-      e.preventDefault();
       console.log("employee data = ", workScheduleData);
+      console.log("SUCCESSSS !!!! Formik Values = ", values);
       toggleArrowTab(activeArrowTab + 1);
       dispatch(setLoaderVisible(true));
 
@@ -499,7 +520,10 @@ const WorkScheduleForm = () => {
                             options={hourOptions}
                             value={hourOptions.find(
                               (option) =>
-                                option.value === workScheduleData.fullday_hr
+                                option.value ===
+                                toSecondsHr(
+                                  workScheduleData.fullday_work_duration
+                                ).hr
                             )}
                             onChange={(e) => {
                               setWorkScheduleData({
