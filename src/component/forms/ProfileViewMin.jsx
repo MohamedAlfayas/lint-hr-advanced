@@ -90,6 +90,7 @@ const ProfileViewMin = () => {
             src={profileObj.profile_url ? profileObj.profile_url : DummyUserImg}
             alt="Employee"
             className="avatar-lg img-thumbnail rounded-circle mx-auto border-success"
+            style={{ objectFit: "cover" }}
           />
           <div className="mt-3">
             <h5 className="fs-15 profile-name">

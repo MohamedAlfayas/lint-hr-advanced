@@ -44,7 +44,6 @@ const EmployeeView = () => {
 
   const navigate = useNavigate();
 
-
   useEffect(() => {
     const EmployeeData = GetLocalStorageData("employee") || [];
     if (id && EmployeeData.length) {
@@ -91,6 +90,7 @@ const EmployeeView = () => {
                 src={
                   profileObj.profile_url ? profileObj.profile_url : DummyUserImg
                 }
+                style={{ objectFit: "cover" }}
                 alt=""
                 className="profile-wid-img"
               />
@@ -106,6 +106,7 @@ const EmployeeView = () => {
                         ? profileObj.profile_url
                         : DummyUserImg
                     }
+                    style={{ objectFit: "cover" }}
                     alt="Available"
                     className="avatar-lg img-thumbnail rounded-circle mx-auto border-success"
                   />

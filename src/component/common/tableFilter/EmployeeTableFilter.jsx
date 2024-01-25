@@ -12,10 +12,11 @@ const EmployeeTableFilter = () => {
     []
   );
   const manager_options = useMemo(() => GetLocalStorageData("employee") || []);
+  const role_options = useMemo(() => GetLocalStorageData("role") || []);
 
   return (
     <React.Fragment>
-      <Col md={4}>
+      <Col md={2}>
         <Select
           id="department_filter"
           name="department_filter"
@@ -27,7 +28,19 @@ const EmployeeTableFilter = () => {
         />
       </Col>
 
-      <Col md={4}>
+      <Col md={2}>
+        <Select
+          id="role_filter"
+          name="role_filter"
+          innerRef={inputRef}
+          isMulti={true}
+          options={role_options || []}
+          className="basic-multi-select"
+          placeholder="Select Role"
+        />
+      </Col>
+
+      <Col md={2}>
         <Select
           id="manager_filter"
           name="manager_filter"
