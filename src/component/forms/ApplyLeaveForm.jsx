@@ -462,96 +462,68 @@ const ApplyLeaveForm = () => {
               </Col>
 
               {!!selectedLeaveTypeObj?.unit &&
-                selectedLeaveTypeObj?.unit === leave_type_day_unit && (
-                  <Col lg={10}>
-                    <div className="input-group">
-                      <div className="input-group">
-                        <Label className="form-label">Select Date</Label>
-                      </div>
-                      <RangePicker
-                        name="multiple_date"
-                        format={DateFormat}
-                        placeholder={["Start Date", "End Date"]}
-                        disabledDate={disabledDate}
-                        onChange={handleMultiDayChange}
-                        value={
-                          !!leaveapplyObj?.start && !!leaveapplyObj?.end
-                            ? [
-                              dayjs(
-                                ConvertDateFormat(
-                                  ConvertISODateFormat(leaveapplyObj?.start)
-                                ),
-                                DateFormat
-                              ),
-                              dayjs(
-                                ConvertDateFormat(
-                                  ConvertISODateFormat(leaveapplyObj?.end)
-                                ),
-                                DateFormat
-                              ),
-                            ]
-                            : null
-                        }
-                      />
-                      <span className="input-group-text">{daysCount} Days</span>
-                   
-                    <div id="passwordHelpBlock" className="form-text">
-                      Please select Start & End Date
-                    </div>
-                    {(daysCount === 1 || daysCount === 0.5) && (
-              
-                  <div className="input-group">
-                    <Col lg={12}>
-                      <Label className="form-label">Select Day Type</Label>
-                    </Col>
-                    <Select
-                      name="day_type"
-                      isMulti={false}
-                      options={day_type || []}
-                      placeholder="Select Day Type"
-                      className="basic-multi-select"
-                      value={
-                        leaveapplyObj?.day_type
-                          ? day_type.find(
-                            (d) => d.id === leaveapplyObj?.day_type
-                          )
-                          : []
-                      }
-                      onChange={handleDayType}
-                    />
-                  </div>
-          
-              )}
-               </div>
+  selectedLeaveTypeObj?.unit === leave_type_day_unit && (
+    <Col lg={10}>
+      <div className="input-group">
+        <div className="input-group">
+          <Label className="form-label">Select Date</Label>
+        </div>
+        <RangePicker
+          name="multiple_date"
+          format={DateFormat}
+          placeholder={["Start Date", "End Date"]}
+          disabledDate={disabledDate}
+          onChange={handleMultiDayChange}
+          value={
+            !!leaveapplyObj?.start && !!leaveapplyObj?.end
+              ? [
+                  dayjs(
+                    ConvertDateFormat(
+                      ConvertISODateFormat(leaveapplyObj?.start)
+                    ),
+                    DateFormat
+                  ),
+                  dayjs(
+                    ConvertDateFormat(
+                      ConvertISODateFormat(leaveapplyObj?.end)
+                    ),
+                    DateFormat
+                  ),
+                ]
+              : null
+          }
+        />
+        <span className="input-group-text">{daysCount} Days</span>
+        <div id="passwordHelpBlock" className="form-text">
+          Please select Start & End Date
+        </div>
+      </div>
 
-                  </Col>
-                  
-                )}
+      {(daysCount === 1 || daysCount === 0.5) && (
+        <div className="input-group">
+          <Col lg={12}>
+            <Label className="form-label">Select Day Type</Label>
+          </Col>
+          <Col lg={6}>
+            <Select
+              name="day_type"
+              isMulti={false}
+              options={day_type || []}
+              placeholder="Select Day Type"
+              className="basic-multi-select"
+              value={
+                leaveapplyObj?.day_type
+                  ? day_type.find((d) => d.id === leaveapplyObj?.day_type)
+                  : []
+              }
+              onChange={handleDayType}
+            />
+          </Col>
+        </div>
+      )}
+    </Col>
+  )}
 
-              {/* {(daysCount === 1 || daysCount === 0.5) && (
-                <Col>
-                  <div className="input-group">
-                    <Col lg={12}>
-                      <Label className="form-label">Select Day Type</Label>
-                    </Col>
-                    <Select
-                      name="day_type"
-                      isMulti={false}
-                      options={day_type || []}
-                      placeholder="Select Day Type"
-                      className="basic-multi-select"
-                      value={
-                        leaveapplyObj?.day_type
-                          ? day_type.find(
-                            (d) => d.id === leaveapplyObj?.day_type
-                          )
-                          : []
-                      }
-                      onChange={handleDayType}
-                    />
-                  </div>
-                </Col>
-              )} */}
 
               {!!selectedLeaveTypeObj?.unit &&
                 selectedLeaveTypeObj?.unit === leave_type_hour_unit && (

@@ -1,24 +1,31 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button, Card, CardBody } from "reactstrap";
 import WebCheckInOut from "../../component/common/timer/WebCheckInOut";
 import { useSelector } from "react-redux";
+import { Api } from "../../common/api/Api";
 const TimeTracking = () => {
-  const checkInOutToggle = (ele) => {
-    if (ele.closest("button").classList.contains("active")) {
-      ele.closest("button").classList.remove("active");
-      ele.closest("button").classList.remove("btn-outline-warning");
-      ele.closest("button").classList.add("btn-outline-secondary");
-    } else {
-      ele.closest("button").classList.remove("btn-outline-secondary");
-      ele.closest("button").classList.add("active");
-      ele.closest("button").classList.add("btn-outline-warning");
-    }
-  };
+  const [firstCheckInTime, setFirstCheckInTime] = useState(null);
+  // const checkInOutToggle = (ele) => {
+  //   if (ele.closest("button").classList.contains("active")) {
+  //     ele.closest("button").classList.remove("active");
+  //     ele.closest("button").classList.remove("btn-outline-warning");
+  //     ele.closest("button").classList.add("btn-outline-secondary");
+  //   } else {
+  //     ele.closest("button").classList.remove("btn-outline-secondary");
+  //     ele.closest("button").classList.add("active");
+  //     ele.closest("button").classList.add("btn-outline-warning");
+  //   }
+  // };
 
   const { total_seconds, currently_checked_in } = useSelector(
     (state) => state.ClockReducer
   );
 
+  const getCurrentDate = () => {
+    const currentDate = new Date();
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return currentDate.toLocaleDateString(undefined, options);
+  };
   const formatTime = (seconds) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -33,13 +40,31 @@ const TimeTracking = () => {
 
     return `${hDisplay} : ${mDisplay} : ${sDisplay}`;
   };
+  useEffect(() => {
+      
+      const fetchData = async () => {
+        try {
+          const data = await Api.get("/attendance/get-total-work-duration/");
+          console.log("RES = ", data.data.data.first_check_in_time);
+          const fetchFirstCheckInTime = data.data.data.first_check_in_time;
+        
+          setFirstCheckInTime(fetchFirstCheckInTime);
+          LCAttendance.init(data.total_work_duration, data.currently_checked_in);
+        } catch (error) {
+          console.log("ERR = ", error);
+        }
+      };
+  
+      fetchData();
+    }, []);
+
 
   return (
     <React.Fragment>
       <Card style={{ height: "325px" }}>
         <CardBody className="text-center">
           <h6 className="card-title mb-3 flex-grow-1 text-start">
-            Date : 10 Dec 2023
+             Date: {getCurrentDate()}
           </h6>
           <div className="mb-2">
             <lord-icon
@@ -55,7 +80,7 @@ const TimeTracking = () => {
           </div>
           <h3 className="mb-1">{formatTime(total_seconds)}</h3>
           <h5 className="fs-14 mb-4">
-            First In : <b> 08:25 am</b>
+            First In : <b> {firstCheckInTime}</b>
           </h5>
           <div className="hstack gap-2 justify-content-center">
             <WebCheckInOut showTimer={false} />
