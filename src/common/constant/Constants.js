@@ -2263,7 +2263,15 @@ export const leave_approval_status_options = [
   { id: "2", label: "Approved", value: "2" },
   { id: "3", label: "Rejected", value: "3" },
 ];
+
 export const leave_type_options = [
   { id: 1, label: "Leave Type", value: "0" },
   { id: 2, label: "Permission Type", value: "1" },
 ];
+
+
+export const leave_approval_table_filter_options = [
+  { id: 1, label: "Pending", value: 1 },
+  { id: 2, label: "Approved", value: 2 },
+  { id: 3, label: "Rejected", value: 3 },
+]

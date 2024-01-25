@@ -12,12 +12,16 @@ import {
   leave_type_component_name,
   leave_type_day_unit,
 } from "../../common/constant/Constants";
+import { setLeaveTypeTableFilterKeys } from "../../redux/reducers/ChildReducer/TableFilterReducer";
 
 const LeaveType = () => {
   const dispatch = useDispatch();
   const { leave_type_data } = useSelector((state) => state.LeaveTypeReducer);
+
   useEffect(() => {
+    console.log("LT UE RUNNING !!!!!");
     dispatch(setLeaveType(GetLocalStorageData("leave_types") || []));
+    dispatch(setLeaveTypeTableFilterKeys({ unit: 0 }));
   }, []);
 
   let types = [

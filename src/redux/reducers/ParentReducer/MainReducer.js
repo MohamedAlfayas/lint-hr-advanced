@@ -19,6 +19,7 @@ import AttendanceReportReducer from "../ChildReducer/AttendanceReportReducer";
 import BranchReducer from "../ChildReducer/BranchReducer";
 import MyProfileReducer from "../ChildReducer/MyProfileReducer";
 import TableDataReducer from "../ChildReducer/TableDataReducer";
+import TableFilterReducer from "../ChildReducer/TableFilterReducer";
 export const MainReducer = combineReducers({
     MetaReducer: MetaReducer,
     EmployeeReducer: EmployeeReducer,
@@ -40,4 +41,5 @@ export const MainReducer = combineReducers({
     BranchReducer: BranchReducer,
     MyProfileReducer: MyProfileReducer,
     TableDataReducer: TableDataReducer,
+    TableFilterReducer: TableFilterReducer,
 })

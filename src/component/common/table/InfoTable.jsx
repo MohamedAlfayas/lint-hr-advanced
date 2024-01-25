@@ -65,6 +65,7 @@ import {
   employee_component_name,
   holiday_component_name,
   leave_approval_component_name,
+  leave_type_component_name,
 } from "../../../common/constant/Constants";
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
@@ -98,6 +99,18 @@ const InfoTable = ({
   //   !!activeTableTab && setActiveTab(activeTableTab);
   // }, [activeTableTab]);
 
+  const { search, employee_table_filter_keys, leave_type_table_filter_keys } =
+    useSelector((state) => state.TableFilterReducer);
+
+  const table_filter_keys =
+    formname === employee_component_name
+      ? employee_table_filter_keys
+      : formname === leave_type_component_name
+      ? leave_type_table_filter_keys
+      : {};
+
+  console.log("table_filter_keys = ", table_filter_keys);
+
   const tabOptions = filterOptions
     ? filterOptions.map((obj, idx) => {
         return {
@@ -114,15 +127,11 @@ const InfoTable = ({
   const [deleteModalMulti, setDeleteModalMulti] = useState(false);
   const [modal, setModal] = useState(false);
   const [modal_list, setmodal_list] = useState(false);
-  const [search, setSearch] = useState("");
+  // const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [showContainer, setShowContainer] = useState(false);
   const [selectedGroupIds, setSelectedGroupIds] = useState([]);
-
-  const table_filter_keys = {
-    primary_department_id_list: [2, 3],
-  };
 
   const tog_list = () => {
     setmodal_list(!modal_list);
@@ -725,13 +734,6 @@ const InfoTable = ({
     console.log("data", data);
   };
 
-  // const module_list_for_create_btn_access = [
-  //   "employee",
-  //   "leave_types",
-  //   "holiday",
-  //   "department",
-  // ];
-
   // CUSTOM FORM
 
   const handleCreateAndUpdate = ($id, table_obj) => {
@@ -819,22 +821,6 @@ const InfoTable = ({
                   </h5>
 
                   {formname && formname === holiday_component_name && (
-                    // <Datetime
-                    //   className="w-20"
-                    //   value={selectedYear}
-                    //   onChange={(date) => {
-                    //     if (date.isValid()) {
-                    //       const year = date.year();
-                    //       setSelectedYear(new Date(year, 0, 1));
-                    //     } else {
-                    //       setSelectedYear(null);
-                    //     }
-                    //   }}
-                    //   dateFormat="YYYY"
-                    //   timeFormat={false}
-                    //   viewMode="years"
-                    // />
-
                     <center>
                       <div className="flex-shrink-0 ms-5 mt-0">
                         <UncontrolledDropdown className="card-header-dropdown">
@@ -1164,20 +1150,54 @@ const InfoTable = ({
                 {dataList.length ? (
                   <TableContainer
                     columns={columns}
-                    search={search}
-                    setSearch={setSearch}
                     data={
                       (search.trim().length
-                        ? dataList.filter((d) =>
-                            Object.values(d).some(
-                              (value) =>
-                                typeof value === "string" &&
-                                value
-                                  .toLowerCase()
-                                  .includes(search.toLowerCase())
+                        ? dataList
+                            .filter((obj) => {
+                              return Object.entries(table_filter_keys).every(
+                                ([key, value]) => {
+                                  // Exclude keys with value 0 from filtering
+                                  if (value === 0) {
+                                    return true; // Skip filtering for keys with value 0
+                                  }
+
+                                  // Check if the key exists in the employee object and the values match
+                                  return (
+                                    obj[key] !== undefined &&
+                                    (Array.isArray(obj[key])
+                                      ? obj[key].includes(value)
+                                      : obj[key] === value)
+                                  );
+                                }
+                              );
+                            })
+                            .filter((d) =>
+                              Object.values(d).some(
+                                (value) =>
+                                  typeof value === "string" &&
+                                  value
+                                    .toLowerCase()
+                                    .includes(search.toLowerCase())
+                              )
                             )
-                          )
-                        : dataList) || []
+                        : dataList.filter((obj) => {
+                            return Object.entries(table_filter_keys).every(
+                              ([key, value]) => {
+                                // Exclude keys with value 0 from filtering
+                                if (value === 0) {
+                                  return true; // Skip filtering for keys with value 0
+                                }
+
+                                // Check if the key exists in the obj object and the values match
+                                return (
+                                  obj[key] !== undefined &&
+                                  (Array.isArray(obj[key])
+                                    ? obj[key].includes(value)
+                                    : obj[key] === value)
+                                );
+                              }
+                            );
+                          })) || []
                     }
                     isPagination={true}
                     isGlobalFilter={true}

@@ -22,12 +22,11 @@ import {
 } from "../../../common/constant/Constants";
 import LeaveApprovalFilter from "../tableFilter/LeaveApprovalFilter";
 import LeaveTypeFilter from "../tableFilter/LeaveTypeFilter";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { setTableFilterSearchText } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
 
 const TableContainer = ({
   columns,
-  search,
-  setSearch,
   data,
   formname,
   isGlobalSearch,
@@ -40,9 +39,9 @@ const TableContainer = ({
   divClass,
   SearchPlaceholder,
 }) => {
-  const [tableData, setTableData] = useState([]);
+  const { search } = useSelector((state) => state.TableFilterReducer);
 
-  const { table_data } = useSelector((state) => state.TableDataReducer);
+  const dispatch = useDispatch();
 
   const {
     getTableProps,
@@ -146,15 +145,15 @@ const TableContainer = ({
                     type="text"
                     className="form-control search /"
                     placeholder={`Search ${formname.split("_").join(" ")}`}
-                    onChange={(e) => setSearch(e.target.value)}
+                    value={search || ""}
+                    onChange={(e) =>
+                      dispatch(setTableFilterSearchText(e.target.value))
+                    }
                   />
                   <i className="bx bx-search-alt search-icon"></i>
                 </div>
               </Col>
               {formname === employee_component_name && <EmployeeTableFilter />}
-              {formname === leave_approval_component_name && (
-                <LeaveApprovalFilter />
-              )}
               {formname === leave_type_component_name && <LeaveTypeFilter />}
               {/* <Col md={2}>
                 <div>
@@ -261,7 +260,7 @@ const TableContainer = ({
         </div>
         <div className="col-sm-auto">
           <select
-            className="form-select form-select-sm"
+            className="form-select custom-select-medium text-muted"
             value={pageSize}
             onChange={handlePageSizeChange}
           >

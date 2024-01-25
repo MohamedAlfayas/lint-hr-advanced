@@ -23,6 +23,10 @@ import {
   employee_component_name,
   profile_view_component_name,
 } from "../../common/constant/Constants";
+import {
+  resetEmployeeTableFilterKeys,
+  setEmployeeTableFilterKeys,
+} from "../../redux/reducers/ChildReducer/TableFilterReducer";
 
 const Employee = () => {
   const dispatch = useDispatch();
@@ -35,6 +39,17 @@ const Employee = () => {
   useEffect(() => {
     dispatch(setEmployee(EmployeeData));
   }, [version]);
+
+  useEffect(() => {
+    // dispatch(
+    //   setEmployeeTableFilterKeys({
+    //     primary_department_id_list: 0,
+    //     role_id: 0,
+    //     reporting_manager_id: 0,
+    //   })
+    // );
+    dispatch(resetEmployeeTableFilterKeys());
+  }, []);
 
   const CustomFieldsForThisForm = GetCustomField("employee") || [];
   const DepartmentData = GetLocalStorageData("department") || [];
@@ -51,20 +66,6 @@ const Employee = () => {
 
   // Column
   const additionalColumn = [
-    {
-      Header: "ID",
-      accessor: "emp_id",
-      filterable: false,
-      id: "emp_id",
-      accessor: (obj) => {
-        return (
-          <>
-            <React.Fragment>{obj.emp_id}</React.Fragment>
-          </>
-        );
-      },
-    },
-
     {
       Header: "Name",
       accessor: "fname",
@@ -133,6 +134,31 @@ const Employee = () => {
       // filterable: false,
       // id: "nameAndEmail",
     },
+    {
+      Header: "ID",
+      accessor: "emp_id",
+      filterable: false,
+      id: "emp_id",
+      accessor: (obj) => {
+        return (
+          <>
+            <div className="flex-grow-1">
+              <div>
+                <Link
+                  to="#"
+                  onClick={() => viewEmployee(obj)}
+                  className="link-body-emphasis mb-0"
+                >
+                  {" "}
+                  <React.Fragment>{obj.emp_id}</React.Fragment>
+                </Link>
+              </div>
+            </div>
+          </>
+        );
+      },
+    },
+
     {
       Header: "Role",
       id: "role_id",
@@ -212,14 +238,6 @@ const Employee = () => {
             </Button>
           </span>
         );
-
-        return (
-          <>
-            {thisDepartment.map((d) => (
-              <React.Fragment>{d.name}</React.Fragment>
-            ))}
-          </>
-        );
       },
     },
     {
@@ -284,68 +302,7 @@ const Employee = () => {
         ) : (
           "-----------------"
         );
-
-        // return obj.profile_url ? (
-        //   <div className="d-flex gap-2 align-items-center">
-        //     <div className="flex-shrink-0">
-        //       <img
-        //         src={obj.profile_url}
-        //         alt=""
-        //         className="avatar-xs rounded-circle"
-        //         style={{ objectFit: "cover" }}
-        //       />
-        //     </div>
-        //     <div className="flex-grow-1">
-        //       <div>
-        //         <Link
-        //           to="#"
-        //           onClick={() => viewEmployee(obj)}
-        //           className="link-body-emphasis mb-0"
-        //         >
-        //           {" "}
-        //           <h5 className="fs-14 mb-1">{obj.fname}</h5>
-        //         </Link>
-        //       </div>
-        //       <div>{obj.email}</div>
-        //     </div>
-        //   </div>
-        // ) : (
-        //   <div className="d-flex gap-2 align-items-center">
-        //     <div className="flex-shrink-0">
-        //       <div
-        //         className="avatar-xs rounded-circle"
-        //         style={{
-        //           display: "flex",
-        //           justifyContent: "center",
-        //           alignItems: "center",
-        //           background: "#0ab39c",
-        //         }}
-        //         data-bs-toggle="tooltip"
-        //         title={obj.fname}
-        //       >
-        //         <span className="first_letter" style={{ color: "white" }}>
-        //           {obj.fname.charAt(0)}
-        //         </span>
-        //       </div>
-        //     </div>
-        //     <div className="flex-grow-1">
-        //       <div>
-        //         <Link
-        //           to="#"
-        //           onClick={() => viewEmployee(obj)}
-        //           className="link-body-emphasis mb-0"
-        //         >
-        //           {" "}
-        //           <h5 className="fs-14 mb-1">{obj.fname}</h5>
-        //         </Link>
-        //       </div>
-        //       <div>{obj.email}</div>
-        //     </div>
-        //   </div>
-        // );
       },
-      // filterable: false,
-      // id: "nameAndEmail",
     },
     {
       Header: "Status",

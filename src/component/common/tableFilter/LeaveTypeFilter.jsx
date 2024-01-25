@@ -2,20 +2,48 @@ import React, { useRef } from "react";
 import { Col, Label } from "reactstrap";
 import Select from "react-select";
 import { leave_type_options } from "../../../common/constant/Constants";
+import { useDispatch, useSelector } from "react-redux";
+import { setLeaveTypeTableFilterKeys } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
 
 const LeaveTypeFilter = () => {
   const inputRef = useRef();
+
+  const dispatch = useDispatch();
+
+  const { leave_type_table_filter_keys } = useSelector(
+    (state) => state.TableFilterReducer
+  );
+
+  const handleFilterChange = (e, name) => {
+    let val = !!e ? e.id : 0;
+    dispatch(
+      setLeaveTypeTableFilterKeys({
+        ...leave_type_table_filter_keys,
+        [name]: val,
+      })
+    );
+  };
+
   return (
     <React.Fragment>
       <Col md={4}>
         <Select
           id="status_filter"
           name="status_filter"
+          isClearable={true}
           innerRef={inputRef}
           isMulti={false}
           options={leave_type_options || []}
           className="basic-multi-select"
           placeholder="Select Leave Type"
+          value={
+            !!leave_type_table_filter_keys?.unit
+              ? leave_type_options.find(
+                  (d) => d.id === leave_type_table_filter_keys?.unit
+                )
+              : []
+          }
+          onChange={(e) => handleFilterChange(e, "unit")}
         />
       </Col>
     </React.Fragment>
