@@ -47,12 +47,15 @@ const DepartmentForm = () => {
   const [departmentOptions, setDepartmentOptions] = useState([]);
 
   useEffect(() => {
+    console.log("Dep Form Obj = ", form_obj);
     setDepartmentData(form_obj);
     setDepartmentOptions(
-      DepartmentList.filter((obj) => obj.pid !== form_obj.id)
+      DepartmentList.filter(
+        (obj) =>
+          !form_obj?.child_id_list.includes(obj.id) && form_obj?.id !== obj.id
+      )
     );
   }, [form_obj]);
-  console.log("fff", form_obj);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -125,18 +128,19 @@ const DepartmentForm = () => {
 
                 <Select
                   name="pid"
-                  className={`react-select-container ${FormikForm.touched.pid && FormikForm.errors.pid
+                  className={`react-select-container ${
+                    FormikForm.touched.pid && FormikForm.errors.pid
                       ? "is-invalid"
                       : ""
-                    }`}
+                  }`}
                   classNamePrefix="react-select"
                   styles={{
                     control: (provided, state) => ({
                       ...provided,
                       borderColor:
                         !state.isFocused &&
-                          FormikForm.touched.pid &&
-                          FormikForm.errors.pid
+                        FormikForm.touched.pid &&
+                        FormikForm.errors.pid
                           ? "red !important"
                           : provided.borderColor,
                     }),
@@ -198,9 +202,7 @@ const DepartmentForm = () => {
                   </div>
                 </div>
                 <div id="passwordHelpBlock" className="form-text mb-3">
-                  
-                  
-                Check if is required location based employee location.
+                  Check if is required location based employee location.
                 </div>
               </Col>
               <Col lg={12}>

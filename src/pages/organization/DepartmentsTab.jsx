@@ -47,12 +47,11 @@ const DepartmentsTab = () => {
       description: "",
       is_location_required: false,
       pid: 0,
+      child_id_list: [],
     };
   }, []);
 
   const handleDepartmentEdit = ($id, obj) => {
-    console.log("Dep Edit = ", obj);
-
     const depObj = $id === 0 ? newDepObj : obj;
     dispatch(setFormTitle("Departments"));
     dispatch(setFormObj(depObj));
