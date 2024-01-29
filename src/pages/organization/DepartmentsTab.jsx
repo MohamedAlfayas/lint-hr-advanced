@@ -233,12 +233,12 @@ const DepartmentsTab = () => {
     setShowOrgModal(!showOrgModal);
   }
 
-  const [teamMembersID, setTeamMembersID] = useState([]);
+  const [departmentId, setDepartmentId] = useState(0);
 
   const setDataForTable = (obj) => {
     console.log("Node Data == ", obj);
     let team_members_id = obj.data.manager.concat(obj.data.employee);
-    setTeamMembersID(team_members_id);
+    setDepartmentId(team_members_id);
   };
 
   const nodeTemplate1 = (node) => {
@@ -252,7 +252,7 @@ const DepartmentsTab = () => {
                   <Link
                     onClick={() => {
                       toggleOrgModal();
-                      setDataForTable(node);
+                      setDepartmentId(node.id);
                     }}
                     className="text-body  text-truncate d-block"
                   >
@@ -367,7 +367,7 @@ const DepartmentsTab = () => {
       <OrgModal
         showOrgModal={showOrgModal}
         toggleOrgModal={toggleOrgModal}
-        teamMembersID={teamMembersID}
+        departmentId={departmentId}
       />
     </React.Fragment>
   );

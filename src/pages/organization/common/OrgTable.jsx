@@ -11,184 +11,277 @@ import {
   UncontrolledTooltip,
 } from "reactstrap";
 
-const OrgTable = ({ teamMembersID }) => {
-  let globalData = JSON.parse(localStorage.getItem("lcEdu_GlobalData"));
-  console.log("globalData.......", globalData);
-  console.log(globalData);
-  const department = globalData.Department;
-  console.log("ggh", department);
-  const TeamData = globalData.Employee;
-  console.log("dasta", TeamData);
-
-  const tableData = TeamData.filter((obj) =>
-    teamMembersID.includes(parseInt(obj.id))
-  );
+const OrgTable = ({ departmentId }) => {
   const EmployeeData = GetLocalStorageData("employee") || [];
-  console.log("asas", EmployeeData);
   const DepartmentData = GetLocalStorageData("department") || [];
-  console.log("zasa", DepartmentData);
 
-  // const matchedDepartments = EmployeeData.map(employeeDepartmentId => {
-  //   const department = DepartmentData.find(department => department.id === employeeDepartmentId);
-  //   return department ? department.name : null;
-  // });
-  const filteredData = EmployeeData?.filter((val) => {
-    const filterDep = DepartmentData?.filter((obj) => val?.primary_department_id_list?.includes(obj?.val))
-    return filterDep
-  })
+  const TableData = EmployeeData.filter((d) =>
+    d.primary_department_id_list.includes(departmentId)
+  );
 
-  console.log("filteredData ===:", filteredData);
-
-  const columns = useMemo(() => {
-    return [
-      {
-        Header: "ID",
-        accessor: (cellProps) => {
-          return <Link to="#">{cellProps.id}</Link>;
-        },
-        disableFilters: false,
-        filterable: false,
-        sortBy: [
-          {
-            desc: false,
-          },
-        ],
-      },
-
-      {
-        Header: "Name",
-        accessor: "name",
-        tdClass: "d-flex",
-        accessor: (cellProps) => {
-          const imgsrc =
-            cellProps.id % 2 === 0
-              ? require("../../../assets/images/users/avatar-3.jpg")
-              : require("../../../assets/images/users/avatar-8.jpg");
-          return (
-            <div style={{ textAlign: "left" }}>
+  const columns = [
+    {
+      Header: "Name",
+      accessor: "fname",
+      filterable: false,
+      id: "fname",
+      accessor: (obj) => {
+        return obj.profile_url ? (
+          <div className="d-flex gap-2 align-items-center">
+            <div className="flex-shrink-0">
               <img
-                src={cellProps.img}
-                alt={cellProps.name}
-                className="avatar-xs rounded-3 me-2"
+                src={obj.profile_url}
+                alt=""
+                className="avatar-xs rounded-circle"
+                style={{ objectFit: "cover" }}
               />
-              <span style={{ marginLeft: "7px" }}>
-                <b>{cellProps.name}</b>
-              </span>
             </div>
-          );
-        },
-        disableFilters: false,
-        filterable: false,
-      },
-      {
-        Header: "Department",
-        accessor: "dep",
-        disableFilters: false,
-        filterable: false,
-        accessor: (cellProps) => {
-          console.log(cellProps);
-          //const depName = department.filter((p) => p.id === cellProps.dep[0]);
-          console.log('department ===', department);
-          console.log('cellProps === ', cellProps);
-          var depList = department.filter((obj) =>
-            cellProps.primary_department_id_list.includes(parseInt(obj.id))
-          );
-
-          //console.log(depList);
-
-          let row_id = cellProps.id;
-
-          return (
-            <span>
-              <Button
-                color="light"
-                id={`depListRef-${row_id}`}
-                className="position-relative">
-                {depList[0].name}
-                {depList.length > 1 ? (
-                  <span>
-                    <Badge
-                      //id="tooltipwithHtml"
-                      pill
-                      color="success"
-                      className="position-absolute top-0 start-100 translate-middle">
-                      +{depList.length}
-                      <span className="visually-hidden">Departments</span>
-                    </Badge>
-
-                    <UncontrolledTooltip
-                      placement="bottom"
-                      target={`depListRef-${row_id}`}>
-                      {" "}
-                      <div class="mt-1">
-                        {depList.map((item, key) => (
-                          <p class="mb-1">{item.name}</p>
-                        ))}
-                      </div>{" "}
-                    </UncontrolledTooltip>
-                  </span>
-                ) : (
-                  ""
-                )}
-              </Button>
-            </span>
-          );
-        },
-      },
-      {
-        Header: "Status",
-        disableFilters: true,
-        filterable: true,
-        accessor: (cellProps) => {
-          switch (cellProps.status) {
-            case "Active":
-              return (
-                <span className="badge bg-success-subtle text-success text-uppercase">
+            <div className="flex-grow-1">
+              <div>
+                <Link
+                  to="#"
+                  onClick={() => viewEmployee(obj)}
+                  className="link-body-emphasis mb-0"
+                >
                   {" "}
-                  {cellProps.status}
-                </span>
-              );
-            case "Refund":
-              return (
-                <span className="badge bg-warning-subtle  text-warning text-uppercase">
-                  {" "}
-                  {cellProps.status}
-                </span>
-              );
-            default:
-              return (
-                <span className="badge bg-danger-subtle  text-danger text-uppercase">
-                  {" "}
-                  {cellProps.status}
-                </span>
-              );
-          }
-        },
-      },
-      {
-        Header: "Actions",
-        disableFilters: true,
-        filterable: true,
-        accessor: (cellProps) => {
-          return (
-            <React.Fragment>
-              <p>
-                <Link to="#" className="link-info">
-                  View
+                  <h5 className="fs-14 mb-1">{obj.fname}</h5>
                 </Link>
-              </p>
-            </React.Fragment>
-          );
-        },
+              </div>
+              <div>{obj.email}</div>
+            </div>
+          </div>
+        ) : (
+          <div className="d-flex gap-2 align-items-center">
+            <div className="flex-shrink-0">
+              <div
+                className="avatar-xs rounded-circle"
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  background: "#0ab39c",
+                }}
+                data-bs-toggle="tooltip"
+                title={obj.fname}
+              >
+                <span className="first_letter" style={{ color: "white" }}>
+                  {obj.fname.charAt(0)}
+                </span>
+              </div>
+            </div>
+            <div className="flex-grow-1">
+              <div>
+                <Link
+                  to="#"
+                  onClick={() => viewEmployee(obj)}
+                  className="link-body-emphasis mb-0"
+                >
+                  {" "}
+                  <h5 className="fs-14 mb-1">{obj.fname}</h5>
+                </Link>
+              </div>
+              <div>{obj.email}</div>
+            </div>
+          </div>
+        );
       },
-    ];
-  }, []);
+      // filterable: false,
+      // id: "nameAndEmail",
+    },
+    {
+      Header: "ID",
+      accessor: "emp_id",
+      filterable: false,
+      id: "emp_id",
+      accessor: (obj) => {
+        return (
+          <>
+            <div className="flex-grow-1">
+              <div>
+                <Link
+                  to="#"
+                  onClick={() => viewEmployee(obj)}
+                  className="link-body-emphasis mb-0"
+                >
+                  {" "}
+                  <React.Fragment>{obj.emp_id}</React.Fragment>
+                </Link>
+              </div>
+            </div>
+          </>
+        );
+      },
+    },
+
+    {
+      Header: "Role",
+      id: "role_id",
+      filterable: false,
+      accessor: (obj) => {
+        const RoleData = GetLocalStorageData("role");
+        let thisRole = RoleData
+          ? RoleData.filter((data) => obj.role_id === data.id)
+          : [];
+        return (
+          <>
+            {thisRole.map((d) => (
+              <React.Fragment>{d.name}</React.Fragment>
+            ))}
+          </>
+        );
+      },
+    },
+    {
+      Header: "Department",
+      id: "department",
+      filterable: false,
+      accessor: (obj) => {
+        let thisDepartment = DepartmentData
+          ? DepartmentData.filter((data) =>
+              obj.primary_department_id_list.includes(data.id)
+            )
+          : [];
+
+        let firstDep_name = thisDepartment?.length
+          ? thisDepartment[0].name
+          : "";
+
+        let subDepList = thisDepartment?.length
+          ? thisDepartment.filter((datas, index) => {
+              if (index !== 0) {
+                return datas;
+              }
+            })
+          : [];
+
+        return (
+          <span>
+            <Button
+              color="light"
+              id={`depListRef-${obj.id}`}
+              className="position-relative"
+            >
+              <React.Fragment>{firstDep_name}</React.Fragment>
+              {subDepList.length > 0 ? (
+                <span>
+                  <Badge
+                    //id="tooltipwithHtml"
+                    pill
+                    color="success"
+                    className="position-absolute top-0 start-100 translate-middle"
+                  >
+                    +{subDepList.length}
+                    <span className="visually-hidden">Departments</span>
+                  </Badge>
+
+                  <UncontrolledTooltip
+                    placement="bottom"
+                    target={`depListRef-${obj.id}`}
+                  >
+                    {" "}
+                    <div className="mt-1">
+                      {subDepList.map((item, key) => (
+                        <p className="mb-1">{item.name}</p>
+                      ))}
+                    </div>{" "}
+                  </UncontrolledTooltip>
+                </span>
+              ) : (
+                ""
+              )}
+            </Button>
+          </span>
+        );
+      },
+    },
+    {
+      Header: "Reporting Manager",
+      filterable: false,
+      id: "reporting_manager_id",
+      accessor: (obj) => {
+        let rm_obj =
+          EmployeeData.find((d) => d.id === obj.reporting_manager_id) || null;
+
+        return !!rm_obj ? (
+          rm_obj.profile_url ? (
+            <div className="d-flex gap-2 align-items-center">
+              <div className="flex-shrink-0">
+                <img
+                  src={rm_obj.profile_url}
+                  alt=""
+                  className="avatar-xs rounded-circle"
+                  style={{ objectFit: "cover" }}
+                />
+              </div>
+              <div className="flex-grow-1">
+                <div>
+                  <Link to="#" className="link-body-emphasis mb-0">
+                    {" "}
+                    <h5 className="fs-14 mb-1">{rm_obj.fname}</h5>
+                  </Link>
+                </div>
+                <div>{rm_obj.email}</div>
+              </div>
+            </div>
+          ) : (
+            <div className="d-flex gap-2 align-items-center">
+              <div className="flex-shrink-0">
+                <div
+                  className="avatar-xs rounded-circle"
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    background: "#0ab39c",
+                  }}
+                  data-bs-toggle="tooltip"
+                  title={rm_obj.fname}
+                >
+                  <span className="first_letter" style={{ color: "white" }}>
+                    {rm_obj.fname.charAt(0)}
+                  </span>
+                </div>
+              </div>
+              <div className="flex-grow-1">
+                <div>
+                  <Link to="#" className="link-body-emphasis mb-0">
+                    {" "}
+                    <h5 className="fs-14 mb-1">{rm_obj.fname}</h5>
+                  </Link>
+                </div>
+                <div>{rm_obj.email}</div>
+              </div>
+            </div>
+          )
+        ) : (
+          "-----------------"
+        );
+      },
+    },
+    {
+      Header: "Status",
+      id: "status",
+      filterable: false,
+      accessor: (obj) => {
+        let status = obj.is_active ? "Active" : "Inactive";
+        let statusClass = obj.is_active ? "success" : "warning";
+        return (
+          <span
+            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
+          >
+            {" "}
+            {status}{" "}
+          </span>
+        );
+      },
+    },
+  ];
 
   return (
     <React.Fragment>
       <TableContainer
         columns={columns || []}
-        data={filteredData || []}
+        data={TableData || []}
         isPagination={false}
         isGlobalFilter={false}
         iscustomPageSize={false}
