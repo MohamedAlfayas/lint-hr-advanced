@@ -2028,22 +2028,29 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
+        role_uuid: "8578e1a0-017b-4a8a-a21f-9aed72d09bfd"
       },
       {
         id: 102,
         notes: "User Can Create New Branch",
         element: "per_branch_create",
-        dependency: ["per_branch_view"],
+        dependency: [
+          "per_branch_view"
+        ],
         checked: false,
         disabled: false,
+        role_uuid: "3e3808cb-bdd7-4c3b-8739-33c6d3628919"
       },
       {
         id: 103,
         notes: "User Can Edit Branch",
         element: "per_branch_edit",
-        dependency: ["per_branch_view"],
+        dependency: [
+          "per_branch_view"
+        ],
         checked: false,
         disabled: false,
+        role_uuid: "8b1dedb1-3d52-446b-9bb5-97e1bf16b853"
       },
       {
         id: 104,
@@ -2052,22 +2059,29 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
+        role_uuid: "1d058113-3d6d-4fe5-a606-334314931ad3"
       },
       {
         id: 105,
         notes: "User Can Create New Departments",
         element: "per_department_create",
-        dependency: ["per_department_view"],
+        dependency: [
+          "per_department_view"
+        ],
         checked: false,
         disabled: false,
+        role_uuid: "f6a4143f-647b-4637-9f11-7c430e93d113"
       },
       {
         id: 106,
         notes: "User Can Edit Departments",
         element: "per_department_edit",
-        dependency: ["per_department_view"],
+        dependency: [
+          "per_department_view"
+        ],
         checked: false,
         disabled: false,
+        role_uuid: "073ef1a9-4b01-41db-b80d-eb7ec42eb9ae"
       },
       {
         id: 107,
@@ -2076,24 +2090,31 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
+        role_uuid: "9c519aac-aa18-4c05-8429-b5d6667addad"
       },
       {
         id: 108,
         notes: "User Can Create New Role",
         element: "per_role_create",
-        dependency: ["per_role_view"],
+        dependency: [
+          "per_role_view"
+        ],
         checked: false,
         disabled: false,
+        role_uuid: "7af2e13a-ead8-47f3-8140-a0fb53fa053d"
       },
       {
         id: 109,
         notes: "User Can Edit Role",
         element: "per_role_edit",
-        dependency: ["per_role_view"],
+        dependency: [
+          "per_role_view"
+        ],
         checked: false,
         disabled: false,
-      },
-    ],
+        role_uuid: "42a3de75-9a01-4a84-a118-5f4506d3c821"
+      }
+    ]
   },
   {
     id: 2,
@@ -2108,6 +2129,7 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
+        role_uuid: "653acb09-a044-4203-9edb-70a687d67faf"
       },
       {
         id: 202,
@@ -2116,6 +2138,7 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
+        role_uuid: "189e36b1-5d4e-4793-aa17-01934fd93c76"
       },
       {
         id: 203,
@@ -2124,6 +2147,7 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
+        role_uuid: "16de9a16-fa83-4154-bfe6-2c29b9918d8d"
       },
       {
         id: 204,
@@ -2132,6 +2156,7 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
+        role_uuid: "51d0a494-da34-4ce3-bdd8-4aff9da6a460"
       },
       {
         id: 205,
@@ -2140,14 +2165,18 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
+        role_uuid: "fcd24dc4-bb71-4b16-97f1-7cdc5f5e3815"
       },
       {
         id: 206,
         notes: "User Can Edit Paid/OT Hours",
         element: "per_edit_paid_ot_hours",
-        dependency: ["per_view_team_attendance"],
+        dependency: [
+          "per_view_team_attendance"
+        ],
         checked: false,
         disabled: false,
+        role_uuid: "66a209be-2cf8-42c8-bf90-20d7f194193d"
       },
       {
         id: 207,
@@ -2156,32 +2185,42 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
+        role_uuid: "11039dcd-b1f0-4b72-8e11-5fcd51373e4b"
       },
       {
         id: 208,
         notes: "Can Create Work Schedule",
         element: "per_ws_create",
-        dependency: ["per_ws_view"],
+        dependency: [
+          "per_ws_view"
+        ],
         checked: false,
         disabled: false,
+        role_uuid: "b3a12085-ec8d-4c0b-ac34-bf09541891b9"
       },
       {
         id: 209,
         notes: "Can Edit Work Schedule",
         element: "per_ws_edit",
-        dependency: ["per_ws_view"],
+        dependency: [
+          "per_ws_view"
+        ],
         checked: false,
         disabled: false,
+        role_uuid: "e0dee2bf-0b9e-47d8-aeec-ad59c9009b71"
       },
       {
         id: 210,
         notes: "Can Delete Work Schedule",
         element: "per_ws_delete",
-        dependency: ["per_ws_view"],
+        dependency: [
+          "per_ws_view"
+        ],
         checked: false,
         disabled: false,
-      },
-    ],
+        role_uuid: "36c3b362-44df-4e48-b5b2-0be76edda6b2"
+      }
+    ]
   },
   {
     id: 3,
@@ -2196,8 +2235,9 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
-      },
-    ],
+        role_uuid: "201456a3-cd3d-404b-952f-80c43c22c5cf"
+      }
+    ]
   },
   {
     id: 4,
@@ -2212,8 +2252,9 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
-      },
-    ],
+        role_uuid: "e0ad49c2-4585-4176-9d7c-88b0c72d4581"
+      }
+    ]
   },
   {
     id: 5,
@@ -2228,6 +2269,7 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
+        role_uuid: "3ee1c4b4-7ccc-434d-bd86-f2e983b37a12"
       },
       {
         id: 502,
@@ -2236,6 +2278,7 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
+        role_uuid: "a63a2a29-f9f3-4317-841b-f947143813cd"
       },
       {
         id: 503,
@@ -2244,6 +2287,7 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
+        role_uuid: "35ca76c6-437e-4c9b-9252-1f4cbefd73f5"
       },
       {
         id: 504,
@@ -2252,9 +2296,10 @@ export const default_roles_list = [
         dependency: [],
         checked: false,
         disabled: false,
-      },
-    ],
-  },
+        role_uuid: "46fa1cb6-b730-47e9-aed7-a1fdc92c82d8"
+      }
+    ]
+  }
 ];
 
 export const leave_approval_status_options = [
