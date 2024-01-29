@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import { Api } from "../../common/api/Api";
 const TimeTracking = () => {
   const [firstCheckInTime, setFirstCheckInTime] = useState(null);
+
   // const checkInOutToggle = (ele) => {
   //   if (ele.closest("button").classList.contains("active")) {
   //     ele.closest("button").classList.remove("active");
@@ -40,6 +41,9 @@ const TimeTracking = () => {
 
     return `${hDisplay} : ${mDisplay} : ${sDisplay}`;
   };
+
+
+
   useEffect(() => {
       
       const fetchData = async () => {
@@ -47,8 +51,13 @@ const TimeTracking = () => {
           const data = await Api.get("/attendance/get-total-work-duration/");
           console.log("RES = ", data.data.data.first_check_in_time);
           const fetchFirstCheckInTime = data.data.data.first_check_in_time;
+          const [datePart, timePart] = fetchFirstCheckInTime.split(' ');
+          const [hours, minutes] = timePart.split(':');
+          const amOrPm = parseInt(hours) >= 12 ? 'PM' : 'AM';
+          const formattedHours = (parseInt(hours) % 12) || 12;
         
-          setFirstCheckInTime(fetchFirstCheckInTime);
+          const formattedTime = `${formattedHours}:${minutes} ${amOrPm}`;
+          setFirstCheckInTime(formattedTime);
           LCAttendance.init(data.total_work_duration, data.currently_checked_in);
         } catch (error) {
           console.log("ERR = ", error);

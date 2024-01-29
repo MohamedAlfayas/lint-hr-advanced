@@ -44,6 +44,22 @@ const ProfileViewMin = () => {
   const [individualAttendanceReportData, setIndividualAttendanceReportData] =
     useState([]);
 
+  function getWorkScheduleName(workScheduleId, workScheduleData) {
+    const workScheduleName = workScheduleData.find(
+      (schedule) => schedule.id === workScheduleId
+    );
+
+    if (workScheduleName) {
+      return workScheduleName.name;
+    } else {
+      return "Work schedule not found";
+    }
+  }
+
+
+  const workScheduleId = form_obj.work_schedule_id;
+  const workScheduleName = getWorkScheduleName(workScheduleId, WorkScheduleData);
+
   useEffect(() => {
     const today = new Date();
     const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
@@ -82,6 +98,73 @@ const ProfileViewMin = () => {
 
   const navigate = useNavigate();
 
+
+  const getFileIcon = (fileName) => {
+    const fileType = getFileType(fileName);
+
+    switch (fileType) {
+      case 'pdf':
+        return (
+          <div>
+            <i className="ri-file-pdf-line" style={{ fontSize: '25px' }} />
+            <a  download target="_blank" rel="noopener noreferrer">
+              <i className="ri-download-2-line" style={{ fontSize: '20px' }} />
+            </a>
+          </div>
+        );
+      case 'img':
+        return (
+          <div>
+            <i className="ri-image-line" style={{ fontSize: '25px' }} />
+            <a download target="_blank" rel="noopener noreferrer">
+              <i className="ri-download-2-line" style={{ fontSize: '20px' }} />
+            </a>
+          </div>
+        );
+      case 'xlsx':
+      case 'xls':
+        return (
+          <div>
+            <i className="ri-file-excel-line" style={{ fontSize: '25px' }} />
+            <a  download target="_blank" rel="noopener noreferrer">
+              <i className="ri-download-2-line" style={{ fontSize: '20px' }} />
+            </a>
+          </div>
+        );
+      case 'word':
+        return (
+          <div>
+            <i className="ri-file-word-line" style={{ fontSize: '25px' }} />
+            <a  download target="_blank" rel="noopener noreferrer">
+              <i className="ri-download-2-line" style={{ fontSize: '20px' }} />
+            </a>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getFileType = (fileName) => {
+    const extension = fileName.split('.').pop();
+    // Map common file extensions to file types
+    const fileTypeMap = {
+      pdf: ['pdf'],
+      img: ['png', 'jpg', 'jpeg', 'gif'],
+      xlsx: ['xlsx'],
+      xls: ['xls'],
+      word: ['doc', 'docx'],
+    };
+
+    for (const [type, extensions] of Object.entries(fileTypeMap)) {
+      if (extensions.includes(extension.toLowerCase())) {
+        return type;
+      }
+    }
+
+    // Default to 'other' if the file type is not recognized
+    return 'other';
+  };
   return (
     <React.Fragment>
       <Row>
@@ -102,8 +185,8 @@ const ProfileViewMin = () => {
               {profileObj?.primary_department
                 ? DepartmentData.length
                   ? DepartmentData.find(
-                      (d) => d.id === profileObj?.primary_department
-                    )?.name
+                    (d) => d.id === profileObj?.primary_department
+                  )?.name
                   : ""
                 : ""}
             </p>
@@ -154,8 +237,7 @@ const ProfileViewMin = () => {
           </Col>
         </Row>
         <div className="table-responsive table-card p-3">
-          <h5 className="fs-15 mb-2 mt-3 ms-3">Basic Details</h5>
-
+          <h5 className="fs-15 mb-2 mt-3 ms-3 text-center">Basic Details</h5>
           <Table className="table table-borderless mb-0">
             <tbody>
               <tr>
@@ -167,41 +249,39 @@ const ProfileViewMin = () => {
               </tr>
               <tr>
                 <td className="fw-medium">Gender</td>
-                <td>{profileObj?.gender || ""}</td>
-              </tr>
-              <tr>
-                <td className="fw-medium">Work Schedule</td>
                 <td>
-                  {profileObj?.work_schedule
-                    ? WorkScheduleData.length
-                      ? WorkScheduleData.find(
-                          (w) => w.id === profileObj?.work_schedule
-                        ).name
-                      : ""
-                    : ""}
+                  {profileObj?.gender === 1
+                    ? "Male"
+                    : profileObj?.gender === 2
+                      ? "Female"
+                      : ""}
                 </td>
               </tr>
               <tr>
+                <td className="fw-medium">Work Schedule</td>
+                <td>{workScheduleName}</td>
+              </tr>
+              {/* <tr>
                 <td className="fw-medium">Sub Departments</td>
                 <td>
                   {profileObj?.sub_department
                     ? profileObj?.sub_department.map((d) => (
-                        <span
-                          className="badge bg-primary-subtle text-primary me-1"
-                          key={1}
-                        >
-                          {DepartmentData.length
-                            ? DepartmentData.find((e) => e.id === d).name
-                            : ""}
-                        </span>
-                      ))
+                      <span
+                        className="badge bg-primary-subtle text-primary me-1"
+                        key={1}
+                      >
+                        {DepartmentData.length
+                          ? DepartmentData.find((e) => e.id === d).name
+                          : ""}
+                      </span>
+                    ))
                     : null}
                 </td>
-              </tr>
+              </tr> */}
               <tr>
                 <td className="fw-medium">Joining Date</td>
                 <td>
-                  <small className="text-muted">
+                  <small className="text">
                     {(profileObj?.joining_date &&
                       ConvertDateFormat(profileObj?.joining_date)) ||
                       ""}
@@ -209,10 +289,29 @@ const ProfileViewMin = () => {
                 </td>
               </tr>
               {profileObj?.cf_values &&
-                (profileObj?.cf_values).map((c) => (
-                  <tr>
+                profileObj.cf_values.map((c) => (
+                  <tr key={c.name}>
                     <td className="fw-medium">{c.name}</td>
-                    <td>{c.value}</td>
+                    <td>
+                      {c.value && (
+                        <>
+                          {getFileIcon(c.value)}
+                          <span style={{ marginLeft: '5px' }}>
+                          {c.value.substring(c.value.lastIndexOf('/') + 1)} {/* Display only the file name */}
+                          {'  '}
+                          
+                          </span>
+                          {/* <a
+                            href={c.value}
+                            download
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <i className="ri-download-2-line" style={{ fontSize: '20px' }} />
+                          </a> */}
+                        </>
+                      )}
+                    </td>
                   </tr>
                 ))}
             </tbody>

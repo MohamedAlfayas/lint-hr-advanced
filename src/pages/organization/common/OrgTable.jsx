@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import TableContainer from "../../../component/common/table/TableContainer";
 import { Link } from "react-router-dom";
+import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 
 import {
   Badge,
@@ -12,14 +13,31 @@ import {
 
 const OrgTable = ({ teamMembersID }) => {
   let globalData = JSON.parse(localStorage.getItem("lcEdu_GlobalData"));
-  console.log("globalData.......");
+  console.log("globalData.......", globalData);
   console.log(globalData);
   const department = globalData.Department;
+  console.log("ggh", department);
   const TeamData = globalData.Employee;
+  console.log("dasta", TeamData);
 
   const tableData = TeamData.filter((obj) =>
     teamMembersID.includes(parseInt(obj.id))
   );
+  const EmployeeData = GetLocalStorageData("employee") || [];
+  console.log("asas", EmployeeData);
+  const DepartmentData = GetLocalStorageData("department") || [];
+  console.log("zasa", DepartmentData);
+
+  // const matchedDepartments = EmployeeData.map(employeeDepartmentId => {
+  //   const department = DepartmentData.find(department => department.id === employeeDepartmentId);
+  //   return department ? department.name : null;
+  // });
+  const filteredData = EmployeeData?.filter((val) => {
+    const filterDep = DepartmentData?.filter((obj) => val?.primary_department_id_list?.includes(obj?.val))
+    return filterDep
+  })
+
+  console.log("filteredData ===:", filteredData);
 
   const columns = useMemo(() => {
     return [
@@ -70,9 +88,10 @@ const OrgTable = ({ teamMembersID }) => {
         accessor: (cellProps) => {
           console.log(cellProps);
           //const depName = department.filter((p) => p.id === cellProps.dep[0]);
-
+          console.log('department ===', department);
+          console.log('cellProps === ', cellProps);
           var depList = department.filter((obj) =>
-            cellProps.dep.includes(parseInt(obj.id))
+            cellProps.primary_department_id_list.includes(parseInt(obj.id))
           );
 
           //console.log(depList);
@@ -169,7 +188,7 @@ const OrgTable = ({ teamMembersID }) => {
     <React.Fragment>
       <TableContainer
         columns={columns || []}
-        data={tableData || []}
+        data={filteredData || []}
         isPagination={false}
         isGlobalFilter={false}
         iscustomPageSize={false}
