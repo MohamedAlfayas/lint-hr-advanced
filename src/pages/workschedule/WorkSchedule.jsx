@@ -126,6 +126,7 @@ const WorkSchedule = () => {
       maximum_break_hr: "00",
       maximum_break_min: "00",
       auto_clock_out: false,
+      has_ot: false,
       is_default: false,
       status: false,
       fullday_work_duration: 0,
@@ -136,7 +137,8 @@ const WorkSchedule = () => {
         {
           id: 0,
           s_day: "Monday",
-          e_day: "Monday",
+          weekday: "Monday",
+          e_day: "",
           s_hr: "00",
           s_min: "00",
           e_hr: "00",
@@ -177,7 +179,7 @@ const WorkSchedule = () => {
         {
           id: 0,
           s_day: "Thursday",
-          WeekDay: "Thursday",
+          weekDay: "Thursday",
           e_day: "",
           s_hr: "00",
           s_min: "00",

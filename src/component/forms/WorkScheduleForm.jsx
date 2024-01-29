@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Card,
@@ -22,6 +22,7 @@ import Select from "react-select";
 import { Api } from "../../common/api/Api";
 
 import classnames from "classnames";
+import { week_list } from "../../common/constant/Constants";
 
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
@@ -49,127 +50,127 @@ const WorkScheduleForm = () => {
     setWorkScheduleData(form_obj);
   }, [form_obj]);
 
-  const [workScheduleDatas, setWorkScheduleDatas] = useState({
-    id: 0,
-    name: "",
-    description: "",
-    timezone: "Asia/Kolkata",
-    auto_clock_out: false,
-    status: true,
-    is_default: false,
-    fullday_hr: 0,
-    fullday_min: 0,
-    fullday_work_duration: 0,
-    grace_in_time_hr: 0,
-    grace_in_time_min: 0,
-    grace_time_duration: 0,
-    halfday_hr: 0,
-    halfday_min: 0,
-    halfday_work_duration: 0,
-    maximum_break_hr: 0,
-    maximum_break_min: 0,
-    maximum_break_duration: 0,
-    workday: [
-      {
-        day_id: 1,
-        weekday: "monday",
-        s_day: "monday",
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: false,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      },
-      {
-        day_id: 2,
-        weekday: "tuesday",
-        s_day: "tuesday",
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: false,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      },
-      {
-        day_id: 3,
-        weekday: "wednesday",
-        s_day: "wednesday",
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: false,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      },
-      {
-        day_id: 4,
-        weekday: "thursday",
-        s_day: "thursday",
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: false,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      },
-      {
-        day_id: 5,
-        weekday: "friday",
-        s_day: "friday",
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: false,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      },
-      {
-        day_id: 6,
-        weekday: "saturday",
-        s_day: "saturday",
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: false,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      },
-      {
-        day_id: 0,
-        weekday: "sunday",
-        s_day: "sunday",
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: false,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      },
-    ],
-  });
+  // const [workScheduleDatas, setWorkScheduleDatas] = useState({
+  //   id: 0,
+  //   name: "",
+  //   description: "",
+  //   timezone: "Asia/Kolkata",
+  //   auto_clock_out: false,
+  //   status: true,
+  //   is_default: false,
+  //   fullday_hr: 0,
+  //   fullday_min: 0,
+  //   fullday_work_duration: 0,
+  //   grace_in_time_hr: 0,
+  //   grace_in_time_min: 0,
+  //   grace_time_duration: 0,
+  //   halfday_hr: 0,
+  //   halfday_min: 0,
+  //   halfday_work_duration: 0,
+  //   maximum_break_hr: 0,
+  //   maximum_break_min: 0,
+  //   maximum_break_duration: 0,
+  //   workday: [
+  //     {
+  //       day_id: 1,
+  //       weekday: "monday",
+  //       s_day: "monday",
+  //       e_day: "",
+  //       s_hr: "00",
+  //       s_min: "00",
+  //       e_hr: "00",
+  //       e_min: "00",
+  //       is_day_on: false,
+  //       total_work_duration: 0,
+  //       break_duration: 0,
+  //       total_work_duration_without_break: 0,
+  //     },
+  //     {
+  //       day_id: 2,
+  //       weekday: "tuesday",
+  //       s_day: "tuesday",
+  //       e_day: "",
+  //       s_hr: "00",
+  //       s_min: "00",
+  //       e_hr: "00",
+  //       e_min: "00",
+  //       is_day_on: false,
+  //       total_work_duration: 0,
+  //       break_duration: 0,
+  //       total_work_duration_without_break: 0,
+  //     },
+  //     {
+  //       day_id: 3,
+  //       weekday: "wednesday",
+  //       s_day: "wednesday",
+  //       e_day: "",
+  //       s_hr: "00",
+  //       s_min: "00",
+  //       e_hr: "00",
+  //       e_min: "00",
+  //       is_day_on: false,
+  //       total_work_duration: 0,
+  //       break_duration: 0,
+  //       total_work_duration_without_break: 0,
+  //     },
+  //     {
+  //       day_id: 4,
+  //       weekday: "thursday",
+  //       s_day: "thursday",
+  //       e_day: "",
+  //       s_hr: "00",
+  //       s_min: "00",
+  //       e_hr: "00",
+  //       e_min: "00",
+  //       is_day_on: false,
+  //       total_work_duration: 0,
+  //       break_duration: 0,
+  //       total_work_duration_without_break: 0,
+  //     },
+  //     {
+  //       day_id: 5,
+  //       weekday: "friday",
+  //       s_day: "friday",
+  //       e_day: "",
+  //       s_hr: "00",
+  //       s_min: "00",
+  //       e_hr: "00",
+  //       e_min: "00",
+  //       is_day_on: false,
+  //       total_work_duration: 0,
+  //       break_duration: 0,
+  //       total_work_duration_without_break: 0,
+  //     },
+  //     {
+  //       day_id: 6,
+  //       weekday: "saturday",
+  //       s_day: "saturday",
+  //       e_day: "",
+  //       s_hr: "00",
+  //       s_min: "00",
+  //       e_hr: "00",
+  //       e_min: "00",
+  //       is_day_on: false,
+  //       total_work_duration: 0,
+  //       break_duration: 0,
+  //       total_work_duration_without_break: 0,
+  //     },
+  //     {
+  //       day_id: 0,
+  //       weekday: "sunday",
+  //       s_day: "sunday",
+  //       e_day: "",
+  //       s_hr: "00",
+  //       s_min: "00",
+  //       e_hr: "00",
+  //       e_min: "00",
+  //       is_day_on: false,
+  //       total_work_duration: 0,
+  //       break_duration: 0,
+  //       total_work_duration_without_break: 0,
+  //     },
+  //   ],
+  // });
 
   const [passedarrowSteps, setPassedarrowSteps] = useState([1]);
   const hourOptions = Array.from({ length: 24 }, (_, i) => ({
@@ -193,10 +194,13 @@ const WorkScheduleForm = () => {
     }
   }
 
-  const handleCBChange = (elm, ck) => {
-    console.log(elm);
-    console.log(ck);
-  };
+  const handleChange = useCallback((event) => {
+    const { name } = event.target;
+    setWorkScheduleData((prevWorkScheduleData) => ({
+      ...prevWorkScheduleData,
+      [name]: event.target.checked,
+    }));
+  }, []);
 
   const calculateTime = (obj, i, isWeekOff) => {
     if (!isWeekOff) {
@@ -206,7 +210,7 @@ const WorkScheduleForm = () => {
       var Temp1 = new Date("2020-01-01" + " " + StartTime).getTime();
       var Temp2 = new Date("2020-01-01" + " " + EndTime).getTime();
       var DiffSec = Temp2 - Temp1;
-      console.log(DiffSec);
+      console.log("DiffSec", DiffSec);
 
       const startDate = new Date(
         2020,
@@ -230,20 +234,42 @@ const WorkScheduleForm = () => {
             (new Date(2020, 0, 2, 0, 0) - startDate) / 1000;
 
       workScheduleData.workday[i].total_work_duration = secondDifference;
+      workScheduleData.workday[i].total_work_duration_without_break =
+        workScheduleData.workday[i].total_work_duration -
+        workScheduleData.maximum_break_duration;
+
+      // setWorkScheduleData((prevData) => {
+      //   const updatedWorkdays = prevData.workday.map((workday, index) => {
+      //     if (index === i) {
+      //       // Update the properties for the specified index
+      //       return {
+      //         ...workday,
+      //         total_work_duration: secondDifference,
+      //         total_work_duration_without_break:
+      //           secondDifference - prevData.maximum_break_duration,
+      //       };
+      //     }
+      //     return workday; // For other indexes, keep the original workday
+      //   });
+
+      //   return {
+      //     ...prevData,
+      //     workday: updatedWorkdays,
+      //   };
+      // });
 
       // setWorkScheduleData({
       //   ...workScheduleData,
-      //   total_work_duration: DiffSec,
+      //   total_work_duration: secondDifference,
       // });
-      //total_work_duration: 0,
-
-      //obj.workday[i].total_work_duration = DiffSec;
+      // total_work_duration: 0,
+      //   (obj.workday[i].total_work_duration = secondDifference);
 
       // let updatedWorkDay = [...workScheduleData?.workday].map((d, idx) => {
       //   if (i === idx) {
       //     return {
       //       ...d,
-      //       total_work_duration: DiffSec,
+      //       total_work_duration: secondDifference,
       //     };
       //   } else {
       //     return d;
@@ -255,17 +281,20 @@ const WorkScheduleForm = () => {
       //   total_work_duration: secondDifference,
       // });
 
-      var mins = Math.floor(DiffSec / 60000);
+      // var mins = Math.floor(DiffSec / 60000);
+      // var hrs = Math.floor(mins / 60);
+      // var sec = Math.floor(mins * 60);
+      // console.log("Seconds", sec);
+
+      var mins = Math.floor(secondDifference / 60);
       var hrs = Math.floor(mins / 60);
-
       mins = mins % 60;
-
       var ws_hr = obj.fullday_hr;
       var ws_min = obj.fullday_min;
 
-      if (parseInt(obj.workday[i].s_hr) > parseInt(obj.workday[i].e_hr)) {
-        hrs = Math.abs(hrs) - 24;
-      }
+      // if (parseInt(obj.workday[i].s_hr) > parseInt(obj.workday[i].e_hr)) {
+      //   hrs = Math.abs(hrs) - 24;
+      // }
 
       let colorCLass =
         Math.abs(hrs) - ws_hr == 0 && Math.abs(mins) - ws_min == 0
@@ -294,52 +323,12 @@ const WorkScheduleForm = () => {
   function pad(d) {
     return d < 10 ? "0" + d.toString() : d.toString();
   }
-  const FormikForm = useFormik({
-    enableReinitialize: true,
-    initialValues: workScheduleData,
-    validationSchema: Yup.object({
-      name: Yup.string().trim().required("Please Enter Work Schedule Name"),
-    }),
-    onSubmit: async (values) => {
-      console.log("employee data = ", workScheduleData);
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
-      toggleArrowTab(activeArrowTab + 1);
-      dispatch(setLoaderVisible(true));
-
-      const Api = await PostApi(
-        "/work-schedule/create/",
-        workScheduleData,
-        false
-      );
-      console.log("API RES = ", Api);
-      if (Api.status && Api.status === 200) {
-        workScheduleData.id === 0
-          ? dispatch(addWorkSchedule(Api?.data.data))
-          : dispatch(editWorkSchedule(Api?.data?.data));
-        dispatch(toggleRSBView(false));
-        toast.success(Api?.data?.message);
-      } else {
-        toast.error(Api?.data?.message || Api?.data?.detail);
-      }
-
-      dispatch(setLoaderVisible(false));
-    },
-  });
 
   function toHrSeconds({ h: hours, m: minutes, s: seconds }) {
-    console.log(hours);
-    console.log(minutes);
-    console.log(seconds);
-
-    console.log(hours * 3600 + minutes * 60 + seconds);
-    console.log(".....................");
-    console.log(workScheduleData);
     return hours * 3600 + minutes * 60 + seconds;
   }
 
   function toSecondsHr(d) {
-    console.log(".....................");
-    console.log(workScheduleData);
     d = Number(d);
     var h = Math.floor(d / 3600);
     var m = Math.floor((d % 3600) / 60);
@@ -358,31 +347,43 @@ const WorkScheduleForm = () => {
 
     return data;
   }
+  const getNextDay = (currentDay) => {
+    const daysOfWeek = week_list.map((day) => day.label);
+    const currentIndex = daysOfWeek.indexOf(currentDay);
+    return daysOfWeek[(currentIndex + 1) % 7];
+  };
 
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   console.log("employee data = ", workScheduleData);
-  //   toggleArrowTab(activeArrowTab + 1);
-  //   dispatch(setLoaderVisible(true));
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: workScheduleData,
+    validationSchema: Yup.object({
+      name: Yup.string().trim().required("Please Enter Work Schedule Name"),
+    }),
+    onSubmit: async (values) => {
+      console.log("employee data = ", workScheduleData);
+      console.log("SUCCESSSS !!!! Formik Values = ", values);
+      toggleArrowTab(activeArrowTab + 1);
+      // dispatch(setLoaderVisible(true));
 
-  //   const Api = await PostApi(
-  //     "/work-schedule/create/",
-  //     workScheduleData,
-  //     false
-  //   );
-  //   console.log("API RES = ", Api);
-  //   if (Api.status && Api.status === 200) {
-  //     workScheduleData.id === 0
-  //       ? dispatch(addWorkSchedule(Api?.data.data))
-  //       : dispatch(editWorkSchedule(Api?.data?.data));
-  //     dispatch(toggleRSBView(false));
-  //     toast.success(Api?.data?.message);
-  //   } else {
-  //     toast.error(Api?.data?.message || Api?.data?.detail);
-  //   }
+      // const Api = await PostApi(
+      //   "/work-schedule/create/",
+      //   workScheduleData,
+      //   false
+      // );
+      // console.log("API RES = ", Api);
+      // if (Api.status && Api.status === 200) {
+      //   workScheduleData.id === 0
+      //     ? dispatch(addWorkSchedule(Api?.data.data))
+      //     : dispatch(editWorkSchedule(Api?.data?.data));
+      //   dispatch(toggleRSBView(false));
+      //   toast.success(Api?.data?.message);
+      // } else {
+      //   toast.error(Api?.data?.message || Api?.data?.detail);
+      // }
 
-  //   dispatch(setLoaderVisible(false));
-  // };
+      // dispatch(setLoaderVisible(false));
+    },
+  });
 
   document.title = "WorkSchedule | Lint HR";
 
@@ -521,18 +522,17 @@ const WorkScheduleForm = () => {
                             value={hourOptions.find(
                               (option) =>
                                 option.value ===
-                                toSecondsHr(
-                                  workScheduleData.fullday_work_duration
-                                ).hr
+                                String(
+                                  Math.floor(
+                                    workScheduleData.fullday_work_duration /
+                                      3600
+                                  )
+                                ).padStart(2, "0")
                             )}
                             onChange={(e) => {
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                fullday_hr: toHrSeconds({
-                                  h: e.value,
-                                  m: 0,
-                                  s: 0,
-                                }),
+                                fullday_hr: e.value,
 
                                 fullday_work_duration: toHrSeconds({
                                   h: e.value,
@@ -550,17 +550,19 @@ const WorkScheduleForm = () => {
                             options={minuteOptions}
                             value={minuteOptions.find(
                               (option) =>
-                                // option.value === workScheduleData.fullday_min
-                                option.value === workScheduleData.fullday_min
+                                option.value ===
+                                String(
+                                  Math.floor(
+                                    (workScheduleData.fullday_work_duration %
+                                      3600) /
+                                      60
+                                  )
+                                ).padStart(2, "0")
                             )}
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                fullday_min: toHrSeconds({
-                                  h: 0,
-                                  m: e.value,
-                                  s: 0,
-                                }),
+                                fullday_min: e.value,
                                 fullday_work_duration: toHrSeconds({
                                   h: workScheduleData.fullday_hr,
                                   m: e.value,
@@ -590,16 +592,18 @@ const WorkScheduleForm = () => {
                             options={hourOptions}
                             value={hourOptions.find(
                               (option) =>
-                                option.value === workScheduleData.halfday_hr
+                                option.value ===
+                                String(
+                                  Math.floor(
+                                    workScheduleData.halfday_work_duration /
+                                      3600
+                                  )
+                                ).padStart(2, "0")
                             )}
                             onChange={(e) => {
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                halfday_hr: toHrSeconds({
-                                  h: e.value,
-                                  m: 0,
-                                  s: 0,
-                                }),
+                                halfday_hr: e.value,
 
                                 halfday_work_duration: toHrSeconds({
                                   h: e.value,
@@ -617,16 +621,19 @@ const WorkScheduleForm = () => {
                             options={minuteOptions}
                             value={minuteOptions.find(
                               (option) =>
-                                option.value === workScheduleData.halfday_min
+                                option.value ===
+                                String(
+                                  Math.floor(
+                                    (workScheduleData.halfday_work_duration %
+                                      3600) /
+                                      60
+                                  )
+                                ).padStart(2, "0")
                             )}
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                halfday_min: toHrSeconds({
-                                  h: 0,
-                                  m: e.value,
-                                  s: 0,
-                                }),
+                                halfday_min: e.value,
                                 halfday_work_duration: toHrSeconds({
                                   h: workScheduleData.halfday_hr,
                                   m: e.value,
@@ -658,16 +665,16 @@ const WorkScheduleForm = () => {
                             value={hourOptions.find(
                               (option) =>
                                 option.value ===
-                                workScheduleData.grace_in_time_hr
+                                String(
+                                  Math.floor(
+                                    workScheduleData.grace_time_duration / 3600
+                                  )
+                                ).padStart(2, "0")
                             )}
                             onChange={(e) => {
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                grace_in_time_hr: toHrSeconds({
-                                  h: e.value,
-                                  m: 0,
-                                  s: 0,
-                                }),
+                                grace_in_time_hr: e.value,
 
                                 grace_time_duration: toHrSeconds({
                                   h: e.value,
@@ -686,16 +693,18 @@ const WorkScheduleForm = () => {
                             value={minuteOptions.find(
                               (option) =>
                                 option.value ===
-                                workScheduleData.grace_in_time_min
+                                String(
+                                  Math.floor(
+                                    (workScheduleData.grace_time_duration %
+                                      3600) /
+                                      60
+                                  )
+                                ).padStart(2, "0")
                             )}
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                grace_in_time_min: toHrSeconds({
-                                  h: 0,
-                                  m: e.value,
-                                  s: 0,
-                                }),
+                                grace_in_time_min: e.value,
                                 grace_time_duration: toHrSeconds({
                                   h: workScheduleData.grace_in_time_hr,
                                   m: e.value,
@@ -725,16 +734,17 @@ const WorkScheduleForm = () => {
                             value={hourOptions.find(
                               (option) =>
                                 option.value ===
-                                workScheduleData.maximum_break_hr
+                                String(
+                                  Math.floor(
+                                    workScheduleData.maximum_break_duration /
+                                      3600
+                                  )
+                                ).padStart(2, "0")
                             )}
                             onChange={(e) => {
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                maximum_break_hr: toHrSeconds({
-                                  h: e.value,
-                                  m: 0,
-                                  s: 0,
-                                }),
+                                maximum_break_hr: e.value,
                                 maximum_break_duration: toHrSeconds({
                                   h: e.value,
                                   m: workScheduleData.maximum_break_min,
@@ -752,16 +762,18 @@ const WorkScheduleForm = () => {
                             value={minuteOptions.find(
                               (option) =>
                                 option.value ===
-                                workScheduleData.maximum_break_min
+                                String(
+                                  Math.floor(
+                                    (workScheduleData.maximum_break_duration %
+                                      3600) /
+                                      60
+                                  )
+                                ).padStart(2, "0")
                             )}
                             onChange={(e) =>
                               setWorkScheduleData({
                                 ...workScheduleData,
-                                maximum_break_min: toHrSeconds({
-                                  h: 0,
-                                  m: e.value,
-                                  s: 0,
-                                }),
+                                maximum_break_min: e.value,
                                 maximum_break_duration: toHrSeconds({
                                   h: workScheduleData.maximum_break_hr,
                                   m: e.value,
@@ -775,32 +787,47 @@ const WorkScheduleForm = () => {
                     </Col>
                   </Row>
 
-                  <Row>
-                    <Col xxl={9} md={9}>
-                      <div className="form-check form-check-success mb-3 mt-3 w-50">
-                        <Label
-                          className="form-check-label"
-                          for="auto_clock_out_cb"
-                        >
-                          Auto Clock Out
-                        </Label>
+                  <Col lg={12}>
+                    <div>
+                      <Label for="auto_clock_out_cb" className="form-label">
+                        Auto Clock Out
+                      </Label>
+                      <div
+                        className="form-check form-switch form-switch-md form-switch-success"
+                        dir="ltr"
+                      >
                         <Input
-                          className="form-check-input"
-                          type="checkbox"
-                          name="auto_clock_out_cb"
+                          name="auto_clock_out"
                           id="auto_clock_out_cb"
+                          type="checkbox"
+                          className="form-check-input"
                           checked={workScheduleData.auto_clock_out}
-                          onChange={(e) => {
-                            console.log(e);
-                            setWorkScheduleData({
-                              ...workScheduleData,
-                              auto_clock_out: e.target.checked,
-                            });
-                          }}
+                          onChange={handleChange}
                         />
                       </div>
-                    </Col>
-                  </Row>
+                    </div>
+                  </Col>
+
+                  <Col lg={12}>
+                    <div>
+                      <Label for="has_ot" className="form-label">
+                        Enable OT
+                      </Label>
+                      <div
+                        className="form-check form-switch form-switch-md form-switch-success"
+                        dir="ltr"
+                      >
+                        <Input
+                          id="has_ot"
+                          name="has_ot"
+                          type="checkbox"
+                          className="form-check-input"
+                          checked={workScheduleData.has_ot}
+                          onChange={handleChange}
+                        />
+                      </div>
+                    </div>
+                  </Col>
                 </div>
                 <div className="d-flex align-items-start gap-3 mt-4">
                   <button
@@ -839,7 +866,7 @@ const WorkScheduleForm = () => {
                       <th>TO</th>
                       <th>End Time</th>
                       <th>Minute</th>
-                      <th>Shift Hourse</th>
+                      <th>Shift Hours</th>
                     </tr>
                     {workScheduleData.workday?.map((workday, index) => {
                       return (
@@ -900,7 +927,7 @@ const WorkScheduleForm = () => {
                               isDisabled={!workday.is_day_on}
                               placeholder={"00"}
                               options={hourOptions}
-                              value={minuteOptions.find(
+                              value={hourOptions.find(
                                 (option) => option.value === workday.s_hr
                               )}
                               onChange={(e) => {
@@ -961,11 +988,27 @@ const WorkScheduleForm = () => {
                                 (option) => option.value === workday.e_hr
                               )}
                               onChange={(e) => {
+                                console.log("Type of e.value:", typeof e.value);
+                                console.log("Value of e.value:", e.value);
+
                                 let global_wd = [...workScheduleData.workday];
                                 let this_wd = {
                                   ...workday,
                                   e_hr: e.value,
                                 };
+                                if (
+                                  e.value.trim() === "00" ||
+                                  e.value < workday.s_hr
+                                ) {
+                                  this_wd.e_day = getNextDay(workday.s_day);
+                                } else if (
+                                  e.value === workday.s_hr &&
+                                  workday.e_min < workday.s_min
+                                ) {
+                                  this_wd.e_day = getNextDay(workday.s_day);
+                                } else {
+                                  this_wd.e_day = workday.s_day;
+                                }
                                 let res = global_wd.map((obj, idx) =>
                                   idx === index ? this_wd : obj
                                 );
