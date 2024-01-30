@@ -22,26 +22,27 @@ import AttendanceConfig from "../pages/attendanceConfig/AttendanceConfig"
 
 
 const privateRoutes = [
-    { path: "/dashboard", component: <Dashboard /> },
-    { path: "/organization", component: <ProjectOverview /> },
-    { path: "/employee", component: <Employee /> },
-    { path: "/employee/view/:id", component: <EmployeeView /> },
-    { path: "/roles", component: <Roles /> },
-    { path: "/workschedule", component: <WorkSchedule /> },
-    { path: "/holidays", component: <Holidays /> },
-    { path: "/leavetype", component: <LeaveType /> },
-    { path: "/leave-approval", component: <LeaveApproval /> },
-    { path: "/leaves", component: <LeaveDashboard /> },
-    { path: "/custom-field", component: <CustomField /> },
-    { path: "/payroll", component: <PayRoll /> },
-    { path: "/payrollconfig", component: <PayRollConfig /> },
-    { path: "/attendance", component: <AttendanceDashboard /> },
-    { path: "/xlsx", component: <Xlsx /> },
-    { path: "/attendanceconfig", component: <AttendanceConfig /> },
+    { path: "/dashboard", component: <Dashboard />, perm: "all" },
+    { path: "/organization", component: <ProjectOverview />, perm: "organization" },
+    { path: "/employee", component: <Employee />, perm: "employee" },
+    { path: "/employee/view/:id", component: <EmployeeView />, perm: "employee_view" },
+    { path: "/roles", component: <Roles />, perm: "roles" },
+    { path: "/workschedule", component: <WorkSchedule />, perm: "work_schedule" },
+    { path: "/holidays", component: <Holidays />, perm: "holidays" },
+    { path: "/leavetype", component: <LeaveType />, perm: "leave_type" },
+    { path: "/leave-approval", component: <LeaveApproval />, perm: "leave_approval" },
+    { path: "/leaves", component: <LeaveDashboard />, perm: "leaves" },
+    { path: "/custom-field", component: <CustomField />, perm: "custom_field" },
+    { path: "/payroll", component: <PayRoll />, perm: "payroll" },
+    { path: "/payrollconfig", component: <PayRollConfig />, perm: "payroll_config" },
+    { path: "/attendance", component: <AttendanceDashboard />, perm: "attendance" },
+    { path: "/xlsx", component: <Xlsx />, perm: "xlsx" },
+    { path: "/attendanceconfig", component: <AttendanceConfig />, perm: "attendance_config" },
     {
         path: "/",
         exact: true,
         component: <Navigate to="/dashboard" />,
+        perm: "all"
     },
 ]
 

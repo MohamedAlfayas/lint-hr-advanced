@@ -125,25 +125,27 @@ const OrgInfoTab = () => {
       .then((res) => {
         const response = res?.data?.data;
         console.log("org res = ", response);
-        let thisCFValues = [...response?.cf_values];
-        let cf = [];
-        if (thisCFValues && thisCFValues.length) {
-          cf = CustomFieldsForThisForm.map((obj) => {
-            return {
-              ...obj,
-              value:
-                thisCFValues.find((t) => t.id === obj.id)?.value || obj.value,
-            };
-          });
-        } else {
-          cf = CustomFieldsForThisForm;
-        }
-        setProfileData({ ...response, cf_values: cf });
+        if (Object.keys(response).length) {
+          let thisCFValues = [...response?.cf_values];
+          let cf = [];
+          if (thisCFValues && thisCFValues.length) {
+            cf = CustomFieldsForThisForm.map((obj) => {
+              return {
+                ...obj,
+                value:
+                  thisCFValues.find((t) => t.id === obj.id)?.value || obj.value,
+              };
+            });
+          } else {
+            cf = CustomFieldsForThisForm;
+          }
+          setProfileData({ ...response, cf_values: cf });
 
-        setStateListOptions(
-          CountryListOptions.find((d) => d.value === response?.country)
-            .states || []
-        );
+          setStateListOptions(
+            CountryListOptions.find((d) => d.value === response?.country)
+              .states || []
+          );
+        }
       })
       .catch((err) => {
         console.log(err);
@@ -791,10 +793,10 @@ const OrgInfoTab = () => {
                                   : false
                               }
                             />
-                            {!FormikForm.touched.timezone &&
+                            {/* {!FormikForm.touched.timezone &&
                               !FormikForm.errors.timezone && (
                                 <i className="ri-time-line"></i>
-                              )}
+                              )} */}
                             {FormikForm.touched.timezone &&
                             FormikForm.errors.timezone ? (
                               <div className="lc_form_error_text">

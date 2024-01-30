@@ -38,6 +38,7 @@ const TableContainer = ({
   tdClass,
   divClass,
   SearchPlaceholder,
+  showInfo,
 }) => {
   const { search } = useSelector((state) => state.TableFilterReducer);
 
@@ -218,60 +219,64 @@ const TableContainer = ({
         </Table>
       </div>
 
-      <Row className="align-items-center g-3 text-center text-sm-start mb-3">
-        <div className="col-sm">
-          <div className="text-muted">
-            Showing
-            <span className="fw-semibold ms-1">{startItem}</span> to{" "}
-            <span className="fw-semibold">{endItem}</span> of{" "}
-            <span className="fw-semibold">{rows.length}</span>
+      {showInfo === true && (
+        <Row className="align-items-center g-3 text-center text-sm-start mb-3">
+          <div className="col-sm">
+            <div className="text-muted">
+              Showing
+              <span className="fw-semibold ms-1">{startItem}</span> to{" "}
+              <span className="fw-semibold">{endItem}</span> of{" "}
+              <span className="fw-semibold">{rows.length}</span>
+            </div>
           </div>
-        </div>
-        <div className="col-sm-auto">
-          <ul className="pagination pagination-separated pagination-md justify-content-center justify-content-sm-start mb-0">
-            <li
-              className={!canPreviousPage ? "page-item disabled" : "page-item"}
+          <div className="col-sm-auto">
+            <ul className="pagination pagination-separated pagination-md justify-content-center justify-content-sm-start mb-0">
+              <li
+                className={
+                  !canPreviousPage ? "page-item disabled" : "page-item"
+                }
+              >
+                <Link to="#" className="page-link" onClick={previousPage}>
+                  Previous
+                </Link>
+              </li>
+              {pageOptions.map((item, key) => (
+                <React.Fragment key={key}>
+                  <li className="page-item">
+                    <Link
+                      to="#"
+                      className={
+                        pageIndex === item ? "page-link active" : "page-link"
+                      }
+                      onClick={() => gotoPage(item)}
+                    >
+                      {item + 1}
+                    </Link>
+                  </li>
+                </React.Fragment>
+              ))}
+              <li className={!canNextPage ? "page-item disabled" : "page-item"}>
+                <Link to="#" className="page-link" onClick={nextPage}>
+                  Next
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div className="col-sm-auto">
+            <select
+              className="form-select custom-select-medium text-muted"
+              value={pageSize}
+              onChange={handlePageSizeChange}
             >
-              <Link to="#" className="page-link" onClick={previousPage}>
-                Previous
-              </Link>
-            </li>
-            {pageOptions.map((item, key) => (
-              <React.Fragment key={key}>
-                <li className="page-item">
-                  <Link
-                    to="#"
-                    className={
-                      pageIndex === item ? "page-link active" : "page-link"
-                    }
-                    onClick={() => gotoPage(item)}
-                  >
-                    {item + 1}
-                  </Link>
-                </li>
-              </React.Fragment>
-            ))}
-            <li className={!canNextPage ? "page-item disabled" : "page-item"}>
-              <Link to="#" className="page-link" onClick={nextPage}>
-                Next
-              </Link>
-            </li>
-          </ul>
-        </div>
-        <div className="col-sm-auto">
-          <select
-            className="form-select custom-select-medium text-muted"
-            value={pageSize}
-            onChange={handlePageSizeChange}
-          >
-            {[10, 25, 50, 100].map((size) => (
-              <option key={size} value={size}>
-                Show {size}
-              </option>
-            ))}
-          </select>
-        </div>
-      </Row>
+              {[10, 25, 50, 100].map((size) => (
+                <option key={size} value={size}>
+                  Show {size}
+                </option>
+              ))}
+            </select>
+          </div>
+        </Row>
+      )}
     </Fragment>
   );
 };

@@ -3,11 +3,18 @@ import PublicRoute from "./PublicRoute";
 import PrivateRoute from "./PrivateRoute";
 import { privateRoutes, publicRoutes } from "./AllRoutes";
 import Layout from "../layout/Layout";
-import React from "react";
+import React, { useEffect, useMemo } from "react";
 import Basic404 from "../pages/error/Basic404";
 
 
 const Index = () => {
+
+    // const user_perm_list = ['employee', 'leave_type', 'custom_field']
+
+    // const filteredPrivateRoutes = useMemo(() => {
+    //     return privateRoutes.filter(route => user_perm_list.includes(route?.perm) || route.perm === "all");
+    // }, []);
+
     return (
         <React.Fragment>
             <Routes>

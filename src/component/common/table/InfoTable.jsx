@@ -1209,6 +1209,7 @@ const InfoTable = ({
                     handleDataClick={handleDataClicks}
                     isDataFilter={true}
                     SearchPlaceholder="Search for data ID, customer, data status or something..."
+                    showInfo={true}
                   />
                 ) : (
                   <React.Fragment>
