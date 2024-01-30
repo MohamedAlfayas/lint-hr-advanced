@@ -38,6 +38,9 @@ import { setDepartmentDetails } from "../../redux/reducers/ChildReducer/Departme
 const DepartmentsTab = () => {
   const DepartmentData = GetLocalStorageData("department");
 
+  const EmployeeData = GetLocalStorageData("employee");
+  console.log("Datas",EmployeeData);
+
   const dispatch = useDispatch();
 
   const newDepObj = useMemo(() => {
@@ -59,6 +62,8 @@ const DepartmentsTab = () => {
     dispatch(setComponentToShow("department"));
     dispatch(toggleRSBView(true));
   };
+
+  
 
   const [data] = useState([
     {
@@ -224,7 +229,7 @@ const DepartmentsTab = () => {
       { id: 2, img: avatar2, name: "ELan1" },
       // { id: 3, img: avatar3 },
 
-      { id: 3, imgNumber: "7", bgcolor: "bg-info" },
+      { id: 3, imgNumber: "4", bgcolor: "bg-info" },
     ],
   };
 
@@ -234,6 +239,7 @@ const DepartmentsTab = () => {
   }
 
   const [departmentId, setDepartmentId] = useState(0);
+  const [departmemtName, setDepartName] = useState(0);
 
   const setDataForTable = (obj) => {
     console.log("Node Data == ", obj);
@@ -253,6 +259,7 @@ const DepartmentsTab = () => {
                     onClick={() => {
                       toggleOrgModal();
                       setDepartmentId(node.id);
+                      setDepartName(node.name);
                     }}
                     className="text-body  text-truncate d-block"
                   >
@@ -304,6 +311,11 @@ const DepartmentsTab = () => {
               <div className="flex-shrink-0 ms-1">
                 <div className="d-flex gap-1">
                   <button
+                  onClick={() => {
+                    toggleOrgModal();
+                    setDepartmentId(node.id);
+                    setDepartName(node.name);
+                  }}
                     type="button"
                     className="btn btn-icon text-muted btn-sm fs-18"
                   >
@@ -368,6 +380,7 @@ const DepartmentsTab = () => {
         showOrgModal={showOrgModal}
         toggleOrgModal={toggleOrgModal}
         departmentId={departmentId}
+        organizationName={departmemtName}
       />
     </React.Fragment>
   );

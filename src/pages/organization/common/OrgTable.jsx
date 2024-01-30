@@ -40,14 +40,14 @@ const OrgTable = ({ departmentId }) => {
               <div>
                 <Link
                   to="#"
-                  onClick={() => viewEmployee(obj)}
+                  // onClick={() => viewEmployee(obj)}
                   className="link-body-emphasis mb-0"
                 >
                   {" "}
-                  <h5 className="fs-14 mb-1">{obj.fname}</h5>
+                  <h5 className="fs-14 mb-1 text text-start">{obj.fname}</h5>
                 </Link>
               </div>
-              <div>{obj.email}</div>
+              <div className="text-start">{obj.email}</div>
             </div>
           </div>
         ) : (
@@ -73,7 +73,7 @@ const OrgTable = ({ departmentId }) => {
               <div>
                 <Link
                   to="#"
-                  onClick={() => viewEmployee(obj)}
+                  // onClick={() => viewEmployee(obj)}
                   className="link-body-emphasis mb-0"
                 >
                   {" "}
@@ -88,112 +88,112 @@ const OrgTable = ({ departmentId }) => {
       // filterable: false,
       // id: "nameAndEmail",
     },
-    {
-      Header: "ID",
-      accessor: "emp_id",
-      filterable: false,
-      id: "emp_id",
-      accessor: (obj) => {
-        return (
-          <>
-            <div className="flex-grow-1">
-              <div>
-                <Link
-                  to="#"
-                  onClick={() => viewEmployee(obj)}
-                  className="link-body-emphasis mb-0"
-                >
-                  {" "}
-                  <React.Fragment>{obj.emp_id}</React.Fragment>
-                </Link>
-              </div>
-            </div>
-          </>
-        );
-      },
-    },
+    // {
+    //   Header: "ID",
+    //   accessor: "emp_id",
+    //   filterable: false,
+    //   id: "emp_id",
+    //   accessor: (obj) => {
+    //     return (
+    //       <>
+    //         <div className="flex-grow-1">
+    //           <div>
+    //             <Link
+    //               to="#"
+    //               onClick={() => viewEmployee(obj)}
+    //               className="link-body-emphasis mb-0"
+    //             >
+    //               {" "}
+    //               <React.Fragment>{obj.emp_id}</React.Fragment>
+    //             </Link>
+    //           </div>
+    //         </div>
+    //       </>
+    //     );
+    //   },
+    // },
 
-    {
-      Header: "Role",
-      id: "role_id",
-      filterable: false,
-      accessor: (obj) => {
-        const RoleData = GetLocalStorageData("role");
-        let thisRole = RoleData
-          ? RoleData.filter((data) => obj.role_id === data.id)
-          : [];
-        return (
-          <>
-            {thisRole.map((d) => (
-              <React.Fragment>{d.name}</React.Fragment>
-            ))}
-          </>
-        );
-      },
-    },
-    {
-      Header: "Department",
-      id: "department",
-      filterable: false,
-      accessor: (obj) => {
-        let thisDepartment = DepartmentData
-          ? DepartmentData.filter((data) =>
-              obj.primary_department_id_list.includes(data.id)
-            )
-          : [];
+    // {
+    //   Header: "Role",
+    //   id: "role_id",
+    //   filterable: false,
+    //   accessor: (obj) => {
+    //     const RoleData = GetLocalStorageData("role");
+    //     let thisRole = RoleData
+    //       ? RoleData.filter((data) => obj.role_id === data.id)
+    //       : [];
+    //     return (
+    //       <>
+    //         {thisRole.map((d) => (
+    //           <React.Fragment>{d.name}</React.Fragment>
+    //         ))}
+    //       </>
+    //     );
+    //   },
+    // },
+    // {
+    //   Header: "Department",
+    //   id: "department",
+    //   filterable: false,
+    //   accessor: (obj) => {
+    //     let thisDepartment = DepartmentData
+    //       ? DepartmentData.filter((data) =>
+    //           obj.primary_department_id_list.includes(data.id)
+    //         )
+    //       : [];
 
-        let firstDep_name = thisDepartment?.length
-          ? thisDepartment[0].name
-          : "";
+    //     let firstDep_name = thisDepartment?.length
+    //       ? thisDepartment[0].name
+    //       : "";
 
-        let subDepList = thisDepartment?.length
-          ? thisDepartment.filter((datas, index) => {
-              if (index !== 0) {
-                return datas;
-              }
-            })
-          : [];
+    //     let subDepList = thisDepartment?.length
+    //       ? thisDepartment.filter((datas, index) => {
+    //           if (index !== 0) {
+    //             return datas;
+    //           }
+    //         })
+    //       : [];
 
-        return (
-          <span>
-            <Button
-              color="light"
-              id={`depListRef-${obj.id}`}
-              className="position-relative"
-            >
-              <React.Fragment>{firstDep_name}</React.Fragment>
-              {subDepList.length > 0 ? (
-                <span>
-                  <Badge
-                    //id="tooltipwithHtml"
-                    pill
-                    color="success"
-                    className="position-absolute top-0 start-100 translate-middle"
-                  >
-                    +{subDepList.length}
-                    <span className="visually-hidden">Departments</span>
-                  </Badge>
+    //     return (
+    //       <span>
+    //         <Button
+    //           color="light"
+    //           id={`depListRef-${obj.id}`}
+    //           className="position-relative"
+    //         >
+    //           <React.Fragment>{firstDep_name}</React.Fragment>
+    //           {subDepList.length > 0 ? (
+    //             <span>
+    //               <Badge
+    //                 //id="tooltipwithHtml"
+    //                 pill
+    //                 color="success"
+    //                 className="position-absolute top-0 start-100 translate-middle"
+    //               >
+    //                 +{subDepList.length}
+    //                 <span className="visually-hidden">Departments</span>
+    //               </Badge>
 
-                  <UncontrolledTooltip
-                    placement="bottom"
-                    target={`depListRef-${obj.id}`}
-                  >
-                    {" "}
-                    <div className="mt-1">
-                      {subDepList.map((item, key) => (
-                        <p className="mb-1">{item.name}</p>
-                      ))}
-                    </div>{" "}
-                  </UncontrolledTooltip>
-                </span>
-              ) : (
-                ""
-              )}
-            </Button>
-          </span>
-        );
-      },
-    },
+    //               <UncontrolledTooltip
+    //                 placement="bottom"
+    //                 target={`depListRef-${obj.id}`}
+    //               >
+    //                 {" "}
+    //                 <div className="mt-1">
+    //                   {subDepList.map((item, key) => (
+    //                     <p className="mb-1">{item.name}</p>
+    //                   ))}
+    //                 </div>{" "}
+    //               </UncontrolledTooltip>
+    //             </span>
+    //           ) : (
+    //             ""
+    //           )}
+    //         </Button>
+    //       </span>
+    //     );
+    //   },
+    // },
     {
       Header: "Reporting Manager",
       filterable: false,
@@ -217,10 +217,10 @@ const OrgTable = ({ departmentId }) => {
                 <div>
                   <Link to="#" className="link-body-emphasis mb-0">
                     {" "}
-                    <h5 className="fs-14 mb-1">{rm_obj.fname}</h5>
+                    <h5 className="fs-14 mb-1 text-start">{rm_obj.fname}</h5>
                   </Link>
                 </div>
-                <div>{rm_obj.email}</div>
+                <div className="text-start">{rm_obj.email}</div>
               </div>
             </div>
           ) : (
@@ -258,23 +258,23 @@ const OrgTable = ({ departmentId }) => {
         );
       },
     },
-    {
-      Header: "Status",
-      id: "status",
-      filterable: false,
-      accessor: (obj) => {
-        let status = obj.is_active ? "Active" : "Inactive";
-        let statusClass = obj.is_active ? "success" : "warning";
-        return (
-          <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
-          >
-            {" "}
-            {status}{" "}
-          </span>
-        );
-      },
-    },
+    // {
+    //   Header: "Status",
+    //   id: "status",
+    //   filterable: false,
+    //   accessor: (obj) => {
+    //     let status = obj.is_active ? "Active" : "Inactive";
+    //     let statusClass = obj.is_active ? "success" : "warning";
+    //     return (
+    //       <span
+    //         className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
+    //       >
+    //         {" "}
+    //         {status}{" "}
+    //       </span>
+    //     );
+    //   },
+    // },
   ];
 
   return (
@@ -291,6 +291,7 @@ const OrgTable = ({ departmentId }) => {
         tableClass="table-centered align-middle table-nowrap mb-0"
         theadClass="text-muted table-light"
         SearchPlaceholder="Search Products..."
+        showInfo={false}
       />
     </React.Fragment>
   );

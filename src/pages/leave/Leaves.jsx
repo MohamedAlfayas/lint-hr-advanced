@@ -175,7 +175,7 @@ const LeaveDashboard = () => {
               <LeaveTypesWidgets
                 formname={leave_application_component_name}
                 initialFormObj={initialFormObj}
-                width_per={"35%"}
+                width_per={"45%"}
               />
             </Col>
             <InfoTable
