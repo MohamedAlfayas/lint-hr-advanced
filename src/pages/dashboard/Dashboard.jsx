@@ -3,6 +3,7 @@ import { Col, Container, Row } from "reactstrap";
 import Widget from "../../component/widget/Widgets";
 import Section from "../../component/section/Section";
 import { MetaTitle } from "../../common/data/MetaTitle";
+import EmployeeActivity from "./EmployeeActivity";
 
 const Dashboard = () => {
   document.title = `Dashboard | ${MetaTitle || "Lint HR"}`;
@@ -22,9 +23,13 @@ const Dashboard = () => {
                 <Section rightClickBtn={toggleRightColumn} />
                 <Row>
                   <Widget />
-                </Row>                
+                </Row>
               </div>
-            </Col>            
+            </Col>
+            <EmployeeActivity
+              rightColumn={rightColumn}
+              hideRightColumn={toggleRightColumn}
+            />
           </Row>
         </Container>
       </div>
