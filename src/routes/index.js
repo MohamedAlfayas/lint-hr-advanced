@@ -9,11 +9,11 @@ import Basic404 from "../pages/error/Basic404";
 
 const Index = () => {
 
-    // const user_perm_list = ['employee', 'leave_type', 'custom_field']
-
-    // const filteredPrivateRoutes = useMemo(() => {
-    //     return privateRoutes.filter(route => user_perm_list.includes(route?.perm) || route.perm === "all");
-    // }, []);
+    const filteredPrivateRoutes = useMemo(() => {
+        const user_perm_list = JSON.parse(localStorage.getItem('user_perm_list'));
+        console.log("user_perm_list = ", user_perm_list);
+        return privateRoutes.filter(route => user_perm_list.includes(route?.perm) || route.perm === "all");
+    }, []);
 
     return (
         <React.Fragment>

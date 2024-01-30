@@ -81,6 +81,15 @@ const Login = () => {
             "lint_hr_profile_data",
             JSON.stringify(res?.data?.profile_data)
           );
+          localStorage.setItem(
+            "user_perm_list",
+            JSON.stringify([
+              "organization",
+              "employee",
+              "leave_type",
+              "custom_field",
+            ])
+          );
           dispatch(setMyProfileDataReducer(res?.data?.profile_data));
           // localStorage.setItem(
           //   "left_side_bar_type",

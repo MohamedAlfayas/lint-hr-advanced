@@ -33,6 +33,7 @@ const ProfileDropdown = () => {
     localStorage.removeItem("lint_hr_v");
     localStorage.removeItem("lint_hr_globaldata");
     localStorage.removeItem("lint_hr_profile_data");
+    localStorage.removeItem("user_perm_list");
 
     if (window.logoutChannel) {
       window.logoutChannel.close();

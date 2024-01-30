@@ -36,10 +36,8 @@ import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setDepartmentDetails } from "../../redux/reducers/ChildReducer/DepartmentReducer";
 
 const DepartmentsTab = () => {
-  const DepartmentData = GetLocalStorageData("department");
-
   const EmployeeData = GetLocalStorageData("employee");
-  console.log("Datas",EmployeeData);
+  console.log("Datas", EmployeeData);
 
   const dispatch = useDispatch();
 
@@ -62,158 +60,6 @@ const DepartmentsTab = () => {
     dispatch(setComponentToShow("department"));
     dispatch(toggleRSBView(true));
   };
-
-  
-
-  const [data] = useState([
-    {
-      label: "Lintcloud IT Service Private Limited",
-      expanded: true,
-      type: "person",
-      data: {
-        id: 1,
-        manager: [1, 2],
-        employee: [3, 4],
-      },
-      children: [
-        {
-          expanded: true,
-          type: "person",
-          label: "Sales and marketing (Business development)",
-          data: {
-            id: 1,
-            manager: [1, 2],
-            employee: [3, 4],
-          },
-          children: [
-            {
-              label: "Pre Sales",
-            },
-            {
-              label: "Post Sales",
-            },
-            {
-              label: "Marketing",
-            },
-            {
-              label: "Customer Success",
-            },
-          ],
-        },
-        {
-          expanded: true,
-          type: "person",
-          label: "Development",
-          data: {
-            id: 1,
-            manager: [1, 2],
-            employee: [3, 4],
-          },
-          children: [
-            {
-              label: "Python Programing",
-            },
-            {
-              label: "UI/UX Design",
-            },
-            {
-              label: "Backend (DB)",
-            },
-            {
-              label: "React (UI/UX)",
-            },
-            {
-              label: "Android",
-              expanded: true,
-              children: [
-                {
-                  label: "Unit Testing",
-                },
-                {
-                  label: "Backend Services",
-                },
-              ],
-            },
-            {
-              label: "Apple Iphone",
-            },
-          ],
-        },
-        {
-          expanded: true,
-          type: "person",
-          label: "Accounts",
-          data: {
-            id: 1,
-            manager: [1, 2],
-            employee: [3, 4],
-          },
-          children: [
-            {
-              label: "Acc & Finance",
-            },
-            {
-              label: "Hr",
-              expanded: true,
-              children: [
-                {
-                  label: "Requirement",
-                },
-                {
-                  label: "Selection Team",
-                  expanded: true,
-                  children: [
-                    {
-                      label: "Traniee",
-                      expanded: true,
-                      children: [
-                        {
-                          label: "Traniee 1",
-                          expanded: true,
-                          children: [
-                            {
-                              label: "Traniee 2",
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-        {
-          expanded: true,
-          type: "person",
-          label: "Back Office",
-          data: {
-            id: 1,
-            manager: [1, 2],
-            employee: [3, 4],
-          },
-          children: [
-            {
-              label: "Carpet Sweeper",
-            },
-            {
-              label: "Cab Driver",
-            },
-            {
-              label: "Watch Man",
-            },
-            {
-              label: "Document Keeper",
-            },
-            {
-              label: "Hospitality Cleaner",
-            },
-          ],
-        },
-      ],
-    },
-  ]);
 
   const { department_data } = useSelector((state) => state.DepartmentReducer);
 
@@ -239,16 +85,15 @@ const DepartmentsTab = () => {
   }
 
   const [departmentId, setDepartmentId] = useState(0);
-  const [departmemtName, setDepartName] = useState(0);
-
-  const setDataForTable = (obj) => {
-    console.log("Node Data == ", obj);
-    let team_members_id = obj.data.manager.concat(obj.data.employee);
-    setDepartmentId(team_members_id);
-  };
+  const [departmentName, setDepartmentName] = useState(0);
 
   const nodeTemplate1 = (node) => {
     if (true) {
+      let emp_list_for_this_department =
+        EmployeeData.filter((d) =>
+          d.primary_department_id_list.includes(node.id)
+        ) || [];
+
       return (
         <Col xxl={12} lg={12}>
           <div className="border rounded border-dashed p-2">
@@ -259,7 +104,7 @@ const DepartmentsTab = () => {
                     onClick={() => {
                       toggleOrgModal();
                       setDepartmentId(node.id);
-                      setDepartName(node.name);
+                      setDepartmentName(node.name);
                     }}
                     className="text-body  text-truncate d-block"
                   >
@@ -268,42 +113,87 @@ const DepartmentsTab = () => {
                 </h5>
                 <div>
                   <div className="avatar-group">
-                    {item.subItem.map((item, key) => (
-                      <React.Fragment key={key}>
-                        {item.img ? (
-                          <div className="avatar-group-item">
-                            <Link
-                              to="#"
-                              className="d-inline-block"
-                              id={item.targetId}
-                            >
-                              <img
-                                src={item.img}
-                                alt={item.name}
-                                title={item.name}
-                                className="rounded-circle avatar-xxs"
-                              />
-                            </Link>
-                          </div>
-                        ) : (
-                          <div className="avatar-group-item">
-                            <Link to="#">
-                              <div className="avatar-xxs">
-                                <span
-                                  title={item.imgNumber + " Employees"}
-                                  className={
-                                    "avatar-title rounded-circle text-white " +
-                                    item.bgcolor
-                                  }
+                    {emp_list_for_this_department
+                      .slice(0, 2)
+                      .map((item, key) => (
+                        <React.Fragment key={key}>
+                          {item.profile_url ? (
+                            <div className="avatar-group-item">
+                              <Link to="#" className="d-inline-block">
+                                <div className="d-flex gap-2 align-items-center">
+                                  <div className="flex-shrink-0">
+                                    <img
+                                      src={item.profile_url}
+                                      alt=""
+                                      className="avatar-xs rounded-circle"
+                                      style={{ objectFit: "cover" }}
+                                      data-bs-toggle="tooltip"
+                                      title={item.fname}
+                                    />
+                                  </div>
+                                </div>
+                              </Link>
+                            </div>
+                          ) : (
+                            <div className="avatar-group-item">
+                              <Link to="#">
+                                <div className="d-flex gap-2 align-items-center">
+                                  <div className="flex-shrink-0">
+                                    <div
+                                      className="avatar-xs rounded-circle"
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        background: "#0ab39c",
+                                      }}
+                                      data-bs-toggle="tooltip"
+                                      title={item.fname}
+                                    >
+                                      <span
+                                        className="first_letter"
+                                        style={{ color: "white" }}
+                                      >
+                                        {item.fname.charAt(0)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </Link>
+                            </div>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    {emp_list_for_this_department.length > 2 && (
+                      <React.Fragment>
+                        <div className="avatar-group-item">
+                          <Link to="#">
+                            <div className="d-flex gap-2 align-items-center">
+                              <div className="flex-shrink-0">
+                                <div
+                                  className="avatar-xs rounded-circle bg-info"
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                  }}
+                                  data-bs-toggle="tooltip"
+                                  title={emp_list_for_this_department.length}
                                 >
-                                  <small>{item.imgNumber}</small>
-                                </span>
+                                  <span
+                                    className="first_letter"
+                                    style={{ color: "white" }}
+                                  >
+                                    +{""}
+                                    {emp_list_for_this_department.length - 2}
+                                  </span>
+                                </div>
                               </div>
-                            </Link>
-                          </div>
-                        )}
+                            </div>
+                          </Link>
+                        </div>
                       </React.Fragment>
-                    ))}
+                    )}
                   </div>
                 </div>
               </div>
@@ -311,11 +201,11 @@ const DepartmentsTab = () => {
               <div className="flex-shrink-0 ms-1">
                 <div className="d-flex gap-1">
                   <button
-                  onClick={() => {
-                    toggleOrgModal();
-                    setDepartmentId(node.id);
-                    setDepartName(node.name);
-                  }}
+                    onClick={() => {
+                      toggleOrgModal();
+                      setDepartmentId(node.id);
+                      setDepartmentName(node.name);
+                    }}
                     type="button"
                     className="btn btn-icon text-muted btn-sm fs-18"
                   >
@@ -335,8 +225,6 @@ const DepartmentsTab = () => {
         </Col>
       );
     }
-
-    return node.label;
   };
 
   return (
@@ -380,7 +268,7 @@ const DepartmentsTab = () => {
         showOrgModal={showOrgModal}
         toggleOrgModal={toggleOrgModal}
         departmentId={departmentId}
-        organizationName={departmemtName}
+        organizationName={departmentName}
       />
     </React.Fragment>
   );
