@@ -179,19 +179,20 @@ const Navdata = () => {
             stateVariables: isBaseUi,
             subItems: [
                 { id: "organization", label: "Organization", link: "/organization", parentId: "baseUi" },
-                { id: "employee", label: "Employee", link: "/employee", parentId: "baseUi" },
                 { id: "roles", label: "Roles", link: "/roles", parentId: "baseUi" },
                 { id: "workschedule", label: "WorkSchedule", link: "/workschedule", parentId: "baseUi" },
                 { id: "holidays", label: "Holidays", link: "/holidays", parentId: "baseUi" },
-                { id: "attendance", label: "Attendance", link: "/attendance", parentId: "baseUi" },
-                { id: "leaves", label: "Leaves", link: "/leaves", parentId: "baseUi" },
                 { id: "leavetype", label: "Leave Type", link: "/leavetype", parentId: "baseUi" },
-                { id: "leaveapproval", label: "Leave Approval", link: "/leave-approval", parentId: "baseUi" },
                 { id: "customfield", label: "Custom Field", link: "/custom-field", parentId: "baseUi" },
+                { id: "employee", label: "Employee", link: "/employee", parentId: "baseUi" },
+                { id: "leaves", label: "Leaves", link: "/leaves", parentId: "baseUi" },
+                { id: "leaveapproval", label: "Leave Approval", link: "/leave-approval", parentId: "baseUi" },
+                { id: "attendance", label: "Attendance", link: "/attendance", parentId: "baseUi" },
+                { id: "attendanceconfig", label: "Attendance Configuration", link: "/attendanceconfig", parentId: "baseUi" },
                 { id: "payroll", label: "Pay Roll", link: "/payroll", parentId: "payroll" },
                 { id: "payrollconfig", label: "Pay Roll Configuration", link: "/payrollconfig", parentId: "baseUi" },
-                { id: "attendanceconfig", label: "Attendance Configuration", link: "/attendanceconfig", parentId: "baseUi" },
-
+                
+                  
                 //     { id: "badges", label: "Badges", link: "#", parentId: "baseUi" },
                 //     { id: "buttons", label: "Buttons", link: "#", parentId: "baseUi" },
                 //     { id: "colors", label: "Colors", link: "#", parentId: "baseUi" },

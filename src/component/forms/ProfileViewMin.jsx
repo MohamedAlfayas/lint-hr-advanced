@@ -107,7 +107,45 @@ const ProfileViewMin = () => {
         return (
           <div>
             <i className="ri-file-pdf-line" style={{ fontSize: '25px' }} />
-            <a  download target="_blank" rel="noopener noreferrer">
+
+          </div>
+        );
+      case 'img':
+        return (
+          <div>
+            <i className="ri-image-2-line" style={{ fontSize: '25px' }} />
+
+          </div>
+        );
+      case 'xlsx':
+      case 'xls':
+        return (
+          <div>
+            <i className=" ri-file-excel-2-line" style={{ fontSize: '25px' }} />
+
+          </div>
+        );
+      case 'word':
+        return (
+          <div>
+            <i className=" ri-file-word-2-line" style={{ fontSize: '25px' }} />
+
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getDownloadIcon = (fileName) => {
+    const fileType = getFileType(fileName);
+
+    switch (fileType) {
+      case 'pdf':
+        return (
+          <div>
+
+            <a download target="_blank" rel="noopener noreferrer">
               <i className="ri-download-2-line" style={{ fontSize: '20px' }} />
             </a>
           </div>
@@ -115,7 +153,7 @@ const ProfileViewMin = () => {
       case 'img':
         return (
           <div>
-            <i className="ri-image-line" style={{ fontSize: '25px' }} />
+
             <a download target="_blank" rel="noopener noreferrer">
               <i className="ri-download-2-line" style={{ fontSize: '20px' }} />
             </a>
@@ -125,8 +163,8 @@ const ProfileViewMin = () => {
       case 'xls':
         return (
           <div>
-            <i className="ri-file-excel-line" style={{ fontSize: '25px' }} />
-            <a  download target="_blank" rel="noopener noreferrer">
+
+            <a download target="_blank" rel="noopener noreferrer">
               <i className="ri-download-2-line" style={{ fontSize: '20px' }} />
             </a>
           </div>
@@ -134,8 +172,8 @@ const ProfileViewMin = () => {
       case 'word':
         return (
           <div>
-            <i className="ri-file-word-line" style={{ fontSize: '25px' }} />
-            <a  download target="_blank" rel="noopener noreferrer">
+
+            <a download target="_blank" rel="noopener noreferrer">
               <i className="ri-download-2-line" style={{ fontSize: '20px' }} />
             </a>
           </div>
@@ -295,12 +333,15 @@ const ProfileViewMin = () => {
                     <td>
                       {c.value && (
                         <>
-                          {getFileIcon(c.value)}
-                          <span style={{ marginLeft: '5px' }}>
-                          {c.value.substring(c.value.lastIndexOf('/') + 1)} {/* Display only the file name */}
-                          {'  '}
-                          
-                          </span>
+
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            {getFileIcon(c.value)}
+                            <span style={{ marginLeft: '5px', marginRight: '5px' }}>
+                              {c.value.substring(c.value.lastIndexOf('/') + 1)}
+                            </span>
+                            {getDownloadIcon(c.value)}
+                          </div>
+
                           {/* <a
                             href={c.value}
                             download
