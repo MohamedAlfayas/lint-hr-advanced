@@ -13,6 +13,14 @@ import {
   TabPane,
 } from "reactstrap";
 
+//import images
+import product8 from "../../assets/images/products/img-8.png";
+import product2 from "../../assets/images/products/img-2.png";
+import product10 from "../../assets/images/products/img-10.png";
+import avatar2 from "../../assets/images/users/avatar-2.jpg";
+import avatar3 from "../../assets/images/users/avatar-3.jpg";
+import gitbox from "../../assets/images/giftbox.png";
+
 //SimpleBar
 import Select from "react-select";
 
@@ -20,6 +28,7 @@ import SimpleBar from "simplebar-react";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import classnames from "classnames";
 import EmployeeActivityTable from "./EmployeeActivityTable";
+import { Link } from "react-router-dom";
 
 const EmployeeActivity = (props) => {
   const dep_options = GetLocalStorageData("department") || [];
@@ -89,111 +98,96 @@ const EmployeeActivity = (props) => {
 
               <TabContent activeTab={activeTab} className="p-0">
                 <TabPane tabId="1">
-                  <SimpleBar style={{ maxHeight: "100%" }} className="p-3 pt-0">
-                    <EmployeeActivityTable></EmployeeActivityTable>
+                  <SimpleBar
+                    style={{ maxHeight: "550px" }}
+                    className="p-3 pt-0"
+                  >
+                    <div className="acitivity-timeline acitivity-main mt-2">
+                      <div className="acitivity-item d-flex mt-1">
+                        <div className="flex-shrink-0">
+                          <img
+                            src={avatar2}
+                            alt=""
+                            className="avatar-xs rounded-circle acitivity-avatar"
+                          />
+                        </div>
+                        <div className="flex-grow-1 ms-3 border-bottom border-bottom-dashed">
+                          <h6 className="mb-0 lh-base">
+                            Natasha Carey{" "}
+                            <i class="mdi mdi-circle fs-10 align-middle text-warning me-1 ms-2"></i>
+                            <span class="fs-12 mb-0 text-muted">Late</span>
+                          </h6>
+                          <p className="text-muted mb-2">Department | Role</p>
+
+                          <p className="mb-1 text-muted">
+                            <small className="mb-0 text-muted">
+                              Login - 09:18 AM
+                            </small>
+                          </p>
+                          <p className="mb-1 text-muted">
+                            <small className="mb-0 text-muted">Logout -</small>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="acitivity-item d-flex mt-1">
+                        <div className="flex-shrink-0">
+                          <div
+                            className="avatar-xs rounded-circle acitivity-avatar"
+                            style={{
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              background: "#0ab39c",
+                            }}
+                            data-bs-toggle="tooltip"
+                            title={"Test"}
+                          >
+                            <span
+                              className="first_letter"
+                              style={{ color: "white" }}
+                            >
+                              {"Test".charAt(0)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex-grow-1 ms-3 border-bottom border-bottom-dashed">
+                          <h6 className="mb-0 lh-base">
+                            Natasha Carey{" "}
+                            <i class="mdi mdi-circle fs-10 align-middle text-success me-1 ms-2"></i>
+                            <span class="fs-12 mb-0 text-muted">Ontime</span>
+                          </h6>
+                          <p className="text-muted mb-2">Department | Role</p>
+
+                          <p className="mb-1 text-muted">
+                            <small className="mb-0 text-muted">
+                              Login - 09:18 AM
+                            </small>
+                          </p>
+
+                          <p className="mb-1 text-muted">
+                            <small className="mb-0 text-muted">
+                              Logout - 07:35 PM
+                            </small>
+                          </p>
+                          <p className="mb-1 text-muted">
+                            <small className="mb-0 text-muted">
+                              Total - 08:18 Hr
+                            </small>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </SimpleBar>
+
+                  {/* <SimpleBar style={{ maxHeight: "100%" }} className="p-3 pt-0">
+                    <EmployeeActivityTable></EmployeeActivityTable>
+                  </SimpleBar> */}
                 </TabPane>
 
                 <TabPane tabId="2">
-                  <div className="p-3 bg-warning-subtle">
-                    <div className="float-end ms-2">
-                      <h6 className="text-warning mb-0">
-                        USD Balance :{" "}
-                        <span className="text-body">$12,426.07</span>
-                      </h6>
-                    </div>
-                    <h6 className="mb-0 text-danger">Sell Coin</h6>
-                  </div>
-                  <div className="p-3">
-                    <Row>
-                      <Col xs-={6}>
-                        <div className="mb-3">
-                          <label>Currency :</label>
-                          <select className="form-select">
-                            <option>BTC</option>
-                            <option>ETH</option>
-                            <option>LTC</option>
-                          </select>
-                        </div>
-                      </Col>
-                      <Col xs-={6}>
-                        <div className="mb-3">
-                          <label>Email :</label>
-                          <input
-                            type="email"
-                            className="form-control"
-                            placeholder="example@email.com"
-                          />
-                        </div>
-                      </Col>
-                    </Row>
-                    <div>
-                      <div className="input-group mb-3">
-                        <label className="input-group-text">Amount</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="0"
-                        />
-                      </div>
-                      <div className="input-group mb-3">
-                        <label className="input-group-text">Price</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="2.045585"
-                        />
-                        <label className="input-group-text">$</label>
-                      </div>
-                      <div className="input-group mb-0">
-                        <label className="input-group-text">Total</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="2700.16"
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-3 pt-2">
-                      <div className="d-flex mb-2">
-                        <div className="flex-grow-1">
-                          <p className="fs-13 mb-0">
-                            Transaction Fees
-                            <span className="text-muted ms-1 fs-11">
-                              (0.05%)
-                            </span>
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0">
-                          <h6 className="mb-0">$1.08</h6>
-                        </div>
-                      </div>
-                      <div className="d-flex mb-2">
-                        <div className="flex-grow-1">
-                          <p className="fs-13 mb-0">
-                            Minimum Received
-                            <span className="text-muted ms-1 fs-11">(2%)</span>
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0">
-                          <h6 className="mb-0">$7.85</h6>
-                        </div>
-                      </div>
-                      <div className="d-flex">
-                        <div className="flex-grow-1">
-                          <p className="fs-13 mb-0">Estimated Rate</p>
-                        </div>
-                        <div className="flex-shrink-0">
-                          <h6 className="mb-0">1 BTC ~ $34572.00</h6>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-3 pt-2">
-                      <button type="button" className="btn btn-danger w-100">
-                        Sell Coin
-                      </button>
-                    </div>
-                  </div>
+                  <EmployeeActivityTable></EmployeeActivityTable>
                 </TabPane>
               </TabContent>
             </CardBody>
