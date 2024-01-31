@@ -12,7 +12,13 @@ const Index = () => {
     const filteredPrivateRoutes = useMemo(() => {
         const user_perm_list = JSON.parse(localStorage.getItem('user_perm_list'));
         console.log("user_perm_list = ", user_perm_list);
-        return privateRoutes.filter(route => user_perm_list.includes(route?.perm) || route.perm === "all");
+        if (!!user_perm_list) {
+            return privateRoutes.filter(route => user_perm_list.includes(route?.perm) || route.perm === "all");
+        }
+        else {
+            return privateRoutes
+        }
+
     }, []);
 
     return (
