@@ -67,7 +67,7 @@ const Login = () => {
 
       axios({
         method: "POST",
-        url: `${BaseURL}/employee/auth/login/`,
+        url: `${BaseURL}employee/auth/login/`,
         // url : `http://192.168.1.100:8000/employee/auth/login/`,
         data: values,
       })
