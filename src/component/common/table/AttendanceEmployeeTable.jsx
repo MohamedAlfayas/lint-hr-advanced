@@ -71,7 +71,10 @@ const AttendanceEmployeeTable = () => {
   const openEditModal = (rowData) => {
     console.log("rowdataa ===", rowData);
 
-    const paidHrFormatted = ConvertSecondsToTime(rowData.paid_hr_in_seconds);
+    const paidHrFormatted =
+      parseInt(rowData.paid_hr_in_seconds) > 0
+        ? ConvertSecondsToTime(rowData.paid_hr_in_seconds)
+        : "00:00 Hr";
     const otHrnInSeconds = rowData.ot_hr_in_seconds;
 
     setEditModalOpen(true);

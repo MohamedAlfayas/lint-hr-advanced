@@ -29,7 +29,7 @@ const AttendanceTeamTable = () => {
   const holiday_data = GetLocalStorageData("holiday") || [];
   const leave_types_data = GetLocalStorageData("leave_types") || [];
   const employee_data = GetLocalStorageData("employee") || [];
-  const department_data = GetLocalStorageData("department") || [];
+  const DepartmentData = GetLocalStorageData("department") || [];
 
   const [timeline_modal, settimeline_modal] = useState(false);
   const [notes_modal, setNotes_modal] = useState(false);
@@ -486,24 +486,17 @@ const AttendanceTeamTable = () => {
   };
 
   const DepartmentCell = ({ rowData, dataKey, ...props }) => {
-    let at_employee_data = employee_data.find(function (i) {
-      return i.id == rowData.employee_id;
-    });
-    let at_employee_department_data = department_data.find(function (i) {
-      return i.id == at_employee_data.primary_department_id;
-    });
-
-    let thisDepartment = department_data
-      ? department_data.filter(
-          (data) => at_employee_data.primary_department_id === data.id
+    let thisDepartment = DepartmentData
+      ? DepartmentData.filter((data) =>
+          rowData.primary_department_id_list.includes(data.id)
         )
       : [];
 
-    var subDepList = at_employee_data.sub_department_id_list
-      ? department_data.filter((datas, index) => {
-          if (
-            at_employee_data.sub_department_id_list.includes(parseInt(datas.id))
-          ) {
+    let firstDep_name = thisDepartment?.length ? thisDepartment[0].name : "";
+
+    let subDepList = thisDepartment?.length
+      ? thisDepartment.filter((datas, index) => {
+          if (index !== 0) {
             return datas;
           }
         })
@@ -514,13 +507,11 @@ const AttendanceTeamTable = () => {
         <span>
           <Button
             color="light"
-            id={`depListRef-${at_employee_data.id}`}
+            id={`depListRef-${rowData.employee_id}`}
             className="position-relative"
           >
-            {thisDepartment.map((d) => (
-              <React.Fragment>{d.name}</React.Fragment>
-            ))}
-            {at_employee_data.sub_department_id_list.length > 0 ? (
+            <React.Fragment>{firstDep_name}</React.Fragment>
+            {subDepList.length > 0 ? (
               <span>
                 <Badge
                   //id="tooltipwithHtml"
@@ -528,13 +519,13 @@ const AttendanceTeamTable = () => {
                   color="success"
                   className="position-absolute top-0 start-100 translate-middle"
                 >
-                  +{at_employee_data.sub_department_id_list.length}
+                  +{subDepList.length}
                   <span className="visually-hidden">Departments</span>
                 </Badge>
 
                 <UncontrolledTooltip
                   placement="bottom"
-                  target={`depListRef-${at_employee_data.id}`}
+                  target={`depListRef-${rowData.employee_id}`}
                 >
                   {" "}
                   <div className="mt-1">
@@ -566,10 +557,7 @@ const AttendanceTeamTable = () => {
                 {` ${ConvertSecondsToTime(
                   rowData.total_paid_hours_in_seconds
                 )}`}
-                /
-                {` ${ConvertSecondsToTime(
-                  rowData.total_work_hours_in_seconds
-                )}`}
+                /{` ${ConvertSecondsToTime(rowData.work_schedule_duration)}`}
               </div>
             </div>
           </div>
@@ -583,7 +571,7 @@ const AttendanceTeamTable = () => {
               style={{
                 width: Math.round(
                   (rowData.total_paid_hours_in_seconds /
-                    rowData.total_work_hours_in_seconds) *
+                    rowData.work_schedule_duration) *
                     100 *
                     2
                 ),
@@ -599,7 +587,7 @@ const AttendanceTeamTable = () => {
     let at_employee_data = employee_data.find(function (i) {
       return i.id == rowData.employee_id;
     });
-    let at_employee_department_data = department_data.find(function (i) {
+    let at_employee_DepartmentData = DepartmentData.find(function (i) {
       return i.id == at_employee_data.primary_department_id;
     });
 
@@ -622,11 +610,11 @@ const AttendanceTeamTable = () => {
     </Column>,
     <Column width={200} fixed="left">
       <HeaderCell>Paid Time / Work Schedule</HeaderCell>
-      <WSHourCell dataKey="total_work_hours_in_seconds" fullText />
+      <WSHourCell dataKey="work_schedule_duration" fullText />
     </Column>,
     <Column width={200} fixed="left">
       <HeaderCell>Department</HeaderCell>
-      <DepartmentCell dataKey="department" fullText />
+      <DepartmentCell dataKey="primary_department_id_list" fullText />
     </Column>,
   ];
 
