@@ -39,6 +39,12 @@ const AttendanceEmployeeTable = () => {
   const [notes_modal, setNotes_modal] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedRowDataForEdit, setSelectedRowDataForEdit] = useState(null);
+  const [reportEdit, setReportEdit] = useState({
+    obj_id: 0,
+    edited_paid_hr: 0,
+    edited_ot_hr: 0,
+    notes: [],
+  });
   const [selectedPaidHours, setSelectedPaidHours] = useState({
     paid_hours_hr: null,
   });
@@ -205,27 +211,34 @@ const AttendanceEmployeeTable = () => {
     label: i.toString().padStart(2, "0"),
     value: i.toString().padStart(2, "0"),
   }));
+  useEffect(() => {
+    calculateTime();
+    console.log("Inside Use Effect");
+  }, [selectedPaidHours.paid_hours_hr, selectedPaidMinutes.paid_hours_min]);
 
-  // const handleSaveButtonClick = () => {
-  //   // Collect the data you need
-  //   const savedData = {
-  //     paidHours: {
-  //       hr: selectedPaidHours.paid_hours_hr,
-  //       min: selectedPaidMinutes.paid_hours_min,
-  //     },
-  //     ot: {
-  //       hr: selectedOtHours.ot_hr,
-  //       min: selectedOtMinutes.ot_min,
-  //     },
-  //     totalPaidHours: totalPaidHours,
-  //     notes: selectedNotes,
-  //   };
+  const calculateTime = () => {
+    const paidHrs =
+      parseInt(selectedPaidHours.paid_hours_hr) * 3600 +
+      parseInt(selectedPaidMinutes.paid_hours_min) * 60;
+    console.log("Inside function calculateTime", paidHrs);
+    return paidHrs;
+  };
 
-  //   // Log the data to the console
-  //   console.log('Saved Data:', savedData);
-
-  //   // Add any additional logic to save the data to your backend or perform other actions as needed.
-  // };
+  const handleSaveButtonClick = () => {
+    const calculatedPaidHrs = calculateTime();
+    console.log("Inside function handleSaveButtonClick", calculatedPaidHrs);
+    setReportEdit((prevState) => ({
+      ...prevState,
+      obj_id: 0,
+      edited_paid_hr: calculatedPaidHrs,
+      edited_ot_hr: 0,
+    }));
+    console.log("Report Edit", reportEdit);
+  };
+  useEffect(() => {
+    // This will run after each render when reportEdit changes
+    console.log("Report Edit", reportEdit);
+  }, [reportEdit]);
 
   const Attendance_data1 = [
     {
@@ -617,7 +630,7 @@ const AttendanceEmployeeTable = () => {
 
     return (
       <Label {...props} className="link-group">
-        {fullday_hr} : {fullday_min} Hr
+        {fullday_hr} : {fullday_min}
       </Label>
     );
   };
@@ -781,10 +794,9 @@ const AttendanceEmployeeTable = () => {
                   </Col>
                   <Col>
                     <Label>
-                      {" "}
-                      <WorkScheduleData
+                      <WorkScheduleCell
                         rowData={selectedRowDataForEdit}
-                        dataKey="work_schedule_id"
+                        dataKey="ws"
                       />
                     </Label>
                   </Col>
@@ -919,7 +931,7 @@ const AttendanceEmployeeTable = () => {
                   type="button"
                   className="btn w-sm btn-success"
                   data-bs-dismiss="modal"
-                  // onClick={handleSaveButtonClick}
+                  onClick={handleSaveButtonClick}
                 >
                   <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
                   Save
