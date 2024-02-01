@@ -32,11 +32,11 @@ const OrgTable = ({ departmentId }) => {
               <img
                 src={obj.profile_url}
                 alt=""
-                className="avatar-xs rounded-circle"
+                className="avatar-xs rounded-circle acitivity-avatar"
                 style={{ objectFit: "cover" }}
               />
             </div>
-            <div className="flex-grow-1">
+            <div className="flex-grow-1 align-items-left">
               <div>
                 <Link
                   to="#"
@@ -69,11 +69,11 @@ const OrgTable = ({ departmentId }) => {
                 </span>
               </div>
             </div>
-            <div className="flex-grow-1">
+            <div className="flex-grow-1 align-items-left">
               <div>
                 <Link
                   to="#"
-                  // onClick={() => viewEmployee(obj)}
+                  onClick={() => viewEmployee(obj)}
                   className="link-body-emphasis mb-0"
                 >
                   {" "}
@@ -209,7 +209,7 @@ const OrgTable = ({ departmentId }) => {
                 <img
                   src={rm_obj.profile_url}
                   alt=""
-                  className="avatar-xs rounded-circle"
+                  className="avatar-xs rounded-circle acitivity-avatar"
                   style={{ objectFit: "cover" }}
                 />
               </div>
@@ -227,7 +227,7 @@ const OrgTable = ({ departmentId }) => {
             <div className="d-flex gap-2 align-items-center">
               <div className="flex-shrink-0">
                 <div
-                  className="avatar-xs rounded-circle"
+                  className="avatar-xs rounded-circle acitivity-avatar"
                   style={{
                     display: "flex",
                     justifyContent: "center",

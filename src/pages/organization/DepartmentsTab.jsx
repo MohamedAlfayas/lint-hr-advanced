@@ -125,7 +125,7 @@ const DepartmentsTab = () => {
                                     <img
                                       src={item.profile_url}
                                       alt=""
-                                      className="avatar-xs rounded-circle"
+                                      className="avatar-xs rounded-circle acitivity-avatar"
                                       style={{ objectFit: "cover" }}
                                       data-bs-toggle="tooltip"
                                       title={item.fname}
@@ -140,7 +140,7 @@ const DepartmentsTab = () => {
                                 <div className="d-flex gap-2 align-items-center">
                                   <div className="flex-shrink-0">
                                     <div
-                                      className="avatar-xs rounded-circle"
+                                      className="avatar-xs rounded-circle acitivity-avatar"
                                       style={{
                                         display: "flex",
                                         justifyContent: "center",
@@ -171,7 +171,7 @@ const DepartmentsTab = () => {
                             <div className="d-flex gap-2 align-items-center">
                               <div className="flex-shrink-0">
                                 <div
-                                  className="avatar-xs rounded-circle bg-info"
+                                  className="avatar-xs rounded-circle acitivity-avatar bg-info"
                                   style={{
                                     display: "flex",
                                     justifyContent: "center",

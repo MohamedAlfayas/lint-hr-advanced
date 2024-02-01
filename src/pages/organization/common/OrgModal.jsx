@@ -3,11 +3,16 @@ import { Button, Modal, ModalBody, ModalHeader } from "reactstrap";
 import { Link } from "react-router-dom";
 import OrgTable from "./OrgTable";
 
-const OrgModal = ({ showOrgModal, toggleOrgModal, departmentId, organizationName }) => {
+const OrgModal = ({
+  showOrgModal,
+  toggleOrgModal,
+  departmentId,
+  organizationName,
+}) => {
   return (
     <Modal
       className="modal-dialog"
-      style={{ maxWidth: '50%', width: '50%', margin: 'auto' }} 
+      style={{ margin: "auto" }}
       scrollable={true}
       isOpen={showOrgModal}
       toggle={() => {
@@ -21,10 +26,9 @@ const OrgModal = ({ showOrgModal, toggleOrgModal, departmentId, organizationName
         toggle={() => {
           toggleOrgModal();
         }}
-        style={{ fontSize: '0.90rem', padding: '0.25rem' }}
+        style={{ fontSize: "0.90rem", padding: "0.25rem" }}
       >
         {organizationName} Members
-      
       </ModalHeader>
 
       <ModalBody className="text-center p-1">
