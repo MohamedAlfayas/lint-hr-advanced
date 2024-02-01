@@ -192,6 +192,7 @@ const Navdata = () => {
                 { id: "attendanceconfig", label: "Attendance Configuration", link: "/attendanceconfig", parentId: "baseUi", perm: 'attendance_config' },
                 { id: "payroll", label: "Pay Roll", link: "/payroll", parentId: "payroll", perm: 'payroll' },
                 { id: "payrollconfig", label: "Pay Roll Configuration", link: "/payrollconfig", parentId: "baseUi", perm: 'payroll_config' },
+                { id: "payrollconfig", label: "Attendance Reoprt", link: "/attendancereport", parentId: "baseUi", perm: 'attendance_report' },
 
             ],
         },

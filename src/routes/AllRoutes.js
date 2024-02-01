@@ -18,6 +18,7 @@ import Xlsx from "../pages/xlsx/Xlsx"
 import PayRollConfig from "../pages/payroll/PayRollConfig";
 import AttendanceDashboard from "../pages/attendance/Attendance";
 import AttendanceConfig from "../pages/attendanceConfig/AttendanceConfig"
+import AttendanceReport from "../pages/attendance/AttendanceReport";
 
 
 
@@ -38,6 +39,7 @@ const privateRoutes = [
     { path: "/attendance", component: <AttendanceDashboard />, perm: "attendance" },
     { path: "/xlsx", component: <Xlsx />, perm: "xlsx" },
     { path: "/attendanceconfig", component: <AttendanceConfig />, perm: "attendance_config" },
+    { path: "/attendancereport", component: <AttendanceReport />, perm: "attendance_report" },
     {
         path: "/",
         exact: true,
