@@ -23,7 +23,7 @@ const Roles = () => {
   useEffect(() => {
     Api({
       method: "GET",
-      url: "/role/get-role",
+      url: "/role/get-role/",
     })
       .then((res) => {
         console.log("RES = ", res);
