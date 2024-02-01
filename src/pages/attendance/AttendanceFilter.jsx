@@ -144,14 +144,13 @@ const AttendanceFilter = () => {
             <Col xl={2}>
               <div className="form-icon right">
                 <DatePicker
-                  //  value={dayjs(filterKeys?.thisMonth, MonthFormat)}
+                  value={dayjs(filterKeys?.thisMonth, MonthFormat)}
                   format={MonthFormat}
                   picker="month"
                   allowClear={false}
                   className="form-control"
                   placeholder="Select Month"
-
-                  // onChange={handleDateRangeChange}
+                  onChange={handleDateRangeChange}
                 />
               </div>
             </Col>
