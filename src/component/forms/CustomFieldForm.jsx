@@ -34,28 +34,15 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
+import {
+  custom_field_input_types,
+  custom_field_module_lists,
+} from "../../common/constant/Constants";
 
 const CustomFieldForm = () => {
   const dispatch = useDispatch();
   const [customFieldObj, setCustomFieldObj] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-
-  let types = [
-    { id: "text", label: "Text", value: "text" },
-    { id: "number", label: "Number", value: "number" },
-    { id: "date", label: "Date", value: "date" },
-    { id: "option", label: "Option", value: "option" },
-    { id: "file", label: "File", value: "file" },
-  ];
-  let module_lists = [
-    { id: "employee", label: "Employee", value: "employee" },
-    { id: "organization", label: "Organization", value: "organization" },
-  ];
-  let options = [
-    { id: "24", label: "Twenty Four", value: "24" },
-    { id: "fayas", label: "FAYAS", value: "fayas" },
-  ];
-  const labels = options.map((option) => option.label);
 
   useEffect(() => {
     setCustomFieldObj(form_obj);
@@ -210,7 +197,7 @@ const CustomFieldForm = () => {
                     name="type"
                     id="type"
                     isMulti={false}
-                    options={types || []}
+                    options={custom_field_input_types || []}
                     className="basic-multi-select"
                     styles={{
                       control: (provided, state) => ({
@@ -225,7 +212,9 @@ const CustomFieldForm = () => {
                     }}
                     value={
                       (customFieldObj.type &&
-                        types.find((e) => e.value === customFieldObj.type)) ||
+                        custom_field_input_types.find(
+                          (e) => e.value === customFieldObj.type
+                        )) ||
                       []
                     }
                     onChange={(e) => {
@@ -378,7 +367,7 @@ const CustomFieldForm = () => {
                   <Select
                     name="applicable_for_modules"
                     isMulti={true}
-                    options={module_lists || []}
+                    options={custom_field_module_lists || []}
                     className="basic-multi-select"
                     styles={{
                       control: (provided, state) => ({
@@ -393,7 +382,7 @@ const CustomFieldForm = () => {
                     }}
                     value={
                       customFieldObj.applicable_for_modules &&
-                      module_lists.filter((e) =>
+                      custom_field_module_lists.filter((e) =>
                         customFieldObj.applicable_for_modules.includes(e.value)
                       )
                     }
@@ -409,6 +398,7 @@ const CustomFieldForm = () => {
                         ? true
                         : false
                     }
+                    closeMenuOnSelect={false}
                   />
                   {FormikForm.touched.applicable_for_modules &&
                   FormikForm.errors.applicable_for_modules ? (

@@ -493,6 +493,7 @@ const LeaveTypeForm = () => {
                         ? true
                         : false
                     }
+                    closeMenuOnSelect={false}
                   />
                   {FormikForm.touched.ws_id && FormikForm.errors.ws_id ? (
                     <div className="lc_form_error_text">
@@ -535,6 +536,7 @@ const LeaveTypeForm = () => {
                         ? true
                         : false
                     }
+                    closeMenuOnSelect={false}
                   />
                   {FormikForm.touched.genders && FormikForm.errors.genders ? (
                     <div className="lc_form_error_text">

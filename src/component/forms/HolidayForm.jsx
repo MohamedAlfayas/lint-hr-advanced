@@ -192,6 +192,7 @@ const HolidayForm = () => {
                         ? true
                         : false
                     }
+                    closeMenuOnSelect={false}
                   />
                   {FormikForm.touched.work_schedule_id_list &&
                   FormikForm.errors.work_schedule_id_list ? (

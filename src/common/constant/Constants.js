@@ -2320,3 +2320,16 @@ export const leave_approval_table_filter_options = [
   { id: 2, label: "Approved", value: 2 },
   { id: 3, label: "Rejected", value: 3 },
 ]
+
+
+export const custom_field_input_types = [
+  { id: "text", label: "Text", value: "text" },
+  { id: "number", label: "Number", value: "number" },
+  { id: "date", label: "Date", value: "date" },
+  { id: "option", label: "Option", value: "option" },
+  { id: "file", label: "File", value: "file" },
+];
+export const custom_field_module_lists = [
+  { id: "employee", label: "Employee", value: "employee" },
+  { id: "organization", label: "Organization", value: "organization" },
+];
