@@ -96,10 +96,11 @@ const WebCheckInOut = ({ showTimer }) => {
       {loading ? (
         <Button color="primary" className="btn-load" outline>
           <span className="d-flex align-items-center">
-            <Spinner size="sm" className="flex-shrink-0"> Loading... </Spinner>
-            <span className="flex-grow-1 ms-2">
-              Loading...
-            </span>
+            <Spinner size="sm" className="flex-shrink-0">
+              {" "}
+              Loading...{" "}
+            </Spinner>
+            <span className="flex-grow-1 ms-2">Loading...</span>
           </span>
         </Button>
       ) : (
@@ -117,8 +118,8 @@ const WebCheckInOut = ({ showTimer }) => {
               </>
             ) : (
               <span className="icon-on">
-                <i className="ri-time-line align-bottom me-1" />{' '}
-                {currently_checked_in ? 'Check OUT' : 'Check IN'}
+                <i className="ri-time-line align-bottom me-1" />{" "}
+                {currently_checked_in ? "Check OUT" : "Check IN"}
               </span>
             )}
           </span>
@@ -126,7 +127,15 @@ const WebCheckInOut = ({ showTimer }) => {
       )}
 
       {showTimer && (
-        <span className="ms-1 mt-1" style={{ fontSize: 'initial', fontWeight: 700 }}>
+        <span
+          className="ms-1 mt-1"
+          style={{
+            display: "inline-block",
+            width: "90px",
+            fontSize: "initial",
+            fontWeight: 700,
+          }}
+        >
           &nbsp;<span className="timer">{formatTime(total_seconds)}</span>
         </span>
       )}
