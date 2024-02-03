@@ -39,7 +39,6 @@ const EmployeeActivity = (props) => {
             ? "col-auto layout-rightside-col d-block"
             : "col-auto layout-rightside-col d-none"
         }
-        // style={{ height: "100%" }}
         id="layout-rightside-coll"
       >
         <div className="overlay" onClick={props.hideRightColumn}></div>

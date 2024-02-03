@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import { Col, Container, Row } from "reactstrap";
-import Widget from "../../component/widget/Widgets";
 import Section from "../../component/section/Section";
 import { MetaTitle } from "../../common/data/MetaTitle";
 import EmployeeActivity from "./EmployeeActivity";
+import AttendanceStatistics from "./AttendanceStatistics";
+import PayrollWidgets from "./PayrollWidgets";
+import AttendanceGraph from "./AttendanceGraph";
+import DeptWiseAttendanceWidgets from "./DeptWiseAttendanceWidgets";
 
 const Dashboard = () => {
   document.title = `Dashboard | ${MetaTitle || "Lint HR"}`;
@@ -21,8 +24,21 @@ const Dashboard = () => {
             <Col>
               <div className="h-100">
                 <Section rightClickBtn={toggleRightColumn} />
+
                 <Row>
-                  <Widget />
+                  <Col xl={3}>
+                    <AttendanceStatistics />
+                  </Col>
+
+                  <Col xl={9}>
+                    <Row>
+                      <PayrollWidgets />
+                    </Row>
+                    <Row>
+                      <AttendanceGraph />
+                    </Row>
+                  </Col>
+                  <Col xl={12}> {/* <DeptWiseAttendanceWidgets /> */}</Col>
                 </Row>
               </div>
             </Col>
