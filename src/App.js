@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 
 //import Scss
 import './assets/scss/themes.scss';
 import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Rsuite css
 import 'rsuite/dist/rsuite-no-reset.min.css';
@@ -13,7 +14,6 @@ import Route from './routes';
 
 //imoprt Css @Elan
 import './App.css';
-
 
 function App() {
   return (

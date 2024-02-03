@@ -5,10 +5,10 @@ import { privateRoutes, publicRoutes } from "./AllRoutes";
 import Layout from "../layout/Layout";
 import React, { useEffect, useMemo, lazy, Suspense, } from "react";
 import LoadingBar from "react-top-loading-bar";
-import Basic404 from "../pages/error/Basic404";
+// import Basic404 from "../pages/error/Basic404";
 
 
-// const Basic404 = lazy(() => import('../pages/error/Basic404'));
+const Basic404 = lazy(() => import('../pages/error/Basic404'));
 
 const Index = () => {
 
@@ -31,10 +31,10 @@ const Index = () => {
                             path={route.path}
                             element={
                                 <PublicRoute>
-                                    {/* <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
+                                    <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
                                         {route.component}
-                                    </Suspense> */}
-                                    {route.component}
+                                    </Suspense>
+                                    {/* {route.component} */}
                                 </PublicRoute>
                             }
                             key={idx}
@@ -50,10 +50,10 @@ const Index = () => {
                             element={
                                 <PrivateRoute>
                                     <Layout>
-                                        {/* <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
+                                        <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
                                             {route.component}
-                                        </Suspense> */}
-                                        {route.component}
+                                        </Suspense>
+                                        {/* {route.component} */}
                                     </Layout>
                                 </PrivateRoute>
                             }
@@ -66,19 +66,19 @@ const Index = () => {
                 <Route
                     path="*"
                     element={
-                        // <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
-                        //     <Basic404 />
-                        // </Suspense>
-                        <Basic404 />
+                        <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
+                            <Basic404 />
+                        </Suspense>
+                        // <Basic404 />
                     }
                 />
                 <Route
                     path="/404"
                     element={
-                        // <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
-                        //     <Basic404 />
-                        // </Suspense>
-                        <Basic404 />
+                        <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
+                            <Basic404 />
+                        </Suspense>
+                        // <Basic404 />
                     }
                 />
             </Routes>
