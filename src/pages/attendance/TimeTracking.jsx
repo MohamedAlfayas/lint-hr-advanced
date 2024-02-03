@@ -24,7 +24,7 @@ const TimeTracking = () => {
 
   const getCurrentDate = () => {
     const currentDate = new Date();
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    const options = { year: "numeric", month: "short", day: "numeric" };
     return currentDate.toLocaleDateString(undefined, options);
   };
   const formatTime = (seconds) => {
@@ -42,38 +42,33 @@ const TimeTracking = () => {
     return `${hDisplay} : ${mDisplay} : ${sDisplay}`;
   };
 
-
-
   useEffect(() => {
-      
-      const fetchData = async () => {
-        try {
-          const data = await Api.get("/attendance/get-total-work-duration/");
-          console.log("RES = ", data.data.data.first_check_in_time);
-          const fetchFirstCheckInTime = data.data.data.first_check_in_time;
-          const [datePart, timePart] = fetchFirstCheckInTime.split(' ');
-          const [hours, minutes] = timePart.split(':');
-          const amOrPm = parseInt(hours) >= 12 ? 'PM' : 'AM';
-          const formattedHours = (parseInt(hours) % 12) || 12;
-        
-          const formattedTime = `${formattedHours}:${minutes} ${amOrPm}`;
-          setFirstCheckInTime(formattedTime);
-          LCAttendance.init(data.total_work_duration, data.currently_checked_in);
-        } catch (error) {
-          console.log("ERR = ", error);
-        }
-      };
-  
-      fetchData();
-    }, []);
+    const fetchData = async () => {
+      try {
+        const data = await Api.get("/attendance/get-total-work-duration/");
+        console.log("RES = ", data.data.data.first_check_in_time);
+        const fetchFirstCheckInTime = data.data.data.first_check_in_time;
+        const [datePart, timePart] = fetchFirstCheckInTime.split(" ");
+        const [hours, minutes] = timePart.split(":");
+        const amOrPm = parseInt(hours) >= 12 ? "PM" : "AM";
+        const formattedHours = parseInt(hours) % 12 || 12;
 
+        const formattedTime = `${formattedHours}:${minutes} ${amOrPm}`;
+        setFirstCheckInTime(formattedTime);
+      } catch (error) {
+        console.log("ERR = ", error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <React.Fragment>
       <Card style={{ height: "325px" }}>
         <CardBody className="text-center">
           <h6 className="card-title mb-3 flex-grow-1 text-start">
-             Date: {getCurrentDate()}
+            Date: {getCurrentDate()}
           </h6>
           <div className="mb-2">
             <lord-icon

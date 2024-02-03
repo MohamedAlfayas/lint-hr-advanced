@@ -2,45 +2,45 @@ import React from "react";
 import ReactApexChart from "react-apexcharts";
 import getChartColorsArray from "../../component/common/dynamicColor/ChartsDynamicColor";
 
-const AttendanceOverviewChart = ({ dataColors }) => {
+const AttendanceOverviewChart = ({ dataColors, chartData }) => {
   var chartColumnStacked100Colors = getChartColorsArray(dataColors);
-  const series = [
-    {
-      name: "IN Hour",
-      data: [
-        8, 7, 7.2, 6, 8, 7, 0, 8, 7, 7.2, 6, 8, 7, 0, 8, 7, 7.2, 6, 8, 7, 0, 8,
-        7, 7.2, 6, 8, 7, 0, 0, 8,
-      ],
-    },
-    {
-      name: "Balance Hour",
-      data: [
-        0, 0, 0.8, 2, 0, 1, 0, 0, 1, 0.8, 2, 0, 1, 0, 0, 1, 0.8, 2, 0, 1, 0, 0,
-        1, 0.8, 2, 0, 1, 0, 0, 0,
-      ],
-    },
-    {
-      name: "Holiday",
-      data: [
-        0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0,
-        0, 0, 0, 8, 0, 0,
-      ],
-    },
-    {
-      name: "Leave",
-      data: [
-        0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 8, 0,
-      ],
-    },
-    {
-      name: "Weekend",
-      data: [
-        0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 8, 0,
-      ],
-    },
-  ];
+  // const series = [
+  //   {
+  //     name: "IN Hour",
+  //     data: [
+  //       8, 7, 7.2, 6, 8, 7, 0, 8, 7, 7.2, 6, 8, 7, 0, 8, 7, 7.2, 6, 8, 7, 0, 8,
+  //       7, 7.2, 6, 8, 7, 0, 0, 8,
+  //     ],
+  //   },
+  //   {
+  //     name: "Balance Hour",
+  //     data: [
+  //       0, 0, 0.8, 2, 0, 1, 0, 0, 1, 0.8, 2, 0, 1, 0, 0, 1, 0.8, 2, 0, 1, 0, 0,
+  //       1, 0.8, 2, 0, 1, 0, 0, 0,
+  //     ],
+  //   },
+  //   {
+  //     name: "Holiday",
+  //     data: [
+  //       0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0,
+  //       0, 0, 0, 8, 0, 0,
+  //     ],
+  //   },
+  //   {
+  //     name: "Leave",
+  //     data: [
+  //       0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  //       0, 0, 0, 0, 8, 0,
+  //     ],
+  //   },
+  //   {
+  //     name: "Weekend",
+  //     data: [
+  //       0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  //       0, 0, 0, 0, 8, 0,
+  //     ],
+  //   },
+  // ];
 
   const options = {
     chart: {
@@ -63,38 +63,7 @@ const AttendanceOverviewChart = ({ dataColors }) => {
       },
     ],
     xaxis: {
-      categories: [
-        "Jan 1",
-        "Jan 2",
-        "Jan 3",
-        "Jan 4",
-        "Jan 5",
-        "Jan 6",
-        "Jan 7",
-        "Jan 8",
-        "Jan 9",
-        "Jan 10",
-        "Jan 11",
-        "Jan 12",
-        "Jan 13",
-        "Jan 14",
-        "Jan 15",
-        "Jan 16",
-        "Jan 17",
-        "Jan 18",
-        "Jan 19",
-        "Jan 20",
-        "Jan 21",
-        "Jan 22",
-        "Jan 23",
-        "Jan 24",
-        "Jan 25",
-        "Jan 26",
-        "Jan 27",
-        "Jan 28",
-        "Jan 29",
-        "Jan 30",
-      ],
+      categories: chartData.categories,
     },
     yaxis: {
       show: false,
@@ -159,7 +128,7 @@ const AttendanceOverviewChart = ({ dataColors }) => {
     <ReactApexChart
       dir="ltr"
       className="apex-charts"
-      series={series}
+      series={chartData.series}
       options={options}
       type="bar"
       height={250}
