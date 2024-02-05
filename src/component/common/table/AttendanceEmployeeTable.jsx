@@ -69,29 +69,41 @@ const AttendanceEmployeeTable = () => {
   }
 
   //Edit Modal Function
-  const openEditModal = (rowData) => {
+  const editAttendanceReport = (rowData) => {
     console.log("rowdataa ===", rowData);
 
-    const paidHrFormatted =
-      parseInt(rowData.paid_hr_in_seconds) > 0
-        ? ConvertSecondsToTime(rowData.paid_hr_in_seconds)
-        : "00:00 Hr";
-    const otHrnInSeconds = rowData.ot_hr_in_seconds;
-
     setEditModalOpen(true);
-    setSelectedRowDataForEdit(rowData);
 
-    setSelectedPaidHours({
-      paid_hours_hr: paidHrFormatted.split(":")[0],
-    });
-    setSelectedPaidMinutes({
-      paid_hours_min: paidHrFormatted.split(":")[1].split(" ")[0],
+    setSelectedRowDataForEdit({
+      date: rowData?.date,
+      work_schedule_duration_without_break:
+        rowData?.work_schedule_duration_without_break,
+      total_work_duration: rowData?.total_work_duration,
+      paid_hr_in_seconds: rowData?.paid_hr_in_seconds,
+      ot_hr_in_seconds: rowData?.ot_hr_in_seconds,
+      notes: "",
     });
 
-    if (otHrnInSeconds === 0) {
-      setSelectedOtHours({ ot_hr: "00" });
-      setSelectedOtMinutes({ ot_min: "00" });
-    }
+    // const paidHrFormatted =
+    //   parseInt(rowData.paid_hr_in_seconds) > 0
+    //     ? ConvertSecondsToTime(rowData.paid_hr_in_seconds)
+    //     : "00:00 Hr";
+    // const otHrnInSeconds = rowData.ot_hr_in_seconds;
+
+    // setSelectedRowDataForEdit(rowData);
+
+    // setSelectedPaidHours({
+    //   paid_hours_hr: paidHrFormatted.split(":")[0],
+    // });
+
+    // setSelectedPaidMinutes({
+    //   paid_hours_min: paidHrFormatted.split(":")[1].split(" ")[0],
+    // });
+
+    // if (otHrnInSeconds === 0) {
+    //   setSelectedOtHours({ ot_hr: "00" });
+    //   setSelectedOtMinutes({ ot_min: "00" });
+    // }
 
     console.log("notes", rowData.notes);
   };
@@ -395,22 +407,29 @@ const AttendanceEmployeeTable = () => {
   };
 
   const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
-    const editing = rowData.status === "EDIT";
-    return (
-      <Cell {...props} className={editing ? "table-content-editing" : ""}>
-        {editing ? (
-          <input
-            className="rs-input"
-            defaultValue={rowData[dataKey]}
-            onChange={(event) => {
-              onChange && onChange(rowData.id, dataKey, event.target.value);
-            }}
-          />
-        ) : (
-          <span className="table-content-edit-span">{rowData[dataKey]}</span>
-        )}
-      </Cell>
-    );
+    console.log("EDIt ROW DATA = ", rowData);
+
+    if (
+      rowData?.status === false &&
+      (rowData?.hr_status === 1 || rowData?.hr_status === 3)
+    ) {
+      return (
+        <Cell style={{ padding: "6px" }} {...props}>
+          <Button
+            appearance="link"
+            onClick={() => editAttendanceReport(rowData)}
+          >
+            Edit
+          </Button>
+        </Cell>
+      );
+    } else {
+      return (
+        <Cell style={{ padding: "6px" }} {...props}>
+          ------
+        </Cell>
+      );
+    }
   };
 
   return (
@@ -474,21 +493,22 @@ const AttendanceEmployeeTable = () => {
 
         <Column width={80} fixed="right">
           <HeaderCell>Action</HeaderCell>
+          <EditableCell />
 
-          <Cell style={{ padding: "6px" }}>
+          {/* <Cell style={{ padding: "6px" }}>
             {(rowData) => (
-              <Button appearance="link" onClick={() => openEditModal(rowData)}>
+              <Button appearance="link" onClick={() => editAttendanceReport(rowData)}>
                 Edit
               </Button>
             )}
-          </Cell>
+          </Cell> */}
         </Column>
       </Table>
       {/* Edit Modal */}
       <Modal isOpen={editModalOpen} toggle={closeEditModal} centered>
         <ModalBody className="text-left">
           {/* Display the values based on selectedRowDataForEdit */}
-          {selectedRowDataForEdit && (
+          {!!selectedRowDataForEdit && (
             <div>
               <Col md={12} lg={12} xxl={12}>
                 <Row className="mb-2">
@@ -514,10 +534,9 @@ const AttendanceEmployeeTable = () => {
                   </Col>
                   <Col>
                     <Label>
-                      <WorkScheduleCell
-                        rowData={selectedRowDataForEdit}
-                        dataKey="ws"
-                      />
+                      {ConvertSecondsToTime(
+                        selectedRowDataForEdit?.work_schedule_duration_without_break
+                      )}
                     </Label>
                   </Col>
                 </Row>

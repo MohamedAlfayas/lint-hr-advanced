@@ -140,19 +140,6 @@ const AttendanceOverview = () => {
             : 0;
 
         totalBalanceHours += balance_hr_for_this_day;
-
-        console.log("------------------------------------------");
-
-        console.log("Obj = ", d);
-
-        console.log("DATE = ", format(new Date(d.date), "dd MMM"));
-
-        console.log("Ws Hours = ", d.work_schedule_duration_without_break);
-        console.log("Ch In Hours = ", d.total_work_duration);
-        console.log("OT Hours = ", d.ot_hr_in_seconds);
-        console.log("Paid Hours = ", d.final_paid_hr_in_seconds);
-        console.log("Leave Hours = ", totalLeaveHours);
-        console.log("Balance Hours = ", balance_hr_for_this_day);
       });
 
       let series = [
