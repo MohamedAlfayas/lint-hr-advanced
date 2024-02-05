@@ -48,13 +48,18 @@ const TimeTracking = () => {
         const data = await Api.get("/attendance/get-total-work-duration/");
         console.log("RES = ", data.data.data.first_check_in_time);
         const fetchFirstCheckInTime = data.data.data.first_check_in_time;
-        const [datePart, timePart] = fetchFirstCheckInTime.split(" ");
-        const [hours, minutes] = timePart.split(":");
-        const amOrPm = parseInt(hours) >= 12 ? "PM" : "AM";
-        const formattedHours = parseInt(hours) % 12 || 12;
 
-        const formattedTime = `${formattedHours}:${minutes} ${amOrPm}`;
-        setFirstCheckInTime(formattedTime);
+        if (!!fetchFirstCheckInTime) {
+          const [datePart, timePart] = fetchFirstCheckInTime.split(" ");
+          const [hours, minutes] = timePart.split(":");
+          const amOrPm = parseInt(hours) >= 12 ? "PM" : "AM";
+          const formattedHours = parseInt(hours) % 12 || 12;
+
+          const formattedTime = `${formattedHours}:${minutes} ${amOrPm}`;
+          setFirstCheckInTime(formattedTime);
+        } else {
+          setFirstCheckInTime("--:--");
+        }
       } catch (error) {
         console.log("ERR = ", error);
       }

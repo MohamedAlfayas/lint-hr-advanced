@@ -557,7 +557,10 @@ const AttendanceTeamTable = () => {
                 {` ${ConvertSecondsToTime(
                   rowData.total_paid_hours_in_seconds
                 )}`}
-                /{` ${ConvertSecondsToTime(rowData.work_schedule_duration)}`}
+                /
+                {` ${ConvertSecondsToTime(
+                  rowData.work_schedule_duration_without_break
+                )}`}
               </div>
             </div>
           </div>
@@ -571,7 +574,7 @@ const AttendanceTeamTable = () => {
               style={{
                 width: Math.round(
                   (rowData.total_paid_hours_in_seconds /
-                    rowData.work_schedule_duration) *
+                    rowData.work_schedule_duration_without_break) *
                     100 *
                     2
                 ),
@@ -610,7 +613,7 @@ const AttendanceTeamTable = () => {
     </Column>,
     <Column width={200} fixed="left">
       <HeaderCell>Paid Time / Work Schedule</HeaderCell>
-      <WSHourCell dataKey="work_schedule_duration" fullText />
+      <WSHourCell dataKey="work_schedule_duration_without_break" fullText />
     </Column>,
     <Column width={200} fixed="left">
       <HeaderCell>Department</HeaderCell>

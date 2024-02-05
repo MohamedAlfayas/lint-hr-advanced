@@ -293,20 +293,22 @@ const AttendanceEmployeeTable = () => {
   };
 
   const WorkScheduleCell = ({ rowData, dataKey, ...props }) => {
-    let at_ws_data = ws_data.find(function (i) {
-      return i.id == rowData.work_schedule_id;
-    });
-    const date = new Date(rowData?.date);
-    const dayOfWeek = new Intl.DateTimeFormat("en-US", {
-      weekday: "long",
-    }).format(date);
+    // let at_ws_data = ws_data.find(function (i) {
+    //   return i.id == rowData.work_schedule_id;
+    // });
+    // const date = new Date(rowData?.date);
+    // const dayOfWeek = new Intl.DateTimeFormat("en-US", {
+    //   weekday: "long",
+    // }).format(date);
 
-    const work_hr = at_ws_data?.workday.find(
-      (val) => val.weekday.toLowerCase() === dayOfWeek.toLowerCase()
+    // const work_hr = at_ws_data?.workday.find(
+    //   (val) => val.weekday.toLowerCase() === dayOfWeek.toLowerCase()
+    // );
+    // let total_work_duration = work_hr ? work_hr.total_work_duration : 0;
+
+    let work_schedule_hr = ConvertSecondsToTime(
+      rowData?.work_schedule_duration_without_break
     );
-    let total_work_duration = work_hr ? work_hr.total_work_duration : 0;
-
-    let work_schedule_hr = ConvertSecondsToTime(total_work_duration);
 
     return (
       <Cell {...props} className="link-group">
