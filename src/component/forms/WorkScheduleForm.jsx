@@ -22,7 +22,11 @@ import Select from "react-select";
 import { Api } from "../../common/api/Api";
 
 import classnames from "classnames";
-import { week_list } from "../../common/constant/Constants";
+import {
+  hourOptions,
+  minuteOptions,
+  week_list,
+} from "../../common/constant/Constants";
 
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
@@ -51,16 +55,6 @@ const WorkScheduleForm = () => {
   }, [form_obj]);
 
   const [passedarrowSteps, setPassedarrowSteps] = useState([1]);
-
-  const hourOptions = Array.from({ length: 24 }, (_, i) => ({
-    label: i.toString().padStart(2, "0"),
-    value: i.toString().padStart(2, "0"),
-  }));
-
-  const minuteOptions = Array.from({ length: 6 }, (_, i) => ({
-    label: (i * 10).toString().padStart(2, "0"),
-    value: (i * 10).toString().padStart(2, "0"),
-  }));
 
   function toggleArrowTab(tab) {
     if (activeArrowTab !== tab) {
@@ -367,7 +361,8 @@ const WorkScheduleForm = () => {
                                   )
                                 ).padStart(2, "0")
                             )}
-                            onChange={(selectedOption) =>
+                            onChange={(selectedOption) => {
+                              console.log("SEL HR = ", selectedOption);
                               handleDurationChange(
                                 selectedOption.value,
                                 Math.floor(
@@ -376,8 +371,8 @@ const WorkScheduleForm = () => {
                                     60
                                 ),
                                 "fullday_work_duration"
-                              )
-                            }
+                              );
+                            }}
                           />
                           <b className="mt-2 me-1 ms-2">M</b>
                           <Select
@@ -396,15 +391,16 @@ const WorkScheduleForm = () => {
                                   )
                                 ).padStart(2, "0")
                             )}
-                            onChange={(selectedOption) =>
+                            onChange={(selectedOption) => {
+                              console.log("Sel Min = ", selectedOption);
                               handleDurationChange(
                                 Math.floor(
                                   workScheduleData.fullday_work_duration / 3600
                                 ),
                                 selectedOption.value,
                                 "fullday_work_duration"
-                              )
-                            }
+                              );
+                            }}
                           />
                         </div>
                       </div>
