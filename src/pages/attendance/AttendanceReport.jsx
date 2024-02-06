@@ -181,222 +181,222 @@ const AttendanceReport = () => {
       totalKms: 0.0,
       total_hrs: "0",
     },
-    // {
-    //   user_id: 6,
-    //   user_name: "Paul Prabhakaran",
-    //   first_name: "Paul",
-    //   last_name: "Prabhakaran",
-    //   user_profile_img:
-    //     "https://lystloc.com/account/api/uploads/user-profile-image/profile.png",
-    //   s3_profile_img: "",
-    //   reporting: true,
-    //   location_id: 10595,
-    //   trip_id: "",
-    //   emp_id: "EMP123",
-    //   reports: [
-    //     {
-    //       present: 0,
-    //       date: "01 Jan",
-    //       emp_id: "EMP123",
-    //       name_1: "Aswin T",
-    //       sessions: 0,
-    //       checkins: [],
-    //       in_time: "09:30",
-    //       out_time: "08:00",
-    //       worked_hours: "",
-    //       logins: [],
-    //       no_of_checkins: 0,
-    //       no_of_logins: 0,
-    //       kms: 0,
-    //       branch: "Coimbatore",
-    //       attendance_status: "C",
-    //     },
-    //     {
-    //       present: 0,
-    //       date: "02 Jan",
-    //       emp_id: "EMP123",
-    //       name_1: "Aswin T",
-    //       sessions: 0,
-    //       checkins: [],
-    //       in_time: "12:30",
-    //       out_time: "09:30",
-    //       worked_hours: "",
-    //       logins: [],
-    //       no_of_checkins: 0,
-    //       no_of_logins: 0,
-    //       kms: 0,
-    //       branch: "Coimbatore",
-    //       attendance_status: "C",
-    //     },
-    //     {
-    //       present: 0,
-    //       date: "03 Jan",
-    //       emp_id: "EMP123",
-    //       name_1: "Aswin T",
-    //       sessions: 0,
-    //       checkins: [],
-    //       in_time: "10:00",
-    //       out_time: "08:00",
-    //       worked_hours: "",
-    //       logins: [],
-    //       no_of_checkins: 0,
-    //       no_of_logins: 0,
-    //       kms: 0,
-    //       branch: "Coimbatore",
-    //       attendance_status: "C",
-    //     },
-    //   ],
-    //   total_days: 5,
-    //   present_days: 5,
-    //   absent_days: 3.0,
-    //   totalCheckIns: 3,
-    //   totalKms: 0.0,
-    //   total_hrs: "0",
-    // },
-    // {
-    //   user_id: 39177,
-    //   user_name: "Antony Donald",
-    //   first_name: "Antony",
-    //   last_name: "Donald",
-    //   user_profile_img:
-    //     "https://lystloc.com/account/api/uploads/user-profile-image/profile.png",
-    //   s3_profile_img: "",
-    //   reporting: true,
-    //   location_id: 10595,
-    //   trip_id: "",
-    //   emp_id: "AND24",
-    //   reports: [
-    //     {
-    //       present: 0,
-    //       date: "01 Jan",
-    //       emp_id: "AND24",
-    //       name_1: "Android 0012 ",
-    //       sessions: 0,
-    //       checkins: [],
-    //       in_time: "10:00",
-    //       out_time: "09:00",
-    //       worked_hours: "",
-    //       logins: [],
-    //       no_of_checkins: 0,
-    //       no_of_logins: 0,
-    //       kms: 0,
-    //       branch: "Coimbatore",
-    //       attendance_status: "D",
-    //     },
-    //     {
-    //       present: 0,
-    //       date: "02 Jan",
-    //       emp_id: "AND24",
-    //       name_1: "Android 0012 ",
-    //       sessions: 0,
-    //       checkins: [],
-    //       in_time: "10:20",
-    //       out_time: "07:00",
-    //       worked_hours: "",
-    //       logins: [],
-    //       no_of_checkins: 0,
-    //       no_of_logins: 0,
-    //       kms: 0,
-    //       branch: "Coimbatore",
-    //       attendance_status: "D",
-    //     },
-    //     {
-    //       present: 0,
-    //       date: "03 Jan",
-    //       emp_id: "AND24",
-    //       name_1: "Android 0012 ",
-    //       sessions: 0,
-    //       checkins: [],
-    //       in_time: "11:00",
-    //       out_time: "09:00",
-    //       worked_hours: "",
-    //       logins: [],
-    //       no_of_checkins: 0,
-    //       no_of_logins: 0,
-    //       kms: 0,
-    //       branch: "Coimbatore",
-    //       attendance_status: "D",
-    //     },
-    //   ],
-    //   total_days: 6,
-    //   present_days: 4,
-    //   absent_days: 3.0,
-    //   totalCheckIns: 3,
-    //   totalKms: 0.0,
-    //   total_hrs: "0",
-    // },
-    // {
-    //   user_id: 43332,
-    //   user_name: "Mohammed Fayas",
-    //   first_name: "Fayas",
-    //   last_name: "Mohammed",
-    //   user_profile_img:
-    //     "https://lystloc.com/account/api/uploads/user-profile-image/profile.png",
-    //   s3_profile_img: "",
-    //   reporting: true,
-    //   location_id: 10595,
-    //   trip_id: "",
-    //   emp_id: "MB1192",
-    //   reports: [
-    //     {
-    //       present: 0,
-    //       date: "01 Jan",
-    //       emp_id: "MB1192",
-    //       name_1: "Manoj Prabhu ",
-    //       sessions: 0,
-    //       checkins: [],
-    //       in_time: "09:30",
-    //       out_time: "06:30",
-    //       worked_hours: "",
-    //       logins: [],
-    //       no_of_checkins: 0,
-    //       no_of_logins: 0,
-    //       kms: 0,
-    //       branch: "Coimbatore",
-    //       attendance_status: "E",
-    //     },
-    //     {
-    //       present: 0,
-    //       date: "02 Jan",
-    //       emp_id: "MB1192",
-    //       name_1: "Manoj Prabhu ",
-    //       sessions: 0,
-    //       checkins: [],
-    //       in_time: "09:30",
-    //       out_time: "07:00",
-    //       worked_hours: "",
-    //       logins: [],
-    //       no_of_checkins: 0,
-    //       no_of_logins: 0,
-    //       kms: 0,
-    //       branch: "Coimbatore",
-    //       attendance_status: "E",
-    //     },
-    //     {
-    //       present: 0,
-    //       date: "03 Jan",
-    //       emp_id: "MB1192",
-    //       name_1: "Manoj Prabhu ",
-    //       sessions: 0,
-    //       checkins: [],
-    //       in_time: "09:00",
-    //       out_time: "06:00",
-    //       worked_hours: "",
-    //       logins: [],
-    //       no_of_checkins: 0,
-    //       no_of_logins: 0,
-    //       kms: 0,
-    //       branch: "Coimbatore",
-    //       attendance_status: "E",
-    //     },
-    //   ],
-    //   total_days: 3,
-    //   present_days: 3,
-    //   absent_days: 3.0,
-    //   totalCheckIns: 4,
-    //   totalKms: 0.0,
-    //   total_hrs: "0",
-    // },
+    {
+      user_id: 6,
+      user_name: "Paul Prabhakaran",
+      first_name: "Paul",
+      last_name: "Prabhakaran",
+      user_profile_img:
+        "https://lystloc.com/account/api/uploads/user-profile-image/profile.png",
+      s3_profile_img: "",
+      reporting: true,
+      location_id: 10595,
+      trip_id: "",
+      emp_id: "EMP123",
+      reports: [
+        {
+          present: 0,
+          date: "01 Jan",
+          emp_id: "EMP123",
+          name_1: "Aswin T",
+          sessions: 0,
+          checkins: [],
+          in_time: "09:30",
+          out_time: "08:00",
+          worked_hours: "",
+          logins: [],
+          no_of_checkins: 0,
+          no_of_logins: 0,
+          kms: 0,
+          branch: "Coimbatore",
+          attendance_status: "C",
+        },
+        {
+          present: 0,
+          date: "02 Jan",
+          emp_id: "EMP123",
+          name_1: "Aswin T",
+          sessions: 0,
+          checkins: [],
+          in_time: "12:30",
+          out_time: "09:30",
+          worked_hours: "",
+          logins: [],
+          no_of_checkins: 0,
+          no_of_logins: 0,
+          kms: 0,
+          branch: "Coimbatore",
+          attendance_status: "C",
+        },
+        {
+          present: 0,
+          date: "03 Jan",
+          emp_id: "EMP123",
+          name_1: "Aswin T",
+          sessions: 0,
+          checkins: [],
+          in_time: "10:00",
+          out_time: "08:00",
+          worked_hours: "",
+          logins: [],
+          no_of_checkins: 0,
+          no_of_logins: 0,
+          kms: 0,
+          branch: "Coimbatore",
+          attendance_status: "C",
+        },
+      ],
+      total_days: 5,
+      present_days: 5,
+      absent_days: 3.0,
+      totalCheckIns: 3,
+      totalKms: 0.0,
+      total_hrs: "0",
+    },
+    {
+      user_id: 39177,
+      user_name: "Antony Donald",
+      first_name: "Antony",
+      last_name: "Donald",
+      user_profile_img:
+        "https://lystloc.com/account/api/uploads/user-profile-image/profile.png",
+      s3_profile_img: "",
+      reporting: true,
+      location_id: 10595,
+      trip_id: "",
+      emp_id: "AND24",
+      reports: [
+        {
+          present: 0,
+          date: "01 Jan",
+          emp_id: "AND24",
+          name_1: "Android 0012 ",
+          sessions: 0,
+          checkins: [],
+          in_time: "10:00",
+          out_time: "09:00",
+          worked_hours: "",
+          logins: [],
+          no_of_checkins: 0,
+          no_of_logins: 0,
+          kms: 0,
+          branch: "Coimbatore",
+          attendance_status: "D",
+        },
+        {
+          present: 0,
+          date: "02 Jan",
+          emp_id: "AND24",
+          name_1: "Android 0012 ",
+          sessions: 0,
+          checkins: [],
+          in_time: "10:20",
+          out_time: "07:00",
+          worked_hours: "",
+          logins: [],
+          no_of_checkins: 0,
+          no_of_logins: 0,
+          kms: 0,
+          branch: "Coimbatore",
+          attendance_status: "D",
+        },
+        {
+          present: 0,
+          date: "03 Jan",
+          emp_id: "AND24",
+          name_1: "Android 0012 ",
+          sessions: 0,
+          checkins: [],
+          in_time: "11:00",
+          out_time: "09:00",
+          worked_hours: "",
+          logins: [],
+          no_of_checkins: 0,
+          no_of_logins: 0,
+          kms: 0,
+          branch: "Coimbatore",
+          attendance_status: "D",
+        },
+      ],
+      total_days: 6,
+      present_days: 4,
+      absent_days: 3.0,
+      totalCheckIns: 3,
+      totalKms: 0.0,
+      total_hrs: "0",
+    },
+    {
+      user_id: 43332,
+      user_name: "Mohammed Fayas",
+      first_name: "Fayas",
+      last_name: "Mohammed",
+      user_profile_img:
+        "https://lystloc.com/account/api/uploads/user-profile-image/profile.png",
+      s3_profile_img: "",
+      reporting: true,
+      location_id: 10595,
+      trip_id: "",
+      emp_id: "MB1192",
+      reports: [
+        {
+          present: 0,
+          date: "01 Jan",
+          emp_id: "MB1192",
+          name_1: "Manoj Prabhu ",
+          sessions: 0,
+          checkins: [],
+          in_time: "09:30",
+          out_time: "06:30",
+          worked_hours: "",
+          logins: [],
+          no_of_checkins: 0,
+          no_of_logins: 0,
+          kms: 0,
+          branch: "Coimbatore",
+          attendance_status: "E",
+        },
+        {
+          present: 0,
+          date: "02 Jan",
+          emp_id: "MB1192",
+          name_1: "Manoj Prabhu ",
+          sessions: 0,
+          checkins: [],
+          in_time: "09:30",
+          out_time: "07:00",
+          worked_hours: "",
+          logins: [],
+          no_of_checkins: 0,
+          no_of_logins: 0,
+          kms: 0,
+          branch: "Coimbatore",
+          attendance_status: "E",
+        },
+        {
+          present: 0,
+          date: "03 Jan",
+          emp_id: "MB1192",
+          name_1: "Manoj Prabhu ",
+          sessions: 0,
+          checkins: [],
+          in_time: "09:00",
+          out_time: "06:00",
+          worked_hours: "",
+          logins: [],
+          no_of_checkins: 0,
+          no_of_logins: 0,
+          kms: 0,
+          branch: "Coimbatore",
+          attendance_status: "E",
+        },
+      ],
+      total_days: 3,
+      present_days: 3,
+      absent_days: 3.0,
+      totalCheckIns: 4,
+      totalKms: 0.0,
+      total_hrs: "0",
+    },
   ];
 
   const EmployeeCell = ({ ...props }) => {
@@ -478,55 +478,54 @@ const AttendanceReport = () => {
       <Cell dataKey="user_name" />
     </Column>,
   ];
+
   const dynamicColumns = (reportList) => {
-    const allDynamicColumns = [];
+    const employeeDates = Array.from(
+      new Set(
+        reportList.flatMap((employee) =>
+          employee.reports.map((report) => report.date)
+        )
+      )
+    );
 
-    reportList.forEach((employee) => {
-      const employeeDates = Array.from(
-        new Set(employee.reports.map((report) => report.date))
+    const columns = [
+      <Column width={250} fixed="left" align="center">
+        <HeaderCell
+          style={{
+            background: "#e6f7ff",
+            border: "2px solid #b5f5ec",
+            borderRadius: "1px",
+            padding: "18px",
+          }}
+        >
+          Employee
+        </HeaderCell>
+        <Cell dataKey="user_name" />
+      </Column>,
+    ];
+
+    employeeDates.forEach((date) => {
+      columns.push(
+        <ColumnGroup key={`date_${date}`} align="center" header={date}>
+          <Column width={100} align="center">
+            <HeaderCell>Attendance</HeaderCell>
+            <Cell dataKey={`attendance_${date}`} />
+          </Column>
+
+          <Column width={80} align="center" title="In">
+            <HeaderCell>In</HeaderCell>
+            <Cell dataKey={`in_time_${date}`} />
+          </Column>
+
+          <Column width={80} align="center" title="Out">
+            <HeaderCell>Out</HeaderCell>
+            <Cell dataKey={`out_time_${date}`} />
+          </Column>
+        </ColumnGroup>
       );
-
-      console.log("Employee Dates = ", employeeDates);
-
-      employeeDates.forEach((date) => {
-        const report = employee.reports.find((r) => r.date === date);
-
-        if (report) {
-          const dynamicColumn = (
-            <ColumnGroup
-              key={`${employee.user_name}_${date}`}
-              align="center"
-              header={date}
-            >
-              <Column width={100} align="center">
-                <HeaderCell>Attendance</HeaderCell>
-                <Cell dataKey={`attendance_${employee.user_name}_${date}`}>
-                  {report.attendance_status}
-                </Cell>
-              </Column>
-
-              <Column width={80} align="center" title="In">
-                <HeaderCell>In</HeaderCell>
-                <Cell dataKey={`in_time_${employee.user_name}_${date}`}>
-                  {report.in_time}
-                </Cell>
-              </Column>
-
-              <Column width={80} align="center" title="Out">
-                <HeaderCell>Out</HeaderCell>
-                <Cell dataKey={`out_time_${employee.user_name}_${date}`}>
-                  {report.out_time}
-                </Cell>
-              </Column>
-            </ColumnGroup>
-          );
-
-          allDynamicColumns.push(dynamicColumn);
-        }
-      });
     });
 
-    return allDynamicColumns;
+    return columns;
   };
 
   const additionalColumns = [
@@ -571,10 +570,8 @@ const AttendanceReport = () => {
     </Column>,
   ];
 
-  const allColumns = [
-    fixedColumns.concat(dynamicColumns(reportList)),
-    ...additionalColumns,
-  ];
+  const allColumns = [...dynamicColumns(reportList), ...additionalColumns];
+
   return (
     <React.Fragment>
       <div className="page-content">

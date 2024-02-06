@@ -136,17 +136,17 @@ const ApplyLeaveForm = () => {
     leave_type_obj?.weekend_between_leave === true
       ? setWeekOffDays([])
       : !!thisEmpWS &&
-      setWeekOffDays(
-        thisEmpWS.workday
+        setWeekOffDays(
+          thisEmpWS.workday
 
-          .map((d) => {
-            if (d.is_day_on === false) {
-              return d.day_id;
-            }
-            return null;
-          })
-          .filter((day_id) => day_id !== null)
-      );
+            .map((d) => {
+              if (d.is_day_on === false) {
+                return d.day_id;
+              }
+              return null;
+            })
+            .filter((day_id) => day_id !== null)
+        );
 
     leave_type_obj?.holiday_between_leave === true
       ? setHolidayDays([])
@@ -170,14 +170,14 @@ const ApplyLeaveForm = () => {
   const handleMultiDayChange = (dates, dateStrings, daysCount) => {
     let startDate =
       dateStrings[0] === "" ||
-        dateStrings[0] === null ||
-        dateStrings[0] === undefined
+      dateStrings[0] === null ||
+      dateStrings[0] === undefined
         ? null
         : dateStrings[0];
     let endDate =
       dateStrings[1] === "" ||
-        dateStrings[1] === null ||
-        dateStrings[1] === undefined
+      dateStrings[1] === null ||
+      dateStrings[1] === undefined
         ? null
         : dateStrings[1];
 
@@ -413,8 +413,8 @@ const ApplyLeaveForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                            FormikForm.touched.leave_type &&
-                            FormikForm.errors.leave_type
+                          FormikForm.touched.leave_type &&
+                          FormikForm.errors.leave_type
                             ? "red !important"
                             : provided.borderColor,
                       }),
@@ -422,8 +422,8 @@ const ApplyLeaveForm = () => {
                     value={
                       leaveapplyObj?.leave_type
                         ? leaveType.find(
-                          (d) => d.id === leaveapplyObj?.leave_type
-                        )
+                            (d) => d.id === leaveapplyObj?.leave_type
+                          )
                         : []
                     }
                     onChange={handleLeaveTypeChange}
@@ -431,13 +431,13 @@ const ApplyLeaveForm = () => {
                     className="basic-multi-select"
                     invalid={
                       FormikForm.touched.leave_type &&
-                        FormikForm.errors.leave_type
+                      FormikForm.errors.leave_type
                         ? true
                         : false
                     }
                   />
                   {FormikForm.touched.leave_type &&
-                    FormikForm.errors.leave_type ? (
+                  FormikForm.errors.leave_type ? (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.leave_type}
                     </div>
@@ -462,124 +462,132 @@ const ApplyLeaveForm = () => {
               </Col>
 
               {!!selectedLeaveTypeObj?.unit &&
-  selectedLeaveTypeObj?.unit === leave_type_day_unit && (
-    <Col lg={10}>
-      <div className="input-group">
-        <div className="input-group">
-          <Label className="form-label">Select Date</Label>
-        </div>
-        <RangePicker
-          name="multiple_date"
-          format={DateFormat}
-          placeholder={["Start Date", "End Date"]}
-          disabledDate={disabledDate}
-          onChange={handleMultiDayChange}
-          value={
-            !!leaveapplyObj?.start && !!leaveapplyObj?.end
-              ? [
-                  dayjs(
-                    ConvertDateFormat(
-                      ConvertISODateFormat(leaveapplyObj?.start)
-                    ),
-                    DateFormat
-                  ),
-                  dayjs(
-                    ConvertDateFormat(
-                      ConvertISODateFormat(leaveapplyObj?.end)
-                    ),
-                    DateFormat
-                  ),
-                ]
-              : null
-          }
-        />
-        <span className="input-group-text">{daysCount} Days</span>
-        <div id="passwordHelpBlock" className="form-text">
-          Please select Start & End Date
-        </div>
-      </div>
+                selectedLeaveTypeObj?.unit === leave_type_day_unit && (
+                  <Col lg={10}>
+                    <div className="input-group">
+                      <div className="input-group">
+                        <Label className="form-label">Select Date</Label>
+                      </div>
+                      <RangePicker
+                        name="multiple_date"
+                        format={DateFormat}
+                        placeholder={["Start Date", "End Date"]}
+                        disabledDate={disabledDate}
+                        onChange={handleMultiDayChange}
+                        value={
+                          !!leaveapplyObj?.start && !!leaveapplyObj?.end
+                            ? [
+                                dayjs(
+                                  ConvertDateFormat(
+                                    ConvertISODateFormat(leaveapplyObj?.start)
+                                  ),
+                                  DateFormat
+                                ),
+                                dayjs(
+                                  ConvertDateFormat(
+                                    ConvertISODateFormat(leaveapplyObj?.end)
+                                  ),
+                                  DateFormat
+                                ),
+                              ]
+                            : null
+                        }
+                      />
+                      <span className="input-group-text">{daysCount} Days</span>
+                    </div>
+                    <div id="passwordHelpBlock" className="form-text">
+                      Please select Start & End Date
+                    </div>
 
-      {(daysCount === 1 || daysCount === 0.5) && (
-        <div className="input-group">
-          <Col lg={12}>
-            <Label className="form-label">Select Day Type</Label>
-          </Col>
-          <Col lg={6}>
-            <Select
-              name="day_type"
-              isMulti={false}
-              options={day_type || []}
-              placeholder="Select Day Type"
-              className="basic-multi-select"
-              value={
-                leaveapplyObj?.day_type
-                  ? day_type.find((d) => d.id === leaveapplyObj?.day_type)
-                  : []
-              }
-              onChange={handleDayType}
-            />
-          </Col>
-        </div>
-      )}
-    </Col>
-  )}
-
+                    {(daysCount === 1 || daysCount === 0.5) && (
+                      <div className="input-group">
+                        <Col lg={12}>
+                          <Label className="form-label">Select Day Type</Label>
+                        </Col>
+                        <Col lg={6}>
+                          <Select
+                            name="day_type"
+                            isMulti={false}
+                            options={day_type || []}
+                            placeholder="Select Day Type"
+                            className="basic-multi-select"
+                            value={
+                              leaveapplyObj?.day_type
+                                ? day_type.find(
+                                    (d) => d.id === leaveapplyObj?.day_type
+                                  )
+                                : []
+                            }
+                            onChange={handleDayType}
+                          />
+                        </Col>
+                      </div>
+                    )}
+                  </Col>
+                )}
 
               {!!selectedLeaveTypeObj?.unit &&
                 selectedLeaveTypeObj?.unit === leave_type_hour_unit && (
                   <Col lg={12}>
-                  <div className="row">
-                    <Col md={4} lg={4} xxl={4}>
-                      <DatePicker
-                        name="start"
-                        placeholder="Select Start Time"
-                        showTime={{ minuteStep: 30 }}
-                        format={DateTimeFormat}
-                        disabledDate={disabledDate}
-                        onChange={handleFromDateChange}
-                        value={
-                          !!leaveapplyObj?.start
-                            ? dayjs(
-                                ConvertToDateTimeFormat(
-                                  ConvertToISODateTimeFormat(leaveapplyObj?.start)
-                                ),
-                                DateTimeFormat
-                              )
-                            : null
-                        }
-                      />    
-                    </Col>
-        
-                    <Col md={4} lg={4} xxl={4}>
-                      <DatePicker
-                        name="end"
-                        placeholder="Select End Time"
-                        showTime={{ minuteStep: 30 }}
-                        format={DateTimeFormat}
-                        disabledDate={disabledDate}
-                        onChange={handleToDateChange}
-                        value={
-                          !!leaveapplyObj?.end
-                            ? dayjs(
-                                ConvertToDateTimeFormat(
-                                  ConvertToISODateTimeFormat(leaveapplyObj?.end)
-                                ),
-                                DateTimeFormat
-                              )
-                            : null
-                        }
-                      />
-                    </Col>
-                    <Col md={2} lg={2} xxl={2}>
-                    <span className="input-group-text" style={{ fontSize: '12px' }}>{hourDiff} h</span>
-                    </Col>
-                    <div id="passwordHelpBlock" className="form-text">
-                      Please select Date and Hour
-                    </div>
-                  </div>
-                </Col>
-                
+                    <div className="row">
+                      <Col md={4} lg={4} xxl={4}>
+                        <DatePicker
+                          name="start"
+                          placeholder="Select Start Time"
+                          showTime={{ minuteStep: 30 }}
+                          format={DateTimeFormat}
+                          disabledDate={disabledDate}
+                          onChange={handleFromDateChange}
+                          value={
+                            !!leaveapplyObj?.start
+                              ? dayjs(
+                                  ConvertToDateTimeFormat(
+                                    ConvertToISODateTimeFormat(
+                                      leaveapplyObj?.start
+                                    )
+                                  ),
+                                  DateTimeFormat
+                                )
+                              : null
+                          }
+                        />
+                      </Col>
 
+                      <Col md={4} lg={4} xxl={4}>
+                        <DatePicker
+                          name="end"
+                          placeholder="Select End Time"
+                          showTime={{ minuteStep: 30 }}
+                          format={DateTimeFormat}
+                          disabledDate={disabledDate}
+                          onChange={handleToDateChange}
+                          value={
+                            !!leaveapplyObj?.end
+                              ? dayjs(
+                                  ConvertToDateTimeFormat(
+                                    ConvertToISODateTimeFormat(
+                                      leaveapplyObj?.end
+                                    )
+                                  ),
+                                  DateTimeFormat
+                                )
+                              : null
+                          }
+                        />
+                      </Col>
+                      <Col md={2} lg={2} xxl={2}>
+                        <span
+                          className="input-group-text"
+                          style={{ fontSize: "12px" }}
+                        >
+                          {hourDiff} h
+                        </span>
+                      </Col>
+                      <div id="passwordHelpBlock" className="form-text">
+                        Please select Date and Hour
+                      </div>
+                    </div>
+                  </Col>
                 )}
               {/* <Col md={6} lg={6} xxl={6}>
                                 <div>
