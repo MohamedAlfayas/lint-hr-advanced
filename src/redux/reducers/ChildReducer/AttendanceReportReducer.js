@@ -17,6 +17,19 @@ const AttendanceReportReducer = createSlice({
                 individual_attendance_report_data: payload
             }
         },
+        updateIndividualAttendanceReportData: (state, { type, payload }) => {
+            return {
+                ...state,
+                individual_attendance_report_data: [...state?.individual_attendance_report_data].map(d => {
+                    if (d.id === payload.id) {
+                        return payload
+                    }
+                    else {
+                        return d
+                    }
+                })
+            }
+        },
         setTeamAttendanceReportData: (state, { type, payload }) => {
             return {
                 ...state,
@@ -34,6 +47,6 @@ const AttendanceReportReducer = createSlice({
 });
 
 
-export const { setIndividualAttendanceReportData, setTeamAttendanceReportData, setShowTeamTable } = AttendanceReportReducer.actions;
+export const { setIndividualAttendanceReportData, updateIndividualAttendanceReportData, setTeamAttendanceReportData, setShowTeamTable } = AttendanceReportReducer.actions;
 
 export default AttendanceReportReducer.reducer;

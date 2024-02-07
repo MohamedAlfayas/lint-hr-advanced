@@ -20,3 +20,15 @@ export const ConvertToDateTimeFormat = (date) => {
 
   return newDateFormat;
 };
+
+
+export const ConvertToJSDateFormat = (date) => {
+  const [datePart, timePart] = String(date).split(" ");
+  const [day, month, year] = datePart.split("-");
+  const [hour, minute, seconds] = timePart.split(":");
+
+  // Forming the new date string in yyyy-mm-dd HH:MM format
+  const newDateFormat = `${month}-${day}-${year} ${hour}:${minute}:${seconds}`;
+
+  return newDateFormat;
+}

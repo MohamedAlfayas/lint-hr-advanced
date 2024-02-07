@@ -30,6 +30,8 @@ import Select from "react-select";
 import { ToastContainer, toast } from "react-toastify";
 import { PostApi } from "../../../common/api/PostApi";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
+import { updateIndividualAttendanceReportData } from "../../../redux/reducers/ChildReducer/AttendanceReportReducer";
+import { GetAmPmDateTime } from "../../../common/js/ConvertDateTimeToAmPm";
 
 const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
@@ -40,6 +42,7 @@ const AttendanceEmployeeTable = () => {
   const ws_data = GetLocalStorageData("work_schedule") || [];
   const holiday_data = GetLocalStorageData("holiday") || [];
   const leave_types_data = GetLocalStorageData("leave_types") || [];
+  const employee_data = GetLocalStorageData("employee") || [];
 
   const [timeline_modal, settimeline_modal] = useState(false);
   const [timelineList, setTimelineList] = useState([]);
@@ -47,22 +50,9 @@ const AttendanceEmployeeTable = () => {
   const [notes_modal, setNotes_modal] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [attendanceEditData, setAttendanceEditData] = useState(null);
-  const [reportEdit, setReportEdit] = useState({
-    obj_id: 0,
-    edited_paid_hr: 0,
-    edited_ot_hr: 0,
-    notes: [],
-  });
-  const [selectedPaidHours, setSelectedPaidHours] = useState({
-    paid_hours_hr: null,
-  });
-  const [selectedPaidMinutes, setSelectedPaidMinutes] = useState({
-    paid_hours_min: null,
-  });
-  const [selectedOtHours, setSelectedOtHours] = useState({ ot_hr: "00" });
-  const [selectedOtMinutes, setSelectedOtMinutes] = useState({ ot_min: "00" });
-  const [totalPaidHours, setTotalPaidHours] = useState("");
-  const [selectedNotes, setSelectedNotes] = useState({});
+
+  const [notesUpdateObj, setNotesUpdateObj] = useState(null);
+  const [notesList, setNotesList] = useState([]);
 
   const [showSaveBtn, setShowSaveBtn] = useState(false);
 
@@ -74,137 +64,16 @@ const AttendanceEmployeeTable = () => {
     settimeline_modal(!timeline_modal);
   }
 
-  function open_notes_modal(rowData) {
-    setNotes_modal(!notes_modal);
-  }
+  const closeNotesModal = () => {
+    setNotes_modal(false);
+  };
 
   const [initialObj, setInitialObj] = useState(0);
-
-  //Edit Modal Function
-  const editAttendanceReport = (rowData) => {
-    let initial_obj = {
-      id: rowData?.id,
-      date: rowData?.date,
-      work_schedule_duration_without_break:
-        rowData?.work_schedule_duration_without_break,
-      total_work_duration: rowData?.final_checked_in_hr_in_seconds,
-      final_checked_in_hr_in_seconds: rowData?.final_checked_in_hr_in_seconds,
-      final_ot_hr_in_seconds: rowData?.final_ot_hr_in_seconds,
-      final_paid_hr_in_seconds: rowData?.final_paid_hr_in_seconds,
-      notes: "",
-    };
-
-    console.log("Initial Obj = ", initial_obj);
-
-    setInitialObj(initial_obj);
-
-    setAttendanceEditData(initial_obj);
-
-    setShowSaveBtn(false);
-
-    setEditModalOpen(true);
-  };
 
   const closeEditModal = () => {
     setAttendanceEditData(null);
     setEditModalOpen(false);
   };
-
-  //Calculate Total Hours Paid+Ot
-
-  const calculateTotalPaidHours = () => {
-    const paidHoursHr = selectedPaidHours.paid_hours_hr || 0;
-    const paidHoursMin = selectedPaidMinutes.paid_hours_min || 0;
-
-    const otHoursHr = selectedOtHours.ot_hr || 0;
-    const otHoursMin = selectedOtMinutes.ot_min || 0;
-
-    const startTime = new Date(
-      0,
-      0,
-      0,
-      parseInt(paidHoursHr),
-      parseInt(paidHoursMin)
-    );
-    const endTime = new Date(
-      0,
-      0,
-      0,
-      parseInt(otHoursHr),
-      parseInt(otHoursMin)
-    );
-
-    console.log("start date ===", startTime);
-    console.log("end date ===", endTime);
-
-    const totalHours = startTime.getHours() + endTime.getHours();
-    const totalMinutes = startTime.getMinutes() + endTime.getMinutes();
-
-    const totalHoursInMinutes = totalHours * 60 + totalMinutes;
-
-    if (totalHoursInMinutes > 1440) {
-      toast.error("Total hours exceeds 24 hours");
-      return;
-    }
-
-    const carryOverHours = Math.floor(totalMinutes / 60);
-    const remainingMinutes = totalMinutes % 60;
-
-    const formattedTotalHours = String(totalHours + carryOverHours).padStart(
-      2,
-      "0"
-    );
-    const formattedRemainingMinutes = String(remainingMinutes).padStart(2, "0");
-
-    const totalPaidHours = `${formattedTotalHours}:${formattedRemainingMinutes} Hr`;
-
-    setTotalPaidHours(totalPaidHours);
-  };
-  const handlePaidHoursHrChange = (selectedOption) => {
-    setSelectedPaidHours({
-      ...selectedPaidHours,
-      paid_hours_hr: selectedOption,
-    });
-  };
-
-  const handlePaidHoursMinChange = (selectedOption) => {
-    setSelectedPaidMinutes({
-      ...selectedPaidMinutes,
-      paid_hours_min: selectedOption,
-    });
-  };
-
-  const handleOTHoursChange = (selectedOption) => {
-    setSelectedOtHours({
-      ...selectedOtHours,
-      ot_hr: selectedOption,
-    });
-  };
-
-  const handleOTMinutesChange = (selectedOption) => {
-    setSelectedOtMinutes({
-      ...selectedOtMinutes,
-      ot_min: selectedOption,
-    });
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    console.log("name = ", name, "   value = ", value);
-    setSelectedNotes({
-      ...selectedNotes,
-      [name]: value,
-    });
-  };
-
-  useEffect(() => {
-    calculateTotalPaidHours();
-  }, [
-    selectedPaidHours,
-    selectedPaidMinutes,
-    selectedOtHours,
-    selectedOtMinutes,
-  ]);
 
   const DateCell = ({ rowData, dataKey, ...props }) => {
     let warning_icon =
@@ -362,7 +231,7 @@ const AttendanceEmployeeTable = () => {
         <Link
           className="link-opacity-75 ms-1"
           href="#"
-          onClick={() => open_notes_modal(rowData)}
+          onClick={() => viewNotes(rowData)}
         >
           {rowData.notes.length} Notes
         </Link>
@@ -371,7 +240,10 @@ const AttendanceEmployeeTable = () => {
   };
 
   const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
-    if (rowData?.hr_status === 1 || rowData?.hr_status === 3) {
+    if (
+      rowData?.status === false &&
+      (rowData?.hr_status === 1 || rowData?.hr_status === 3)
+    ) {
       return (
         <Cell style={{ padding: "6px" }} {...props}>
           <Button
@@ -433,8 +305,6 @@ const AttendanceEmployeeTable = () => {
   };
 
   const isValueChanged = (new_obj) => {
-    console.log("NEW OBJ = ", new_obj);
-
     let initialHr = !!initialObj?.final_paid_hr_in_seconds
       ? Math.floor(initialObj?.final_paid_hr_in_seconds / 3600)
       : 0;
@@ -463,6 +333,34 @@ const AttendanceEmployeeTable = () => {
     }
   };
 
+  //Edit Modal Function
+  const editAttendanceReport = (rowData) => {
+    let initial_obj = {
+      id: rowData?.id,
+      date: rowData?.date,
+      work_schedule_duration_without_break:
+        rowData?.work_schedule_duration_without_break,
+      total_work_duration: rowData?.final_checked_in_hr_in_seconds,
+      final_checked_in_hr_in_seconds: rowData?.final_checked_in_hr_in_seconds,
+      final_ot_hr_in_seconds: rowData?.final_ot_hr_in_seconds,
+      final_paid_hr_in_seconds: rowData?.final_paid_hr_in_seconds,
+      old_checked_in_hr_in_seconds: rowData?.final_checked_in_hr_in_seconds,
+      old_ot_hr_in_seconds: rowData?.final_ot_hr_in_seconds,
+      old_paid_hr_in_seconds: rowData?.final_paid_hr_in_seconds,
+      notes: "",
+    };
+
+    console.log("Initial Obj = ", initial_obj);
+
+    setInitialObj(initial_obj);
+
+    setAttendanceEditData(initial_obj);
+
+    setShowSaveBtn(false);
+
+    setEditModalOpen(true);
+  };
+
   const updateAttendance = async () => {
     console.log("final Update Obj = ", attendanceEditData);
 
@@ -472,6 +370,46 @@ const AttendanceEmployeeTable = () => {
 
     if (Api.status && Api.status === 200) {
       setEditModalOpen(false);
+      dispatch(updateIndividualAttendanceReportData(Api?.data?.data));
+      toast.success(Api?.data?.message);
+    } else {
+      toast.error(Api?.data?.message || Api?.data?.detail);
+    }
+
+    dispatch(setLoaderVisible(false));
+  };
+
+  const viewNotes = (rowData) => {
+    console.log("This rowData = ", rowData);
+
+    let initial_obj = {
+      id: rowData?.id,
+      final_checked_in_hr_in_seconds: rowData?.final_checked_in_hr_in_seconds,
+      final_ot_hr_in_seconds: rowData?.final_ot_hr_in_seconds,
+      final_paid_hr_in_seconds: rowData?.final_paid_hr_in_seconds,
+      notes: "",
+    };
+    setNotesUpdateObj(initial_obj);
+
+    setNotesList(rowData?.notes);
+
+    setNotes_modal(true);
+  };
+
+  const updateNotes = async () => {
+    console.log("UPdated Notes = ", notesUpdateObj);
+
+    dispatch(setLoaderVisible(true));
+
+    const Api = await PostApi(
+      "/attendance/update-notes/",
+      notesUpdateObj,
+      false
+    );
+
+    if (Api.status && Api.status === 200) {
+      setNotes_modal(false);
+      dispatch(updateIndividualAttendanceReportData(Api?.data?.data));
       toast.success(Api?.data?.message);
     } else {
       toast.error(Api?.data?.message || Api?.data?.detail);
@@ -520,11 +458,11 @@ const AttendanceEmployeeTable = () => {
         </Column>
         <Column width={100}>
           <HeaderCell>Total IN</HeaderCell>
-          <SecondsToTimeCell dataKey="final_final_checked_in_hr_in_seconds" />
+          <SecondsToTimeCell dataKey="final_checked_in_hr_in_seconds" />
         </Column>
         <Column width={125}>
           <HeaderCell>OT</HeaderCell>
-          <SecondsToTimeCell dataKey="final_final_ot_hr_in_seconds" />
+          <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
         </Column>
         <Column width={125}>
           <HeaderCell>Paid Hr</HeaderCell>
@@ -542,14 +480,6 @@ const AttendanceEmployeeTable = () => {
         <Column width={80} fixed="right">
           <HeaderCell>Action</HeaderCell>
           <EditableCell />
-
-          {/* <Cell style={{ padding: "6px" }}>
-            {(rowData) => (
-              <Button appearance="link" onClick={() => editAttendanceReport(rowData)}>
-                Edit
-              </Button>
-            )}
-          </Cell> */}
         </Column>
       </Table>
       {/* Edit Modal */}
@@ -911,75 +841,65 @@ const AttendanceEmployeeTable = () => {
       <Modal
         isOpen={notes_modal}
         toggle={() => {
-          open_notes_modal();
+          closeNotesModal();
         }}
         centered
       >
         <ModalBody className="text-left">
           <div>
             <SimpleBar style={{ height: "300px" }} className="px-3 mx-n3 mb-2">
-              <div className="d-flex mb-4">
-                <div className="flex-shrink-0">
-                  <img
-                    src="https://local-lcedu-static.s3.amazonaws.com/dev/employee/72/profile/c436ed58-7f6a-467e-80f0-f2034dad859f.jpg"
-                    alt=""
-                    className="avatar-xs rounded-circle"
-                  />
-                </div>
-                <div className="flex-grow-1 ms-3">
-                  <h5 className="fs-13">
-                    Joseph Parker{" "}
-                    <small className="text-muted ms-2">
-                      20 Dec 2021 - 05:47AM
-                    </small>
-                  </h5>
-                  <p className="text-muted">
-                    I am getting message from customers that when they place
-                    order always get error message .
-                  </p>
-                </div>
-              </div>
-              <div className="d-flex mb-4">
-                <div className="flex-shrink-0">
-                  <img
-                    src="https://local-lcedu-static.s3.amazonaws.com/dev/employee/67/profile/2e06ae27-9238-458c-b0c7-bd4eba75e835.jpg"
-                    alt=""
-                    className="avatar-xs rounded-circle"
-                  />
-                </div>
-                <div className="flex-grow-1 ms-3">
-                  <h5 className="fs-13">
-                    Donald Palmer{" "}
-                    <small className="text-muted ms-2">
-                      24 Dec 2021 - 05:20PM
-                    </small>
-                  </h5>
-                  <p className="text-muted">
-                    If you have further questions, please contact Customer
-                    Support from the “Action Menu” on your .
-                  </p>
-                </div>
-              </div>
-              <div className="d-flex">
-                <div className="flex-shrink-0">
-                  <img
-                    src="https://local-lcedu-static.s3.amazonaws.com/dev/employee/62/profile/8a2e638c-c521-4129-9742-adc05acaae51.webp"
-                    alt=""
-                    className="avatar-xs rounded-circle"
-                  />
-                </div>
-                <div className="flex-grow-1 ms-3">
-                  <h5 className="fs-13">
-                    Alexis Clarke{" "}
-                    <small className="text-muted ms-2">26 min ago</small>
-                  </h5>
-                  <p className="text-muted">
-                    Your provides you with the most current status of your
-                    order. To help manage your order refer to the “Action Menu”
-                    to initiate return, contact Customer Support and more.
-                  </p>
-                </div>
-              </div>
+              {!!notesList &&
+                notesList.map((d) => {
+                  let emp_details =
+                    !!employee_data &&
+                    employee_data.find((e) => e.id === d.employee_id);
+
+                  return (
+                    <div className="d-flex mb-4">
+                      <div className="flex-shrink-0">
+                        {emp_details?.profile_url ? (
+                          <img
+                            src={emp_details?.profile_url}
+                            alt=""
+                            className="avatar-xs rounded-circle"
+                            style={{ objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div
+                            className="avatar-xs rounded-circle"
+                            style={{
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              background: "#0ab39c",
+                              objectFit: "cover",
+                            }}
+                            data-bs-toggle="tooltip"
+                            title={emp_details.fname}
+                          >
+                            <span
+                              className="first_letter"
+                              style={{ color: "white" }}
+                            >
+                              {emp_details.fname.charAt(0)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-grow-1 ms-3">
+                        <h5 className="fs-13">
+                          {emp_details.fname}{" "}
+                          <small className="text-muted ms-2">
+                            {/* 20 Dec 2021 - 05:47AM */}
+                            {GetAmPmDateTime(d?.created_time)}
+                          </small>
+                        </h5>
+                        <p className="text-muted">{d?.message}</p>
+                      </div>
+                    </div>
+                  );
+                })}
             </SimpleBar>
             <form className="mt-4">
               <Row className="g-3">
@@ -995,18 +915,39 @@ const AttendanceEmployeeTable = () => {
                     id="exampleFormControlTextarea1"
                     rows="3"
                     placeholder="Enter your comment..."
+                    value={notesUpdateObj?.notes || ""}
+                    onChange={(e) =>
+                      setNotesUpdateObj({
+                        ...notesUpdateObj,
+                        notes: e.target.value,
+                      })
+                    }
                   ></textarea>
                 </Col>
                 <Col xs={12} className="text-end">
-                  <button
-                    type="button"
-                    className="btn btn-ghost-secondary btn-icon waves-effect me-1"
-                  >
-                    <i className="ri-attachment-line fs-16"></i>
-                  </button>
-                  <Link to="#" className="btn btn-success">
-                    Post Notes
-                  </Link>
+                  <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
+                    <button
+                      type="button"
+                      className="btn w-sm btn-light"
+                      data-bs-dismiss="modal"
+                      onClick={closeNotesModal}
+                    >
+                      Close
+                    </button>
+
+                    {!!notesUpdateObj?.notes &&
+                      (notesUpdateObj?.notes).trim().length > 0 && (
+                        <button
+                          type="button"
+                          className="btn w-sm btn-success"
+                          data-bs-dismiss="modal"
+                          onClick={updateNotes}
+                        >
+                          <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                          Save
+                        </button>
+                      )}
+                  </div>
                 </Col>
               </Row>
             </form>
