@@ -330,20 +330,20 @@ const AttendanceEmployeeTable = () => {
   };
 
   const BreakHourCell = ({ rowData, dataKey, ...props }) => {
-    let at_ws_data = ws_data.find(function (i) {
-      return i.id == rowData.work_schedule_id;
-    });
-    const date = new Date(rowData?.date);
-    const dayOfWeek = new Intl.DateTimeFormat("en-US", {
-      weekday: "long",
-    }).format(date);
+    // let at_ws_data = ws_data.find(function (i) {
+    //   return i.id == rowData.work_schedule_id;
+    // });
+    // const date = new Date(rowData?.date);
+    // const dayOfWeek = new Intl.DateTimeFormat("en-US", {
+    //   weekday: "long",
+    // }).format(date);
 
-    const work_hr = at_ws_data?.workday.find(
-      (val) => val.weekday.toLowerCase() === dayOfWeek.toLowerCase()
-    );
-    let break_hr_duration = work_hr ? work_hr.break_duration : 0;
+    // const work_hr = at_ws_data?.workday.find(
+    //   (val) => val.weekday.toLowerCase() === dayOfWeek.toLowerCase()
+    // );
+    // let break_hr_duration = work_hr ? work_hr.break_duration : 0;
 
-    let break_schedule_hr = ConvertSecondsToTime(break_hr_duration);
+    let break_schedule_hr = ConvertSecondsToTime(rowData.total_break_duration);
 
     return (
       <Cell {...props} className="link-group">
