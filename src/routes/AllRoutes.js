@@ -1,7 +1,5 @@
 import { Navigate } from "react-router";
-import React, { lazy } from 'react';
-
-
+import React, { lazy } from "react";
 
 // import Dashboard from "../pages/dashboard/Dashboard";
 // import Login from "../pages/auth/login/Login";
@@ -24,61 +22,101 @@ import React, { lazy } from 'react';
 // import AttendanceConfig from "../pages/attendanceConfig/AttendanceConfig"
 // import AttendanceReport from "../pages/attendance/AttendanceReport";
 
-
-const Dashboard = lazy(() => import('../pages/dashboard/Dashboard'));
-const Login = lazy(() => import('../pages/auth/login/Login'));
-const Register = lazy(() => import('../pages/auth/register/Register'));
-const ForgetPassword = lazy(() => import('../pages/auth/forgotpassword/ForgetPassword'));
-const ProjectOverview = lazy(() => import('../pages/organization'));
-const Employee = lazy(() => import('../pages/employee/Employee'));
-const EmployeeView = lazy(() => import('../pages/employee/EmployeeView'));
-const Roles = lazy(() => import('../pages/roles/Roles'));
-const WorkSchedule = lazy(() => import('../pages/workschedule/WorkSchedule'));
-const Holidays = lazy(() => import('../pages/holidays/Holidays'));
-const LeaveType = lazy(() => import('../pages/leave/LeaveType'));
-const LeaveApproval = lazy(() => import('../pages/leave/LeaveApproval'));
-const LeaveDashboard = lazy(() => import('../pages/leave/Leaves'));
-const CustomField = lazy(() => import('../pages/customField/CustomField'));
-const PayRoll = lazy(() => import('../pages/payroll/PayRoll'));
-const Xlsx = lazy(() => import('../pages/xlsx/Xlsx'));
-const PayRollConfig = lazy(() => import('../pages/payroll/PayRollConfig'));
-const AttendanceDashboard = lazy(() => import('../pages/attendance/Attendance'));
-const AttendanceConfig = lazy(() => import('../pages/attendanceConfig/AttendanceConfig'));
-const AttendanceReport = lazy(() => import('../pages/attendance/AttendanceReport'));
-
-
+const Dashboard = lazy(() => import("../pages/dashboard/Dashboard"));
+const Login = lazy(() => import("../pages/auth/login/Login"));
+const Register = lazy(() => import("../pages/auth/register/Register"));
+const ForgetPassword = lazy(() =>
+  import("../pages/auth/forgotpassword/ForgetPassword")
+);
+const ProjectOverview = lazy(() => import("../pages/organization"));
+const Employee = lazy(() => import("../pages/employee/Employee"));
+const EmployeeView = lazy(() => import("../pages/employee/EmployeeView"));
+const Roles = lazy(() => import("../pages/roles/Roles"));
+const WorkSchedule = lazy(() => import("../pages/workschedule/WorkSchedule"));
+const Holidays = lazy(() => import("../pages/holidays/Holidays"));
+const LeaveType = lazy(() => import("../pages/leave/LeaveType"));
+const LeaveApproval = lazy(() => import("../pages/leave/LeaveApproval"));
+const LeaveDashboard = lazy(() => import("../pages/leave/Leaves"));
+const CustomField = lazy(() => import("../pages/customField/CustomField"));
+const PayRoll = lazy(() => import("../pages/payroll/PayRoll"));
+const Xlsx = lazy(() => import("../pages/xlsx/Xlsx"));
+const PayRollConfig = lazy(() => import("../pages/payroll/PayRollConfig"));
+const AttendanceDashboard = lazy(() =>
+  import("../pages/attendance/Attendance")
+);
+const AttendanceConfig = lazy(() =>
+  import("../pages/attendanceConfig/AttendanceConfig")
+);
+const AttendanceReport = lazy(() =>
+  import("../pages/attendance/AttendanceReport")
+);
+const AttendanceApproval = lazy(() =>
+  import("../pages/attendanceApproval/AttendanceApproval")
+);
 
 const privateRoutes = [
-    { path: "/dashboard", component: <Dashboard />, perm: "all" },
-    { path: "/organization", component: <ProjectOverview />, perm: "organization" },
-    { path: "/employee", component: <Employee />, perm: "employee" },
-    { path: "/employee/view/:id", component: <EmployeeView />, perm: "employee_view" },
-    { path: "/roles", component: <Roles />, perm: "roles" },
-    { path: "/workschedule", component: <WorkSchedule />, perm: "work_schedule" },
-    { path: "/holidays", component: <Holidays />, perm: "holidays" },
-    { path: "/leavetype", component: <LeaveType />, perm: "leave_type" },
-    { path: "/leave-approval", component: <LeaveApproval />, perm: "leave_approval" },
-    { path: "/leaves", component: <LeaveDashboard />, perm: "leaves" },
-    { path: "/custom-field", component: <CustomField />, perm: "custom_field" },
-    { path: "/payroll", component: <PayRoll />, perm: "payroll" },
-    { path: "/payrollconfig", component: <PayRollConfig />, perm: "payroll_config" },
-    { path: "/attendance", component: <AttendanceDashboard />, perm: "attendance" },
-    { path: "/xlsx", component: <Xlsx />, perm: "xlsx" },
-    { path: "/attendanceconfig", component: <AttendanceConfig />, perm: "attendance_config" },
-    { path: "/attendancereport", component: <AttendanceReport />, perm: "attendance_report" },
-    {
-        path: "/",
-        exact: true,
-        component: <Navigate to="/dashboard" />,
-        perm: "all"
-    },
-]
+  { path: "/dashboard", component: <Dashboard />, perm: "all" },
+  {
+    path: "/organization",
+    component: <ProjectOverview />,
+    perm: "organization",
+  },
+  { path: "/employee", component: <Employee />, perm: "employee" },
+  {
+    path: "/employee/view/:id",
+    component: <EmployeeView />,
+    perm: "employee_view",
+  },
+  { path: "/roles", component: <Roles />, perm: "roles" },
+  { path: "/workschedule", component: <WorkSchedule />, perm: "work_schedule" },
+  { path: "/holidays", component: <Holidays />, perm: "holidays" },
+  { path: "/leavetype", component: <LeaveType />, perm: "leave_type" },
+  {
+    path: "/leave-approval",
+    component: <LeaveApproval />,
+    perm: "leave_approval",
+  },
+  { path: "/leaves", component: <LeaveDashboard />, perm: "leaves" },
+  { path: "/custom-field", component: <CustomField />, perm: "custom_field" },
+  { path: "/payroll", component: <PayRoll />, perm: "payroll" },
+  {
+    path: "/payrollconfig",
+    component: <PayRollConfig />,
+    perm: "payroll_config",
+  },
+  {
+    path: "/attendance",
+    component: <AttendanceDashboard />,
+    perm: "attendance",
+  },
+  { path: "/xlsx", component: <Xlsx />, perm: "xlsx" },
+  {
+    path: "/attendanceconfig",
+    component: <AttendanceConfig />,
+    perm: "attendance_config",
+  },
+  {
+    path: "/attendancereport",
+    component: <AttendanceReport />,
+    perm: "attendance_report",
+  },
+  {
+    path: "/attendanceapproval",
+    component: <AttendanceApproval />,
+    prem: "attendance_approval",
+  },
+  {
+    path: "/",
+    exact: true,
+    component: <Navigate to="/dashboard" />,
+    perm: "all",
+  },
+];
 
 const publicRoutes = [
-    { path: "/auth/login", component: <Login /> },
-    { path: "/auth/forgot-password", component: <ForgetPassword /> },
-    { path: "/auth/register", component: <Register /> },
-]
+  { path: "/auth/login", component: <Login /> },
+  { path: "/auth/forgot-password", component: <ForgetPassword /> },
+  { path: "/auth/register", component: <Register /> },
+];
 
-
-export { publicRoutes, privateRoutes }
+export { publicRoutes, privateRoutes };

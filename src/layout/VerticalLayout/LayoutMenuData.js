@@ -275,6 +275,13 @@ const Navdata = () => {
           parentId: "baseUi",
           perm: "attendance_report",
         },
+        {
+          id: "attendanceapproval",
+          label: "Attendance Approval",
+          link: "/attendanceapproval",
+          parentId: "baseUi",
+          perm: "attendance_approval",
+        },
       ],
     },
     //     {

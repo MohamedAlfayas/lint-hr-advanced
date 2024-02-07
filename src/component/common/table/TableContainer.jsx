@@ -15,10 +15,12 @@ import { Table, Row, Col, Button, Input, CardBody } from "reactstrap";
 import { DefaultColumnFilter } from "./Filters";
 import { Link } from "react-router-dom";
 import EmployeeTableFilter from "../tableFilter/EmployeeTableFilter";
+import AttednaceApprovalFilter from "../tableFilter/AttednaceApprovalFilter";
 import {
   employee_component_name,
   leave_approval_component_name,
   leave_type_component_name,
+  attendance_approval_component_name,
 } from "../../../common/constant/Constants";
 import LeaveApprovalFilter from "../tableFilter/LeaveApprovalFilter";
 import LeaveTypeFilter from "../tableFilter/LeaveTypeFilter";
@@ -155,7 +157,11 @@ const TableContainer = ({
                 </div>
               </Col>
               {formname === employee_component_name && <EmployeeTableFilter />}
+              {formname == attendance_approval_component_name && (
+                <AttednaceApprovalFilter />
+              )}
               {formname === leave_type_component_name && <LeaveTypeFilter />}
+
               {/* <Col md={2}>
                 <div>
                   <button type="button" className="btn btn-primary w-100">
