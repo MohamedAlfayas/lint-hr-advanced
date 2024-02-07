@@ -2333,3 +2333,21 @@ export const custom_field_module_lists = [
   { id: "employee", label: "Employee", value: "employee" },
   { id: "organization", label: "Organization", value: "organization" },
 ];
+
+
+export const hourOptions = Array.from({ length: 24 }, (_, i) => ({
+  label: i.toString().padStart(2, "0"),
+  value: i.toString().padStart(2, "0"),
+}));
+
+export const minuteOptions = Array.from({ length: 6 }, (_, i) => ({
+  label: (i * 10).toString().padStart(2, "0"),
+  value: (i * 10).toString().padStart(2, "0"),
+}));
+
+
+export const AllMinuteOptions = Array.from({ length: 60 }, (_, i) => ({
+  label: i.toString().padStart(2, "0"),
+  value: i.toString().padStart(2, "0"),
+}));
+

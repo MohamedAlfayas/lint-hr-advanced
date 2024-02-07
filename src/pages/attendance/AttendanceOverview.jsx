@@ -123,8 +123,8 @@ const AttendanceOverview = () => {
         inactive_hours.push(inactive_hours_count);
 
         totalWsHours += parseInt(d.work_schedule_duration_without_break);
-        totalCheckInHours += parseInt(d.total_work_duration);
-        totalOtHours += parseInt(d.ot_hr_in_seconds);
+        totalCheckInHours += parseInt(d.final_checked_in_hr_in_seconds);
+        totalOtHours += parseInt(d.final_ot_hr_in_seconds);
         totalPaidHours += parseInt(d.final_paid_hr_in_seconds);
 
         if (d.is_leave_approved === true) {
