@@ -15,6 +15,9 @@ const initialState = {
   },
   attendance_approval_table_filter_keys: {
     primary_department_id_list: 0,
+    thisMonth: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}`,
   },
 };
 
@@ -67,13 +70,6 @@ const TableFilterReducer = createSlice({
         attendance_approval_table_filter_keys: payload,
       };
     },
-    resetAttednanceApprovalTableFilterKeys: (state, { type, payload }) => {
-      return {
-        ...state,
-        attendance_approval_table_filter_keys:
-          initialState?.attendance_approval_table_filter_keys,
-      };
-    },
   },
 });
 
@@ -85,6 +81,5 @@ export const {
   resetLeaveTypeTableFilterKeys,
   setLeaveApprovalTableFilterKeys,
   setAttendanceApprovalTableFilterKeys,
-  resetAttednanceApprovalTableFilterKeys,
 } = TableFilterReducer.actions;
 export default TableFilterReducer.reducer;

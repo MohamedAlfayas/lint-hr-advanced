@@ -40,10 +40,12 @@ const AttednaceApprovalFilter = () => {
   };
 
   const handleDateRangeChange = (e, monthStr) => {
-    setAttendanceApproval({
-      ...attedanceApproval,
-      thisMonth: monthStr,
-    });
+    dispatch(
+      setAttendanceApprovalTableFilterKeys({
+        ...attendance_approval_table_filter_keys,
+        thisMonth: monthStr,
+      })
+    );
   };
 
   return (
@@ -73,7 +75,7 @@ const AttednaceApprovalFilter = () => {
       <Col md={3}>
         <div className="form-icon right">
           <DatePicker
-            value={dayjs(attedanceApproval?.thisMonth, MonthFormat)}
+            value={dayjs(attendance_approval_table_filter_keys?.thisMonth)}
             format={MonthFormat}
             picker="month"
             allowClear={false}

@@ -3,17 +3,23 @@ import { useEffect, useState } from "react";
 import { MetaTitle } from "../../common/data/MetaTitle";
 import InfoTable from "../../component/common/table/InfoTable";
 import { useDispatch, useSelector } from "react-redux";
-import { setLeaveApproval } from "../../redux/reducers/ChildReducer/LeaveApprovalReducer";
 import { setAttendanceApprovalData } from "../../redux/reducers/ChildReducer/AttendanceApprovalReducer";
 import { Api } from "../../common/api/Api";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
-import { Button, Badge, UncontrolledTooltip } from "reactstrap";
-import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
+import {
+  Button,
+  Modal,
+  ModalHeader,
+  ModalBody,
+  Badge,
+  UncontrolledTooltip,
+} from "reactstrap";
 import { setAttendanceApprovalTableFilterKeys } from "../../redux/reducers/ChildReducer/TableFilterReducer";
 import { format } from "date-fns";
 import { ParseTime } from "../../common/js/ParseTime";
 import { ConvertSecondsToTime } from "../../common/js/ConvertSecondsToTime";
 import { Link } from "react-router-dom";
+import SimpleBar from "simplebar-react";
 
 const AttendanceApproval = () => {
   const dispatch = useDispatch();
@@ -23,16 +29,8 @@ const AttendanceApproval = () => {
   );
 
   const DepartmentData = GetLocalStorageData("department") || [];
-  const LeaveTypeData = GetLocalStorageData("leave_types") || [];
   const EmployeeData = GetLocalStorageData("employee") || [];
-  const ProfileData = GetLocalStorageData("my_profile");
 
-  const { version } = useSelector((data) => data.MetaReducer);
-
-  const getUnitId = (id) => {
-    const day_type = LeaveTypeData?.find((val) => val?.value === id)?.unit;
-    return day_type;
-  };
   useEffect(() => {
     dispatch(
       setAttendanceApprovalTableFilterKeys({ primary_department_id_list: 0 })
@@ -47,7 +45,7 @@ const AttendanceApproval = () => {
 
     Api({
       type: "GET",
-      url: "attendance/get_attendance_entry_log/?thisMonth=" + thisMonth,
+      url: "attendance/get-data-for-reporting-manager/?thisMonth=" + thisMonth,
     })
       .then((res) => {
         console.log("res", res);
@@ -60,6 +58,11 @@ const AttendanceApproval = () => {
 
   const [timelineList, setTimelineList] = useState([]);
   const [timelineDate, setTimeLineDate] = useState("");
+  const [timeline_modal, settimeline_modal] = useState(false);
+
+  function open_timeline() {
+    settimeline_modal(!timeline_modal);
+  }
 
   const additionalColumn = [
     {
@@ -113,72 +116,71 @@ const AttendanceApproval = () => {
         );
       },
     },
-    // {
-    //   Header: "Department",
-    //   id: "department",
-    //   filterable: false,
-    //   accessor: (obj) => {
+    {
+      Header: "Department",
+      id: "department",
+      filterable: false,
+      accessor: (obj) => {
+        let thisEmp = EmployeeData.find((data) => data.id === obj.employee_id);
 
-    //     let thisDepartment = ProfileData
-    //       ? ProfileData.find((data) =>
-    //           data.primary_department_id_list.includes(
-    //             obj.primary_department_id_list
-    //           )
-    //         )
-    //       : [];
+        let thisDepartment = thisEmp
+          ? thisEmp.primary_department_id_list.map((deptId) =>
+              DepartmentData.find((dept) => dept.id === deptId)
+            )
+          : [];
 
-    //     let firstDep_name = thisDepartment?.length
-    //       ? thisDepartment[0].name
-    //       : "";
+        let firstDep_name = thisDepartment?.length
+          ? thisDepartment[0].name
+          : "";
 
-    //     let subDepList = thisDepartment?.length
-    //       ? thisDepartment.filter((datas, index) => {
-    //           if (index !== 0) {
-    //             return datas;
-    //           }
-    //         })
-    //       : [];
+        let subDepList = thisDepartment?.length
+          ? thisDepartment.filter((datas, index) => {
+              if (index !== 0) {
+                return datas;
+              }
+            })
+          : [];
 
-    //     return (
-    //       <span>
-    //         <Button
-    //           color="light"
-    //           id={`depListRef-${obj.id}`}
-    //           className="position-relative"
-    //         >
-    //           <React.Fragment>{firstDep_name}</React.Fragment>
-    //           {subDepList.length > 0 ? (
-    //             <span>
-    //               <Badge
-    //                 //id="tooltipwithHtml"
-    //                 pill
-    //                 color="success"
-    //                 className="position-absolute top-0 start-100 translate-middle"
-    //               >
-    //                 +{subDepList.length}
-    //                 <span className="visually-hidden">Departments</span>
-    //               </Badge>
+        return (
+          <span>
+            <Button
+              color="light"
+              id={`depListRef-${obj.id}`}
+              className="position-relative"
+            >
+              <React.Fragment>{firstDep_name}</React.Fragment>
+              {subDepList.length > 0 ? (
+                <span>
+                  <Badge
+                    //id="tooltipwithHtml"
+                    pill
+                    color="success"
+                    className="position-absolute top-0 start-100 translate-middle"
+                  >
+                    +{subDepList.length}
+                    <span className="visually-hidden">Departments</span>
+                  </Badge>
 
-    //               <UncontrolledTooltip
-    //                 placement="bottom"
-    //                 target={`depListRef-${obj.id}`}
-    //               >
-    //                 {" "}
-    //                 <div className="mt-1">
-    //                   {subDepList.map((item, key) => (
-    //                     <p className="mb-1">{item.name}</p>
-    //                   ))}
-    //                 </div>{" "}
-    //               </UncontrolledTooltip>
-    //             </span>
-    //           ) : (
-    //             ""
-    //           )}
-    //         </Button>
-    //       </span>
-    //     );
-    //   },
-    // },
+                  <UncontrolledTooltip
+                    placement="bottom"
+                    target={`depListRef-${obj.id}`}
+                  >
+                    {" "}
+                    <div className="mt-1">
+                      {subDepList.map((item, key) => (
+                        <p className="mb-1">{item.name}</p>
+                      ))}
+                    </div>{" "}
+                  </UncontrolledTooltip>
+                </span>
+              ) : (
+                ""
+              )}
+            </Button>
+          </span>
+        );
+      },
+    },
     {
       Header: "Date",
       accessor: "date",
@@ -202,17 +204,21 @@ const AttendanceApproval = () => {
         return (
           <React.Fragment>
             {in_time}{" "}
-            <Link
-              className="link-opacity-75 ms-1"
-              href="#"
-              onClick={() => {
-                setTimelineList(obj?.entry_log);
-                setTimeLineDate(format(new Date(obj?.date), "dd MMM, yyyy"));
-                open_timeline();
-              }}
-            >
-              +{obj.entry_log.length}
-            </Link>
+            {obj.entry_log.length > 0 ? (
+              <Link
+                className="link-opacity-75 ms-1"
+                href="#"
+                onClick={() => {
+                  setTimelineList(obj?.entry_log);
+                  setTimeLineDate(format(new Date(obj?.date), "dd MMM, yyyy"));
+                  open_timeline();
+                }}
+              >
+                +{obj.entry_log.length}
+              </Link>
+            ) : (
+              <span>-</span>
+            )}
           </React.Fragment>
         );
       },
@@ -228,14 +234,15 @@ const AttendanceApproval = () => {
       },
     },
     {
-      Header: "Edited CIH",
-      accessor: "edited_cih",
+      Header: "Edited Hours",
+      accessor: "edited_hours",
       filterable: false,
-      id: "edited_cih",
+      id: "edited_hours",
       accessor: (obj) => {
         let edited_hours = ConvertSecondsToTime(
-          obj.edited_checked_hr_in_seconds
+          obj.edited_checked_in_hr_in_seconds
         );
+
         return <React.Fragment>{edited_hours}</React.Fragment>;
       },
     },
@@ -255,7 +262,8 @@ const AttendanceApproval = () => {
       filterable: false,
       id: "diff",
       accessor: (obj) => {
-        return <b>0</b>;
+        let diff = ConvertSecondsToTime(obj.paid_hr_difference_in_seconds);
+        return <React.Fragment>{diff}</React.Fragment>;
       },
     },
 
@@ -265,16 +273,16 @@ const AttendanceApproval = () => {
       filterable: false,
       accessor: (obj) => {
         let status =
-          obj.hr_status === 1
-            ? "Pending"
-            : obj.hr_status === 2
+          obj.hr_status === 2
             ? "Approved"
+            : obj.hr_status === 3
+            ? "Pending"
             : "Rejected";
         let statusClass =
-          obj.hr_status === 1
+          obj.hr_status === 2
+            ? "sucess"
+            : obj.hr_status === 3
             ? "primary"
-            : obj.hr_status === 2
-            ? "success"
             : "danger";
         return (
           <span
@@ -288,14 +296,8 @@ const AttendanceApproval = () => {
     },
   ];
 
-  const filterKey = "status";
+  const filterKey = "hr_status";
   const filterOptions = [
-    {
-      option: 1,
-      label: "Pending",
-      count:
-        attendance_approval_data.filter((e) => e[filterKey] === 3).length || 0,
-    },
     {
       option: 2,
       label: "Approved",
@@ -304,6 +306,12 @@ const AttendanceApproval = () => {
     },
     {
       option: 3,
+      label: "Pending",
+      count:
+        attendance_approval_data.filter((e) => e[filterKey] === 3).length || 0,
+    },
+    {
+      option: 4,
       label: "Rejected",
       count:
         attendance_approval_data.filter((e) => e[filterKey] === 4).length || 0,
@@ -321,6 +329,77 @@ const AttendanceApproval = () => {
         filterOptions={filterOptions}
         width_per={"35%"}
       />
+      <Modal
+        isOpen={timeline_modal}
+        toggle={() => {
+          open_timeline();
+        }}
+        centered
+      >
+        <ModalHeader>
+          <h5 className="modal-title" id="exampleModalToggleLabel">
+            Date : {timelineDate}
+          </h5>
+        </ModalHeader>
+        <ModalBody className="text-left">
+          <div>
+            <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
+              <div className="acitivity-timeline acitivity-main">
+                {timelineList.length &&
+                  timelineList.map((data, idx) => {
+                    let py_class =
+                      idx === 0 || idx === data.length - 1 ? "" : "py-3";
+                    let info =
+                      parseInt(data.entry_type) === 1
+                        ? {
+                            class: "success",
+                            text: "IN",
+                            iconClass: "right",
+                          }
+                        : {
+                            class: "warning",
+                            text: "Out",
+                            iconClass: "left",
+                          };
+                    return (
+                      <div className={`acitivity-item  d-flex ${py_class}`}>
+                        <div className="flex-shrink-0 avatar-xs acitivity-avatar">
+                          <div
+                            className={`avatar-title bg-${info?.class}-subtle text-${info?.class} rounded-circle`}
+                          >
+                            <i
+                              className={`mdi mdi-arrow-${info?.iconClass}-thick`}
+                            ></i>
+                          </div>
+                        </div>
+                        <div className="flex-grow-1 ms-3">
+                          <h6 className="mb-1 lh-base">Check {info?.text} </h6>
+                          <p className="text-muted mb-1">
+                            {format(ParseTime(data?.entry_time), "h:mm a")}
+                          </p>
+                          <small className="mb-0 text-muted">
+                            <i className="mdi mdi-map-marker"></i>{" "}
+                            {data?.location || ""}
+                          </small>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </SimpleBar>
+            <div class="d-flex justify-content-center">
+              <Button
+                className="btn btn-warning"
+                onClick={() => {
+                  open_timeline();
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </ModalBody>
+      </Modal>
     </div>
   );
 };

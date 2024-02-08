@@ -41,6 +41,7 @@ import { isEmpty } from "lodash";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
+import { format } from "date-fns";
 import {
   setComponentToShow,
   setFormObj,
@@ -370,7 +371,10 @@ const InfoTable = ({
     let employee_fname =
       EmployeeData.find((e) => e.id === orderData.employee_id)?.fname || "";
 
-    let content = `<span>Are You Sure to <strong style='color:green'>Accept </strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `;
+    let content = `<span>Are You Sure to <strong style='color:green'>Accept </strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
+      new Date(orderData.date),
+      "dd MMM, yyyy"
+    )}</span> `;
     let btnText = "Yes, Approve";
 
     Swal.fire({
@@ -382,6 +386,26 @@ const InfoTable = ({
       cancelButtonText: "Cancel",
       confirmButtonClass: "btn btn-success",
       cancelButtonClass: "btn btn-danger",
+      input: "text",
+      inputPlaceholder: "Enter reason",
+      inputAttributes: {
+        style:
+          "margin: 10px auto; padding: 10px; border-radius: 5px; display: block;",
+      },
+      inputValidator: (value) => {
+        if (!value) {
+          return "Reason is required!";
+        }
+      },
+    }).then((result) => {
+      if (result.value) {
+        const data = {
+          id: [orderData.id],
+          type: 2,
+          notes: result.value,
+        };
+        console.log("Accepted Data", data);
+      }
     });
     // .then(async (result) => {
     //   if (result.value) {
@@ -411,8 +435,11 @@ const InfoTable = ({
     let employee_fname =
       EmployeeData.find((e) => e.id === orderData.employee_id)?.fname || "";
 
-    let content = `<span>Are You Sure to <strong style='color:red'>Reject</strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `;
-    let btnText = "Yes, Approve";
+    let content = `<span>Are You Sure to <strong style='color:red'>Reject</strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
+      new Date(orderData.date),
+      "dd MMM, yyyy"
+    )}</span> `;
+    let btnText = "Yes, Reject";
 
     Swal.fire({
       title: "Confirmation",
@@ -434,6 +461,15 @@ const InfoTable = ({
           return "Reason is required!";
         }
       },
+    }).then((result) => {
+      if (result.value) {
+        const data = {
+          id: [orderData.id],
+          type: 4,
+          notes: result.value,
+        };
+        console.log("Rejected Data", data);
+      }
     });
     // .then(async (result) => {
     //   if (result.value) {
@@ -645,7 +681,7 @@ const InfoTable = ({
           } else if (
             formname &&
             formname === attendance_approval_component_name &&
-            orderData.status === 1
+            orderData.hr_status === 3
           ) {
             return (
               <ul className="list-inline hstack gap-2 mb-0">
