@@ -554,12 +554,9 @@ const AttendanceTeamTable = () => {
             </div>
             <div className="flex-shrink-0">
               <div>
+                {` ${ConvertSecondsToTime(rowData.total_paid_hr_in_seconds)}`}/
                 {` ${ConvertSecondsToTime(
-                  rowData.total_paid_hours_in_seconds
-                )}`}
-                /
-                {` ${ConvertSecondsToTime(
-                  rowData.work_schedule_duration_without_break
+                  rowData.total_work_schedule_hr_without_break_in_seconds
                 )}`}
               </div>
             </div>
@@ -573,8 +570,8 @@ const AttendanceTeamTable = () => {
               aria-valuemax="100"
               style={{
                 width: Math.round(
-                  (rowData.total_paid_hours_in_seconds /
-                    rowData.work_schedule_duration_without_break) *
+                  (rowData.total_paid_hr_in_seconds /
+                    rowData.total_work_schedule_hr_without_break_in_seconds) *
                     100 *
                     2
                 ),
@@ -613,7 +610,10 @@ const AttendanceTeamTable = () => {
     </Column>,
     <Column width={200} fixed="left">
       <HeaderCell>Paid Time / Work Schedule</HeaderCell>
-      <WSHourCell dataKey="work_schedule_duration_without_break" fullText />
+      <WSHourCell
+        dataKey="total_work_schedule_hr_without_break_in_seconds"
+        fullText
+      />
     </Column>,
     <Column width={200} fixed="left">
       <HeaderCell>Department</HeaderCell>
@@ -631,11 +631,55 @@ const AttendanceTeamTable = () => {
             </HeaderCell>
             {/* <Cell dataKey={`workday_data[${index}].final_paid_hr_in_seconds`} /> */}
             <Cell>
-              {(rowData) =>
-                ConvertSecondsToTime(
-                  rowData.workday_data[index].final_paid_hr_in_seconds
-                )
-              }
+              {(rowData) => {
+                let result_text = "";
+                let result_text_color = "black";
+
+                if (rowData.workday_data[index].is_holiday === true) {
+                  let holiday_name =
+                    holiday_data.find(
+                      (d) => d.id === rowData.workday_data[index].holiday_id
+                    ).name || "";
+                  result_text = holiday_name;
+                  result_text_color = "green";
+                } else if (rowData.workday_data[index].is_week_off === true) {
+                  result_text =
+                    rowData.workday_data[index].week_off_day_name || "";
+                  result_text_color = "blue";
+                } else if (
+                  rowData.workday_data[index].is_leave_approved === true
+                ) {
+                  result_text = "Leave";
+                  result_text_color = "orange";
+                } else if (
+                  rowData.workday_data[index].leave_taken_without_approval ===
+                  true
+                ) {
+                  result_text = "Inactive";
+                  result_text_color = "red";
+                } else if (
+                  rowData.workday_data[index].is_attendance_exists === false
+                ) {
+                  result_text = "-";
+                  result_text_color = "black";
+                } else {
+                  result_text =
+                    parseInt(
+                      rowData.workday_data[index].final_paid_hr_in_seconds
+                    ) > 0
+                      ? ConvertSecondsToTime(
+                          rowData.workday_data[index].final_paid_hr_in_seconds
+                        )
+                      : "00:00Hr";
+                  result_text_color = "black";
+                }
+
+                return (
+                  <span style={{ color: result_text_color }}>
+                    {result_text}
+                  </span>
+                );
+              }}
             </Cell>
           </Column>
         ))

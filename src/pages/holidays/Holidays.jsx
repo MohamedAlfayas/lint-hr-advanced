@@ -96,12 +96,16 @@ const Holiday = () => {
     {
       option: true,
       label: "Restricted",
-      count: holiday_data.filter((e) => e[filterKey] === true).length || 0,
+      count: !!holiday_data
+        ? holiday_data.filter((e) => e[filterKey] === true).length
+        : 0,
     },
     {
       option: false,
       label: "Non Restricted",
-      count: holiday_data.filter((e) => e[filterKey] === false).length || 0,
+      count: !!holiday_data
+        ? holiday_data.filter((e) => e[filterKey] === false).length
+        : 0,
     },
   ];
 
@@ -139,7 +143,7 @@ const Holiday = () => {
       ) : (
         <InfoTable
           additionalColumn={additionalColumn}
-          tabledata={holiday_data}
+          tabledata={holiday_data || []}
           formname={holiday_component_name}
           initialFormObj={initialFormObj}
           filterKey={filterKey}
