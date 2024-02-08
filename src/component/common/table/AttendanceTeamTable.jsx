@@ -629,11 +629,11 @@ const AttendanceTeamTable = () => {
               {" "}
               {format(new Date(day.date), "dd MMM, yyyy")}
             </HeaderCell>
-            {/* <Cell dataKey={`workday_data[${index}].paid_hours_in_seconds`} /> */}
+            {/* <Cell dataKey={`workday_data[${index}].final_paid_hr_in_seconds`} /> */}
             <Cell>
               {(rowData) =>
                 ConvertSecondsToTime(
-                  rowData.workday_data[index].paid_hours_in_seconds
+                  rowData.workday_data[index].final_paid_hr_in_seconds
                 )
               }
             </Cell>
