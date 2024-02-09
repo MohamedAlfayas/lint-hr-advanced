@@ -48,6 +48,38 @@ const AttednaceApprovalFilter = () => {
     );
   };
 
+  // const handleFilter = async () => {
+  //   console.log("FILTER CLICKED !!!! === ", filterKeys);
+
+  //   dispatch(setLoaderVisible(true));
+
+  //   const Api = await PostApi(
+  //     "report/get-attendance-report/",
+  //     filterKeys,
+  //     false
+  //   );
+  //   console.log("API RES = ", Api);
+  //   if (Api.status && Api.status === 200) {
+  //     dispatch(
+  //       setIndividualAttendanceReportData(
+  //         Api?.data?.data?.individual_attendance_report
+  //       )
+  //     );
+  //     dispatch(
+  //       setTeamAttendanceReportData(Api?.data?.data?.team_attendance_report)
+  //     );
+  //     if (filterKeys?.type === "2" && filterKeys?.employee === "0") {
+  //       dispatch(setShowTeamTable(true));
+  //     } else {
+  //       dispatch(setShowTeamTable(false));
+  //     }
+  //   } else {
+  //     toast.error(Api?.data?.message || Api?.data?.detail);
+  //   }
+
+  //   dispatch(setLoaderVisible(false));
+  // };
+
   return (
     <React.Fragment>
       <Col md={3}>
@@ -85,6 +117,18 @@ const AttednaceApprovalFilter = () => {
           />
         </div>
       </Col>
+
+      <div className="col-lg-auto">
+        <div className="hstack gap-2">
+          <button
+            type="button"
+            // onClick={handleFilter}
+            className="btn btn-danger"
+          >
+            <i className="ri-equalizer-fill me-1 align-bottom"></i> Filter
+          </button>
+        </div>
+      </div>
     </React.Fragment>
   );
 };

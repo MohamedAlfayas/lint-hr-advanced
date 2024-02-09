@@ -198,7 +198,13 @@ const InfoTable = ({
     let employee_fname =
       EmployeeData.find((e) => e.id === orderData.employee_id)?.fname || "";
 
-    let content = `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To <strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `;
+    let content =
+      formname === leave_approval_component_name
+        ? `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To <strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `
+        : `<span>Are You Sure to <strong style='color:green'>Accept </strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
+            new Date(orderData.date),
+            "dd MMM, yyyy"
+          )}</span> `;
     let btnText = "Yes, Approve";
 
     Swal.fire({
@@ -210,25 +216,59 @@ const InfoTable = ({
       cancelButtonText: "Cancel",
       confirmButtonClass: "btn btn-success",
       cancelButtonClass: "btn btn-danger",
+      input:
+        formname === attendance_approval_component_name ? "text" : undefined,
+      inputPlaceholder:
+        formname === attendance_approval_component_name
+          ? "Enter reason for rejection"
+          : undefined,
+      inputAttributes:
+        formname === attendance_approval_component_name
+          ? {
+              style:
+                "margin: 10px auto; padding: 10px; border-radius: 5px; display: block;",
+            }
+          : undefined,
+      inputValidator:
+        formname === attendance_approval_component_name
+          ? (value) => {
+              if (!value) {
+                return "Reason is required!";
+              }
+            }
+          : undefined,
     }).then(async (result) => {
-      if (result.value) {
-        const data = {
-          leave_application_id_list: [orderData.id],
-          status: 2,
-          reason_from_authority: "",
-        };
+      if (formname === leave_approval_component_name) {
+        if (result.value) {
+          const data = {
+            leave_application_id_list: [orderData.id],
+            status: 2,
+            reason_from_authority: "",
+          };
 
-        console.log("data ====", data);
-        dispatch(editLeaveApproval(data));
-
-        const Api = await PostApi("leave/approve-or-reject/", data, false);
-        console.log("API RES = ", Api);
-        if (Api.status && Api.status === 200) {
+          console.log("data ====", data);
           dispatch(editLeaveApproval(data));
-          toast.success(Api?.data?.message);
-        } else {
-          toast.error(Api?.data?.message || Api?.data?.detail);
+
+          const Api = await PostApi("leave/approve-or-reject/", data, false);
+          console.log("API RES = ", Api);
+          if (Api.status && Api.status === 200) {
+            dispatch(editLeaveApproval(data));
+            toast.success(Api?.data?.message);
+          } else {
+            toast.error(Api?.data?.message || Api?.data?.detail);
+          }
         }
+      } else if (formname === attendance_approval_component_name) {
+        if (result.value) {
+          const data = {
+            id: [orderData.id],
+            type: 2,
+            notes: result.value,
+          };
+          console.log("Accepted Data", data);
+        }
+      } else {
+        toast.error("Something Went Wrong");
       }
     });
   };
@@ -238,7 +278,13 @@ const InfoTable = ({
       EmployeeData.find((e) => e.id === orderData.employee_id)?.fname || "";
     // const unitLabel = orderData.unit === 1 ? 'day' : 'hour';
 
-    let content = `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To <strong style='color:#7066e0'> ${employee_fname} </strong> on ${orderData.start} to  ${orderData.end} </span>`;
+    let content =
+      formname === leave_approval_component_name
+        ? `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To <strong style='color:#7066e0'> ${employee_fname} </strong> on ${orderData.start} to  ${orderData.end} </span>`
+        : `<span>Are You Sure to <strong style='color:red'>Reject</strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
+            new Date(orderData.date),
+            "dd MMM, yyyy"
+          )}</span> `;
     let btnText = "Yes, Reject";
 
     Swal.fire({
@@ -262,32 +308,46 @@ const InfoTable = ({
         }
       },
     }).then(async (result) => {
-      if (result.value) {
-        const data = {
-          leave_application_id_list: [orderData.id],
-          status: 3,
-          reason_from_authority: result.value,
-        };
+      if (formname === leave_approval_component_name) {
+        if (result.value) {
+          const data = {
+            leave_application_id_list: [orderData.id],
+            status: 3,
+            reason_from_authority: result.value,
+          };
 
-        console.log("data ====", data);
+          console.log("data ====", data);
 
-        const Api = await PostApi("leave/approve-or-reject/", data, false);
-        console.log("API RES = ", Api);
-        if (Api.status && Api.status === 200) {
-          dispatch(editLeaveApproval(data));
-          toast.success(Api?.data?.message);
-        } else {
-          toast.error(Api?.data?.message || Api?.data?.detail);
+          const Api = await PostApi("leave/approve-or-reject/", data, false);
+          console.log("API RES = ", Api);
+          if (Api.status && Api.status === 200) {
+            dispatch(editLeaveApproval(data));
+            toast.success(Api?.data?.message);
+          } else {
+            toast.error(Api?.data?.message || Api?.data?.detail);
+          }
         }
+      } else if (formname == attendance_approval_component_name) {
+        if (result.value) {
+          const data = {
+            id: [orderData.id],
+            type: 4,
+            notes: result.value,
+          };
+          console.log("Rejected Data", data);
+        }
+      } else {
+        toast.error("Something Went Wrong");
       }
     });
   };
 
   const handleBulkApproval = async () => {
     console.log("id", selectedGroupIds);
-
     let content =
-      "Are You Sure to <strong style='color:green'>Accept </strong>  Leave To Selected Employees?";
+      formname === leave_approval_component_name
+        ? "Are You Sure to <strong style='color:green'>Accept </strong>  Leave To Selected Employees?"
+        : "Are you Sure to <strong style='color:green'>Approve</strong> Attendance To Selected Employees?";
     let btnText = "Yes, Approve";
 
     Swal.fire({
@@ -299,29 +359,65 @@ const InfoTable = ({
       cancelButtonText: "Cancel",
       confirmButtonClass: "btn btn-success",
       cancelButtonClass: "btn btn-danger",
+      input:
+        formname === attendance_approval_component_name ? "text" : undefined,
+      inputPlaceholder:
+        formname === attendance_approval_component_name
+          ? "Enter reason for rejection"
+          : undefined,
+      inputAttributes:
+        formname === attendance_approval_component_name
+          ? {
+              style:
+                "margin: 10px auto; padding: 10px; border-radius: 5px; display: block;",
+            }
+          : undefined,
+      inputValidator:
+        formname === attendance_approval_component_name
+          ? (value) => {
+              if (!value) {
+                return "Reason is required!";
+              }
+            }
+          : undefined,
     }).then(async (result) => {
-      if (result.value) {
-        const data = {
-          leave_application_id_list: selectedGroupIds,
-          status: 2,
-          reason_from_authority: "",
-        };
-        console.log("data ====", data);
+      if (formname === leave_approval_component_name) {
+        if (result.value) {
+          const data = {
+            leave_application_id_list: selectedGroupIds,
+            status: 2,
+            reason_from_authority: "",
+          };
+          console.log("data ====", data);
 
-        const Api = await PostApi("leave/approve-or-reject/", data, false);
-        console.log("API RES = ", Api);
-        if (Api.status && Api.status === 200) {
-          dispatch(editLeaveApproval(data));
-          toast.success(Api?.data?.message);
-        } else {
-          toast.error(Api?.data?.message || Api?.data?.detail);
+          const Api = await PostApi("leave/approve-or-reject/", data, false);
+          console.log("API RES = ", Api);
+          if (Api.status && Api.status === 200) {
+            dispatch(editLeaveApproval(data));
+            toast.success(Api?.data?.message);
+          } else {
+            toast.error(Api?.data?.message || Api?.data?.detail);
+          }
         }
+      } else if (formname === attendance_approval_component_name) {
+        if (result.value) {
+          const data = {
+            id: selectedGroupIds,
+            hr_status: 2,
+            notes: result.value,
+          };
+          console.log("data ====", data);
+        }
+      } else {
+        toast.error("Something Went Wrong");
       }
     });
   };
   const handleBulkReject = async () => {
     let content =
-      "Are You Sure to <strong style='color:red'>Reject</strong> Leave To Selected Employees?";
+      formname === leave_approval_component_name
+        ? "Are You Sure to <strong style='color:red'>Reject</strong> Leave To Selected Employees?"
+        : "Are You Sure to <strong style='color:red'>Reject</strong> Attendance To Selected Employees?";
     let btnText = "Yes, Reject";
 
     Swal.fire({
@@ -345,153 +441,38 @@ const InfoTable = ({
         }
       },
     }).then(async (result) => {
-      if (result.value) {
-        const data = {
-          leave_application_id_list: selectedGroupIds,
-          status: 3,
-          reason_from_authority: result.value,
-        };
+      if (formname === leave_approval_component_name) {
+        if (result.value) {
+          const data = {
+            leave_application_id_list: selectedGroupIds,
+            status: 3,
+            reason_from_authority: result.value,
+          };
 
-        console.log("data ====", data);
+          console.log("data ====", data);
 
-        const Api = await PostApi("leave/approve-or-reject/", data, false);
-        console.log("API RES = ", Api);
-        if (Api.status && Api.status === 200) {
-          dispatch(editLeaveApproval(data));
-          toast.success(Api?.data?.message);
-        } else {
-          toast.error(Api?.data?.message || Api?.data?.detail);
+          const Api = await PostApi("leave/approve-or-reject/", data, false);
+          console.log("API RES = ", Api);
+          if (Api.status && Api.status === 200) {
+            dispatch(editLeaveApproval(data));
+            toast.success(Api?.data?.message);
+          } else {
+            toast.error(Api?.data?.message || Api?.data?.detail);
+          }
         }
+      } else if (formname === attendance_approval_component_name) {
+        if (result.value) {
+          const data = {
+            id: selectedGroupIds,
+            hr_status: 4,
+            notes: result.value,
+          };
+          console.log("Data", data);
+        }
+      } else {
+        toast.error("Something Went Wrong!");
       }
     });
-  };
-
-  const handleAttendanceApproval = async (orderData) => {
-    console.log("data", orderData);
-    let employee_fname =
-      EmployeeData.find((e) => e.id === orderData.employee_id)?.fname || "";
-
-    let content = `<span>Are You Sure to <strong style='color:green'>Accept </strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
-      new Date(orderData.date),
-      "dd MMM, yyyy"
-    )}</span> `;
-    let btnText = "Yes, Approve";
-
-    Swal.fire({
-      title: "Confirmation",
-      html: content,
-      icon: "info",
-      showCancelButton: true,
-      confirmButtonText: btnText,
-      cancelButtonText: "Cancel",
-      confirmButtonClass: "btn btn-success",
-      cancelButtonClass: "btn btn-danger",
-      input: "text",
-      inputPlaceholder: "Enter reason",
-      inputAttributes: {
-        style:
-          "margin: 10px auto; padding: 10px; border-radius: 5px; display: block;",
-      },
-      inputValidator: (value) => {
-        if (!value) {
-          return "Reason is required!";
-        }
-      },
-    }).then((result) => {
-      if (result.value) {
-        const data = {
-          id: [orderData.id],
-          type: 2,
-          notes: result.value,
-        };
-        console.log("Accepted Data", data);
-      }
-    });
-    // .then(async (result) => {
-    //   if (result.value) {
-    //     const data = {
-    //       leave_application_id_list: [orderData.id],
-    //       status: 2,
-    //       reason_from_authority: "",
-    //     };
-
-    //     console.log("data ====", data);
-    //     dispatch(editLeaveApproval(data));
-
-    //     const Api = await PostApi("leave/approve-or-reject/", data, false);
-    //     console.log("API RES = ", Api);
-    //     if (Api.status && Api.status === 200) {
-    //       dispatch(editLeaveApproval(data));
-    //       toast.success(Api?.data?.message);
-    //     } else {
-    //       toast.error(Api?.data?.message || Api?.data?.detail);
-    //     }
-    //   }
-    // });
-  };
-
-  const handleAttendanceReject = async (orderData) => {
-    console.log("data", orderData);
-    let employee_fname =
-      EmployeeData.find((e) => e.id === orderData.employee_id)?.fname || "";
-
-    let content = `<span>Are You Sure to <strong style='color:red'>Reject</strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
-      new Date(orderData.date),
-      "dd MMM, yyyy"
-    )}</span> `;
-    let btnText = "Yes, Reject";
-
-    Swal.fire({
-      title: "Confirmation",
-      html: content,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: btnText,
-      cancelButtonText: "Cancel",
-      confirmButtonClass: "btn btn-danger",
-      cancelButtonClass: "btn btn-secondary",
-      input: "text",
-      inputPlaceholder: "Enter reason for rejection",
-      inputAttributes: {
-        style:
-          "margin: 10px auto; padding: 10px; border-radius: 5px; display: block;",
-      },
-      inputValidator: (value) => {
-        if (!value) {
-          return "Reason is required!";
-        }
-      },
-    }).then((result) => {
-      if (result.value) {
-        const data = {
-          id: [orderData.id],
-          type: 4,
-          notes: result.value,
-        };
-        console.log("Rejected Data", data);
-      }
-    });
-    // .then(async (result) => {
-    //   if (result.value) {
-    //     const data = {
-    //       leave_application_id_list: [orderData.id],
-    //       status: 2,
-    //       reason_from_authority: "",
-    //     };
-
-    //     console.log("data ====", data);
-    //     dispatch(editLeaveApproval(data));
-
-    //     const Api = await PostApi("leave/approve-or-reject/", data, false);
-    //     console.log("API RES = ", Api);
-    //     if (Api.status && Api.status === 200) {
-    //       dispatch(editLeaveApproval(data));
-    //       toast.success(Api?.data?.message);
-    //     } else {
-    //       toast.error(Api?.data?.message || Api?.data?.detail);
-    //     }
-    //   }
-    // });
   };
 
   const handleStatusFilterChange = (event) => {
@@ -690,7 +671,7 @@ const InfoTable = ({
                     to="javascript:void(0)"
                     className="text-success d-inline-block edit-item-btn"
                     onClick={() => {
-                      handleAttendanceApproval(orderData);
+                      handleApproval(orderData);
                     }}
                   >
                     <i className="ri-check-line fs-16"></i>
@@ -700,7 +681,7 @@ const InfoTable = ({
                   <Link
                     to="javascript:void(0)"
                     className="text-danger d-inline-block remove-item-btn"
-                    onClick={() => handleAttendanceReject(orderData)}
+                    onClick={() => handleReject(orderData)}
                   >
                     <i className="ri-close-line fs-16"></i>
                   </Link>
@@ -1226,7 +1207,8 @@ const InfoTable = ({
                         </div>
                       )}
                       {selectApproveReject &&
-                        formname === leave_approval_component_name && (
+                        (formname === leave_approval_component_name ||
+                          formname === attendance_approval_component_name) && (
                           <div>
                             <button
                               type="button"
@@ -1248,6 +1230,29 @@ const InfoTable = ({
                             </button>{" "}
                           </div>
                         )}
+                      {/* {selectApproveReject &&
+                        formname === attendance_approval_component_name && (
+                          <div>
+                            <button
+                              type="button"
+                              className="btn btn-success add-btn"
+                              id="bulk-approve-btn"
+                              onClick={() => handleBulkApproval()}
+                            >
+                              <i className="ri-check-line fs-16"></i> Bulk
+                              Approve
+                            </button>{" "}
+                            <button
+                              type="button"
+                              className="btn btn-danger add-btn"
+                              id="bulk-reject-btn"
+                              onClick={() => handleBulkReject()}
+                            >
+                              <i className="ri-close-line fs-16"></i> Bulk
+                              Reject
+                            </button>{" "}
+                          </div>
+                        )} */}
                     </div>
                   </div>
                 </div>
