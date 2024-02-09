@@ -27,11 +27,23 @@ const AttendanceReport = () => {
 
   const employee_data = GetLocalStorageData("employee") || [];
 
+  console.log("dataaa",employee_data);
   const { team_daily_attendance_report } = useSelector(
     (state) => state.TeamDailyAttendanceReportReducer
   );
 
   console.log("Team Daily Att Rep = ", team_daily_attendance_report);
+ 
+  const matchedEmployee = employee_data.find(
+    employee => employee.id === team_daily_attendance_report.employee_id
+  );
+  
+  if (matchedEmployee) {
+    console.log("Employee First Name:", matchedEmployee.fname);
+  } else {
+    console.log("No employee found with matching ID.");
+  }
+  
 
   useEffect(() => {
     const today = new Date();
@@ -434,6 +446,13 @@ const AttendanceReport = () => {
     },
   ];
 
+  function formatDate(dateString) {
+    const dateObj = new Date(dateString);
+    const month = new Intl.DateTimeFormat('en', { month: 'short' }).format(dateObj);
+    const day = dateObj.getDate().toString().padStart(2, '0'); // Ensure two-digit day
+    return ` ${day} ${month}`;
+  }
+  
   const EmployeeCell = ({ ...props }) => {
     const EmployeeCell = () => {
       return (
@@ -498,70 +517,117 @@ const AttendanceReport = () => {
     );
   };
 
-  const fixedColumns = [
-    <Column width={250} fixed="left" align="center">
-      <HeaderCell
-        style={{
-          background: "#e6f7ff",
-          border: "2px solid #b5f5ec",
-          borderRadius: "1px",
-          padding: "18px",
-        }}
-      >
-        Employee
-      </HeaderCell>
-      <Cell dataKey="user_name" />
-    </Column>,
-  ];
+  const FixedColumns = ({ rowData, dataKey, ...props }) => {
+    let foundEmployee;
+    let emp_name = (foundEmployee = employee_data.find(
+      (emp) => rowData.employee_id === emp.id
+    ))
+      ? foundEmployee.fname
+      : null;
+
+    console.log("emp_name", emp_name);
+    return (
+      <Cell {...props} dataKey="id">
+        {emp_name}
+      </Cell>
+    );
+  };
+
 
   const dynamicColumns = (reportList) => {
-    const employeeDates = Array.from(
-      new Set(
-        reportList.flatMap((employee) =>
-          employee.reports.map((report) => report.date)
-        )
+    const allDynamicColumns = [];
+    
+  const employeeDates = Array.from(
+    new Set(
+      team_daily_attendance_report.flatMap((employee) =>
+        employee.workday_data.map((report) => report.date)
       )
-    );
+    )
+  );
 
-    const columns = [
-      <Column width={250} fixed="left" align="center">
-        <HeaderCell
-          style={{
-            background: "#e6f7ff",
-            border: "2px solid #b5f5ec",
-            borderRadius: "1px",
-            padding: "18px",
-          }}
-        >
-          Employee
-        </HeaderCell>
-        <Cell dataKey="user_name" />
-      </Column>,
-    ];
+   
+      
+     
 
-    employeeDates.forEach((date) => {
-      columns.push(
-        <ColumnGroup key={`date_${date}`} align="center" header={date}>
-          <Column width={100} align="center">
-            <HeaderCell>Attendance</HeaderCell>
-            <Cell dataKey={`attendance_${date}`} />
-          </Column>
+      employeeDates.forEach((date) => {
+      
 
-          <Column width={80} align="center" title="In">
-            <HeaderCell>In</HeaderCell>
-            <Cell dataKey={`in_time_${date}`} />
-          </Column>
+        
+          const dynamicColumn = (
+            <ColumnGroup key={`date_${date}`} align="center"   header={formatDate(date)}>
+              <Column width={100} align="center">
+                <HeaderCell>Attendance</HeaderCell>
+                <Cell dataKey={`attendance_${date}`} />
+              </Column>
 
-          <Column width={80} align="center" title="Out">
-            <HeaderCell>Out</HeaderCell>
-            <Cell dataKey={`out_time_${date}`} />
-          </Column>
-        </ColumnGroup>
-      );
-    });
+              <Column width={80} align="center" title="In">
+                <HeaderCell>In/Out</HeaderCell>
+                <Cell dataKey={`in_time_${date}`} />
+              </Column>
 
-    return columns;
+              <Column width={80} align="center" title="Out">
+                <HeaderCell>Check-ins</HeaderCell>
+                <Cell dataKey={`out_time_${date}`} />
+              </Column>
+            </ColumnGroup>
+          );
+
+          allDynamicColumns.push(dynamicColumn);
+        
+      });
+  
+
+    return allDynamicColumns;
   };
+  // const dynamicColumns = (reportList) => {
+  //   const employeeDates = Array.from(
+  //     new Set(
+  //       team_daily_attendance_report.flatMap((employee) =>
+  //         employee.workday_data.map((report) => report.date)
+  //       )
+  //     )
+  //   );
+
+  //   const columns = [
+  //     <Column width={250} fixed="left" align="center">
+  //       <HeaderCell
+  //         style={{
+  //           background: "#e6f7ff",
+  //           border: "2px solid #b5f5ec",
+  //           borderRadius: "1px",
+  //           padding: "18px",
+  //         }}
+  //       >
+  //         Employee
+  //       </HeaderCell>
+  //       <Cell dataKey="user_name" />
+  //     </Column>,
+  //   ];
+    
+
+  //   employeeDates.forEach((date) => {
+  //     columns.push(
+  //       <ColumnGroup key={`date_${date}`} align="center"   header={formatDate(date)}>
+  //         <Column width={100} align="center">
+  //           <HeaderCell>Attendance</HeaderCell>
+  //           <Cell dataKey={`attendance_${date}`} />
+  //         </Column>
+
+  //         <Column width={80} align="center" title="In">
+  //           <HeaderCell>In/Out</HeaderCell>
+  //           <Cell dataKey={`in_time_${date}`} />
+  //         </Column>
+
+  //         <Column width={100} align="center" title="Out">
+  //           <HeaderCell>Check-Ins</HeaderCell>
+  //           <Cell dataKey={`out_time_${date}`} />
+  //         </Column>
+  //       </ColumnGroup>
+  //     );
+  //   });
+
+  //   return columns;
+  // };
 
   const additionalColumns = [
     <Column width={130} align="center">
@@ -575,7 +641,7 @@ const AttendanceReport = () => {
       >
         Total Days
       </HeaderCell>
-      <Cell dataKey="total_days" fullText />
+      <Cell dataKey="total_working_days_count" fullText />
     </Column>,
     <Column width={130} align="center">
       <HeaderCell
@@ -588,7 +654,7 @@ const AttendanceReport = () => {
       >
         Present Days
       </HeaderCell>
-      <Cell dataKey="present_days" fullText />
+      <Cell dataKey="total_present_days_count" fullText />
     </Column>,
     <Column width={150} align="center">
       <HeaderCell
@@ -636,12 +702,25 @@ const AttendanceReport = () => {
           cellBordered
           height={420}
           headerHeight={60}
-          data={reportList}
+          data={team_daily_attendance_report || []}
           rowHeight={60}
           autoHeight={true}
           loading={loading}
           className="mb-5"
         >
+          <Column width={250} fixed="left" align="center">
+            <HeaderCell
+              style={{
+                background: "#e6f7ff",
+                border: "2px solid #b5f5ec",
+                borderRadius: "1px",
+                padding: "18px",
+              }}
+            >
+              Employee
+            </HeaderCell>
+            <FixedColumns />
+          </Column>
           {allColumns}
         </Table>
       </div>
