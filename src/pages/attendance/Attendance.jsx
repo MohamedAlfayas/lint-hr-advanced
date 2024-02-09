@@ -44,6 +44,7 @@ const AttendanceDashboard = () => {
     })
       .then((res) => {
         dispatch(setIndividualAttendanceReportData(res?.data?.data));
+        dispatch(setShowTeamTable(false));
       })
       .catch((err) => {
         console.log("Something Went Wrong !!");
@@ -61,9 +62,11 @@ const AttendanceDashboard = () => {
           {/* Filter Card End */}
 
           <Row className="project-wrapper">
-            <Col xxl={3} xl={3} sm={3}>
-              <TimeTracking />
-            </Col>
+            {!showTeamTable && (
+              <Col xxl={3} xl={3} sm={3}>
+                <TimeTracking />
+              </Col>
+            )}
             {!showTeamTable && (
               <Col xxl={9} xl={9} sm={9}>
                 <AttendanceOverview />

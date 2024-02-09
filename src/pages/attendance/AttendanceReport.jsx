@@ -10,19 +10,54 @@ import { MonthFormat } from "../../common/constant/Constants";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 dayjs.extend(customParseFormat);
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { DatePicker } from "antd";
 import { ConvertSecondsToTime } from "../../common/js/ConvertSecondsToTime";
+import { PostApi } from "../../common/api/PostApi";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { Api } from "../../common/api/Api";
+import { setTeamDailyAttendanceReport } from "../../redux/reducers/ChildReducer/TeamDailyAttendanceReportReducer";
 const AttendanceReport = () => {
-  const { Column, HeaderCell, Cell, ColumnGroup } = Table;
   document.title = `Attendance Report | ${MetaTitle}`;
+
+  const { Column, HeaderCell, Cell, ColumnGroup } = Table;
   const [loading, setLoading] = React.useState(false);
 
+  const dispatch = useDispatch();
+
   const employee_data = GetLocalStorageData("employee") || [];
-  const { team_attendance_report_data } = useSelector(
-    (state) => state.AttendanceReportReducer
+
+  const { team_daily_attendance_report } = useSelector(
+    (state) => state.TeamDailyAttendanceReportReducer
   );
-  console.log("team_attendance_report_data = ", team_attendance_report_data);
+
+  console.log("Team Daily Att Rep = ", team_daily_attendance_report);
+
+  useEffect(() => {
+    const today = new Date();
+    const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}`;
+
+    getReportData(thisMonth);
+  }, []);
+
+  const getReportData = (thisMonth) => {
+    dispatch(setLoaderVisible(true));
+
+    Api({
+      type: "GET",
+      url: "report/get-team-daily-attendance-report/?thisMonth=" + thisMonth,
+    })
+      .then((res) => {
+        dispatch(setTeamDailyAttendanceReport(res?.data?.data));
+        dispatch(setLoaderVisible(false));
+      })
+      .catch((err) => {
+        console.log("Something Went Wrong !!");
+        dispatch(setLoaderVisible(false));
+      });
+  };
 
   const [filterKeys, setFilterKeys] = useState({
     month: `${new Date().getFullYear()}-${new Date()

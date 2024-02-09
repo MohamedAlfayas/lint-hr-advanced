@@ -49,9 +49,14 @@ const AttendanceFilter = () => {
     })
       .then((res) => {
         const response = res?.data?.data;
-        setEmployeeOptions(
-          response.map((d) => employee_data.find((e) => e.id === d))
+        let emp_options = response.map((d) =>
+          employee_data.find((e) => e.id === d)
         );
+        console.log("Emp Options = ", emp_options);
+        setEmployeeOptions([
+          { id: "0", label: "All", value: "0" },
+          ...emp_options,
+        ]);
       })
       .catch((err) => {
         console.log("Something Went Wrong !!");
