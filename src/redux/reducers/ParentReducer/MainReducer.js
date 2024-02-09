@@ -22,6 +22,7 @@ import TableDataReducer from "../ChildReducer/TableDataReducer";
 import TableFilterReducer from "../ChildReducer/TableFilterReducer";
 import AttendanceApprovalReducer from "../ChildReducer/AttendanceApprovalReducer";
 import TeamDailyAttendanceReportReducer from "../ChildReducer/TeamDailyAttendanceReportReducer";
+import TeamTodaysAttendanceReducer from "../ChildReducer/TeamTodaysAttendanceReducer";
 
 
 export const MainReducer = combineReducers({
@@ -48,4 +49,5 @@ export const MainReducer = combineReducers({
   TableFilterReducer: TableFilterReducer,
   AttendanceApprovalReducer: AttendanceApprovalReducer,
   TeamDailyAttendanceReportReducer: TeamDailyAttendanceReportReducer,
+  TeamTodaysAttendanceReducer: TeamTodaysAttendanceReducer,
 });

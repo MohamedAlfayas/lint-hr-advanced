@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardBody,
@@ -22,9 +22,36 @@ import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import classnames from "classnames";
 import EmployeeActivityTable from "./EmployeeActivityTable";
 import { Link } from "react-router-dom";
+import { Api } from "../../common/api/Api";
+import { useDispatch, useSelector } from "react-redux";
+import { setTeamTodaysAttendanceData } from "../../redux/reducers/ChildReducer/TeamTodaysAttendanceReducer";
 
 const EmployeeActivity = (props) => {
   const dep_options = GetLocalStorageData("department") || [];
+
+  const { team_todays_attendance } = useSelector(
+    (state) => state.TeamTodaysAttendanceReducer
+  );
+
+  console.log("Team todays Atte = ", team_todays_attendance);
+
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    console.log("Employee Activity Page !!!!");
+
+    Api({
+      method: "GET",
+      url: "report/get-tm-todays-attendance-report/",
+    })
+      .then((res) => {
+        dispatch(setTeamTodaysAttendanceData(res?.data?.data));
+      })
+      .catch((err) => {
+        console.log("ERR = ", err);
+      });
+  }, []);
+
   const [activeTab, setActiveTab] = useState("1");
   const toggleTab = (tab) => {
     if (activeTab !== tab) {
@@ -103,7 +130,7 @@ const EmployeeActivity = (props) => {
 
               <TabContent activeTab={activeTab} className="p-0">
                 <TabPane tabId="1">
-                  <EmployeeActivityTable></EmployeeActivityTable>
+                  <EmployeeActivityTable team_data={team_todays_attendance} />
 
                   {/* <SimpleBar style={{ maxHeight: "100%" }} className="p-3 pt-0">
                     <EmployeeActivityTable></EmployeeActivityTable>
@@ -111,7 +138,11 @@ const EmployeeActivity = (props) => {
                 </TabPane>
 
                 <TabPane tabId="2">
-                  <EmployeeActivityTable></EmployeeActivityTable>
+                  <EmployeeActivityTable
+                    team_data={team_todays_attendance.filter(
+                      (d) => d.is_late === true
+                    )}
+                  />
                 </TabPane>
               </TabContent>
             </CardBody>

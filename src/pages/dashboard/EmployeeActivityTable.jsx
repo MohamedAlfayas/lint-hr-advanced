@@ -6,15 +6,17 @@ import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
 import avatar2 from "../../assets/images/users/avatar-2.jpg";
 
+import { format } from "date-fns";
+
 //SimpleBar
 import Select from "react-select";
 
 import SimpleBar from "simplebar-react";
-const EmployeeActivityTable = ({ departmentId }) => {
+import { ParseTime } from "../../common/js/ParseTime";
+import { ConvertSecondsToTime } from "../../common/js/ConvertSecondsToTime";
+const EmployeeActivityTable = ({ team_data }) => {
   const EmployeeData = GetLocalStorageData("employee") || [];
   const DepartmentData = GetLocalStorageData("department") || [];
-
-  const TableData = EmployeeData;
 
   //  const TableData = EmployeeData.filter((d) =>
   //   d.primary_department_id_list.includes(departmentId)
@@ -24,7 +26,71 @@ const EmployeeActivityTable = ({ departmentId }) => {
     <React.Fragment>
       <SimpleBar style={{ maxHeight: "750px" }} className="p-3 pt-0">
         <div className="acitivity-timeline acitivity-main mt-2">
-          <div className="acitivity-item d-flex mt-1">
+          {team_data.map((d) => {
+            let emp_detail = EmployeeData.find((e) => e.id === d.employee_id);
+
+            let dep_name_list = DepartmentData.filter((dep) => {
+              if (d.primary_department_id_list.includes(dep.id)) {
+                return dep.name;
+              }
+            }).map((l) => l.name);
+
+            console.log("dep_name_list = ", dep_name_list);
+
+            return (
+              <div className="acitivity-item d-flex mt-1">
+                <div className="flex-shrink-0">
+                  <img
+                    src={avatar2}
+                    alt=""
+                    className="avatar-xs rounded-circle acitivity-avatar"
+                  />
+                </div>
+                <div className="flex-grow-1 ms-3 border-bottom border-bottom-dashed">
+                  <h6 className="mb-0 lh-base">
+                    {emp_detail?.fname} {emp_detail?.lname}
+                    <i class="mdi mdi-circle fs-10 align-middle text-warning me-1 ms-2"></i>
+                    <span class="fs-12 mb-0 text-muted">Late</span>
+                  </h6>
+
+                  {dep_name_list.map((dn) => (
+                    <p className="text-muted mb-2">Department | {dn}</p>
+                  ))}
+
+                  {d.is_present === true && (
+                    <>
+                      {!!d.first_check_in_time && (
+                        <p className="mb-1 text-muted">
+                          <small className="mb-0 text-muted">
+                            Login -{" "}
+                            {format(ParseTime(d.first_check_in_time), "h:mm a")}
+                          </small>
+                        </p>
+                      )}
+
+                      {!!d.last_check_out_time && (
+                        <p className="mb-1 text-muted">
+                          <small className="mb-0 text-muted">
+                            Login -{" "}
+                            {format(ParseTime(d.last_check_out_time), "h:mm a")}
+                          </small>
+                        </p>
+                      )}
+
+                      <p className="mb-1 text-muted">
+                        <small className="mb-0 text-muted">
+                          Total -{" "}
+                          {ConvertSecondsToTime(d.final_paid_hr_in_seconds)}
+                        </small>
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* <div className="acitivity-item d-flex mt-1">
             <div className="flex-shrink-0">
               <img
                 src={avatar2}
@@ -433,7 +499,7 @@ const EmployeeActivityTable = ({ departmentId }) => {
                 <small className="mb-0 text-muted">Logout -</small>
               </p>
             </div>
-          </div>
+          </div> */}
         </div>
       </SimpleBar>
     </React.Fragment>
