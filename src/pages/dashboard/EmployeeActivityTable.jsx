@@ -14,6 +14,14 @@ import Select from "react-select";
 import SimpleBar from "simplebar-react";
 import { ParseTime } from "../../common/js/ParseTime";
 import { ConvertSecondsToTime } from "../../common/js/ConvertSecondsToTime";
+import {
+  absent_display,
+  holiday_display,
+  late_entry_display,
+  leave_display,
+  on_time_entry_display,
+  week_off_display,
+} from "../../common/constant/Constants";
 const EmployeeActivityTable = ({ team_data }) => {
   const EmployeeData = GetLocalStorageData("employee") || [];
   const DepartmentData = GetLocalStorageData("department") || [];
@@ -21,6 +29,8 @@ const EmployeeActivityTable = ({ team_data }) => {
   //  const TableData = EmployeeData.filter((d) =>
   //   d.primary_department_id_list.includes(departmentId)
   // );
+
+  console.log("TEAM DATA = ", team_data);
 
   return (
     <React.Fragment>
@@ -37,20 +47,57 @@ const EmployeeActivityTable = ({ team_data }) => {
 
             console.log("dep_name_list = ", dep_name_list);
 
+            let entry_status =
+              d?.is_late === true
+                ? late_entry_display
+                : d?.is_ontime === true
+                ? on_time_entry_display
+                : d?.is_holiday === true
+                ? holiday_display
+                : d?.is_week_off === true
+                ? week_off_display
+                : d?.is_leave_approved === true
+                ? leave_display
+                : d?.no_data === true
+                ? absent_display
+                : on_time_entry_display;
+
             return (
               <div className="acitivity-item d-flex mt-1">
                 <div className="flex-shrink-0">
-                  <img
-                    src={avatar2}
-                    alt=""
-                    className="avatar-xs rounded-circle acitivity-avatar"
-                  />
+                  {!!emp_detail?.profile_url ? (
+                    <img
+                      src={emp_detail?.profile_url}
+                      alt=""
+                      className="avatar-xs rounded-circle acitivity-avatar"
+                    />
+                  ) : (
+                    <div
+                      className="avatar-xs rounded-circle"
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        background: "#0ab39c",
+                      }}
+                      data-bs-toggle="tooltip"
+                      title={emp_detail.fname}
+                    >
+                      <span className="first_letter" style={{ color: "white" }}>
+                        {emp_detail.fname.charAt(0)}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-grow-1 ms-3 border-bottom border-bottom-dashed">
                   <h6 className="mb-0 lh-base">
                     {emp_detail?.fname} {emp_detail?.lname}
-                    <i class="mdi mdi-circle fs-10 align-middle text-warning me-1 ms-2"></i>
-                    <span class="fs-12 mb-0 text-muted">Late</span>
+                    <i
+                      class={`mdi mdi-circle fs-10 align-middle text-${entry_status?.class} me-1 ms-2`}
+                    ></i>
+                    <span class="fs-12 mb-0 text-muted">
+                      {entry_status?.text || ""}
+                    </span>
                   </h6>
 
                   {dep_name_list.map((dn) => (

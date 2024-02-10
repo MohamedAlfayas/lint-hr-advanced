@@ -2342,3 +2342,35 @@ export const AllMinuteOptions = Array.from({ length: 60 }, (_, i) => ({
   label: i.toString().padStart(2, "0"),
   value: i.toString().padStart(2, "0"),
 }));
+
+
+export const late_entry_display = {
+  class: "warning",
+  text: "Late"
+};
+
+export const on_time_entry_display = {
+  class: "success",
+  text: "OnTime"
+};
+
+
+export const holiday_display = {
+  class: "secondary",
+  text: "Holiday"
+};
+
+export const week_off_display = {
+  class: "warning",
+  text: "W/O"
+};
+
+export const leave_display = {
+  class: "body",
+  text: "Leave"
+};
+
+export const absent_display = {
+  class: "danger",
+  text: "Absent"
+};
