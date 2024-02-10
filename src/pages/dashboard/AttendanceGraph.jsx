@@ -1,32 +1,16 @@
 import React from "react";
 import { Card, CardBody, CardHeader, Col } from "reactstrap";
+import ReactEcharts from "echarts-for-react";
+import * as echarts from "echarts/core";
 
-// Import Chart
-// Import Images
-import Img1 from "../../assets/images/nft/img-01.jpg";
-import Img2 from "../../assets/images/nft/img-02.jpg";
-import Img3 from "../../assets/images/nft/img-03.jpg";
-import Img4 from "../../assets/images/nft/img-04.jpg";
-import Img5 from "../../assets/images/nft/img-05.jpg";
-import Img6 from "../../assets/images/nft/img-06.jpg";
-
-// import ImgGif5 from "../../assets/images/nft/gif/img-5.gif";
-// import ImgGif1 from "../../assets/images/nft/gif/img-1.gif";
-// import ImgGif3 from "../../assets/images/nft/gif/img-3.gif";
-// import ImgGif4 from "../../assets/images/nft/gif/img-4.gif";
-
-import avatar8 from "../../assets/images/users/avatar-8.jpg";
-import avatar10 from "../../assets/images/users/avatar-10.jpg";
-
-//SimpleBar
-import SimpleBar from "simplebar-react";
-import { Link } from "react-router-dom";
 import getChartColorsArray from "../../component/common/dynamicColor/ChartsDynamicColor";
 import ReactApexChart from "react-apexcharts";
 
 const AttendanceGraph = () => {
   var dataColors = '["--vz-success", "--vz-warning"]';
   var PopularityChartColors = getChartColorsArray(dataColors);
+  var chartBarColors = getChartColorsArray(dataColors);
+
   const series = [
     {
       name: "Like",
@@ -43,6 +27,52 @@ const AttendanceGraph = () => {
       ],
     },
   ];
+
+  var option = {
+    grid: {
+      left: "0%",
+      right: "0%",
+      bottom: "0%",
+      top: "3%",
+      containLabel: true,
+    },
+    xAxis: {
+      type: "category",
+      data: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      axisLine: {
+        lineStyle: {
+          color: "#858d98",
+        },
+      },
+    },
+    yAxis: {
+      type: "value",
+      axisLine: {
+        lineStyle: {
+          color: "#858d98",
+        },
+      },
+      splitLine: {
+        lineStyle: {
+          color: "rgba(133, 141, 152, 0.1)",
+        },
+      },
+    },
+    textStyle: {
+      fontFamily: "Poppins, sans-serif",
+    },
+    color: chartBarColors,
+    series: [
+      {
+        data: [120, 200, 150, 80, 70, 110, 130],
+        type: "bar",
+        showBackground: true,
+        backgroundStyle: {
+          color: "rgba(180, 180, 180, 0.2)",
+        },
+      },
+    ],
+  };
 
   const options = {
     chart: {
@@ -124,16 +154,13 @@ const AttendanceGraph = () => {
       <Col xxl={12}>
         <Card>
           <CardHeader className="border-0 pb-0">
-            <h6 className="card-title mb-0">Popularity</h6>
+            <h6 className="card-title mb-0">Employee Attendance Trend</h6>
           </CardHeader>
           <div>
-            <ReactApexChart
-              dir="ltr"
-              options={options}
-              series={series}
-              type="bar"
-              height={425}
-              className="apex-charts mt-n4"
+            <ReactEcharts
+              style={{ height: "350px" }}
+              className="p-3"
+              option={option}
             />
           </div>
         </Card>
