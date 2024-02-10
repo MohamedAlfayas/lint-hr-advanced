@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader, Col, Row, Container } from "reactstrap";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Col,
+  Row,
+  Container,
+  Modal,
+  ModalBody,
+  ModalHeader,
+  Button,
+} from "reactstrap";
+import SimpleBar from "simplebar-react";
 import { MetaTitle } from "../../common/data/MetaTitle";
 import CountUp from "react-countup";
 import { Table } from "rsuite";
@@ -17,6 +29,8 @@ import { PostApi } from "../../common/api/PostApi";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { Api } from "../../common/api/Api";
 import { setTeamDailyAttendanceReport } from "../../redux/reducers/ChildReducer/TeamDailyAttendanceReportReducer";
+import { ParseTime } from "../../common/js/ParseTime";
+
 const AttendanceReport = () => {
   document.title = `Attendance Report | ${MetaTitle}`;
 
@@ -27,23 +41,11 @@ const AttendanceReport = () => {
 
   const employee_data = GetLocalStorageData("employee") || [];
 
-  console.log("dataaa",employee_data);
   const { team_daily_attendance_report } = useSelector(
     (state) => state.TeamDailyAttendanceReportReducer
   );
 
   console.log("Team Daily Att Rep = ", team_daily_attendance_report);
- 
-  const matchedEmployee = employee_data.find(
-    employee => employee.id === team_daily_attendance_report.employee_id
-  );
-  
-  if (matchedEmployee) {
-    console.log("Employee First Name:", matchedEmployee.fname);
-  } else {
-    console.log("No employee found with matching ID.");
-  }
-  
 
   useEffect(() => {
     const today = new Date();
@@ -83,558 +85,198 @@ const AttendanceReport = () => {
       month: monthStr,
     });
   };
-  const reportList = [
-    {
-      user_id: 4,
-      user_name: "Elango RV",
-      first_name: "Elango",
-      last_name: "RV",
-      user_profile_img:
-        "https://lystloc.com/account/api/uploads/user-profile-image/11302018165906-1322.jpg",
-      s3_profile_img: "",
-      reporting: true,
-      location_id: 10595,
-      trip_id: "",
-      emp_id: "MB10767",
-      reports: [
-        {
-          present: 0,
-          date: "01 Jan",
-          emp_id: "MB10767",
-          name_1: "Elango RV",
-          sessions: 0,
-          checkins: [],
-          in_time: "10:00",
-          out_time: "06:30",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "A",
-        },
-        {
-          present: 0,
-          date: "02 Jan",
-          emp_id: "MB10767",
-          name_1: "Divya Ramasamy",
-          sessions: 0,
-          checkins: [],
-          in_time: "09:45",
-          out_time: "06:30",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "A",
-        },
-        {
-          present: 0,
-          date: "03 Jan",
-          emp_id: "MB10767",
-          name_1: "Divya Ramasamy",
-          sessions: 0,
-          checkins: [],
-          in_time: "09:30",
-          out_time: "5:30",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "A",
-        },
-      ],
-      total_days: 3,
-      present_days: 5,
-      absent_days: 3.0,
-      totalCheckIns: 2,
-      totalKms: 0.0,
-      total_hrs: "0",
-    },
-    {
-      user_id: 5,
-      user_name: "Dinesh Thalavai",
-      first_name: "Dinesh",
-      last_name: "Thalavai",
-      user_profile_img:
-        "https://lystloc.com/account/api/uploads/user-profile-image/profile.png",
-      s3_profile_img: "",
-      reporting: true,
-      location_id: 10595,
-      trip_id: "",
-      emp_id: "EMP012",
-      reports: [
-        {
-          present: 0,
-          date: "01 Jan",
-          emp_id: "EMP012",
-          name_1: "Aparna ",
-          sessions: 0,
-          checkins: [],
-          in_time: "10:30",
-          out_time: "03:30",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "B",
-        },
-        {
-          present: 0,
-          date: "02 Jan",
-          emp_id: "EMP012",
-          name_1: "Aparna ",
-          sessions: 0,
-          checkins: [],
-          in_time: "11:00",
-          out_time: "04:00",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "B",
-        },
-        {
-          present: 0,
-          date: "03 Jan",
-          emp_id: "EMP012",
-          name_1: "Aparna ",
-          sessions: 0,
-          checkins: [],
-          in_time: "12:00",
-          out_time: "05:00",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "B",
-        },
-      ],
-      total_days: 4,
-      present_days: 6,
-      absent_days: 3.0,
-      totalCheckIns: 1,
-      totalKms: 0.0,
-      total_hrs: "0",
-    },
-    {
-      user_id: 6,
-      user_name: "Paul Prabhakaran",
-      first_name: "Paul",
-      last_name: "Prabhakaran",
-      user_profile_img:
-        "https://lystloc.com/account/api/uploads/user-profile-image/profile.png",
-      s3_profile_img: "",
-      reporting: true,
-      location_id: 10595,
-      trip_id: "",
-      emp_id: "EMP123",
-      reports: [
-        {
-          present: 0,
-          date: "01 Jan",
-          emp_id: "EMP123",
-          name_1: "Aswin T",
-          sessions: 0,
-          checkins: [],
-          in_time: "09:30",
-          out_time: "08:00",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "C",
-        },
-        {
-          present: 0,
-          date: "02 Jan",
-          emp_id: "EMP123",
-          name_1: "Aswin T",
-          sessions: 0,
-          checkins: [],
-          in_time: "12:30",
-          out_time: "09:30",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "C",
-        },
-        {
-          present: 0,
-          date: "03 Jan",
-          emp_id: "EMP123",
-          name_1: "Aswin T",
-          sessions: 0,
-          checkins: [],
-          in_time: "10:00",
-          out_time: "08:00",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "C",
-        },
-      ],
-      total_days: 5,
-      present_days: 5,
-      absent_days: 3.0,
-      totalCheckIns: 3,
-      totalKms: 0.0,
-      total_hrs: "0",
-    },
-    {
-      user_id: 39177,
-      user_name: "Antony Donald",
-      first_name: "Antony",
-      last_name: "Donald",
-      user_profile_img:
-        "https://lystloc.com/account/api/uploads/user-profile-image/profile.png",
-      s3_profile_img: "",
-      reporting: true,
-      location_id: 10595,
-      trip_id: "",
-      emp_id: "AND24",
-      reports: [
-        {
-          present: 0,
-          date: "01 Jan",
-          emp_id: "AND24",
-          name_1: "Android 0012 ",
-          sessions: 0,
-          checkins: [],
-          in_time: "10:00",
-          out_time: "09:00",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "D",
-        },
-        {
-          present: 0,
-          date: "02 Jan",
-          emp_id: "AND24",
-          name_1: "Android 0012 ",
-          sessions: 0,
-          checkins: [],
-          in_time: "10:20",
-          out_time: "07:00",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "D",
-        },
-        {
-          present: 0,
-          date: "03 Jan",
-          emp_id: "AND24",
-          name_1: "Android 0012 ",
-          sessions: 0,
-          checkins: [],
-          in_time: "11:00",
-          out_time: "09:00",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "D",
-        },
-      ],
-      total_days: 6,
-      present_days: 4,
-      absent_days: 3.0,
-      totalCheckIns: 3,
-      totalKms: 0.0,
-      total_hrs: "0",
-    },
-    {
-      user_id: 43332,
-      user_name: "Mohammed Fayas",
-      first_name: "Fayas",
-      last_name: "Mohammed",
-      user_profile_img:
-        "https://lystloc.com/account/api/uploads/user-profile-image/profile.png",
-      s3_profile_img: "",
-      reporting: true,
-      location_id: 10595,
-      trip_id: "",
-      emp_id: "MB1192",
-      reports: [
-        {
-          present: 0,
-          date: "01 Jan",
-          emp_id: "MB1192",
-          name_1: "Manoj Prabhu ",
-          sessions: 0,
-          checkins: [],
-          in_time: "09:30",
-          out_time: "06:30",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "E",
-        },
-        {
-          present: 0,
-          date: "02 Jan",
-          emp_id: "MB1192",
-          name_1: "Manoj Prabhu ",
-          sessions: 0,
-          checkins: [],
-          in_time: "09:30",
-          out_time: "07:00",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "E",
-        },
-        {
-          present: 0,
-          date: "03 Jan",
-          emp_id: "MB1192",
-          name_1: "Manoj Prabhu ",
-          sessions: 0,
-          checkins: [],
-          in_time: "09:00",
-          out_time: "06:00",
-          worked_hours: "",
-          logins: [],
-          no_of_checkins: 0,
-          no_of_logins: 0,
-          kms: 0,
-          branch: "Coimbatore",
-          attendance_status: "E",
-        },
-      ],
-      total_days: 3,
-      present_days: 3,
-      absent_days: 3.0,
-      totalCheckIns: 4,
-      totalKms: 0.0,
-      total_hrs: "0",
-    },
-  ];
 
   function formatDate(dateString) {
     const dateObj = new Date(dateString);
-    const month = new Intl.DateTimeFormat('en', { month: 'short' }).format(dateObj);
-    const day = dateObj.getDate().toString().padStart(2, '0'); // Ensure two-digit day
+    const month = new Intl.DateTimeFormat("en", { month: "short" }).format(
+      dateObj
+    );
+    const day = dateObj.getDate().toString().padStart(2, "0");
     return ` ${day} ${month}`;
   }
-  
-  const EmployeeCell = ({ ...props }) => {
-    const EmployeeCell = () => {
-      return (
-        <div className="link-group">
-          {reportList.map((employee) => (
-            <div key={employee.id} className="d-flex gap-2 align-items-center">
-              <div className="flex-shrink-0">
-                <div
-                  className="avatar-xs rounded-circle"
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    background: "#0ab39c",
-                  }}
-                  data-bs-toggle="tooltip"
-                  title={employee.user_name}
-                >
-                  <span className="first_letter" style={{ color: "white" }}>
-                    {employee.user_name.charAt(0)}
-                  </span>
-                </div>
-              </div>
-              <div className="flex-grow-1">
-                <div>
-                  <Link to="#" className="link-body-emphasis mb-0">
-                    {" "}
-                    <h5 className="fs-14 mb-1">{employee.user_name}</h5>
-                  </Link>
-                </div>
-                {/* Include the employee ID in the component */}
-                <div>{employee.id}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    };
+  const [timeline_modal, settimeline_modal] = useState(false);
+  const [timelineList, setTimelineList] = useState([]);
+  const [timelineDate, setTimeLineDate] = useState("");
 
-    return <Cell {...props}>{<EmployeeCell />}</Cell>;
-  };
-
-  const TotaldaysCell = ({ ...props }) => {
-    const at_employee_data = reportList?.find((val) => val?.user_id);
-    let html_tag = at_employee_data && (
-      <div className="d-flex gap-2 align-items-center">
-        <div className="flex-grow-1">
-          <div>
-            <Link to="#" className="link-body-emphasis mb-0">
-              {" "}
-              <h5 className="fs-14 mb-1">{at_employee_data.total_days}</h5>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-
-    return (
-      <Cell {...props} className="link-group">
-        {html_tag}
-      </Cell>
-    );
-  };
+  function open_timeline() {
+    settimeline_modal(!timeline_modal);
+  }
 
   const FixedColumns = ({ rowData, dataKey, ...props }) => {
     let foundEmployee;
     let emp_name = (foundEmployee = employee_data.find(
       (emp) => rowData.employee_id === emp.id
-    ))
-      ? foundEmployee.fname
-      : null;
+    ));
 
     console.log("emp_name", emp_name);
+
+    let html_tag = emp_name.profile_url ? (
+      <div className="d-flex gap-2 align-items-center">
+        <div className="flex-shrink-0">
+          <img
+            src={emp_name.profile_url}
+            alt=""
+            className="avatar-xs rounded-circle"
+            style={{ objectFit: "cover" }}
+          />
+        </div>
+        <div className="flex-grow-1">
+          <div>
+            <Link to="#" className="link-body-emphasis mb-0">
+              {" "}
+              <h5 className="fs-14 mb-1" style={{ textAlign: "left" }}>
+                {emp_name.fname}
+              </h5>
+            </Link>
+          </div>
+          <div className="fs-14 mb-1" style={{ textAlign: "left" }}>
+            {emp_name.email}
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div className="d-flex gap-2 align-items-center">
+        <div className="flex-shrink-0">
+          <div
+            className="avatar-xs rounded-circle"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              background: "#0ab39c",
+            }}
+            data-bs-toggle="tooltip"
+            title={emp_name.fname}
+          >
+            <span className="first_letter" style={{ color: "white" }}>
+              {emp_name.fname.charAt(0)}
+            </span>
+          </div>
+        </div>
+        <div className="flex-grow-1">
+          <div>
+            <Link to="#" className="link-body-emphasis mb-0">
+              {" "}
+              <h5 className="fs-14 mb-1" style={{ textAlign: "left" }}>
+                {emp_name.fname}
+              </h5>
+            </Link>
+          </div>
+          <div className="fs-14 mb-1" style={{ textAlign: "left" }}>
+            {emp_name.email}
+          </div>
+        </div>
+      </div>
+    );
     return (
       <Cell {...props} dataKey="id">
-        {emp_name}
+        {html_tag}
       </Cell>
     );
   };
 
-
-  const dynamicColumns = (reportList) => {
+  const dynamicColumns = () => {
     const allDynamicColumns = [];
-    
-  const employeeDates = Array.from(
-    new Set(
-      team_daily_attendance_report.flatMap((employee) =>
-        employee.workday_data.map((report) => report.date)
+
+    const employeeDates = Array.from(
+      new Set(
+        team_daily_attendance_report.flatMap((employee) =>
+          employee.workday_data.map((report) => report.date)
+        )
       )
-    )
-  );
+    );
 
-   
-      
-     
+    const AttendanceData = ({ rowData, date, ...props }) => {
+      const attendance_data = rowData.workday_data.find(
+        (day) => day.date === date
+      );
+      console.log("attendance_data", attendance_data);
+      let attend_data =
+        attendance_data.is_present === true
+          ? "P"
+          : attendance_data.is_holiday === true
+          ? "H"
+          : attendance_data.is_day_on === false
+          ? "WO"
+          : attendance_data.is_leave_approved === true
+          ? "L"
+          : attendance_data.leave_taken_without_approval === true
+          ? "A"
+          : "A";
+      return (
+        <Cell {...props} dataKey={`is_present${date}`}>
+          {attend_data}
+        </Cell>
+      );
+    };
 
-      employeeDates.forEach((date) => {
-      
+    const InOut = ({ rowData, date, ...props }) => {
+      const entryLogForDate = rowData.workday_data.find(
+        (day) => day.date === date
+      );
+      const entryLogLength = entryLogForDate
+        ? entryLogForDate.entry_log.length
+        : "-";
 
-        
-          const dynamicColumn = (
-            <ColumnGroup key={`date_${date}`} align="center"   header={formatDate(date)}>
-              <Column width={100} align="center">
-                <HeaderCell>Attendance</HeaderCell>
-                <Cell dataKey={`attendance_${date}`} />
-              </Column>
+      return (
+        <Cell {...props} dataKey={`entry_log_${date}`}>
+          {!!entryLogLength && entryLogLength}
+          {!!entryLogLength && entryLogLength > 0 ? (
+            <div>
+              {" "}
+              <Link
+                className="link-opacity-75 ms-1"
+                href="#"
+                style={{ color: "#0AB39C" }}
+                onClick={() => {
+                  setTimelineList(entryLogForDate?.entry_log);
+                  setTimeLineDate(
+                    format(new Date(entryLogForDate?.date), "dd MMM, yyyy")
+                  );
+                  open_timeline();
+                }}
+              >
+                view
+              </Link>
+            </div>
+          ) : (
+            <span>-</span>
+          )}
+        </Cell>
+      );
+    };
 
-              <Column width={80} align="center" title="In">
-                <HeaderCell>In/Out</HeaderCell>
-                <Cell dataKey={`in_time_${date}`} />
-              </Column>
+    employeeDates.forEach((date) => {
+      const dynamicColumn = (
+        <ColumnGroup
+          key={`date_${date}`}
+          align="center"
+          header={formatDate(date)}
+        >
+          <Column width={100} align="center">
+            <HeaderCell>Attendance</HeaderCell>
+            <AttendanceData date={date} />
+          </Column>
 
-              <Column width={80} align="center" title="Out">
-                <HeaderCell>Check-ins</HeaderCell>
-                <Cell dataKey={`out_time_${date}`} />
-              </Column>
-            </ColumnGroup>
-          );
+          <Column width={80} align="center" title="In">
+            <HeaderCell>In/Out</HeaderCell>
+            <InOut date={date} />
+          </Column>
+        </ColumnGroup>
+      );
 
-          allDynamicColumns.push(dynamicColumn);
-        
-      });
-  
+      allDynamicColumns.push(dynamicColumn);
+    });
 
     return allDynamicColumns;
   };
-  // const dynamicColumns = (reportList) => {
-  //   const employeeDates = Array.from(
-  //     new Set(
-  //       team_daily_attendance_report.flatMap((employee) =>
-  //         employee.workday_data.map((report) => report.date)
-  //       )
-  //     )
-  //   );
-
-  //   const columns = [
-  //     <Column width={250} fixed="left" align="center">
-  //       <HeaderCell
-  //         style={{
-  //           background: "#e6f7ff",
-  //           border: "2px solid #b5f5ec",
-  //           borderRadius: "1px",
-  //           padding: "18px",
-  //         }}
-  //       >
-  //         Employee
-  //       </HeaderCell>
-  //       <Cell dataKey="user_name" />
-  //     </Column>,
-  //   ];
-    
-
-  //   employeeDates.forEach((date) => {
-  //     columns.push(
-  //       <ColumnGroup key={`date_${date}`} align="center"   header={formatDate(date)}>
-  //         <Column width={100} align="center">
-  //           <HeaderCell>Attendance</HeaderCell>
-  //           <Cell dataKey={`attendance_${date}`} />
-  //         </Column>
-
-  //         <Column width={80} align="center" title="In">
-  //           <HeaderCell>In/Out</HeaderCell>
-  //           <Cell dataKey={`in_time_${date}`} />
-  //         </Column>
-
-  //         <Column width={100} align="center" title="Out">
-  //           <HeaderCell>Check-Ins</HeaderCell>
-  //           <Cell dataKey={`out_time_${date}`} />
-  //         </Column>
-  //       </ColumnGroup>
-  //     );
-  //   });
-
-  //   return columns;
-  // };
 
   const additionalColumns = [
     <Column width={130} align="center">
       <HeaderCell
         style={{
           background: "#e6f7ff",
-          border: "2px solid #b5f5ec",
+
           borderRadius: "1px",
           padding: "18px",
         }}
@@ -647,7 +289,7 @@ const AttendanceReport = () => {
       <HeaderCell
         style={{
           background: "#e6f7ff",
-          border: "2px solid #b5f5ec",
+
           borderRadius: "1px",
           padding: "18px",
         }}
@@ -656,22 +298,9 @@ const AttendanceReport = () => {
       </HeaderCell>
       <Cell dataKey="total_present_days_count" fullText />
     </Column>,
-    <Column width={150} align="center">
-      <HeaderCell
-        style={{
-          background: "#e6f7ff",
-          border: "2px solid #b5f5ec",
-          borderRadius: "1px",
-          padding: "18px",
-        }}
-      >
-        Total Check-ins{" "}
-      </HeaderCell>
-      <Cell dataKey="totalCheckIns" fullText />
-    </Column>,
   ];
 
-  const allColumns = [...dynamicColumns(reportList), ...additionalColumns];
+  const allColumns = [...dynamicColumns(), ...additionalColumns];
 
   return (
     <React.Fragment>
@@ -712,7 +341,6 @@ const AttendanceReport = () => {
             <HeaderCell
               style={{
                 background: "#e6f7ff",
-                border: "2px solid #b5f5ec",
                 borderRadius: "1px",
                 padding: "18px",
               }}
@@ -723,6 +351,77 @@ const AttendanceReport = () => {
           </Column>
           {allColumns}
         </Table>
+        <Modal
+          isOpen={timeline_modal}
+          toggle={() => {
+            open_timeline();
+          }}
+          centered
+        >
+          <ModalHeader>
+            <h5 className="modal-title" id="exampleModalToggleLabel">
+              Date : {timelineDate}
+            </h5>
+          </ModalHeader>
+          <ModalBody className="text-left">
+            <div>
+              <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
+                <div className="acitivity-timeline acitivity-main">
+                  {timelineList.length &&
+                    timelineList.map((data, idx) => {
+                      let py_class =
+                        idx === 0 || idx === data.length - 1 ? "" : "py-3";
+                      let info =
+                        parseInt(data.entry_type) === 1
+                          ? {
+                              class: "success",
+                              text: "IN",
+                              iconClass: "right",
+                            }
+                          : {
+                              class: "warning",
+                              text: "Out",
+                              iconClass: "left",
+                            };
+                      return (
+                        <div className={`acitivity-item  d-flex ${py_class}`}>
+                          <div className="flex-shrink-0 avatar-xs acitivity-avatar">
+                            <div
+                              className={`avatar-title bg-${info?.class}-subtle text-${info?.class} rounded-circle`}
+                            >
+                              <i
+                                className={`mdi mdi-arrow-${info?.iconClass}-thick`}
+                              ></i>
+                            </div>
+                          </div>
+                          <div className="flex-grow-1 ms-3">
+                            <h6 className="mb-1 lh-base">
+                              Check {info?.text}{" "}
+                            </h6>
+                            <p className="text-muted mb-1">
+                              {format(ParseTime(data?.entry_time), "h:mm a")}
+                            </p>
+                            <small className="mb-0 text-muted">
+                              <i className="mdi mdi-map-marker"></i>{" "}
+                              {data?.location || ""}
+                            </small>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </SimpleBar>
+              <Button
+                className="btn btn-warning"
+                onClick={() => {
+                  open_timeline();
+                }}
+              >
+                Continue
+              </Button>
+            </div>
+          </ModalBody>
+        </Modal>
       </div>
     </React.Fragment>
   );
