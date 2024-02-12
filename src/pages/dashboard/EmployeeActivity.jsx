@@ -63,8 +63,8 @@ const EmployeeActivity = (props) => {
       <div
         className={
           props.rightColumn
-            ? "col-auto layout-rightside-col d-block"
-            : "col-auto layout-rightside-col d-none"
+            ? "col-auto layout-rightside-col d-none"
+            : "col-auto layout-rightside-col d-block"
         }
         id="layout-rightside-coll"
       >

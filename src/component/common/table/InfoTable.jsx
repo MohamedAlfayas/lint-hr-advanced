@@ -193,10 +193,26 @@ const InfoTable = ({
     approveRejectCheckbox();
   }, []);
 
+  function generateOptions(maxValue, selectedValue) {
+    let options = "";
+    for (let i = 0; i < maxValue; i++) {
+      const selected = selectedValue && i === selectedValue ? "selected" : "";
+      options += `<option value="${i}" ${selected}>${i}</option>`;
+    }
+    return options;
+  }
+
   const handleApproval = async (orderData) => {
     console.log("data", orderData);
     let employee_fname =
       EmployeeData.find((e) => e.id === orderData.employee_id)?.fname || "";
+
+    const totalSeconds = orderData.final_paid_hr_in_seconds;
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    let selectedHour = hours;
+    let selectedMinute = minutes;
+    let textValue;
 
     let content =
       formname === leave_approval_component_name
@@ -204,7 +220,25 @@ const InfoTable = ({
         : `<span>Are You Sure to <strong style='color:green'>Accept </strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
             new Date(orderData.date),
             "dd MMM, yyyy"
-          )}</span> `;
+          )}</span>
+          <div>
+          ${
+            formname === attendance_approval_component_name
+              ? `<span style="display: inline-block; margin-top: 20px;">
+              <label for="select-hour" style="display: inline-block; margin-right: 5px;">Edit Paid Hr:</label>      
+              <b className="mt-2 me-1 ms-2">H</b>
+              <Select id="select-hour" class="swal2-input" style="display: inline-block; width: auto; margin-left: 5px;">
+                ${generateOptions(24, hours)}
+              </Select>
+              <b className="mt-2 me-1 ms-2">M</b>
+              <Select id="select-minute" class="swal2-input" style="display: inline-block; width: auto; margin-left: 5px;">
+                ${generateOptions(60, minutes)}
+              </Select>
+            </span>`
+              : undefined
+          }
+        </div>`;
+
     let btnText = "Yes, Approve";
 
     Swal.fire({
@@ -218,9 +252,10 @@ const InfoTable = ({
       cancelButtonClass: "btn btn-danger",
       input:
         formname === attendance_approval_component_name ? "text" : undefined,
+
       inputPlaceholder:
         formname === attendance_approval_component_name
-          ? "Enter reason for rejection"
+          ? "Enter reason"
           : undefined,
       inputAttributes:
         formname === attendance_approval_component_name
@@ -260,10 +295,17 @@ const InfoTable = ({
         }
       } else if (formname === attendance_approval_component_name) {
         if (result.value) {
+          selectedHour = document.getElementById("select-hour").value;
+          selectedMinute = document.getElementById("select-minute").value;
+
+          const finalHr =
+            parseInt(selectedHour) * 3600 + parseInt(selectedMinute) * 60;
+
           const data = {
             id: [orderData.id],
             type: 2,
             notes: result.value,
+            final_paid_hr_in_seconds: finalHr,
           };
           console.log("Accepted Data", data);
         }

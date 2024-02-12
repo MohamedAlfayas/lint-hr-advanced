@@ -268,6 +268,17 @@ const AttendanceApproval = () => {
     },
 
     {
+      Header: "Paid Hr",
+      accessor: "paid_hr",
+      filterable: false,
+      id: "paid_hr",
+      accessor: (obj) => {
+        let final_hr = ConvertSecondsToTime(obj.final_paid_hr_in_seconds);
+        return <React.Fragment>{final_hr}</React.Fragment>;
+      },
+    },
+
+    {
       Header: "Status",
       id: "status",
       filterable: false,
@@ -299,17 +310,18 @@ const AttendanceApproval = () => {
   const filterKey = "hr_status";
   const filterOptions = [
     {
-      option: 2,
-      label: "Approved",
-      count:
-        attendance_approval_data.filter((e) => e[filterKey] === 2).length || 0,
-    },
-    {
       option: 3,
       label: "Pending",
       count:
         attendance_approval_data.filter((e) => e[filterKey] === 3).length || 0,
     },
+    {
+      option: 2,
+      label: "Approved",
+      count:
+        attendance_approval_data.filter((e) => e[filterKey] === 2).length || 0,
+    },
+
     {
       option: 4,
       label: "Rejected",
