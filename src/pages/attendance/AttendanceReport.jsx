@@ -93,138 +93,94 @@ const AttendanceReport = () => {
       )
     )
   );
-  // const handleExport = () => {
-  //   const wb = XLSX.utils.book_new();
-  
-  //   // Create a worksheet
-  //   const ws = XLSX.utils.aoa_to_sheet([]);
-  
-  //   // Add headers
-  //   const headers = ['Employee Name', 'Email', ...employeeDatesXls.map(date => formatDate(date)), 'Check-In Time', 'Check-Out Time', 'Total Days', 'Present Days']; // Add more headers as needed
-  //   XLSX.utils.sheet_add_aoa(ws, [headers], { origin: 'A1' });
-  
-  //   // Loop through each row of team_daily_attendance_report
-  //   team_daily_attendance_report.forEach((rowData, rowIndex) => {
-  //     const row = [];
-  
-  //     // Find employee data
-  //     const foundEmployee = employee_data.find(emp => rowData.employee_id === emp.id);
-  //     const emp_name = foundEmployee ? foundEmployee.fname : '';
-  
-  //     // Add employee name and email to row
-  //     row.push(emp_name);
-  //     row.push(foundEmployee ? foundEmployee.email : '');
-  
-  //     // Loop through dynamic columns
-  //     employeeDatesXls.forEach(date => {
-  //       const attendance_data = rowData.workday_data.find(day => day.date === date);
-  //       let attend_data =
-  //         attendance_data && attendance_data.is_present === true ? 'P' :
-  //         attendance_data && attendance_data.is_holiday === true ? 'H' :
-  //         attendance_data && attendance_data.is_day_on === false ? 'WO' :
-  //         attendance_data && attendance_data.is_leave_approved === true ? 'L' :
-  //         attendance_data && attendance_data.leave_taken_without_approval === true ? 'A' :
-  //         'A';
-  
-  //       row.push(attend_data);
-  //     });
-  
-  //     // Calculate Check-In and Check-Out times
-  //     let checkInTime = '';
-  //     let checkOutTime = '';
-  //     const attendance_data = rowData.workday_data.find(day => day.date === employeeDatesXls[0]); // Assuming we take the first date for check-in and check-out time
-  
-  //     if (attendance_data && attendance_data.entry_log && attendance_data.entry_log.length > 0) {
-  //       // Assuming entry_log contains timestamps
-  //       const entryLog = attendance_data.entry_log;
-  //       checkInTime = format(ParseTime(entryLog[0]), "h:mm a"); // Format check-in time
-  //       if (entryLog.length > 1) {
-  //         checkOutTime = format(ParseTime(entryLog[entryLog.length - 1]), "h:mm a"); // Format check-out time
-  //       }
-  //     }
-  
-  //     row.push(checkInTime);
-  //     row.push(checkOutTime);
-  
-  //     // Add additional columns
-  //     row.push(rowData.total_working_days_count);
-  //     row.push(rowData.total_present_days_count);
-  
-  //     // Add row to worksheet
-  //     XLSX.utils.sheet_add_aoa(ws, [row], { origin: `A${rowIndex + 2}` });
-  //   });
-  
-  //   // Add worksheet to workbook
-  //   XLSX.utils.book_append_sheet(wb, ws, "MySheet");
-  
-  //   // Write workbook to file
-  //   XLSX.writeFile(wb, "AttendanceReport.xlsx");
-  // };
-  
-  const handleExport = () => {
-    const wb = XLSX.utils.book_new();
-  
-    // Create a worksheet
-    const ws = XLSX.utils.aoa_to_sheet([]);
-  
-    // Add headers
-    const headers = ['Employee Name', 'Email',...employeeDatesXls.map(date => formatDate(date)),'Total Days','Present Days']; // Add more headers as needed
-    XLSX.utils.sheet_add_aoa(ws, [headers], { origin: 'A1' });
-  
-    // Loop through each row of team_daily_attendance_report
-    team_daily_attendance_report.forEach((rowData, rowIndex) => {
+
+
+const handleExport = () => {
+  const wb = XLSX.utils.book_new();
+
+  // Create a worksheet
+  const ws = XLSX.utils.aoa_to_sheet([]);
+
+  // Add headers
+  const headers = ['Employee Name', 'Email'];
+  const subheaders = ['', ''];
+  employeeDatesXls.forEach(date => {
+      headers.push(formatDate(date));
+      subheaders.push('Attendance', 'Check-in', 'Check-out');
+  });
+  headers.push('Total Days', 'Present Days'); // Add more headers as needed
+  XLSX.utils.sheet_add_aoa(ws, [headers, subheaders], { origin: 'A1' });
+
+  // Loop through each row of team_daily_attendance_report
+  team_daily_attendance_report.forEach((rowData, rowIndex) => {
       const row = [];
-      
+
       // Find employee data
       const foundEmployee = employee_data.find(emp => rowData.employee_id === emp.id);
       const emp_name = foundEmployee ? foundEmployee.fname : '';
-  
+
       // Add employee name and email to row
       row.push(emp_name);
       row.push(foundEmployee ? foundEmployee.email : '');
-  
+
       // Loop through dynamic columns
       employeeDatesXls.forEach(date => {
-        const attendance_data = rowData.workday_data.find(day => day.date === date);
-        let attend_data =
-          attendance_data.is_present === true ? 'P' :
-          attendance_data.is_holiday === true ? 'H' :
-          attendance_data.is_day_on === false ? 'WO' :
-          attendance_data.is_leave_approved === true ? 'L' :
-          attendance_data.leave_taken_without_approval === true ? 'A' :
-          'A';
-  
-        row.push(attend_data);
+          const attendance_data = rowData.workday_data.find(day => day.date === date);
+          let attend_data =
+              attendance_data && attendance_data.is_present === true ? 'P' :
+              attendance_data && attendance_data.is_holiday === true ? 'H' :
+              attendance_data && attendance_data.is_day_on === false ? 'WO' :
+              attendance_data && attendance_data.is_leave_approved === true ? 'L' :
+              attendance_data && attendance_data.leave_taken_without_approval === true ? 'A' :
+              'A';
+
+          // Add attendance data
+          row.push(attend_data);
+
+          // Add check-in and check-out times
+          if (attendance_data) {
+              const checkInLog = attendance_data.entry_log.find(log => parseInt(log.entry_type) === 1);
+              const checkOutLog = attendance_data.entry_log.slice().reverse().find(log => parseInt(log.entry_type) !== 1);
+              const firstCheckIn = checkInLog ? format(ParseTime(checkInLog.entry_time), "h:mm a") : '';
+              const lastCheckOut = checkOutLog ? format(ParseTime(checkOutLog.entry_time), "h:mm a") : '';
+              row.push(firstCheckIn);
+              row.push(lastCheckOut);
+          } else {
+              row.push('');
+              row.push('');
+          }
       });
-      
-  
+
       // Add additional columns
       row.push(rowData.total_working_days_count);
       row.push(rowData.total_present_days_count);
-  
+
       // Add row to worksheet
-      XLSX.utils.sheet_add_aoa(ws, [row], { origin: `A${rowIndex + 2}` });
-    });
-  
-    // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(wb, ws, "MySheet");
-  
-    // Write workbook to file
-    XLSX.writeFile(wb, "AttendanceReport.xlsx");
-  };
-  
+      XLSX.utils.sheet_add_aoa(ws, [row], { origin: `A${rowIndex + 3}` });
+  });
+
+  // Add worksheet to workbook
+  XLSX.utils.book_append_sheet(wb, ws, "MySheet");
+
+  // Write workbook to file
+  XLSX.writeFile(wb, "AttendanceReport.xlsx");
+};
+
+
+
+
+
   function formatDate(dateString) {
     const dateObj = new Date(dateString);
-    const month = new Intl.DateTimeFormat("en", { month: "short" }).format(
-      dateObj
-    );
+    const year = dateObj.getFullYear().toString().substr(2); // Get last 2 digits of the year
+    const month = new Intl.DateTimeFormat("en", { month: "short" }).format(dateObj);
     const day = dateObj.getDate().toString().padStart(2, "0");
-    return ` ${day} ${month}`;
+    return `${day} ${month} ${year}`;
   }
   const [timeline_modal, settimeline_modal] = useState(false);
   const [timelineList, setTimelineList] = useState([]);
   const [timelineDate, setTimeLineDate] = useState("");
-
+console.log("list",timelineList);
   function open_timeline() {
     settimeline_modal(!timeline_modal);
   }
@@ -504,63 +460,65 @@ const AttendanceReport = () => {
             </h5>
           </ModalHeader>
           <ModalBody className="text-left">
-            <div>
-              <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
-                <div className="acitivity-timeline acitivity-main">
-                  {timelineList.length &&
-                    timelineList.map((data, idx) => {
-                      let py_class =
-                        idx === 0 || idx === data.length - 1 ? "" : "py-3";
-                      let info =
-                        parseInt(data.entry_type) === 1
-                          ? {
-                            class: "success",
-                            text: "IN",
-                            iconClass: "right",
-                          }
-                          : {
-                            class: "warning",
-                            text: "Out",
-                            iconClass: "left",
-                          };
-                      return (
-                        <div className={`acitivity-item  d-flex ${py_class}`}>
-                          <div className="flex-shrink-0 avatar-xs acitivity-avatar">
-                            <div
-                              className={`avatar-title bg-${info?.class}-subtle text-${info?.class} rounded-circle`}
-                            >
-                              <i
-                                className={`mdi mdi-arrow-${info?.iconClass}-thick`}
-                              ></i>
-                            </div>
-                          </div>
-                          <div className="flex-grow-1 ms-3">
-                            <h6 className="mb-1 lh-base">
-                              Check {info?.text}{" "}
-                            </h6>
-                            <p className="text-muted mb-1">
-                              {format(ParseTime(data?.entry_time), "h:mm a")}
-                            </p>
-                            <small className="mb-0 text-muted">
-                              <i className="mdi mdi-map-marker"></i>{" "}
-                              {data?.location || ""}
-                            </small>
-                          </div>
+  <div>
+    <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Check In</th>
+            <th>Check Out</th>
+            <th>Location</th>
+          </tr>
+        </thead>
+        <tbody>
+          {timelineList.length &&
+            timelineList.map((data, idx) => {
+              let py_class =
+                idx === 0 || idx === timelineList.length - 1 ? "" : "py-3";
+              let isCheckIn = parseInt(data.entry_type) === 1;
+              let checkType = isCheckIn ? "Check In" : "Check Out";
+              let iconClass = isCheckIn ? "mdi mdi-arrow-right-thick" : "mdi mdi-arrow-left-thick";
+              let time = format(ParseTime(data.entry_time), "h:mm a");
+              return (
+                <tr className={py_class}>
+                  <td>
+                    {isCheckIn && (
+                      <>
+                        <div className={`avatar-title bg-success-subtle text-success rounded-circle`}>
+                          <i className={`mdi ${iconClass}`}></i>
                         </div>
-                      );
-                    })}
-                </div>
-              </SimpleBar>
-              <Button
-                className="btn btn-warning"
-                onClick={() => {
-                  open_timeline();
-                }}
-              >
-                Continue
-              </Button>
-            </div>
-          </ModalBody>
+                        <h6 className="mb-1 lh-base">{checkType}</h6>
+                        <p className="text-muted mb-1">{time}</p>
+                      </>
+                    )}
+                  </td>
+                  <td>
+                    {!isCheckIn && (
+                      <>
+                        <div className={`avatar-title bg-warning-subtle text-warning rounded-circle`}>
+                          <i className={`mdi ${iconClass}`}></i>
+                        </div>
+                        <h6 className="mb-1 lh-base">{checkType}</h6>
+                        <p className="text-muted mb-1">{time}</p>
+                      </>
+                    )}
+                  </td>
+                  <td>
+                    <small className="mb-0 text-muted">
+                      <i className="mdi mdi-map-marker"></i> {data.location || ""}
+                    </small>
+                  </td>
+                </tr>
+              );
+            })}
+        </tbody>
+      </table>
+    </SimpleBar>
+    <Button className="btn btn-warning" onClick={() => { open_timeline(); }}>
+      Continue
+    </Button>
+  </div>
+</ModalBody>
         </Modal>
       </div>
     </React.Fragment>
