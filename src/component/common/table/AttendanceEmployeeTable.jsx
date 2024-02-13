@@ -88,6 +88,23 @@ const AttendanceEmployeeTable = () => {
       </Cell>
     );
   };
+  const CommonCellContent = ({ rowData, colspanValue, children }) => {
+    let textContent = "";
+
+    if (rowData.is_present) {
+      return children;
+    } else {
+      if (rowData.is_week_off || rowData.is_holiday) {
+        textContent = rowData.is_week_off ? "Week Off" : "Holiday";
+      }
+
+      return (
+        <Table.Cell colSpan={colspanValue} style={{ textAlign: "center" }}>
+          {textContent}
+        </Table.Cell>
+      );
+    }
+  };
 
   const InOutCell = ({ rowData, dataKey, ...props }) => {
     let in_time = rowData?.first_check_in
@@ -99,25 +116,29 @@ const AttendanceEmployeeTable = () => {
     let thisCellTime = dataKey === "in" ? in_time : out_time;
 
     return (
-      <Cell {...props} className="link-group">
-        {!!thisCellTime && thisCellTime}
-        {!!thisCellTime && (
-          <Link
-            className="link-opacity-75 ms-1"
-            href="#"
-            onClick={() => {
-              setTimelineList(rowData?.entry_log);
-              setTimeLineDate(format(new Date(rowData?.date), "dd MMM, yyyy"));
-              open_timeline();
-            }}
-          >
-            +
-            {dataKey == "in"
-              ? rowData?.total_no_of_check_in
-              : rowData?.total_no_of_check_out}
-          </Link>
-        )}
-      </Cell>
+      <CommonCellContent rowData={rowData} colspanValue={8}>
+        <Cell {...props} className="link-group">
+          {!!thisCellTime && thisCellTime}
+          {!!thisCellTime && (
+            <Link
+              className="link-opacity-75 ms-1"
+              href="#"
+              onClick={() => {
+                setTimelineList(rowData?.entry_log);
+                setTimeLineDate(
+                  format(new Date(rowData?.date), "dd MMM, yyyy")
+                );
+                open_timeline();
+              }}
+            >
+              +
+              {dataKey == "in"
+                ? rowData?.total_no_of_check_in
+                : rowData?.total_no_of_check_out}
+            </Link>
+          )}
+        </Cell>
+      </CommonCellContent>
     );
   };
 
@@ -127,13 +148,15 @@ const AttendanceEmployeeTable = () => {
     let location_text = dataKey === "in" ? in_location : out_location;
 
     return (
-      <Cell {...props} className="link-group">
-        {location_text !== "" && (
-          <>
-            <i className="mdi mdi-map-marker-outline"></i> {location_text}
-          </>
-        )}
-      </Cell>
+      <CommonCellContent rowData={rowData} colspanValue={8}>
+        <Cell {...props} className="link-group">
+          {location_text !== "" && (
+            <>
+              <i className="mdi mdi-map-marker-outline"></i> {location_text}
+            </>
+          )}
+        </Cell>
+      </CommonCellContent>
     );
   };
 
@@ -156,9 +179,11 @@ const AttendanceEmployeeTable = () => {
     );
 
     return (
-      <Cell {...props} className="link-group">
-        {work_schedule_hr}
-      </Cell>
+      <CommonCellContent rowData={rowData} colspanValue={8}>
+        <Cell {...props} className="link-group">
+          {work_schedule_hr}
+        </Cell>
+      </CommonCellContent>
     );
   };
 
@@ -179,9 +204,11 @@ const AttendanceEmployeeTable = () => {
     let break_schedule_hr = ConvertSecondsToTime(rowData.total_break_duration);
 
     return (
-      <Cell {...props} className="link-group">
-        {break_schedule_hr}
-      </Cell>
+      <CommonCellContent rowData={rowData} colspanValue={8}>
+        <Cell {...props} className="link-group">
+          {break_schedule_hr}
+        </Cell>
+      </CommonCellContent>
     );
   };
 
@@ -202,9 +229,11 @@ const AttendanceEmployeeTable = () => {
 
   const SecondsToTimeCell = ({ rowData, dataKey, ...props }) => {
     return (
-      <Cell {...props} className="link-group">
-        {` ${ConvertSecondsToTime(rowData[dataKey])}`}
-      </Cell>
+      <CommonCellContent rowData={rowData} colspanValue={8}>
+        <Cell {...props} className="link-group">
+          {` ${ConvertSecondsToTime(rowData[dataKey])}`}
+        </Cell>
+      </CommonCellContent>
     );
   };
 

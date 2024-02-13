@@ -303,7 +303,7 @@ const InfoTable = ({
 
           const data = {
             id: [orderData.id],
-            type: 2,
+            hr_status: 2,
             notes: result.value,
             final_paid_hr_in_seconds: finalHr,
           };
@@ -371,9 +371,11 @@ const InfoTable = ({
         }
       } else if (formname == attendance_approval_component_name) {
         if (result.value) {
+          console.log("RESULT", result);
           const data = {
             id: [orderData.id],
-            type: 4,
+            final_paid_hr_in_seconds: orderData.final_paid_hr_in_seconds,
+            hr_status: 4,
             notes: result.value,
           };
           console.log("Rejected Data", data);
