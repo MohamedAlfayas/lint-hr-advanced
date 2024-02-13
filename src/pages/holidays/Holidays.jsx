@@ -27,8 +27,6 @@ const Holiday = () => {
     dispatch(setHoliday(GetLocalStorageData("holiday")));
   }, []);
 
-  console.log("holiday DAta = ", holiday_data);
-
   const additionalColumn = [
     {
       Header: "Name",

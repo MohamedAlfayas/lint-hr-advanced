@@ -33,15 +33,15 @@ import {
 import { GetCustomField } from "../../common/js/GetCustomField";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
-const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
+const LeaveTypesWidgets = ({
+  formname,
+  initialFormObj,
+  width_per,
+  leaveTypeForEmployeeData,
+}) => {
   const dispatch = useDispatch();
-  const [leaveTypeData, setLeaveTypeData] = useState([]);
 
-  const { version } = useSelector((state) => state.MetaReducer);
-
-  useEffect(() => {
-    setLeaveTypeData(GetLocalStorageData("leave_types_for_employee") || []);
-  }, [version]);
+  console.log("WIdget Test = ", leaveTypeForEmployeeData);
 
   const handleApplyLeave = (lt) => {
     let FormObj = { ...initialFormObj, leave_type: lt };
@@ -52,6 +52,7 @@ const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
     dispatch(setComponentToShow(formname));
     dispatch(toggleRSBView(true));
   };
+
   return (
     <React.Fragment>
       <Col lg={12}>
@@ -80,7 +81,7 @@ const LeaveTypesWidgets = ({ formname, initialFormObj, width_per }) => {
           modules={[Autoplay, Mousewheel]}
           className="leaveTypeSlider"
         >
-          {(leaveTypeData || []).map((item, key) => (
+          {(leaveTypeForEmployeeData || []).map((item, key) => (
             <SwiperSlide key={key}>
               <Card>
                 <CardBody>

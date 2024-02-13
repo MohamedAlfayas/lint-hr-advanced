@@ -38,6 +38,7 @@ import {
   custom_field_input_types,
   custom_field_module_lists,
 } from "../../common/constant/Constants";
+import { SetLocalStorage } from "../../meta/SetLocalStorageData";
 
 const CustomFieldForm = () => {
   const dispatch = useDispatch();
@@ -124,9 +125,18 @@ const CustomFieldForm = () => {
         );
         console.log("API RES = ", Api);
         if (Api.status && Api.status === 200) {
-          customFieldObj.id === 0
-            ? dispatch(addCustomField(Api?.data.data))
-            : dispatch(editCustomField(Api?.data?.data));
+          // customFieldObj.id === 0
+          //   ? dispatch(addCustomField(Api?.data.data))
+          //   : dispatch(editCustomField(Api?.data?.data));
+
+          if (customFieldObj.id === 0) {
+            dispatch(addCustomField(Api?.data.data));
+            SetLocalStorage("custom_fields", Api?.data.data, 2);
+          } else {
+            dispatch(editCustomField(Api?.data?.data));
+            SetLocalStorage("custom_fields", Api?.data.data, 3);
+          }
+
           dispatch(toggleRSBView(false));
           toast.success(Api?.data?.message);
         } else {

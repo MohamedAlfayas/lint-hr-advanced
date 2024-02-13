@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import TableContainer from "../../component/common/table/TableContainer";
 import { Link } from "react-router-dom";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
@@ -30,7 +30,7 @@ const EmployeeActivityTable = ({ team_data }) => {
   //   d.primary_department_id_list.includes(departmentId)
   // );
 
-  console.log("TEAM DATA = ", team_data);
+  console.log("EmployeeData = ", EmployeeData);
 
   return (
     <React.Fragment>
@@ -64,75 +64,91 @@ const EmployeeActivityTable = ({ team_data }) => {
 
             return (
               <div className="acitivity-item d-flex mt-1">
-                <div className="flex-shrink-0">
-                  {!!emp_detail?.profile_url ? (
-                    <img
-                      src={emp_detail?.profile_url}
-                      alt=""
-                      className="avatar-xs rounded-circle acitivity-avatar"
-                    />
-                  ) : (
-                    <div
-                      className="avatar-xs rounded-circle"
-                      style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        background: "#0ab39c",
-                      }}
-                      data-bs-toggle="tooltip"
-                      title={emp_detail.fname}
-                    >
-                      <span className="first_letter" style={{ color: "white" }}>
-                        {emp_detail.fname.charAt(0)}
-                      </span>
+                {!!emp_detail && (
+                  <>
+                    <div className="flex-shrink-0">
+                      {!!emp_detail?.profile_url ? (
+                        <img
+                          src={emp_detail?.profile_url}
+                          alt=""
+                          className="avatar-xs rounded-circle acitivity-avatar"
+                        />
+                      ) : (
+                        <div
+                          className="avatar-xs rounded-circle"
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            background: "#0ab39c",
+                          }}
+                          data-bs-toggle="tooltip"
+                          title={emp_detail.fname}
+                        >
+                          <span
+                            className="first_letter"
+                            style={{ color: "white" }}
+                          >
+                            {emp_detail.fname.charAt(0)}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div className="flex-grow-1 ms-3 border-bottom border-bottom-dashed">
-                  <h6 className="mb-0 lh-base">
-                    {emp_detail?.fname} {emp_detail?.lname}
-                    <i
-                      class={`mdi mdi-circle fs-10 align-middle text-${entry_status?.class} me-1 ms-2`}
-                    ></i>
-                    <span class="fs-12 mb-0 text-muted">
-                      {entry_status?.text || ""}
-                    </span>
-                  </h6>
+                    <div className="flex-grow-1 ms-3 border-bottom border-bottom-dashed">
+                      <h6 className="mb-0 lh-base">
+                        {emp_detail?.fname} {emp_detail?.lname}
+                        <i
+                          class={`mdi mdi-circle fs-10 align-middle text-${entry_status?.class} me-1 ms-2`}
+                        ></i>
+                        <span class="fs-12 mb-0 text-muted">
+                          {entry_status?.text || ""}
+                        </span>
+                      </h6>
 
-                  {dep_name_list.map((dn) => (
-                    <p className="text-muted mb-2">Department | {dn}</p>
-                  ))}
+                      {dep_name_list.map((dn) => (
+                        <p className="text-muted mb-2">Department | {dn}</p>
+                      ))}
 
-                  {d.is_present === true && (
-                    <>
-                      {!!d.first_check_in_time && (
-                        <p className="mb-1 text-muted">
-                          <small className="mb-0 text-muted">
-                            Login -{" "}
-                            {format(ParseTime(d.first_check_in_time), "h:mm a")}
-                          </small>
-                        </p>
+                      {d.is_present === true && (
+                        <>
+                          {!!d.first_check_in_time && (
+                            <p className="mb-1 text-muted">
+                              <small className="mb-0 text-muted">
+                                Login -{" "}
+                                {format(
+                                  ParseTime(d.first_check_in_time),
+                                  "h:mm a"
+                                )}
+                              </small>
+                            </p>
+                          )}
+
+                          {!!d.last_check_out_time && (
+                            <>
+                              <p className="mb-1 text-muted">
+                                <small className="mb-0 text-muted">
+                                  Login -{" "}
+                                  {format(
+                                    ParseTime(d.last_check_out_time),
+                                    "h:mm a"
+                                  )}
+                                </small>
+                              </p>
+                              <p className="mb-1 text-muted">
+                                <small className="mb-0 text-muted">
+                                  Total -{" "}
+                                  {ConvertSecondsToTime(
+                                    d.final_paid_hr_in_seconds
+                                  )}
+                                </small>
+                              </p>
+                            </>
+                          )}
+                        </>
                       )}
-
-                      {!!d.last_check_out_time && (
-                        <p className="mb-1 text-muted">
-                          <small className="mb-0 text-muted">
-                            Login -{" "}
-                            {format(ParseTime(d.last_check_out_time), "h:mm a")}
-                          </small>
-                        </p>
-                      )}
-
-                      <p className="mb-1 text-muted">
-                        <small className="mb-0 text-muted">
-                          Total -{" "}
-                          {ConvertSecondsToTime(d.final_paid_hr_in_seconds)}
-                        </small>
-                      </p>
-                    </>
-                  )}
-                </div>
+                    </div>
+                  </>
+                )}
               </div>
             );
           })}

@@ -44,6 +44,7 @@ import {
 } from "../../common/constant/Constants";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import { SetLocalStorage } from "../../meta/SetLocalStorageData";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
@@ -165,9 +166,18 @@ const LeaveTypeForm = () => {
         );
         console.log("API RES = ", Api);
         if (Api.status && Api.status === 200) {
-          leaveTypeData.id === 0
-            ? dispatch(addLeaveType(Api?.data.data))
-            : dispatch(editLeaveType(Api?.data?.data));
+          // leaveTypeData.id === 0
+          //   ? dispatch(addLeaveType(Api?.data.data))
+          //   : dispatch(editLeaveType(Api?.data?.data));
+
+          if (leaveTypeData.id === 0) {
+            dispatch(addLeaveType(Api?.data.data));
+            SetLocalStorage("leave_types", Api?.data.data, 2);
+          } else {
+            dispatch(editLeaveType(Api?.data?.data));
+            SetLocalStorage("leave_types", Api?.data.data, 3);
+          }
+
           dispatch(toggleRSBView(false));
           toast.success(Api?.data?.message);
         } else {

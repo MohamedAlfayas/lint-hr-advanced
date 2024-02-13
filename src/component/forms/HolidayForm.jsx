@@ -43,6 +43,7 @@ import { DatePicker } from "antd";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { DateFormat } from "../../common/constant/Constants";
+import { SetLocalStorage } from "../../meta/SetLocalStorageData";
 dayjs.extend(customParseFormat);
 
 const HolidayForm = () => {
@@ -83,9 +84,16 @@ const HolidayForm = () => {
       const Api = await PostApi("holiday/create/", values, false);
       console.log("API RES = ", Api);
       if (Api.status && Api.status === 200) {
-        holidayObj.id === 0
-          ? dispatch(addHoliday(Api?.data.data))
-          : dispatch(editHoliday(Api?.data?.data));
+        if (holidayObj.id === 0) {
+          dispatch(addHoliday(Api?.data.data));
+          SetLocalStorage("holiday", Api?.data.data, 2);
+        } else {
+          dispatch(editHoliday(Api?.data?.data));
+          SetLocalStorage("holiday", Api?.data.data, 3);
+        }
+        // holidayObj.id === 0
+        //   ? dispatch(addHoliday(Api?.data.data))
+        //   : dispatch(editHoliday(Api?.data?.data));
         dispatch(toggleRSBView(false));
         toast.success(Api?.data?.message);
       } else {

@@ -72,7 +72,11 @@ const Login = () => {
         data: values,
       })
         .then((res) => {
-          console.log("adminResponse", res);
+          console.log("adminResponse", res?.data);
+          localStorage.setItem(
+            "lint_hr_globaldata",
+            JSON.stringify(res?.data?.meta_data)
+          );
           localStorage.setItem(
             "lint_hr_token",
             JSON.stringify(res?.data?.token)
@@ -98,8 +102,11 @@ const Login = () => {
           dispatch(
             changeLeftsidebarSizeTypeAction(leftsidbarSizeTypes.DEFAULT)
           );
-          toast.success(res?.data?.message);
-          navigate("/dashboard");
+
+          setTimeout(() => {
+            toast.success(res?.data?.message);
+            navigate("/dashboard");
+          }, 1000);
         })
         .catch((err) => {
           console.log("err = ", err);

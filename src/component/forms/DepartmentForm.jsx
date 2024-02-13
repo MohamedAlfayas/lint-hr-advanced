@@ -32,6 +32,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 
 import Select from "react-select";
+import { SetLocalStorage } from "../../meta/SetLocalStorageData";
 
 const DepartmentForm = () => {
   const [hdDropDown, setHdDropDown] = useState(false);
@@ -78,7 +79,10 @@ const DepartmentForm = () => {
       dispatch(setLoaderVisible(true));
       const Api = await PostApi("department/create/", departmentData, false);
       if (Api.status && Api.status === 200) {
+        console.log("DEP RES = ", Api?.data);
         dispatch(setDepartmentDetails(Api?.data?.data));
+        SetLocalStorage("department_details", Api?.data?.data, 1);
+        SetLocalStorage("department", Api?.data?.department_data, 1);
         dispatch(toggleRSBView(false));
         toast.success(Api?.data?.message);
       } else {

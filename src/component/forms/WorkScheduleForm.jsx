@@ -41,6 +41,7 @@ import { PostApi } from "../../common/api/PostApi";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { diffDates } from "@fullcalendar/core/internal";
+import { SetLocalStorage } from "../../meta/SetLocalStorageData";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
@@ -204,9 +205,18 @@ const WorkScheduleForm = () => {
       );
       console.log("API RES = ", Api);
       if (Api.status && Api.status === 200) {
-        workScheduleData.id === 0
-          ? dispatch(addWorkSchedule(Api?.data.data))
-          : dispatch(editWorkSchedule(Api?.data?.data));
+        // workScheduleData.id === 0
+        //   ? dispatch(addWorkSchedule(Api?.data.data))
+        //   : dispatch(editWorkSchedule(Api?.data?.data));
+
+        if (workScheduleData.id === 0) {
+          dispatch(addWorkSchedule(Api?.data.data));
+          SetLocalStorage("work_schedule", Api?.data.data, 2);
+        } else {
+          dispatch(editWorkSchedule(Api?.data?.data));
+          SetLocalStorage("work_schedule", Api?.data.data, 3);
+        }
+
         dispatch(toggleRSBView(false));
         toast.success(Api?.data?.message);
       } else {

@@ -43,6 +43,7 @@ import {
   ConvertToDateTimeFormat,
   ConvertToISODateTimeFormat,
 } from "../../common/js/ConvertDateTimeFormat";
+import { setLeaveTypeForCurrentEmployee } from "../../redux/reducers/ChildReducer/LeaveTypeReducer";
 dayjs.extend(customParseFormat);
 
 const ApplyLeaveForm = () => {
@@ -66,11 +67,10 @@ const ApplyLeaveForm = () => {
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
   const profileData = GetLocalStorageData("my_profile") || [];
   const holidayData = GetLocalStorageData("holiday") || [];
-  const leaveType = GetLocalStorageData("leave_types_for_employee") || [];
 
-  useEffect(() => {
-    console.log("leaveapplyObj = ", leaveapplyObj);
-  }, [leaveapplyObj]);
+  const { leave_type_for_current_employee } = useSelector(
+    (state) => state.LeaveTypeReducer
+  );
 
   useEffect(() => {
     if (!!form_obj) {
@@ -91,7 +91,7 @@ const ApplyLeaveForm = () => {
       setHolidayDays(holidayData.map((d) => d?.date));
 
       if (form_obj?.leave_type !== 0) {
-        let thisLeaveTypeObj = leaveType.find(
+        let thisLeaveTypeObj = leave_type_for_current_employee.find(
           (d) => d.id === form_obj?.leave_type
         );
         handleStartEndDatesChange(thisLeaveTypeObj);
@@ -121,7 +121,9 @@ const ApplyLeaveForm = () => {
   }, [form_obj]);
 
   const handleLeaveTypeChange = (e) => {
-    let leave_type_obj = leaveType.find((d) => d.id === e.id);
+    let leave_type_obj = leave_type_for_current_employee.find(
+      (d) => d.id === e.id
+    );
 
     handleStartEndDatesChange(leave_type_obj);
   };
@@ -381,9 +383,28 @@ const ApplyLeaveForm = () => {
         );
         console.log("API RES = ", Api);
         if (Api.status && Api.status === 200) {
-          leaveapplyObj.id === 0
-            ? dispatch(addLeaveApplication(Api?.data.data))
-            : dispatch(editLeaveApplication(Api?.data?.data));
+          // leaveapplyObj.id === 0
+          //   ? dispatch(addLeaveApplication(Api?.data.data))
+          //   : dispatch(editLeaveApplication(Api?.data?.data));
+
+          console.log("LTE RES = ", Api?.data?.leave_type_for_employee);
+
+          if (leaveapplyObj.id === 0) {
+            dispatch(addLeaveApplication(Api?.data.data));
+            dispatch(
+              setLeaveTypeForCurrentEmployee(
+                Api?.data?.leave_type_for_employee || []
+              )
+            );
+          } else {
+            dispatch(editLeaveApplication(Api?.data?.data));
+            dispatch(
+              setLeaveTypeForCurrentEmployee(
+                Api?.data?.leave_type_for_employee || []
+              )
+            );
+          }
+
           dispatch(toggleRSBView(false));
           toast.success(Api?.data?.message);
         } else {
@@ -407,7 +428,7 @@ const ApplyLeaveForm = () => {
                   <Select
                     name="leave_type"
                     isMulti={false}
-                    options={leaveType || []}
+                    options={leave_type_for_current_employee || []}
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
@@ -421,7 +442,7 @@ const ApplyLeaveForm = () => {
                     }}
                     value={
                       leaveapplyObj?.leave_type
-                        ? leaveType.find(
+                        ? leave_type_for_current_employee.find(
                             (d) => d.id === leaveapplyObj?.leave_type
                           )
                         : []

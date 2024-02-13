@@ -59,6 +59,7 @@ import {
   editBranch,
 } from "../../redux/reducers/ChildReducer/BranchReducer";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
+import { SetLocalStorage } from "../../meta/SetLocalStorageData";
 // import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 
 const BranchForm = () => {
@@ -213,9 +214,18 @@ const BranchForm = () => {
       const Api = await PostApi("branch/add-new/", branchObj, false);
       console.log("API RES = ", Api);
       if (Api.status && Api.status === 200) {
-        branchObj.id === 0
-          ? dispatch(addBranch(Api?.data?.data))
-          : dispatch(editBranch(Api?.data?.data));
+        // branchObj.id === 0
+        //   ? dispatch(addBranch(Api?.data?.data))
+        //   : dispatch(editBranch(Api?.data?.data));
+
+        if (branchObj.id === 0) {
+          dispatch(addBranch(Api?.data.data));
+          SetLocalStorage("branch", Api?.data.data, 2);
+        } else {
+          dispatch(editBranch(Api?.data?.data));
+          SetLocalStorage("branch", Api?.data.data, 3);
+        }
+
         dispatch(toggleRSBView(false));
         toast.success(Api?.data?.message);
       } else {

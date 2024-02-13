@@ -54,6 +54,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 import { DatePicker } from "antd";
 import { Api } from "../../common/api/Api";
 import { EmployeeDisplayInSelect } from "../../common/js/EmployeeDisplayInSelect";
+import { SetLocalStorage } from "../../meta/SetLocalStorageData";
 dayjs.extend(customParseFormat);
 
 // Register the plugins
@@ -409,9 +410,18 @@ const EmployeeForm = () => {
         const Api = await PostApi("employee/add-new/", form_data, true);
         console.log("API RES = ", Api);
         if (Api.status && Api.status === 200) {
-          employeeObj.id === 0
-            ? dispatch(addEmployee(Api?.data.data))
-            : dispatch(editEmployee(Api?.data?.data));
+          // employeeObj.id === 0
+          //   ? dispatch(addEmployee(Api?.data.data))
+          //   : dispatch(editEmployee(Api?.data?.data));
+
+          if (employeeObj.id === 0) {
+            dispatch(addEmployee(Api?.data.data));
+            SetLocalStorage("employee", Api?.data.data, 2);
+          } else {
+            dispatch(editEmployee(Api?.data?.data));
+            SetLocalStorage("employee", Api?.data.data, 3);
+          }
+
           dispatch(toggleRSBView(false));
           toast.success(Api?.data?.message);
         } else {

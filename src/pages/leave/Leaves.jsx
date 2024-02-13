@@ -11,6 +11,7 @@ import { GetApi } from "../../common/api/GetApi";
 import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setLeaveApplication } from "../../redux/reducers/ChildReducer/LeaveApplyReducer";
+import { setLeaveTypeForCurrentEmployee } from "../../redux/reducers/ChildReducer/LeaveTypeReducer";
 
 const LeaveDashboard = () => {
   useEffect(() => {
@@ -25,8 +26,24 @@ const LeaveDashboard = () => {
         console.log("ERR = ", err);
       });
   }, []);
+
+  useEffect(() => {
+    Api({
+      method: "GET",
+      url: "leave/get-leave-type-for-employee/",
+    })
+      .then((res) => {
+        dispatch(setLeaveTypeForCurrentEmployee(res?.data?.data || []));
+      })
+      .catch((err) => {
+        console.log("ERR = ", err);
+      });
+  }, []);
+
   document.title = `Leave Application | ${MetaTitle}`;
+
   const LeaveTypeData = GetLocalStorageData("leave_types") || [];
+
   const getUnitId = (id) => {
     const day_type = LeaveTypeData?.find((val) => val?.value === id)?.unit;
     return day_type;
@@ -166,6 +183,10 @@ const LeaveDashboard = () => {
     },
   ];
 
+  const { leave_type_for_current_employee } = useSelector(
+    (state) => state.LeaveTypeReducer
+  );
+
   return (
     <React.Fragment>
       <div className="page-content">
@@ -176,6 +197,7 @@ const LeaveDashboard = () => {
                 formname={leave_application_component_name}
                 initialFormObj={initialFormObj}
                 width_per={"45%"}
+                leaveTypeForEmployeeData={leave_type_for_current_employee}
               />
             </Col>
             <InfoTable
