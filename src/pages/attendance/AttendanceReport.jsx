@@ -31,7 +31,7 @@ import { Api } from "../../common/api/Api";
 import { setTeamDailyAttendanceReport } from "../../redux/reducers/ChildReducer/TeamDailyAttendanceReportReducer";
 import { ParseTime } from "../../common/js/ParseTime";
 import * as XLSX from 'xlsx';
-
+import '../../common/css/lc_style.css'
 const AttendanceReport = () => {
   document.title = `Attendance Report | ${MetaTitle}`;
 
@@ -86,6 +86,40 @@ const AttendanceReport = () => {
       month: monthStr,
     });
   };
+
+  const handleFilter = async () => {
+    console.log("FILTER CLICKED !!!! === ", filterKeys);
+
+    dispatch(setLoaderVisible(true));
+
+    const Api = await PostApi(
+      "report/get-attendance-report/",
+      filterKeys,
+      false
+    );
+    console.log("API RES = ", Api);
+    if (Api.status && Api.status === 200) {
+      dispatch(
+        setIndividualAttendanceReportData(
+          Api?.data?.data?.individual_attendance_report
+        )
+      );
+      dispatch(
+        setTeamAttendanceReportData(Api?.data?.data?.team_attendance_report)
+      );
+      if (filterKeys?.type === "2" && filterKeys?.employee === "0") {
+        dispatch(setShowTeamTable(true));
+      } else {
+        dispatch(setShowTeamTable(false));
+      }
+    } else {
+      toast.error(Api?.data?.message || Api?.data?.detail);
+    }
+
+    dispatch(setLoaderVisible(false));
+  };
+
+
   const employeeDatesXls = Array.from(
     new Set(
       team_daily_attendance_report.flatMap((employee) =>
@@ -95,76 +129,80 @@ const AttendanceReport = () => {
   );
 
 
-const handleExport = () => {
-  const wb = XLSX.utils.book_new();
+  const handleExport = () => {
+    const wb = XLSX.utils.book_new();
 
-  // Create a worksheet
-  const ws = XLSX.utils.aoa_to_sheet([]);
+    
+    const ws = XLSX.utils.aoa_to_sheet([]);
 
-  // Add headers
-  const headers = ['Employee Name', 'Email'];
-  const subheaders = ['', ''];
-  employeeDatesXls.forEach(date => {
+    
+    const headers = ['Employee Name', 'Email'];
+    const subheaders = ['', ''];
+    employeeDatesXls.forEach(date => {
+      headers.push('');
       headers.push(formatDate(date));
-      subheaders.push('Attendance', 'Check-in', 'Check-out');
-  });
-  headers.push('Total Days', 'Present Days'); // Add more headers as needed
-  XLSX.utils.sheet_add_aoa(ws, [headers, subheaders], { origin: 'A1' });
+      headers.push('');
+      subheaders.push('Attendance');
+      subheaders.push('Check-in');
+      subheaders.push('Check-out');
+    });
+    headers.push('Total Days', 'Present Days'); 
+    XLSX.utils.sheet_add_aoa(ws, [headers, subheaders], { origin: 'A1' });
 
-  // Loop through each row of team_daily_attendance_report
-  team_daily_attendance_report.forEach((rowData, rowIndex) => {
+    
+    team_daily_attendance_report.forEach((rowData, rowIndex) => {
       const row = [];
 
-      // Find employee data
+     
       const foundEmployee = employee_data.find(emp => rowData.employee_id === emp.id);
       const emp_name = foundEmployee ? foundEmployee.fname : '';
 
-      // Add employee name and email to row
+     
       row.push(emp_name);
       row.push(foundEmployee ? foundEmployee.email : '');
 
-      // Loop through dynamic columns
+     
       employeeDatesXls.forEach(date => {
-          const attendance_data = rowData.workday_data.find(day => day.date === date);
-          let attend_data =
-              attendance_data && attendance_data.is_present === true ? 'P' :
-              attendance_data && attendance_data.is_holiday === true ? 'H' :
+        const attendance_data = rowData.workday_data.find(day => day.date === date);
+        let attend_data =
+          attendance_data && attendance_data.is_present === true ? 'P' :
+            attendance_data && attendance_data.is_holiday === true ? 'H' :
               attendance_data && attendance_data.is_day_on === false ? 'WO' :
-              attendance_data && attendance_data.is_leave_approved === true ? 'L' :
-              attendance_data && attendance_data.leave_taken_without_approval === true ? 'A' :
-              'A';
+                attendance_data && attendance_data.is_leave_approved === true ? 'L' :
+                  attendance_data && attendance_data.leave_taken_without_approval === true ? 'A' :
+                    'A';
 
-          // Add attendance data
-          row.push(attend_data);
+       
+        row.push(attend_data);
 
-          // Add check-in and check-out times
-          if (attendance_data) {
-              const checkInLog = attendance_data.entry_log.find(log => parseInt(log.entry_type) === 1);
-              const checkOutLog = attendance_data.entry_log.slice().reverse().find(log => parseInt(log.entry_type) !== 1);
-              const firstCheckIn = checkInLog ? format(ParseTime(checkInLog.entry_time), "h:mm a") : '';
-              const lastCheckOut = checkOutLog ? format(ParseTime(checkOutLog.entry_time), "h:mm a") : '';
-              row.push(firstCheckIn);
-              row.push(lastCheckOut);
-          } else {
-              row.push('');
-              row.push('');
-          }
+     
+        if (attendance_data) {
+          const checkInLog = attendance_data.entry_log.find(log => parseInt(log.entry_type) === 1);
+          const checkOutLog = attendance_data.entry_log.slice().reverse().find(log => parseInt(log.entry_type) !== 1);
+          const firstCheckIn = checkInLog ? format(ParseTime(checkInLog.entry_time), "h:mm a") : '';
+          const lastCheckOut = checkOutLog ? format(ParseTime(checkOutLog.entry_time), "h:mm a") : '';
+          row.push(firstCheckIn);
+          row.push(lastCheckOut);
+        } else {
+          row.push('');
+          row.push('');
+        }
       });
 
-      // Add additional columns
+    
       row.push(rowData.total_working_days_count);
       row.push(rowData.total_present_days_count);
 
-      // Add row to worksheet
+     
       XLSX.utils.sheet_add_aoa(ws, [row], { origin: `A${rowIndex + 3}` });
-  });
+    });
 
-  // Add worksheet to workbook
-  XLSX.utils.book_append_sheet(wb, ws, "MySheet");
+   
+    XLSX.utils.book_append_sheet(wb, ws, "MySheet");
 
-  // Write workbook to file
-  XLSX.writeFile(wb, "AttendanceReport.xlsx");
-};
+   
+    XLSX.writeFile(wb, "AttendanceReport.xlsx");
+  };
 
 
 
@@ -172,7 +210,7 @@ const handleExport = () => {
 
   function formatDate(dateString) {
     const dateObj = new Date(dateString);
-    const year = dateObj.getFullYear().toString().substr(2); // Get last 2 digits of the year
+    const year = dateObj.getFullYear().toString().substr(2); 
     const month = new Intl.DateTimeFormat("en", { month: "short" }).format(dateObj);
     const day = dateObj.getDate().toString().padStart(2, "0");
     return `${day} ${month} ${year}`;
@@ -180,7 +218,7 @@ const handleExport = () => {
   const [timeline_modal, settimeline_modal] = useState(false);
   const [timelineList, setTimelineList] = useState([]);
   const [timelineDate, setTimeLineDate] = useState("");
-console.log("list",timelineList);
+  console.log("list", timelineList);
   function open_timeline() {
     settimeline_modal(!timeline_modal);
   }
@@ -453,72 +491,71 @@ console.log("list",timelineList);
             open_timeline();
           }}
           centered
+          className="custom-modal"
         >
           <ModalHeader>
-            <h5 className="modal-title" id="exampleModalToggleLabel">
-              Date : {timelineDate}
+            <h5 className="modal-title" id="exampleModalToggleLabel" style={{ fontSize: 'smaller' }}>
+              Date: {timelineDate}
             </h5>
           </ModalHeader>
           <ModalBody className="text-left">
-  <div>
-    <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Check In</th>
-            <th>Check Out</th>
-            <th>Location</th>
-          </tr>
-        </thead>
-        <tbody>
-          {timelineList.length &&
-            timelineList.map((data, idx) => {
-              let py_class =
-                idx === 0 || idx === timelineList.length - 1 ? "" : "py-3";
-              let isCheckIn = parseInt(data.entry_type) === 1;
-              let checkType = isCheckIn ? "Check In" : "Check Out";
-              let iconClass = isCheckIn ? "mdi mdi-arrow-right-thick" : "mdi mdi-arrow-left-thick";
-              let time = format(ParseTime(data.entry_time), "h:mm a");
-              return (
-                <tr className={py_class}>
-                  <td>
-                    {isCheckIn && (
-                      <>
-                        <div className={`avatar-title bg-success-subtle text-success rounded-circle`}>
-                          <i className={`mdi ${iconClass}`}></i>
-                        </div>
-                        <h6 className="mb-1 lh-base">{checkType}</h6>
-                        <p className="text-muted mb-1">{time}</p>
-                      </>
-                    )}
-                  </td>
-                  <td>
-                    {!isCheckIn && (
-                      <>
-                        <div className={`avatar-title bg-warning-subtle text-warning rounded-circle`}>
-                          <i className={`mdi ${iconClass}`}></i>
-                        </div>
-                        <h6 className="mb-1 lh-base">{checkType}</h6>
-                        <p className="text-muted mb-1">{time}</p>
-                      </>
-                    )}
-                  </td>
-                  <td>
-                    <small className="mb-0 text-muted">
-                      <i className="mdi mdi-map-marker"></i> {data.location || ""}
-                    </small>
-                  </td>
-                </tr>
-              );
-            })}
-        </tbody>
-      </table>
-    </SimpleBar>
-    <Button className="btn btn-warning" onClick={() => { open_timeline(); }}>
-      Continue
-    </Button>
-  </div>
-</ModalBody>
+            <div>
+              <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>
+                        Check In <i className="mdi mdi-arrow-down-thick arrow-icon"></i>
+                      </th>
+                      <th>
+                        Check Out <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
+                      </th>
+                      <th>Location</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {timelineList.length > 0 &&
+                      timelineList.map((data, idx) => {
+                        let checkInData = timelineList[idx];
+                        let checkOutData = timelineList[idx + 1];
+                        if (checkInData && parseInt(checkInData.entry_type) === 1) {
+                          let checkInTime = format(ParseTime(checkInData.entry_time), "h:mm a");
+                          let checkOutTime = checkOutData
+                            ? format(ParseTime(checkOutData.entry_time), "h:mm a")
+                            : "";
+                          return (
+                            <tr key={idx}>
+                              <td>
+                              
+                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkInTime}</p>
+                              </td>
+                              <td>
+                              
+                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkOutTime}</p>
+                              </td>
+                              <td>
+                                <small className="mb-0 text-muted">
+                                  <a href={`https://maps.google.com/?q=${checkInData.location}`} target="_blank" rel="noopener noreferrer">
+                                    <i className="mdi mdi-map-marker"></i> {checkInData.location || ""}
+                                  </a>
+                                </small>
+                              </td>
+                            </tr>
+                          );
+                        }
+                        return null; // Skip rendering if it's not a check-in entry
+                      })}
+                  </tbody>
+                </table>
+              </SimpleBar>
+              <div className="text-center mt-3">
+                <Button className="btn btn-warning" onClick={() => { open_timeline(); }}>
+                 Close
+                </Button>
+              </div>
+            </div>
+          </ModalBody>
+
         </Modal>
       </div>
     </React.Fragment>

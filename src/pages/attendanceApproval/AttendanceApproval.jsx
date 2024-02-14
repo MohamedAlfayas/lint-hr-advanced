@@ -341,77 +341,78 @@ const AttendanceApproval = () => {
         filterOptions={filterOptions}
         width_per={"35%"}
       />
-      <Modal
-        isOpen={timeline_modal}
-        toggle={() => {
-          open_timeline();
-        }}
-        centered
-      >
-        <ModalHeader>
-          <h5 className="modal-title" id="exampleModalToggleLabel">
-            Date : {timelineDate}
-          </h5>
-        </ModalHeader>
-        <ModalBody className="text-left">
-          <div>
-            <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
-              <div className="acitivity-timeline acitivity-main">
-                {timelineList.length &&
-                  timelineList.map((data, idx) => {
-                    let py_class =
-                      idx === 0 || idx === data.length - 1 ? "" : "py-3";
-                    let info =
-                      parseInt(data.entry_type) === 1
-                        ? {
-                            class: "success",
-                            text: "IN",
-                            iconClass: "right",
-                          }
-                        : {
-                            class: "warning",
-                            text: "Out",
-                            iconClass: "left",
-                          };
-                    return (
-                      <div className={`acitivity-item  d-flex ${py_class}`}>
-                        <div className="flex-shrink-0 avatar-xs acitivity-avatar">
-                          <div
-                            className={`avatar-title bg-${info?.class}-subtle text-${info?.class} rounded-circle`}
-                          >
-                            <i
-                              className={`mdi mdi-arrow-${info?.iconClass}-thick`}
-                            ></i>
-                          </div>
-                        </div>
-                        <div className="flex-grow-1 ms-3">
-                          <h6 className="mb-1 lh-base">Check {info?.text} </h6>
-                          <p className="text-muted mb-1">
-                            {format(ParseTime(data?.entry_time), "h:mm a")}
-                          </p>
-                          <small className="mb-0 text-muted">
-                            <i className="mdi mdi-map-marker"></i>{" "}
-                            {data?.location || ""}
-                          </small>
-                        </div>
-                      </div>
-                    );
-                  })}
+        <Modal
+          isOpen={timeline_modal}
+          toggle={() => {
+            open_timeline();
+          }}
+          centered
+          className="custom-modal"
+        >
+          <ModalHeader>
+            <h5 className="modal-title" id="exampleModalToggleLabel" style={{ fontSize: 'smaller' }}>
+              Date: {timelineDate}
+            </h5>
+          </ModalHeader>
+          <ModalBody className="text-left">
+            <div>
+              <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>
+                        Check In <i className="mdi mdi-arrow-down-thick arrow-icon"></i>
+                      </th>
+                      <th>
+                        Check Out <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
+                      </th>
+                      <th>Location</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {timelineList.length > 0 &&
+                      timelineList.map((data, idx) => {
+                        let checkInData = timelineList[idx];
+                        let checkOutData = timelineList[idx + 1];
+                        if (checkInData && parseInt(checkInData.entry_type) === 1) {
+                          let checkInTime = format(ParseTime(checkInData.entry_time), "h:mm a");
+                          let checkOutTime = checkOutData
+                            ? format(ParseTime(checkOutData.entry_time), "h:mm a")
+                            : "";
+                          return (
+                            <tr key={idx}>
+                              <td>
+                              
+                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkInTime}</p>
+                              </td>
+                              <td>
+                              
+                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkOutTime}</p>
+                              </td>
+                              <td>
+                                <small className="mb-0 text-muted">
+                                  <a href={`https://maps.google.com/?q=${checkInData.location}`} target="_blank" rel="noopener noreferrer">
+                                    <i className="mdi mdi-map-marker"></i> {checkInData.location || ""}
+                                  </a>
+                                </small>
+                              </td>
+                            </tr>
+                          );
+                        }
+                        return null; // Skip rendering if it's not a check-in entry
+                      })}
+                  </tbody>
+                </table>
+              </SimpleBar>
+              <div className="text-center mt-3">
+                <Button className="btn btn-warning" onClick={() => { open_timeline(); }}>
+                 Close
+                </Button>
               </div>
-            </SimpleBar>
-            <div class="d-flex justify-content-center">
-              <Button
-                className="btn btn-warning"
-                onClick={() => {
-                  open_timeline();
-                }}
-              >
-                Close
-              </Button>
             </div>
-          </div>
-        </ModalBody>
-      </Modal>
+          </ModalBody>
+
+        </Modal>
     </div>
   );
 };
