@@ -18,10 +18,14 @@ const AttendanceApprovalReducer = createSlice({
         ...state,
         attendance_approval_data: [...state?.attendance_approval_data].map(
           (d) => {
-            if (d.id == payload.id) {
-              return payload;
-            } else {
-              return d;
+            if ((payload?.id).includes(d.id)) {
+              return {
+                ...d,
+                hr_status: payload?.hr_status
+              }
+            }
+            else {
+              return d
             }
           }
         ),

@@ -20,7 +20,7 @@ import { ParseTime } from "../../common/js/ParseTime";
 import { ConvertSecondsToTime } from "../../common/js/ConvertSecondsToTime";
 import { Link } from "react-router-dom";
 import SimpleBar from "simplebar-react";
-import { differenceInMinutes } from 'date-fns';
+import { differenceInMinutes } from "date-fns";
 const AttendanceApproval = () => {
   const dispatch = useDispatch();
 
@@ -45,7 +45,9 @@ const AttendanceApproval = () => {
 
     Api({
       type: "GET",
-      url: "attendance/get-data-for-reporting-manager/?thisMonth=" + thisMonth,
+      url:
+        "attendance/get-attendance-data-for-reporting-manager/?thisMonth=" +
+        thisMonth,
     })
       .then((res) => {
         console.log("res", res);
@@ -341,90 +343,132 @@ const AttendanceApproval = () => {
         filterOptions={filterOptions}
         width_per={"35%"}
       />
-         <Modal
-          isOpen={timeline_modal}
-          toggle={() => {
-            open_timeline();
-          }}
-          centered
-          className="custom-modal"
-        >
-          <ModalHeader>
-            <h5 className="modal-title" id="exampleModalToggleLabel" style={{ fontSize: 'smaller' }}>
-              Date: {timelineDate}
-            </h5>
-          </ModalHeader>
-          <ModalBody className="text-left">
-            <div>
-              <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>
-                        Check In <i className="mdi mdi-arrow-down-thick arrow-icon"></i>
-                      </th>
-                      <th>
-                        Check Out <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
-                      </th>
-                      <th>Total Hours</th>
-                      <th>Location</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {timelineList.length > 0 &&
-                      timelineList.map((data, idx) => {
-                        let checkInData = timelineList[idx];
-                        let checkOutData = timelineList[idx + 1];
-                        if (checkInData && parseInt(checkInData.entry_type) === 1) {
-                          let checkInTime = format(ParseTime(checkInData.entry_time), "h:mm a");
-                          let checkOutTime = checkOutData
-                            ? format(ParseTime(checkOutData.entry_time), "h:mm a")
-                            : "";
-                          let totalDifference = checkOutData ? differenceInMinutes(ParseTime(checkOutData.entry_time), ParseTime(checkInData.entry_time)) : 0;
-                          let totalHours = Math.floor(totalDifference / 60);
-                          let totalMinutes = totalDifference % 60;
+      <Modal
+        isOpen={timeline_modal}
+        toggle={() => {
+          open_timeline();
+        }}
+        centered
+        className="custom-modal"
+      >
+        <ModalHeader>
+          <h5
+            className="modal-title"
+            id="exampleModalToggleLabel"
+            style={{ fontSize: "smaller" }}
+          >
+            Date: {timelineDate}
+          </h5>
+        </ModalHeader>
+        <ModalBody className="text-left">
+          <div>
+            <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>
+                      Check In{" "}
+                      <i className="mdi mdi-arrow-down-thick arrow-icon"></i>
+                    </th>
+                    <th>
+                      Check Out{" "}
+                      <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
+                    </th>
+                    <th>Total Hours</th>
+                    <th>Location</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timelineList.length > 0 &&
+                    timelineList.map((data, idx) => {
+                      let checkInData = timelineList[idx];
+                      let checkOutData = timelineList[idx + 1];
+                      if (
+                        checkInData &&
+                        parseInt(checkInData.entry_type) === 1
+                      ) {
+                        let checkInTime = format(
+                          ParseTime(checkInData.entry_time),
+                          "h:mm a"
+                        );
+                        let checkOutTime = checkOutData
+                          ? format(ParseTime(checkOutData.entry_time), "h:mm a")
+                          : "";
+                        let totalDifference = checkOutData
+                          ? differenceInMinutes(
+                              ParseTime(checkOutData.entry_time),
+                              ParseTime(checkInData.entry_time)
+                            )
+                          : 0;
+                        let totalHours = Math.floor(totalDifference / 60);
+                        let totalMinutes = totalDifference % 60;
 
-                        
-                          let formattedTotalHours = totalHours.toString().padStart(2, '0');
-                          let formattedTotalMinutes = totalMinutes.toString().padStart(2, '0');
+                        let formattedTotalHours = totalHours
+                          .toString()
+                          .padStart(2, "0");
+                        let formattedTotalMinutes = totalMinutes
+                          .toString()
+                          .padStart(2, "0");
 
-                          return (
-                            <tr key={idx}>
-                              <td>
-
-                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkInTime}</p>
-                              </td>
-                              <td>
-
-                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkOutTime}</p>
-                              </td>
-                              <td>
-                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{formattedTotalHours}:{formattedTotalMinutes} Hr</p>
-                              </td>
-                              <td>
-                                <small className="mb-0 text-muted">
-                                  <a href={`https://maps.google.com/?q=${checkInData.location}`} target="_blank" rel="noopener noreferrer">
-                                    <i className="mdi mdi-map-marker"></i> {checkInData.location || ""}
-                                  </a>
-                                </small>
-                              </td>
-                            </tr>
-                          );
-                        }
-                        return null; // Skip rendering if it's not a check-in entry
-                      })}
-                  </tbody>
-                </table>
-              </SimpleBar>
-              <div className="text-center mt-3">
-                <Button className="btn btn-warning" onClick={() => { open_timeline(); }}>
-                  Close
-                </Button>
-              </div>
+                        return (
+                          <tr key={idx}>
+                            <td>
+                              <p
+                                className="text-muted mb-1"
+                                style={{ fontWeight: "bold" }}
+                              >
+                                {checkInTime}
+                              </p>
+                            </td>
+                            <td>
+                              <p
+                                className="text-muted mb-1"
+                                style={{ fontWeight: "bold" }}
+                              >
+                                {checkOutTime}
+                              </p>
+                            </td>
+                            <td>
+                              <p
+                                className="text-muted mb-1"
+                                style={{ fontWeight: "bold" }}
+                              >
+                                {formattedTotalHours}:{formattedTotalMinutes} Hr
+                              </p>
+                            </td>
+                            <td>
+                              <small className="mb-0 text-muted">
+                                <a
+                                  href={`https://maps.google.com/?q=${checkInData.location}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <i className="mdi mdi-map-marker"></i>{" "}
+                                  {checkInData.location || ""}
+                                </a>
+                              </small>
+                            </td>
+                          </tr>
+                        );
+                      }
+                      return null; // Skip rendering if it's not a check-in entry
+                    })}
+                </tbody>
+              </table>
+            </SimpleBar>
+            <div className="text-center mt-3">
+              <Button
+                className="btn btn-warning"
+                onClick={() => {
+                  open_timeline();
+                }}
+              >
+                Close
+              </Button>
             </div>
-          </ModalBody>
-
-        </Modal>
+          </div>
+        </ModalBody>
+      </Modal>
     </div>
   );
 };

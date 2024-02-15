@@ -74,6 +74,7 @@ import { defineElement } from "lord-icon-element";
 import { PostApi } from "../../../common/api/PostApi";
 import { editLeaveApproval } from "../../../redux/reducers/ChildReducer/LeaveApprovalReducer";
 import { setTableDataReducer } from "../../../redux/reducers/ChildReducer/TableDataReducer";
+import { updateAttendanceApprovalData } from "../../../redux/reducers/ChildReducer/AttendanceApprovalReducer";
 defineElement(loadAnimation);
 
 const InfoTable = ({
@@ -317,6 +318,7 @@ const InfoTable = ({
           console.log("Approve OR Reject Status = ", Api);
           if (Api.status && Api.status === 200) {
             toast.success(Api?.data?.message);
+            dispatch(updateAttendanceApprovalData(data));
           } else {
             toast.error(Api?.data?.message || Api?.data?.detail);
           }
@@ -401,6 +403,7 @@ const InfoTable = ({
           console.log("Approve OR Reject Status = ", Api);
           if (Api.status && Api.status === 200) {
             toast.success(Api?.data?.message);
+            dispatch(updateAttendanceApprovalData(data));
           } else {
             toast.error(Api?.data?.message || Api?.data?.detail);
           }
@@ -487,6 +490,7 @@ const InfoTable = ({
           console.log("Approve OR Reject Status = ", Api);
           if (Api.status && Api.status === 200) {
             toast.success(Api?.data?.message);
+            dispatch(updateAttendanceApprovalData(data));
           } else {
             toast.error(Api?.data?.message || Api?.data?.detail);
           }
@@ -561,6 +565,7 @@ const InfoTable = ({
           console.log("Approve OR Reject Status = ", Api);
           if (Api.status && Api.status === 200) {
             toast.success(Api?.data?.message);
+            dispatch(updateAttendanceApprovalData(data));
           } else {
             toast.error(Api?.data?.message || Api?.data?.detail);
           }
