@@ -307,6 +307,19 @@ const InfoTable = ({
             notes: result.value,
             final_paid_hr_in_seconds: finalHr,
           };
+
+          const Api = await PostApi(
+            "attendance/approve-or-reject/",
+            data,
+            false
+          );
+          console.log("Approve OR Reject Status = ", Api);
+          if (Api.status && Api.status === 200) {
+            toast.success(Api?.data?.message);
+          } else {
+            toast.error(Api?.data?.message || Api?.data?.detail);
+          }
+
           console.log("Accepted Data", data);
         }
       } else {
