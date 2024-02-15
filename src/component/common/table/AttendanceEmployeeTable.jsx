@@ -32,7 +32,7 @@ import { PostApi } from "../../../common/api/PostApi";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
 import { updateIndividualAttendanceReportData } from "../../../redux/reducers/ChildReducer/AttendanceReportReducer";
 import { GetAmPmDateTime } from "../../../common/js/ConvertDateTimeToAmPm";
-import { differenceInMinutes } from 'date-fns';
+import { differenceInMinutes } from "date-fns";
 const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
 
@@ -83,29 +83,12 @@ const AttendanceEmployeeTable = () => {
 
     return (
       <Cell {...props} className="fw-bold">
-       <div style={{ display: 'flex', alignItems: 'center' }}>
-    <div>{format(new Date(rowData.date), "dd MMM, yyyy")}</div>
-    <span style={{ marginLeft: "5px" }}>{warning_icon}</span>
-  </div>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div>{format(new Date(rowData.date), "dd MMM, yyyy")}</div>
+          <span style={{ marginLeft: "5px" }}>{warning_icon}</span>
+        </div>
       </Cell>
     );
-  };
-  const CommonCellContent = ({ rowData, colspanValue, children }) => {
-    let textContent = "";
-
-    if (rowData.is_present) {
-      return children;
-    } else {
-      if (rowData.is_week_off || rowData.is_holiday) {
-        textContent = rowData.is_week_off ? "Week Off" : "Holiday";
-      }
-
-      return (
-        <Table.Cell colSpan={colspanValue} style={{ textAlign: "center" }}>
-          {textContent}
-        </Table.Cell>
-      );
-    }
   };
 
   const InOutCell = ({ rowData, dataKey, ...props }) => {
@@ -118,29 +101,25 @@ const AttendanceEmployeeTable = () => {
     let thisCellTime = dataKey === "in" ? in_time : out_time;
 
     return (
-      <CommonCellContent rowData={rowData} colspanValue={8}>
-        <Cell {...props} className="link-group">
-          {!!thisCellTime && thisCellTime}
-          {!!thisCellTime && (
-            <Link
-              className="link-opacity-75 ms-1"
-              href="#"
-              onClick={() => {
-                setTimelineList(rowData?.entry_log);
-                setTimeLineDate(
-                  format(new Date(rowData?.date), "dd MMM, yyyy")
-                );
-                open_timeline();
-              }}
-            >
-              +
-              {dataKey == "in"
-                ? rowData?.total_no_of_check_in
-                : rowData?.total_no_of_check_out}
-            </Link>
-          )}
-        </Cell>
-      </CommonCellContent>
+      <Cell {...props} className="link-group">
+        {!!thisCellTime && thisCellTime}
+        {!!thisCellTime && (
+          <Link
+            className="link-opacity-75 ms-1"
+            href="#"
+            onClick={() => {
+              setTimelineList(rowData?.entry_log);
+              setTimeLineDate(format(new Date(rowData?.date), "dd MMM, yyyy"));
+              open_timeline();
+            }}
+          >
+            +
+            {dataKey == "in"
+              ? rowData?.total_no_of_check_in
+              : rowData?.total_no_of_check_out}
+          </Link>
+        )}
+      </Cell>
     );
   };
 
@@ -150,92 +129,43 @@ const AttendanceEmployeeTable = () => {
     let location_text = dataKey === "in" ? in_location : out_location;
 
     return (
-      <CommonCellContent rowData={rowData} colspanValue={8}>
-        <Cell {...props} className="link-group">
-          {location_text !== "" && (
-            <>
-              <i className="mdi mdi-map-marker-outline"></i> {location_text}
-            </>
-          )}
-        </Cell>
-      </CommonCellContent>
+      <Cell {...props} className="link-group">
+        {location_text !== "" && (
+          <>
+            <i className="mdi mdi-map-marker-outline"></i> {location_text}
+          </>
+        )}
+      </Cell>
     );
   };
 
   const WorkScheduleCell = ({ rowData, dataKey, ...props }) => {
-    // let at_ws_data = ws_data.find(function (i) {
-    //   return i.id == rowData.work_schedule_id;
-    // });
-    // const date = new Date(rowData?.date);
-    // const dayOfWeek = new Intl.DateTimeFormat("en-US", {
-    //   weekday: "long",
-    // }).format(date);
-
-    // const work_hr = at_ws_data?.workday.find(
-    //   (val) => val.weekday.toLowerCase() === dayOfWeek.toLowerCase()
-    // );
-    // let total_work_duration = work_hr ? work_hr.total_work_duration : 0;
-
     let work_schedule_hr = ConvertSecondsToTime(
       rowData?.work_schedule_duration_without_break
     );
 
     return (
-      <CommonCellContent rowData={rowData} colspanValue={8}>
-        <Cell {...props} className="link-group">
-          {work_schedule_hr}
-        </Cell>
-      </CommonCellContent>
+      <Cell {...props} className="link-group">
+        {work_schedule_hr}
+      </Cell>
     );
   };
 
   const BreakHourCell = ({ rowData, dataKey, ...props }) => {
-    // let at_ws_data = ws_data.find(function (i) {
-    //   return i.id == rowData.work_schedule_id;
-    // });
-    // const date = new Date(rowData?.date);
-    // const dayOfWeek = new Intl.DateTimeFormat("en-US", {
-    //   weekday: "long",
-    // }).format(date);
-
-    // const work_hr = at_ws_data?.workday.find(
-    //   (val) => val.weekday.toLowerCase() === dayOfWeek.toLowerCase()
-    // );
-    // let break_hr_duration = work_hr ? work_hr.break_duration : 0;
-
     let break_schedule_hr = ConvertSecondsToTime(rowData.total_break_duration);
 
     return (
-      <CommonCellContent rowData={rowData} colspanValue={8}>
-        <Cell {...props} className="link-group">
-          {break_schedule_hr}
-        </Cell>
-      </CommonCellContent>
-    );
-  };
-
-  const WorkScheduleData = ({ rowData, dataKey, ...props }) => {
-    let at_ws_data = ws_data.find(function (i) {
-      return i.id == rowData.work_schedule_id;
-    });
-
-    let fullday_hr = at_ws_data?.fullday_hr || "";
-    let fullday_min = at_ws_data?.fullday_min || "";
-
-    return (
-      <Label {...props} className="link-group">
-        {fullday_hr} : {fullday_min}
-      </Label>
+      <Cell {...props} className="link-group">
+        {break_schedule_hr}
+      </Cell>
     );
   };
 
   const SecondsToTimeCell = ({ rowData, dataKey, ...props }) => {
     return (
-      <CommonCellContent rowData={rowData} colspanValue={8}>
-        <Cell {...props} className="link-group">
-          {` ${ConvertSecondsToTime(rowData[dataKey])}`}
-        </Cell>
-      </CommonCellContent>
+      <Cell {...props} className="link-group">
+        {` ${ConvertSecondsToTime(rowData[dataKey])}`}
+      </Cell>
     );
   };
 
@@ -768,89 +698,131 @@ const AttendanceEmployeeTable = () => {
       </Modal>
       {/* IN/OUT List Modal */}
       <Modal
-          isOpen={timeline_modal}
-          toggle={() => {
-            open_timeline();
-          }}
-          centered
-          className="custom-modal"
-        >
-          <ModalHeader>
-            <h5 className="modal-title" id="exampleModalToggleLabel" style={{ fontSize: 'smaller' }}>
-              Date: {timelineDate}
-            </h5>
-          </ModalHeader>
-          <ModalBody className="text-left">
-            <div>
-              <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>
-                        Check In <i className="mdi mdi-arrow-down-thick arrow-icon"></i>
-                      </th>
-                      <th>
-                        Check Out <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
-                      </th>
-                      <th>Total Hours</th>
-                      <th>Location</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {timelineList.length > 0 &&
-                      timelineList.map((data, idx) => {
-                        let checkInData = timelineList[idx];
-                        let checkOutData = timelineList[idx + 1];
-                        if (checkInData && parseInt(checkInData.entry_type) === 1) {
-                          let checkInTime = format(ParseTime(checkInData.entry_time), "h:mm a");
-                          let checkOutTime = checkOutData
-                            ? format(ParseTime(checkOutData.entry_time), "h:mm a")
-                            : "";
-                          let totalDifference = checkOutData ? differenceInMinutes(ParseTime(checkOutData.entry_time), ParseTime(checkInData.entry_time)) : 0;
-                          let totalHours = Math.floor(totalDifference / 60);
-                          let totalMinutes = totalDifference % 60;
+        isOpen={timeline_modal}
+        toggle={() => {
+          open_timeline();
+        }}
+        centered
+        className="custom-modal"
+      >
+        <ModalHeader>
+          <h5
+            className="modal-title"
+            id="exampleModalToggleLabel"
+            style={{ fontSize: "smaller" }}
+          >
+            Date: {timelineDate}
+          </h5>
+        </ModalHeader>
+        <ModalBody className="text-left">
+          <div>
+            <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>
+                      Check In{" "}
+                      <i className="mdi mdi-arrow-down-thick arrow-icon"></i>
+                    </th>
+                    <th>
+                      Check Out{" "}
+                      <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
+                    </th>
+                    <th>Total Hours</th>
+                    <th>Location</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timelineList.length > 0 &&
+                    timelineList.map((data, idx) => {
+                      let checkInData = timelineList[idx];
+                      let checkOutData = timelineList[idx + 1];
+                      if (
+                        checkInData &&
+                        parseInt(checkInData.entry_type) === 1
+                      ) {
+                        let checkInTime = format(
+                          ParseTime(checkInData.entry_time),
+                          "h:mm a"
+                        );
+                        let checkOutTime = checkOutData
+                          ? format(ParseTime(checkOutData.entry_time), "h:mm a")
+                          : "";
+                        let totalDifference = checkOutData
+                          ? differenceInMinutes(
+                              ParseTime(checkOutData.entry_time),
+                              ParseTime(checkInData.entry_time)
+                            )
+                          : 0;
+                        let totalHours = Math.floor(totalDifference / 60);
+                        let totalMinutes = totalDifference % 60;
 
-                        
-                          let formattedTotalHours = totalHours.toString().padStart(2, '0');
-                          let formattedTotalMinutes = totalMinutes.toString().padStart(2, '0');
+                        let formattedTotalHours = totalHours
+                          .toString()
+                          .padStart(2, "0");
+                        let formattedTotalMinutes = totalMinutes
+                          .toString()
+                          .padStart(2, "0");
 
-                          return (
-                            <tr key={idx}>
-                              <td>
-
-                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkInTime}</p>
-                              </td>
-                              <td>
-
-                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkOutTime}</p>
-                              </td>
-                              <td>
-                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{formattedTotalHours}:{formattedTotalMinutes} Hr</p>
-                              </td>
-                              <td>
-                                <small className="mb-0 text-muted">
-                                  <a href={`https://maps.google.com/?q=${checkInData.location}`} target="_blank" rel="noopener noreferrer">
-                                    <i className="mdi mdi-map-marker"></i> {checkInData.location || ""}
-                                  </a>
-                                </small>
-                              </td>
-                            </tr>
-                          );
-                        }
-                        return null; // Skip rendering if it's not a check-in entry
-                      })}
-                  </tbody>
-                </table>
-              </SimpleBar>
-              <div className="text-center mt-3">
-                <Button className="btn btn-warning" onClick={() => { open_timeline(); }}>
-                  Close
-                </Button>
-              </div>
+                        return (
+                          <tr key={idx}>
+                            <td>
+                              <p
+                                className="text-muted mb-1"
+                                style={{ fontWeight: "bold" }}
+                              >
+                                {checkInTime}
+                              </p>
+                            </td>
+                            <td>
+                              <p
+                                className="text-muted mb-1"
+                                style={{ fontWeight: "bold" }}
+                              >
+                                {checkOutTime}
+                              </p>
+                            </td>
+                            <td>
+                              <p
+                                className="text-muted mb-1"
+                                style={{ fontWeight: "bold" }}
+                              >
+                                {formattedTotalHours}:{formattedTotalMinutes} Hr
+                              </p>
+                            </td>
+                            <td>
+                              <small className="mb-0 text-muted">
+                                <a
+                                  href={`https://maps.google.com/?q=${checkInData.location}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <i className="mdi mdi-map-marker"></i>{" "}
+                                  {checkInData.location || ""}
+                                </a>
+                              </small>
+                            </td>
+                          </tr>
+                        );
+                      }
+                      return null; // Skip rendering if it's not a check-in entry
+                    })}
+                </tbody>
+              </table>
+            </SimpleBar>
+            <div className="text-center mt-3">
+              <Button
+                className="btn btn-warning"
+                onClick={() => {
+                  open_timeline();
+                }}
+              >
+                Close
+              </Button>
             </div>
-          </ModalBody>
-
-        </Modal>
+          </div>
+        </ModalBody>
+      </Modal>
       {/* Notes Modal */}
       <Modal
         isOpen={notes_modal}

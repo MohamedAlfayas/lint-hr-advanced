@@ -306,6 +306,7 @@ const InfoTable = ({
             hr_status: 2,
             notes: result.value,
             final_paid_hr_in_seconds: finalHr,
+            is_single_approval: true,
           };
 
           const Api = await PostApi(
@@ -387,10 +388,23 @@ const InfoTable = ({
           console.log("RESULT", result);
           const data = {
             id: [orderData.id],
-            final_paid_hr_in_seconds: orderData.final_paid_hr_in_seconds,
+            final_paid_hr_in_seconds: 0,
             hr_status: 4,
             notes: result.value,
+            is_single_approval: false,
           };
+          const Api = await PostApi(
+            "attendance/approve-or-reject/",
+            data,
+            false
+          );
+          console.log("Approve OR Reject Status = ", Api);
+          if (Api.status && Api.status === 200) {
+            toast.success(Api?.data?.message);
+          } else {
+            toast.error(Api?.data?.message || Api?.data?.detail);
+          }
+
           console.log("Rejected Data", data);
         }
       } else {
@@ -462,7 +476,20 @@ const InfoTable = ({
             id: selectedGroupIds,
             hr_status: 2,
             notes: result.value,
+            final_paid_hr_in_seconds: 0,
+            is_single_approval: false,
           };
+          const Api = await PostApi(
+            "attendance/approve-or-reject/",
+            data,
+            false
+          );
+          console.log("Approve OR Reject Status = ", Api);
+          if (Api.status && Api.status === 200) {
+            toast.success(Api?.data?.message);
+          } else {
+            toast.error(Api?.data?.message || Api?.data?.detail);
+          }
           console.log("data ====", data);
         }
       } else {
@@ -523,7 +550,21 @@ const InfoTable = ({
             id: selectedGroupIds,
             hr_status: 4,
             notes: result.value,
+            final_paid_hr_in_seconds: 0,
+            is_single_approval: false,
           };
+          const Api = await PostApi(
+            "attendance/approve-or-reject/",
+            data,
+            false
+          );
+          console.log("Approve OR Reject Status = ", Api);
+          if (Api.status && Api.status === 200) {
+            toast.success(Api?.data?.message);
+          } else {
+            toast.error(Api?.data?.message || Api?.data?.detail);
+          }
+
           console.log("Data", data);
         }
       } else {
