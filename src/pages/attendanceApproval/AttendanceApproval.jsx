@@ -20,7 +20,7 @@ import { ParseTime } from "../../common/js/ParseTime";
 import { ConvertSecondsToTime } from "../../common/js/ConvertSecondsToTime";
 import { Link } from "react-router-dom";
 import SimpleBar from "simplebar-react";
-
+import { differenceInMinutes } from 'date-fns';
 const AttendanceApproval = () => {
   const dispatch = useDispatch();
 
@@ -341,7 +341,7 @@ const AttendanceApproval = () => {
         filterOptions={filterOptions}
         width_per={"35%"}
       />
-        <Modal
+         <Modal
           isOpen={timeline_modal}
           toggle={() => {
             open_timeline();
@@ -366,6 +366,7 @@ const AttendanceApproval = () => {
                       <th>
                         Check Out <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
                       </th>
+                      <th>Total Hours</th>
                       <th>Location</th>
                     </tr>
                   </thead>
@@ -379,15 +380,26 @@ const AttendanceApproval = () => {
                           let checkOutTime = checkOutData
                             ? format(ParseTime(checkOutData.entry_time), "h:mm a")
                             : "";
+                          let totalDifference = checkOutData ? differenceInMinutes(ParseTime(checkOutData.entry_time), ParseTime(checkInData.entry_time)) : 0;
+                          let totalHours = Math.floor(totalDifference / 60);
+                          let totalMinutes = totalDifference % 60;
+
+                        
+                          let formattedTotalHours = totalHours.toString().padStart(2, '0');
+                          let formattedTotalMinutes = totalMinutes.toString().padStart(2, '0');
+
                           return (
                             <tr key={idx}>
                               <td>
-                              
+
                                 <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkInTime}</p>
                               </td>
                               <td>
-                              
+
                                 <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkOutTime}</p>
+                              </td>
+                              <td>
+                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{formattedTotalHours}:{formattedTotalMinutes} Hr</p>
                               </td>
                               <td>
                                 <small className="mb-0 text-muted">
@@ -406,7 +418,7 @@ const AttendanceApproval = () => {
               </SimpleBar>
               <div className="text-center mt-3">
                 <Button className="btn btn-warning" onClick={() => { open_timeline(); }}>
-                 Close
+                  Close
                 </Button>
               </div>
             </div>

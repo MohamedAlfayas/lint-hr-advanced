@@ -32,7 +32,7 @@ import { PostApi } from "../../../common/api/PostApi";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
 import { updateIndividualAttendanceReportData } from "../../../redux/reducers/ChildReducer/AttendanceReportReducer";
 import { GetAmPmDateTime } from "../../../common/js/ConvertDateTimeToAmPm";
-
+import { differenceInMinutes } from 'date-fns';
 const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
 
@@ -83,8 +83,10 @@ const AttendanceEmployeeTable = () => {
 
     return (
       <Cell {...props} className="fw-bold">
-        {format(new Date(rowData.date), "dd MMM, yyyy")}
-        <span style={{ marginLeft: "10px" }}>{warning_icon}</span>
+       <div style={{ display: 'flex', alignItems: 'center' }}>
+    <div>{format(new Date(rowData.date), "dd MMM, yyyy")}</div>
+    <span style={{ marginLeft: "5px" }}>{warning_icon}</span>
+  </div>
       </Cell>
     );
   };
@@ -790,6 +792,7 @@ const AttendanceEmployeeTable = () => {
                       <th>
                         Check Out <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
                       </th>
+                      <th>Total Hours</th>
                       <th>Location</th>
                     </tr>
                   </thead>
@@ -803,15 +806,26 @@ const AttendanceEmployeeTable = () => {
                           let checkOutTime = checkOutData
                             ? format(ParseTime(checkOutData.entry_time), "h:mm a")
                             : "";
+                          let totalDifference = checkOutData ? differenceInMinutes(ParseTime(checkOutData.entry_time), ParseTime(checkInData.entry_time)) : 0;
+                          let totalHours = Math.floor(totalDifference / 60);
+                          let totalMinutes = totalDifference % 60;
+
+                        
+                          let formattedTotalHours = totalHours.toString().padStart(2, '0');
+                          let formattedTotalMinutes = totalMinutes.toString().padStart(2, '0');
+
                           return (
                             <tr key={idx}>
                               <td>
-                              
+
                                 <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkInTime}</p>
                               </td>
                               <td>
-                              
+
                                 <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkOutTime}</p>
+                              </td>
+                              <td>
+                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{formattedTotalHours}:{formattedTotalMinutes} Hr</p>
                               </td>
                               <td>
                                 <small className="mb-0 text-muted">
@@ -830,7 +844,7 @@ const AttendanceEmployeeTable = () => {
               </SimpleBar>
               <div className="text-center mt-3">
                 <Button className="btn btn-warning" onClick={() => { open_timeline(); }}>
-                 Close
+                  Close
                 </Button>
               </div>
             </div>

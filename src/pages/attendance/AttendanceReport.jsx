@@ -32,6 +32,7 @@ import { setTeamDailyAttendanceReport } from "../../redux/reducers/ChildReducer/
 import { ParseTime } from "../../common/js/ParseTime";
 import * as XLSX from 'xlsx';
 import '../../common/css/lc_style.css'
+import { differenceInMinutes } from 'date-fns';
 const AttendanceReport = () => {
   document.title = `Attendance Report | ${MetaTitle}`;
 
@@ -50,7 +51,7 @@ const AttendanceReport = () => {
 
   useEffect(() => {
     const today = new Date();
-    const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
+    const thisMonth = `${today.getFullYear()}-${(today.getMonth())
       .toString()
       .padStart(2, "0")}`;
 
@@ -73,13 +74,13 @@ const AttendanceReport = () => {
         dispatch(setLoaderVisible(false));
       });
   };
-
   const [filterKeys, setFilterKeys] = useState({
-    month: `${new Date().getFullYear()}-${new Date()
-      .getMonth()
-      .toString()
-      .padStart(2, "0")}`,
+    month: `${new Date().getFullYear()}-${(new Date().getMonth()).toString().padStart(2, "0")}`,
   });
+  useEffect(() => {
+    getReportData(filterKeys.month);
+  }, [filterKeys.month]);
+
   const handleDateRangeChange = (e, monthStr) => {
     setFilterKeys({
       ...filterKeys,
@@ -87,37 +88,37 @@ const AttendanceReport = () => {
     });
   };
 
-  const handleFilter = async () => {
-    console.log("FILTER CLICKED !!!! === ", filterKeys);
+  // const handleFilter = async () => {
+  //   console.log("FILTER CLICKED !!!! === ", filterKeys);
 
-    dispatch(setLoaderVisible(true));
+  //   dispatch(setLoaderVisible(true));
 
-    const Api = await PostApi(
-      "report/get-attendance-report/",
-      filterKeys,
-      false
-    );
-    console.log("API RES = ", Api);
-    if (Api.status && Api.status === 200) {
-      dispatch(
-        setIndividualAttendanceReportData(
-          Api?.data?.data?.individual_attendance_report
-        )
-      );
-      dispatch(
-        setTeamAttendanceReportData(Api?.data?.data?.team_attendance_report)
-      );
-      if (filterKeys?.type === "2" && filterKeys?.employee === "0") {
-        dispatch(setShowTeamTable(true));
-      } else {
-        dispatch(setShowTeamTable(false));
-      }
-    } else {
-      toast.error(Api?.data?.message || Api?.data?.detail);
-    }
+  //   const Api = await PostApi(
+  //     "report/get-attendance-report/",
+  //     filterKeys,
+  //     false
+  //   );
+  //   console.log("API RES = ", Api);
+  //   if (Api.status && Api.status === 200) {
+  //     dispatch(
+  //       setIndividualAttendanceReportData(
+  //         Api?.data?.data?.individual_attendance_report
+  //       )
+  //     );
+  //     dispatch(
+  //       setTeamAttendanceReportData(Api?.data?.data?.team_attendance_report)
+  //     );
+  //     if (filterKeys?.type === "2" && filterKeys?.employee === "0") {
+  //       dispatch(setShowTeamTable(true));
+  //     } else {
+  //       dispatch(setShowTeamTable(false));
+  //     }
+  //   } else {
+  //     toast.error(Api?.data?.message || Api?.data?.detail);
+  //   }
 
-    dispatch(setLoaderVisible(false));
-  };
+  //   dispatch(setLoaderVisible(false));
+  // };
 
 
   const employeeDatesXls = Array.from(
@@ -132,10 +133,10 @@ const AttendanceReport = () => {
   const handleExport = () => {
     const wb = XLSX.utils.book_new();
 
-    
+
     const ws = XLSX.utils.aoa_to_sheet([]);
 
-    
+
     const headers = ['Employee Name', 'Email'];
     const subheaders = ['', ''];
     employeeDatesXls.forEach(date => {
@@ -146,22 +147,22 @@ const AttendanceReport = () => {
       subheaders.push('Check-in');
       subheaders.push('Check-out');
     });
-    headers.push('Total Days', 'Present Days'); 
+    headers.push('Total Days', 'Present Days');
     XLSX.utils.sheet_add_aoa(ws, [headers, subheaders], { origin: 'A1' });
 
-    
+
     team_daily_attendance_report.forEach((rowData, rowIndex) => {
       const row = [];
 
-     
+
       const foundEmployee = employee_data.find(emp => rowData.employee_id === emp.id);
       const emp_name = foundEmployee ? foundEmployee.fname : '';
 
-     
+
       row.push(emp_name);
       row.push(foundEmployee ? foundEmployee.email : '');
 
-     
+
       employeeDatesXls.forEach(date => {
         const attendance_data = rowData.workday_data.find(day => day.date === date);
         let attend_data =
@@ -172,10 +173,10 @@ const AttendanceReport = () => {
                   attendance_data && attendance_data.leave_taken_without_approval === true ? 'A' :
                     'A';
 
-       
+
         row.push(attend_data);
 
-     
+
         if (attendance_data) {
           const checkInLog = attendance_data.entry_log.find(log => parseInt(log.entry_type) === 1);
           const checkOutLog = attendance_data.entry_log.slice().reverse().find(log => parseInt(log.entry_type) !== 1);
@@ -189,18 +190,18 @@ const AttendanceReport = () => {
         }
       });
 
-    
+
       row.push(rowData.total_working_days_count);
       row.push(rowData.total_present_days_count);
 
-     
+
       XLSX.utils.sheet_add_aoa(ws, [row], { origin: `A${rowIndex + 3}` });
     });
 
-   
+
     XLSX.utils.book_append_sheet(wb, ws, "MySheet");
 
-   
+
     XLSX.writeFile(wb, "AttendanceReport.xlsx");
   };
 
@@ -210,7 +211,7 @@ const AttendanceReport = () => {
 
   function formatDate(dateString) {
     const dateObj = new Date(dateString);
-    const year = dateObj.getFullYear().toString().substr(2); 
+    const year = dateObj.getFullYear().toString().substr(2);
     const month = new Intl.DateTimeFormat("en", { month: "short" }).format(dateObj);
     const day = dateObj.getDate().toString().padStart(2, "0");
     return `${day} ${month} ${year}`;
@@ -510,6 +511,7 @@ const AttendanceReport = () => {
                       <th>
                         Check Out <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
                       </th>
+                      <th>Total Hours</th>
                       <th>Location</th>
                     </tr>
                   </thead>
@@ -523,15 +525,26 @@ const AttendanceReport = () => {
                           let checkOutTime = checkOutData
                             ? format(ParseTime(checkOutData.entry_time), "h:mm a")
                             : "";
+                          let totalDifference = checkOutData ? differenceInMinutes(ParseTime(checkOutData.entry_time), ParseTime(checkInData.entry_time)) : 0;
+                          let totalHours = Math.floor(totalDifference / 60);
+                          let totalMinutes = totalDifference % 60;
+
+                        
+                          let formattedTotalHours = totalHours.toString().padStart(2, '0');
+                          let formattedTotalMinutes = totalMinutes.toString().padStart(2, '0');
+
                           return (
                             <tr key={idx}>
                               <td>
-                              
+
                                 <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkInTime}</p>
                               </td>
                               <td>
-                              
+
                                 <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkOutTime}</p>
+                              </td>
+                              <td>
+                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{formattedTotalHours}:{formattedTotalMinutes} Hr</p>
                               </td>
                               <td>
                                 <small className="mb-0 text-muted">
@@ -550,7 +563,7 @@ const AttendanceReport = () => {
               </SimpleBar>
               <div className="text-center mt-3">
                 <Button className="btn btn-warning" onClick={() => { open_timeline(); }}>
-                 Close
+                  Close
                 </Button>
               </div>
             </div>
