@@ -50,6 +50,7 @@ const AttendanceEmployeeTable = () => {
   const [notes_modal, setNotes_modal] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [attendanceEditData, setAttendanceEditData] = useState(null);
+  const [hrStatus, setHrStatus] = useState(0);
 
   const [notesUpdateObj, setNotesUpdateObj] = useState(null);
   const [notesList, setNotesList] = useState([]);
@@ -92,135 +93,203 @@ const AttendanceEmployeeTable = () => {
   };
 
   const InOutCell = ({ rowData, dataKey, ...props }) => {
-    let in_time = rowData?.first_check_in
-      ? format(ParseTime(rowData?.first_check_in), "h:mm a")
-      : null;
-    let out_time = rowData?.last_check_out
-      ? format(ParseTime(rowData?.last_check_out), "h:mm a")
-      : null;
-    let thisCellTime = dataKey === "in" ? in_time : out_time;
+    if (rowData.is_present === false) {
+      return (
+        <Cell {...props} className="link-group">
+          {null}
+        </Cell>
+      );
+    } else {
+      let in_time = rowData?.first_check_in
+        ? format(ParseTime(rowData?.first_check_in), "h:mm a")
+        : null;
+      let out_time = rowData?.last_check_out
+        ? format(ParseTime(rowData?.last_check_out), "h:mm a")
+        : null;
+      let thisCellTime = dataKey === "in" ? in_time : out_time;
 
-    return (
-      <Cell {...props} className="link-group">
-        {!!thisCellTime && thisCellTime}
-        {!!thisCellTime && (
-          <Link
-            className="link-opacity-75 ms-1"
-            href="#"
-            onClick={() => {
-              setTimelineList(rowData?.entry_log);
-              setTimeLineDate(format(new Date(rowData?.date), "dd MMM, yyyy"));
-              open_timeline();
-            }}
-          >
-            +
-            {dataKey == "in"
-              ? rowData?.total_no_of_check_in
-              : rowData?.total_no_of_check_out}
-          </Link>
-        )}
-      </Cell>
-    );
+      return (
+        <Cell {...props} className="link-group">
+          {!!thisCellTime && thisCellTime}
+          {!!thisCellTime && (
+            <Link
+              className="link-opacity-75 ms-1"
+              href="#"
+              onClick={() => {
+                setTimelineList(rowData?.entry_log);
+                setTimeLineDate(
+                  format(new Date(rowData?.date), "dd MMM, yyyy")
+                );
+                open_timeline();
+              }}
+            >
+              +
+              {dataKey == "in"
+                ? rowData?.total_no_of_check_in
+                : rowData?.total_no_of_check_out}
+            </Link>
+          )}
+        </Cell>
+      );
+    }
   };
 
   const LocationCell = ({ rowData, dataKey, ...props }) => {
-    let in_location = rowData?.first_check_in_location || "";
-    let out_location = rowData?.last_check_out_location || "";
-    let location_text = dataKey === "in" ? in_location : out_location;
+    if (rowData.is_present === false) {
+      return (
+        <Cell {...props} className="link-group">
+          {null}
+        </Cell>
+      );
+    } else {
+      let in_location = rowData?.first_check_in_location || "";
+      let out_location = rowData?.last_check_out_location || "";
+      let location_text = dataKey === "in" ? in_location : out_location;
 
-    return (
-      <Cell {...props} className="link-group">
-        {location_text !== "" && (
-          <>
-            <i className="mdi mdi-map-marker-outline"></i> {location_text}
-          </>
-        )}
-      </Cell>
-    );
+      return (
+        <Cell {...props} className="link-group">
+          {location_text !== "" && (
+            <>
+              <i className="mdi mdi-map-marker-outline"></i> {location_text}
+            </>
+          )}
+        </Cell>
+      );
+    }
   };
 
   const WorkScheduleCell = ({ rowData, dataKey, ...props }) => {
-    let work_schedule_hr = ConvertSecondsToTime(
-      rowData?.work_schedule_duration_without_break
-    );
-
     return (
       <Cell {...props} className="link-group">
-        {work_schedule_hr}
+        {rowData.is_leave_approved === true ? (
+          <strong>Leave</strong>
+        ) : rowData.is_holiday === true ? (
+          <strong>Holiday</strong>
+        ) : rowData.is_week_off === true ? (
+          <strong>Week Off</strong>
+        ) : rowData.is_present === false ? (
+          <strong>Absent</strong>
+        ) : (
+          ConvertSecondsToTime(rowData?.work_schedule_duration_without_break)
+        )}
       </Cell>
     );
   };
 
   const BreakHourCell = ({ rowData, dataKey, ...props }) => {
-    let break_schedule_hr = ConvertSecondsToTime(rowData.total_break_duration);
+    if (rowData.is_present === false) {
+      return (
+        <Cell {...props} className="link-group">
+          {null}
+        </Cell>
+      );
+    } else {
+      let break_schedule_hr = ConvertSecondsToTime(
+        rowData.total_break_duration
+      );
 
-    return (
-      <Cell {...props} className="link-group">
-        {break_schedule_hr}
-      </Cell>
-    );
+      return (
+        <Cell {...props} className="link-group">
+          {break_schedule_hr}
+        </Cell>
+      );
+    }
   };
 
   const SecondsToTimeCell = ({ rowData, dataKey, ...props }) => {
-    return (
-      <Cell {...props} className="link-group">
-        {` ${ConvertSecondsToTime(rowData[dataKey])}`}
-      </Cell>
-    );
-  };
-
-  const HrStatusCell = ({ rowData, dataKey, ...props }) => {
-    let at_hr_status_data = hr_status_options.find(function (i) {
-      return i.id == rowData.hr_status;
-    });
-
-    let class_name = at_hr_status_data?.class || "";
-    let label = at_hr_status_data?.label || "";
-
-    return (
-      <Cell {...props} className="link-group">
-        <span className={`badge bg-${class_name}-subtle text-${class_name}`}>
-          <b className="fs-7"> {label}</b>
-        </span>
-      </Cell>
-    );
-  };
-
-  const NotesCell = ({ rowData, dataKey, ...props }) => {
-    return (
-      <Cell {...props} className="link-group">
-        <Link
-          className="link-opacity-75 ms-1"
-          href="#"
-          onClick={() => viewNotes(rowData)}
-        >
-          {rowData.notes.length} Notes
-        </Link>
-      </Cell>
-    );
-  };
-
-  const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
-    if (
-      rowData?.status === false &&
-      (rowData?.hr_status === 1 || rowData?.hr_status === 3)
-    ) {
+    if (rowData.is_present === false) {
       return (
-        <Cell style={{ padding: "6px" }} {...props}>
-          <Button
-            appearance="link"
-            onClick={() => editAttendanceReport(rowData)}
-          >
-            Edit
-          </Button>
+        <Cell {...props} className="link-group">
+          {null}
         </Cell>
       );
     } else {
       return (
-        <Cell style={{ padding: "6px" }} {...props}>
-          ------
+        <Cell {...props} className="link-group">
+          {` ${ConvertSecondsToTime(rowData[dataKey])}`}
         </Cell>
       );
+    }
+  };
+
+  const HrStatusCell = ({ rowData, dataKey, ...props }) => {
+    if (rowData.is_present === false) {
+      return (
+        <Cell {...props} className="link-group">
+          {null}
+        </Cell>
+      );
+    } else {
+      let at_hr_status_data = hr_status_options.find(function (i) {
+        return i.id == rowData.hr_status;
+      });
+
+      let class_name = at_hr_status_data?.class || "";
+      let label = at_hr_status_data?.label || "";
+
+      return (
+        <Cell {...props} className="link-group">
+          <span className={`badge bg-${class_name}-subtle text-${class_name}`}>
+            <b className="fs-7"> {label}</b>
+          </span>
+        </Cell>
+      );
+    }
+  };
+
+  const NotesCell = ({ rowData, dataKey, ...props }) => {
+    if (rowData.is_present === false) {
+      return (
+        <Cell {...props} className="link-group">
+          {null}
+        </Cell>
+      );
+    } else {
+      return (
+        <Cell {...props} className="link-group">
+          <Link
+            className="link-opacity-75 ms-1"
+            href="#"
+            onClick={() => viewNotes(rowData)}
+          >
+            {rowData.notes.length} Notes
+          </Link>
+        </Cell>
+      );
+    }
+  };
+
+  const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
+    if (rowData.is_holiday === true || rowData.is_week_off === true) {
+      return (
+        <Cell {...props} className="link-group">
+          {null}
+        </Cell>
+      );
+    } else {
+      if (
+        rowData?.status === false &&
+        (rowData?.hr_status === 1 ||
+          rowData?.hr_status === 3 ||
+          rowData?.hr_status === 4)
+      ) {
+        return (
+          <Cell style={{ padding: "6px" }} {...props}>
+            <Button
+              appearance="link"
+              onClick={() => editAttendanceReport(rowData)}
+            >
+              Edit
+            </Button>
+          </Cell>
+        );
+      } else {
+        return (
+          <Cell style={{ padding: "6px" }} {...props}>
+            ------
+          </Cell>
+        );
+      }
     }
   };
 
@@ -353,6 +422,7 @@ const AttendanceEmployeeTable = () => {
     setNotesUpdateObj(initial_obj);
 
     setNotesList(rowData?.notes);
+    setHrStatus(rowData?.hr_status);
 
     setNotes_modal(true);
   };
@@ -831,6 +901,15 @@ const AttendanceEmployeeTable = () => {
         }}
         centered
       >
+        <ModalHeader>
+          <h5
+            className="modal-title"
+            id="exampleModalToggleLabel"
+            style={{ fontSize: "smaller" }}
+          >
+            Notes
+          </h5>
+        </ModalHeader>
         <ModalBody className="text-left">
           <div>
             <SimpleBar style={{ height: "300px" }} className="px-3 mx-n3 mb-2">
@@ -889,32 +968,34 @@ const AttendanceEmployeeTable = () => {
             </SimpleBar>
             <form className="mt-4">
               <Row className="g-3">
-                <Col xs={12}>
-                  <label
-                    htmlFor="exampleFormControlTextarea1"
-                    className="form-label text-body"
-                  >
-                    Leave a Notes
-                  </label>
-                  <textarea
-                    className="form-control bg-light border-light"
-                    id="exampleFormControlTextarea1"
-                    rows="3"
-                    placeholder="Enter your comment..."
-                    value={notesUpdateObj?.notes || ""}
-                    onChange={(e) =>
-                      setNotesUpdateObj({
-                        ...notesUpdateObj,
-                        notes: e.target.value,
-                      })
-                    }
-                  ></textarea>
-                </Col>
+                {hrStatus != 2 && (
+                  <Col xs={12}>
+                    <label
+                      htmlFor="exampleFormControlTextarea1"
+                      className="form-label text-body"
+                    >
+                      Leave a Notes
+                    </label>
+                    <textarea
+                      className="form-control bg-light border-light"
+                      id="exampleFormControlTextarea1"
+                      rows="3"
+                      placeholder="Enter your comment..."
+                      value={notesUpdateObj?.notes || ""}
+                      onChange={(e) =>
+                        setNotesUpdateObj({
+                          ...notesUpdateObj,
+                          notes: e.target.value,
+                        })
+                      }
+                    ></textarea>
+                  </Col>
+                )}
                 <Col xs={12} className="text-end">
                   <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
                     <button
                       type="button"
-                      className="btn w-sm btn-light"
+                      className="btn btn-warning"
                       data-bs-dismiss="modal"
                       onClick={closeNotesModal}
                     >
@@ -922,7 +1003,8 @@ const AttendanceEmployeeTable = () => {
                     </button>
 
                     {!!notesUpdateObj?.notes &&
-                      (notesUpdateObj?.notes).trim().length > 0 && (
+                      (notesUpdateObj?.notes).trim().length > 0 &&
+                      hrStatus != 2 && (
                         <button
                           type="button"
                           className="btn w-sm btn-success"
