@@ -1910,7 +1910,7 @@ export const export_sample_data_info = [
   },
 ];
 
-export const path_list_for_timer_hide = ["/attendance", "/dashboard"];
+export const path_list_for_timer_hide = ["/attendance"];
 
 export const week_list = [
   { id: 0, label: "Sunday", value: 0 },
