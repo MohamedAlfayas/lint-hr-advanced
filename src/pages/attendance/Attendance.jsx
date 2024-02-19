@@ -22,17 +22,21 @@ import {
 } from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
 import { Api } from "../../common/api/Api";
 import AttendanceFilter from "./AttendanceFilter";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 
 const AttendanceDashboard = () => {
   document.title = `Attendance Overview | ${MetaTitle}`;
 
   const dispatch = useDispatch();
 
+  const { showLoader } = useSelector((state) => state.LoaderReducer);
+
   const { showTeamTable } = useSelector(
     (state) => state.AttendanceReportReducer
   );
 
   useEffect(() => {
+    dispatch(setLoaderVisible(true));
     const today = new Date();
     const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
       .toString()
@@ -43,10 +47,12 @@ const AttendanceDashboard = () => {
       url: "attendance/get_attendance_entry_log/?thisMonth=" + thisMonth,
     })
       .then((res) => {
+        dispatch(setLoaderVisible(false));
         dispatch(setIndividualAttendanceReportData(res?.data?.data));
         dispatch(setShowTeamTable(false));
       })
       .catch((err) => {
+        dispatch(setLoaderVisible(false));
         console.log("Something Went Wrong !!");
       });
   }, []);

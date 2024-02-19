@@ -115,7 +115,7 @@ const WorkSchedule = () => {
       name: "",
       description: "",
       timezone: "Asia/Kolkata",
-      auto_clock_out: false,
+      auto_clock_out: true,
       has_ot: false,
       is_default: false,
       status: false,

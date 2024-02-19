@@ -13,6 +13,8 @@ import {
   ModalBody,
   Badge,
   UncontrolledTooltip,
+  Row,
+  Col,
 } from "reactstrap";
 import { setAttendanceApprovalTableFilterKeys } from "../../redux/reducers/ChildReducer/TableFilterReducer";
 import { format } from "date-fns";
@@ -21,6 +23,7 @@ import { ConvertSecondsToTime } from "../../common/js/ConvertSecondsToTime";
 import { Link } from "react-router-dom";
 import SimpleBar from "simplebar-react";
 import { differenceInMinutes } from "date-fns";
+import { GetAmPmDateTime } from "../../common/js/ConvertDateTimeToAmPm";
 const AttendanceApproval = () => {
   const dispatch = useDispatch();
 
@@ -61,10 +64,23 @@ const AttendanceApproval = () => {
   const [timelineList, setTimelineList] = useState([]);
   const [timelineDate, setTimeLineDate] = useState("");
   const [timeline_modal, settimeline_modal] = useState(false);
+  const [notes_modal, setNotes_modal] = useState(false);
+  const [notesList, setNotesList] = useState([]);
+  const closeNotesModal = () => {
+    setNotes_modal(false);
+  };
 
   function open_timeline() {
     settimeline_modal(!timeline_modal);
   }
+
+  const viewNotes = (obj) => {
+    console.log("This rowData = ", obj);
+
+    setNotesList(obj?.notes);
+
+    setNotes_modal(true);
+  };
 
   const additionalColumn = [
     {
@@ -279,6 +295,26 @@ const AttendanceApproval = () => {
         return <React.Fragment>{final_hr}</React.Fragment>;
       },
     },
+    {
+      Header: "Notes",
+      accessor: "notes",
+      filterable: false,
+      id: "notes",
+      accessor: (obj) => {
+        return (
+          <React.Fragment>
+            {" "}
+            <Link
+              className="link-opacity-75 ms-1"
+              href="#"
+              onClick={() => viewNotes(obj)}
+            >
+              {obj.notes.length} Notes
+            </Link>
+          </React.Fragment>
+        );
+      },
+    },
 
     {
       Header: "Status",
@@ -293,7 +329,7 @@ const AttendanceApproval = () => {
             : "Rejected";
         let statusClass =
           obj.hr_status === 2
-            ? "sucess"
+            ? "success"
             : obj.hr_status === 3
             ? "primary"
             : "danger";
@@ -466,6 +502,97 @@ const AttendanceApproval = () => {
                 Close
               </Button>
             </div>
+          </div>
+        </ModalBody>
+      </Modal>
+      <Modal
+        isOpen={notes_modal}
+        toggle={() => {
+          closeNotesModal();
+        }}
+        centered
+      >
+        <ModalHeader>
+          <h5
+            className="modal-title"
+            id="exampleModalToggleLabel"
+            style={{ fontSize: "smaller" }}
+          >
+            Notes
+          </h5>
+        </ModalHeader>
+        <ModalBody className="text-left">
+          <div>
+            <SimpleBar style={{ height: "300px" }} className="px-3 mx-n3 mb-2">
+              {!!notesList &&
+                notesList.map((d) => {
+                  let emp_details =
+                    !!EmployeeData &&
+                    EmployeeData.find((e) => e.id === d.employee_id);
+
+                  return (
+                    <div className="d-flex mb-4">
+                      <div className="flex-shrink-0">
+                        {emp_details?.profile_url ? (
+                          <img
+                            src={emp_details?.profile_url}
+                            alt=""
+                            className="avatar-xs rounded-circle"
+                            style={{ objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div
+                            className="avatar-xs rounded-circle"
+                            style={{
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              background: "#0ab39c",
+                              objectFit: "cover",
+                            }}
+                            data-bs-toggle="tooltip"
+                            title={emp_details.fname}
+                          >
+                            <span
+                              className="first_letter"
+                              style={{ color: "white" }}
+                            >
+                              {emp_details.fname.charAt(0)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-grow-1 ms-3">
+                        <h5 className="fs-13">
+                          {emp_details.fname}{" "}
+                          <small className="text-muted ms-2">
+                            {/* 20 Dec 2021 - 05:47AM */}
+                            {GetAmPmDateTime(d?.created_time)}
+                          </small>
+                        </h5>
+                        <p className="text-muted">{d?.message}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+            </SimpleBar>
+            <form className="mt-4">
+              <Row className="g-3">
+                <Col xs={12} className="text-end">
+                  <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
+                    <button
+                      type="button"
+                      className="btn btn-warning"
+                      data-bs-dismiss="modal"
+                      onClick={closeNotesModal}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </Col>
+              </Row>
+            </form>
           </div>
         </ModalBody>
       </Modal>

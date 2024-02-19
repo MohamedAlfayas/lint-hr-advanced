@@ -78,8 +78,12 @@ const AttendanceOverview = () => {
             parseFloat(daily_work_hour_duration_without_break) -
             parseFloat(final_paid_hr_count);
 
-          balance_hr_count =
-            parseFloat(balance_hours_diff) > 0 ? balance_hours_diff : 0;
+          if (d.is_holiday === true || d.is_week_off === true) {
+            balance_hr_count = 0;
+          } else {
+            balance_hr_count =
+              parseFloat(balance_hours_diff) > 0 ? balance_hours_diff : 0;
+          }
 
           holiday_hours_count = 0;
           weekend_hours_count = 0;

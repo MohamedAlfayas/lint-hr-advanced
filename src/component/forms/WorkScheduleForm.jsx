@@ -620,7 +620,7 @@ const WorkScheduleForm = () => {
                     </Col>
                   </Row>
 
-                  <Col lg={12}>
+                  {/* <Col lg={12}>
                     <div>
                       <Label for="auto_clock_out_cb" className="form-label">
                         Auto Clock Out
@@ -639,7 +639,7 @@ const WorkScheduleForm = () => {
                         />
                       </div>
                     </div>
-                  </Col>
+                  </Col> */}
 
                   <Col lg={12}>
                     <div>

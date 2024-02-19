@@ -260,7 +260,7 @@ const AttendanceEmployeeTable = () => {
   };
 
   const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
-    if (rowData.is_holiday === true || rowData.is_week_off === true) {
+    if (rowData.is_holiday === true) {
       return (
         <Cell {...props} className="link-group">
           {null}
@@ -275,18 +275,40 @@ const AttendanceEmployeeTable = () => {
       ) {
         return (
           <Cell style={{ padding: "6px" }} {...props}>
-            <Button
+            <ul className="list-inline hstack gap-2 mb-0">
+              <li className="list-inline-item edit">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-primary d-inline-block edit-item-btn"
+                  onClick={() => editAttendanceReport(rowData)}
+                >
+                  <i className="ri-pencil-fill fs-16"></i>
+                </Link>
+              </li>
+              <li className="list-inline-item">
+                <Link
+                  to="#"
+                  className="text-success d-inline-block remove-item-btn"
+                  // onClick={() => {
+                  //   const orderData = cellProps.row.original;
+                  // }}
+                >
+                  <i className="ri-edit-box-line"></i>
+                </Link>
+              </li>
+            </ul>
+            {/* <Button
               appearance="link"
               onClick={() => editAttendanceReport(rowData)}
             >
               Edit
-            </Button>
+            </Button> */}
           </Cell>
         );
       } else {
         return (
           <Cell style={{ padding: "6px" }} {...props}>
-            ------
+            <span>-</span>
           </Cell>
         );
       }
