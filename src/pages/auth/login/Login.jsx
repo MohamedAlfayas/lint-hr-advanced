@@ -69,7 +69,7 @@ const Login = () => {
       console.log("Form Values = ", values);
       // localStorage.setItem("token", "abc");
       values["username"] = values.email;
-      values["logged_by"] = 2;
+      values["device_type"] = 1;
 
       axios({
         method: "POST",
