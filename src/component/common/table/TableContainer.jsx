@@ -21,9 +21,11 @@ import {
   leave_approval_component_name,
   leave_type_component_name,
   attendance_approval_component_name,
+  holiday_component_name,
 } from "../../../common/constant/Constants";
 import LeaveApprovalFilter from "../tableFilter/LeaveApprovalFilter";
 import LeaveTypeFilter from "../tableFilter/LeaveTypeFilter";
+import HolidayFilter from "../tableFilter/HolidayFilter";
 import { useDispatch, useSelector } from "react-redux";
 import { setTableFilterSearchText } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
 
@@ -161,6 +163,7 @@ const TableContainer = ({
                 <AttednaceApprovalFilter />
               )}
               {formname === leave_type_component_name && <LeaveTypeFilter />}
+              {formname === holiday_component_name && <HolidayFilter />}
 
               {/* <Col md={2}>
                 <div>

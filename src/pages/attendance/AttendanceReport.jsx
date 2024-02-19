@@ -130,25 +130,31 @@ const AttendanceReport = () => {
   );
 
 
+
+
   const handleExport = () => {
     const wb = XLSX.utils.book_new();
 
 
     const ws = XLSX.utils.aoa_to_sheet([]);
-
+    const headerStyle = { font: { bold: true } };
 
     const headers = ['Employee Name', 'Email'];
     const subheaders = ['', ''];
     employeeDatesXls.forEach(date => {
+      headers.push('');
       headers.push('');
       headers.push(formatDate(date));
       headers.push('');
       subheaders.push('Attendance');
       subheaders.push('Check-in');
       subheaders.push('Check-out');
+      subheaders.push('Duration');
+     
     });
     headers.push('Total Days', 'Present Days');
-    XLSX.utils.sheet_add_aoa(ws, [headers, subheaders], { origin: 'A1' });
+    
+    XLSX.utils.sheet_add_aoa(ws, [headers, subheaders], { origin: 'A1',style: [headerStyle,headerStyle] });
 
 
     team_daily_attendance_report.forEach((rowData, rowIndex) => {
@@ -156,9 +162,10 @@ const AttendanceReport = () => {
 
 
       const foundEmployee = employee_data.find(emp => rowData.employee_id === emp.id);
+      // const emp_id = foundEmployee ? foundEmployee.emp_id : ' ;'
       const emp_name = foundEmployee ? foundEmployee.fname : '';
 
-
+      // row.push(emp_id);
       row.push(emp_name);
       row.push(foundEmployee ? foundEmployee.email : '');
 
@@ -182,9 +189,19 @@ const AttendanceReport = () => {
           const checkOutLog = attendance_data.entry_log.slice().reverse().find(log => parseInt(log.entry_type) !== 1);
           const firstCheckIn = checkInLog ? format(ParseTime(checkInLog.entry_time), "h:mm a") : '';
           const lastCheckOut = checkOutLog ? format(ParseTime(checkOutLog.entry_time), "h:mm a") : '';
+          const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds)
+          const entryLogLength = attendance_data.entry_log.length;
+          let duration = ''; 
+    if (entryLogLength === 0) {
+        duration = total_hour; 
+    } else {
+        duration = `${total_hour}(${entryLogLength})`; 
+    }
           row.push(firstCheckIn);
           row.push(lastCheckOut);
+          row.push(duration);
         } else {
+          row.push('');
           row.push('');
           row.push('');
         }
@@ -224,7 +241,7 @@ const AttendanceReport = () => {
     settimeline_modal(!timeline_modal);
   }
 
-  const FixedColumns = ({ rowData, dataKey, ...props }) => {
+  const FixedColumns = ({ rowData,index, dataKey, ...props }) => {
     let foundEmployee;
     let emp_name = (foundEmployee = employee_data.find(
       (emp) => rowData.employee_id === emp.id
@@ -291,7 +308,7 @@ const AttendanceReport = () => {
       </div>
     );
     return (
-      <Cell {...props} dataKey="id">
+      <Cell {...props} dataKey="id" style={{ backgroundColor: index % 2 === 0 ? 'white' : '#e6f7ff' }}>
         {html_tag}
       </Cell>
     );
@@ -368,23 +385,23 @@ const AttendanceReport = () => {
       );
     };
 
-    employeeDates.forEach((date) => {
+    employeeDates.forEach((date,index) => {
       const dynamicColumn = (
         <ColumnGroup
-          key={`date_${date}`}
-          align="center"
-          header={formatDate(date)}
-        >
-          <Column width={100} align="center">
-            <HeaderCell>Attendance</HeaderCell>
-            <AttendanceData date={date} />
-          </Column>
+        key={`date_${date}`}
+        align="center"
+        header={<span style={{ fontWeight: 'bold' }}>{formatDate(date)}</span>}
+      >
+        <Column width={100} align="center" style={{ backgroundColor: index % 2 === 0 ? 'white' : '#e6f7ff' }}>
+          <HeaderCell style={{ fontWeight: 'bold' }}>Attendance</HeaderCell>
+          <AttendanceData date={date} />
+        </Column>
 
-          <Column width={80} align="center" title="In">
-            <HeaderCell>In/Out</HeaderCell>
-            <InOut date={date} />
-          </Column>
-        </ColumnGroup>
+        <Column width={80} align="center" title="In" style={{ backgroundColor: index % 2 === 0 ? 'white' : '	#e6f7ff' }}>
+          <HeaderCell style={{ fontWeight: 'bold' }}>In/Out</HeaderCell>
+          <InOut date={date} />
+        </Column>
+      </ColumnGroup>
       );
 
       allDynamicColumns.push(dynamicColumn);
@@ -401,6 +418,7 @@ const AttendanceReport = () => {
 
           borderRadius: "1px",
           padding: "18px",
+        fontWeight: 'bold' ,
         }}
       >
         Total Days
@@ -414,7 +432,9 @@ const AttendanceReport = () => {
 
           borderRadius: "1px",
           padding: "18px",
+          fontWeight: 'bold',
         }}
+        
       >
         Present Days
       </HeaderCell>
@@ -478,6 +498,7 @@ const AttendanceReport = () => {
                 background: "#e6f7ff",
                 borderRadius: "1px",
                 padding: "18px",
+                fontWeight: 'bold' ,
               }}
             >
               Employee
