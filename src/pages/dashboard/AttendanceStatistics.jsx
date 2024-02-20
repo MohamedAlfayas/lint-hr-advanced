@@ -8,19 +8,90 @@ import {
 } from "reactstrap";
 import { useSelector, useDispatch } from "react-redux";
 
-//import Images
-import btc from "../../assets/images/svg/crypto-icons/btc.svg";
-import eth from "../../assets/images/svg/crypto-icons/eth.svg";
-import ltc from "../../assets/images/svg/crypto-icons/ltc.svg";
-import dash from "../../assets/images/svg/crypto-icons/dash.svg";
-
-import { createSelector } from "reselect";
 import ReactApexChart from "react-apexcharts";
 
 const AttendanceStatistics = () => {
   const dispatch = useDispatch();
 
   const [chartData, setchartData] = useState([]);
+
+  const [checkedInData, setCheckedInData] = useState([]);
+  const [notCheckedInData, setNotCheckedInData] = useState([]);
+  const [onLeaveData, setOnLeaveData] = useState([]);
+  const [checkedOutData, setCheckedOutData] = useState([]);
+
+  const [checkedInPer, setCheckedInPer] = useState(0);
+  const [notCheckedInPer, setNotCheckedInPer] = useState(0);
+  const [onLeavePer, setOnLeavePer] = useState(0);
+  const [checkedOutPer, setCheckedOutPer] = useState(0);
+
+  const { team_todays_attendance } = useSelector(
+    (state) => state.TeamTodaysAttendanceReducer
+  );
+
+  console.log("notCheckedInPer = ", notCheckedInPer);
+
+  useEffect(() => {
+    console.log("Stastics Report = ", team_todays_attendance);
+
+    let ch_in_data = [];
+    let not_ch_in_data = [];
+    let ol_data = [];
+    let ch_out_data = [];
+
+    if (!!team_todays_attendance && team_todays_attendance?.length) {
+      team_todays_attendance.map((d) => {
+        if (d.is_present === true) {
+          if (d.currently_checked_in) {
+            ch_in_data.push(d);
+          } else {
+            ch_out_data.push(d);
+          }
+        } else if (d.is_leave_approved === true) {
+          ol_data.push(d);
+        } else {
+          not_ch_in_data.push(d);
+        }
+      });
+
+      setCheckedInData(ch_in_data);
+      setNotCheckedInData(not_ch_in_data);
+      setOnLeaveData(ol_data);
+      setCheckedOutData(ch_out_data);
+
+      setCheckedInPer(
+        Math.round(
+          (parseInt(ch_in_data?.length) /
+            parseInt(team_todays_attendance.length)) *
+            100
+        )
+      );
+
+      setNotCheckedInPer(
+        Math.round(
+          (parseInt(not_ch_in_data?.length) /
+            parseInt(team_todays_attendance.length)) *
+            100
+        )
+      );
+
+      setOnLeavePer(
+        Math.round(
+          (parseInt(ol_data?.length) /
+            parseInt(team_todays_attendance.length)) *
+            100
+        )
+      );
+
+      setCheckedOutPer(
+        Math.round(
+          (parseInt(ch_out_data?.length) /
+            parseInt(team_todays_attendance.length)) *
+            100
+        )
+      );
+    }
+  }, [team_todays_attendance]);
 
   const getChartColorsArray = (colors) => {
     colors = JSON.parse(colors);
@@ -81,7 +152,7 @@ const AttendanceStatistics = () => {
               fontWeight: 500,
               offsetY: 5,
               formatter: function (val) {
-                return "$" + val;
+                return val + "%";
               },
             },
             total: {
@@ -92,10 +163,9 @@ const AttendanceStatistics = () => {
               fontWeight: 500,
               formatter: function (w) {
                 return (
-                  "$" +
                   w.globals.seriesTotals.reduce(function (a, b) {
                     return a + b;
-                  }, 0)
+                  }, 0) + "%"
                 );
               },
             },
@@ -112,7 +182,7 @@ const AttendanceStatistics = () => {
     yaxis: {
       labels: {
         formatter: function (value) {
-          return "$" + value;
+          return value + "%";
         },
       },
     },
@@ -136,7 +206,12 @@ const AttendanceStatistics = () => {
             <ReactApexChart
               dir="ltr"
               options={options}
-              series={[44, 55, 41, 17]}
+              series={[
+                checkedInPer,
+                notCheckedInPer,
+                onLeavePer,
+                checkedOutPer,
+              ]}
               type="donut"
               height="224"
               className="apex-charts"
@@ -157,12 +232,15 @@ const AttendanceStatistics = () => {
                     <h6 className="mb-1">Checked In</h6>
                     <p className="fs-12 mb-0 text-muted">
                       <i className="mdi mdi-circle fs-10 align-middle text-primary me-1"></i>
-                      Male : 15 / Female : 10
+                      Male :{" "}
+                      {checkedInData.filter((d) => d.gender === 1).length} /
+                      Female :{" "}
+                      {checkedInData.filter((d) => d.gender === 2).length}
                     </p>
                   </div>
                   <div className="flex-shrink-0 text-end">
-                    <h6 className="mb-1">25</h6>
-                    <p className="text-success fs-12 mb-0">25% </p>
+                    <h6 className="mb-1">{checkedInData?.length}</h6>
+                    <p className="text-success fs-12 mb-0">{checkedInPer}%</p>
                   </div>
                 </div>
               </li>
@@ -180,12 +258,15 @@ const AttendanceStatistics = () => {
                     <h6 className="mb-1">Not Checked In</h6>
                     <p className="fs-12 mb-0 text-muted">
                       <i className="mdi mdi-circle fs-10 align-middle text-info me-1"></i>
-                      Male : 22 / Female : 8
+                      Male :{" "}
+                      {notCheckedInData.filter((d) => d.gender === 1).length} /
+                      Female :{" "}
+                      {notCheckedInData.filter((d) => d.gender === 2).length}
                     </p>
                   </div>
                   <div className="flex-shrink-0 text-end">
-                    <h6 className="mb-1">30</h6>
-                    <p className="text-danger fs-12 mb-0">30%</p>
+                    <h6 className="mb-1">{notCheckedInData?.length}</h6>
+                    <p className="text-danger fs-12 mb-0">{notCheckedInPer}%</p>
                   </div>
                 </div>
               </li>
@@ -203,12 +284,14 @@ const AttendanceStatistics = () => {
                     <h6 className="mb-1">On Leave</h6>
                     <p className="fs-12 mb-0 text-muted">
                       <i className="mdi mdi-circle fs-10 align-middle text-warning me-1"></i>
-                      Male : 2 / Female : 3
+                      Male : {onLeaveData.filter((d) => d.gender === 1).length}{" "}
+                      / Female :{" "}
+                      {onLeaveData.filter((d) => d.gender === 2).length}
                     </p>
                   </div>
                   <div className="flex-shrink-0 text-end">
-                    <h6 className="mb-1">5</h6>
-                    <p className="text-success fs-12 mb-0">5%</p>
+                    <h6 className="mb-1">{onLeaveData?.length}</h6>
+                    <p className="text-success fs-12 mb-0">{onLeavePer}%</p>
                   </div>
                 </div>
               </li>
@@ -226,12 +309,15 @@ const AttendanceStatistics = () => {
                     <h6 className="mb-1">Checked Out</h6>
                     <p className="fs-12 mb-0 text-muted">
                       <i className="mdi mdi-circle fs-10 align-middle text-success me-1"></i>
-                      Male : 31 / Female : 9
+                      Male :{" "}
+                      {checkedOutData.filter((d) => d.gender === 1).length} /
+                      Female :{" "}
+                      {checkedOutData.filter((d) => d.gender === 2).length}
                     </p>
                   </div>
                   <div className="flex-shrink-0 text-end">
-                    <h6 className="mb-1"> 40</h6>
-                    <p className="text-success fs-12 mb-0">40%</p>
+                    <h6 className="mb-1">{checkedOutData?.length}</h6>
+                    <p className="text-success fs-12 mb-0">{checkedOutPer}%</p>
                   </div>
                 </div>
               </li>
