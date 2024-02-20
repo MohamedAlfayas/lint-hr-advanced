@@ -524,11 +524,11 @@ const AttendanceApproval = () => {
         <ModalBody className="text-left">
           <div>
             <SimpleBar style={{ height: "300px" }} className="px-3 mx-n3 mb-2">
-              {!!notesList &&
+              {notesList && notesList.length > 0 ? (
                 notesList.map((d) => {
                   let emp_details =
-                    !!EmployeeData &&
-                    EmployeeData.find((e) => e.id === d.employee_id);
+                    !!employee_data &&
+                    employee_data.find((e) => e.id === d.employee_id);
 
                   return (
                     <div className="d-flex mb-4">
@@ -575,7 +575,40 @@ const AttendanceApproval = () => {
                       </div>
                     </div>
                   );
-                })}
+                })
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "25vh",
+                  }}
+                >
+                  <lord-icon
+                    src="https://cdn.lordicon.com/msoeawqm.json"
+                    trigger="loop"
+                    colors="primary:#405189,secondary:#0ab39c"
+                    style={{
+                      marginTop: "20px",
+                      width: "150px",
+                      height: "80px",
+                      marginBottom: "20px",
+                    }}
+                  ></lord-icon>
+                  <p
+                    style={{
+                      width: "300px",
+                      color: "#405189",
+                      fontSize: "20px",
+                      textAlign: "center",
+                    }}
+                  >
+                    No Notes Found!
+                  </p>
+                </div>
+              )}
             </SimpleBar>
             <form className="mt-4">
               <Row className="g-3">

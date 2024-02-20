@@ -1,19 +1,32 @@
 import React, { Fragment, useEffect, useState } from "react";
-import { Table } from "rsuite";
+import {
+  Table,
+  IconButton,
+  Dropdown,
+  Icon,
+  Whisper,
+  Popover,
+  ButtonToolbar,
+} from "rsuite";
+import AlignJustifyIcon from "@rsuite/icons/legacy/AlignJustify";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import {
   Badge,
-  Button,
   Card,
   CardBody,
   CardHeader,
   Col,
   Input,
   Label,
+  Button,
   Modal,
   ModalBody,
   ModalHeader,
   Row,
+  UncontrolledDropdown,
+  DropdownToggle,
+  DropdownMenu,
+  DropdownItem,
 } from "reactstrap";
 import {
   AllMinuteOptions,
@@ -51,6 +64,8 @@ const AttendanceEmployeeTable = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [attendanceEditData, setAttendanceEditData] = useState(null);
   const [hrStatus, setHrStatus] = useState(0);
+  const [notesLength, setNotesLength] = useState(0);
+  const [date, setDate] = useState();
 
   const [notesUpdateObj, setNotesUpdateObj] = useState(null);
   const [notesList, setNotesList] = useState([]);
@@ -260,6 +275,44 @@ const AttendanceEmployeeTable = () => {
   };
 
   const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
+    const dropdownItems = [
+      {
+        label: "Edit Attendance",
+        icon: <i className="ri-pencil-line"></i>,
+        onClick: () => editAttendanceReport(rowData),
+      },
+      {
+        label: "Apply Leave",
+        icon: <i className="ri-check-line"></i>,
+        // onClick:()=>editAttendanceReport(rowData),
+      },
+    ];
+    let dropdownMenu;
+    if (rowData.leave_taken_without_approval === true) {
+      dropdownMenu = (
+        <Popover>
+          <Dropdown.Menu>
+            {dropdownItems.map((item, index) => (
+              <Dropdown.Item key={index} onClick={item.onClick}>
+                {item.icon} {item.label}
+              </Dropdown.Item>
+            ))}
+          </Dropdown.Menu>
+        </Popover>
+      );
+    } else {
+      const firstItemInDropdown = dropdownItems[0];
+      dropdownMenu = (
+        <Popover>
+          <Dropdown.Menu>
+            <Dropdown.Item onClick={firstItemInDropdown.onClick}>
+              {firstItemInDropdown.icon} {firstItemInDropdown.label}
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Popover>
+      );
+    }
+
     if (rowData.is_holiday === true) {
       return (
         <Cell {...props} className="link-group">
@@ -274,29 +327,34 @@ const AttendanceEmployeeTable = () => {
           rowData?.hr_status === 4)
       ) {
         return (
-          <Cell style={{ padding: "6px" }} {...props}>
-            <ul className="list-inline hstack gap-2 mb-0">
-              <li className="list-inline-item edit">
-                <Link
-                  to="javascript:void(0)"
-                  className="text-primary d-inline-block edit-item-btn"
-                  onClick={() => editAttendanceReport(rowData)}
-                >
-                  <i className="ri-pencil-fill fs-16"></i>
-                </Link>
-              </li>
-              <li className="list-inline-item">
-                <Link
-                  to="#"
-                  className="text-success d-inline-block remove-item-btn"
-                  // onClick={() => {
-                  //   const orderData = cellProps.row.original;
-                  // }}
-                >
-                  <i className="ri-edit-box-line"></i>
-                </Link>
-              </li>
-            </ul>
+          <Cell
+            {...props}
+            className="link-group"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <div className="rsuite-table-dropdown">
+              <Whisper
+                placement="autoEnd"
+                trigger="click"
+                speaker={dropdownMenu}
+              >
+                <ButtonToolbar>
+                  <IconButton
+                    appearance="subtle"
+                    icon={
+                      <span className="text-primary d-inline-block edit-item-btn fs-16">
+                        <i className="mdi mdi-dots-horizontal"></i>
+                      </span>
+                    }
+                  />
+                </ButtonToolbar>
+              </Whisper>
+            </div>
+
             {/* <Button
               appearance="link"
               onClick={() => editAttendanceReport(rowData)}
@@ -307,7 +365,14 @@ const AttendanceEmployeeTable = () => {
         );
       } else {
         return (
-          <Cell style={{ padding: "6px" }} {...props}>
+          <Cell
+            {...props}
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
             <span>-</span>
           </Cell>
         );
@@ -445,6 +510,8 @@ const AttendanceEmployeeTable = () => {
 
     setNotesList(rowData?.notes);
     setHrStatus(rowData?.hr_status);
+    setNotesLength(rowData?.entry_log.length);
+    setDate(rowData?.date);
 
     setNotes_modal(true);
   };
@@ -531,7 +598,7 @@ const AttendanceEmployeeTable = () => {
         </Column>
 
         <Column width={80} fixed="right">
-          <HeaderCell>Action</HeaderCell>
+          <HeaderCell fixed="center">Action</HeaderCell>
           <EditableCell />
         </Column>
       </Table>
@@ -935,7 +1002,7 @@ const AttendanceEmployeeTable = () => {
         <ModalBody className="text-left">
           <div>
             <SimpleBar style={{ height: "300px" }} className="px-3 mx-n3 mb-2">
-              {!!notesList &&
+              {notesList && notesList.length > 0 ? (
                 notesList.map((d) => {
                   let emp_details =
                     !!employee_data &&
@@ -986,7 +1053,40 @@ const AttendanceEmployeeTable = () => {
                       </div>
                     </div>
                   );
-                })}
+                })
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "25vh",
+                  }}
+                >
+                  <lord-icon
+                    src="https://cdn.lordicon.com/msoeawqm.json"
+                    trigger="loop"
+                    colors="primary:#405189,secondary:#0ab39c"
+                    style={{
+                      marginTop: "20px",
+                      width: "150px",
+                      height: "80px",
+                      marginBottom: "20px",
+                    }}
+                  ></lord-icon>
+                  <p
+                    style={{
+                      width: "300px",
+                      color: "#405189",
+                      fontSize: "20px",
+                      textAlign: "center",
+                    }}
+                  >
+                    No Notes Found!
+                  </p>
+                </div>
+              )}
             </SimpleBar>
             <form className="mt-4">
               <Row className="g-3">
