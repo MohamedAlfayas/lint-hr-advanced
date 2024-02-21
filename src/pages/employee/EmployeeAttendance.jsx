@@ -1,36 +1,100 @@
 import { DatePicker } from "antd";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Select from "react-select";
 import { Card, CardBody, CardHeader, Col, Row } from "reactstrap";
 import {
   MonthFormat,
   hr_status_options,
   record_options,
-  attendance_type_options,
 } from "../../common/constant/Constants";
 import AttendanceOverview from "../attendance/AttendanceOverview";
 import AttendanceEmployeeTable from "../../component/common/table/AttendanceEmployeeTable";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  setIndividualAttendanceReportData,
+  setShowTeamTable,
+  setTeamAttendanceReportData,
+} from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
+import dayjs from "dayjs";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { PostApi } from "../../common/api/PostApi";
+const EmployeeAttendance = ({ profileObj }) => {
+  const dispatch = useDispatch();
 
-const EmployeeAttendance = (props) => {
-  const { profileObj } = props;
   useEffect(() => {
-    if (
-      thisEmployeeData !== undefined &&
-      thisEmployeeData !== null &&
-      Object.keys(thisEmployeeData).length > 0
-    ) {
-      let updated_filter_keys = {
-        ...filterKeys,
-        employee: profileObj?.id,
-      };
+    let updated_filter_keys = {
+      ...filterKeys,
+      employee: profileObj?.id,
+    };
+    BuildTable(updated_filter_keys);
+    setFilterKeys(updated_filter_keys);
+  }, [profileObj]);
 
-      BuildTable(updated_filter_keys);
+  const [filterKeys, setFilterKeys] = useState({
+    thisMonth: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}`,
+    hr_status: "0",
+    record: "0",
+    type: "2",
+    employee: "0",
+  });
 
-      setFilterKeys(updated_filter_keys);
+  const { showTeamTable } = useSelector(
+    (state) => state.AttendanceReportReducer
+  );
+
+  const BuildTable = async (payload) => {
+    dispatch(setLoaderVisible(true));
+
+    const Api = await PostApi("report/get-attendance-report/", payload, false);
+    console.log("API RES = ", Api?.data?.data);
+    if (Api.status && Api.status === 200) {
+      dispatch(
+        setIndividualAttendanceReportData(
+          Api?.data?.data?.individual_attendance_report
+        )
+      );
+      dispatch(
+        setTeamAttendanceReportData(Api?.data?.data?.team_attendance_report)
+      );
+      if (filterKeys?.type === "2" && filterKeys?.employee === "0") {
+        dispatch(setShowTeamTable(true));
+      } else {
+        dispatch(setShowTeamTable(false));
+      }
     } else {
-      navigate("/404");
+      toast.error(Api?.data?.message || Api?.data?.detail);
     }
-  }, []);
+
+    dispatch(setLoaderVisible(false));
+  };
+
+  const handleDateRangeChange = (e, monthStr) => {
+    setFilterKeys({
+      ...filterKeys,
+      thisMonth: monthStr,
+    });
+  };
+
+  const handleHRStatusChange = (e) => {
+    setFilterKeys({
+      ...filterKeys,
+      hr_status: e.value,
+    });
+  };
+
+  const handleRecordChange = (e) => {
+    setFilterKeys({
+      ...filterKeys,
+      record: e.value,
+    });
+  };
+
+  const handleFilter = async () => {
+    BuildTable(filterKeys);
+  };
+
   return (
     <div>
       <React.Fragment>

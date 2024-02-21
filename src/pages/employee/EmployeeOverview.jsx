@@ -24,6 +24,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import SwiperCore, { Autoplay } from "swiper";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { gender_options } from "../../common/constant/Constants";
+import SimpleBar from "simplebar-react";
 
 const EmployeeOverview = (props) => {
   SwiperCore.use([Autoplay]);
@@ -58,14 +59,7 @@ const EmployeeOverview = (props) => {
           </Card>
 
           <Card>
-            <div
-              style={{
-                height: "400px",
-                overflowY: "auto",
-                scrollbarWidth: "thin",
-                scrollbarColor: "transparent transparent",
-              }}
-            >
+            <SimpleBar style={{ maxHeight: "400px" }}>
               <CardBody>
                 <h5 className="card-title mb-3">Info</h5>
                 <div className="table-responsive">
@@ -188,7 +182,7 @@ const EmployeeOverview = (props) => {
                   </Table>
                 </div>
               </CardBody>
-            </div>
+            </SimpleBar>
           </Card>
 
           <Card>
@@ -505,14 +499,7 @@ const EmployeeOverview = (props) => {
           <Row>
             <Col lg={12}>
               <Card>
-                <div
-                  style={{
-                    height: "400px",
-                    overflowY: "auto",
-                    scrollbarWidth: "thin",
-                    scrollbarColor: "transparent transparent",
-                  }}
-                >
+                <SimpleBar style={{ maxHeight: "400px" }}>
                   <CardHeader className="align-items-center d-flex">
                     <h4 className="card-title mb-0  me-2">Recent Activity</h4>
                     <div className="flex-shrink-0 ms-auto">
@@ -1432,7 +1419,7 @@ const EmployeeOverview = (props) => {
                       </TabPane>
                     </TabContent>
                   </CardBody>
-                </div>
+                </SimpleBar>
               </Card>
             </Col>
           </Row>

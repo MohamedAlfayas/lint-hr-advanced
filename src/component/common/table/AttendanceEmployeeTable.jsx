@@ -7,6 +7,7 @@ import {
   Whisper,
   Popover,
   ButtonToolbar,
+  Menu,
 } from "rsuite";
 import AlignJustifyIcon from "@rsuite/icons/legacy/AlignJustify";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
@@ -32,6 +33,7 @@ import {
   AllMinuteOptions,
   hourOptions,
   hr_status_options,
+  leave_application_component_name,
 } from "../../../common/constant/Constants";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
@@ -46,6 +48,13 @@ import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderRed
 import { updateIndividualAttendanceReportData } from "../../../redux/reducers/ChildReducer/AttendanceReportReducer";
 import { GetAmPmDateTime } from "../../../common/js/ConvertDateTimeToAmPm";
 import { differenceInMinutes } from "date-fns";
+import {
+  setComponentToShow,
+  setFormObj,
+  setFormTitle,
+  setFormWidthPercentage,
+  toggleRSBView,
+} from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
 const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
 
@@ -284,7 +293,7 @@ const AttendanceEmployeeTable = () => {
       {
         label: "Apply Leave",
         icon: <i className="ri-check-line"></i>,
-        // onClick:()=>editAttendanceReport(rowData),
+        onClick: () => applyLeaveForm(),
       },
     ];
     let dropdownMenu;
@@ -476,6 +485,25 @@ const AttendanceEmployeeTable = () => {
     setShowSaveBtn(false);
 
     setEditModalOpen(true);
+  };
+
+  const applyLeaveForm = () => {
+    const initialFormObj = {
+      id: 0,
+      leave_type: 0,
+      reason: "",
+      start: null,
+      end: null,
+      requested_leave_count: 0,
+      status: 1,
+      day_type: 1,
+      in_between_dates: [],
+    };
+    dispatch(setFormTitle(leave_application_component_name));
+    dispatch(setFormObj(initialFormObj));
+    // dispatch(setFormWidthPercentage("45%"));
+    dispatch(setComponentToShow(leave_application_component_name));
+    dispatch(toggleRSBView(true));
   };
 
   const updateAttendance = async () => {
