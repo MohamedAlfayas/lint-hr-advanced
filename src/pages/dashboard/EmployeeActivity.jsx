@@ -33,8 +33,6 @@ const EmployeeActivity = (props) => {
     (state) => state.TeamTodaysAttendanceReducer
   );
 
-  console.log("Team todays Atte = ", team_todays_attendance);
-
   const dispatch = useDispatch();
 
   useEffect(() => {
