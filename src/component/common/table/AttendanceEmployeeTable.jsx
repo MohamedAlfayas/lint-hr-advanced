@@ -55,6 +55,8 @@ import {
   setFormWidthPercentage,
   toggleRSBView,
 } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
+import { setLeaveTypeForCurrentEmployee } from "../../../redux/reducers/ChildReducer/LeaveTypeReducer";
+
 const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
 
@@ -63,7 +65,8 @@ const AttendanceEmployeeTable = () => {
 
   const ws_data = GetLocalStorageData("work_schedule") || [];
   const holiday_data = GetLocalStorageData("holiday") || [];
-  const leave_types_data = GetLocalStorageData("leave_types") || [];
+  const leaves_type_employee =
+    GetLocalStorageData("leave_types_for_employee") || [];
   const employee_data = GetLocalStorageData("employee") || [];
 
   const [timeline_modal, settimeline_modal] = useState(false);
@@ -86,6 +89,14 @@ const AttendanceEmployeeTable = () => {
   const { individual_attendance_report_data } = useSelector(
     (state) => state.AttendanceReportReducer
   );
+
+  const day_leave_types = leaves_type_employee.filter((d) => d.unit === 1);
+  console.log("DAy Leaves", day_leave_types);
+  const hour_types = leaves_type_employee.filter((d) => d.unit === 2);
+  console.log("hour", hour_types);
+  // const { leave_type_for_current_employee } = useSelector(
+  //   (state) => state.LeaveTypeReducer
+  // );
 
   function open_timeline() {
     settimeline_modal(!timeline_modal);
@@ -1172,31 +1183,76 @@ const AttendanceEmployeeTable = () => {
         centered
         className="custom-modal"
       >
-        <ModalHeader>
+        <ModalHeader className="d-flex justify-content-center">
           <h5
-            className="modal-title"
+            className="modal-title center"
             id="exampleModalToggleLabel"
             style={{ fontSize: "smaller" }}
           >
-            Apply Leave {format(new Date(leaveDate), "dd MMM, yyyy")}
+            Apply Leave on {format(new Date(leaveDate), "dd MMM, yyyy")}
           </h5>
         </ModalHeader>
         <ModalBody className="text-left">
-          <div>
-            <SimpleBar
-              style={{ maxHeight: "410px" }}
-              className="p-3 pt-0"
-            ></SimpleBar>
-            <div className="text-center mt-3">
-              <Button
-                className="btn btn-warning"
-                onClick={() => {
-                  closeLeaveModal();
-                }}
-              >
-                Close
-              </Button>
-            </div>
+          <Col md={12} lg={12} xxl={12}>
+            <Row className="mb-2">
+              <Col>
+                <Label htmlFor="calculation" className="form-label">
+                  Leave Type:
+                </Label>
+              </Col>
+              <Col>
+                <Select
+                  name="leave_type"
+                  isMulti={false}
+                  options={day_leave_types || []}
+                  // value={
+                  //   leaveapplyObj?.leave_type
+                  //     ? leave_type_for_current_employee.find(
+                  //         (d) => d.id === leaveapplyObj?.leave_type
+                  //       )
+                  //     : []
+                  // }
+                  // onChange={handleLeaveTypeChange}
+                  placeholder="Select Leave Type"
+                  className="basic-multi-select"
+                />
+              </Col>
+            </Row>
+          </Col>
+          <Col md={12} lg={12} xxl={12}>
+            <Row className="mt-4">
+              <Col>
+                <Label htmlFor="calculation" className="form-label">
+                  Reason:
+                </Label>
+              </Col>
+              <Col>
+                <textarea
+                  className="form-control bg-light border-light"
+                  id="exampleFormControlTextarea1"
+                  rows="3"
+                  placeholder="Enter Reason"
+                  // value={notesUpdateObj?.notes || ""}
+                  // onChange={(e) =>
+                  //   setNotesUpdateObj({
+                  //     ...notesUpdateObj,
+                  //     notes: e.target.value,
+                  //   })
+                  // }
+                ></textarea>
+              </Col>
+            </Row>
+          </Col>
+
+          <div className="text-center mt-5">
+            <Button
+              className="btn btn-warning"
+              onClick={() => {
+                closeLeaveModal();
+              }}
+            >
+              Close
+            </Button>
           </div>
         </ModalBody>
       </Modal>
