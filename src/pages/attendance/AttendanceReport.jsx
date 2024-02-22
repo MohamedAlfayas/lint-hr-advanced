@@ -192,11 +192,12 @@ const AttendanceReport = () => {
                     bottom: { style: 'thin' },
                     right: { style: 'thin' }
                 };
+                cell.alignment = { horizontal: 'center' }; // Center align the content
             });
         });
     }
 
-    team_daily_attendance_report.forEach((rowData, rowIndex) => {
+    team_daily_attendance_report.forEach((rowData, rowIndex,colIndex) => {
         const row = [];
         const foundEmployee = employee_data.find(emp => rowData.employee_id === emp.id);
         const emp_name = foundEmployee ? foundEmployee.fname : '';
@@ -241,7 +242,11 @@ const AttendanceReport = () => {
             if (value === 'P' || value === 'A') {
                 fontColor = value === 'P' ? '00FF00' : 'FF0000'; 
                 isBold = true;
-            } else if (value === 'WO' || value === 'H' || value === 'L') {
+              } else if (value === 'WO') {
+                fontColor = '888888';
+                isBold = true;
+            } else if (value === 'H' || value === 'L') {
+                fontColor = '000000'; 
                 isBold = true;
             }
 
@@ -253,6 +258,176 @@ const AttendanceReport = () => {
             if (cellNumber > 1) {
                 cell.alignment = { horizontal: 'center' };
             }
+            if (cellNumber >= 7 && cellNumber <= 10) {
+              const fillColor = colIndex % 2 === 0 ? 'FFFFFF' : 'e6f7ff';
+              cell.fill = {
+                  type: 'pattern',
+                  pattern: 'solid',
+                  fgColor: { argb: fillColor }, 
+              };
+          } else if (cellNumber >= 11 && cellNumber <= 14) {
+              cell.fill = {
+                  type: 'pattern',
+                  pattern: 'solid',
+                  fgColor: { argb: 'FFFFFF' }, 
+              };
+          } else if (cellNumber >= 15 && cellNumber <= 18) {
+              cell.fill = {
+                  type: 'pattern',
+                  pattern: 'solid',
+                  fgColor: { argb: 'e6f7ff' }, 
+              };
+          }else if (cellNumber >= 19 && cellNumber <= 22) {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFFFFF' }, 
+            };
+        }else if (cellNumber >= 23 && cellNumber <= 26) {
+          cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'e6f7ff' }, 
+          };
+      }else if (cellNumber >= 27 && cellNumber <= 30) {
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFF' }, 
+        };
+    }else if (cellNumber >= 31 && cellNumber <= 34) {
+      cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'e6f7ff' }, 
+      };
+  }else if (cellNumber >= 35 && cellNumber <= 38) {
+    cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFFFF' }, 
+    };
+}else if (cellNumber >= 39 && cellNumber <= 42) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'e6f7ff' }, 
+  };
+}else if (cellNumber >= 43 && cellNumber <= 46) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFFF' }, 
+  };
+}else if (cellNumber >= 47 && cellNumber <= 50) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'e6f7ff' }, 
+  };
+}else if (cellNumber >= 51 && cellNumber <= 54) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFFF' }, 
+  };
+}else if (cellNumber >= 55 && cellNumber <= 58) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'e6f7ff' }, 
+  };
+}else if (cellNumber >= 59 && cellNumber <= 62) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFFF' }, 
+  };
+}else if (cellNumber >= 63 && cellNumber <= 66) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'e6f7ff' }, 
+  };
+}else if (cellNumber >= 67 && cellNumber <= 70) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFFF' }, 
+  };
+}else if (cellNumber >= 71 && cellNumber <= 74) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'e6f7ff' }, 
+  };
+}else if (cellNumber >= 75 && cellNumber <= 78) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFFF' }, 
+  };
+}else if (cellNumber >= 79 && cellNumber <= 82) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'e6f7ff' }, 
+  };
+}else if (cellNumber >= 83 && cellNumber <= 86) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFFF' }, 
+  };
+}else if (cellNumber >= 87 && cellNumber <= 90) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'e6f7ff' }, 
+  };
+}else if (cellNumber >= 91 && cellNumber <= 94) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFFF' }, 
+  };
+}else if (cellNumber >= 95 && cellNumber <= 98) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'e6f7ff' }, 
+  };
+}else if (cellNumber >= 99 && cellNumber <= 102) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFFF' }, 
+  };
+}else if (cellNumber >= 103 && cellNumber <= 106) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'e6f7ff' }, 
+  };
+}else if (cellNumber >= 107 && cellNumber <= 110) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFFF' }, 
+  };
+}else if (cellNumber >= 15 && cellNumber <= 18) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'e6f7ff' }, 
+  };
+}else if (cellNumber >= 15 && cellNumber <= 18) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'e6f7ff' }, 
+  };
+}
         });
     });
 
@@ -279,6 +454,19 @@ const AttendanceReport = () => {
         column.width = maxLength < 10 ? 10 : maxLength + 2;
     });
 
+    // Apply borders to all cells
+    sheet.eachRow(row => {
+      row.eachCell(cell => {
+          cell.border = {
+              top: { style: 'thin' },
+              left: { style: 'thin' },
+              bottom: { style: 'thin' },
+              right: { style: 'thin' }
+          };
+          cell.alignment = { horizontal: 'center' }; // Center align the content
+      });
+  });
+
     workbook.xlsx.writeBuffer().then(data => {
         const blob = new Blob([data], {
             type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -286,11 +474,29 @@ const AttendanceReport = () => {
         const url = window.URL.createObjectURL(blob);
         const anchor = document.createElement('a');
         anchor.href = url;
-        anchor.download = 'AttendanceReport.xlsx';
-        anchor.click();
-        window.URL.revokeObjectURL(url);
+        const employeeDatesXls = Array.from(
+          new Set(
+              team_daily_attendance_report.flatMap((employee) =>
+                  employee.workday_data.map((report) => report.date)
+              )
+          )
+      );
+      
+      const monthYear = employeeDatesXls.map(dateString => {
+          const date = new Date(dateString);
+          const month = date.toLocaleString('default', { month: 'short' }); 
+          const year = date.getFullYear(); 
+          return `${month}${year}`;
+      });
+      
+      const filename = `Attendance_Report_${monthYear[0]}.xlsx`; // Assuming you want to use the first month-year combination in the array
+      
+      anchor.download = filename;
+      anchor.click();
+      window.URL.revokeObjectURL(url);
     });
 };
+
 
 
 
