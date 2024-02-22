@@ -142,6 +142,16 @@ const AttendanceReport = () => {
         ],
     });
     sheet.properties.defaultRowHeight = 20;
+    sheet.autoFilter = {
+      from: {
+          row: 1, // Assuming your headers start from row 1
+          column: 1 // Assuming "Employee Name" is the first column
+      },
+      to: {
+          row: 2, // Assuming all rows are populated
+          column: 2 // Assuming "Email" is the second column
+      }
+  };
 
     const headers = ['Employee Name', 'Email'];
     const subheaders = ['', ''];
@@ -434,6 +444,20 @@ const AttendanceReport = () => {
       fgColor: { argb: 'e6f7ff' }, 
   };
 }
+// employeeDatesXls.forEach((date, colIndex) => {
+//   let fillColor;
+//   if ((cellNumber + 1) % 8 >= 4 && (cellNumber + 1) % 8 <= 7) {
+//       fillColor = colIndex % 2 === 0 ? 'FFFFFF' : 'e6f7ff';
+//   } else {
+//       fillColor = colIndex % 2 === 0 ? 'e6f7ff' : 'FFFFFF';
+//   }
+
+//   cell.fill = {
+//       type: 'pattern',
+//       pattern: 'solid',
+//       fgColor: { argb: fillColor }, 
+//   };
+// });
         });
     });
 
@@ -472,7 +496,8 @@ const AttendanceReport = () => {
           cell.alignment = { horizontal: 'center' }; // Center align the content
       });
   });
-
+  // const additionalSheet = workbook.addWorksheet("Additional Data");
+  // additionalSheet.addRow(["Additional", "Data", "Goes", "Here"]);
     workbook.xlsx.writeBuffer().then(data => {
         const blob = new Blob([data], {
             type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -502,389 +527,6 @@ const AttendanceReport = () => {
       window.URL.revokeObjectURL(url);
     });
 };
-
-
-
-
-  
-
-//   const exportExcelFile = () => {
-//     const workbook = new ExcelJs.Workbook();
-//     const sheet = workbook.addWorksheet("My Sheet", {
-//         views: [
-//             {
-//                 state: "frozen",
-//                 xSplit: 2,  // Number of columns to freeze, excluding the "Employee Name" and "Email" columns
-//                 ySplit: 2,  // Number of rows to freeze, excluding header rows
-//             },
-//         ],
-//     });
-//     sheet.properties.defaultRowHeight = 25;
-
-//     // Define columns
-//     const headers = ['Employee Name', 'Email'];
-//     const subheaders = ['', ''];
-//     const employeeDatesXls = Array.from(
-//         new Set(
-//             team_daily_attendance_report.flatMap((employee) =>
-//                 employee.workday_data.map((report) => report.date)
-//             )
-//         )
-//     );
-
-//     employeeDatesXls.forEach((date, index) => {
-//         headers.push('');
-//         headers.push('');
-//         headers.push(formatDate(date));
-//         headers.push('');
-//         subheaders.push('Attendance');
-//         subheaders.push('Check-in');
-//         subheaders.push('Check-out');
-//         subheaders.push('Duration');
-//     });
-
-//     headers.push('Total Days', 'Present Days');
-//     const headerRow = sheet.addRow(headers);
-//     const subheaderRow = sheet.addRow(subheaders);
-
-//     // Bold header and subheader cells
-//     headerRow.font = { bold: true };
-//     subheaderRow.font = { bold: true };
-
-//     // Merge cells for date headers and align to center
-//     for (let i = 0; i < employeeDatesXls.length; i++) {
-//         const startCol = i * 4 + 3;
-//         const endCol = i * 4 + 6;
-//         const dateHeader = formatDate(employeeDatesXls[i]);
-
-//         sheet.mergeCells(1, startCol, 1, endCol); // Merge date header cells
-//         const mergedCell = sheet.getCell(1, startCol);
-//         mergedCell.value = dateHeader; // Set the value of the merged cell
-//         mergedCell.alignment = { horizontal: 'center' }; // Align merged cells to center
-
-//         // Apply alternating background colors to date columns
-//         if (i % 2 === 0) {
-//             // Even index
-//             [0, 1, 2, 3].forEach(offset => { // Apply to "Attendance", "Check-in", "Check-out", and "Duration" headers
-//                 const col = startCol + offset;
-//                 sheet.getColumn(col).eachCell({ includeEmpty: true }, (cell) => {
-//                     cell.fill = {
-//                         type: 'pattern',
-//                         pattern: 'solid',
-//                         fgColor: { argb: 'FFFFFF' }, // White color for even columns
-//                     };
-//                     cell.border = {
-//                         top: { style: 'thin' },
-//                         left: { style: 'thin' },
-//                         bottom: { style: 'thin' },
-//                         right: { style: 'thin' }
-//                     };
-//                 });
-//             });
-//         } else {
-//             // Odd index
-//             [0, 1, 2, 3].forEach(offset => { // Apply to "Attendance", "Check-in", "Check-out", and "Duration" headers
-//                 const col = startCol + offset;
-//                 sheet.getColumn(col).eachCell({ includeEmpty: true }, (cell) => {
-//                     cell.fill = {
-//                         type: 'pattern',
-//                         pattern: 'solid',
-//                         fgColor: { argb: 'e6f7ff' }, // Light green color for odd columns
-//                     };
-//                     cell.border = {
-//                         top: { style: 'thin' },
-//                         left: { style: 'thin' },
-//                         bottom: { style: 'thin' },
-//                         right: { style: 'thin' }
-//                     };
-//                 });
-//             });
-//         }
-//     }
-
-//     // Populate data and set alignment to center
-//     team_daily_attendance_report.forEach((rowData, rowIndex) => {
-//         const row = [];
-//         const foundEmployee = employee_data.find(emp => rowData.employee_id === emp.id);
-//         const emp_name = foundEmployee ? foundEmployee.fname : '';
-//         row.push(emp_name);
-//         row.push(foundEmployee ? foundEmployee.email : '');
-
-//         employeeDatesXls.forEach((date, colIndex) => {
-//             const attendance_data = rowData.workday_data.find(day => day.date === date);
-//             let attend_data = attendance_data && attendance_data.is_present === true ? 'P' :
-//                 attendance_data && attendance_data.is_holiday === true ? 'H' :
-//                 attendance_data && attendance_data.is_day_on === false ? 'WO' :
-//                 attendance_data && attendance_data.is_leave_approved === true ? 'L' :
-//                 attendance_data && attendance_data.leave_taken_without_approval === true ? 'A' :
-//                 'A';
-//             row.push(attend_data);
-
-//             if (attendance_data) {
-//                 const checkInLog = attendance_data.entry_log.find(log => parseInt(log.entry_type) === 1);
-//                 const checkOutLog = attendance_data.entry_log.slice().reverse().find(log => parseInt(log.entry_type) !== 1);
-//                 const firstCheckIn = checkInLog ? format(ParseTime(checkInLog.entry_time), "h:mm a") : '';
-//                 const lastCheckOut = checkOutLog ? format(ParseTime(checkOutLog.entry_time), "h:mm a") : '';
-//                 const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds);
-//                 const entryLogLength = attendance_data.entry_log.length;
-//                 let duration = entryLogLength === 0 ? total_hour : `${total_hour}(${entryLogLength})`;
-//                 row.push(firstCheckIn);
-//                 row.push(lastCheckOut);
-//                 row.push(duration);
-//             } else {
-//                 row.push('', '', '', '');
-//             }
-//         });
-
-//         row.push(rowData.total_working_days_count);
-//         row.push(rowData.total_present_days_count);
-//         const dataRow = sheet.addRow(row);
-        
-
-//         // Apply text color formatting
-//         dataRow.eachCell((cell, cellNumber) => {
-//             let value = cell.value;
-//             let fontColor = '000000'; // Default color (black)
-//             let isBold = false;
-
-//             if (value === 'P' || value === 'A') {
-//                 fontColor = value === 'P' ? '00FF00' : 'FF0000'; // Green for 'P', Red for 'A'
-//                 isBold = true;
-//             } else if (value === 'WO' || value === 'H' || value === 'L') {
-//                 isBold = true;
-//             }
-
-//             // Set the font color and style of the cell
-//             cell.font = {
-//                 color: { argb: fontColor },
-//                 bold: isBold
-//             };
-
-//             // Align data cells to center
-//             if (cellNumber > 1) {
-//                 cell.alignment = { horizontal: 'center' };
-//             }
-//         });
-//     });
-
-//     // Set alignment to center for all headers and subheaders
-//     sheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-//         row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-//             cell.alignment = { horizontal: 'center' }; // Align headers and subheaders to center
-//         });
-//     });
-
-//     // Set column widths
-//     sheet.columns.forEach(column => {
-//         column.width = 20;
-//     });
-
-//     // Write to buffer and create download link
-//     workbook.xlsx.writeBuffer().then(data => {
-//         const blob = new Blob([data], {
-//             type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-//         });
-//         const url = window.URL.createObjectURL(blob);
-//         const anchor = document.createElement('a');
-//         anchor.href = url;
-//         anchor.download = 'AttendanceReport.xlsx';
-//         anchor.click();
-//         window.URL.revokeObjectURL(url);
-//     });
-// };
-
-
-  
-
-
-
-  
-  
-//   const handleExport = () => {
-//     const wb = XLSX.utils.book_new();
-//     const ws = XLSX.utils.aoa_to_sheet([]);
-
-//     const headers = ['Employee Name', 'Email'];
-//     const subheaders = ['', ''];
-//     employeeDatesXls.forEach(date => {
-//         headers.push('');
-//         headers.push('');
-//         headers.push(formatDate(date));
-//         headers.push('');
-//         subheaders.push('Attendance');
-//         subheaders.push('Check-in');
-//         subheaders.push('Check-out');
-//         subheaders.push('Duration');
-//     });
-//     headers.push('Total Days', 'Present Days');
-
-//     XLSX.utils.sheet_add_aoa(ws, [headers, subheaders], { origin: 'A1' });
-
-//     team_daily_attendance_report.forEach((rowData, rowIndex) => {
-//         const row = [];
-//         const foundEmployee = employee_data.find(emp => rowData.employee_id === emp.id);
-//         const emp_name = foundEmployee ? foundEmployee.fname : '';
-//         row.push(emp_name);
-//         row.push(foundEmployee ? foundEmployee.email : '');
-
-//         employeeDatesXls.forEach(date => {
-//             const attendance_data = rowData.workday_data.find(day => day.date === date);
-//             let attend_data = attendance_data && attendance_data.is_present === true ? 'P' :
-//                 attendance_data && attendance_data.is_holiday === true ? 'H' :
-//                 attendance_data && attendance_data.is_day_on === false ? 'WO' :
-//                 attendance_data && attendance_data.is_leave_approved === true ? 'L' :
-//                 attendance_data && attendance_data.leave_taken_without_approval === true ? 'A' :
-//                 'A';
-
-//             row.push(attend_data);
-
-//             if (attendance_data) {
-//                 const checkInLog = attendance_data.entry_log.find(log => parseInt(log.entry_type) === 1);
-//                 const checkOutLog = attendance_data.entry_log.slice().reverse().find(log => parseInt(log.entry_type) !== 1);
-//                 const firstCheckIn = checkInLog ? format(ParseTime(checkInLog.entry_time), "h:mm a") : '';
-//                 const lastCheckOut = checkOutLog ? format(ParseTime(checkOutLog.entry_time), "h:mm a") : '';
-//                 const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds)
-//                 const entryLogLength = attendance_data.entry_log.length;
-//                 let duration = '';
-//                 if (entryLogLength === 0) {
-//                     duration = total_hour;
-//                 } else {
-//                     duration = `${total_hour}(${entryLogLength})`;
-//                 }
-//                 row.push(firstCheckIn);
-//                 row.push(lastCheckOut);
-//                 row.push(duration);
-//             } else {
-//                 row.push('');
-//                 row.push('');
-//                 row.push('');
-//             }
-//         });
-
-//         row.push(rowData.total_working_days_count);
-//         row.push(rowData.total_present_days_count);
-
-//         XLSX.utils.sheet_add_aoa(ws, [row], { origin: `A${rowIndex + 3}` });
-//     });
-
-//     // Set column width
-//     const range = XLSX.utils.decode_range(ws['!ref']);
-//     for (let C = range.s.c; C <= range.e.c; ++C) {
-//         const width = 10; // Change the width as needed
-//         ws['!cols'] = ws['!cols'] || [];
-//         ws['!cols'][C] = { wch: width };
-//     }
-
-//     const col_width = 100;
-//     const start_col_index = 0; // Starting column index
-//     const end_col_index = 1; // Ending column index
-//     if(!ws["!cols"]) ws["!cols"] = [];
-
-// /* create column metadata object if it does not exist */
-// for (let i = start_col_index; i <= end_col_index; i++) {
-//   if (!ws["!cols"][i]) ws["!cols"][i] = { wch: col_width };
-//   else ws["!cols"][i].wpx = col_width;
-// }
-
-//     XLSX.utils.book_append_sheet(wb, ws, "MySheet");
-//     XLSX.writeFile(wb, "AttendanceReport.xlsx");
-// };
-
-
-
-//   const handleExport = () => {
-//     const wb = XLSX.utils.book_new();
-
-
-//     const ws = XLSX.utils.aoa_to_sheet([]);
-  
-
-//     const headers = ['Employee Name', 'Email'];
-//     const subheaders = ['', ''];
-//     employeeDatesXls.forEach(date => {
-//       headers.push('');
-//       headers.push('');
-//       headers.push(formatDate(date));
-//       headers.push('');
-//       subheaders.push('Attendance');
-//       subheaders.push('Check-in');
-//       subheaders.push('Check-out');
-//       subheaders.push('Duration');
-     
-//     });
-//     headers.push('Total Days', 'Present Days');
-    
-//     XLSX.utils.sheet_add_aoa(ws, [headers, subheaders], { origin: 'A1' });
-
-
-//     team_daily_attendance_report.forEach((rowData, rowIndex) => {
-//       const row = [];
-
-
-//       const foundEmployee = employee_data.find(emp => rowData.employee_id === emp.id);
-//       // const emp_id = foundEmployee ? foundEmployee.emp_id : ' ;'
-//       const emp_name = foundEmployee ? foundEmployee.fname : '';
-
-//       // row.push(emp_id);
-//       row.push(emp_name);
-//       row.push(foundEmployee ? foundEmployee.email : '');
-
-
-//       employeeDatesXls.forEach(date => {
-//         const attendance_data = rowData.workday_data.find(day => day.date === date);
-//         let attend_data =
-//           attendance_data && attendance_data.is_present === true ? 'P' :
-//             attendance_data && attendance_data.is_holiday === true ? 'H' :
-//               attendance_data && attendance_data.is_day_on === false ? 'WO' :
-//                 attendance_data && attendance_data.is_leave_approved === true ? 'L' :
-//                   attendance_data && attendance_data.leave_taken_without_approval === true ? 'A' :
-//                     'A';
-
-
-//         row.push(attend_data);
-
-
-//         if (attendance_data) {
-//           const checkInLog = attendance_data.entry_log.find(log => parseInt(log.entry_type) === 1);
-//           const checkOutLog = attendance_data.entry_log.slice().reverse().find(log => parseInt(log.entry_type) !== 1);
-//           const firstCheckIn = checkInLog ? format(ParseTime(checkInLog.entry_time), "h:mm a") : '';
-//           const lastCheckOut = checkOutLog ? format(ParseTime(checkOutLog.entry_time), "h:mm a") : '';
-//           const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds)
-//           const entryLogLength = attendance_data.entry_log.length;
-//           let duration = ''; 
-//     if (entryLogLength === 0) {
-//         duration = total_hour; 
-//     } else {
-//         duration = `${total_hour}(${entryLogLength})`; 
-//     }
-//           row.push(firstCheckIn);
-//           row.push(lastCheckOut);
-//           row.push(duration);
-//         } else {
-//           row.push('');
-//           row.push('');
-//           row.push('');
-//         }
-//       });
-
-
-//       row.push(rowData.total_working_days_count);
-//       row.push(rowData.total_present_days_count);
-
-
-//       XLSX.utils.sheet_add_aoa(ws, [row], { origin: `A${rowIndex + 3}` });
-//     });
-
-    
-
-//     XLSX.utils.book_append_sheet(wb, ws, "MySheet");
-
-
-//     XLSX.writeFile(wb, "AttendanceReport.xlsx");
-//   };
-
-
-
 
 
   function formatDate(dateString) {
