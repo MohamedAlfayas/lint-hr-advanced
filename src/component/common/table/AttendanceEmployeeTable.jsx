@@ -72,6 +72,7 @@ const AttendanceEmployeeTable = () => {
   const [notes_modal, setNotes_modal] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [leave_modal, setLeave_modal] = useState(false);
+  const [leaveDate, setLeaveDate] = useState(null);
   const [attendanceEditData, setAttendanceEditData] = useState(null);
   const [hrStatus, setHrStatus] = useState(0);
   const [notesLength, setNotesLength] = useState(0);
@@ -298,7 +299,7 @@ const AttendanceEmployeeTable = () => {
       {
         label: "Apply Leave",
         icon: <i className="ri-check-line"></i>,
-        onClick: () => applyLeave(),
+        onClick: () => applyLeave(rowData),
       },
     ];
     let dropdownMenu;
@@ -492,8 +493,9 @@ const AttendanceEmployeeTable = () => {
     setEditModalOpen(true);
   };
 
-  const applyLeave = () => {
+  const applyLeave = (rowData) => {
     setLeave_modal(true);
+    setLeaveDate(rowData.date);
   };
 
   const updateAttendance = async () => {
@@ -1176,7 +1178,7 @@ const AttendanceEmployeeTable = () => {
             id="exampleModalToggleLabel"
             style={{ fontSize: "smaller" }}
           >
-            Apply Leave on today
+            Apply Leave {format(new Date(leaveDate), "dd MMM, yyyy")}
           </h5>
         </ModalHeader>
         <ModalBody className="text-left">
