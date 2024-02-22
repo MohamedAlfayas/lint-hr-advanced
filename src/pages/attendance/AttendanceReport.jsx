@@ -415,13 +415,19 @@ const AttendanceReport = () => {
       pattern: 'solid',
       fgColor: { argb: 'FFFFFF' }, 
   };
-}else if (cellNumber >= 15 && cellNumber <= 18) {
+}else if (cellNumber >= 111 && cellNumber <= 114) {
   cell.fill = {
       type: 'pattern',
       pattern: 'solid',
       fgColor: { argb: 'e6f7ff' }, 
   };
-}else if (cellNumber >= 15 && cellNumber <= 18) {
+}else if (cellNumber >= 115 && cellNumber <= 118) {
+  cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFFF' }, 
+  };
+}else if (cellNumber >= 119 && cellNumber <= 122) {
   cell.fill = {
       type: 'pattern',
       pattern: 'solid',
