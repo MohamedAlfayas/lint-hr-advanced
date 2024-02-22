@@ -71,10 +71,11 @@ const AttendanceEmployeeTable = () => {
   const [timelineDate, setTimeLineDate] = useState("");
   const [notes_modal, setNotes_modal] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [leave_modal, setLeave_modal] = useState(false);
   const [attendanceEditData, setAttendanceEditData] = useState(null);
   const [hrStatus, setHrStatus] = useState(0);
   const [notesLength, setNotesLength] = useState(0);
-  const [date, setDate] = useState();
+  const [date, setDate] = useState(null);
 
   const [notesUpdateObj, setNotesUpdateObj] = useState(null);
   const [notesList, setNotesList] = useState([]);
@@ -91,6 +92,10 @@ const AttendanceEmployeeTable = () => {
 
   const closeNotesModal = () => {
     setNotes_modal(false);
+  };
+
+  const closeLeaveModal = () => {
+    setLeave_modal(false);
   };
 
   const [initialObj, setInitialObj] = useState(0);
@@ -293,7 +298,7 @@ const AttendanceEmployeeTable = () => {
       {
         label: "Apply Leave",
         icon: <i className="ri-check-line"></i>,
-        onClick: () => applyLeaveForm(),
+        onClick: () => applyLeave(),
       },
     ];
     let dropdownMenu;
@@ -487,23 +492,8 @@ const AttendanceEmployeeTable = () => {
     setEditModalOpen(true);
   };
 
-  const applyLeaveForm = () => {
-    const initialFormObj = {
-      id: 0,
-      leave_type: 0,
-      reason: "",
-      start: null,
-      end: null,
-      requested_leave_count: 0,
-      status: 1,
-      day_type: 1,
-      in_between_dates: [],
-    };
-    dispatch(setFormTitle(leave_application_component_name));
-    dispatch(setFormObj(initialFormObj));
-    // dispatch(setFormWidthPercentage("45%"));
-    dispatch(setComponentToShow(leave_application_component_name));
-    dispatch(toggleRSBView(true));
+  const applyLeave = () => {
+    setLeave_modal(true);
   };
 
   const updateAttendance = async () => {
@@ -540,7 +530,6 @@ const AttendanceEmployeeTable = () => {
     setHrStatus(rowData?.hr_status);
     setNotesLength(rowData?.entry_log.length);
     setDate(rowData?.date);
-
     setNotes_modal(true);
   };
 
@@ -1024,7 +1013,7 @@ const AttendanceEmployeeTable = () => {
             id="exampleModalToggleLabel"
             style={{ fontSize: "smaller" }}
           >
-            Notes
+            Notes - {format(new Date(date), "dd MMM, yyyy")}
           </h5>
         </ModalHeader>
         <ModalBody className="text-left">
@@ -1169,6 +1158,43 @@ const AttendanceEmployeeTable = () => {
                 </Col>
               </Row>
             </form>
+          </div>
+        </ModalBody>
+      </Modal>
+
+      <Modal
+        isOpen={leave_modal}
+        toggle={() => {
+          closeLeaveModal();
+        }}
+        centered
+        className="custom-modal"
+      >
+        <ModalHeader>
+          <h5
+            className="modal-title"
+            id="exampleModalToggleLabel"
+            style={{ fontSize: "smaller" }}
+          >
+            Apply Leave on
+          </h5>
+        </ModalHeader>
+        <ModalBody className="text-left">
+          <div>
+            <SimpleBar
+              style={{ maxHeight: "410px" }}
+              className="p-3 pt-0"
+            ></SimpleBar>
+            <div className="text-center mt-3">
+              <Button
+                className="btn btn-warning"
+                onClick={() => {
+                  closeLeaveModal();
+                }}
+              >
+                Close
+              </Button>
+            </div>
           </div>
         </ModalBody>
       </Modal>

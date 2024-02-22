@@ -30,9 +30,11 @@ const Holiday = () => {
   const additionalColumn = [
     {
       Header: "Name",
-      accessor: "name",
       filterable: false,
       id: "name",
+      accessor: (obj) => {
+        return <b>{obj.name}</b>;
+      },
     },
     {
       Header: "Date",
@@ -49,7 +51,7 @@ const Holiday = () => {
       id: "shift",
       filterable: false,
       accessor: (obj) => {
-        return <b>{obj.work_schedule_id_list.length} Shifts</b>;
+        return <>{obj.work_schedule_id_list.length} Shifts</>;
       },
     },
     {

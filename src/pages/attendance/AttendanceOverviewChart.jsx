@@ -105,7 +105,9 @@ const AttendanceOverviewChart = ({ dataColors, chartData }) => {
               : w.config.series[seriesIndex].name == "Leave"
               ? "L"
               : w.config.series[seriesIndex].name == "Weekend"
-              ? "WF"
+              ? "WO"
+              : w.config.series[seriesIndex].name == "Inactive"
+              ? "A"
               : "";
 
           return text;
@@ -116,8 +118,9 @@ const AttendanceOverviewChart = ({ dataColors, chartData }) => {
     },
     legend: {
       position: "bottom",
-      offsetY: -15,
+      offsetY: 0,
       itemMargin: {
+        top: 5,
         horizontal: 5,
         vertical: 0,
       },

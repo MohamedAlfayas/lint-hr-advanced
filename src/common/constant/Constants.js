@@ -1834,11 +1834,6 @@ export const attendance_type_options = [
     label: "Team Attendance",
     value: "2",
   },
-  {
-    id: "3",
-    label: "Employee Attendance",
-    value: "3",
-  },
 ];
 
 export const short_months = [
@@ -2343,34 +2338,32 @@ export const AllMinuteOptions = Array.from({ length: 60 }, (_, i) => ({
   value: i.toString().padStart(2, "0"),
 }));
 
-
 export const late_entry_display = {
   class: "warning",
-  text: "Late"
+  text: "Late",
 };
 
 export const on_time_entry_display = {
   class: "success",
-  text: "OnTime"
+  text: "OnTime",
 };
-
 
 export const holiday_display = {
   class: "secondary",
-  text: "Holiday"
+  text: "Holiday",
 };
 
 export const week_off_display = {
   class: "warning",
-  text: "W/O"
+  text: "W/O",
 };
 
 export const leave_display = {
   class: "body",
-  text: "Leave"
+  text: "Leave",
 };
 
 export const absent_display = {
   class: "danger",
-  text: "Absent"
+  text: "Absent",
 };

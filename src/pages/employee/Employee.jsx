@@ -135,7 +135,7 @@ const Employee = () => {
       // id: "nameAndEmail",
     },
     {
-      Header: "ID",
+      Header: " Employee ID",
       accessor: "emp_id",
       filterable: false,
       id: "emp_id",

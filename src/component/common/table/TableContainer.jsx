@@ -73,7 +73,7 @@ const TableContainer = ({
       defaultColumn: { Filter: DefaultColumnFilter },
       initialState: {
         pageIndex: 0,
-        pageSize: 10,
+        pageSize: 25,
         selectedRowIds: 0,
         sortBy: [
           {
@@ -133,8 +133,12 @@ const TableContainer = ({
                 value={pageSize}
                 onChange={onChangeInSelect}
               >
-                {[10, 25, 50, 100].map((pageSize) => (
-                  <option key={pageSize} value={pageSize}>
+                {[25, 50, 100].map((pageSize) => (
+                  <option
+                    key={pageSize}
+                    value={pageSize}
+                    style={{ paddingTop: 0.4 }}
+                  >
                     Show {pageSize}
                   </option>
                 ))}
@@ -277,7 +281,7 @@ const TableContainer = ({
               value={pageSize}
               onChange={handlePageSizeChange}
             >
-              {[10, 25, 50, 100].map((size) => (
+              {[25, 50, 100].map((size) => (
                 <option key={size} value={size}>
                   Show {size}
                 </option>

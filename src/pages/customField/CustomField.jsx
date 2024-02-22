@@ -87,7 +87,7 @@ const CustomField = () => {
   const additionalColumn = [
     {
       Header: "Display Name",
-      accessor: "name",
+
       accessor: (obj) => {
         return <b>{obj.name}</b>;
       },
@@ -98,9 +98,9 @@ const CustomField = () => {
       Header: "Field Type",
       accessor: (obj) => {
         return (
-          <b>
+          <>
             {custom_field_types.find((e) => e.value === obj.type)?.label || ""}
-          </b>
+          </>
         );
       },
       filterable: false,
@@ -110,14 +110,16 @@ const CustomField = () => {
       Header: "Applicable For",
       accessor: (obj) => {
         return (
-          <b>
-            {obj.applicable_for_modules.map((e) => {
-              return (
+          <>
+            {obj.applicable_for_modules.map((e, index) => {
+              const label =
                 custom_field_applicable_modules.find((m) => m.value === e)
-                  ?.label || ""
-              );
+                  ?.label || "";
+              return index === obj.applicable_for_modules.length - 1
+                ? label
+                : label + " / ";
             })}
-          </b>
+          </>
         );
       },
       filterable: false,

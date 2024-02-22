@@ -37,9 +37,11 @@ const Roles = () => {
   const additionalColumn = [
     {
       Header: "Name",
-      accessor: "name",
       filterable: false,
       id: "name",
+      accessor: (obj) => {
+        return <b>{obj.name}</b>;
+      },
     },
     {
       Header: "Employees",

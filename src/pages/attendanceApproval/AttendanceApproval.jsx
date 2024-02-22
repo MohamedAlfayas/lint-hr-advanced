@@ -242,6 +242,18 @@ const AttendanceApproval = () => {
       },
     },
     {
+      Header: "Work Schedule",
+      accessor: "work_schedule",
+      filterable: false,
+      id: "work_schedule",
+      accessor: (obj) => {
+        let workSchedule = ConvertSecondsToTime(
+          obj.work_schedule_duration_without_break
+        );
+        return <React.Fragment> {workSchedule} </React.Fragment>;
+      },
+    },
+    {
       Header: "Checked Hours",
       accessor: "checked_hoours",
       filterable: false,
@@ -261,7 +273,7 @@ const AttendanceApproval = () => {
           obj.edited_checked_in_hr_in_seconds
         );
 
-        return <React.Fragment>{edited_hours}</React.Fragment>;
+        return <b>{edited_hours}</b>;
       },
     },
     {
@@ -271,7 +283,7 @@ const AttendanceApproval = () => {
       id: "ot",
       accessor: (obj) => {
         let ot_hours = ConvertSecondsToTime(obj.edited_ot_hr_in_seconds);
-        return <React.Fragment>{ot_hours}</React.Fragment>;
+        return <b>{ot_hours}</b>;
       },
     },
     {
@@ -281,7 +293,7 @@ const AttendanceApproval = () => {
       id: "diff",
       accessor: (obj) => {
         let diff = ConvertSecondsToTime(obj.paid_hr_difference_in_seconds);
-        return <React.Fragment>{diff}</React.Fragment>;
+        return <b>{diff}</b>;
       },
     },
 
@@ -527,8 +539,8 @@ const AttendanceApproval = () => {
               {notesList && notesList.length > 0 ? (
                 notesList.map((d) => {
                   let emp_details =
-                    !!employee_data &&
-                    employee_data.find((e) => e.id === d.employee_id);
+                    !!EmployeeData &&
+                    EmployeeData.find((e) => e.id === d.employee_id);
 
                   return (
                     <div className="d-flex mb-4">

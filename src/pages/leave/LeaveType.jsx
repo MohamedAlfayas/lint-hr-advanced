@@ -70,7 +70,6 @@ const LeaveType = () => {
   const additionalColumn = [
     {
       Header: "Name",
-      accessor: "name",
       filterable: false,
       id: "name",
       accessor: (obj) => {
@@ -103,10 +102,10 @@ const LeaveType = () => {
         let leave_count = obj.allowed_count;
         let leave_unit = obj.unit === leave_type_day_unit ? "Day" : "Hour";
         return (
-          <b>
+          <>
             {leave_count}
             <small> {leave_unit} / Year</small>
-          </b>
+          </>
         );
       },
     },
