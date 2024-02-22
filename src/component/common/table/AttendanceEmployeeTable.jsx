@@ -1176,7 +1176,7 @@ const AttendanceEmployeeTable = () => {
             id="exampleModalToggleLabel"
             style={{ fontSize: "smaller" }}
           >
-            Apply Leave on
+            Apply Leave on today
           </h5>
         </ModalHeader>
         <ModalBody className="text-left">
