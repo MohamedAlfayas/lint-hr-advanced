@@ -28,7 +28,7 @@ import LeaveTypeFilter from "../tableFilter/LeaveTypeFilter";
 import HolidayFilter from "../tableFilter/HolidayFilter";
 import { useDispatch, useSelector } from "react-redux";
 import { setTableFilterSearchText } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
-
+import '../../../common/css/lc_style.css';
 const TableContainer = ({
   columns,
   data,
@@ -277,7 +277,7 @@ const TableContainer = ({
           </div>
           <div className="col-sm-auto">
             <select
-              className="form-select custom-select-medium text-muted"
+              className="form-select custom-select-medium text-muted my-select"
               value={pageSize}
               onChange={handlePageSizeChange}
             >

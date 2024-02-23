@@ -55,3 +55,12 @@
   max-height: 600px; 
   padding: 0px;
 }
+.my-select {
+  font-size: 13px;
+  color: #879cca;
+  padding: 6px 30px 6px 8px; /* Adjusting the left side padding */
+  background-color: #f3f6f9;
+  color: #f3f6f9;
+  border: var(--vz-border-width) solid #e9ebec;
+}
+

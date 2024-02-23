@@ -24,6 +24,7 @@ import { Link } from "react-router-dom";
 import SimpleBar from "simplebar-react";
 import { differenceInMinutes } from "date-fns";
 import { GetAmPmDateTime } from "../../common/js/ConvertDateTimeToAmPm";
+import './../../common/css/lc_style.css';
 const AttendanceApproval = () => {
   const dispatch = useDispatch();
 
@@ -62,10 +63,12 @@ const AttendanceApproval = () => {
   }, []);
 
   const [timelineList, setTimelineList] = useState([]);
+  console.log("list",timelineList);
   const [timelineDate, setTimeLineDate] = useState("");
   const [timeline_modal, settimeline_modal] = useState(false);
   const [notes_modal, setNotes_modal] = useState(false);
   const [notesList, setNotesList] = useState([]);
+  const [date, setDate] = useState(null)
   const closeNotesModal = () => {
     setNotes_modal(false);
   };
@@ -78,6 +81,7 @@ const AttendanceApproval = () => {
     console.log("This rowData = ", obj);
 
     setNotesList(obj?.notes);
+    setDate(obj?.date);
 
     setNotes_modal(true);
   };
@@ -523,14 +527,15 @@ const AttendanceApproval = () => {
           closeNotesModal();
         }}
         centered
+        className="custom-modal"
       >
         <ModalHeader>
-          <h5
+        <h5
             className="modal-title"
             id="exampleModalToggleLabel"
             style={{ fontSize: "smaller" }}
           >
-            Notes
+            Notes - {format(new Date(date), "dd MMM, yyyy")}
           </h5>
         </ModalHeader>
         <ModalBody className="text-left">

@@ -94,7 +94,7 @@ const Holiday = () => {
   const filterKey = "is_restricted";
   const filterOptions = [
     {
-      option: false,
+      option: true,
       label: "Restricted",
       count: !!holiday_data
         ? holiday_data.filter((e) => e[filterKey] === true).length

@@ -129,7 +129,7 @@ const InfoTable = ({
       })
     : [];
 
-  const [activeTab, setActiveTab] = useState("2");
+  const [activeTab, setActiveTab] = useState(1);
   const [dataList, setDataList] = useState([]);
   const [isExportCSV, setIsExportCSV] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
@@ -1069,7 +1069,7 @@ const InfoTable = ({
                     {formname.split("_").join(" ")}
                   </h5>
 
-                  {formname && formname === holiday_component_name && (
+                  {/* {formname && formname === holiday_component_name && (
                     <center>
                       <div className="flex-shrink-0 ms-5 mt-0">
                         <UncontrolledDropdown className="card-header-dropdown">
@@ -1100,7 +1100,7 @@ const InfoTable = ({
                         </UncontrolledDropdown>
                       </div>
                     </center>
-                  )}
+                  )} */}
                 </div>
                 <div className="col-sm-auto">
                   <div className="d-flex gap-1 flex-wrap">
