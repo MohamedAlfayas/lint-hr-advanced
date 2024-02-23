@@ -132,7 +132,11 @@ const LeaveDashboard = () => {
       filterable: false,
       accessor: (obj) => {
         let status =
-          obj.status == 1 ? "Pending" : obj.status == 2 ? "Approved" : "Cancel";
+          obj.status == 1
+            ? "Pending"
+            : obj.status == 2
+            ? "Approved"
+            : "Canceled";
         let statusClass =
           obj.status == 1 ? "warning" : obj.status == 2 ? "success" : "danger";
         return (

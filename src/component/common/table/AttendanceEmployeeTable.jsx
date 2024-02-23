@@ -55,6 +55,8 @@ import {
   setFormWidthPercentage,
   toggleRSBView,
 } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
+import { set } from "lodash";
+import { addLeaveApplication } from "../../../redux/reducers/ChildReducer/LeaveApplyReducer";
 import { setLeaveTypeForCurrentEmployee } from "../../../redux/reducers/ChildReducer/LeaveTypeReducer";
 
 const AttendanceEmployeeTable = () => {
@@ -77,6 +79,7 @@ const AttendanceEmployeeTable = () => {
   const [leave_modal, setLeave_modal] = useState(false);
   const [leaveDate, setLeaveDate] = useState(null);
   const [attendanceEditData, setAttendanceEditData] = useState(null);
+  const [leaveApplyData, setLeaveApplyData] = useState(null);
   const [hrStatus, setHrStatus] = useState(0);
   const [notesLength, setNotesLength] = useState(0);
   const [date, setDate] = useState(null);
@@ -85,18 +88,14 @@ const AttendanceEmployeeTable = () => {
   const [notesList, setNotesList] = useState([]);
 
   const [showSaveBtn, setShowSaveBtn] = useState(false);
+  const [leaveCount, setLeaveCount] = useState(0);
 
   const { individual_attendance_report_data } = useSelector(
     (state) => state.AttendanceReportReducer
   );
 
   const day_leave_types = leaves_type_employee.filter((d) => d.unit === 1);
-  console.log("DAy Leaves", day_leave_types);
   const hour_types = leaves_type_employee.filter((d) => d.unit === 2);
-  console.log("hour", hour_types);
-  // const { leave_type_for_current_employee } = useSelector(
-  //   (state) => state.LeaveTypeReducer
-  // );
 
   function open_timeline() {
     settimeline_modal(!timeline_modal);
@@ -108,6 +107,7 @@ const AttendanceEmployeeTable = () => {
 
   const closeLeaveModal = () => {
     setLeave_modal(false);
+    setLeaveCount(0);
   };
 
   const [initialObj, setInitialObj] = useState(0);
@@ -316,10 +316,14 @@ const AttendanceEmployeeTable = () => {
     let dropdownMenu;
     if (rowData.leave_taken_without_approval === true) {
       dropdownMenu = (
-        <Popover>
+        <Popover style={{ padding: "3px" }}>
           <Dropdown.Menu>
             {dropdownItems.map((item, index) => (
-              <Dropdown.Item key={index} onClick={item.onClick}>
+              <Dropdown.Item
+                key={index}
+                onClick={item.onClick}
+                style={{ padding: "8px" }}
+              >
                 {item.icon} {item.label}
               </Dropdown.Item>
             ))}
@@ -329,9 +333,12 @@ const AttendanceEmployeeTable = () => {
     } else {
       const firstItemInDropdown = dropdownItems[0];
       dropdownMenu = (
-        <Popover>
+        <Popover style={{ padding: "3px" }}>
           <Dropdown.Menu>
-            <Dropdown.Item onClick={firstItemInDropdown.onClick}>
+            <Dropdown.Item
+              onClick={firstItemInDropdown.onClick}
+              style={{ padding: "8px" }}
+            >
               {firstItemInDropdown.icon} {firstItemInDropdown.label}
             </Dropdown.Item>
           </Dropdown.Menu>
@@ -505,8 +512,52 @@ const AttendanceEmployeeTable = () => {
   };
 
   const applyLeave = (rowData) => {
+    let intialObj = {
+      id: 0,
+      leave_type: 0,
+      reason: "",
+      start: rowData?.date,
+      end: rowData?.date,
+      requested_leave_count: 1,
+      status: 1,
+      day_type: 1,
+      in_between_dates: [rowData?.date],
+    };
+    setLeaveApplyData(intialObj);
     setLeave_modal(true);
     setLeaveDate(rowData.date);
+  };
+
+  const handleApplyLeave = async () => {
+    dispatch(setLoaderVisible(true));
+    if (leaveApplyData.leave_type === 0) {
+      toast.error("Please Select Leave Type");
+    } else {
+      console.log("SUCCESSSS !!!!", leaveApplyData);
+      const Api = await PostApi(
+        "leave/leave-application/create/",
+        leaveApplyData,
+        false
+      );
+      console.log("API RES = ", Api);
+      if (Api.status && Api.status === 200) {
+        console.log("LTE RES = ", Api?.data?.leave_type_for_employee);
+        if (leaveApplyData.id === 0) {
+          dispatch(addLeaveApplication(Api?.data.data));
+          dispatch(
+            setLeaveTypeForCurrentEmployee(
+              Api?.data?.leave_type_for_employee || []
+            )
+          );
+        }
+        dispatch(toggleRSBView(false));
+        setLeave_modal(false);
+        toast.success(Api?.data?.message);
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
+      }
+    }
+    dispatch(setLoaderVisible(false));
   };
 
   const updateAttendance = async () => {
@@ -621,6 +672,10 @@ const AttendanceEmployeeTable = () => {
         <Column width={150}>
           <HeaderCell>Status</HeaderCell>
           <HrStatusCell dataKey="hr_status" />
+        </Column>
+        <Column width={100}>
+          <HeaderCell>Activity</HeaderCell>
+          <Cell>{null}</Cell>
         </Column>
         <Column width={100}>
           <HeaderCell>Notes</HeaderCell>
@@ -1019,6 +1074,7 @@ const AttendanceEmployeeTable = () => {
           closeNotesModal();
         }}
         centered
+        className="custom-modal"
       >
         <ModalHeader>
           <h5
@@ -1205,17 +1261,45 @@ const AttendanceEmployeeTable = () => {
                   name="leave_type"
                   isMulti={false}
                   options={day_leave_types || []}
-                  // value={
-                  //   leaveapplyObj?.leave_type
-                  //     ? leave_type_for_current_employee.find(
-                  //         (d) => d.id === leaveapplyObj?.leave_type
-                  //       )
-                  //     : []
-                  // }
-                  // onChange={handleLeaveTypeChange}
+                  value={
+                    leaveApplyData?.leave_type
+                      ? day_leave_types.find(
+                          (d) => d.id === leaveApplyData?.leave_type
+                        )
+                      : []
+                  }
+                  onChange={(e) => {
+                    setLeaveApplyData((prevData) => {
+                      const newData = {
+                        ...prevData,
+                        leave_type: e.id,
+                      };
+                      setLeaveCount(
+                        newData.leave_type
+                          ? day_leave_types.find(
+                              (d) => d.id === newData.leave_type
+                            )?.balance_leave_count
+                          : ""
+                      );
+                      return newData;
+                    });
+                  }}
                   placeholder="Select Leave Type"
                   className="basic-multi-select"
                 />
+              </Col>
+            </Row>
+            <Row className="mb-2">
+              <Col></Col>
+              <Col>
+                {leaveApplyData?.leave_type ? (
+                  <Col>
+                    {" "}
+                    <div id="passwordHelpBlock" className="form-text">
+                      {leaveCount} Days Remaining
+                    </div>
+                  </Col>
+                ) : null}
               </Col>
             </Row>
           </Col>
@@ -1232,27 +1316,41 @@ const AttendanceEmployeeTable = () => {
                   id="exampleFormControlTextarea1"
                   rows="3"
                   placeholder="Enter Reason"
-                  // value={notesUpdateObj?.notes || ""}
-                  // onChange={(e) =>
-                  //   setNotesUpdateObj({
-                  //     ...notesUpdateObj,
-                  //     notes: e.target.value,
-                  //   })
-                  // }
+                  value={leaveApplyData?.reason || ""}
+                  onChange={(e) => {
+                    setLeaveApplyData({
+                      ...leaveApplyData,
+                      reason: e.target.value,
+                    });
+                  }}
                 ></textarea>
               </Col>
             </Row>
           </Col>
 
           <div className="text-center mt-5">
-            <Button
-              className="btn btn-warning"
-              onClick={() => {
-                closeLeaveModal();
-              }}
-            >
-              Close
-            </Button>
+            <Col xs={12} className="text-end">
+              <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
+                <Button
+                  className="btn btn-warning"
+                  onClick={() => {
+                    closeLeaveModal();
+                  }}
+                >
+                  Close
+                </Button>
+
+                <button
+                  type="button"
+                  className="btn w-sm btn-success"
+                  data-bs-dismiss="modal"
+                  onClick={handleApplyLeave}
+                >
+                  <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                  Save
+                </button>
+              </div>
+            </Col>
           </div>
         </ModalBody>
       </Modal>
