@@ -27,13 +27,32 @@ import { useDispatch, useSelector } from "react-redux";
 import { setTeamTodaysAttendanceData } from "../../redux/reducers/ChildReducer/TeamTodaysAttendanceReducer";
 
 const EmployeeActivity = (props) => {
-  const dep_options = GetLocalStorageData("department") || [];
+  const [lateData, setLateData] = useState([]);
+  const [noData, setNoData] = useState([]);
 
   const { team_todays_attendance } = useSelector(
     (state) => state.TeamTodaysAttendanceReducer
   );
 
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (!!team_todays_attendance) {
+      let late_data = [];
+      let no_data = [];
+
+      team_todays_attendance.map((d) => {
+        if (d.is_late === true) {
+          late_data.push(d);
+        } else if (d.no_data === true) {
+          no_data.push(d);
+        }
+      });
+
+      setLateData(late_data);
+      setNoData(no_data);
+    }
+  }, [team_todays_attendance]);
 
   useEffect(() => {
     console.log("Employee Activity Page !!!!");
@@ -84,7 +103,14 @@ const EmployeeActivity = (props) => {
                         toggleTab("1");
                       }}
                     >
-                      All <small>{"(110)"}</small>
+                      All{" "}
+                      <small>
+                        {`(${
+                          !!team_todays_attendance
+                            ? team_todays_attendance.length
+                            : 0
+                        })`}
+                      </small>
                     </NavLink>
                   </NavItem>
                   <NavItem>
@@ -95,7 +121,7 @@ const EmployeeActivity = (props) => {
                         toggleTab("2");
                       }}
                     >
-                      Late <small>{"(10)"}</small>
+                      Late <small>{`(${lateData?.length || 0})`}</small>
                     </NavLink>
                   </NavItem>
                   <NavItem>
@@ -106,7 +132,7 @@ const EmployeeActivity = (props) => {
                         toggleTab("3");
                       }}
                     >
-                      No Data <small>{"(10)"}</small>
+                      No Data <small>{`(${noData?.length || 0})`}</small>
                     </NavLink>
                   </NavItem>
                 </Nav>
@@ -136,11 +162,11 @@ const EmployeeActivity = (props) => {
                 </TabPane>
 
                 <TabPane tabId="2">
-                  <EmployeeActivityTable
-                    team_data={team_todays_attendance.filter(
-                      (d) => d.is_late === true
-                    )}
-                  />
+                  <EmployeeActivityTable team_data={lateData} />
+                </TabPane>
+
+                <TabPane tabId="3">
+                  <EmployeeActivityTable team_data={noData} />
                 </TabPane>
               </TabContent>
             </CardBody>

@@ -119,7 +119,7 @@ const EmployeeActivityTable = ({ team_data }) => {
                             <>
                               <p className="mb-1 text-muted">
                                 <small className="mb-0 text-muted">
-                                  Login -{" "}
+                                  Logout -{" "}
                                   {format(
                                     ParseTime(d.last_check_out_time),
                                     "h:mm a"
