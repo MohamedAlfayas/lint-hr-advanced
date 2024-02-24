@@ -64,6 +64,7 @@ const EmployeeActivityTable = ({ team_data }) => {
                           src={emp_detail?.profile_url}
                           alt=""
                           className="avatar-xs rounded-circle acitivity-avatar"
+                          style={{ objectFit: "cover" }}
                         />
                       ) : (
                         <div
@@ -97,9 +98,15 @@ const EmployeeActivityTable = ({ team_data }) => {
                         </span>
                       </h6>
 
-                      {dep_name_list.map((dn) => (
-                        <p className="text-muted mb-2">Department | {dn}</p>
-                      ))}
+                      <p className="text-muted mb-2">
+                        {" "}
+                        Department -
+                        {dep_name_list.map((dn, index) => (
+                          <>
+                            {index > 0 ? " / " : ""} {dn}
+                          </>
+                        ))}
+                      </p>
 
                       {d.is_present === true && (
                         <>
@@ -126,6 +133,7 @@ const EmployeeActivityTable = ({ team_data }) => {
                                   )}
                                 </small>
                               </p>
+
                               <p className="mb-1 text-muted">
                                 <small className="mb-0 text-muted">
                                   Total -{" "}

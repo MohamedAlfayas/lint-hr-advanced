@@ -185,7 +185,7 @@ const EmployeeOverview = (props) => {
             </SimpleBar>
           </Card>
 
-          <Card>
+          {/* <Card>
             <CardBody>
               <h5 className="card-title mb-4">Portfolio</h5>
               <div className="d-flex flex-wrap gap-2">
@@ -219,7 +219,7 @@ const EmployeeOverview = (props) => {
                 </div>
               </div>
             </CardBody>
-          </Card>
+          </Card> */}
 
           <Card>
             <CardBody>
@@ -273,7 +273,7 @@ const EmployeeOverview = (props) => {
 
           <Card>
             <CardBody>
-              <div className="d-flex align-items-center mb-4">
+              <div className="d-flex align-items-center mb-3">
                 <div className="flex-grow-1">
                   <h5 className="card-title mb-0">Suggestions</h5>
                 </div>
@@ -358,7 +358,7 @@ const EmployeeOverview = (props) => {
             </CardBody>
           </Card>
 
-          <Card>
+          {/* <Card>
             <CardBody>
               <div className="d-flex align-items-center mb-4">
                 <div className="flex-grow-1">
@@ -421,9 +421,9 @@ const EmployeeOverview = (props) => {
                 </div>
               </div>
             </CardBody>
-          </Card>
+          </Card> */}
         </Col>
-        <Col xxl={9} sm={9} md={9} lg={9}>
+        <Col xxl={9} sm={9} md={9} lg={9} style={{ marginBottom: "20px" }}>
           <Card>
             <CardBody>
               <h5 className="card-title mb-3">About</h5>
@@ -1427,7 +1427,7 @@ const EmployeeOverview = (props) => {
           <Card>
             <CardBody>
               <h5 className="card-title">Projects</h5>
-              <div className="d-flex justify-content-end gap-2 mb-2">
+              <div className="d-flex justify-content-end gap-2 mb-5">
                 <div className="slider-button-prev">
                   <div className="avatar-title fs-18 rounded px-1">
                     <i className="ri-arrow-left-s-line"></i>

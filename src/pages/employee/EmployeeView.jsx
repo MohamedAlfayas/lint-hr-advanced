@@ -215,6 +215,13 @@ const EmployeeView = () => {
                     </NavItem>
                   </Nav>
                   <div className="flex-shrink-0">
+                    <Link to="/employee" className="btn w-sm btn-warning">
+                      <i className="ri-arrow-left-line align-bottom"></i> Back
+                      to Employee
+                    </Link>
+                  </div>
+
+                  <div className="flex-shrink-0" style={{ marginLeft: "10px" }}>
                     <Link
                       to="/pages-profile-settings"
                       className="btn btn-success"

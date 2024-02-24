@@ -62,9 +62,9 @@ const AttendanceDashboard = () => {
       <div className="page-content">
         <Container fluid>
           {/* Filter Card Start */}
-
-          <AttendanceFilter />
-
+          <div style={{ zIndex: 1000, position: "relative" }}>
+            <AttendanceFilter />
+          </div>
           {/* Filter Card End */}
 
           <Row className="project-wrapper">
