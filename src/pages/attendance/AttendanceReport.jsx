@@ -30,10 +30,10 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 import { Api } from "../../common/api/Api";
 import { setTeamDailyAttendanceReport } from "../../redux/reducers/ChildReducer/TeamDailyAttendanceReportReducer";
 import { ParseTime } from "../../common/js/ParseTime";
-import * as XLSX from 'xlsx';
-const ExcelJs = require('exceljs');
-import '../../common/css/lc_style.css'
-import { differenceInMinutes } from 'date-fns';
+import * as XLSX from "xlsx";
+const ExcelJs = require("exceljs");
+import "../../common/css/lc_style.css";
+import { differenceInMinutes } from "date-fns";
 const AttendanceReport = () => {
   document.title = `Attendance Report | ${MetaTitle}`;
 
@@ -52,7 +52,8 @@ const AttendanceReport = () => {
 
   useEffect(() => {
     const today = new Date();
-    const thisMonth = `${today.getFullYear()}-${(today.getMonth())
+    const thisMonth = `${today.getFullYear()}-${today
+      .getMonth()
       .toString()
       .padStart(2, "0")}`;
 
@@ -76,7 +77,10 @@ const AttendanceReport = () => {
       });
   };
   const [filterKeys, setFilterKeys] = useState({
-    month: `${new Date().getFullYear()}-${(new Date().getMonth()).toString().padStart(2, "0")}`,
+    month: `${new Date().getFullYear()}-${new Date()
+      .getMonth()
+      .toString()
+      .padStart(2, "0")}`,
   });
   useEffect(() => {
     getReportData(filterKeys.month);
@@ -121,7 +125,6 @@ const AttendanceReport = () => {
   //   dispatch(setLoaderVisible(false));
   // };
 
-
   const employeeDatesXls = Array.from(
     new Set(
       team_daily_attendance_report.flatMap((employee) =>
@@ -133,44 +136,44 @@ const AttendanceReport = () => {
   const exportExcelFile = () => {
     const workbook = new ExcelJs.Workbook();
     const sheet = workbook.addWorksheet("My Sheet", {
-        views: [
-            {
-                state: "frozen",
-                xSplit: 2,  
-                ySplit: 2,  
-            },
-        ],
+      views: [
+        {
+          state: "frozen",
+          xSplit: 2,
+          ySplit: 2,
+        },
+      ],
     });
     sheet.properties.defaultRowHeight = 20;
     sheet.autoFilter = {
       from: {
-          row: 1, // Assuming your headers start from row 1
-          column: 1 // Assuming "Employee Name" is the first column
+        row: 1, // Assuming your headers start from row 1
+        column: 1, // Assuming "Employee Name" is the first column
       },
       to: {
-          row: 2, // Assuming all rows are populated
-          column: 2 // Assuming "Email" is the second column
-      }
-  };
+        row: 2, // Assuming all rows are populated
+        column: 2, // Assuming "Email" is the second column
+      },
+    };
 
-    const headers = ['Employee Name', 'Email'];
-    const subheaders = ['', ''];
+    const headers = ["Employee Name", "Email"];
+    const subheaders = ["", ""];
 
     // Assuming `team_daily_attendance_report` is available
     const employeeDatesXls = Array.from(
-        new Set(
-            team_daily_attendance_report.flatMap((employee) =>
-                employee.workday_data.map((report) => report.date)
-            )
+      new Set(
+        team_daily_attendance_report.flatMap((employee) =>
+          employee.workday_data.map((report) => report.date)
         )
+      )
     );
 
     employeeDatesXls.forEach((date, index) => {
-        headers.push('', '', formatDate(date), '');
-        subheaders.push('Attendance', 'Check-in', 'Check-out', 'Duration');
+      headers.push("", "", formatDate(date), "");
+      subheaders.push("Attendance", "Check-in", "Check-out", "Duration");
     });
 
-    headers.push('Total Days', 'Present Days');
+    headers.push("Total Days", "Present Days");
     const headerRow = sheet.addRow(headers);
     const subheaderRow = sheet.addRow(subheaders);
 
@@ -178,361 +181,390 @@ const AttendanceReport = () => {
     subheaderRow.font = { bold: true };
 
     for (let i = 0; i < employeeDatesXls.length; i++) {
-        const startCol = i * 4 + 3;
-        const endCol = i * 4 + 6;
-        const dateHeader = formatDate(employeeDatesXls[i]);
+      const startCol = i * 4 + 3;
+      const endCol = i * 4 + 6;
+      const dateHeader = formatDate(employeeDatesXls[i]);
 
-        sheet.mergeCells(1, startCol, 1, endCol); 
-        const mergedCell = sheet.getCell(1, startCol);
-        mergedCell.value = dateHeader; 
-        mergedCell.alignment = { horizontal: 'center' }; 
+      sheet.mergeCells(1, startCol, 1, endCol);
+      const mergedCell = sheet.getCell(1, startCol);
+      mergedCell.value = dateHeader;
+      mergedCell.alignment = { horizontal: "center" };
 
-        const fillColor = i % 2 === 0 ? 'FFFFFF' : 'e6f7ff';
-        [0, 1, 2, 3].forEach(offset => { 
-            const col = startCol + offset;
-            sheet.getColumn(col).eachCell({ includeEmpty: true }, (cell) => {
-                cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: fillColor }, 
-                };
-                cell.border = {
-                    top: { style: 'thin' },
-                    left: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
-                cell.alignment = { horizontal: 'center' }; // Center align the content
-            });
+      const fillColor = i % 2 === 0 ? "FFFFFF" : "e6f7ff";
+      [0, 1, 2, 3].forEach((offset) => {
+        const col = startCol + offset;
+        sheet.getColumn(col).eachCell({ includeEmpty: true }, (cell) => {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: fillColor },
+          };
+          cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+          };
+          cell.alignment = { horizontal: "center" }; // Center align the content
         });
+      });
     }
 
-    team_daily_attendance_report.forEach((rowData, rowIndex,colIndex) => {
-        const row = [];
-        const foundEmployee = employee_data.find(emp => rowData.employee_id === emp.id);
-        const emp_name = foundEmployee ? foundEmployee.fname : '';
-        row.push(emp_name);
-        row.push(foundEmployee ? foundEmployee.email : '');
+    team_daily_attendance_report.forEach((rowData, rowIndex, colIndex) => {
+      const row = [];
+      const foundEmployee = employee_data.find(
+        (emp) => rowData.employee_id === emp.id
+      );
+      const emp_name = foundEmployee ? foundEmployee.fname : "";
+      row.push(emp_name);
+      row.push(foundEmployee ? foundEmployee.email : "");
 
-        employeeDatesXls.forEach((date, colIndex) => {
-            const attendance_data = rowData.workday_data.find(day => day.date === date);
-            let attend_data = attendance_data && attendance_data.is_present === true ? 'P' :
-                attendance_data && attendance_data.is_holiday === true ? 'H' :
-                attendance_data && attendance_data.is_day_on === false ? 'WO' :
-                attendance_data && attendance_data.is_leave_approved === true ? 'L' :
-                attendance_data && attendance_data.leave_taken_without_approval === true ? 'A' :
-                'A';
-            row.push(attend_data);
+      employeeDatesXls.forEach((date, colIndex) => {
+        const attendance_data = rowData.workday_data.find(
+          (day) => day.date === date
+        );
+        let attend_data =
+          attendance_data && attendance_data.is_present === true
+            ? "P"
+            : attendance_data && attendance_data.is_holiday === true
+            ? "H"
+            : attendance_data && attendance_data.is_day_on === false
+            ? "WO"
+            : attendance_data && attendance_data.is_leave_approved === true
+            ? "L"
+            : attendance_data &&
+              attendance_data.leave_taken_without_approval === true
+            ? "A"
+            : "A";
+        row.push(attend_data);
 
-            if (attendance_data) {
-                const checkInLog = attendance_data.entry_log.find(log => parseInt(log.entry_type) === 1);
-                const checkOutLog = attendance_data.entry_log.slice().reverse().find(log => parseInt(log.entry_type) !== 1);
-                const firstCheckIn = checkInLog ? format(ParseTime(checkInLog.entry_time), "h:mm a") : '';
-                const lastCheckOut = checkOutLog ? format(ParseTime(checkOutLog.entry_time), "h:mm a") : '';
-                const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds);
-                const entryLogLength = attendance_data.entry_log.length;
-                let duration = entryLogLength === 0 ? total_hour : `${total_hour} (${entryLogLength})`;
-                row.push(firstCheckIn);
-                row.push(lastCheckOut);
-                row.push(duration);
-            } else {
-                row.push('', '', '', '');
-            }
-        });
+        if (attendance_data) {
+          const checkInLog = attendance_data.entry_log.find(
+            (log) => parseInt(log.entry_type) === 1
+          );
+          const checkOutLog = attendance_data.entry_log
+            .slice()
+            .reverse()
+            .find((log) => parseInt(log.entry_type) !== 1);
+          const firstCheckIn = checkInLog
+            ? format(ParseTime(checkInLog.entry_time), "h:mm a")
+            : "";
+          const lastCheckOut = checkOutLog
+            ? format(ParseTime(checkOutLog.entry_time), "h:mm a")
+            : "";
+          const total_hour = ConvertSecondsToTime(
+            attendance_data.final_paid_hr_in_seconds
+          );
+          const entryLogLength = attendance_data.entry_log.length;
+          let duration =
+            entryLogLength === 0
+              ? total_hour
+              : `${total_hour} (${entryLogLength})`;
+          row.push(firstCheckIn);
+          row.push(lastCheckOut);
+          row.push(duration);
+        } else {
+          row.push("", "", "", "");
+        }
+      });
 
-        row.push(rowData.total_working_days_count);
-        row.push(rowData.total_present_days_count);
-        const dataRow = sheet.addRow(row);
+      row.push(rowData.total_working_days_count);
+      row.push(rowData.total_present_days_count);
+      const dataRow = sheet.addRow(row);
 
-        dataRow.eachCell((cell, cellNumber) => {
-            let value = cell.value;
-            let fontColor = '000000'; 
-            let isBold = false;
+      dataRow.eachCell((cell, cellNumber) => {
+        let value = cell.value;
+        let fontColor = "000000";
+        let isBold = false;
 
-            if (value === 'P' || value === 'A') {
-                fontColor = value === 'P' ? '00FF00' : 'FF0000'; 
-                isBold = true;
-              } else if (value === 'WO') {
-                fontColor = '888888';
-                isBold = true;
-            } else if (value === 'H' || value === 'L') {
-                fontColor = '000000'; 
-                isBold = true;
-            }
+        if (value === "P" || value === "A") {
+          fontColor = value === "P" ? "00FF00" : "FF0000";
+          isBold = true;
+        } else if (value === "WO") {
+          fontColor = "888888";
+          isBold = true;
+        } else if (value === "H" || value === "L") {
+          fontColor = "000000";
+          isBold = true;
+        }
 
-            cell.font = {
-                color: { argb: fontColor },
-                bold: isBold
-            };
-
-            if (cellNumber > 1) {
-                cell.alignment = { horizontal: 'center' };
-            }
-            if (cellNumber >= 7 && cellNumber <= 10) {
-              const fillColor = colIndex % 2 === 0 ? 'FFFFFF' : 'e6f7ff';
-              cell.fill = {
-                  type: 'pattern',
-                  pattern: 'solid',
-                  fgColor: { argb: fillColor }, 
-              };
-          } else if (cellNumber >= 11 && cellNumber <= 14) {
-              cell.fill = {
-                  type: 'pattern',
-                  pattern: 'solid',
-                  fgColor: { argb: 'FFFFFF' }, 
-              };
-          } else if (cellNumber >= 15 && cellNumber <= 18) {
-              cell.fill = {
-                  type: 'pattern',
-                  pattern: 'solid',
-                  fgColor: { argb: 'e6f7ff' }, 
-              };
-          }else if (cellNumber >= 19 && cellNumber <= 22) {
-            cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFFFFF' }, 
-            };
-        }else if (cellNumber >= 23 && cellNumber <= 26) {
-          cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'e6f7ff' }, 
-          };
-      }else if (cellNumber >= 27 && cellNumber <= 30) {
-        cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFFFFF' }, 
+        cell.font = {
+          color: { argb: fontColor },
+          bold: isBold,
         };
-    }else if (cellNumber >= 31 && cellNumber <= 34) {
-      cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'e6f7ff' }, 
-      };
-  }else if (cellNumber >= 35 && cellNumber <= 38) {
-    cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFFFFF' }, 
-    };
-}else if (cellNumber >= 39 && cellNumber <= 42) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'e6f7ff' }, 
-  };
-}else if (cellNumber >= 43 && cellNumber <= 46) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFF' }, 
-  };
-}else if (cellNumber >= 47 && cellNumber <= 50) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'e6f7ff' }, 
-  };
-}else if (cellNumber >= 51 && cellNumber <= 54) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFF' }, 
-  };
-}else if (cellNumber >= 55 && cellNumber <= 58) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'e6f7ff' }, 
-  };
-}else if (cellNumber >= 59 && cellNumber <= 62) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFF' }, 
-  };
-}else if (cellNumber >= 63 && cellNumber <= 66) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'e6f7ff' }, 
-  };
-}else if (cellNumber >= 67 && cellNumber <= 70) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFF' }, 
-  };
-}else if (cellNumber >= 71 && cellNumber <= 74) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'e6f7ff' }, 
-  };
-}else if (cellNumber >= 75 && cellNumber <= 78) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFF' }, 
-  };
-}else if (cellNumber >= 79 && cellNumber <= 82) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'e6f7ff' }, 
-  };
-}else if (cellNumber >= 83 && cellNumber <= 86) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFF' }, 
-  };
-}else if (cellNumber >= 87 && cellNumber <= 90) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'e6f7ff' }, 
-  };
-}else if (cellNumber >= 91 && cellNumber <= 94) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFF' }, 
-  };
-}else if (cellNumber >= 95 && cellNumber <= 98) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'e6f7ff' }, 
-  };
-}else if (cellNumber >= 99 && cellNumber <= 102) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFF' }, 
-  };
-}else if (cellNumber >= 103 && cellNumber <= 106) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'e6f7ff' }, 
-  };
-}else if (cellNumber >= 107 && cellNumber <= 110) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFF' }, 
-  };
-}else if (cellNumber >= 111 && cellNumber <= 114) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'e6f7ff' }, 
-  };
-}else if (cellNumber >= 115 && cellNumber <= 118) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFF' }, 
-  };
-}else if (cellNumber >= 119 && cellNumber <= 122) {
-  cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'e6f7ff' }, 
-  };
-}
-// employeeDatesXls.forEach((date, colIndex) => {
-//   let fillColor;
-//   if ((cellNumber + 1) % 8 >= 4 && (cellNumber + 1) % 8 <= 7) {
-//       fillColor = colIndex % 2 === 0 ? 'FFFFFF' : 'e6f7ff';
-//   } else {
-//       fillColor = colIndex % 2 === 0 ? 'e6f7ff' : 'FFFFFF';
-//   }
 
-//   cell.fill = {
-//       type: 'pattern',
-//       pattern: 'solid',
-//       fgColor: { argb: fillColor }, 
-//   };
-// });
-        });
+        if (cellNumber > 1) {
+          cell.alignment = { horizontal: "center" };
+        }
+        if (cellNumber >= 7 && cellNumber <= 10) {
+          const fillColor = colIndex % 2 === 0 ? "FFFFFF" : "e6f7ff";
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: fillColor },
+          };
+        } else if (cellNumber >= 11 && cellNumber <= 14) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        } else if (cellNumber >= 15 && cellNumber <= 18) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        } else if (cellNumber >= 19 && cellNumber <= 22) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        } else if (cellNumber >= 23 && cellNumber <= 26) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        } else if (cellNumber >= 27 && cellNumber <= 30) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        } else if (cellNumber >= 31 && cellNumber <= 34) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        } else if (cellNumber >= 35 && cellNumber <= 38) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        } else if (cellNumber >= 39 && cellNumber <= 42) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        } else if (cellNumber >= 43 && cellNumber <= 46) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        } else if (cellNumber >= 47 && cellNumber <= 50) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        } else if (cellNumber >= 51 && cellNumber <= 54) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        } else if (cellNumber >= 55 && cellNumber <= 58) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        } else if (cellNumber >= 59 && cellNumber <= 62) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        } else if (cellNumber >= 63 && cellNumber <= 66) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        } else if (cellNumber >= 67 && cellNumber <= 70) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        } else if (cellNumber >= 71 && cellNumber <= 74) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        } else if (cellNumber >= 75 && cellNumber <= 78) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        } else if (cellNumber >= 79 && cellNumber <= 82) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        } else if (cellNumber >= 83 && cellNumber <= 86) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        } else if (cellNumber >= 87 && cellNumber <= 90) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        } else if (cellNumber >= 91 && cellNumber <= 94) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        } else if (cellNumber >= 95 && cellNumber <= 98) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        } else if (cellNumber >= 99 && cellNumber <= 102) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        } else if (cellNumber >= 103 && cellNumber <= 106) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        } else if (cellNumber >= 107 && cellNumber <= 110) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        } else if (cellNumber >= 111 && cellNumber <= 114) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        } else if (cellNumber >= 115 && cellNumber <= 118) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        } else if (cellNumber >= 119 && cellNumber <= 122) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        }
+        // employeeDatesXls.forEach((date, colIndex) => {
+        //   let fillColor;
+        //   if ((cellNumber + 1) % 8 >= 4 && (cellNumber + 1) % 8 <= 7) {
+        //       fillColor = colIndex % 2 === 0 ? 'FFFFFF' : 'e6f7ff';
+        //   } else {
+        //       fillColor = colIndex % 2 === 0 ? 'e6f7ff' : 'FFFFFF';
+        //   }
+
+        //   cell.fill = {
+        //       type: 'pattern',
+        //       pattern: 'solid',
+        //       fgColor: { argb: fillColor },
+        //   };
+        // });
+      });
     });
 
     sheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-        let maxHeight = 0;
-        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-            const lines = cell.value ? cell.value.toString().split('\n').length : 1;
-            maxHeight = Math.max(maxHeight, lines);
-        });
-        row.height = maxHeight * 15; // Adjust this factor according to your font size and row height settings
+      let maxHeight = 0;
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        const lines = cell.value ? cell.value.toString().split("\n").length : 1;
+        maxHeight = Math.max(maxHeight, lines);
+      });
+      row.height = maxHeight * 15; // Adjust this factor according to your font size and row height settings
     });
 
     sheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-            cell.alignment = { horizontal: 'center' }; 
-        });
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        cell.alignment = { horizontal: "center" };
+      });
     });
 
-    sheet.columns.forEach(column => {
-        let maxLength = 0;
-        column.eachCell({ includeEmpty: true }, cell => {
-            maxLength = Math.max(maxLength, (cell.value ? cell.value.toString().length : 0));
-        });
-        column.width = maxLength < 10 ? 10 : maxLength + 2;
+    sheet.columns.forEach((column) => {
+      let maxLength = 0;
+      column.eachCell({ includeEmpty: true }, (cell) => {
+        maxLength = Math.max(
+          maxLength,
+          cell.value ? cell.value.toString().length : 0
+        );
+      });
+      column.width = maxLength < 10 ? 10 : maxLength + 2;
     });
 
     // Apply borders to all cells
-    sheet.eachRow(row => {
-      row.eachCell(cell => {
-          cell.border = {
-              top: { style: 'thin' },
-              left: { style: 'thin' },
-              bottom: { style: 'thin' },
-              right: { style: 'thin' }
-          };
-          cell.alignment = { horizontal: 'center' }; // Center align the content
+    sheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+        cell.alignment = { horizontal: "center" }; // Center align the content
       });
-  });
-  // const additionalSheet = workbook.addWorksheet("Additional Data");
-  // additionalSheet.addRow(["Additional", "Data", "Goes", "Here"]);
-    workbook.xlsx.writeBuffer().then(data => {
-        const blob = new Blob([data], {
-            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        });
-        const url = window.URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        const employeeDatesXls = Array.from(
-          new Set(
-              team_daily_attendance_report.flatMap((employee) =>
-                  employee.workday_data.map((report) => report.date)
-              )
+    });
+    // const additionalSheet = workbook.addWorksheet("Additional Data");
+    // additionalSheet.addRow(["Additional", "Data", "Goes", "Here"]);
+    workbook.xlsx.writeBuffer().then((data) => {
+      const blob = new Blob([data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      const employeeDatesXls = Array.from(
+        new Set(
+          team_daily_attendance_report.flatMap((employee) =>
+            employee.workday_data.map((report) => report.date)
           )
+        )
       );
-      
-      const monthYear = employeeDatesXls.map(dateString => {
-          const date = new Date(dateString);
-          const month = date.toLocaleString('default', { month: 'short' }); 
-          const year = date.getFullYear(); 
-          return `${month}${year}`;
+
+      const monthYear = employeeDatesXls.map((dateString) => {
+        const date = new Date(dateString);
+        const month = date.toLocaleString("default", { month: "short" });
+        const year = date.getFullYear();
+        return `${month}${year}`;
       });
-      
+
       const filename = `Attendance_Report_${monthYear[0]}.xlsx`; // Assuming you want to use the first month-year combination in the array
-      
+
       anchor.download = filename;
       anchor.click();
       window.URL.revokeObjectURL(url);
     });
-};
-
+  };
 
   function formatDate(dateString) {
     const dateObj = new Date(dateString);
     const year = dateObj.getFullYear().toString().substr(2);
-    const month = new Intl.DateTimeFormat("en", { month: "short" }).format(dateObj);
+    const month = new Intl.DateTimeFormat("en", { month: "short" }).format(
+      dateObj
+    );
     const day = dateObj.getDate().toString().padStart(2, "0");
     return `${day} ${month} ${year}`;
   }
@@ -544,7 +576,7 @@ const AttendanceReport = () => {
     settimeline_modal(!timeline_modal);
   }
 
-  const FixedColumns = ({ rowData,index, dataKey, ...props }) => {
+  const FixedColumns = ({ rowData, index, dataKey, ...props }) => {
     let foundEmployee;
     let emp_name = (foundEmployee = employee_data.find(
       (emp) => rowData.employee_id === emp.id
@@ -611,7 +643,11 @@ const AttendanceReport = () => {
       </div>
     );
     return (
-      <Cell {...props} dataKey="id" style={{ backgroundColor: index % 2 === 0 ? 'white' : '#e6f7ff' }}>
+      <Cell
+        {...props}
+        dataKey="id"
+        style={{ backgroundColor: index % 2 === 0 ? "white" : "#e6f7ff" }}
+      >
         {html_tag}
       </Cell>
     );
@@ -636,15 +672,15 @@ const AttendanceReport = () => {
       let attend_data =
         attendance_data.is_present === true
           ? "P"
+          : attendance_data.is_leave_approved === true
+          ? "L"
           : attendance_data.is_holiday === true
-            ? "H"
-            : attendance_data.is_day_on === false
-              ? "WO"
-              : attendance_data.is_leave_approved === true
-                ? "L"
-                : attendance_data.leave_taken_without_approval === true
-                  ? "A"
-                  : "A";
+          ? "H"
+          : attendance_data.is_day_on === false
+          ? "WO"
+          : attendance_data.leave_taken_without_approval === true
+          ? "A"
+          : "A";
       return (
         <Cell {...props} dataKey={`is_present${date}`}>
           {attend_data}
@@ -657,15 +693,17 @@ const AttendanceReport = () => {
         (day) => day.date === date
       );
       console.log("durationData", durationData);
-      const total_hour = ConvertSecondsToTime(durationData.final_paid_hr_in_seconds)
-     
+      const total_hour = ConvertSecondsToTime(
+        durationData.final_paid_hr_in_seconds
+      );
+
       return (
         <Cell {...props} dataKey={`is_present${date}`}>
           {total_hour}
         </Cell>
       );
     };
-    
+
     const InOut = ({ rowData, date, ...props }) => {
       const entryLogForDate = rowData.workday_data.find(
         (day) => day.date === date
@@ -673,7 +711,7 @@ const AttendanceReport = () => {
       const entryLogLength = entryLogForDate
         ? entryLogForDate.entry_log.length
         : "-";
-      
+
       return (
         <Cell {...props} dataKey={`entry_log_${date}`}>
           {!!entryLogLength && entryLogLength}
@@ -702,27 +740,43 @@ const AttendanceReport = () => {
       );
     };
 
-    employeeDates.forEach((date,index) => {
+    employeeDates.forEach((date, index) => {
       const dynamicColumn = (
         <ColumnGroup
-        key={`date_${date}`}
-        align="center"
-        header={<span style={{ fontWeight: 'bold' }}>{formatDate(date)}</span>}
-      >
-        <Column width={100} align="center" style={{ backgroundColor: index % 2 === 0 ? 'white' : '#e6f7ff' }}>
-          <HeaderCell style={{ fontWeight: 'bold' }}>Attendance</HeaderCell>
-          <AttendanceData date={date} />
-        </Column>
+          key={`date_${date}`}
+          align="center"
+          header={
+            <span style={{ fontWeight: "bold" }}>{formatDate(date)}</span>
+          }
+        >
+          <Column
+            width={100}
+            align="center"
+            style={{ backgroundColor: index % 2 === 0 ? "white" : "#e6f7ff" }}
+          >
+            <HeaderCell style={{ fontWeight: "bold" }}>Attendance</HeaderCell>
+            <AttendanceData date={date} />
+          </Column>
 
-        <Column width={80} align="center" title="In" style={{ backgroundColor: index % 2 === 0 ? 'white' : '	#e6f7ff' }}>
-          <HeaderCell style={{ fontWeight: 'bold' }}>In/Out</HeaderCell>
-          <InOut date={date} />
-        </Column>
-        <Column width={80} align="center" title="In" style={{ backgroundColor: index % 2 === 0 ? 'white' : '	#e6f7ff' }}>
-          <HeaderCell style={{ fontWeight: 'bold' }}>Duration</HeaderCell>
-          <DurationData date={date} />
-        </Column>
-      </ColumnGroup>
+          <Column
+            width={80}
+            align="center"
+            title="In"
+            style={{ backgroundColor: index % 2 === 0 ? "white" : "	#e6f7ff" }}
+          >
+            <HeaderCell style={{ fontWeight: "bold" }}>In/Out</HeaderCell>
+            <InOut date={date} />
+          </Column>
+          <Column
+            width={80}
+            align="center"
+            title="In"
+            style={{ backgroundColor: index % 2 === 0 ? "white" : "	#e6f7ff" }}
+          >
+            <HeaderCell style={{ fontWeight: "bold" }}>Duration</HeaderCell>
+            <DurationData date={date} />
+          </Column>
+        </ColumnGroup>
       );
 
       allDynamicColumns.push(dynamicColumn);
@@ -739,7 +793,7 @@ const AttendanceReport = () => {
 
           borderRadius: "1px",
           padding: "18px",
-        fontWeight: 'bold' ,
+          fontWeight: "bold",
         }}
       >
         Total Days
@@ -753,9 +807,8 @@ const AttendanceReport = () => {
 
           borderRadius: "1px",
           padding: "18px",
-          fontWeight: 'bold',
+          fontWeight: "bold",
         }}
-        
       >
         Present Days
       </HeaderCell>
@@ -785,21 +838,21 @@ const AttendanceReport = () => {
                     />
                   </div>
                 </Col>
-              
-                 <Button
+
+                <Button
                   type="button"
                   className="btn btn-info"
                   onClick={exportExcelFile}
-                  style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', width: '80px' }}
+                  style={{
+                    padding: "0.25rem 0.5rem",
+                    fontSize: "0.75rem",
+                    width: "80px",
+                  }}
                 >
                   <i className="ri-file-download-line align-bottom me-1"></i>
                   Export
-                </Button> 
+                </Button>
               </Row>
-
-
-
-
             </CardHeader>
           </Card>
         </Container>
@@ -820,7 +873,7 @@ const AttendanceReport = () => {
                 background: "#e6f7ff",
                 borderRadius: "1px",
                 padding: "18px",
-                fontWeight: 'bold' ,
+                fontWeight: "bold",
               }}
             >
               Employee
@@ -838,7 +891,11 @@ const AttendanceReport = () => {
           className="custom-modal"
         >
           <ModalHeader>
-            <h5 className="modal-title" id="exampleModalToggleLabel" style={{ fontSize: 'smaller' }}>
+            <h5
+              className="modal-title"
+              id="exampleModalToggleLabel"
+              style={{ fontSize: "smaller" }}
+            >
               Date: {timelineDate}
             </h5>
           </ModalHeader>
@@ -849,10 +906,12 @@ const AttendanceReport = () => {
                   <thead>
                     <tr>
                       <th>
-                        Check In <i className="mdi mdi-arrow-down-thick arrow-icon"></i>
+                        Check In{" "}
+                        <i className="mdi mdi-arrow-down-thick arrow-icon"></i>
                       </th>
                       <th>
-                        Check Out <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
+                        Check Out{" "}
+                        <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
                       </th>
                       <th>Total Hours</th>
                       <th>Location</th>
@@ -863,36 +922,72 @@ const AttendanceReport = () => {
                       timelineList.map((data, idx) => {
                         let checkInData = timelineList[idx];
                         let checkOutData = timelineList[idx + 1];
-                        if (checkInData && parseInt(checkInData.entry_type) === 1) {
-                          let checkInTime = format(ParseTime(checkInData.entry_time), "h:mm a");
+                        if (
+                          checkInData &&
+                          parseInt(checkInData.entry_type) === 1
+                        ) {
+                          let checkInTime = format(
+                            ParseTime(checkInData.entry_time),
+                            "h:mm a"
+                          );
                           let checkOutTime = checkOutData
-                            ? format(ParseTime(checkOutData.entry_time), "h:mm a")
+                            ? format(
+                                ParseTime(checkOutData.entry_time),
+                                "h:mm a"
+                              )
                             : "";
-                          let totalDifference = checkOutData ? differenceInMinutes(ParseTime(checkOutData.entry_time), ParseTime(checkInData.entry_time)) : 0;
+                          let totalDifference = checkOutData
+                            ? differenceInMinutes(
+                                ParseTime(checkOutData.entry_time),
+                                ParseTime(checkInData.entry_time)
+                              )
+                            : 0;
                           let totalHours = Math.floor(totalDifference / 60);
                           let totalMinutes = totalDifference % 60;
 
-                        
-                          let formattedTotalHours = totalHours.toString().padStart(2, '0');
-                          let formattedTotalMinutes = totalMinutes.toString().padStart(2, '0');
+                          let formattedTotalHours = totalHours
+                            .toString()
+                            .padStart(2, "0");
+                          let formattedTotalMinutes = totalMinutes
+                            .toString()
+                            .padStart(2, "0");
 
                           return (
                             <tr key={idx}>
                               <td>
-
-                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkInTime}</p>
+                                <p
+                                  className="text-muted mb-1"
+                                  style={{ fontWeight: "bold" }}
+                                >
+                                  {checkInTime}
+                                </p>
                               </td>
                               <td>
-
-                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{checkOutTime}</p>
+                                <p
+                                  className="text-muted mb-1"
+                                  style={{ fontWeight: "bold" }}
+                                >
+                                  {checkOutTime}
+                                </p>
                               </td>
                               <td>
-                                <p className="text-muted mb-1" style={{ fontWeight: 'bold' }}>{formattedTotalHours}:{formattedTotalMinutes} Hr</p>
+                                <p
+                                  className="text-muted mb-1"
+                                  style={{ fontWeight: "bold" }}
+                                >
+                                  {formattedTotalHours}:{formattedTotalMinutes}{" "}
+                                  Hr
+                                </p>
                               </td>
                               <td>
                                 <small className="mb-0 text-muted">
-                                  <a href={`https://maps.google.com/?q=${checkInData.location}`} target="_blank" rel="noopener noreferrer">
-                                    <i className="mdi mdi-map-marker"></i> {checkInData.location || ""}
+                                  <a
+                                    href={`https://maps.google.com/?q=${checkInData.location}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <i className="mdi mdi-map-marker"></i>{" "}
+                                    {checkInData.location || ""}
                                   </a>
                                 </small>
                               </td>
@@ -905,13 +1000,17 @@ const AttendanceReport = () => {
                 </table>
               </SimpleBar>
               <div className="text-center mt-3">
-                <Button className="btn btn-warning" onClick={() => { open_timeline(); }}>
+                <Button
+                  className="btn btn-warning"
+                  onClick={() => {
+                    open_timeline();
+                  }}
+                >
                   Close
                 </Button>
               </div>
             </div>
           </ModalBody>
-
         </Modal>
       </div>
     </React.Fragment>

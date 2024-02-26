@@ -2354,7 +2354,7 @@ export const holiday_display = {
 };
 
 export const week_off_display = {
-  class: "warning",
+  class: "primary",
   text: "W/O",
 };
 

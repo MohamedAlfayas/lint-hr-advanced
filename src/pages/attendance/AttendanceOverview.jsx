@@ -71,9 +71,11 @@ const AttendanceOverview = () => {
             : 0;
 
         if (d.is_present === true) {
-          final_paid_hr_count = parseFloat(
-            (d.final_paid_hr_in_seconds / 3600).toFixed(1)
-          );
+          final_paid_hr_count =
+            parseInt(d.final_paid_hr_in_seconds) === 0
+              ? parseFloat((d.final_checked_in_hr_in_seconds / 3600).toFixed(1))
+              : parseFloat((d.final_paid_hr_in_seconds / 3600).toFixed(1));
+
           let balance_hours_diff =
             parseFloat(daily_work_hour_duration_without_break) -
             parseFloat(final_paid_hr_count);
@@ -89,6 +91,13 @@ const AttendanceOverview = () => {
           weekend_hours_count = 0;
           leave_hours_count = 0;
           inactive_hours_count = 0;
+        } else if (d.is_leave_approved === true) {
+          final_paid_hr_count = 0;
+          balance_hr_count = 0;
+          holiday_hours_count = 0;
+          weekend_hours_count = 0;
+          inactive_hours_count = 0;
+          leave_hours_count = daily_work_hour_duration_without_break;
         } else if (d.is_holiday === true) {
           final_paid_hr_count = 0;
           balance_hr_count = 0;
@@ -97,19 +106,20 @@ const AttendanceOverview = () => {
           leave_hours_count = 0;
           inactive_hours_count = 0;
         } else if (d.is_week_off === true) {
+          console.log("Entered Week off");
           final_paid_hr_count = 0;
           balance_hr_count = 0;
           holiday_hours_count = 0;
           weekend_hours_count = daily_work_hour_duration_without_break;
           leave_hours_count = 0;
           inactive_hours_count = 0;
-        } else if (d.is_leave_approved === true) {
+        } else if (d.leave_taken_without_approval === true) {
           final_paid_hr_count = 0;
           balance_hr_count = 0;
           holiday_hours_count = 0;
           weekend_hours_count = 0;
-          inactive_hours_count = 0;
-          leave_hours_count = daily_work_hour_duration_without_break;
+          leave_hours_count = 0;
+          inactive_hours_count = daily_work_hour_duration_without_break;
         } else {
           final_paid_hr_count = 0;
           balance_hr_count = 0;

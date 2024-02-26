@@ -387,13 +387,6 @@ const AttendanceEmployeeTable = () => {
                 </ButtonToolbar>
               </Whisper>
             </div>
-
-            {/* <Button
-              appearance="link"
-              onClick={() => editAttendanceReport(rowData)}
-            >
-              Edit
-            </Button> */}
           </Cell>
         );
       } else {
