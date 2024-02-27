@@ -241,6 +241,24 @@ const Employee = () => {
       },
     },
     {
+      Header: "Work Schedule",
+      id: "work-schedule",
+      filterable: false,
+      accessor: (obj) => {
+        const WorkSchedule = GetLocalStorageData("work_schedule");
+        let workscheduleData = WorkSchedule
+          ? WorkSchedule.filter((data) => obj.work_schedule_id === data.id)
+          : [];
+        return (
+          <>
+            {workscheduleData.map((d) => (
+              <React.Fragment>{d.name}</React.Fragment>
+            ))}
+          </>
+        );
+      },
+    },
+    {
       Header: "Reporting Manager",
       filterable: false,
       id: "reporting_manager_id",

@@ -66,6 +66,7 @@ export const EmployeeDisplayInSelect = ({ innerProps, label, data }) => (
               alignItems: "center",
               background: "#0ab39c",
               marginRight: "10px",
+              marginLeft: "5px",
             }}
             data-bs-toggle="tooltip"
             title={data.fname}

@@ -1907,6 +1907,8 @@ export const export_sample_data_info = [
 
 export const path_list_for_timer_hide = ["/attendance"];
 
+export const employee_view_component_name = ["/employee/view"];
+
 export const week_list = [
   { id: 0, label: "Sunday", value: 0 },
   { id: 1, label: "Monday", value: 1 },
@@ -2366,4 +2368,14 @@ export const leave_display = {
 export const absent_display = {
   class: "danger",
   text: "Absent",
+};
+
+export const earlyout_display = {
+  class: "warning",
+  text: "Early Out",
+};
+
+export const earlyin_display = {
+  class: "success",
+  text: "Early In",
 };

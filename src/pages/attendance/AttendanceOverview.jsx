@@ -73,7 +73,7 @@ const AttendanceOverview = () => {
         if (d.is_present === true) {
           final_paid_hr_count =
             parseInt(d.final_paid_hr_in_seconds) === 0
-              ? parseFloat((d.final_checked_in_hr_in_seconds / 3600).toFixed(1))
+              ? parseFloat((d.maximum_full_day_work_duration / 3600).toFixed(1))
               : parseFloat((d.final_paid_hr_in_seconds / 3600).toFixed(1));
 
           let balance_hours_diff =

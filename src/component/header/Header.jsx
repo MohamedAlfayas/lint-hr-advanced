@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-
+// import { FaSearch } from "react-icons/fa";
 //import images
 import logoSm from "../../assets/images/logo-sm.png";
 import logoDark from "../../assets/images/logo-dark.png";
 import logoLight from "../../assets/images/logo-light.png";
 import { useDispatch, useSelector } from "react-redux";
+import Select, { components } from "react-select";
 import { changeSidebarVisibilityAction } from "../../redux/reducers/ChildReducer/LayoutReducer";
-import { Dropdown, DropdownMenu, DropdownToggle, Form } from "reactstrap";
+import { Col, Dropdown, DropdownMenu, DropdownToggle, Form } from "reactstrap";
 import LightDark from "../../common/js/LightDark";
 import NotificationDropdown from "../../common/js/NotificationDropdown";
 import ProfileDropdown from "../../common/js/ProfileDropdown";
@@ -19,15 +20,42 @@ import { leftsidbarSizeTypes } from "../../layout/Constants";
 import { path_list_for_timer_hide } from "../../common/constant/Constants";
 import { GetTotalWorkDuration } from "../../common/js/GetTotalWorkDuration";
 import { setMyProfileDataReducer } from "../../redux/reducers/ChildReducer/MyProfileReducer";
+import { EmployeeDisplayInSelect } from "../../common/js/EmployeeDisplayInSelect";
+import { Api } from "../../common/api/Api";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { employee_view_component_name } from "../../common/constant/Constants";
 
 const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const dispatch = useDispatch();
   const { sidebarVisibilitytype } = useSelector((state) => state.LayoutReducer);
+  const [employeeOptions, setEmployeeOptions] = useState([]);
+  const employee_data = GetLocalStorageData("employee");
+  useEffect(() => {
+    Api({
+      type: "GET",
+      url: "employee/get-my-team-members/",
+    })
+      .then((res) => {
+        const response = res?.data?.data;
+        let emp_options = response.map((d) =>
+          employee_data.find((e) => e.id === d)
+        );
+        console.log("Emp Options = ", emp_options);
+        setEmployeeOptions(emp_options);
+      })
+      .catch((err) => {
+        console.log("Something Went Wrong !!");
+      });
+  }, []);
 
-  const [search, setSearch] = useState(false);
-  const toogleSearch = () => {
-    setSearch(!search);
-  };
+  // const ControlWithSearchIcon = ({ children, ...props }) => (
+  //   <components.Control {...props} style={{ width: "100%" }}>
+  //     <div className="custom-select-control">
+  //       <FaSearch className="search-icon" />
+  //       <div>{children}</div>
+  //     </div>
+  //   </components.Control>
+  // );
 
   const toogleMenuBtn = () => {
     var windowSize = document.documentElement.clientWidth;
@@ -114,38 +142,41 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
                 </span>
               </button>
             </div>
+            {location.pathname.includes(employee_view_component_name) ? (
+              <div className="form-icon right">
+                <Col lg={12}>
+                  <Select
+                    name="employee_attendance"
+                    id="employee_attendance"
+                    options={employeeOptions || []}
+                    components={{
+                      Option: EmployeeDisplayInSelect,
+                      // Control: ControlWithSearchIcon,
+                      DropdownIndicator: null,
+                    }}
+                    styles={{
+                      control: (provided) => ({
+                        ...provided,
+                        width: "200px",
+                        margin: 0,
+                        padding: 0,
+                      }),
+                    }}
+                    placeholder="Select a Employee"
+                    // value={
+                    //   !!filterKeys?.employee
+                    //     ? employeeOptions.find(
+                    //         (d) => d.id === filterKeys?.employee
+                    //       )
+                    //     : []
+                    // }
+                    // onChange={handleEmployeeChange}
+                  />
+                </Col>
+              </div>
+            ) : null}
 
             <div className="d-flex align-items-center">
-              <Dropdown
-                isOpen={search}
-                toggle={toogleSearch}
-                className="d-md-none topbar-head-dropdown header-item"
-              >
-                <DropdownToggle
-                  type="button"
-                  tag="button"
-                  className="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle"
-                >
-                  <i className="bx bx-search fs-22"></i>
-                </DropdownToggle>
-                <DropdownMenu className="dropdown-menu-lg dropdown-menu-end p-0">
-                  <Form className="p-3">
-                    <div className="form-group m-0">
-                      <div className="input-group">
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="Search ..."
-                          aria-label="Recipient's username"
-                        />
-                        <button className="btn btn-primary" type="submit">
-                          <i className="mdi mdi-magnify"></i>
-                        </button>
-                      </div>
-                    </div>
-                  </Form>
-                </DropdownMenu>
-              </Dropdown>
               {path_list_for_timer_hide.includes(location.pathname) ? null : (
                 <WebCheckInOut showTimer={true} />
               )}

@@ -58,6 +58,12 @@ import {
 import { set } from "lodash";
 import { addLeaveApplication } from "../../../redux/reducers/ChildReducer/LeaveApplyReducer";
 import { setLeaveTypeForCurrentEmployee } from "../../../redux/reducers/ChildReducer/LeaveTypeReducer";
+import {
+  late_entry_display,
+  on_time_entry_display,
+  earlyin_display,
+  earlyout_display,
+} from "../../../common/constant/Constants";
 
 const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
@@ -275,6 +281,52 @@ const AttendanceEmployeeTable = () => {
           </span>
         </Cell>
       );
+    }
+  };
+
+  const ActivityCell = ({ rowData, dataKey, ...props }) => {
+    if (rowData.is_present === false) {
+      return (
+        <Cell {...props} className="link-group">
+          {null}
+        </Cell>
+      );
+    } else {
+      let entry_status;
+      if (rowData.day_status === null) {
+        entry_status = on_time_entry_display;
+        return (
+          <Cell {...props} className="link-group">
+            <i
+              class={`mdi mdi-circle fs-10 align-middle text-${entry_status?.class} me-1 ms-2`}
+            ></i>
+            <span class="fs-12 mb-0 text-muted">
+              {entry_status?.text || ""}
+            </span>
+          </Cell>
+        );
+      } else {
+        entry_status =
+          rowData.day_status.early_in === true
+            ? earlyin_display
+            : rowData.day_status.ontime === true
+            ? on_time_entry_display
+            : rowData.day_status?.late === true
+            ? late_entry_display
+            : rowData.day_status?.early_out === true
+            ? earlyout_display
+            : on_time_entry_display;
+        return (
+          <Cell {...props} className="link-group">
+            <i
+              class={`mdi mdi-circle fs-10 align-middle text-${entry_status?.class} me-1 ms-2`}
+            ></i>
+            <span class="fs-12 mb-0 text-muted">
+              {entry_status?.text || ""}
+            </span>
+          </Cell>
+        );
+      }
     }
   };
 
@@ -668,7 +720,7 @@ const AttendanceEmployeeTable = () => {
         </Column>
         <Column width={100}>
           <HeaderCell>Activity</HeaderCell>
-          <Cell>{null}</Cell>
+          <ActivityCell />
         </Column>
         <Column width={100}>
           <HeaderCell>Notes</HeaderCell>
