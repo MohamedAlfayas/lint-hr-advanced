@@ -44,7 +44,7 @@ const AuthLoader = () => {
               </div>
               <div>
                 <p className="mt-3 fs-15 fw-medium" style={{ color: "black" }}>
-                  This won't take more than a minute, You'll be tken there once
+                  This won't take more than a minute, You'll be taken there once
                   it's ready.
                 </p>
               </div>

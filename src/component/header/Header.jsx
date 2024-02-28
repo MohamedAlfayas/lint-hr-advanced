@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 // import { FaSearch } from "react-icons/fa";
 //import images
 import logoSm from "../../assets/images/logo-sm.png";
@@ -30,6 +30,8 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const { sidebarVisibilitytype } = useSelector((state) => state.LayoutReducer);
   const [employeeOptions, setEmployeeOptions] = useState([]);
   const employee_data = GetLocalStorageData("employee");
+  const { id } = useParams();
+
   useEffect(() => {
     Api({
       type: "GET",
@@ -47,15 +49,6 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
         console.log("Something Went Wrong !!");
       });
   }, []);
-
-  // const ControlWithSearchIcon = ({ children, ...props }) => (
-  //   <components.Control {...props} style={{ width: "100%" }}>
-  //     <div className="custom-select-control">
-  //       <FaSearch className="search-icon" />
-  //       <div>{children}</div>
-  //     </div>
-  //   </components.Control>
-  // );
 
   const toogleMenuBtn = () => {
     var windowSize = document.documentElement.clientWidth;
@@ -101,6 +94,12 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
     }
   };
 
+  const navigate = useNavigate();
+
+  const handleEmployeeChange = (e) => {
+    navigate(`/employee/view/${e.value}`);
+  };
+
   const location = useLocation();
 
   return (
@@ -141,40 +140,34 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
                   <span></span>
                 </span>
               </button>
+              {location.pathname.includes(employee_view_component_name) ? (
+                <div className="form-icon right" style={{ marginTop: "17px" }}>
+                  <Col lg={12}>
+                    <Select
+                      name="employee_attendance"
+                      id="employee_attendance"
+                      options={employeeOptions || []}
+                      components={{
+                        Option: EmployeeDisplayInSelect,
+                      }}
+                      styles={{
+                        control: (provided) => ({
+                          ...provided,
+                          width: "200px",
+                          margin: 0,
+                          padding: 0,
+                        }),
+                      }}
+                      placeholder="Select Employee"
+                      value={
+                        (id && employeeOptions.find((e) => e.id === id)) || []
+                      }
+                      onChange={handleEmployeeChange}
+                    />
+                  </Col>
+                </div>
+              ) : null}
             </div>
-            {location.pathname.includes(employee_view_component_name) ? (
-              <div className="form-icon right">
-                <Col lg={12}>
-                  <Select
-                    name="employee_attendance"
-                    id="employee_attendance"
-                    options={employeeOptions || []}
-                    components={{
-                      Option: EmployeeDisplayInSelect,
-                      // Control: ControlWithSearchIcon,
-                      DropdownIndicator: null,
-                    }}
-                    styles={{
-                      control: (provided) => ({
-                        ...provided,
-                        width: "200px",
-                        margin: 0,
-                        padding: 0,
-                      }),
-                    }}
-                    placeholder="Select a Employee"
-                    // value={
-                    //   !!filterKeys?.employee
-                    //     ? employeeOptions.find(
-                    //         (d) => d.id === filterKeys?.employee
-                    //       )
-                    //     : []
-                    // }
-                    // onChange={handleEmployeeChange}
-                  />
-                </Col>
-              </div>
-            ) : null}
 
             <div className="d-flex align-items-center">
               {path_list_for_timer_hide.includes(location.pathname) ? null : (

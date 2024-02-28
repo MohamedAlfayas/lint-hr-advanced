@@ -1,3 +1,8 @@
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+
+const RoleData = GetLocalStorageData("role") || [];
+const departmentData = GetLocalStorageData("department") || [];
+
 export const EmployeeDisplayInSelect = ({ innerProps, label, data }) => (
   <div {...innerProps} className="d-flex align-items-center">
     {data?.id === "0" ? (
@@ -87,12 +92,35 @@ export const EmployeeDisplayInSelect = ({ innerProps, label, data }) => (
             marginRight: "10px",
           }}
         >
-          <div style={{ fontWeight: "bold" }}>{label}</div>
-          {data?.emp_id && (
-            <div style={{ marginTop: "-2px", fontSize: "10px" }}>
-              #{data.emp_id}
-            </div>
-          )}
+          <div>
+            <span style={{ fontWeight: "bold" }}>{label}</span>
+            {data?.emp_id && (
+              <span style={{ fontSize: "11px" }}> - {data.emp_id}</span>
+            )}
+          </div>
+
+          <div>
+            <span style={{ marginTop: "5px", fontSize: "10px" }}>
+              {data?.primary_department_id_list
+                ? departmentData?.length
+                  ? departmentData.find(
+                      (d) => d.id === data.primary_department_id_list[0]
+                    )?.name
+                  : ""
+                : ""}
+            </span>
+            {/* {data?.emp_id && (
+              <span style={{ fontSize: "10px" }}>
+                {" "}
+                /{" "}
+                {data?.role_id
+                  ? RoleData?.length
+                    ? RoleData.find((d) => d.id === data?.role_id)?.name
+                    : ""
+                  : ""}
+              </span>
+            )} */}
+          </div>
         </div>
       </>
     )}

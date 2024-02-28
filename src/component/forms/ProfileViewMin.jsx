@@ -56,9 +56,11 @@ const ProfileViewMin = () => {
     }
   }
 
-
   const workScheduleId = form_obj.work_schedule_id;
-  const workScheduleName = getWorkScheduleName(workScheduleId, WorkScheduleData);
+  const workScheduleName = getWorkScheduleName(
+    workScheduleId,
+    WorkScheduleData
+  );
 
   useEffect(() => {
     const today = new Date();
@@ -98,38 +100,33 @@ const ProfileViewMin = () => {
 
   const navigate = useNavigate();
 
-
   const getFileIcon = (fileName) => {
     const fileType = getFileType(fileName);
 
     switch (fileType) {
-      case 'pdf':
+      case "pdf":
         return (
           <div>
-            <i className="ri-file-pdf-line" style={{ fontSize: '25px' }} />
-
+            <i className="ri-file-pdf-line" style={{ fontSize: "25px" }} />
           </div>
         );
-      case 'img':
+      case "img":
         return (
           <div>
-            <i className="ri-image-2-line" style={{ fontSize: '25px' }} />
-
+            <i className="ri-image-2-line" style={{ fontSize: "25px" }} />
           </div>
         );
-      case 'xlsx':
-      case 'xls':
+      case "xlsx":
+      case "xls":
         return (
           <div>
-            <i className=" ri-file-excel-2-line" style={{ fontSize: '25px' }} />
-
+            <i className=" ri-file-excel-2-line" style={{ fontSize: "25px" }} />
           </div>
         );
-      case 'word':
+      case "word":
         return (
           <div>
-            <i className=" ri-file-word-2-line" style={{ fontSize: '25px' }} />
-
+            <i className=" ri-file-word-2-line" style={{ fontSize: "25px" }} />
           </div>
         );
       default:
@@ -141,40 +138,36 @@ const ProfileViewMin = () => {
     const fileType = getFileType(fileName);
 
     switch (fileType) {
-      case 'pdf':
+      case "pdf":
         return (
           <div>
-
             <a download target="_blank" rel="noopener noreferrer">
-              <i className="ri-download-2-line" style={{ fontSize: '20px' }} />
+              <i className="ri-download-2-line" style={{ fontSize: "20px" }} />
             </a>
           </div>
         );
-      case 'img':
+      case "img":
         return (
           <div>
-
             <a download target="_blank" rel="noopener noreferrer">
-              <i className="ri-download-2-line" style={{ fontSize: '20px' }} />
+              <i className="ri-download-2-line" style={{ fontSize: "20px" }} />
             </a>
           </div>
         );
-      case 'xlsx':
-      case 'xls':
+      case "xlsx":
+      case "xls":
         return (
           <div>
-
             <a download target="_blank" rel="noopener noreferrer">
-              <i className="ri-download-2-line" style={{ fontSize: '20px' }} />
+              <i className="ri-download-2-line" style={{ fontSize: "20px" }} />
             </a>
           </div>
         );
-      case 'word':
+      case "word":
         return (
           <div>
-
             <a download target="_blank" rel="noopener noreferrer">
-              <i className="ri-download-2-line" style={{ fontSize: '20px' }} />
+              <i className="ri-download-2-line" style={{ fontSize: "20px" }} />
             </a>
           </div>
         );
@@ -184,14 +177,14 @@ const ProfileViewMin = () => {
   };
 
   const getFileType = (fileName) => {
-    const extension = fileName.split('.').pop();
+    const extension = fileName.split(".").pop();
     // Map common file extensions to file types
     const fileTypeMap = {
-      pdf: ['pdf'],
-      img: ['png', 'jpg', 'jpeg', 'gif'],
-      xlsx: ['xlsx'],
-      xls: ['xls'],
-      word: ['doc', 'docx'],
+      pdf: ["pdf"],
+      img: ["png", "jpg", "jpeg", "gif"],
+      xlsx: ["xlsx"],
+      xls: ["xls"],
+      word: ["doc", "docx"],
     };
 
     for (const [type, extensions] of Object.entries(fileTypeMap)) {
@@ -201,7 +194,7 @@ const ProfileViewMin = () => {
     }
 
     // Default to 'other' if the file type is not recognized
-    return 'other';
+    return "other";
   };
   return (
     <React.Fragment>
@@ -223,8 +216,8 @@ const ProfileViewMin = () => {
               {profileObj?.primary_department
                 ? DepartmentData.length
                   ? DepartmentData.find(
-                    (d) => d.id === profileObj?.primary_department
-                  )?.name
+                      (d) => d.id === profileObj?.primary_department
+                    )?.name
                   : ""
                 : ""}
             </p>
@@ -274,6 +267,7 @@ const ProfileViewMin = () => {
             </div>
           </Col>
         </Row>
+
         <div className="table-responsive table-card p-3">
           <h5 className="fs-15 mb-2 mt-3 ms-3 text-center">Basic Details</h5>
           <Table className="table table-borderless mb-0">
@@ -291,8 +285,8 @@ const ProfileViewMin = () => {
                   {profileObj?.gender === 1
                     ? "Male"
                     : profileObj?.gender === 2
-                      ? "Female"
-                      : ""}
+                    ? "Female"
+                    : ""}
                 </td>
               </tr>
               <tr>
@@ -333,11 +327,17 @@ const ProfileViewMin = () => {
                     <td>
                       {c.value && (
                         <>
-
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <div
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
                             {getFileIcon(c.value)}
-                            <span style={{ marginLeft: '5px', marginRight: '5px' }}>
-                              {c.value.substring(c.value.lastIndexOf('/') + 1)}
+                            <span
+                              style={{
+                                marginLeft: "5px",
+                                marginRight: "5px",
+                              }}
+                            >
+                              {c.value.substring(c.value.lastIndexOf("/") + 1)}
                             </span>
                             {getDownloadIcon(c.value)}
                           </div>
@@ -502,7 +502,7 @@ const ProfileViewMin = () => {
           </TabContent>
         </div>
 
-        <div className="offcanvas-foorter border p-3 hstack gap-3 text-center position-relative">
+        <div className="offcanvas-foorter border p-3 hstack gap-3 text-center position-relative mt-auto">
           <button className="btn btn-light w-100">
             <i className="ri-at-line align-bottom ms-1"></i> Send Email
           </button>
