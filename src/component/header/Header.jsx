@@ -160,7 +160,11 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
                       }}
                       placeholder="Select Employee"
                       value={
-                        (id && employeeOptions.find((e) => e.id === id)) || []
+                        (id &&
+                          employeeOptions.find(
+                            (e) => e.id === parseInt(id, 10)
+                          )) ||
+                        []
                       }
                       onChange={handleEmployeeChange}
                     />

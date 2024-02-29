@@ -866,6 +866,7 @@ const AttendanceReport = () => {
           autoHeight={true}
           loading={loading}
           className="mb-5"
+          affixHorizontalScrollbar
         >
           <Column width={250} fixed="left" align="center">
             <HeaderCell

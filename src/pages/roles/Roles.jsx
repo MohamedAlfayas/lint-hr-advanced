@@ -122,8 +122,6 @@ const Roles = () => {
         filterOptions={filterOptions}
         width_per={"60%"}
       />
-
-      <RsuiteTable />
     </React.Fragment>
   );
 };

@@ -673,6 +673,7 @@ const AttendanceEmployeeTable = () => {
         loading={loading}
         bordered={true}
         className="mb-5"
+        affixHorizontalScrollbar
       >
         <Column width={175} align="center" fixed="left">
           <HeaderCell>Date</HeaderCell>

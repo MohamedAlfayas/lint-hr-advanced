@@ -25,7 +25,10 @@ import {
 import SimpleBar from "simplebar-react";
 import DummyUserImg from "../../assets/images/users/user.png";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
-import { ConvertDateFormat } from "../../common/js/ConvertDateFormat";
+import {
+  ConvertDateFormat,
+  ConvertISODateFormat,
+} from "../../common/js/ConvertDateFormat";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { Api } from "../../common/api/Api";
 import { parse, format } from "date-fns";
@@ -41,6 +44,7 @@ const ProfileViewMin = () => {
   console.log("WS Data = ", WorkScheduleData);
   const [profileObj, setProfileObj] = useState({});
   const [empId, setEmpId] = useState(0);
+  const [todayDate, setTodayDate] = useState(0);
   const [individualAttendanceReportData, setIndividualAttendanceReportData] =
     useState([]);
 
@@ -83,6 +87,9 @@ const ProfileViewMin = () => {
 
   useEffect(() => {
     console.log("Form Obj = ", form_obj);
+    const currentDate = new Date();
+    setTodayDate(ConvertISODateFormat(currentDate));
+
     if (form_obj) {
       setProfileObj(form_obj);
       setEmpId(form_obj.id);
@@ -248,24 +255,42 @@ const ProfileViewMin = () => {
           </div>
         </div>
         <Row className="g-0 text-center">
-          <Col xs={4}>
-            <div className="p-3 border border-dashed border-start-0">
-              <h5 className="mb-1 profile-project">09:00</h5>
-              <p className="text-muted mb-0">Check In</p>
-            </div>
-          </Col>
-          <Col xs={4}>
-            <div className="p-3 border border-dashed border-start-0">
-              <h5 className="mb-1 profile-task">00:00</h5>
-              <p className="text-muted mb-0">Check Out</p>
-            </div>
-          </Col>
-          <Col xs={4}>
-            <div className="p-3 border border-dashed border-end-0">
-              <h5 className="mb-1 profile-task">07:00</h5>
-              <p className="text-muted mb-0">Working Hrs</p>
-            </div>
-          </Col>
+          {individualAttendanceReportData.map((item) =>
+            item.date === todayDate ? (
+              <>
+                <Col xs={4}>
+                  <div className="p-3 border border-dashed border-start-0">
+                    <h5 className="mb-1 profile-project">
+                      {!!item?.first_check_in
+                        ? format(ParseTime(item?.first_check_in), "h:mm a")
+                        : "-"}
+                    </h5>
+                    <p className="text-muted mb-0">Check In</p>
+                  </div>
+                </Col>
+                <Col xs={4}>
+                  <div className="p-3 border border-dashed border-start-0">
+                    <h5 className="mb-1 profile-task">
+                      {!!item?.last_check_out
+                        ? format(ParseTime(item?.last_check_out), "h:mm a")
+                        : "-"}
+                    </h5>
+                    <p className="text-muted mb-0">Check Out</p>
+                  </div>
+                </Col>
+                <Col xs={4}>
+                  <div className="p-3 border border-dashed border-end-0">
+                    <h5 className="mb-1 profile-task">
+                      {!!item?.total_work_duration
+                        ? ConvertSecondsToTime(item?.total_work_duration)
+                        : "-"}
+                    </h5>
+                    <p className="text-muted mb-0">Working Hrs</p>
+                  </div>
+                </Col>
+              </>
+            ) : null
+          )}
         </Row>
 
         <div className="table-responsive table-card p-3">
@@ -502,7 +527,15 @@ const ProfileViewMin = () => {
           </TabContent>
         </div>
 
-        <div className="offcanvas-foorter border p-3 hstack gap-3 text-center position-relative mt-auto">
+        <div
+          className="offcanvas-foorter border p-3 hstack gap-3 text-center position-sticky bottom-0 bg-white"
+          style={{
+            position: "fixed",
+            bottom: 0,
+            width: "100%",
+            backgroundColor: "white",
+          }}
+        >
           <button className="btn btn-light w-100">
             <i className="ri-at-line align-bottom ms-1"></i> Send Email
           </button>

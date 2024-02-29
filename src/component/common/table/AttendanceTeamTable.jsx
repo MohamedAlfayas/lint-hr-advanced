@@ -712,6 +712,7 @@ const AttendanceTeamTable = () => {
         autoHeight={true}
         loading={loading}
         bordered={true}
+        affixHorizontalScrollbar
         className="mb-5"
       >
         {allColumns}
