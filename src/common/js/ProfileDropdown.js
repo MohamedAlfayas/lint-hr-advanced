@@ -80,7 +80,7 @@ const ProfileDropdown = () => {
         toast.error(Api?.data?.message || Api?.data?.detail);
       }
     } else {
-      toast.error('Something Went Wrong Please Relaod the Page')
+      toast.error(UnsubscribeTopicApi?.data?.message)
     }
 
   };

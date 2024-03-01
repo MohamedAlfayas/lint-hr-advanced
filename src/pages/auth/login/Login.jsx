@@ -99,47 +99,48 @@ const Login = () => {
             },
           })
             .then((response) => {
-              console.log("RESP = ", response);
+              console.log("Topic Subscribed Successfully !!! = ", response);
+              localStorage.setItem(
+                "lint_hr_globaldata",
+                JSON.stringify(res?.data?.meta_data)
+              );
+              localStorage.setItem(
+                "lint_hr_token",
+                JSON.stringify(res?.data?.token)
+              );
+              localStorage.setItem(
+                "lint_hr_profile_data",
+                JSON.stringify(res?.data?.profile_data)
+              );
+              localStorage.setItem(
+                "user_perm_list",
+                JSON.stringify([
+                  "organization",
+                  "employee",
+                  "leave_type",
+                  "custom_field",
+                ])
+              );
+              dispatch(setMyProfileDataReducer(res?.data?.profile_data));
+              // localStorage.setItem(
+              //   "left_side_bar_type",
+              //   leftsidbarSizeTypes.DEFAULT
+              // );
+              dispatch(
+                changeLeftsidebarSizeTypeAction(leftsidbarSizeTypes.DEFAULT)
+              );
+
+              setTimeout(() => {
+                toast.success(res?.data?.message);
+                navigate("/dashboard");
+                dispatch(setLoaderVisible(false));
+              }, 1000);
             })
             .catch((error) => {
               console.log("ERR = ", error);
+              dispatch(setLoaderVisible(false));
+              toast.error(error?.response?.data?.message);
             });
-
-          localStorage.setItem(
-            "lint_hr_globaldata",
-            JSON.stringify(res?.data?.meta_data)
-          );
-          localStorage.setItem(
-            "lint_hr_token",
-            JSON.stringify(res?.data?.token)
-          );
-          localStorage.setItem(
-            "lint_hr_profile_data",
-            JSON.stringify(res?.data?.profile_data)
-          );
-          localStorage.setItem(
-            "user_perm_list",
-            JSON.stringify([
-              "organization",
-              "employee",
-              "leave_type",
-              "custom_field",
-            ])
-          );
-          dispatch(setMyProfileDataReducer(res?.data?.profile_data));
-          // localStorage.setItem(
-          //   "left_side_bar_type",
-          //   leftsidbarSizeTypes.DEFAULT
-          // );
-          dispatch(
-            changeLeftsidebarSizeTypeAction(leftsidbarSizeTypes.DEFAULT)
-          );
-
-          setTimeout(() => {
-            toast.success(res?.data?.message);
-            navigate("/dashboard");
-            dispatch(setLoaderVisible(false));
-          }, 1000);
         })
         .catch((err) => {
           console.log("err = ", err);
