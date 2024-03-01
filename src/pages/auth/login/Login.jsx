@@ -39,6 +39,7 @@ import { changeLeftsidebarSizeTypeAction } from "../../../redux/reducers/ChildRe
 import { setMyProfileDataReducer } from "../../../redux/reducers/ChildReducer/MyProfileReducer";
 import AuthLoader from "../loader/AuthLoader";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
+import { generateToken } from "../../../firebase";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -77,8 +78,30 @@ const Login = () => {
         // url : `http://192.168.1.100:8000/employee/auth/login/`,
         data: values,
       })
-        .then((res) => {
+        .then(async (res) => {
           console.log("adminResponse", res?.data);
+
+          const newFCMToken = await generateToken();
+
+          console.log("newFCMToken = ", newFCMToken);
+
+          axios({
+            method: "POST",
+            url: `${BaseURL}employee/subscribe-topic/`,
+            headers: {
+              Authorization: `Bearer ${res?.data?.token?.access}`,
+            },
+            data: {
+              fcm_token: newFCMToken,
+            },
+          })
+            .then((response) => {
+              console.log("RESP = ", response);
+            })
+            .catch((error) => {
+              console.log("ERR = ", error);
+            });
+
           localStorage.setItem(
             "lint_hr_globaldata",
             JSON.stringify(res?.data?.meta_data)

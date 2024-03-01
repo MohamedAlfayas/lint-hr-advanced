@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 
 //import Scss
 import './assets/scss/themes.scss';
@@ -14,8 +14,24 @@ import Route from './routes';
 
 //imoprt Css @Elan
 import './App.css';
+import { generateToken, messaging } from './firebase';
+import { onMessage } from 'firebase/messaging';
 
 function App() {
+
+  useEffect(() => {
+    generateToken();
+    onMessage(messaging, (payload) => {
+      console.log('Foreground message received:', payload);
+      const notificationTitle = payload.notification.title;
+      const notificationOptions = {
+        body: payload.notification.body,
+        icon: "/logo-sm.png"
+      };
+      new Notification(notificationTitle, notificationOptions);
+    });
+  }, [])
+
   return (
     <React.Fragment>
       <Route />

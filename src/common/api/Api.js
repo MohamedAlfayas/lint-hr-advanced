@@ -24,7 +24,7 @@ const getRefreshToken = async () => {
         console.log("New Token = ", newAccessToken);
 
         // Update the token in local storage
-        const tokenData = JSON.parse(localStorage.getItem('lint_hr_token'));
+        const tokenData = JSON.parse(('lint_hr_token'));
         tokenData.access = newAccessToken;
         localStorage.setItem('lint_hr_token', JSON.stringify(tokenData));
         // Return the new token
@@ -120,6 +120,7 @@ const logout = () => {
     localStorage.removeItem("lint_hr_globaldata");
     localStorage.removeItem("lint_hr_profile_data");
     localStorage.removeItem("user_perm_list");
+
 
     if (window.logoutChannel) {
         window.logoutChannel.close();

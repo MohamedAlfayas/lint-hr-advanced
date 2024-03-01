@@ -13,6 +13,7 @@ import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { setShowTeamTable } from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
 import { PostApi } from "../api/PostApi";
+import { generateToken } from "../../firebase";
 
 const ProfileDropdown = () => {
   const navigate = useNavigate();
@@ -31,44 +32,56 @@ const ProfileDropdown = () => {
 
   const logout = async () => {
 
-    const values = {
-      'device_type': 1,
+    const newFCMToken = await generateToken();
+
+    console.log("newFCMToken On Logout = ", newFCMToken);
+
+    let payload = {
+      fcm_token: newFCMToken
     }
 
-    const token = JSON.parse(localStorage.getItem('lint_hr_token'));
+    const UnsubscribeTopicApi = await PostApi("employee/unsubscribe-topic/", payload, false);
 
-    if (token) {
-      values['refresh_token'] = token?.refresh
-    }
-
-    const Api = await PostApi("employee/auth/logout/", values, false);
-
-    if (Api.status && Api.status === 200) {
-      localStorage.removeItem("lint_hr_token");
-      localStorage.removeItem("lint_hr_v");
-      localStorage.removeItem("lint_hr_globaldata");
-      localStorage.removeItem("lint_hr_profile_data");
-      localStorage.removeItem("user_perm_list");
-
-      if (window.logoutChannel) {
-        window.logoutChannel.close();
+    if (UnsubscribeTopicApi.status && UnsubscribeTopicApi.status === 200) {
+      const values = {
+        'device_type': 1,
       }
 
-      // Create a new broadcast channel
-      window.logoutChannel = new BroadcastChannel("logoutChannel");
+      const token = JSON.parse(localStorage.getItem('lint_hr_token'));
 
-      // Broadcast logout event to other tabs
-      window.logoutChannel.postMessage("logoutEvent");
+      if (token) {
+        values['refresh_token'] = token?.refresh
+      }
 
-      dispatch(setShowTeamTable(false));
+      const Api = await PostApi("employee/auth/logout/", values, false);
 
-      toast.success("Logged Out Successfully");
-      navigate("/auth/login");
+      if (Api.status && Api.status === 200) {
+        localStorage.removeItem("lint_hr_token");
+        localStorage.removeItem("lint_hr_v");
+        localStorage.removeItem("lint_hr_globaldata");
+        localStorage.removeItem("lint_hr_profile_data");
+        localStorage.removeItem("user_perm_list");
+
+        if (window.logoutChannel) {
+          window.logoutChannel.close();
+        }
+
+        // Create a new broadcast channel
+        window.logoutChannel = new BroadcastChannel("logoutChannel");
+
+        // Broadcast logout event to other tabs
+        window.logoutChannel.postMessage("logoutEvent");
+
+        dispatch(setShowTeamTable(false));
+
+        toast.success("Logged Out Successfully");
+        navigate("/auth/login");
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
+      }
     } else {
-      toast.error(Api?.data?.message || Api?.data?.detail);
+      toast.error('Something Went Wrong Please Relaod the Page')
     }
-
-
 
   };
 

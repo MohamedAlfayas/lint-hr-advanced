@@ -36,7 +36,7 @@
     "filepond": "^4.30.4",
     "filepond-plugin-image-exif-orientation": "^1.0.11",
     "filepond-plugin-image-preview": "^4.6.11",
-    "firebase": "^9.23.0",
+    "firebase": "^10.8.0",
     "formik": "^2.4.5",
     "google-maps-react": "^2.0.6",
     "gridjs": "^6.0.6",
@@ -114,7 +114,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "sync:dev": "aws s3 sync build/ s3://linthr.com",
-    "deploy:dev": "yarn build --profile && yarn sync:dev" 
+    "deploy:dev": "yarn build --profile && yarn sync:dev"
   },
   "browserslist": {
     "production": [
