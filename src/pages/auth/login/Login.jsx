@@ -39,7 +39,8 @@ import { changeLeftsidebarSizeTypeAction } from "../../../redux/reducers/ChildRe
 import { setMyProfileDataReducer } from "../../../redux/reducers/ChildReducer/MyProfileReducer";
 import AuthLoader from "../loader/AuthLoader";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
-import { generateToken } from "../../../firebase";
+import { generateToken, messaging } from "../../../firebase";
+import { deleteToken } from "firebase/messaging";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -81,9 +82,11 @@ const Login = () => {
         .then(async (res) => {
           console.log("adminResponse", res?.data);
 
+          await deleteToken(messaging);
+
           const newFCMToken = await generateToken();
 
-          console.log("newFCMToken = ", newFCMToken);
+          console.log("newFCMToken After Delete = ", newFCMToken);
 
           axios({
             method: "POST",
