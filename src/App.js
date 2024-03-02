@@ -23,9 +23,9 @@ function App() {
     generateToken();
     onMessage(messaging, (payload) => {
       console.log('Foreground message received:', payload);
-      const notificationTitle = payload.notification.title;
+      const notificationTitle = payload.data.title;
       const notificationOptions = {
-        body: payload.notification.body,
+        body: payload.data.body,
         icon: "/logo-sm.png"
       };
       new Notification(notificationTitle, notificationOptions);
