@@ -430,7 +430,7 @@ const AttendanceOverview = () => {
               <div>
                 <div dir="ltr" className="apex-charts">
                   <AttendanceOverviewChart
-                    dataColors='["--vz-success", "--vz-primary", "--vz-info", "--vz-danger", "--vz-orange", "--vz-warning"]'
+                    dataColors='["--vz-success", "--vz-primary", "--vz-info", "--vz-warning", "--vz-orange", "--vz-danger"]'
                     chartData={chartData}
                   />
                 </div>

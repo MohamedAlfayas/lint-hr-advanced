@@ -8,6 +8,7 @@ import {
   Popover,
   ButtonToolbar,
   Menu,
+  Affix,
 } from "rsuite";
 import AlignJustifyIcon from "@rsuite/icons/legacy/AlignJustify";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
@@ -209,13 +210,13 @@ const AttendanceEmployeeTable = () => {
     return (
       <Cell {...props} className="link-group">
         {rowData.is_leave_approved === true ? (
-          <strong>Leave</strong>
+          <span style={{ color: "orange" }}>Leave</span>
         ) : rowData.is_holiday === true ? (
-          <strong>Holiday</strong>
+          <span style={{ color: "green" }}>Holiday</span>
         ) : rowData.is_week_off === true ? (
-          <strong>Week Off</strong>
+          <span style={{ color: "blue" }}>Week Off</span>
         ) : rowData.is_present === false ? (
-          <strong>Absent</strong>
+          <span style={{ color: "red" }}>Absent</span>
         ) : (
           ConvertSecondsToTime(rowData?.work_schedule_duration_without_break)
         )}
@@ -733,6 +734,7 @@ const AttendanceEmployeeTable = () => {
           <EditableCell />
         </Column>
       </Table>
+
       {/* Edit Modal */}
       <Modal isOpen={editModalOpen} toggle={closeEditModal} centered>
         <ModalBody className="text-left">
