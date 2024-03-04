@@ -183,6 +183,11 @@ const ProfileViewMin = () => {
     }
   };
 
+  console.log(
+    "individual Attendance Report Data",
+    individualAttendanceReportData
+  );
+
   const getFileType = (fileName) => {
     const extension = fileName.split(".").pop();
     // Map common file extensions to file types
@@ -254,9 +259,9 @@ const ProfileViewMin = () => {
             </div>
           </div>
         </div>
-        <Row className="g-0 text-center">
-          {individualAttendanceReportData.map((item) =>
-            item.date === todayDate ? (
+        {individualAttendanceReportData.map((item) =>
+          item.date === todayDate ? (
+            <Row className="g-0 text-center">
               <>
                 <Col xs={4}>
                   <div className="p-3 border border-dashed border-start-0">
@@ -289,9 +294,9 @@ const ProfileViewMin = () => {
                   </div>
                 </Col>
               </>
-            ) : null
-          )}
-        </Row>
+            </Row>
+          ) : null
+        )}
 
         <div className="table-responsive table-card p-3">
           <h5 className="fs-15 mb-2 mt-3 ms-3 text-center">Basic Details</h5>
@@ -459,13 +464,24 @@ const ProfileViewMin = () => {
                         <td>
                           {!!item?.last_check_out
                             ? format(ParseTime(item?.last_check_out), "h:mm a")
-                            : null}
+                            : item.is_week_off === true
+                            ? "Week Off"
+                            : item?.is_holiday === true
+                            ? "Holiday"
+                            : item.is_leave_approved === true
+                            ? "Leave"
+                            : item?.first_check_in === null &&
+                              item.leave_taken_without_approval === true
+                            ? "Absent"
+                            : ""}
                         </td>
-                        <td
-                          className={item.totalColor}
-                        >{` ${ConvertSecondsToTime(
-                          item?.total_work_duration
-                        )}`}</td>
+                        <td className={item.totalColor}>
+                          {!!item?.total_work_duration
+                            ? ` ${ConvertSecondsToTime(
+                                item?.total_work_duration
+                              )}`
+                            : ""}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

@@ -667,73 +667,84 @@ const AttendanceEmployeeTable = () => {
 
   return (
     <Fragment>
-      <Table
-        height={400}
-        data={individual_attendance_report_data || []}
-        autoHeight={true}
-        loading={loading}
-        bordered={true}
-        className="mb-5"
-        affixHorizontalScrollbar
-      >
-        <Column width={175} align="center" fixed="left">
-          <HeaderCell>Date</HeaderCell>
-          <DateCell />
-        </Column>
-        <Column width={130}>
-          <HeaderCell>IN</HeaderCell>
-          <InOutCell dataKey="in" />
-        </Column>
-        <Column width={150}>
-          <HeaderCell>IN Location</HeaderCell>
-          <LocationCell dataKey="in" fullText />
-        </Column>
-        <Column width={130}>
-          <HeaderCell>OUT</HeaderCell>
-          <InOutCell dataKey="out" />
-        </Column>
-        <Column width={150}>
-          <HeaderCell>OUT Location</HeaderCell>
-          <LocationCell dataKey="out" fullText />
-        </Column>
-        <Column width={100}>
-          <HeaderCell>Work Schedule</HeaderCell>
-          <WorkScheduleCell dataKey="ws" />
-        </Column>
-        <Column width={100}>
-          <HeaderCell>Break</HeaderCell>
-          <BreakHourCell dataKey="total_break_duration" />
-        </Column>
-        <Column width={100}>
-          <HeaderCell>Total IN</HeaderCell>
-          <SecondsToTimeCell dataKey="final_checked_in_hr_in_seconds" />
-        </Column>
-        <Column width={125}>
-          <HeaderCell>OT</HeaderCell>
-          <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
-        </Column>
-        <Column width={125}>
-          <HeaderCell>Paid Hr</HeaderCell>
-          <SecondsToTimeCell dataKey="final_paid_hr_in_seconds" />
-        </Column>
-        <Column width={150}>
-          <HeaderCell>Status</HeaderCell>
-          <HrStatusCell dataKey="hr_status" />
-        </Column>
-        <Column width={100}>
-          <HeaderCell>Activity</HeaderCell>
-          <ActivityCell />
-        </Column>
-        <Column width={100}>
-          <HeaderCell>Notes</HeaderCell>
-          <NotesCell dataKey="notes" />
-        </Column>
+      <div style={{ position: "relative" }}>
+        <Table
+          height={400}
+          data={individual_attendance_report_data || []}
+          autoHeight={true}
+          loading={loading}
+          bordered={true}
+          className="mb-5"
+          affixHorizontalScrollbar
+          affixHeader={{
+            affix: true,
+            offsetTop: 0,
+            position: "sticky",
+            top: 0,
+            zIndex: 1,
+          }}
+        >
+          <Column width={175} align="center" fixed="left">
+            <HeaderCell style={{ offsetTop: 0 }}>Date</HeaderCell>
+            <DateCell />
+          </Column>
+          <Column width={130}>
+            <HeaderCell style={{ offsetTop: 0 }}>IN</HeaderCell>
+            <InOutCell dataKey="in" />
+          </Column>
+          <Column width={150}>
+            <HeaderCell>IN Location</HeaderCell>
+            <LocationCell dataKey="in" fullText />
+          </Column>
+          <Column width={130}>
+            <HeaderCell style={{ offsetTop: 0 }}>OUT</HeaderCell>
+            <InOutCell dataKey="out" />
+          </Column>
+          <Column width={150}>
+            <HeaderCell style={{ offsetTop: 0 }}>OUT Location</HeaderCell>
+            <LocationCell dataKey="out" fullText />
+          </Column>
+          <Column width={100}>
+            <HeaderCell style={{ offsetTop: 0 }}>Work Schedule</HeaderCell>
+            <WorkScheduleCell dataKey="ws" />
+          </Column>
+          <Column width={100}>
+            <HeaderCell style={{ offsetTop: 0 }}>Break</HeaderCell>
+            <BreakHourCell dataKey="total_break_duration" />
+          </Column>
+          <Column width={100}>
+            <HeaderCell style={{ offsetTop: 0 }}>Total IN</HeaderCell>
+            <SecondsToTimeCell dataKey="final_checked_in_hr_in_seconds" />
+          </Column>
+          <Column width={125}>
+            <HeaderCell style={{ offsetTop: 0 }}>OT</HeaderCell>
+            <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
+          </Column>
+          <Column width={125}>
+            <HeaderCell style={{ offsetTop: 0 }}>Paid Hr</HeaderCell>
+            <SecondsToTimeCell dataKey="final_paid_hr_in_seconds" />
+          </Column>
+          <Column width={150}>
+            <HeaderCell style={{ offsetTop: 0 }}>Status</HeaderCell>
+            <HrStatusCell dataKey="hr_status" />
+          </Column>
+          <Column width={100}>
+            <HeaderCell style={{ offsetTop: 0 }}>Activity</HeaderCell>
+            <ActivityCell />
+          </Column>
+          <Column width={100}>
+            <HeaderCell style={{ offsetTop: 0 }}>Notes</HeaderCell>
+            <NotesCell dataKey="notes" />
+          </Column>
 
-        <Column width={80} fixed="right">
-          <HeaderCell fixed="center">Action</HeaderCell>
-          <EditableCell />
-        </Column>
-      </Table>
+          <Column width={80} fixed="right">
+            <HeaderCell style={{ offsetTop: 0 }} fixed="center">
+              Action
+            </HeaderCell>
+            <EditableCell />
+          </Column>
+        </Table>
+      </div>
 
       {/* Edit Modal */}
       <Modal isOpen={editModalOpen} toggle={closeEditModal} centered>
