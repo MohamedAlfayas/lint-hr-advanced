@@ -26,7 +26,7 @@ function App() {
       const notificationTitle = payload.data.title;
       const notificationOptions = {
         body: payload.data.body,
-        icon: "/logo-sm.png"
+        icon: !!(payload?.data?.image) ? payload?.data?.image : "/logo-sm.png"
       };
       new Notification(notificationTitle, notificationOptions);
     });

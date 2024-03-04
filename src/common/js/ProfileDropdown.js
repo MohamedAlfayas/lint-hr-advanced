@@ -40,47 +40,42 @@ const ProfileDropdown = () => {
       fcm_token: newFCMToken
     }
 
-    const UnsubscribeTopicApi = await PostApi("employee/unsubscribe-topic/", payload, false);
+    const values = {
+      'device_type': 1,
+      "fcm_token": newFCMToken
+    }
 
-    if (UnsubscribeTopicApi.status && UnsubscribeTopicApi.status === 200) {
-      const values = {
-        'device_type': 1,
+    const token = JSON.parse(localStorage.getItem('lint_hr_token'));
+
+    if (token) {
+      values['refresh_token'] = token?.refresh
+    }
+
+    const Api = await PostApi("employee/auth/logout/", values, false);
+
+    if (Api.status && Api.status === 200) {
+      localStorage.removeItem("lint_hr_token");
+      localStorage.removeItem("lint_hr_v");
+      localStorage.removeItem("lint_hr_globaldata");
+      localStorage.removeItem("lint_hr_profile_data");
+      localStorage.removeItem("user_perm_list");
+
+      if (window.logoutChannel) {
+        window.logoutChannel.close();
       }
 
-      const token = JSON.parse(localStorage.getItem('lint_hr_token'));
+      // Create a new broadcast channel
+      window.logoutChannel = new BroadcastChannel("logoutChannel");
 
-      if (token) {
-        values['refresh_token'] = token?.refresh
-      }
+      // Broadcast logout event to other tabs
+      window.logoutChannel.postMessage("logoutEvent");
 
-      const Api = await PostApi("employee/auth/logout/", values, false);
+      dispatch(setShowTeamTable(false));
 
-      if (Api.status && Api.status === 200) {
-        localStorage.removeItem("lint_hr_token");
-        localStorage.removeItem("lint_hr_v");
-        localStorage.removeItem("lint_hr_globaldata");
-        localStorage.removeItem("lint_hr_profile_data");
-        localStorage.removeItem("user_perm_list");
-
-        if (window.logoutChannel) {
-          window.logoutChannel.close();
-        }
-
-        // Create a new broadcast channel
-        window.logoutChannel = new BroadcastChannel("logoutChannel");
-
-        // Broadcast logout event to other tabs
-        window.logoutChannel.postMessage("logoutEvent");
-
-        dispatch(setShowTeamTable(false));
-
-        toast.success("Logged Out Successfully");
-        navigate("/auth/login");
-      } else {
-        toast.error(Api?.data?.message || Api?.data?.detail);
-      }
+      toast.success("Logged Out Successfully");
+      navigate("/auth/login");
     } else {
-      toast.error(UnsubscribeTopicApi?.data?.message)
+      toast.error(Api?.data?.message || Api?.data?.detail);
     }
 
   };

@@ -21,10 +21,17 @@ import { GetGlobalVersion } from "../meta/GetGlobalVersion";
 import { GetTotalWorkDuration } from "../common/js/GetTotalWorkDuration";
 import { setMyProfileDataReducer } from "../redux/reducers/ChildReducer/MyProfileReducer";
 import { GetLocalStorageData } from "../meta/GetLocalStorageData";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const Layout = ({ children }) => {
   const dispatch = useDispatch();
+
+  const location = useLocation();
+
+  useEffect(() => {
+    console.log("Location = ", location?.pathname);
+    GetTotalWorkDuration(dispatch);
+  }, [location]);
 
   const [headerClass, setHeaderClass] = useState("");
 

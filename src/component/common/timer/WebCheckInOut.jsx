@@ -43,7 +43,7 @@ const WebCheckInOut = ({ showTimer }) => {
       false
     );
 
-    if (Api.status && Api.status === 200) {
+    if (!!Api && Api.status && Api.status === 200) {
       toast.success(Api?.data?.message);
       setCurrentlyCheckedIn(!currently_checked_in);
       GetTotalWorkDuration(dispatch);

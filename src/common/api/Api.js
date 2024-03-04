@@ -61,7 +61,7 @@ Api.interceptors.response.use(
     const originalRequest = error.config;
 
     // Handle token-related exceptions
-    if (error.response.status === 401 && !originalRequest._retry) {
+    if (!!error?.response && error.response.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         // If token is being refreshed, wait for the new token
         try {
