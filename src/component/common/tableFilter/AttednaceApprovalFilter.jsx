@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { Col } from "reactstrap";
 import Select from "react-select";
@@ -8,20 +8,29 @@ import { DatePicker } from "antd";
 import { MonthFormat } from "../../../common/constant/Constants";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
+import { Api } from "../../../common/api/Api";
+import { setAttendanceApprovalData } from "../../../redux/reducers/ChildReducer/AttendanceApprovalReducer";
 dayjs.extend(customParseFormat);
 
 const AttednaceApprovalFilter = () => {
   const inputRef = useRef();
-  const [attedanceApproval, setAttendanceApproval] = useState({
-    thisMonth: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
+  const [filteredDepType, setFilteredDepType] = useState(0);
+  const [filteredMonth, setFilteredMonth] = useState(
+    `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
       .toString()
-      .padStart(2, "0")}`,
-  });
-
+      .padStart(2, "0")}`
+  );
   const dep_options = useMemo(
     () => GetLocalStorageData("department") || [],
     []
   );
+
+  const [depOptions, setDepOptions] = useState([]);
+
+  useEffect(() => {
+    setDepOptions([{ id: "0", label: "All", value: "0" }, ...dep_options]);
+  });
 
   const dispatch = useDispatch();
 
@@ -29,56 +38,33 @@ const AttednaceApprovalFilter = () => {
     (state) => state.TableFilterReducer
   );
 
-  const handleFilterChange = (e, name) => {
-    let val = !!e ? e.id : 0;
-    dispatch(
-      setAttendanceApprovalTableFilterKeys({
-        ...attendance_approval_table_filter_keys,
-        [name]: val,
-      })
-    );
+  const handleDepartmentChange = (e, name) => {
+    setFilteredDepType(e.value);
   };
 
   const handleDateRangeChange = (e, monthStr) => {
-    dispatch(
-      setAttendanceApprovalTableFilterKeys({
-        ...attendance_approval_table_filter_keys,
-        thisMonth: monthStr,
-      })
-    );
+    setFilteredMonth(monthStr);
   };
 
-  // const handleFilter = async () => {
-  //   console.log("FILTER CLICKED !!!! === ", filterKeys);
-
-  //   dispatch(setLoaderVisible(true));
-
-  //   const Api = await PostApi(
-  //     "report/get-attendance-report/",
-  //     filterKeys,
-  //     false
-  //   );
-  //   console.log("API RES = ", Api);
-  //   if (Api.status && Api.status === 200) {
-  //     dispatch(
-  //       setIndividualAttendanceReportData(
-  //         Api?.data?.data?.individual_attendance_report
-  //       )
-  //     );
-  //     dispatch(
-  //       setTeamAttendanceReportData(Api?.data?.data?.team_attendance_report)
-  //     );
-  //     if (filterKeys?.type === "2" && filterKeys?.employee === "0") {
-  //       dispatch(setShowTeamTable(true));
-  //     } else {
-  //       dispatch(setShowTeamTable(false));
-  //     }
-  //   } else {
-  //     toast.error(Api?.data?.message || Api?.data?.detail);
-  //   }
-
-  //   dispatch(setLoaderVisible(false));
-  // };
+  const handleFilter = async () => {
+    dispatch(setLoaderVisible(true));
+    Api({
+      type: "GET",
+      url:
+        "attendance/get-attendance-data-for-approval/?thisMonth=" +
+        filteredMonth +
+        "&department_id=" +
+        filteredDepType,
+    })
+      .then((res) => {
+        console.log("res", res);
+        dispatch(setAttendanceApprovalData(res?.data?.data));
+      })
+      .catch((err) => {
+        console.log("ERR = ", err);
+      });
+    dispatch(setLoaderVisible(false));
+  };
 
   return (
     <React.Fragment>
@@ -86,28 +72,23 @@ const AttednaceApprovalFilter = () => {
         <Select
           id="department_filter"
           name="department_filter"
-          isClearable={true}
+          isClearable={false}
           innerRef={inputRef}
           isMulti={false}
-          options={dep_options || []}
+          options={depOptions || []}
           className="basic-multi-select"
           placeholder="Select Department"
-          value={
-            !!attendance_approval_table_filter_keys?.primary_department_id_list
-              ? dep_options.find(
-                  (d) =>
-                    d.id ===
-                    attendance_approval_table_filter_keys?.primary_department_id_list
-                )
-              : []
+          allowClear={false}
+          onChange={(e) =>
+            handleDepartmentChange(e, "primary_department_id_list")
           }
-          onChange={(e) => handleFilterChange(e, "primary_department_id_list")}
+          value={depOptions.find((d) => d.id === filteredDepType) || []}
         />
       </Col>
       <Col md={3}>
         <div className="form-icon right">
           <DatePicker
-            value={dayjs(attendance_approval_table_filter_keys?.thisMonth)}
+            value={dayjs(filteredMonth)}
             format={MonthFormat}
             picker="month"
             allowClear={false}
@@ -122,7 +103,7 @@ const AttednaceApprovalFilter = () => {
         <div className="hstack gap-2">
           <button
             type="button"
-            // onClick={handleFilter}
+            onClick={handleFilter}
             className="btn btn-danger"
           >
             <i className="ri-equalizer-fill me-1 align-bottom"></i> Filter

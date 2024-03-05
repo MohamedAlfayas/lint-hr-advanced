@@ -28,7 +28,7 @@ import LeaveTypeFilter from "../tableFilter/LeaveTypeFilter";
 import HolidayFilter from "../tableFilter/HolidayFilter";
 import { useDispatch, useSelector } from "react-redux";
 import { setTableFilterSearchText } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
-import '../../../common/css/lc_style.css';
+import "../../../common/css/lc_style.css";
 const TableContainer = ({
   columns,
   data,
@@ -147,21 +147,24 @@ const TableContainer = ({
           )}
           <CardBody className="border border-dashed border-end-0 border-start-0">
             <Row>
-              <Col md={4}>
-                <div className="search-box me-2 mb-2 d-inline-block col-12">
-                  <input
-                    id="search-bar-0"
-                    type="text"
-                    className="form-control search /"
-                    placeholder={`Search ${formname.split("_").join(" ")}`}
-                    value={search || ""}
-                    onChange={(e) =>
-                      dispatch(setTableFilterSearchText(e.target.value))
-                    }
-                  />
-                  <i className="bx bx-search-alt search-icon"></i>
-                </div>
-              </Col>
+              {formname !== attendance_approval_component_name && (
+                <Col md={4}>
+                  <div className="search-box me-2 mb-2 d-inline-block col-12">
+                    <input
+                      id="search-bar-0"
+                      type="text"
+                      className="form-control search /"
+                      placeholder={`Search ${formname.split("_").join(" ")}`}
+                      value={search || ""}
+                      onChange={(e) =>
+                        dispatch(setTableFilterSearchText(e.target.value))
+                      }
+                    />
+                    <i className="bx bx-search-alt search-icon"></i>
+                  </div>
+                </Col>
+              )}
+
               {formname === employee_component_name && <EmployeeTableFilter />}
               {formname == attendance_approval_component_name && (
                 <AttednaceApprovalFilter />

@@ -114,20 +114,34 @@ const AttendanceFilter = () => {
 
     dispatch(setLoaderVisible(true));
 
-    const Api = await PostApi(
+    const attendanceApi = await PostApi(
       "report/get-attendance-report/",
       filterKeys,
       false
     );
-    console.log("API RES = ", Api);
-    if (Api.status && Api.status === 200) {
+    console.log("API RES = ", attendanceApi);
+    if (attendanceApi.status && attendanceApi.status === 200) {
       dispatch(
         setIndividualAttendanceReportData(
-          Api?.data?.data?.individual_attendance_report
+          attendanceApi?.data?.data?.individual_attendance_report
         )
       );
+      if (filterKeys?.type === "2" && filterKeys?.employee !== "0") {
+        Api({
+          type: "GET",
+          url: `leave/get-leave-type-details-for-employee/?employee_id=${filterKeys?.employee}`,
+        })
+          .then((res) => {
+            console.log("Employee Leave Type Data");
+          })
+          .catch((err) => {
+            console.log("Something Went Worng");
+          });
+      }
       dispatch(
-        setTeamAttendanceReportData(Api?.data?.data?.team_attendance_report)
+        setTeamAttendanceReportData(
+          attendanceApi?.data?.data?.team_attendance_report
+        )
       );
       if (filterKeys?.type === "2" && filterKeys?.employee === "0") {
         dispatch(setShowTeamTable(true));
@@ -135,7 +149,7 @@ const AttendanceFilter = () => {
         dispatch(setShowTeamTable(false));
       }
     } else {
-      toast.error(Api?.data?.message || Api?.data?.detail);
+      toast.error(attendanceApi?.data?.message || attendanceApi?.data?.detail);
     }
 
     dispatch(setLoaderVisible(false));

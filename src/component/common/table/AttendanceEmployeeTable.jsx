@@ -367,7 +367,10 @@ const AttendanceEmployeeTable = () => {
       },
     ];
     let dropdownMenu;
-    if (rowData.leave_taken_without_approval === true) {
+    if (
+      rowData.leave_taken_without_approval === true &&
+      rowData.is_leave_pending === false
+    ) {
       dropdownMenu = (
         <Popover style={{ padding: "3px" }}>
           <Dropdown.Menu>

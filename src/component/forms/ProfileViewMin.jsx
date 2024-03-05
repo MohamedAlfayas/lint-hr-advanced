@@ -35,6 +35,7 @@ import { parse, format } from "date-fns";
 import Column from "antd/es/table/Column";
 import { ConvertSecondsToTime } from "../../common/js/ConvertSecondsToTime";
 import { ParseTime } from "../../common/js/ParseTime";
+import AttendanceReport from "../../pages/attendance/AttendanceReport";
 const ProfileViewMin = () => {
   const dispatch = useDispatch();
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
@@ -47,6 +48,8 @@ const ProfileViewMin = () => {
   const [todayDate, setTodayDate] = useState(0);
   const [individualAttendanceReportData, setIndividualAttendanceReportData] =
     useState([]);
+
+  const [attendanceEmpReport, setAttendanceEmpReport] = useState([]);
 
   function getWorkScheduleName(workScheduleId, workScheduleData) {
     const workScheduleName = workScheduleData.find(
@@ -91,10 +94,22 @@ const ProfileViewMin = () => {
     setTodayDate(ConvertISODateFormat(currentDate));
 
     if (form_obj) {
+      Api({
+        type: "GET",
+        url: `report/get-latest-attendance-report-for-employee/?employee_id=${form_obj.id}`,
+      })
+        .then((res) => {
+          setAttendanceEmpReport(res?.data?.data);
+        })
+        .catch((err) => {
+          console.log("Something Went Wrong !!");
+        });
       setProfileObj(form_obj);
       setEmpId(form_obj.id);
     }
   }, [form_obj]);
+
+  console.log("Attendance Report for Employee", attendanceEmpReport);
 
   // Custom Tabs Bordered
   const [customActiveTab, setcustomActiveTab] = useState("1");
@@ -259,7 +274,7 @@ const ProfileViewMin = () => {
             </div>
           </div>
         </div>
-        {individualAttendanceReportData.map((item) =>
+        {attendanceEmpReport.map((item) =>
           item.date === todayDate ? (
             <Row className="g-0 text-center">
               <>
@@ -451,7 +466,7 @@ const ProfileViewMin = () => {
                       </td>
                     </tr>
 
-                    {individualAttendanceReportData.map((item) => (
+                    {attendanceEmpReport.map((item) => (
                       <tr key={item.id}>
                         <td className="fw-medium">
                           {format(new Date(item.date), "dd MMM, yyyy")}

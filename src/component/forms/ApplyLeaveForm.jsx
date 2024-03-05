@@ -228,6 +228,8 @@ const ApplyLeaveForm = () => {
     });
   };
 
+  const initialTime = dayjs("00:00", "HH:mm");
+
   const disabledDate = (current) => {
     const dayOfWeek = current.day();
     return (
@@ -555,7 +557,11 @@ const ApplyLeaveForm = () => {
                         <DatePicker
                           name="start"
                           placeholder="Select Start Time"
-                          showTime={{ minuteStep: 30 }}
+                          showTime={{
+                            minuteStep: 30,
+                            defaultValue: initialTime,
+                            format: "HH:mm",
+                          }}
                           format={DateTimeFormat}
                           disabledDate={disabledDate}
                           onChange={handleFromDateChange}
@@ -571,6 +577,7 @@ const ApplyLeaveForm = () => {
                                 )
                               : null
                           }
+                          showNow={false}
                         />
                       </Col>
 
@@ -578,7 +585,11 @@ const ApplyLeaveForm = () => {
                         <DatePicker
                           name="end"
                           placeholder="Select End Time"
-                          showTime={{ minuteStep: 30 }}
+                          showTime={{
+                            minuteStep: 30,
+                            defaultValue: initialTime,
+                            format: "HH:mm",
+                          }}
                           format={DateTimeFormat}
                           disabledDate={disabledDate}
                           onChange={handleToDateChange}
@@ -594,6 +605,7 @@ const ApplyLeaveForm = () => {
                                 )
                               : null
                           }
+                          showNow={false}
                         />
                       </Col>
                       <Col md={2} lg={2} xxl={2}>

@@ -486,8 +486,13 @@ const EmployeeOverview = (props) => {
                     </div>
                     <div className="flex-grow-1 overflow-hidden">
                       <p className="mb-1">Website :</p>
-                      <Link to="#" className="fw-semibold">
-                        www.velzon.com
+                      <Link
+                        to="https://www.lintcloud.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="fw-semibold"
+                      >
+                        www.lintcloud.com
                       </Link>
                     </div>
                   </div>
