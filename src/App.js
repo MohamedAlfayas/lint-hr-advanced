@@ -28,7 +28,10 @@ function App() {
         body: payload.data.body,
         icon: !!(payload?.data?.image) ? payload?.data?.image : "/logo-sm.png"
       };
-      new Notification(notificationTitle, notificationOptions);
+      if (!document.hidden) {
+        // If tab is focused, show the notification immediately
+        new Notification(notificationTitle, notificationOptions);
+      }
     });
   }, [])
 
