@@ -94,7 +94,7 @@ const AttendanceReport = () => {
   };
 
   const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
-    console.log("da",rowData);
+ 
     const exportindividualExcelFile = () => {
       const workbook = new ExcelJs.Workbook();
       const sheet = workbook.addWorksheet("My Sheet", {});
@@ -110,7 +110,7 @@ const AttendanceReport = () => {
           },
       };
   
-      const headers = ["Employee Name", "Email", "Emp ID", "Attendane", "Checked-in", "Checkd-out","Paid Hr","Work Schedule", "Status", "Activity",  "OT",  "Edited Hours","In", "Out",  "Total", "In Location", "Out Location"];
+      const headers = ["Employee Name", "Email", "Emp ID", "Attendane","Paid Hr","Work Schedule", "Status", "Activity",  "OT",  "Edited Hours","In", "Out",  "Total", "In Location", "Out Location"];
   
       // Assuming `team_daily_attendance_report` is available
       const employeeDatesXls = Array.from(new Set(team_daily_attendance_report.flatMap((employee) =>
@@ -137,45 +137,36 @@ const AttendanceReport = () => {
                   attendance_data.leave_taken_without_approval === true ? "A" : "A";
               row.push(attend_data);
   
-              const checkInLog = attendance_data.entry_log.find((log) => parseInt(log.entry_type) === 1);
-              console.log("In",checkInLog);
-              const checkOutLog = attendance_data.entry_log.slice().reverse().find((log) => parseInt(log.entry_type) !== 1);
-              const firstCheckIn = checkInLog ? format(ParseTime(checkInLog.entry_time), "h:mm a") : "";
-              const lastCheckOut = checkOutLog ? format(ParseTime(checkOutLog.entry_time), "h:mm a") : "";
+            
+            
               const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds);
               const entryLogLength = attendance_data.entry_log.length;
-              // const entryLogIn = attendance_data.entry_log .filter(entry => entry.entry_type === 1)
-          //     entryLogIn.forEach(entry => {
-          //       const entryTime = new Date(entry.entry_time);
-          //       const hours = entryTime.getHours();
-          //       const minutes = entryTime.getMinutes();
-          //       const ampm = hours >= 12 ? 'PM' : 'AM';
-          //       const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
-          //       const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
-          //       const inTime = formattedHours + ':' + formattedMinutes + ' ' + ampm
-          //       console.log("INTIME",inTime);
-          //       row.push(inTime)
-                
-          //   });
-          //   const entryLogOut = attendance_data.entry_log .filter(entry => entry.entry_type === 2)
-          //   entryLogOut.forEach(entry => {
-          //     const entryTime = new Date(entry.entry_time);
-          //     const hours = entryTime.getHours();
-          //     const minutes = entryTime.getMinutes();
-          //     const ampm = hours >= 12 ? 'PM' : 'AM';
-          //     const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
-          //     const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
-          //     const outTime = formattedHours + ':' + formattedMinutes + ' ' + ampm
-          //     console.log("outTime",outTime);
-          //     row.push(outTime)
-              
-          // });
-              let duration = entryLogLength === 0 ? total_hour : `${total_hour} (${entryLogLength})`;
+              const entryLogs = attendance_data.entry_log.map(entry => {
+                const entryTime = entry.entry_time
+                console.log("TTT",entryTime);
+                // const hours = entryTime.getHours();
+                // const minutes = entryTime.getMinutes();
+                // const ampm = hours >= 12 ? 'PM' : 'AM';
+                // const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
+                // const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+                // console.log("Time", formattedHours + ':' + formattedMinutes + ' ' + ampm);
+                // return formattedHours + ':' + formattedMinutes + ' ' + ampm;
+            });
+            
+            const entryLogIn = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 1);
+            const entryLogOut = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 2);
+            
+            // Push entryLogIn and entryLogOut to the row
+           
+              let duration = entryLogLength === 0 ? total_hour : `${total_hour}`;
               let workScheduleHr = ConvertSecondsToTime(attendance_data.work_schedule_hr_without_break_in_seconds);
-              row.push(firstCheckIn, lastCheckOut, duration,workScheduleHr);
+              row.push(duration,workScheduleHr,);
+              entryLogIn.forEach(inTime => row.push(inTime));
+              entryLogOut.forEach(outTime => row.push(outTime));
           } else {
               row.push("", "", "", "", "", "");
           }
+          
 
           sheet.addRow(row);
       });
@@ -213,12 +204,18 @@ const AttendanceReport = () => {
               cell.alignment = { horizontal: "center" };
           });
       });
+      const monthYear = employeeDatesXls.map((dateString) => {
+        const date = new Date(dateString);
+        const month = date.toLocaleString("default", { month: "short" });
+        const year = date.getFullYear();
+        return `${month}${year}`;
+      });
   
       workbook.xlsx.writeBuffer().then((data) => {
           const blob = new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
           const url = window.URL.createObjectURL(blob);
           const anchor = document.createElement("a");
-          const filename = `Attendance_Report_${formatDate(employeeDatesXls[0], 'MMM_YYYY')}.xlsx`;
+          const filename = `${emp_name}_Attendance_Report_${monthYear[0]}.xlsx`;
           anchor.href = url;
           anchor.download = filename;
           anchor.click();
