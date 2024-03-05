@@ -117,8 +117,6 @@ const Layout = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    GetTotalWorkDuration(dispatch);
-
     // let my_profile_data = GetLocalStorageData("my_profile");
 
     // !!my_profile_data && dispatch(setMyProfileDataReducer(my_profile_data))
@@ -153,26 +151,52 @@ const Layout = ({ children }) => {
 
   let visibilityChangeTimeout;
 
-  document.addEventListener("visibilitychange", function () {
-    clearTimeout(visibilityChangeTimeout);
+  // document.addEventListener("visibilitychange", function () {
+  //   clearTimeout(visibilityChangeTimeout);
 
-    visibilityChangeTimeout = setTimeout(() => {
-      if (document.visibilityState === "visible") {
-        console.log("has focus");
-        //LCGetTodaysWorkDuration();
-        //LCGetTodaysWorkDuration.init();
-        dispatch(
-          setMyProfileDataReducer(
-            JSON.parse(localStorage.getItem("lint_hr_profile_data"))
-          )
-        );
-        GetTotalWorkDuration(dispatch);
-      } else {
-        //clearInterval(interval);
-        console.log("lost focus");
-      }
-    }, 200);
-  });
+  //   visibilityChangeTimeout = setTimeout(() => {
+  //     if (document.visibilityState === "visible") {
+  //       console.log("has focus");
+  //       //LCGetTodaysWorkDuration();
+  //       //LCGetTodaysWorkDuration.init();
+  //       dispatch(
+  //         setMyProfileDataReducer(
+  //           JSON.parse(localStorage.getItem("lint_hr_profile_data"))
+  //         )
+  //       );
+  //       GetTotalWorkDuration(dispatch);
+  //     } else {
+  //       //clearInterval(interval);
+  //       console.log("lost focus");
+  //     }
+  //   }, 200);
+  // });
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      clearTimeout(visibilityChangeTimeout);
+
+      visibilityChangeTimeout = setTimeout(() => {
+        if (document.visibilityState === "visible") {
+          console.log("has focus");
+          dispatch(
+            setMyProfileDataReducer(
+              JSON.parse(localStorage.getItem("lint_hr_profile_data"))
+            )
+          );
+          GetTotalWorkDuration(dispatch);
+        } else {
+          console.log("lost focus");
+        }
+      }, 200);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   return (
     <React.Fragment>
