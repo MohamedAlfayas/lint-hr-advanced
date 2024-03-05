@@ -24,7 +24,7 @@ import { Link } from "react-router-dom";
 import SimpleBar from "simplebar-react";
 import { differenceInMinutes } from "date-fns";
 import { GetAmPmDateTime } from "../../common/js/ConvertDateTimeToAmPm";
-import './../../common/css/lc_style.css';
+import "./../../common/css/lc_style.css";
 const AttendanceApproval = () => {
   const dispatch = useDispatch();
 
@@ -50,8 +50,9 @@ const AttendanceApproval = () => {
     Api({
       type: "GET",
       url:
-        "attendance/get-attendance-data-for-reporting-manager/?thisMonth=" +
-        thisMonth,
+        "attendance/get-attendance-data-for-approval/?thisMonth=" +
+        thisMonth +
+        "&department_id=0",
     })
       .then((res) => {
         console.log("res", res);
@@ -63,12 +64,12 @@ const AttendanceApproval = () => {
   }, []);
 
   const [timelineList, setTimelineList] = useState([]);
-  console.log("list",timelineList);
+  console.log("list", timelineList);
   const [timelineDate, setTimeLineDate] = useState("");
   const [timeline_modal, settimeline_modal] = useState(false);
   const [notes_modal, setNotes_modal] = useState(false);
   const [notesList, setNotesList] = useState([]);
-  const [date, setDate] = useState(null)
+  const [date, setDate] = useState(null);
   const closeNotesModal = () => {
     setNotes_modal(false);
   };
@@ -530,7 +531,7 @@ const AttendanceApproval = () => {
         className="custom-modal"
       >
         <ModalHeader>
-        <h5
+          <h5
             className="modal-title"
             id="exampleModalToggleLabel"
             style={{ fontSize: "smaller" }}
