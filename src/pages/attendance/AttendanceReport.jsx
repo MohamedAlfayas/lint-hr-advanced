@@ -77,8 +77,8 @@ const AttendanceReport = () => {
       });
   };
   const [filterKeys, setFilterKeys] = useState({
-    month: `${new Date().getFullYear()}-${new Date()
-      .getMonth()
+    month: `${new Date().getFullYear()}-${(new Date()
+      .getMonth()+1)
       .toString()
       .padStart(2, "0")}`,
   });
@@ -97,237 +97,135 @@ const AttendanceReport = () => {
     console.log("da",rowData);
     const exportindividualExcelFile = () => {
       const workbook = new ExcelJs.Workbook();
-      const sheet = workbook.addWorksheet("My Sheet", {
-
-      });
+      const sheet = workbook.addWorksheet("My Sheet", {});
       sheet.properties.defaultRowHeight = 20;
       sheet.autoFilter = {
-        from: {
-          row: 1, // Assuming your headers start from row 1
-          column: 1, // Assuming "Employee Name" is the first column
-        },
-        to: {
-          row: 2, // Assuming all rows are populated
-          column: 2, // Assuming "Email" is the second column
-        },
+          from: {
+              row: 1, // Assuming your headers start from row 1
+              column: 1, // Assuming "Employee Name" is the first column
+          },
+          to: {
+              row: 2, // Assuming all rows are populated
+              column: 2, // Assuming "Email" is the second column
+          },
       };
   
-      const headers = ["Date","Employee Name", "Email","Emp ID","Attendane","Status","Activity","Work Schedule","Checked-in","Checkd-out","OT","Paid Hr","Edited Hours","In","Out","Total","In Location","Out Location"];
-   
+      const headers = ["Employee Name", "Email", "Emp ID", "Attendane", "Checked-in", "Checkd-out","Paid Hr","Work Schedule", "Status", "Activity",  "OT",  "Edited Hours","In", "Out",  "Total", "In Location", "Out Location"];
   
       // Assuming `team_daily_attendance_report` is available
-      const employeeDatesXls = Array.from(
-        new Set(
-          team_daily_attendance_report.flatMap((employee) =>
-            employee.workday_data.map((report) => report.date)
-          )
-        )
-      );
+      const employeeDatesXls = Array.from(new Set(team_daily_attendance_report.flatMap((employee) =>
+          employee.workday_data.map((report) => report.date)
+      )));
   
+      const foundEmployee = employee_data.find((emp) => rowData.employee_id === emp.id);
+      const emp_name = foundEmployee ? foundEmployee.fname : "";
+      const employee_id = foundEmployee ? foundEmployee.emp_id : "";
+  
+      // Add headers row
+      const headerRow = sheet.addRow(["Date", ...headers]);
+  
+      // Add data rows
       employeeDatesXls.forEach((date, index) => {
-        headers.push("", "", formatDate(date), "");
-    
-      });
-  
-    
-      const headerRow = sheet.addRow(headers);
-  
-  
-      headerRow.font = { bold: true };
-      
-  
-      for (let i = 0; i < employeeDatesXls.length; i++) {
-        const startCol = i * 4 + 3;
-        const endCol = i * 4 + 6;
-        const dateHeader = formatDate(employeeDatesXls[i]);
-  
-        sheet.mergeCells(1, startCol, 1, endCol);
-        const mergedCell = sheet.getCell(1, startCol);
-        mergedCell.value = dateHeader;
-        mergedCell.alignment = { horizontal: "center" };
-  
-        const fillColor = i % 2 === 0 ? "FFFFFF" : "e6f7ff";
-        [0, 1, 2, 3].forEach((offset) => {
-          const col = startCol + offset;
-          sheet.getColumn(col).eachCell({ includeEmpty: true }, (cell) => {
-            cell.fill = {
-              type: "pattern",
-              pattern: "solid",
-              fgColor: { argb: fillColor },
-            };
-            cell.border = {
-              top: { style: "thin" },
-              left: { style: "thin" },
-              bottom: { style: "thin" },
-              right: { style: "thin" },
-            };
-            cell.alignment = { horizontal: "center" }; // Center align the content
-          });
-        });
-      }
-  
-     
-        const row = [];
-        const foundEmployee = employee_data.find(
-          (emp) => rowData.employee_id === emp.id
-        );
-        const emp_name = foundEmployee ? foundEmployee.fname : "";
-        const employee_id = foundEmployee ? foundEmployee.emp_id : "";
-        row.push("")
-        row.push(emp_name);
-        row.push(foundEmployee ? foundEmployee.email : "");
-        row.push(employee_id)
-  
-        employeeDatesXls.forEach((date, colIndex) => {
-          const attendance_data = rowData.workday_data.find(
-            (day) => day.date === date
-          );
-          let attend_data =
-            attendance_data && attendance_data.is_present === true
-              ? "P"
-              : attendance_data && attendance_data.is_holiday === true
-              ? "H"
-              : attendance_data && attendance_data.is_day_on === false
-              ? "WO"
-              : attendance_data && attendance_data.is_leave_approved === true
-              ? "L"
-              : attendance_data &&
-                attendance_data.leave_taken_without_approval === true
-              ? "A"
-              : "A";
-          row.push(attend_data);
-  
+          const attendance_data = rowData.workday_data.find((day) => day.date === date);
+          const row = [formatDate(date), emp_name, foundEmployee ? foundEmployee.email : "", employee_id];
           if (attendance_data) {
-            const checkInLog = attendance_data.entry_log.find(
-              (log) => parseInt(log.entry_type) === 1
-            );
-            const checkOutLog = attendance_data.entry_log
-              .slice()
-              .reverse()
-              .find((log) => parseInt(log.entry_type) !== 1);
-            const firstCheckIn = checkInLog
-              ? format(ParseTime(checkInLog.entry_time), "h:mm a")
-              : "";
-            const lastCheckOut = checkOutLog
-              ? format(ParseTime(checkOutLog.entry_time), "h:mm a")
-              : "";
-            const total_hour = ConvertSecondsToTime(
-              attendance_data.final_paid_hr_in_seconds
-            );
-            const entryLogLength = attendance_data.entry_log.length;
-            let duration =
-              entryLogLength === 0
-                ? total_hour
-                : `${total_hour} (${entryLogLength})`;
-            row.push(firstCheckIn);
-            row.push(lastCheckOut);
-            row.push(duration);
+              const attend_data =
+                  attendance_data.is_present === true ? "P" :
+                  attendance_data.is_holiday === true ? "H" :
+                  attendance_data.is_day_on === false ? "WO" :
+                  attendance_data.is_leave_approved === true ? "L" :
+                  attendance_data.leave_taken_without_approval === true ? "A" : "A";
+              row.push(attend_data);
+  
+              const checkInLog = attendance_data.entry_log.find((log) => parseInt(log.entry_type) === 1);
+              console.log("In",checkInLog);
+              const checkOutLog = attendance_data.entry_log.slice().reverse().find((log) => parseInt(log.entry_type) !== 1);
+              const firstCheckIn = checkInLog ? format(ParseTime(checkInLog.entry_time), "h:mm a") : "";
+              const lastCheckOut = checkOutLog ? format(ParseTime(checkOutLog.entry_time), "h:mm a") : "";
+              const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds);
+              const entryLogLength = attendance_data.entry_log.length;
+              // const entryLogIn = attendance_data.entry_log .filter(entry => entry.entry_type === 1)
+          //     entryLogIn.forEach(entry => {
+          //       const entryTime = new Date(entry.entry_time);
+          //       const hours = entryTime.getHours();
+          //       const minutes = entryTime.getMinutes();
+          //       const ampm = hours >= 12 ? 'PM' : 'AM';
+          //       const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
+          //       const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+          //       const inTime = formattedHours + ':' + formattedMinutes + ' ' + ampm
+          //       console.log("INTIME",inTime);
+          //       row.push(inTime)
+                
+          //   });
+          //   const entryLogOut = attendance_data.entry_log .filter(entry => entry.entry_type === 2)
+          //   entryLogOut.forEach(entry => {
+          //     const entryTime = new Date(entry.entry_time);
+          //     const hours = entryTime.getHours();
+          //     const minutes = entryTime.getMinutes();
+          //     const ampm = hours >= 12 ? 'PM' : 'AM';
+          //     const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
+          //     const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+          //     const outTime = formattedHours + ':' + formattedMinutes + ' ' + ampm
+          //     console.log("outTime",outTime);
+          //     row.push(outTime)
+              
+          // });
+              let duration = entryLogLength === 0 ? total_hour : `${total_hour} (${entryLogLength})`;
+              let workScheduleHr = ConvertSecondsToTime(attendance_data.work_schedule_hr_without_break_in_seconds);
+              row.push(firstCheckIn, lastCheckOut, duration,workScheduleHr);
           } else {
-            row.push("", "", "", "");
+              row.push("", "", "", "", "", "");
           }
-        });
-  
-        row.push(rowData.total_working_days_count);
-        row.push(rowData.total_present_days_count);
-        const dataRow = sheet.addRow(row);
-  
-        dataRow.eachCell((cell, cellNumber) => {
-          let value = cell.value;
-          let fontColor = "000000";
-          let isBold = false;
-  
-          if (value === "P" || value === "A") {
-            fontColor = value === "P" ? "00FF00" : "FF0000";
-            isBold = true;
-          } else if (value === "WO") {
-            fontColor = "888888";
-            isBold = true;
-          } else if (value === "H" || value === "L") {
-            fontColor = "000000";
-            isBold = true;
-          }
-  
-          cell.font = {
-            color: { argb: fontColor },
-            bold: isBold,
-          };
-  
-          if (cellNumber > 1) {
-            cell.alignment = { horizontal: "center" };
-          }
-       
-        });
-     
-  
-      sheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-        let maxHeight = 0;
-        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-          const lines = cell.value ? cell.value.toString().split("\n").length : 1;
-          maxHeight = Math.max(maxHeight, lines);
-        });
-        row.height = maxHeight * 15; // Adjust this factor according to your font size and row height settings
+
+          sheet.addRow(row);
       });
+    //   team_daily_attendance_report.forEach(rowData => {
+    //     const employee = employee_data.find(emp => emp.id === rowData.employee_id);
+    //     if (employee) {
+    //         rowData.workday_data.forEach(day => {
+    //             const checkInLog = day.entry_log.find(log => parseInt(log.entry_type) === 1);
+    //             const checkOutLog = day.entry_log.find(log => parseInt(log.entry_type) !== 1);
+    //             if (checkInLog) {
+    //                 const checkInTime = format(ParseTime(checkInLog.entry_time), "h:mm a");
+    //                 const checkOutTime = checkOutLog ? format(ParseTime(checkOutLog.entry_time), "h:mm a") : "";
+    //                 const totalDifference = checkOutLog ? differenceInMinutes(ParseTime(checkOutLog.entry_time), ParseTime(checkInLog.entry_time)) : 0;
+    //                 const totalHours = Math.floor(totalDifference / 60);
+    //                 const totalMinutes = totalDifference % 60;
+    //                 const formattedTotalHours = totalHours.toString().padStart(2, "0");
+    //                 const formattedTotalMinutes = totalMinutes.toString().padStart(2, "0");
+    //                 const location = checkInLog.location || "";
+    //                 sheet.addRow([checkInTime, checkOutTime, `${formattedTotalHours}:${formattedTotalMinutes} Hr`, location]);
+    //             }
+    //         });
+    //     }
+    // });
   
-      sheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-          cell.alignment = { horizontal: "center" };
-        });
-      });
-  
+      // Set column widths and cell borders
       sheet.columns.forEach((column) => {
-        let maxLength = 0;
-        column.eachCell({ includeEmpty: true }, (cell) => {
-          maxLength = Math.max(
-            maxLength,
-            cell.value ? cell.value.toString().length : 0
-          );
-        });
-        column.width = maxLength < 10 ? 10 : maxLength + 2;
+          column.width = 15;
+          column.eachCell({ includeEmpty: true }, (cell) => {
+              cell.border = {
+                  top: { style: "thin" },
+                  left: { style: "thin" },
+                  bottom: { style: "thin" },
+                  right: { style: "thin" },
+              };
+              cell.alignment = { horizontal: "center" };
+          });
       });
   
-      // Apply borders to all cells
-      sheet.eachRow((row) => {
-        row.eachCell((cell) => {
-          cell.border = {
-            top: { style: "thin" },
-            left: { style: "thin" },
-            bottom: { style: "thin" },
-            right: { style: "thin" },
-          };
-          cell.alignment = { horizontal: "center" }; // Center align the content
-        });
-      });
-      // const additionalSheet = workbook.addWorksheet("Additional Data");
-      // additionalSheet.addRow(["Additional", "Data", "Goes", "Here"]);
       workbook.xlsx.writeBuffer().then((data) => {
-        const blob = new Blob([data], {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        });
-        const url = window.URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        const employeeDatesXls = Array.from(
-          new Set(
-            team_daily_attendance_report.flatMap((employee) =>
-              employee.workday_data.map((report) => report.date)
-            )
-          )
-        );
-  
-        const monthYear = employeeDatesXls.map((dateString) => {
-          const date = new Date(dateString);
-          const month = date.toLocaleString("default", { month: "short" });
-          const year = date.getFullYear();
-          return `${month}${year}`;
-        });
-  
-        const filename = `Attendance_Report_${monthYear[0]}.xlsx`; // Assuming you want to use the first month-year combination in the array
-  
-        anchor.download = filename;
-        anchor.click();
-        window.URL.revokeObjectURL(url);
+          const blob = new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+          const url = window.URL.createObjectURL(blob);
+          const anchor = document.createElement("a");
+          const filename = `Attendance_Report_${formatDate(employeeDatesXls[0], 'MMM_YYYY')}.xlsx`;
+          anchor.href = url;
+          anchor.download = filename;
+          anchor.click();
+          window.URL.revokeObjectURL(url);
       });
-    };
+  };
+  
  
 
 
