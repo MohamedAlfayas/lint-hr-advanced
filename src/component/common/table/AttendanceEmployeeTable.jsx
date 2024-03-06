@@ -57,6 +57,7 @@ import {
   toggleRSBView,
 } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { set } from "lodash";
+import { setEmployeeLeaveType } from "../../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
 import { addLeaveApplication } from "../../../redux/reducers/ChildReducer/LeaveApplyReducer";
 import { setLeaveTypeForCurrentEmployee } from "../../../redux/reducers/ChildReducer/LeaveTypeReducer";
 import {
@@ -71,11 +72,6 @@ const AttendanceEmployeeTable = () => {
 
   const { Column, HeaderCell, Cell } = Table;
   const [loading, setLoading] = React.useState(false);
-
-  const ws_data = GetLocalStorageData("work_schedule") || [];
-  const holiday_data = GetLocalStorageData("holiday") || [];
-  const leaves_type_employee =
-    GetLocalStorageData("leave_types_for_employee") || [];
   const employee_data = GetLocalStorageData("employee") || [];
 
   const [timeline_modal, settimeline_modal] = useState(false);
@@ -101,8 +97,12 @@ const AttendanceEmployeeTable = () => {
     (state) => state.AttendanceReportReducer
   );
 
-  const day_leave_types = leaves_type_employee.filter((d) => d.unit === 1);
-  const hour_types = leaves_type_employee.filter((d) => d.unit === 2);
+  const { employee_leave_data } = useSelector(
+    (state) => state.EmployeeLeaveReducer
+  );
+
+  const day_leave_types = employee_leave_data.filter((d) => d.unit === 1);
+  // const hour_types = employee_leave_data.filter((d) => d.unit === 2);
 
   function open_timeline() {
     settimeline_modal(!timeline_modal);
@@ -332,7 +332,7 @@ const AttendanceEmployeeTable = () => {
   };
 
   const NotesCell = ({ rowData, dataKey, ...props }) => {
-    if (rowData.is_present === false) {
+    if (rowData.is_present === false || rowData?.status === true) {
       return (
         <Cell {...props} className="link-group">
           {null}
@@ -1338,7 +1338,7 @@ const AttendanceEmployeeTable = () => {
                       };
                       setLeaveCount(
                         newData.leave_type
-                          ? day_leave_types.find(
+                          ? employee_leave_data.find(
                               (d) => d.id === newData.leave_type
                             )?.balance_leave_count
                           : ""

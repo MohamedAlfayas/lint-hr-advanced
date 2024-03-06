@@ -22,6 +22,7 @@ import { PostApi } from "../../common/api/PostApi";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { toast } from "react-toastify";
 import { EmployeeDisplayInSelect } from "../../common/js/EmployeeDisplayInSelect";
+import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
 dayjs.extend(customParseFormat);
 
 const AttendanceFilter = () => {
@@ -132,7 +133,8 @@ const AttendanceFilter = () => {
           url: `leave/get-leave-type-details-for-employee/?employee_id=${filterKeys?.employee}`,
         })
           .then((res) => {
-            console.log("Employee Leave Type Data");
+            console.log(res?.data?.data);
+            dispatch(setEmployeeLeaveType(res?.data?.data));
           })
           .catch((err) => {
             console.log("Something Went Worng");

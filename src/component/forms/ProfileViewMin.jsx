@@ -36,6 +36,7 @@ import Column from "antd/es/table/Column";
 import { ConvertSecondsToTime } from "../../common/js/ConvertSecondsToTime";
 import { ParseTime } from "../../common/js/ParseTime";
 import AttendanceReport from "../../pages/attendance/AttendanceReport";
+import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
 const ProfileViewMin = () => {
   const dispatch = useDispatch();
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
@@ -108,8 +109,6 @@ const ProfileViewMin = () => {
       setEmpId(form_obj.id);
     }
   }, [form_obj]);
-
-  console.log("Attendance Report for Employee", attendanceEmpReport);
 
   // Custom Tabs Bordered
   const [customActiveTab, setcustomActiveTab] = useState("1");
@@ -197,11 +196,21 @@ const ProfileViewMin = () => {
         return null;
     }
   };
-
-  console.log(
-    "individual Attendance Report Data",
-    individualAttendanceReportData
-  );
+  const navigatuser = () => {
+    dispatch(toggleRSBView(false));
+    navigate(`/employee/view/${empId}`);
+    Api({
+      type: "GET",
+      url: `leave/get-leave-type-details-for-employee/?employee_id=${empId}`,
+    })
+      .then((res) => {
+        console.log("Leave Type for Employee", res?.data?.data);
+        dispatch(setEmployeeLeaveType(res?.data?.data));
+      })
+      .catch((err) => {
+        console.log("Somethong Went Wrong!!");
+      });
+  };
 
   const getFileType = (fileName) => {
     const extension = fileName.split(".").pop();
@@ -572,10 +581,7 @@ const ProfileViewMin = () => {
           </button>
           <Button
             // to={`/employee/view/${empId}`}
-            onClick={() => {
-              dispatch(toggleRSBView(false));
-              navigate(`/employee/view/${empId}`);
-            }}
+            onClick={navigatuser}
             className="btn btn-primary w-100"
           >
             <i className="ri-user-3-line align-bottom ms-1"></i> View Profile
