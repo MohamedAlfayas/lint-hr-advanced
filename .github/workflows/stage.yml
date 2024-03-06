@@ -3,6 +3,7 @@ run-name: ${{github.actor}} is deploying to staging.
 env:
   s3_bucket: s3://linthr.com
   cloudfront_distribution_id: E2HETT4TNZKT0Q
+  CI: false
 on:
   push:
     branches:
