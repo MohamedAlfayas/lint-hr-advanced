@@ -24,6 +24,7 @@ import { EmployeeDisplayInSelect } from "../../common/js/EmployeeDisplayInSelect
 import { Api } from "../../common/api/Api";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { employee_view_component_name } from "../../common/constant/Constants";
+import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
 
 const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const dispatch = useDispatch();
@@ -98,6 +99,16 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
 
   const handleEmployeeChange = (e) => {
     navigate(`/employee/view/${e.value}`);
+    Api({
+      type: "GET",
+      url: `leave/get-leave-type-details-for-employee/?employee_id=${e.value}`,
+    })
+      .then((res) => {
+        dispatch(setEmployeeLeaveType(res?.data?.data));
+      })
+      .catch((err) => {
+        console.log("Something Went Wrong!!!");
+      });
   };
 
   const location = useLocation();

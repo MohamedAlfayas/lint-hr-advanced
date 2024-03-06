@@ -2,8 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { Col } from "reactstrap";
 import Select from "react-select";
-import { useDispatch, useSelector } from "react-redux";
-import { setAttendanceApprovalTableFilterKeys } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
 import { DatePicker } from "antd";
 import { MonthFormat } from "../../../common/constant/Constants";
 import dayjs from "dayjs";
@@ -11,10 +9,10 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
 import { Api } from "../../../common/api/Api";
 import { setAttendanceApprovalData } from "../../../redux/reducers/ChildReducer/AttendanceApprovalReducer";
+import { useDispatch } from "react-redux";
 dayjs.extend(customParseFormat);
 
-const AttednaceApprovalFilter = () => {
-  const inputRef = useRef();
+const AttendanceApprovalFilter = () => {
   const [filteredDepType, setFilteredDepType] = useState(0);
   const [filteredMonth, setFilteredMonth] = useState(
     `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
@@ -26,17 +24,13 @@ const AttednaceApprovalFilter = () => {
     []
   );
 
+  const dispatch = useDispatch();
+
   const [depOptions, setDepOptions] = useState([]);
 
   useEffect(() => {
     setDepOptions([{ id: "0", label: "All", value: "0" }, ...dep_options]);
-  });
-
-  const dispatch = useDispatch();
-
-  const { attendance_approval_table_filter_keys } = useSelector(
-    (state) => state.TableFilterReducer
-  );
+  }, []);
 
   const handleDepartmentChange = (e, name) => {
     setFilteredDepType(e.value);
@@ -73,7 +67,6 @@ const AttednaceApprovalFilter = () => {
           id="department_filter"
           name="department_filter"
           isClearable={false}
-          innerRef={inputRef}
           isMulti={false}
           options={depOptions || []}
           className="basic-multi-select"
@@ -114,4 +107,4 @@ const AttednaceApprovalFilter = () => {
   );
 };
 
-export default AttednaceApprovalFilter;
+export default AttendanceApprovalFilter;

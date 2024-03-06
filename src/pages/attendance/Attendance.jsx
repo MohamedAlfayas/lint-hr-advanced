@@ -23,13 +23,19 @@ import {
 import { Api } from "../../common/api/Api";
 import AttendanceFilter from "./AttendanceFilter";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { profile_data } from "../../redux/reducers/ChildReducer/MyProfileReducer";
+import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
 
 const AttendanceDashboard = () => {
   document.title = `Attendance Overview | ${MetaTitle}`;
 
   const dispatch = useDispatch();
 
+  const [userData, setUserData] = useState();
+
   const { showLoader } = useSelector((state) => state.LoaderReducer);
+
+  const { profile_data } = useSelector((state) => state.MyProfileReducer);
 
   const { showTeamTable } = useSelector(
     (state) => state.AttendanceReportReducer
@@ -55,6 +61,22 @@ const AttendanceDashboard = () => {
         dispatch(setLoaderVisible(false));
         console.log("Something Went Wrong !!");
       });
+  }, []);
+
+  useEffect(() => {
+    dispatch(setLoaderVisible(true));
+    Api({
+      type: "GET",
+      url: `leave/get-leave-type-details-for-employee/?employee_id=${profile_data.id}`,
+    })
+      .then((res) => {
+        console.log("Employee Own Leave Type", res?.data?.data);
+        dispatch(setEmployeeLeaveType(res?.data?.data));
+      })
+      .catch((err) => {
+        console.log("Something Went Wrong!!!");
+      });
+    dispatch(setLoaderVisible(false));
   }, []);
 
   return (

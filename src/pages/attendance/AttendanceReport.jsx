@@ -110,7 +110,7 @@ const AttendanceReport = () => {
           },
       };
   
-      const headers = ["Employee Name", "Email", "Emp ID", "Attendane","Paid Hr","Work Schedule", "Status", "Activity",  "OT",  "Edited Hours","In", "Out",  "Total", "In Location", "Out Location"];
+      const headers = ["Employee Name", "Email", "Emp ID", "Attendane","Paid Hr","Work Schedule","In", "Out","Work Schedule", "Status", "Activity",  "OT",  "Edited Hours",  "Total", "In Location", "Out Location"];
   
       // Assuming `team_daily_attendance_report` is available
       const employeeDatesXls = Array.from(new Set(team_daily_attendance_report.flatMap((employee) =>
@@ -126,50 +126,64 @@ const AttendanceReport = () => {
   
       // Add data rows
       employeeDatesXls.forEach((date, index) => {
-          const attendance_data = rowData.workday_data.find((day) => day.date === date);
-          const row = [formatDate(date), emp_name, foundEmployee ? foundEmployee.email : "", employee_id];
-          if (attendance_data) {
-              const attend_data =
-                  attendance_data.is_present === true ? "P" :
-                  attendance_data.is_holiday === true ? "H" :
-                  attendance_data.is_day_on === false ? "WO" :
-                  attendance_data.is_leave_approved === true ? "L" :
-                  attendance_data.leave_taken_without_approval === true ? "A" : "A";
-              row.push(attend_data);
-  
-            
-            
-              const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds);
-              const entryLogLength = attendance_data.entry_log.length;
-              const entryLogs = attendance_data.entry_log.map(entry => {
-                const entryTime = entry.entry_time
-                console.log("TTT",entryTime);
-                // const hours = entryTime.getHours();
-                // const minutes = entryTime.getMinutes();
-                // const ampm = hours >= 12 ? 'PM' : 'AM';
-                // const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
-                // const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
-                // console.log("Time", formattedHours + ':' + formattedMinutes + ' ' + ampm);
-                // return formattedHours + ':' + formattedMinutes + ' ' + ampm;
+        const attendance_data = rowData.workday_data.find((day) => day.date === date);
+        if (attendance_data) {
+            const attend_data =
+                attendance_data.is_present === true ? "P" :
+                attendance_data.is_holiday === true ? "H" :
+                attendance_data.is_day_on === false ? "WO" :
+                attendance_data.is_leave_approved === true ? "L" :
+                attendance_data.leave_taken_without_approval === true ? "A" : "A";
+    
+            const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds);
+            const workScheduleHr = ConvertSecondsToTime(attendance_data.work_schedule_hr_without_break_in_seconds);
+    
+            const entryLogs = attendance_data.entry_log.map(entry => {
+                const entryTime = entry.entry_time;
+                return format(ParseTime(entryTime), "h:mm a");
             });
-            
             const entryLogIn = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 1);
             const entryLogOut = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 2);
-            
-            // Push entryLogIn and entryLogOut to the row
-           
-              let duration = entryLogLength === 0 ? total_hour : `${total_hour}`;
-              let workScheduleHr = ConvertSecondsToTime(attendance_data.work_schedule_hr_without_break_in_seconds);
-              row.push(duration,workScheduleHr,);
-              entryLogIn.forEach(inTime => row.push(inTime));
-              entryLogOut.forEach(outTime => row.push(outTime));
-          } else {
-              row.push("", "", "", "", "", "");
-          }
-          
+    
+            const inLength = entryLogIn.length;
+            const outLength = entryLogOut.length;
+            const maxIterations = Math.max(inLength, outLength);
+    
+            // If either entryLogIn or entryLogOut is empty, push an empty row
+            if (inLength === 0 || outLength === 0) {
+                const row = [formatDate(date), emp_name, foundEmployee ? foundEmployee.email : "", employee_id, attend_data, total_hour, workScheduleHr];
+                row.push(inLength === 0 ? "-" : entryLogIn[0]);
+                row.push(outLength === 0 ? "-" : entryLogOut[0]);
+                sheet.addRow(row);
+            } else {
+                for (let i = 0; i < maxIterations; i++) {
+                    const row = [formatDate(date), emp_name, foundEmployee ? foundEmployee.email : "", employee_id, attend_data, total_hour, workScheduleHr];
+        
+                    if (i < inLength) {
+                        row.push(entryLogIn[i]);
+                    } else {
+                        row.push(""); // Push an empty value if entryLogIn is empty
+                    }
+        
+                    if (i < outLength) {
+                        row.push(entryLogOut[i]);
+                    } else {
+                        row.push(""); // Push an empty value if entryLogOut is empty
+                    }
+        
+                    sheet.addRow(row);
+                }
+            }
+        } else {
+            // If no attendance data found for a specific date, add a row with "WO" data
+            const row = [formatDate(date), emp_name, foundEmployee ? foundEmployee.email : "", employee_id, "WO", "", ""];
+            sheet.addRow(row);
+        }
+    });
+    
 
-          sheet.addRow(row);
-      });
+    
+    
     //   team_daily_attendance_report.forEach(rowData => {
     //     const employee = employee_data.find(emp => emp.id === rowData.employee_id);
     //     if (employee) {
@@ -215,7 +229,7 @@ const AttendanceReport = () => {
           const blob = new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
           const url = window.URL.createObjectURL(blob);
           const anchor = document.createElement("a");
-          const filename = `${emp_name}_Attendance_Report_${monthYear[0]}.xlsx`;
+          const filename = `${emp_name}_${employee_id}_Attendance_${monthYear[0]}.xlsx`;
           anchor.href = url;
           anchor.download = filename;
           anchor.click();
