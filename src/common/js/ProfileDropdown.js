@@ -36,10 +36,6 @@ const ProfileDropdown = () => {
 
     console.log("newFCMToken On Logout = ", newFCMToken);
 
-    let payload = {
-      fcm_token: newFCMToken
-    }
-
     const values = {
       'device_type': 1,
       "fcm_token": newFCMToken

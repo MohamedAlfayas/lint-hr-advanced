@@ -1,5 +1,6 @@
 import { Api } from "../common/api/Api"
 import { setVersion } from "../redux/reducers/ChildReducer/MetaReducer";
+import { setMyProfileDataReducer } from "../redux/reducers/ChildReducer/MyProfileReducer";
 
 export const GetGlobalVersion = async (dispatch) => {
     Api({
@@ -14,7 +15,8 @@ export const GetGlobalVersion = async (dispatch) => {
                 .then(master => {
                     localStorage.setItem("lint_hr_globaldata", JSON.stringify(master?.data));
                     localStorage.setItem("lint_hr_v", res?.data?.version);
-                    dispatch(setVersion(res?.data?.version))
+                    dispatch(setVersion(res?.data?.version));
+                    dispatch(setMyProfileDataReducer(master?.data?.my_profile));
                 })
                 .catch(error => {
                     console.log("ERRor == ", error);
