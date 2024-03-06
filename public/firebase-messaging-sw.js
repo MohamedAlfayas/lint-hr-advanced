@@ -24,9 +24,6 @@ messaging.onBackgroundMessage((payload) => {
         payload
     );
 
-    // Check if this notification has already been displayed in another tab
-    broadcastChannel.postMessage({ type: 'notification', payload });
-
     // Customize notification here
     const notificationTitle = payload.data.title
     const notificationOptions = {
@@ -37,18 +34,3 @@ messaging.onBackgroundMessage((payload) => {
     self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-
-// Listen for messages from other service worker instances
-broadcastChannel.onmessage = (event) => {
-    if (event.data && event.data.type === 'notification') {
-        // Prevent showing the notification in this instance if it's already shown in another instance
-        self.registration.getNotifications().then(notifications => {
-            if (!notifications.some(notification => notification.data.id === event.data.payload.data.id)) {
-                self.registration.showNotification(event.data.payload.data.title, {
-                    body: event.data.payload.data.body,
-                    icon: event.data.payload.data.icon
-                });
-            }
-        });
-    }
-};
