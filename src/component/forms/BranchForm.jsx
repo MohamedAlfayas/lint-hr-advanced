@@ -48,8 +48,6 @@ import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { GoogleMap, Marker } from "@react-google-maps/api";
-import LocationSearch from "../../pages/organization/LocationSearch";
-import LocationSearch2 from "../../pages/organization/LocationSearch2";
 import { useDispatch, useSelector } from "react-redux";
 import { CountryCodeDisplayInSelect } from "../../common/js/CountryCodeDisplayInSelect";
 import { PostApi } from "../../common/api/PostApi";
@@ -60,6 +58,8 @@ import {
 } from "../../redux/reducers/ChildReducer/BranchReducer";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { SetLocalStorage } from "../../meta/SetLocalStorageData";
+import DistanceCalculaterInMap from "../../pages/attendance/DistanceCalculaterInMap";
+import LocationSearch from "../../pages/organization/LocationSearch";
 // import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 
 const BranchForm = () => {
@@ -450,6 +450,8 @@ const BranchForm = () => {
                     setBranchObj={setBranchObj}
                     FormikForm={FormikForm}
                   />
+
+                  <DistanceCalculaterInMap branchObj={branchObj} />
 
                   <Col lg={12}>
                     <div>

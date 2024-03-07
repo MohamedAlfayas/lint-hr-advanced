@@ -5,7 +5,7 @@ import {
   StandaloneSearchBox,
 } from "@react-google-maps/api";
 
-const MapComponent = () => {
+const LocationSearch2 = () => {
   const [map, setMap] = useState(null);
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState([]);
@@ -68,4 +68,4 @@ const MapComponent = () => {
   );
 };
 
-export default MapComponent;
+export default LocationSearch2;

@@ -31,6 +31,13 @@ const TeamTab = () => {
   //Modal
   const [modal, setModal] = useState(false);
   const openModal = () => setModal(!modal);
+
+  const [modal_xlarge, setmodal_xlarge] = useState(false);
+
+  function tog_xlarge() {
+    setmodal_xlarge(!modal_xlarge);
+  }
+
   return (
     <React.Fragment>
       <Row className="g-4 mb-3">
@@ -51,7 +58,8 @@ const TeamTab = () => {
             <button
               type="button"
               className="btn btn-danger"
-              onClick={openModal}>
+              onClick={tog_xlarge}
+            >
               <i className="ri-share-line me-1 align-bottom"></i> Invite Member
             </button>
           </div>
@@ -68,7 +76,8 @@ const TeamTab = () => {
                     <div className="flex-shrink-0 me-2">
                       <button
                         type="button"
-                        className="btn fs-16 p-0 favourite-btn">
+                        className="btn fs-16 p-0 favourite-btn"
+                      >
                         <i className="ri-star-fill"></i>
                       </button>
                     </div>
@@ -148,7 +157,8 @@ const TeamTab = () => {
                     <div className="flex-shrink-0 me-2">
                       <button
                         type="button"
-                        className="btn fs-16 p-0 favourite-btn active">
+                        className="btn fs-16 p-0 favourite-btn active"
+                      >
                         <i className="ri-star-fill"></i>
                       </button>
                     </div>
@@ -226,7 +236,8 @@ const TeamTab = () => {
                     <div className="flex-shrink-0 me-2">
                       <button
                         type="button"
-                        className="btn fs-16 p-0 favourite-btn active">
+                        className="btn fs-16 p-0 favourite-btn active"
+                      >
                         <i className="ri-star-fill"></i>
                       </button>
                     </div>
@@ -306,7 +317,8 @@ const TeamTab = () => {
                     <div className="flex-shrink-0 me-2">
                       <button
                         type="button"
-                        className="btn fs-16 p-0 favourite-btn">
+                        className="btn fs-16 p-0 favourite-btn"
+                      >
                         <i className="ri-star-fill"></i>
                       </button>
                     </div>
@@ -386,7 +398,8 @@ const TeamTab = () => {
                     <div className="flex-shrink-0 me-2">
                       <button
                         type="button"
-                        className="btn fs-16 p-0 favourite-btn">
+                        className="btn fs-16 p-0 favourite-btn"
+                      >
                         <i className="ri-star-fill"></i>
                       </button>
                     </div>
@@ -466,7 +479,8 @@ const TeamTab = () => {
                     <div className="flex-shrink-0 me-2">
                       <button
                         type="button"
-                        className="btn fs-16 p-0 favourite-btn">
+                        className="btn fs-16 p-0 favourite-btn"
+                      >
                         <i className="ri-star-fill"></i>
                       </button>
                     </div>
@@ -546,7 +560,8 @@ const TeamTab = () => {
                     <div className="flex-shrink-0 me-2">
                       <button
                         type="button"
-                        className="btn fs-16 p-0 favourite-btn">
+                        className="btn fs-16 p-0 favourite-btn"
+                      >
                         <i className="ri-star-fill"></i>
                       </button>
                     </div>
@@ -624,7 +639,8 @@ const TeamTab = () => {
                     <div className="flex-shrink-0 me-2">
                       <button
                         type="button"
-                        className="btn fs-16 p-0 favourite-btn">
+                        className="btn fs-16 p-0 favourite-btn"
+                      >
                         <i className="ri-star-fill"></i>
                       </button>
                     </div>
@@ -704,7 +720,8 @@ const TeamTab = () => {
                     <div className="flex-shrink-0 me-2">
                       <button
                         type="button"
-                        className="btn fs-16 p-0 favourite-btn">
+                        className="btn fs-16 p-0 favourite-btn"
+                      >
                         <i className="ri-star-fill"></i>
                       </button>
                     </div>
@@ -784,7 +801,8 @@ const TeamTab = () => {
                     <div className="flex-shrink-0 me-2">
                       <button
                         type="button"
-                        className="btn fs-16 p-0 favourite-btn">
+                        className="btn fs-16 p-0 favourite-btn"
+                      >
                         <i className="ri-star-fill"></i>
                       </button>
                     </div>
@@ -935,7 +953,8 @@ const TeamTab = () => {
                 data-bs-trigger="hover"
                 data-bs-placement="top"
                 title=""
-                data-bs-original-title="Brent Gonzalez">
+                data-bs-original-title="Brent Gonzalez"
+              >
                 <div className="avatar-xs">
                   <img
                     src={avatar3}
@@ -951,7 +970,8 @@ const TeamTab = () => {
                 data-bs-trigger="hover"
                 data-bs-placement="top"
                 title=""
-                data-bs-original-title="Sylvia Wright">
+                data-bs-original-title="Sylvia Wright"
+              >
                 <div className="avatar-xs">
                   <div className="avatar-title rounded-circle bg-secondary">
                     S
@@ -965,7 +985,8 @@ const TeamTab = () => {
                 data-bs-trigger="hover"
                 data-bs-placement="top"
                 title=""
-                data-bs-original-title="Ellen Smith">
+                data-bs-original-title="Ellen Smith"
+              >
                 <div className="avatar-xs">
                   <img
                     src={avatar4}
@@ -979,7 +1000,8 @@ const TeamTab = () => {
           <SimpleBar
             className="mx-n4 px-4"
             data-simplebar="init"
-            style={{ maxHeight: "225px" }}>
+            style={{ maxHeight: "225px" }}
+          >
             <div className="vstack gap-3">
               <div className="d-flex align-items-center">
                 <div className="avatar-xs flex-shrink-0 me-3">
@@ -1115,12 +1137,33 @@ const TeamTab = () => {
           <button
             type="button"
             className="btn btn-light w-xs"
-            data-bs-dismiss="modal">
+            data-bs-dismiss="modal"
+          >
             Cancel
           </button>
           <button type="button" className="btn btn-success w-xs">
             Invite
           </button>
+        </div>
+      </Modal>
+
+      <Modal
+        size="xl"
+        isOpen={modal_xlarge}
+        toggle={() => {
+          tog_xlarge();
+        }}
+      >
+        <ModalBody className="p-4">...</ModalBody>
+
+        <div class="modal-footer">
+          <a
+            class="btn btn-link link-success fw-medium"
+            href="/velzon/react/default/ui-modals"
+          >
+            <i class="ri-close-line me-1 align-middle"></i> Close
+          </a>
+          <button class="btn btn-primary">Save changes</button>
         </div>
       </Modal>
     </React.Fragment>
