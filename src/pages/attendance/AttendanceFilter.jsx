@@ -12,7 +12,7 @@ import Select from "react-select";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   setIndividualAttendanceReportData,
   setShowTeamTable,
@@ -23,6 +23,7 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 import { toast } from "react-toastify";
 import { EmployeeDisplayInSelect } from "../../common/js/EmployeeDisplayInSelect";
 import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
+import { profile_data } from "../../redux/reducers/ChildReducer/MyProfileReducer";
 dayjs.extend(customParseFormat);
 
 const AttendanceFilter = () => {
@@ -40,6 +41,8 @@ const AttendanceFilter = () => {
 
   const [employeeOptions, setEmployeeOptions] = useState([]);
   const [showEmployeeSelect, setShowEmployeeSelect] = useState(false);
+
+  const { profile_data } = useSelector((state) => state.MyProfileReducer);
 
   const employee_data = GetLocalStorageData("employee");
 
@@ -127,6 +130,19 @@ const AttendanceFilter = () => {
           attendanceApi?.data?.data?.individual_attendance_report
         )
       );
+      if (filterKeys?.type === "1") {
+        Api({
+          type: "GET",
+          url: `leave/get-leave-type-details-for-employee/?employee_id=${profile_data.id}`,
+        })
+          .then((res) => {
+            console.log(res?.data?.data);
+            dispatch(setEmployeeLeaveType(res?.data?.data));
+          })
+          .catch((err) => {
+            console.log("Something Went Worng");
+          });
+      }
       if (filterKeys?.type === "2" && filterKeys?.employee !== "0") {
         Api({
           type: "GET",

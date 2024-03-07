@@ -64,6 +64,22 @@ const AttendanceApprovalFilter = () => {
     <React.Fragment>
       <Col md={3}>
         <Select
+          id="employee_filter"
+          name="employee_filter"
+          isClearable={false}
+          isMulti={false}
+          options={depOptions || []}
+          className="basic-multi-select"
+          placeholder="Select Employee"
+          allowClear={false}
+          // onChange={(e) =>
+          //   handleDepartmentChange(e, "primary_department_id_list")
+          // }
+          // value={depOptions.find((d) => d.id === filteredDepType) || []}
+        />
+      </Col>
+      <Col md={3}>
+        <Select
           id="department_filter"
           name="department_filter"
           isClearable={false}

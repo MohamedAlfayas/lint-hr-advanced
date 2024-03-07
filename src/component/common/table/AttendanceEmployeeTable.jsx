@@ -66,6 +66,7 @@ import {
   earlyin_display,
   earlyout_display,
 } from "../../../common/constant/Constants";
+import DistanceCalculaterInMap from "../../../pages/attendance/DistanceCalculaterInMap";
 
 const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
@@ -80,6 +81,7 @@ const AttendanceEmployeeTable = () => {
   const [notes_modal, setNotes_modal] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [leave_modal, setLeave_modal] = useState(false);
+  const [locationModal, setLocationModal] = useState(false);
   const [leaveDate, setLeaveDate] = useState(null);
   const [attendanceEditData, setAttendanceEditData] = useState(null);
   const [leaveApplyData, setLeaveApplyData] = useState(null);
@@ -106,6 +108,10 @@ const AttendanceEmployeeTable = () => {
 
   function open_timeline() {
     settimeline_modal(!timeline_modal);
+  }
+
+  function open_location() {
+    setLocationModal(!locationModal);
   }
 
   const closeNotesModal = () => {
@@ -197,9 +203,14 @@ const AttendanceEmployeeTable = () => {
       return (
         <Cell {...props} className="link-group">
           {location_text !== "" && (
-            <>
+            <Link
+              href="#"
+              onClick={() => {
+                open_location();
+              }}
+            >
               <i className="mdi mdi-map-marker-outline"></i> {location_text}
-            </>
+            </Link>
           )}
         </Cell>
       );
@@ -571,6 +582,7 @@ const AttendanceEmployeeTable = () => {
       status: 1,
       day_type: 1,
       in_between_dates: [rowData?.date],
+      employee_id: rowData?.employee_id,
     };
     setLeaveApplyData(intialObj);
     setLeave_modal(true);
@@ -583,6 +595,7 @@ const AttendanceEmployeeTable = () => {
       toast.error("Please Select Leave Type");
     } else {
       console.log("SUCCESSSS !!!!", leaveApplyData);
+
       const Api = await PostApi(
         "leave/leave-application/create/",
         leaveApplyData,
@@ -727,7 +740,7 @@ const AttendanceEmployeeTable = () => {
             <HeaderCell style={{ offsetTop: 0 }}>Paid Hr</HeaderCell>
             <SecondsToTimeCell dataKey="final_paid_hr_in_seconds" />
           </Column>
-          <Column width={150}>
+          <Column width={100}>
             <HeaderCell style={{ offsetTop: 0 }}>Status</HeaderCell>
             <HrStatusCell dataKey="hr_status" />
           </Column>
@@ -1126,6 +1139,31 @@ const AttendanceEmployeeTable = () => {
                 Close
               </Button>
             </div>
+          </div>
+        </ModalBody>
+      </Modal>
+      {/*Location Modal */}
+      <Modal
+        size="lg"
+        isOpen={locationModal}
+        toggle={() => {
+          open_location();
+        }}
+        centered
+      >
+        <ModalBody>
+          <div>
+            <DistanceCalculaterInMap />
+            {/* <div className="text-center mt-5">
+              <Button
+                className="btn btn-warning"
+                onClick={() => {
+                  open_location();
+                }}
+              >
+                Close
+              </Button>
+            </div> */}
           </div>
         </ModalBody>
       </Modal>

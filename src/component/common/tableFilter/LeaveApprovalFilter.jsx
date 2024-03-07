@@ -26,7 +26,7 @@ const LeaveApprovalFilter = () => {
 
   return (
     <React.Fragment>
-      <Col md={4}>
+      <Col md={3}>
         <Select
           id="status_filter"
           name="status_filter"
@@ -35,8 +35,8 @@ const LeaveApprovalFilter = () => {
           isMulti={false}
           options={leave_approval_table_filter_options || []}
           className="basic-multi-select"
-          placeholder="Select Status"
-          onChange={(e) => handleFilterChange(e, "status")}
+          placeholder="Select Employee"
+          // onChange={(e) => handleFilterChange(e, "status")}
         />
       </Col>
     </React.Fragment>

@@ -18,6 +18,8 @@ import DepartmentsTab from "./DepartmentsTab";
 import Branch from "./Branch";
 import TeamTab from "./TeamTab";
 import OrgInfoTab from "./OrgInfoTab";
+import PayRollConfig from "./../payroll/PayRollConfig";
+import AttendanceConfig from "./../attendanceConfig/AttendanceConfig";
 
 const Section = () => {
   //Tab
@@ -68,12 +70,14 @@ const Section = () => {
                     <div className="hstack gap-1 flex-wrap">
                       <button
                         type="button"
-                        className="btn py-0 fs-16 favourite-btn active">
+                        className="btn py-0 fs-16 favourite-btn active"
+                      >
                         <i className="ri-star-fill"></i>
                       </button>
                       <button
                         type="button"
-                        className="btn py-0 fs-16 text-body">
+                        className="btn py-0 fs-16 text-body"
+                      >
                         <i className="ri-share-line"></i>
                       </button>
                     </div>
@@ -90,7 +94,8 @@ const Section = () => {
                       onClick={() => {
                         toggleTab("1");
                       }}
-                      href="#">
+                      href="#"
+                    >
                       Company Info
                     </NavLink>
                   </NavItem>
@@ -103,7 +108,8 @@ const Section = () => {
                       onClick={() => {
                         toggleTab("2");
                       }}
-                      href="#">
+                      href="#"
+                    >
                       Departments
                     </NavLink>
                   </NavItem>
@@ -116,7 +122,8 @@ const Section = () => {
                       onClick={() => {
                         toggleTab("3");
                       }}
-                      href="#">
+                      href="#"
+                    >
                       Branch
                     </NavLink>
                   </NavItem>
@@ -129,8 +136,9 @@ const Section = () => {
                       onClick={() => {
                         toggleTab("4");
                       }}
-                      href="#">
-                      Company Policy
+                      href="#"
+                    >
+                      Payroll Configuration
                     </NavLink>
                   </NavItem>
                   <NavItem>
@@ -142,8 +150,9 @@ const Section = () => {
                       onClick={() => {
                         toggleTab("5");
                       }}
-                      href="#">
-                      Integrations
+                      href="#"
+                    >
+                      Attendance Configuration
                     </NavLink>
                   </NavItem>
                 </Nav>
@@ -165,10 +174,10 @@ const Section = () => {
               <Branch />
             </TabPane>
             <TabPane tabId="4">
-              <TeamTab />
+              <PayRollConfig />
             </TabPane>
             <TabPane tabId="5">
-              <OrgInfoTab />
+              <AttendanceConfig />
             </TabPane>
           </TabContent>
         </Col>
