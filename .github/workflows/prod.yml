@@ -1,5 +1,5 @@
-name: Stage
-run-name: ${{github.actor}} is deploying to staging.
+name: Prod
+run-name: ${{github.actor}} is deploying to Production.
 env:
   s3_bucket: s3://linthr.com
   cloudfront_distribution_id: E2HETT4TNZKT0Q
@@ -27,11 +27,22 @@ jobs:
       - name: Build Project
         run: yarn build
 
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: build/
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
 
     steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
