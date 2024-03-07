@@ -7,6 +7,7 @@ import AttendanceStatistics from "./AttendanceStatistics";
 import PayrollWidgets from "./PayrollWidgets";
 import AttendanceGraph from "./AttendanceGraph";
 import DeptWiseAttendanceWidgets from "./DeptWiseAttendanceWidgets";
+import AttendanceLeaveApprovalTable from "./AttendanceLeaveApprovalTable";
 
 const Dashboard = () => {
   document.title = `Dashboard | ${MetaTitle || "Lint HR"}`;
@@ -38,6 +39,7 @@ const Dashboard = () => {
                       <AttendanceGraph />
                     </Row>
                   </Col>
+                  <Col xl={12}><AttendanceLeaveApprovalTable /></Col>
                   <Col xl={12}> {/* <DeptWiseAttendanceWidgets /> */}</Col>
                 </Row>
               </div>

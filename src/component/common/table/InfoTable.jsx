@@ -68,6 +68,8 @@ import {
   holiday_component_name,
   leave_approval_component_name,
   leave_type_component_name,
+  attendance_pending_table,
+  leave_pending_table
 } from "../../../common/constant/Constants";
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
@@ -113,20 +115,20 @@ const InfoTable = ({
     formname === employee_component_name
       ? employee_table_filter_keys
       : formname === leave_type_component_name
-      ? leave_type_table_filter_keys
-      : formname === attendance_approval_component_name
-      ? attendance_approval_table_filter_keys
-      : {};
+        ? leave_type_table_filter_keys
+        : formname === attendance_approval_component_name
+          ? attendance_approval_table_filter_keys
+          : {};
 
   console.log("table_filter_keys = ", table_filter_keys);
 
   const tabOptions = filterOptions
     ? filterOptions.map((obj, idx) => {
-        return {
-          ...obj,
-          idx: idx + 2,
-        };
-      })
+      return {
+        ...obj,
+        idx: idx + 2,
+      };
+    })
     : [];
 
   const [activeTab, setActiveTab] = useState(1);
@@ -153,7 +155,7 @@ const InfoTable = ({
     const checkall = document.getElementById("checkBoxAll");
     const ele = document.querySelectorAll(".dataCheckBox");
     const checkboxes = document.querySelectorAll(
-      ".dataCheckBox.form-check-input"
+      ".dataCheckBox.form-check-input:not(:disabled)"
     );
     const checkboxesArray = Array.from(checkboxes);
     // checkboxesArray.map((checkbox) => {
@@ -174,19 +176,21 @@ const InfoTable = ({
 
     checkboxesArray.forEach((checkbox) => {
       // Do something with each checkbox
-      if (checkall.checked) {
-        ele.forEach((ele) => {
-          ele.checked = true;
-        });
-        setSelectedGroupIds((prevIds) => [
-          ...prevIds,
-          parseInt(checkbox.value),
-        ]);
-      } else {
-        ele.forEach((ele) => {
-          ele.checked = false;
-        });
-        setSelectedGroupIds([]);
+      if (!checkbox.disabled) {
+        if (checkall.checked) {
+          ele.forEach((ele) => {
+            ele.checked = true;
+          });
+          setSelectedGroupIds((prevIds) => [
+            ...prevIds,
+            parseInt(checkbox.value),
+          ]);
+        } else {
+          ele.forEach((ele) => {
+            ele.checked = false;
+          });
+          setSelectedGroupIds([]);
+        }
       }
       // Perform other actions based on the checkbox
     });
@@ -219,13 +223,12 @@ const InfoTable = ({
       formname === leave_approval_component_name
         ? `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To <strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `
         : `<span>Are You Sure to <strong style='color:green'>Accept </strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
-            new Date(orderData.date),
-            "dd MMM, yyyy"
-          )}</span>
+          new Date(orderData.date),
+          "dd MMM, yyyy"
+        )}</span>
           <div>
-          ${
-            formname === attendance_approval_component_name
-              ? `<span style="display: inline-block; margin-top: 20px;">
+          ${formname === attendance_approval_component_name
+          ? `<span style="display: inline-block; margin-top: 20px;">
               <label for="select-hour" style="display: inline-block; margin-right: 5px;">Edit Paid Hr:</label>      
               <b className="mt-2 me-1 ms-2">H</b>
               <Select id="select-hour" class="swal2-input" style="display: inline-block; width: auto; margin-left: 5px;">
@@ -236,8 +239,8 @@ const InfoTable = ({
                 ${generateOptions(60, minutes)}
               </Select>
             </span>`
-              : undefined
-          }
+          : undefined
+        }
         </div>`;
 
     let btnText = "Yes, Approve";
@@ -261,17 +264,17 @@ const InfoTable = ({
       inputAttributes:
         formname === attendance_approval_component_name
           ? {
-              style:
-                "margin: 10px auto; padding: 10px; border-radius: 5px; display: block;",
-            }
+            style:
+              "margin: 10px auto; padding: 10px; border-radius: 5px; display: block;",
+          }
           : undefined,
       inputValidator:
         formname === attendance_approval_component_name
           ? (value) => {
-              if (!value) {
-                return "Reason is required!";
-              }
+            if (!value) {
+              return "Reason is required!";
             }
+          }
           : undefined,
     }).then(async (result) => {
       if (formname === leave_approval_component_name) {
@@ -340,9 +343,9 @@ const InfoTable = ({
       formname === leave_approval_component_name
         ? `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To <strong style='color:#7066e0'> ${employee_fname} </strong> on ${orderData.start} to  ${orderData.end} </span>`
         : `<span>Are You Sure to <strong style='color:red'>Reject</strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
-            new Date(orderData.date),
-            "dd MMM, yyyy"
-          )}</span> `;
+          new Date(orderData.date),
+          "dd MMM, yyyy"
+        )}</span> `;
     let btnText = "Yes, Reject";
 
     Swal.fire({
@@ -442,17 +445,17 @@ const InfoTable = ({
       inputAttributes:
         formname === attendance_approval_component_name
           ? {
-              style:
-                "margin: 10px auto; padding: 10px; border-radius: 5px; display: block;",
-            }
+            style:
+              "margin: 10px auto; padding: 10px; border-radius: 5px; display: block;",
+          }
           : undefined,
       inputValidator:
         formname === attendance_approval_component_name
           ? (value) => {
-              if (!value) {
-                return "Reason is required!";
-              }
+            if (!value) {
+              return "Reason is required!";
             }
+          }
           : undefined,
     }).then(async (result) => {
       if (formname === leave_approval_component_name) {
@@ -697,11 +700,17 @@ const InfoTable = ({
         ),
         Cell: (cellProps) => {
           const orderDataChecked = cellProps.row.original.id;
-
+          const orderData = cellProps.row.original;
           return (
             <input
               type="checkbox"
               className="dataCheckBox form-check-input"
+              disabled={
+                (formname === leave_approval_component_name &&
+                  orderData?.status !== 1) ||
+                (formname === attendance_approval_component_name &&
+                  orderData?.hr_status !== 3)
+              }
               id={`checkbox-${cellProps.row.original.id}`}
               value={cellProps.row.original.id}
               onClick={(event) => {
@@ -735,7 +744,7 @@ const InfoTable = ({
 
           if (
             formname &&
-            formname === leave_approval_component_name &&
+            formname === leave_approval_component_name || leave_pending_table &&
             orderData.status === 1
           ) {
             return (
@@ -764,7 +773,7 @@ const InfoTable = ({
             );
           } else if (
             formname &&
-            formname === attendance_approval_component_name &&
+            formname === attendance_approval_component_name || attendance_pending_table &&
             orderData.hr_status === 3
           ) {
             return (
@@ -1137,7 +1146,8 @@ const InfoTable = ({
                             <i className="ri-file-download-line align-bottom me-1"></i>{" "}
                             Import
                           </button>
-                        )}{" "}
+                        )}
+                      {" "}
                       {/* <div>
                         {formname &&
                           formname === leave_approval_component_name && (
@@ -1271,14 +1281,19 @@ const InfoTable = ({
                             </button>
                           </div>
                         )} */}
-                      <button
-                        type="button"
-                        className="btn btn-info"
-                        onClick={() => setIsExportCSV(true)}
-                      >
-                        <i className="ri-file-download-line align-bottom me-1"></i>{" "}
-                        Export
-                      </button>{" "}
+                      {formname &&
+                        formname !== "attendance_pending_table" && (
+                          <button
+                            type="button"
+                            className="btn btn-info"
+                            onClick={() => setIsExportCSV(true)}
+                          >
+                            <i className="ri-file-download-line align-bottom me-1"></i>{" "}
+                            Export
+                          </button>
+                        )
+                      }
+                      {" "}
                       {isMultiDeleteButton && (
                         <div>
                           <button
@@ -1368,29 +1383,31 @@ const InfoTable = ({
                   className="nav-tabs nav-tabs-custom nav-success"
                   role="tablist"
                 >
-                  <NavItem>
-                    <NavLink
-                      className={classnames(
-                        { active: activeTab === 1 },
-                        "fw-semibold"
-                      )}
-                      onClick={() => {
-                        toggleTab(1, "all");
-                      }}
-                      href="#"
-                    >
-                      <i className="ri-store-2-fill me-1 align-bottom"></i> All
-                      Datas
-                      {tabledata && tabledata.length > 0 && (
-                        <Badge
-                          color={activeTab === 1 ? "success" : "primary"}
-                          style={{ marginLeft: "5px" }}
-                        >
-                          {tabledata.length}
-                        </Badge>
-                      )}
-                    </NavLink>
-                  </NavItem>
+                  {formname === "attendance_pending_table" && (
+                    <NavItem>
+                      <NavLink
+                        className={classnames(
+                          { active: activeTab === 1 },
+                          "fw-semibold"
+                        )}
+                        onClick={() => {
+                          toggleTab(1, "all");
+                        }}
+                        href="#"
+                      >
+                        <i className="ri-store-2-fill me-1 align-bottom"></i> All Datas
+                        {tabledata && tabledata.length > 0 && (
+                          <Badge
+                            color={activeTab === 1 ? "success" : "primary"}
+                            style={{ marginLeft: "5px" }}
+                          >
+                            {tabledata.length}
+                          </Badge>
+                        )}
+                      </NavLink>
+                    </NavItem>
+                  )}
+
                   {!!filterOptions &&
                     filterOptions.map((obj, idx) => (
                       <NavItem>
@@ -1428,34 +1445,7 @@ const InfoTable = ({
                     data={
                       (search.trim().length
                         ? dataList
-                            .filter((obj) => {
-                              return Object.entries(table_filter_keys).every(
-                                ([key, value]) => {
-                                  // Exclude keys with value 0 from filtering
-                                  if (value === 0) {
-                                    return true; // Skip filtering for keys with value 0
-                                  }
-
-                                  // Check if the key exists in the employee object and the values match
-                                  return (
-                                    obj[key] !== undefined &&
-                                    (Array.isArray(obj[key])
-                                      ? obj[key].includes(value)
-                                      : obj[key] === value)
-                                  );
-                                }
-                              );
-                            })
-                            .filter((d) =>
-                              Object.values(d).some(
-                                (value) =>
-                                  typeof value === "string" &&
-                                  value
-                                    .toLowerCase()
-                                    .includes(search.toLowerCase())
-                              )
-                            )
-                        : dataList.filter((obj) => {
+                          .filter((obj) => {
                             return Object.entries(table_filter_keys).every(
                               ([key, value]) => {
                                 // Exclude keys with value 0 from filtering
@@ -1463,7 +1453,7 @@ const InfoTable = ({
                                   return true; // Skip filtering for keys with value 0
                                 }
 
-                                // Check if the key exists in the obj object and the values match
+                                // Check if the key exists in the employee object and the values match
                                 return (
                                   obj[key] !== undefined &&
                                   (Array.isArray(obj[key])
@@ -1472,7 +1462,34 @@ const InfoTable = ({
                                 );
                               }
                             );
-                          })) || []
+                          })
+                          .filter((d) =>
+                            Object.values(d).some(
+                              (value) =>
+                                typeof value === "string" &&
+                                value
+                                  .toLowerCase()
+                                  .includes(search.toLowerCase())
+                            )
+                          )
+                        : dataList.filter((obj) => {
+                          return Object.entries(table_filter_keys).every(
+                            ([key, value]) => {
+                              // Exclude keys with value 0 from filtering
+                              if (value === 0) {
+                                return true; // Skip filtering for keys with value 0
+                              }
+
+                              // Check if the key exists in the obj object and the values match
+                              return (
+                                obj[key] !== undefined &&
+                                (Array.isArray(obj[key])
+                                  ? obj[key].includes(value)
+                                  : obj[key] === value)
+                              );
+                            }
+                          );
+                        })) || []
                     }
                     isPagination={true}
                     isGlobalFilter={true}
@@ -1547,15 +1564,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Order Id"
                         type="text"
-                        // validate={{
-                        //     required: { value: true },
-                        // }}
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={validation.values.orderId || ""}
-                        // invalid={
-                        //     validation.touched.orderId && validation.errors.orderId ? true : false
-                        // }
+                      // validate={{
+                      //     required: { value: true },
+                      // }}
+                      // onChange={validation.handleChange}
+                      // onBlur={validation.handleBlur}
+                      // value={validation.values.orderId || ""}
+                      // invalid={
+                      //     validation.touched.orderId && validation.errors.orderId ? true : false
+                      // }
                       />
                       {/* {validation.touched.orderId && validation.errors.orderId ? (
                                                     <FormFeedback type="invalid">{validation.errors.orderId}</FormFeedback>
@@ -1575,15 +1592,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Name"
                         type="text"
-                        // validate={{
-                        //     required: { value: true },
-                        // }}
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={validation.values.customer || ""}
-                        // invalid={
-                        //     validation.touched.customer && validation.errors.customer ? true : false
-                        // }
+                      // validate={{
+                      //     required: { value: true },
+                      // }}
+                      // onChange={validation.handleChange}
+                      // onBlur={validation.handleBlur}
+                      // value={validation.values.customer || ""}
+                      // invalid={
+                      //     validation.touched.customer && validation.errors.customer ? true : false
+                      // }
                       />
                       {/* {validation.touched.customer && validation.errors.customer ? (
                                                     <FormFeedback type="invalid">{validation.errors.customer}</FormFeedback>
@@ -1655,12 +1672,12 @@ const InfoTable = ({
                           <Input
                             name="amount"
                             type="text"
-                            // onChange={validation.handleChange}
-                            // onBlur={validation.handleBlur}
-                            // value={validation.values.amount || ""}
-                            // invalid={
-                            //     validation.touched.amount && validation.errors.amount ? true : false
-                            // }
+                          // onChange={validation.handleChange}
+                          // onBlur={validation.handleBlur}
+                          // value={validation.values.amount || ""}
+                          // invalid={
+                          //     validation.touched.amount && validation.errors.amount ? true : false
+                          // }
                           />
                           {/* {validation.touched.amount && validation.errors.amount ? (
                                                             <FormFeedback type="invalid">{validation.errors.amount}</FormFeedback>
@@ -1677,11 +1694,11 @@ const InfoTable = ({
                             name="payment"
                             type="select"
                             className="form-select"
-                            // onChange={validation.handleChange}
-                            // onBlur={validation.handleBlur}
-                            // value={
-                            //     validation.values.payment || ""
-                            // }
+                          // onChange={validation.handleChange}
+                          // onBlur={validation.handleBlur}
+                          // value={
+                          //     validation.values.payment || ""
+                          // }
                           >
                             {/* {orderpayement.map((item, key) => (
                                                                 <React.Fragment key={key}>
@@ -1708,11 +1725,11 @@ const InfoTable = ({
                         name="status"
                         type="select"
                         className="form-select"
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={
-                        //     validation.values.status || ""
-                        // }
+                      // onChange={validation.handleChange}
+                      // onBlur={validation.handleBlur}
+                      // value={
+                      //     validation.values.status || ""
+                      // }
                       >
                         {/* {orderstatus.map((item, key) => (
                                                         <React.Fragment key={key}>

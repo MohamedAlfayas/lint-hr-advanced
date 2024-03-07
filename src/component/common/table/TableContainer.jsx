@@ -22,6 +22,8 @@ import {
   leave_type_component_name,
   attendance_approval_component_name,
   holiday_component_name,
+  attendance_pending_table,
+
 } from "../../../common/constant/Constants";
 import LeaveApprovalFilter from "../tableFilter/LeaveApprovalFilter";
 import LeaveTypeFilter from "../tableFilter/LeaveTypeFilter";
@@ -147,7 +149,7 @@ const TableContainer = ({
           )}
           <CardBody className="border border-dashed border-end-0 border-start-0">
             <Row>
-              {formname !== attendance_approval_component_name && (
+              {formname !== attendance_approval_component_name || attendance_pending_table && (
                 <Col md={4}>
                   <div className="search-box me-2 mb-2 d-inline-block col-12">
                     <input
@@ -168,6 +170,9 @@ const TableContainer = ({
               {formname === employee_component_name && <EmployeeTableFilter />}
               {formname == attendance_approval_component_name && (
                 <AttendanceApprovalFilter />
+              )}
+              {formname === leave_approval_component_name && (
+                <LeaveApprovalFilter />
               )}
               {formname === leave_type_component_name && <LeaveTypeFilter />}
               {formname === holiday_component_name && <HolidayFilter />}

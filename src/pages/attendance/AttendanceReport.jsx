@@ -34,12 +34,18 @@ import * as XLSX from "xlsx";
 const ExcelJs = require("exceljs");
 import "../../common/css/lc_style.css";
 import { differenceInMinutes } from "date-fns";
+import { CSVLink } from 'react-csv'; 
 const AttendanceReport = () => {
   document.title = `Attendance Report | ${MetaTitle}`;
 
   const { Column, HeaderCell, Cell, ColumnGroup } = Table;
   const [loading, setLoading] = React.useState(false);
+  const [showModal, setShowModal] = useState(false);
 
+  const toggleModal = () => {
+    setShowModal(!showModal);
+  };
+ 
   const dispatch = useDispatch();
 
   const employee_data = GetLocalStorageData("employee") || [];
@@ -137,13 +143,19 @@ const AttendanceReport = () => {
     
             const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds);
             const workScheduleHr = ConvertSecondsToTime(attendance_data.work_schedule_hr_without_break_in_seconds);
+          
+               
     
             const entryLogs = attendance_data.entry_log.map(entry => {
                 const entryTime = entry.entry_time;
+                const location = entry.location 
+                console.log("location",location);
                 return format(ParseTime(entryTime), "h:mm a");
+               
             });
             const entryLogIn = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 1);
             const entryLogOut = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 2);
+            
     
             const inLength = entryLogIn.length;
             const outLength = entryLogOut.length;
@@ -178,32 +190,12 @@ const AttendanceReport = () => {
             // If no attendance data found for a specific date, add a row with "WO" data
             const row = [formatDate(date), emp_name, foundEmployee ? foundEmployee.email : "", employee_id, "WO", "", ""];
             sheet.addRow(row);
-        }
+        }   
     });
     
 
     
-    
-    //   team_daily_attendance_report.forEach(rowData => {
-    //     const employee = employee_data.find(emp => emp.id === rowData.employee_id);
-    //     if (employee) {
-    //         rowData.workday_data.forEach(day => {
-    //             const checkInLog = day.entry_log.find(log => parseInt(log.entry_type) === 1);
-    //             const checkOutLog = day.entry_log.find(log => parseInt(log.entry_type) !== 1);
-    //             if (checkInLog) {
-    //                 const checkInTime = format(ParseTime(checkInLog.entry_time), "h:mm a");
-    //                 const checkOutTime = checkOutLog ? format(ParseTime(checkOutLog.entry_time), "h:mm a") : "";
-    //                 const totalDifference = checkOutLog ? differenceInMinutes(ParseTime(checkOutLog.entry_time), ParseTime(checkInLog.entry_time)) : 0;
-    //                 const totalHours = Math.floor(totalDifference / 60);
-    //                 const totalMinutes = totalDifference % 60;
-    //                 const formattedTotalHours = totalHours.toString().padStart(2, "0");
-    //                 const formattedTotalMinutes = totalMinutes.toString().padStart(2, "0");
-    //                 const location = checkInLog.location || "";
-    //                 sheet.addRow([checkInTime, checkOutTime, `${formattedTotalHours}:${formattedTotalMinutes} Hr`, location]);
-    //             }
-    //         });
-    //     }
-    // });
+
   
       // Set column widths and cell borders
       sheet.columns.forEach((column) => {
@@ -1013,18 +1005,58 @@ const AttendanceReport = () => {
                 </Col>
 
                 <Button
-                  type="button"
-                  className="btn btn-info"
-                  onClick={exportExcelFile}
-                  style={{
-                    padding: "0.25rem 0.5rem",
-                    fontSize: "0.75rem",
-                    width: "80px",
-                  }}
-                >
-                  <i className="ri-file-download-line align-bottom me-1"></i>
-                  Export
-                </Button>
+        type="button"
+        className="btn btn-info"
+        onClick={toggleModal} // Open the modal when the button is clicked
+        style={{
+          padding: "0.25rem 0.5rem",
+          fontSize: "0.75rem",
+          width: "80px",
+          marginLeft: "auto"
+        }}
+      >
+        <i className="ri-file-download-line align-bottom me-1"></i>
+        Export
+      </Button>
+
+      <Modal isOpen={showModal} toggle={toggleModal} centered={true}>
+        <ModalHeader toggle={toggleModal}></ModalHeader>
+        <ModalBody className="py-3 px-5">
+          <div className="mt-2 text-center">
+            <lord-icon
+              src="https://cdn.lordicon.com/nocovwne.json"
+              trigger="loop"
+              colors="primary:#0ab39c,secondary:#f06548"
+              style={{ width: "100px", height: "100px" }}
+            ></lord-icon>
+            <div className="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
+              <h4>Are you sure?</h4>
+              <p className="text-muted mx-4 mb-0">
+                Are you sure you want to export XLSX file?
+              </p>
+            </div>
+          </div>
+          <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
+            <Button
+              type="button"
+              className="btn w-sm btn-light"
+              onClick={toggleModal} // Close the modal when the "Close" button is clicked
+            >
+              Close
+            </Button>
+            <Button
+             type="button"
+              className="btn w-sm btn-success"
+              onClick={() => {
+                exportExcelFile();
+                toggleModal(); // Close the modal after clicking the "Download" button
+              }}
+            >
+              Download
+            </Button>
+          </div>
+        </ModalBody>
+      </Modal>
               </Row>
             </CardHeader>
           </Card>

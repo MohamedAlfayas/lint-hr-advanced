@@ -1883,6 +1883,8 @@ export const professional_tax_form_component_name = "professional_tax_form";
 export const salary_form_component_name = "salary_form";
 export const salary_policy_form_component_name = "salary_policy_form";
 export const location_edit_form_component_name = "location_edit_form";
+export const attendance_pending_table = "attendance_pending_table";
+export const leave_pending_table = "leave_pending_table";
 
 export const component_list_for_import_btn_access = [
   department_component_name,
