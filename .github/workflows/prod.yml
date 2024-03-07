@@ -17,21 +17,21 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup NodeJs
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.11.1
-      - name: Install Dependencies
-        run: yarn install
+      # - name: Setup NodeJs
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: 20.11.1
+      # - name: Install Dependencies
+      #   run: yarn install
 
-      - name: Build Project
-        run: yarn build
+      # - name: Build Project
+      #   run: yarn build
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: build
-          path: build/
+          path: hello/
 
   deploy:
     needs: build
@@ -42,6 +42,9 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
+
+      - name: files
+        run: ls -la
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
