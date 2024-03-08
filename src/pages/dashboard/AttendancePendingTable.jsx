@@ -78,6 +78,9 @@ const AttendancePendingTable = () => {
     settimeline_modal(!timeline_modal);
   }
 
+  const AttendancependingData = attendance_approval_data.filter(item => item.hr_status === 3);
+  console.log("data",AttendancependingData);
+
   const viewNotes = (obj) => {
     console.log("This rowData = ", obj);
 
@@ -272,26 +275,26 @@ const AttendancePendingTable = () => {
    
   ];
 
-  const filterKey = "hr_status";
-  const filterOptions = [
-    {
-      option: 3,
-      label: "Pending",
-      count:
-        attendance_approval_data.filter((e) => e[filterKey] === 3).length || 0,
-    },
+  // const filterKey = "hr_status";
+  // const filterOptions = [
+  //   {
+  //     option: 3,
+  //     label: "Pending",
+  //     count:
+  //       attendance_approval_data.filter((e) => e[filterKey] === 3).length || 0,
+  //   },
    
-  ];
+  // ];
 
   document.title = `Attendance Approval | ${MetaTitle}`;
   return (
     <div>
       <InfoTable
         additionalColumn={additionalColumn}
-        tabledata={attendance_approval_data}
-        formname={""}
-        filterKey={filterKey}
-        filterOptions={filterOptions}
+        tabledata={AttendancependingData}
+        formname={"attendance_pending_table"}
+        // filterKey={filterKey}
+        // filterOptions={filterOptions}
         width_per={"35%"}
       />
       <Modal

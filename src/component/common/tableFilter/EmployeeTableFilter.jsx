@@ -34,7 +34,7 @@ const EmployeeTableFilter = () => {
 
   return (
     <React.Fragment>
-      <Col md={2}>
+      <Col md={3}>
         <Select
           id="department_filter"
           name="department_filter"
@@ -78,7 +78,7 @@ const EmployeeTableFilter = () => {
         />
       </Col>
 
-      <Col md={2}>
+      <Col md={3}>
         <Select
           id="manager_filter"
           name="manager_filter"

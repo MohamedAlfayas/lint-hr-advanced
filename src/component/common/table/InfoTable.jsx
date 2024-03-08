@@ -220,14 +220,14 @@ const InfoTable = ({
     let textValue;
 
     let content =
-      formname === leave_approval_component_name
+      formname === leave_approval_component_name || formname === leave_pending_table
         ? `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To <strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `
         : `<span>Are You Sure to <strong style='color:green'>Accept </strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
           new Date(orderData.date),
           "dd MMM, yyyy"
         )}</span>
           <div>
-          ${formname === attendance_approval_component_name
+          ${formname === attendance_approval_component_name || formname === attendance_pending_table
           ? `<span style="display: inline-block; margin-top: 20px;">
               <label for="select-hour" style="display: inline-block; margin-right: 5px;">Edit Paid Hr:</label>      
               <b className="mt-2 me-1 ms-2">H</b>
@@ -255,21 +255,21 @@ const InfoTable = ({
       confirmButtonClass: "btn btn-success",
       cancelButtonClass: "btn btn-danger",
       input:
-        formname === attendance_approval_component_name ? "text" : undefined,
+        formname === attendance_approval_component_name || formname === attendance_pending_table  ? "text" : undefined,
 
       inputPlaceholder:
-        formname === attendance_approval_component_name
+        formname === attendance_approval_component_name || formname === attendance_pending_table
           ? "Enter reason"
           : undefined,
       inputAttributes:
-        formname === attendance_approval_component_name
+        formname === attendance_approval_component_name || formname === attendance_pending_table
           ? {
             style:
               "margin: 10px auto; padding: 10px; border-radius: 5px; display: block;",
           }
           : undefined,
       inputValidator:
-        formname === attendance_approval_component_name
+        formname === attendance_approval_component_name || formname === attendance_pending_table
           ? (value) => {
             if (!value) {
               return "Reason is required!";
@@ -277,7 +277,7 @@ const InfoTable = ({
           }
           : undefined,
     }).then(async (result) => {
-      if (formname === leave_approval_component_name) {
+      if (formname === leave_approval_component_name || formname === leave_pending_table) {
         if (result.value) {
           const data = {
             leave_application_id_list: [orderData.id],
@@ -297,7 +297,7 @@ const InfoTable = ({
             toast.error(Api?.data?.message || Api?.data?.detail);
           }
         }
-      } else if (formname === attendance_approval_component_name) {
+      } else if (formname === attendance_approval_component_name || formname === attendance_pending_table ) {
         if (result.value) {
           selectedHour = document.getElementById("select-hour").value;
           selectedMinute = document.getElementById("select-minute").value;
@@ -340,7 +340,7 @@ const InfoTable = ({
     // const unitLabel = orderData.unit === 1 ? 'day' : 'hour';
 
     let content =
-      formname === leave_approval_component_name
+      formname === leave_approval_component_name || formname === leave_pending_table
         ? `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To <strong style='color:#7066e0'> ${employee_fname} </strong> on ${orderData.start} to  ${orderData.end} </span>`
         : `<span>Are You Sure to <strong style='color:red'>Reject</strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
           new Date(orderData.date),
@@ -369,7 +369,7 @@ const InfoTable = ({
         }
       },
     }).then(async (result) => {
-      if (formname === leave_approval_component_name) {
+      if (formname === leave_approval_component_name || formname === leave_pending_table) {
         if (result.value) {
           const data = {
             leave_application_id_list: [orderData.id],
@@ -388,7 +388,7 @@ const InfoTable = ({
             toast.error(Api?.data?.message || Api?.data?.detail);
           }
         }
-      } else if (formname == attendance_approval_component_name) {
+      } else if (formname == attendance_approval_component_name || formname === attendance_pending_table) {
         if (result.value) {
           console.log("RESULT", result);
           const data = {
@@ -741,10 +741,10 @@ const InfoTable = ({
         Header: "Action",
         Cell: (cellProps) => {
           const orderData = cellProps.row.original;
-
           if (
             formname &&
-            formname === leave_approval_component_name || leave_pending_table &&
+            (formname === leave_approval_component_name ||
+              formname === leave_pending_table) &&
             orderData.status === 1
           ) {
             return (
@@ -771,9 +771,10 @@ const InfoTable = ({
                 </li>
               </ul>
             );
-          } else if (
+          }else if (
             formname &&
-            formname === attendance_approval_component_name || attendance_pending_table &&
+            (formname === attendance_approval_component_name ||
+              formname === attendance_pending_table) &&
             orderData.hr_status === 3
           ) {
             return (
@@ -1113,9 +1114,11 @@ const InfoTable = ({
                 </div>
                 <div className="col-sm-auto">
                   <div className="d-flex gap-1 flex-wrap">
-                    {formname &&
+                  {formname &&
                       formname !== leave_approval_component_name &&
-                      formname !== attendance_approval_component_name && (
+                      formname !== attendance_approval_component_name &&
+                      formname !== attendance_pending_table &&
+                      formname !== leave_pending_table && (
                         <button
                           type="button"
                           className="btn btn-success add-btn"
@@ -1281,8 +1284,9 @@ const InfoTable = ({
                             </button>
                           </div>
                         )} */}
-                      {formname &&
-                        formname !== "attendance_pending_table" && (
+                   {formname &&
+                        formname !== attendance_pending_table &&
+                        formname !== leave_pending_table && (
                           <button
                             type="button"
                             className="btn btn-info"
@@ -1383,7 +1387,8 @@ const InfoTable = ({
                   className="nav-tabs nav-tabs-custom nav-success"
                   role="tablist"
                 >
-                  {formname === "attendance_pending_table" && (
+                 {formname === attendance_pending_table ? null : formname ===
+                    leave_pending_table ? null : (
                     <NavItem>
                       <NavLink
                         className={classnames(

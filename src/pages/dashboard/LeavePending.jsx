@@ -23,6 +23,9 @@ const LeaveApprovalPending = () => {
   const LeaveTypeData = GetLocalStorageData("leave_types") || [];
   const { version } = useSelector((data) => data.MetaReducer);
 
+  const pendingData = leave_approval_data.filter(item => item.status === 1);
+  console.log("data",pendingData);
+
   const getUnitId = (id) => {
     const day_type = LeaveTypeData?.find((val) => val?.value === id)?.unit;
     return day_type;
@@ -34,6 +37,7 @@ const LeaveApprovalPending = () => {
       url: "leave/leave-application-for-approval/get/",
     })
       .then((res) => {
+        console.log("API Response:", res.data); 
         dispatch(setLeaveApproval(res?.data?.data));
       })
       .catch((err) => {
@@ -218,26 +222,26 @@ const LeaveApprovalPending = () => {
     );
   }, []);
 
-  const filterKey = "status";
-  const filterOptions = [
-    {
-      option: 1,
-      label: "Pending",
-      count: leave_approval_data.filter((e) => e[filterKey] === 1).length || 0,
-    },
+  // const filterKey = "status";
+  // const filterOptions = [
+  //   {
+  //     option: 1,
+  //     label: "Pending",
+  //     count: leave_approval_data.filter((e) => e[filterKey] === 1).length || 0,
+  //   },
    
-  ];
+  // ];
 
   document.title = `Leave Approval | ${MetaTitle}`;
   return (
     <React.Fragment>
       <InfoTable
         additionalColumn={additionalColumn}
-        tabledata={leave_approval_data}
-        formname={""}
+        tabledata={pendingData}
+        formname={"leave_pending_table"}
         initialFormObj={initialFormObj}
-        filterKey={filterKey}
-        filterOptions={filterOptions}
+        // filterKey={filterKey}
+        // filterOptions={filterOptions}
         width_per={"35%"}
       />
     </React.Fragment>

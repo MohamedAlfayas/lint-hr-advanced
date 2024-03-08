@@ -34,7 +34,13 @@ import * as XLSX from "xlsx";
 const ExcelJs = require("exceljs");
 import "../../common/css/lc_style.css";
 import { differenceInMinutes } from "date-fns";
-import { CSVLink } from 'react-csv'; 
+import { CSVLink } from 'react-csv';
+import {
+  late_entry_display,
+  on_time_entry_display,
+  earlyin_display,
+  earlyout_display,
+} from "../../common/constant/Constants";
 const AttendanceReport = () => {
   document.title = `Attendance Report | ${MetaTitle}`;
 
@@ -45,7 +51,7 @@ const AttendanceReport = () => {
   const toggleModal = () => {
     setShowModal(!showModal);
   };
- 
+
   const dispatch = useDispatch();
 
   const employee_data = GetLocalStorageData("employee") || [];
@@ -84,7 +90,7 @@ const AttendanceReport = () => {
   };
   const [filterKeys, setFilterKeys] = useState({
     month: `${new Date().getFullYear()}-${(new Date()
-      .getMonth()+1)
+      .getMonth() + 1)
       .toString()
       .padStart(2, "0")}`,
   });
@@ -100,115 +106,149 @@ const AttendanceReport = () => {
   };
 
   const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
- 
+
     const exportindividualExcelFile = () => {
       const workbook = new ExcelJs.Workbook();
       const sheet = workbook.addWorksheet("My Sheet", {});
       sheet.properties.defaultRowHeight = 20;
       sheet.autoFilter = {
-          from: {
-              row: 1, // Assuming your headers start from row 1
-              column: 1, // Assuming "Employee Name" is the first column
-          },
-          to: {
-              row: 2, // Assuming all rows are populated
-              column: 2, // Assuming "Email" is the second column
-          },
+        from: {
+          row: 1, // Assuming your headers start from row 1
+          column: 1, // Assuming "Employee Name" is the first column
+        },
+        to: {
+          row: 2, // Assuming all rows are populated
+          column: 2, // Assuming "Email" is the second column
+        },
       };
-  
-      const headers = ["Employee Name", "Email", "Emp ID", "Attendane","Paid Hr","Work Schedule","In", "Out","Work Schedule", "Status", "Activity",  "OT",  "Edited Hours",  "Total", "In Location", "Out Location"];
-  
+
+      const headers = ["Employee Name", "Email", "Emp ID", "Attendane", "Paid Hr", "Work Schedule", "In", "Out","Total", "Status", "Activity", "OT", "Edited Hours", "Total", "In Location", "Out Location"];
+
       // Assuming `team_daily_attendance_report` is available
       const employeeDatesXls = Array.from(new Set(team_daily_attendance_report.flatMap((employee) =>
-          employee.workday_data.map((report) => report.date)
+        employee.workday_data.map((report) => report.date)
       )));
-  
+
       const foundEmployee = employee_data.find((emp) => rowData.employee_id === emp.id);
       const emp_name = foundEmployee ? foundEmployee.fname : "";
       const employee_id = foundEmployee ? foundEmployee.emp_id : "";
-  
+
       // Add headers row
       const headerRow = sheet.addRow(["Date", ...headers]);
-  
+      const entry_status_column = [];
       // Add data rows
       employeeDatesXls.forEach((date, index) => {
         const attendance_data = rowData.workday_data.find((day) => day.date === date);
         if (attendance_data) {
-            const attend_data =
-                attendance_data.is_present === true ? "P" :
-                attendance_data.is_holiday === true ? "H" :
-                attendance_data.is_day_on === false ? "WO" :
-                attendance_data.is_leave_approved === true ? "L" :
-                attendance_data.leave_taken_without_approval === true ? "A" : "A";
-    
-            const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds);
-            const workScheduleHr = ConvertSecondsToTime(attendance_data.work_schedule_hr_without_break_in_seconds);
-          
-               
-    
-            const entryLogs = attendance_data.entry_log.map(entry => {
-                const entryTime = entry.entry_time;
-                const location = entry.location 
-                console.log("location",location);
-                return format(ParseTime(entryTime), "h:mm a");
-               
-            });
-            const entryLogIn = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 1);
-            const entryLogOut = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 2);
-            
-    
-            const inLength = entryLogIn.length;
-            const outLength = entryLogOut.length;
-            const maxIterations = Math.max(inLength, outLength);
-    
-            // If either entryLogIn or entryLogOut is empty, push an empty row
-            if (inLength === 0 || outLength === 0) {
-                const row = [formatDate(date), emp_name, foundEmployee ? foundEmployee.email : "", employee_id, attend_data, total_hour, workScheduleHr];
-                row.push(inLength === 0 ? "-" : entryLogIn[0]);
-                row.push(outLength === 0 ? "-" : entryLogOut[0]);
-                sheet.addRow(row);
-            } else {
-                for (let i = 0; i < maxIterations; i++) {
-                    const row = [formatDate(date), emp_name, foundEmployee ? foundEmployee.email : "", employee_id, attend_data, total_hour, workScheduleHr];
-        
-                    if (i < inLength) {
-                        row.push(entryLogIn[i]);
-                    } else {
-                        row.push(""); // Push an empty value if entryLogIn is empty
-                    }
-        
-                    if (i < outLength) {
-                        row.push(entryLogOut[i]);
-                    } else {
-                        row.push(""); // Push an empty value if entryLogOut is empty
-                    }
-        
-                    sheet.addRow(row);
-                }
+          const attend_data =
+            attendance_data.is_present === true ? "P" :
+            attendance_data.is_holiday === true ? "H" :
+            attendance_data.is_day_on === false ? "WO" :
+            attendance_data.is_leave_approved === true ? "L" :
+            attendance_data.leave_taken_without_approval === true ? "A" : "A";
+      
+          const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds);
+          const workScheduleHr = ConvertSecondsToTime(attendance_data.work_schedule_hr_without_break_in_seconds);
+          const status = attendance_data.hr_status;
+          function getStatusText(hr_status) {
+            switch (hr_status) {
+              case 1:
+                return "Auto Approval";
+              case 2:
+                return "Approval";
+              case 3:
+                return "Pending";
+              case 4:
+                return "Reject";
+              default:
+                return "Unknown";
             }
-        } else {
-            // If no attendance data found for a specific date, add a row with "WO" data
-            const row = [formatDate(date), emp_name, foundEmployee ? foundEmployee.email : "", employee_id, "WO", "", ""];
+          }
+          const statusText = getStatusText(status);
+      
+          let entry_status;
+          const activity = attendance_data.day_status;
+          if (activity === null) {
+            entry_status = on_time_entry_display.text;
+          } else {
+            entry_status =
+              activity.early_in === true ? earlyin_display.text :
+              activity.ontime === true ? on_time_entry_display.text :
+              activity.late === true ? late_entry_display.text :
+              activity.early_out === true ? earlyout_display.text :
+              on_time_entry_display.text;
+          }
+      
+          const otHours =  ConvertSecondsToTime(attendance_data.final_ot_hr_in_seconds);
+          console.log("jhjh",otHours); 
+          const editedHours = ConvertSecondsToTime(attendance_data.checked_in_hr_in_seconds - attendance_data.edited_checked_in_hr_in_seconds);
+         
+   
+      
+          const entryLogs = attendance_data.entry_log.map(entry => {
+            const entryTime = entry.entry_time;
+            const location = entry.location;
+            return format(ParseTime(entryTime), "h:mm a");
+          });
+          const entryLogIn = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 1);
+          const entryLogOut = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 2);
+      
+          const inLength = entryLogIn.length;
+          const outLength = entryLogOut.length;
+          const maxIterations = Math.max(inLength, outLength);
+      
+          // If either entryLogIn or entryLogOut is empty, push an empty row
+          if (inLength === 0 || outLength === 0) {
+            const row = [formatDate(date), emp_name, foundEmployee ? foundEmployee.email : "", employee_id, attend_data, total_hour, workScheduleHr];
+            row.push(inLength === 0 ? "-" : entryLogIn[0]);
+            row.push(outLength === 0 ? "-" : entryLogOut[0]);
+            row.push(statusText || "-"); // If statusText is falsy, push "-"
+            row.push(entry_status || "-"); // If entry_status is falsy, push "-"
+            row.push(otHours || "-");
+            row.push(editedHours || "-");
             sheet.addRow(row);
-        }   
-    });
-    
+          } else {
+            for (let i = 0; i < maxIterations; i++) {
+              const row = [formatDate(date), emp_name, foundEmployee ? foundEmployee.email : "", employee_id, attend_data, total_hour, workScheduleHr];
+      
+              if (i < inLength) {
+                row.push(entryLogIn[i]);
+              } else {
+                row.push(""); // Push an empty value if entryLogIn is empty
+              }
+      
+              if (i < outLength) {
+                row.push(entryLogOut[i]);
+              } else {
+                row.push(""); // Push an empty value if entryLogOut is empty
+              }
+      
+              row.push(statusText || "-"); // If statusText is falsy, push "-"
+              row.push(entry_status || "-"); // If entry_status is falsy, push "-"
+              row.push(otHours || "-");
+              row.push(editedHours || "-");
+              sheet.addRow(row);
+            }
+          }
+        }
+      });
 
-    
 
-  
+
+
+
       // Set column widths and cell borders
       sheet.columns.forEach((column) => {
-          column.width = 15;
-          column.eachCell({ includeEmpty: true }, (cell) => {
-              cell.border = {
-                  top: { style: "thin" },
-                  left: { style: "thin" },
-                  bottom: { style: "thin" },
-                  right: { style: "thin" },
-              };
-              cell.alignment = { horizontal: "center" };
-          });
+        column.width = 15;
+        column.eachCell({ includeEmpty: true }, (cell) => {
+          cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+          };
+          cell.alignment = { horizontal: "center" };
+        });
       });
       const monthYear = employeeDatesXls.map((dateString) => {
         const date = new Date(dateString);
@@ -216,43 +256,43 @@ const AttendanceReport = () => {
         const year = date.getFullYear();
         return `${month}${year}`;
       });
-  
+
       workbook.xlsx.writeBuffer().then((data) => {
-          const blob = new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-          const url = window.URL.createObjectURL(blob);
-          const anchor = document.createElement("a");
-          const filename = `${emp_name}_${employee_id}_Attendance_${monthYear[0]}.xlsx`;
-          anchor.href = url;
-          anchor.download = filename;
-          anchor.click();
-          window.URL.revokeObjectURL(url);
+        const blob = new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const url = window.URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        const filename = `${emp_name}_${employee_id}_Attendance_${monthYear[0]}.xlsx`;
+        anchor.href = url;
+        anchor.download = filename;
+        anchor.click();
+        window.URL.revokeObjectURL(url);
       });
-  };
-  
- 
+    };
+
+
 
 
     return (
-    <Cell
-    {...props}
-    className="link-group"
-    style={{
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-    }}
-  >
-    <ButtonToolbar>
-                  <IconButton
-                    appearance="subtle"
-                    icon={
-                      <span className="text-primary d-inline-block edit-item-btn fs-16">
-                        <i class="ri-download-2-line"onClick={exportindividualExcelFile}></i>
-                      </span>
-                    }
-                  />
-                </ButtonToolbar>
-                </Cell>
+      <Cell
+        {...props}
+        className="link-group"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ButtonToolbar>
+          <IconButton
+            appearance="subtle"
+            icon={
+              <span className="text-primary d-inline-block edit-item-btn fs-16">
+                <i class="ri-download-2-line" onClick={exportindividualExcelFile}></i>
+              </span>
+            }
+          />
+        </ButtonToolbar>
+      </Cell>
     )
   };
 
@@ -390,15 +430,15 @@ const AttendanceReport = () => {
           attendance_data && attendance_data.is_present === true
             ? "P"
             : attendance_data && attendance_data.is_holiday === true
-            ? "H"
-            : attendance_data && attendance_data.is_day_on === false
-            ? "WO"
-            : attendance_data && attendance_data.is_leave_approved === true
-            ? "L"
-            : attendance_data &&
-              attendance_data.leave_taken_without_approval === true
-            ? "A"
-            : "A";
+              ? "H"
+              : attendance_data && attendance_data.is_day_on === false
+                ? "WO"
+                : attendance_data && attendance_data.is_leave_approved === true
+                  ? "L"
+                  : attendance_data &&
+                    attendance_data.leave_taken_without_approval === true
+                    ? "A"
+                    : "A";
         row.push(attend_data);
 
         if (attendance_data) {
@@ -724,7 +764,7 @@ const AttendanceReport = () => {
   function open_timeline() {
     settimeline_modal(!timeline_modal);
   }
-  
+
 
   const FixedColumns = ({ rowData, index, dataKey, ...props }) => {
     let foundEmployee;
@@ -818,19 +858,19 @@ const AttendanceReport = () => {
       const attendance_data = rowData.workday_data.find(
         (day) => day.date === date
       );
-      console.log("attendance_data", attendance_data);
+ 
       let attend_data =
         attendance_data.is_present === true
           ? "P"
           : attendance_data.is_leave_approved === true
-          ? "L"
-          : attendance_data.is_holiday === true
-          ? "H"
-          : attendance_data.is_day_on === false
-          ? "WO"
-          : attendance_data.leave_taken_without_approval === true
-          ? "A"
-          : "A";
+            ? "L"
+            : attendance_data.is_holiday === true
+              ? "H"
+              : attendance_data.is_day_on === false
+                ? "WO"
+                : attendance_data.leave_taken_without_approval === true
+                  ? "A"
+                  : "A";
       return (
         <Cell {...props} dataKey={`is_present${date}`}>
           {attend_data}
@@ -842,7 +882,7 @@ const AttendanceReport = () => {
       const durationData = rowData.workday_data.find(
         (day) => day.date === date
       );
-      console.log("durationData", durationData);
+    
       const total_hour = ConvertSecondsToTime(
         durationData.final_paid_hr_in_seconds
       );
@@ -964,21 +1004,21 @@ const AttendanceReport = () => {
       </HeaderCell>
       <Cell dataKey="total_present_days_count" fullText />
     </Column>,
-       <Column width={80} fixed="right">
-       <HeaderCell
-         style={{
-           background: "#e6f7ff",
- 
-           borderRadius: "1px",
-           padding: "18px",
-           fontWeight: "bold",
-         }}
-       >
+    <Column width={80} fixed="right">
+      <HeaderCell
+        style={{
+          background: "#e6f7ff",
+
+          borderRadius: "1px",
+          padding: "18px",
+          fontWeight: "bold",
+        }}
+      >
         Down
-       </HeaderCell>
-       <EditableCell />
-     </Column>,
-    
+      </HeaderCell>
+      <EditableCell />
+    </Column>,
+
   ];
 
   const allColumns = [...dynamicColumns(), ...additionalColumns];
@@ -1005,58 +1045,58 @@ const AttendanceReport = () => {
                 </Col>
 
                 <Button
-        type="button"
-        className="btn btn-info"
-        onClick={toggleModal} // Open the modal when the button is clicked
-        style={{
-          padding: "0.25rem 0.5rem",
-          fontSize: "0.75rem",
-          width: "80px",
-          marginLeft: "auto"
-        }}
-      >
-        <i className="ri-file-download-line align-bottom me-1"></i>
-        Export
-      </Button>
+                  type="button"
+                  className="btn btn-info"
+                  onClick={toggleModal} // Open the modal when the button is clicked
+                  style={{
+                    padding: "0.25rem 0.5rem",
+                    fontSize: "0.75rem",
+                    width: "80px",
+                    marginLeft: "auto"
+                  }}
+                >
+                  <i className="ri-file-download-line align-bottom me-1"></i>
+                  Export
+                </Button>
 
-      <Modal isOpen={showModal} toggle={toggleModal} centered={true}>
-        <ModalHeader toggle={toggleModal}></ModalHeader>
-        <ModalBody className="py-3 px-5">
-          <div className="mt-2 text-center">
-            <lord-icon
-              src="https://cdn.lordicon.com/nocovwne.json"
-              trigger="loop"
-              colors="primary:#0ab39c,secondary:#f06548"
-              style={{ width: "100px", height: "100px" }}
-            ></lord-icon>
-            <div className="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
-              <h4>Are you sure?</h4>
-              <p className="text-muted mx-4 mb-0">
-                Are you sure you want to export XLSX file?
-              </p>
-            </div>
-          </div>
-          <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
-            <Button
-              type="button"
-              className="btn w-sm btn-light"
-              onClick={toggleModal} // Close the modal when the "Close" button is clicked
-            >
-              Close
-            </Button>
-            <Button
-             type="button"
-              className="btn w-sm btn-success"
-              onClick={() => {
-                exportExcelFile();
-                toggleModal(); // Close the modal after clicking the "Download" button
-              }}
-            >
-              Download
-            </Button>
-          </div>
-        </ModalBody>
-      </Modal>
+                <Modal isOpen={showModal} toggle={toggleModal} centered={true}>
+                  <ModalHeader toggle={toggleModal}></ModalHeader>
+                  <ModalBody className="py-3 px-5">
+                    <div className="mt-2 text-center">
+                      <lord-icon
+                        src="https://cdn.lordicon.com/nocovwne.json"
+                        trigger="loop"
+                        colors="primary:#0ab39c,secondary:#f06548"
+                        style={{ width: "100px", height: "100px" }}
+                      ></lord-icon>
+                      <div className="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
+                        <h4>Are you sure?</h4>
+                        <p className="text-muted mx-4 mb-0">
+                          Are you sure you want to export XLSX file?
+                        </p>
+                      </div>
+                    </div>
+                    <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
+                      <Button
+                        type="button"
+                        className="btn w-sm btn-light"
+                        onClick={toggleModal} // Close the modal when the "Close" button is clicked
+                      >
+                        Close
+                      </Button>
+                      <Button
+                        type="button"
+                        className="btn w-sm btn-success"
+                        onClick={() => {
+                          exportExcelFile();
+                          toggleModal(); // Close the modal after clicking the "Download" button
+                        }}
+                      >
+                        Download
+                      </Button>
+                    </div>
+                  </ModalBody>
+                </Modal>
               </Row>
             </CardHeader>
           </Card>
@@ -1138,15 +1178,15 @@ const AttendanceReport = () => {
                           );
                           let checkOutTime = checkOutData
                             ? format(
-                                ParseTime(checkOutData.entry_time),
-                                "h:mm a"
-                              )
+                              ParseTime(checkOutData.entry_time),
+                              "h:mm a"
+                            )
                             : "";
                           let totalDifference = checkOutData
                             ? differenceInMinutes(
-                                ParseTime(checkOutData.entry_time),
-                                ParseTime(checkInData.entry_time)
-                              )
+                              ParseTime(checkOutData.entry_time),
+                              ParseTime(checkInData.entry_time)
+                            )
                             : 0;
                           let totalHours = Math.floor(totalDifference / 60);
                           let totalMinutes = totalDifference % 60;
