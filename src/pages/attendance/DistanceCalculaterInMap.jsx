@@ -1,6 +1,7 @@
 import {
   Circle,
   GoogleMap,
+  InfoWindow,
   Marker,
   Polyline,
   useJsApiLoader,
@@ -8,6 +9,9 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import { Col } from "reactstrap";
 import { map_radius_options } from "../../common/constant/Constants";
+
+const mapIconOffice = require("../../assets/images/icons/office.png");
+const mapIconEmployee = require("../../assets/images/icons/location.png");
 
 function DistanceCalculaterInMap({ branchObj }) {
   const [mapZoom, setMapZoom] = useState(21);
@@ -84,7 +88,7 @@ function DistanceCalculaterInMap({ branchObj }) {
 
   // Function to calculate distance between two points
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371 * 1000; // Radius of the Earth in meters
+    const R = 6371; // Radius of the Earth in km
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
     const a =
@@ -94,7 +98,7 @@ function DistanceCalculaterInMap({ branchObj }) {
         Math.sin(dLon / 2) *
         Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c; // Distance in meters
+    const d = R * c; // Distance in km
     return d;
   };
 
@@ -139,6 +143,28 @@ function DistanceCalculaterInMap({ branchObj }) {
     }
   }, []);
 
+  const [selectedMarker, setSelectedMarker] = useState(null);
+
+  // Function to calculate heading between two points
+  const calculateHeading = (pointA, pointB) => {
+    const lat1 = (pointA.lat * Math.PI) / 180;
+    const lon1 = (pointA.lng * Math.PI) / 180;
+    const lat2 = (pointB.lat * Math.PI) / 180;
+    const lon2 = (pointB.lng * Math.PI) / 180;
+
+    const dLon = lon2 - lon1;
+
+    const y = Math.sin(dLon) * Math.cos(lat2);
+    const x =
+      Math.cos(lat1) * Math.sin(lat2) -
+      Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+
+    let brng = Math.atan2(y, x);
+    brng = (brng * 180) / Math.PI;
+
+    return brng;
+  };
+
   return isLoaded ? (
     <React.Fragment>
       <Col lg={12}>
@@ -151,13 +177,66 @@ function DistanceCalculaterInMap({ branchObj }) {
           onUnmount={onUnmount}
         >
           {/* Markers for the two points */}
-          {locations.map((location, index) => (
+          {/* {locations.map((location, index) => (
             <Marker
               key={index}
               position={location}
               title={location.name} // Add title to the marker
             />
-          ))}
+          ))} */}
+
+          {/* Markers for the two points */}
+          {/* {locations.map((location, index) => {
+            const nextLocation =
+              locations[index === locations.length - 1 ? 0 : index + 1];
+            const rotation = calculateHeading(location, nextLocation);
+            return (
+              <Marker
+                key={index}
+                position={location}
+                title={location.name} // Add title to the marker
+                icon={{
+                  url: index === 0 ? mapIconOffice : mapIconEmployee,
+                  scaledSize: new window.google.maps.Size(40, 40),
+                  rotation: rotation,
+                }}
+              >
+                <InfoWindow>
+                  <div>{location.name}</div>
+                </InfoWindow>
+              </Marker>
+            );
+          })} */}
+
+          {/* Markers for the two points */}
+          {locations.map((location, index) => {
+            const nextLocation =
+              locations[index === locations.length - 1 ? 0 : index + 1];
+            const rotation = calculateHeading(location, nextLocation);
+            return (
+              <Marker
+                key={index}
+                position={location}
+                title={location.name} // Add title to the marker
+                icon={{
+                  url: index === 0 ? mapIconOffice : mapIconEmployee,
+
+                  scaledSize: new window.google.maps.Size(40, 40),
+                  rotation: rotation,
+                }}
+                onClick={() => setSelectedMarker(location)}
+              />
+            );
+          })}
+          {/* InfoWindow to display label */}
+          {selectedMarker && (
+            <InfoWindow
+              position={selectedMarker}
+              onCloseClick={() => setSelectedMarker(null)}
+            >
+              <div>{selectedMarker.name}</div>
+            </InfoWindow>
+          )}
           <Circle
             // optional
             onLoad={onLoadCircle}
@@ -183,16 +262,17 @@ function DistanceCalculaterInMap({ branchObj }) {
             <div
               style={{
                 position: "absolute",
-                top: 50,
-                left: "50%",
+                top: 55,
+                left: 90,
                 transform: "translateX(-50%)",
                 backgroundColor: "white",
                 padding: 5,
                 borderRadius: 5,
                 boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
+                textAlign: "center",
               }}
             >
-              Distance: {distance} meters
+              <b>{distance}</b> Km Diff.
             </div>
           )}
           {/* Child components, such as markers, info windows, etc. */}
