@@ -1151,21 +1151,7 @@ const AttendanceEmployeeTable = () => {
         }}
         centered
       >
-        <ModalBody>
-          <div>
-            <DistanceCalculaterInMap />
-            {/* <div className="text-center mt-5">
-              <Button
-                className="btn btn-warning"
-                onClick={() => {
-                  open_location();
-                }}
-              >
-                Close
-              </Button>
-            </div> */}
-          </div>
-        </ModalBody>
+        <DistanceCalculaterInMap />
       </Modal>
       {/* Notes Modal */}
       <Modal
