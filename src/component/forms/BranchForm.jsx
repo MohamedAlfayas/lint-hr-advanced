@@ -451,8 +451,6 @@ const BranchForm = () => {
                     FormikForm={FormikForm}
                   />
 
-                  <DistanceCalculaterInMap branchObj={branchObj} />
-
                   <Col lg={12}>
                     <div>
                       <Label htmlFor="address" className="form-label">

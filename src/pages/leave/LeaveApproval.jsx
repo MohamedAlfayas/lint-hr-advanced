@@ -85,6 +85,7 @@ const LeaveApproval = () => {
                 src={thisEmployee.profile_url}
                 alt=""
                 className="avatar-xs rounded-circle"
+                style={{ objectFit: "cover" }}
               />
             </div>
             <div className="flex-grow-1">

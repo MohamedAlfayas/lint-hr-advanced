@@ -497,1428 +497,1312 @@ const PayRollConfig = () => {
 
   return (
     <React.Fragment>
-      <div className="page-content">
-        <Container fluid>
-          <Row className="project-wrapper">
-            <Col xxl={12}>
-              <Card>
-                <CardBody>
-                  <h5 className="mb-3">Payroll Configuration</h5>
+      <Card>
+        <CardBody>
+          <h5 className="mb-3">Payroll Configuration</h5>
 
+          <Row>
+            <Col md={2} className="border-end">
+              <Nav pills className="flex-column text-left" id="v-pills-tab">
+                <NavItem>
+                  <NavLink
+                    style={{ cursor: "pointer" }}
+                    className={classnames({
+                      "mb-2": true,
+                      active: verticalTab === "1",
+                    })}
+                    onClick={() => {
+                      toggleVertical("1");
+                    }}
+                    id="v-pills-home-tab"
+                  >
+                    General
+                  </NavLink>
+                </NavItem>
+                <NavItem>
+                  <NavLink
+                    style={{ cursor: "pointer" }}
+                    className={classnames({
+                      "mb-2": true,
+                      active: verticalTab === "2",
+                    })}
+                    onClick={() => {
+                      toggleVertical("2");
+                    }}
+                    id="v-pills-profile-tab"
+                  >
+                    Pay Cycles
+                  </NavLink>
+                </NavItem>
+                <NavItem>
+                  <NavLink
+                    style={{ cursor: "pointer" }}
+                    className={classnames({
+                      "mb-2": true,
+                      active: verticalTab === "3",
+                    })}
+                    onClick={() => {
+                      toggleVertical("3");
+                    }}
+                    id="v-pills-messages-tab"
+                  >
+                    Basic Components
+                  </NavLink>
+                </NavItem>
+                <NavItem>
+                  <NavLink
+                    style={{ cursor: "pointer" }}
+                    className={classnames({
+                      active: verticalTab === "4",
+                    })}
+                    onClick={() => {
+                      toggleVertical("4");
+                    }}
+                    id="v-pills-settings-tab"
+                  >
+                    Salary Components
+                  </NavLink>
+                </NavItem>
+                <NavItem>
+                  <NavLink
+                    style={{ cursor: "pointer" }}
+                    className={classnames({
+                      active: verticalTab === "5",
+                    })}
+                    onClick={() => {
+                      toggleVertical("5");
+                    }}
+                    id="v-pills-settings-tab"
+                  >
+                    Salary Policies
+                  </NavLink>
+                </NavItem>
+              </Nav>
+            </Col>
+            <Col md={10}>
+              <TabContent
+                activeTab={verticalTab}
+                className="text-muted mt-4 mt-md-0"
+                id="v-pills-tabContent"
+              >
+                {/* General Tab Start */}
+                <TabPane tabId="1" id="v-pills-home">
+                  <div className="d-flex mb-2">
+                    <Row>
+                      <Col md={6} lg={6} xxl={6}>
+                        <div>
+                          <Label htmlFor="location" className="form-label">
+                            Location
+                          </Label>
+                          <div>
+                            <Select
+                              id="location"
+                              isMulti={false}
+                              options={location_option || []}
+                              value={
+                                (payrollobj.general.location &&
+                                  location_option.find(
+                                    (e) =>
+                                      e.value === payrollobj.general.location
+                                  )) ||
+                                []
+                              }
+                              className="basic-multi-select "
+                            />
+                          </div>
+                          <div
+                            id="passwordHelpBlock"
+                            className="form-text mb-3"
+                          >
+                            Select Payroll Country.
+                          </div>
+                        </div>
+                      </Col>
+                      <Col md={6} lg={6} xxl={6}>
+                        <div>
+                          <Label htmlFor="currency" className="form-label">
+                            Currency
+                          </Label>
+                          <div>
+                            <Select
+                              id="currency"
+                              isMulti={false}
+                              options={currency_option || []}
+                              value={
+                                (payrollobj.general.currency &&
+                                  currency_option.find(
+                                    (e) =>
+                                      e.value === payrollobj.general.currency
+                                  )) ||
+                                []
+                              }
+                              className="basic-multi-select "
+                            />
+                          </div>
+                          <div
+                            id="passwordHelpBlock"
+                            className="form-text mb-3"
+                          >
+                            Select Payroll Currency.
+                          </div>
+                        </div>
+                      </Col>
+                      <Col md={12} lg={12} xxl={12}>
+                        <div>
+                          <Label htmlFor="calculation" className="form-label">
+                            Calculate Monthly Salary Based On
+                          </Label>
+                          <div>
+                            <Select
+                              id="calculation"
+                              isMulti={false}
+                              options={salary_calculation_option || []}
+                              value={
+                                (payrollobj.general.calc_based_on &&
+                                  salary_calculation_option.find(
+                                    (e) =>
+                                      e.value ===
+                                      payrollobj.general.calc_based_on
+                                  )) ||
+                                []
+                              }
+                              className="basic-multi-select "
+                            />
+                          </div>
+                          <div
+                            id="passwordHelpBlock"
+                            className="form-text mb-3"
+                          >
+                            Select Calculate Monthly Salary Based On.
+                          </div>
+                        </div>
+                      </Col>
+                      <Col lg={12}>
+                        <div className="text-start">
+                          <Button
+                            type="submit"
+                            color="success"
+                            className="btn-label"
+                          >
+                            {" "}
+                            <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                            Save{" "}
+                          </Button>{" "}
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                  <Col md={9} lg={9} xxl={9}>
+                    <Card>
+                      <CardBody className="bg-info-subtle">
+                        <div className="d-flex">
+                          <div className="flex-shrink-0">
+                            <FeatherIcon
+                              icon="info"
+                              className="text-info icon-dual-info"
+                            />
+                          </div>
+                          <div className="flex-grow-1 ms-3">
+                            <h6 className="fs-15">
+                              Payroll General Info Heading @Dinesh!
+                            </h6>
+                            <p className="text-muted mb-0 hide">
+                              Event that applications book will appear here.
+                              Click on an event to see the details and manage
+                              applicants event.
+                            </p>
+                          </div>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  </Col>
+                </TabPane>
+                {/* General Tab End */}
+
+                {/* Pay Cycle Tab Start */}
+                <TabPane tabId="2" id="v-pills-profile">
+                  <div className="d-flex mb-2">
+                    <Row>
+                      <Col md={12} lg={12} xxl={12}>
+                        <div>
+                          <Label htmlFor="pc_name" className="form-label">
+                            Name
+                          </Label>
+                          <div className="form-icon right">
+                            <Input
+                              type="text"
+                              name="pc_name"
+                              id="pc_name"
+                              className="form-control"
+                              placeholder="Pay Cycle Name"
+                              value={payrollobj.pay_cycle.name || ""}
+                            />
+                            <i className="ri-profile-line"></i>
+                          </div>
+                          <div
+                            id="passwordHelpBlock"
+                            className="form-text mb-3"
+                          >
+                            Enter Pay Cycle Name.
+                          </div>
+                        </div>
+                      </Col>
+                      <Col md={12} lg={12} xxl={12}>
+                        <div>
+                          <Label htmlFor="description" className="form-label">
+                            Description
+                          </Label>
+                          <div className="form-icon right">
+                            <textarea
+                              type="text"
+                              name="description"
+                              className="form-control"
+                              id="description"
+                              value={payrollobj.pay_cycle.desc || ""}
+                              placeholder="Enter description"
+                            ></textarea>
+                            <i className="ri-file-list-3-line"></i>
+                          </div>
+                          <div
+                            id="passwordHelpBlock"
+                            className="form-text mb-3"
+                          >
+                            Enter Description Of Pay Cycles.
+                          </div>
+                        </div>
+                      </Col>
+                      <Col md={6} lg={6} xxl={6}>
+                        <div>
+                          <Label htmlFor="calculation" className="form-label">
+                            Effective From
+                          </Label>
+                          <div>
+                            <DatePicker
+                              className="form-control"
+                              placeholder="Effective From"
+                              // value={payrollobj.pay_cycle.from}
+                              // value={dayjs(
+                              //   payrollobj.pay_cycle.from,
+                              //   MonthFormat
+                              // )}
+                              format={MonthFormat}
+                              picker="month"
+                              allowClear={false}
+                            />
+                          </div>
+                          <div
+                            id="passwordHelpBlock"
+                            className="form-text mb-3"
+                          >
+                            Choose the day after 30 Nov 2023.
+                          </div>
+                        </div>
+                      </Col>
+                      <Col md={6} lg={6} xxl={6}>
+                        <div>
+                          <Label htmlFor="calculation" className="form-label">
+                            Repeat Every
+                          </Label>
+                          <div>
+                            <Select
+                              id="calculation"
+                              isMulti={false}
+                              options={repeat_option || []}
+                              value={
+                                (payrollobj.pay_cycle.repeat &&
+                                  repeat_option.find(
+                                    (e) =>
+                                      e.value === payrollobj.pay_cycle.repeat
+                                  )) ||
+                                []
+                              }
+                              className="basic-multi-select "
+                            />
+                          </div>
+                          <div
+                            id="passwordHelpBlock"
+                            className="form-text mb-3"
+                          >
+                            Select Calculate Monthly Salary Based On.
+                          </div>
+                        </div>
+                      </Col>
+                      <Col md={6} lg={6} xxl={6}>
+                        <div>
+                          <Label htmlFor="calculation" className="form-label">
+                            Cut-off Date
+                          </Label>
+                          <div>
+                            <Select
+                              id="calculation"
+                              isMulti={false}
+                              options={cut_of_month_option || []}
+                              value={
+                                (payrollobj.pay_cycle.cut_off &&
+                                  cut_of_month_option.find(
+                                    (e) =>
+                                      e.value === payrollobj.pay_cycle.cut_off
+                                  )) ||
+                                []
+                              }
+                              className="basic-multi-select "
+                            />
+                          </div>
+                          <div
+                            id="passwordHelpBlock"
+                            className="form-text mb-3"
+                          >
+                            This is the latest date that payroll information
+                            should be submitted to calculate payroll.
+                          </div>
+                        </div>
+                      </Col>
+                      <Col lg={12}>
+                        <div className="text-start">
+                          <Button
+                            type="submit"
+                            color="success"
+                            className="btn-label"
+                          >
+                            {" "}
+                            <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                            Save{" "}
+                          </Button>{" "}
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                  <Col md={9} lg={9} xxl={9}>
+                    <Card>
+                      <CardBody className="bg-info-subtle">
+                        <div className="d-flex">
+                          <div className="flex-shrink-0">
+                            <FeatherIcon
+                              icon="info"
+                              className="text-info icon-dual-info"
+                            />
+                          </div>
+                          <div className="flex-grow-1 ms-3">
+                            <h6 className="fs-15">
+                              Payroll General Info Heading @Dinesh!
+                            </h6>
+                            <p className="text-muted mb-0 hide">
+                              Event that applications book will appear here.
+                              Click on an event to see the details and manage
+                              applicants event.
+                            </p>
+                          </div>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  </Col>
+                </TabPane>
+                {/* Pay Cycle Tab End */}
+
+                {/* Basic Components Tab Start */}
+                <TabPane tabId="3" id="v-pills-messages">
+                  {/* Tab Inside Tab @Elan */}
                   <Row>
-                    <Col md={2} className="border-end">
+                    <Col xxl={12}>
                       <Nav
-                        pills
-                        className="flex-column text-left"
-                        id="v-pills-tab"
+                        tabs
+                        className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3"
                       >
                         <NavItem>
                           <NavLink
                             style={{ cursor: "pointer" }}
                             className={classnames({
-                              "mb-2": true,
-                              active: verticalTab === "1",
+                              active: customActiveTab === "1",
                             })}
                             onClick={() => {
-                              toggleVertical("1");
+                              toggleCustom("1");
                             }}
-                            id="v-pills-home-tab"
                           >
-                            General
+                            ESI <small>{"(Employees state insurance)"}</small>
                           </NavLink>
                         </NavItem>
                         <NavItem>
                           <NavLink
                             style={{ cursor: "pointer" }}
                             className={classnames({
-                              "mb-2": true,
-                              active: verticalTab === "2",
+                              active: customActiveTab === "2",
                             })}
                             onClick={() => {
-                              toggleVertical("2");
+                              toggleCustom("2");
                             }}
-                            id="v-pills-profile-tab"
                           >
-                            Pay Cycles
+                            EPF <small>{"(Employees' Provident Fund)"}</small>
                           </NavLink>
                         </NavItem>
                         <NavItem>
                           <NavLink
                             style={{ cursor: "pointer" }}
                             className={classnames({
-                              "mb-2": true,
-                              active: verticalTab === "3",
+                              active: customActiveTab === "3",
                             })}
                             onClick={() => {
-                              toggleVertical("3");
+                              toggleCustom("3");
                             }}
-                            id="v-pills-messages-tab"
                           >
-                            Basic Components
+                            Professional Tax
                           </NavLink>
                         </NavItem>
                         <NavItem>
                           <NavLink
                             style={{ cursor: "pointer" }}
                             className={classnames({
-                              active: verticalTab === "4",
+                              active: customActiveTab === "4",
                             })}
                             onClick={() => {
-                              toggleVertical("4");
+                              toggleCustom("4");
                             }}
-                            id="v-pills-settings-tab"
                           >
-                            Salary Components
-                          </NavLink>
-                        </NavItem>
-                        <NavItem>
-                          <NavLink
-                            style={{ cursor: "pointer" }}
-                            className={classnames({
-                              active: verticalTab === "5",
-                            })}
-                            onClick={() => {
-                              toggleVertical("5");
-                            }}
-                            id="v-pills-settings-tab"
-                          >
-                            Salary Policies
+                            LABOUR WELFARE FUND
                           </NavLink>
                         </NavItem>
                       </Nav>
-                    </Col>
-                    <Col md={10}>
+
                       <TabContent
-                        activeTab={verticalTab}
-                        className="text-muted mt-4 mt-md-0"
-                        id="v-pills-tabContent"
+                        activeTab={customActiveTab}
+                        className="text-muted"
                       >
-                        {/* General Tab Start */}
-                        <TabPane tabId="1" id="v-pills-home">
-                          <div className="d-flex mb-2">
-                            <Row>
-                              <Col md={6} lg={6} xxl={6}>
-                                <div>
-                                  <Label
-                                    htmlFor="location"
-                                    className="form-label"
-                                  >
-                                    Location
-                                  </Label>
-                                  <div>
-                                    <Select
-                                      id="location"
-                                      isMulti={false}
-                                      options={location_option || []}
-                                      value={
-                                        (payrollobj.general.location &&
-                                          location_option.find(
-                                            (e) =>
-                                              e.value ===
-                                              payrollobj.general.location
-                                          )) ||
-                                        []
-                                      }
-                                      className="basic-multi-select "
-                                    />
-                                  </div>
+                        {/* ESI Tab */}
+                        <TabPane tabId="1" id="home1">
+                          <div className="d-flex">
+                            <Col xxl={12} sm={12} className="project-card">
+                              <Card>
+                                <CardBody>
                                   <div
-                                    id="passwordHelpBlock"
-                                    className="form-text mb-3"
+                                    className={`p-3 mt-n3 mx-n3 bg-${
+                                      payrollobj.basic_components.esi
+                                        ? "success"
+                                        : "dark"
+                                    }-subtle rounded-top`}
                                   >
-                                    Select Payroll Country.
-                                  </div>
-                                </div>
-                              </Col>
-                              <Col md={6} lg={6} xxl={6}>
-                                <div>
-                                  <Label
-                                    htmlFor="currency"
-                                    className="form-label"
-                                  >
-                                    Currency
-                                  </Label>
-                                  <div>
-                                    <Select
-                                      id="currency"
-                                      isMulti={false}
-                                      options={currency_option || []}
-                                      value={
-                                        (payrollobj.general.currency &&
-                                          currency_option.find(
-                                            (e) =>
-                                              e.value ===
-                                              payrollobj.general.currency
-                                          )) ||
-                                        []
-                                      }
-                                      className="basic-multi-select "
-                                    />
-                                  </div>
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text mb-3"
-                                  >
-                                    Select Payroll Currency.
-                                  </div>
-                                </div>
-                              </Col>
-                              <Col md={12} lg={12} xxl={12}>
-                                <div>
-                                  <Label
-                                    htmlFor="calculation"
-                                    className="form-label"
-                                  >
-                                    Calculate Monthly Salary Based On
-                                  </Label>
-                                  <div>
-                                    <Select
-                                      id="calculation"
-                                      isMulti={false}
-                                      options={salary_calculation_option || []}
-                                      value={
-                                        (payrollobj.general.calc_based_on &&
-                                          salary_calculation_option.find(
-                                            (e) =>
-                                              e.value ===
-                                              payrollobj.general.calc_based_on
-                                          )) ||
-                                        []
-                                      }
-                                      className="basic-multi-select "
-                                    />
-                                  </div>
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text mb-3"
-                                  >
-                                    Select Calculate Monthly Salary Based On.
-                                  </div>
-                                </div>
-                              </Col>
-                              <Col lg={12}>
-                                <div className="text-start">
-                                  <Button
-                                    type="submit"
-                                    color="success"
-                                    className="btn-label"
-                                  >
-                                    {" "}
-                                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                                    Save{" "}
-                                  </Button>{" "}
-                                </div>
-                              </Col>
-                            </Row>
-                          </div>
-                          <Col md={9} lg={9} xxl={9}>
-                            <Card>
-                              <CardBody className="bg-info-subtle">
-                                <div className="d-flex">
-                                  <div className="flex-shrink-0">
-                                    <FeatherIcon
-                                      icon="info"
-                                      className="text-info icon-dual-info"
-                                    />
-                                  </div>
-                                  <div className="flex-grow-1 ms-3">
-                                    <h6 className="fs-15">
-                                      Payroll General Info Heading @Dinesh!
-                                    </h6>
-                                    <p className="text-muted mb-0 hide">
-                                      Event that applications book will appear
-                                      here. Click on an event to see the details
-                                      and manage applicants event.
-                                    </p>
-                                  </div>
-                                </div>
-                              </CardBody>
-                            </Card>
-                          </Col>
-                        </TabPane>
-                        {/* General Tab End */}
-
-                        {/* Pay Cycle Tab Start */}
-                        <TabPane tabId="2" id="v-pills-profile">
-                          <div className="d-flex mb-2">
-                            <Row>
-                              <Col md={12} lg={12} xxl={12}>
-                                <div>
-                                  <Label
-                                    htmlFor="pc_name"
-                                    className="form-label"
-                                  >
-                                    Name
-                                  </Label>
-                                  <div className="form-icon right">
-                                    <Input
-                                      type="text"
-                                      name="pc_name"
-                                      id="pc_name"
-                                      className="form-control"
-                                      placeholder="Pay Cycle Name"
-                                      value={payrollobj.pay_cycle.name || ""}
-                                    />
-                                    <i className="ri-profile-line"></i>
-                                  </div>
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text mb-3"
-                                  >
-                                    Enter Pay Cycle Name.
-                                  </div>
-                                </div>
-                              </Col>
-                              <Col md={12} lg={12} xxl={12}>
-                                <div>
-                                  <Label
-                                    htmlFor="description"
-                                    className="form-label"
-                                  >
-                                    Description
-                                  </Label>
-                                  <div className="form-icon right">
-                                    <textarea
-                                      type="text"
-                                      name="description"
-                                      className="form-control"
-                                      id="description"
-                                      value={payrollobj.pay_cycle.desc || ""}
-                                      placeholder="Enter description"
-                                    ></textarea>
-                                    <i className="ri-file-list-3-line"></i>
-                                  </div>
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text mb-3"
-                                  >
-                                    Enter Description Of Pay Cycles.
-                                  </div>
-                                </div>
-                              </Col>
-                              <Col md={6} lg={6} xxl={6}>
-                                <div>
-                                  <Label
-                                    htmlFor="calculation"
-                                    className="form-label"
-                                  >
-                                    Effective From
-                                  </Label>
-                                  <div>
-                                    <DatePicker
-                                      className="form-control"
-                                      placeholder="Effective From"
-                                      // value={payrollobj.pay_cycle.from}
-                                      // value={dayjs(
-                                      //   payrollobj.pay_cycle.from,
-                                      //   MonthFormat
-                                      // )}
-                                      format={MonthFormat}
-                                      picker="month"
-                                      allowClear={false}
-                                    />
-                                  </div>
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text mb-3"
-                                  >
-                                    Choose the day after 30 Nov 2023.
-                                  </div>
-                                </div>
-                              </Col>
-                              <Col md={6} lg={6} xxl={6}>
-                                <div>
-                                  <Label
-                                    htmlFor="calculation"
-                                    className="form-label"
-                                  >
-                                    Repeat Every
-                                  </Label>
-                                  <div>
-                                    <Select
-                                      id="calculation"
-                                      isMulti={false}
-                                      options={repeat_option || []}
-                                      value={
-                                        (payrollobj.pay_cycle.repeat &&
-                                          repeat_option.find(
-                                            (e) =>
-                                              e.value ===
-                                              payrollobj.pay_cycle.repeat
-                                          )) ||
-                                        []
-                                      }
-                                      className="basic-multi-select "
-                                    />
-                                  </div>
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text mb-3"
-                                  >
-                                    Select Calculate Monthly Salary Based On.
-                                  </div>
-                                </div>
-                              </Col>
-                              <Col md={6} lg={6} xxl={6}>
-                                <div>
-                                  <Label
-                                    htmlFor="calculation"
-                                    className="form-label"
-                                  >
-                                    Cut-off Date
-                                  </Label>
-                                  <div>
-                                    <Select
-                                      id="calculation"
-                                      isMulti={false}
-                                      options={cut_of_month_option || []}
-                                      value={
-                                        (payrollobj.pay_cycle.cut_off &&
-                                          cut_of_month_option.find(
-                                            (e) =>
-                                              e.value ===
-                                              payrollobj.pay_cycle.cut_off
-                                          )) ||
-                                        []
-                                      }
-                                      className="basic-multi-select "
-                                    />
-                                  </div>
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text mb-3"
-                                  >
-                                    This is the latest date that payroll
-                                    information should be submitted to calculate
-                                    payroll.
-                                  </div>
-                                </div>
-                              </Col>
-                              <Col lg={12}>
-                                <div className="text-start">
-                                  <Button
-                                    type="submit"
-                                    color="success"
-                                    className="btn-label"
-                                  >
-                                    {" "}
-                                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                                    Save{" "}
-                                  </Button>{" "}
-                                </div>
-                              </Col>
-                            </Row>
-                          </div>
-                          <Col md={9} lg={9} xxl={9}>
-                            <Card>
-                              <CardBody className="bg-info-subtle">
-                                <div className="d-flex">
-                                  <div className="flex-shrink-0">
-                                    <FeatherIcon
-                                      icon="info"
-                                      className="text-info icon-dual-info"
-                                    />
-                                  </div>
-                                  <div className="flex-grow-1 ms-3">
-                                    <h6 className="fs-15">
-                                      Payroll General Info Heading @Dinesh!
-                                    </h6>
-                                    <p className="text-muted mb-0 hide">
-                                      Event that applications book will appear
-                                      here. Click on an event to see the details
-                                      and manage applicants event.
-                                    </p>
-                                  </div>
-                                </div>
-                              </CardBody>
-                            </Card>
-                          </Col>
-                        </TabPane>
-                        {/* Pay Cycle Tab End */}
-
-                        {/* Basic Components Tab Start */}
-                        <TabPane tabId="3" id="v-pills-messages">
-                          {/* Tab Inside Tab @Elan */}
-                          <Row>
-                            <Col xxl={12}>
-                              <Nav
-                                tabs
-                                className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3"
-                              >
-                                <NavItem>
-                                  <NavLink
-                                    style={{ cursor: "pointer" }}
-                                    className={classnames({
-                                      active: customActiveTab === "1",
-                                    })}
-                                    onClick={() => {
-                                      toggleCustom("1");
-                                    }}
-                                  >
-                                    ESI{" "}
-                                    <small>
-                                      {"(Employees state insurance)"}
-                                    </small>
-                                  </NavLink>
-                                </NavItem>
-                                <NavItem>
-                                  <NavLink
-                                    style={{ cursor: "pointer" }}
-                                    className={classnames({
-                                      active: customActiveTab === "2",
-                                    })}
-                                    onClick={() => {
-                                      toggleCustom("2");
-                                    }}
-                                  >
-                                    EPF{" "}
-                                    <small>
-                                      {"(Employees' Provident Fund)"}
-                                    </small>
-                                  </NavLink>
-                                </NavItem>
-                                <NavItem>
-                                  <NavLink
-                                    style={{ cursor: "pointer" }}
-                                    className={classnames({
-                                      active: customActiveTab === "3",
-                                    })}
-                                    onClick={() => {
-                                      toggleCustom("3");
-                                    }}
-                                  >
-                                    Professional Tax
-                                  </NavLink>
-                                </NavItem>
-                                <NavItem>
-                                  <NavLink
-                                    style={{ cursor: "pointer" }}
-                                    className={classnames({
-                                      active: customActiveTab === "4",
-                                    })}
-                                    onClick={() => {
-                                      toggleCustom("4");
-                                    }}
-                                  >
-                                    LABOUR WELFARE FUND
-                                  </NavLink>
-                                </NavItem>
-                              </Nav>
-
-                              <TabContent
-                                activeTab={customActiveTab}
-                                className="text-muted"
-                              >
-                                {/* ESI Tab */}
-                                <TabPane tabId="1" id="home1">
-                                  <div className="d-flex">
-                                    <Col
-                                      xxl={12}
-                                      sm={12}
-                                      className="project-card"
-                                    >
-                                      <Card>
-                                        <CardBody>
-                                          <div
-                                            className={`p-3 mt-n3 mx-n3 bg-${
-                                              payrollobj.basic_components.esi
-                                                ? "success"
-                                                : "dark"
-                                            }-subtle rounded-top`}
-                                          >
-                                            <div className="d-flex align-items-center">
-                                              <div className="flex-grow-1">
-                                                <h5 className="mb-0 fs-14">
-                                                  <Link
-                                                    to="#"
-                                                    className="text-body"
-                                                  >
-                                                    ESI
-                                                  </Link>
-                                                </h5>
-                                              </div>
-                                              <div className="flex-shrink-0">
-                                                <div className="d-flex gap-1 align-items-center my-n2">
-                                                  <div className="form-check form-switch form-switch-success  ">
-                                                    <Input
-                                                      className="form-check-input"
-                                                      type="checkbox"
-                                                      role="switch"
-                                                      id="enableESI"
-                                                      checked={
-                                                        payrollobj
-                                                          .basic_components.esi
-                                                          .is_active
-                                                      }
-                                                    />
-                                                    <Label
-                                                      className="form-check-label"
-                                                      for="enableESI"
-                                                    >
-                                                      Active
-                                                    </Label>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          </div>
-
-                                          <div className="py-3">
-                                            <Row className="gy-3">
-                                              <Col xs={4}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    Deduction Cycle
-                                                  </p>
-                                                  <h5 className="fs-14">
-                                                    Monthly
-                                                  </h5>
-                                                </div>
-                                              </Col>
-                                              <Col xs={4}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    Employee's Contribution
-                                                  </p>
-                                                  <h5 className="fs-14">
-                                                    0.75 % of Gross Pay
-                                                  </h5>
-                                                </div>
-                                              </Col>
-                                              <Col xs={4}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    Employer's Contribution
-                                                  </p>
-                                                  <h5 className="fs-14">
-                                                    3.25 % of Gross Pay
-                                                  </h5>
-                                                </div>
-                                              </Col>
-                                              <Col md={12} lg={12} xxl={12}>
-                                                <Card>
-                                                  <CardBody className="bg-info-subtle">
-                                                    <div className="d-flex">
-                                                      <div className="flex-shrink-0">
-                                                        <FeatherIcon
-                                                          icon="info"
-                                                          className="text-info icon-dual-info"
-                                                        />
-                                                      </div>
-                                                      <div className="flex-grow-1 ms-3">
-                                                        <h6 className="fs-15">
-                                                          Note!
-                                                        </h6>
-                                                        <p className="text-muted mb-0 hide">
-                                                          ESI deductions will be
-                                                          made only if the
-                                                          employee’s monthly
-                                                          salary is less than or
-                                                          equal to ₹ 21,000. If
-                                                          the employee gets a
-                                                          salary revision which
-                                                          increases their
-                                                          monthly salary above ₹
-                                                          21,000, they would
-                                                          have to continue
-                                                          making ESI
-                                                          contributions till the
-                                                          end of the
-                                                          contribution period in
-                                                          which the salary was
-                                                          revised
-                                                          (April-September or
-                                                          October-March).
-                                                        </p>
-                                                      </div>
-                                                    </div>
-                                                  </CardBody>
-                                                </Card>
-                                              </Col>
-                                            </Row>
-                                          </div>
-                                        </CardBody>
-                                      </Card>
-                                    </Col>
-                                  </div>
-                                </TabPane>
-
-                                {/* EPF Tab */}
-                                <TabPane tabId="2">
-                                  <div className="d-flex">
-                                    <Col
-                                      xxl={12}
-                                      sm={12}
-                                      className="project-card"
-                                    >
-                                      <Card>
-                                        <CardBody>
-                                          <div
-                                            className={`p-3 mt-n3 mx-n3 bg-${
-                                              payrollobj.basic_components.epf
-                                                .is_active
-                                                ? "success"
-                                                : "dark"
-                                            }-subtle rounded-top`}
-                                          >
-                                            <div className="d-flex align-items-center">
-                                              <div className="flex-grow-1">
-                                                <h5 className="mb-0 fs-14">
-                                                  <Link
-                                                    to="#"
-                                                    className="text-body"
-                                                  >
-                                                    EPF
-                                                  </Link>
-                                                </h5>
-                                              </div>
-                                              <div className="flex-shrink-0">
-                                                <div className="d-flex gap-1 align-items-center my-n2">
-                                                  <div className="form-check form-switch form-switch-success  ">
-                                                    <Input
-                                                      className="form-check-input"
-                                                      type="checkbox"
-                                                      role="switch"
-                                                      id="enableEPF"
-                                                      checked={
-                                                        payrollobj
-                                                          .basic_components.epf
-                                                          .is_active
-                                                      }
-                                                    />
-                                                    <Label
-                                                      className="form-check-label"
-                                                      for="enableEPF"
-                                                    >
-                                                      Active
-                                                    </Label>
-                                                  </div>
-                                                  <a
-                                                    onClick={() =>
-                                                      handleEPFEdit(
-                                                        payrollobj
-                                                          .basic_components.epf
-                                                      )
-                                                    }
-                                                    className="text-primary d-inline-block edit-item-btn ms-2"
-                                                    href="javascript:void(0)"
-                                                  >
-                                                    <i class="ri-pencil-fill fs-16"></i>
-                                                  </a>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          </div>
-
-                                          <div className="py-3">
-                                            <Row className="gy-3">
-                                              <Col xs={4}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    Deduction Cycle
-                                                  </p>
-                                                  <h5 className="fs-14">
-                                                    {
-                                                      payrollobj
-                                                        .basic_components.epf
-                                                        .epf_type
-                                                    }
-                                                  </h5>
-                                                </div>
-                                              </Col>
-                                              <Col xs={4}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    Employee's Contribution
-                                                  </p>
-                                                  <h5 className="fs-14">
-                                                    {payrollobj.basic_components
-                                                      .epf.epf_cycle
-                                                      ? EPFCycle.find(
-                                                          (obj) =>
-                                                            obj.id ===
-                                                            payrollobj
-                                                              .basic_components
-                                                              .epf.epf_cycle
-                                                        ).Employee
-                                                      : []}
-                                                  </h5>
-                                                </div>
-                                              </Col>
-                                              <Col xs={4}>
-                                                <div>
-                                                  <p className="text-muted mb-1">
-                                                    Employer's Contribution
-                                                  </p>
-                                                  <h5 className="fs-14">
-                                                    {payrollobj.basic_components
-                                                      .epf.epf_cycle
-                                                      ? EPFCycle.find(
-                                                          (obj) =>
-                                                            obj.id ===
-                                                            payrollobj
-                                                              .basic_components
-                                                              .epf.epf_cycle
-                                                        ).Employer
-                                                      : []}
-                                                  </h5>
-                                                </div>
-                                              </Col>
-                                              <Col md={12} lg={12} xxl={12}>
-                                                <Card>
-                                                  <CardBody className="bg-info-subtle">
-                                                    <div className="d-flex">
-                                                      <div className="flex-shrink-0">
-                                                        <FeatherIcon
-                                                          icon="info"
-                                                          className="text-info icon-dual-info"
-                                                        />
-                                                      </div>
-                                                      <div className="flex-grow-1 ms-3">
-                                                        <h6 className="fs-15">
-                                                          Note!
-                                                        </h6>
-                                                        <p className="text-muted mb-0 hide">
-                                                          Employer's EPF
-                                                          Contribution would
-                                                          include EDLI & Admin
-                                                          charge in CTC salary
-                                                          structure.
-                                                        </p>
-                                                      </div>
-                                                    </div>
-                                                  </CardBody>
-                                                </Card>
-                                              </Col>
-                                            </Row>
-                                          </div>
-                                        </CardBody>
-                                      </Card>
-                                    </Col>
-                                  </div>
-                                </TabPane>
-
-                                <TabPane tabId="3">
-                                  <div className="d-flex">
-                                    <Col
-                                      xxl={12}
-                                      sm={12}
-                                      className="project-card"
-                                    >
-                                      {(
-                                        payrollobj.basic_components.pro_tax ||
-                                        []
-                                      ).map((item, key) => (
-                                        <Card key={key}>
-                                          <CardBody>
-                                            <div
-                                              className={`p-3 mt-n3 mx-n3 bg-${
-                                                item.is_active
-                                                  ? "success"
-                                                  : "dark"
-                                              }-subtle rounded-top`}
+                                    <div className="d-flex align-items-center">
+                                      <div className="flex-grow-1">
+                                        <h5 className="mb-0 fs-14">
+                                          <Link to="#" className="text-body">
+                                            ESI
+                                          </Link>
+                                        </h5>
+                                      </div>
+                                      <div className="flex-shrink-0">
+                                        <div className="d-flex gap-1 align-items-center my-n2">
+                                          <div className="form-check form-switch form-switch-success  ">
+                                            <Input
+                                              className="form-check-input"
+                                              type="checkbox"
+                                              role="switch"
+                                              id="enableESI"
+                                              checked={
+                                                payrollobj.basic_components.esi
+                                                  .is_active
+                                              }
+                                            />
+                                            <Label
+                                              className="form-check-label"
+                                              for="enableESI"
                                             >
-                                              <div className="d-flex align-items-center">
-                                                <div className="flex-grow-1">
-                                                  <h5 className="mb-0 fs-14">
-                                                    <Link
-                                                      to="#"
-                                                      className="text-body"
-                                                    >
-                                                      {item.company}
-                                                      <span className="badge border border-dark text-body ms-2">
-                                                        {item.tag}
-                                                      </span>
-                                                    </Link>
-                                                  </h5>
-                                                </div>
-                                                <div className="flex-shrink-0">
-                                                  <div className="d-flex gap-1 align-items-center my-n2">
-                                                    <div className="form-check form-switch form-switch-success  ">
-                                                      <Input
-                                                        className="form-check-input"
-                                                        type="checkbox"
-                                                        role="switch"
-                                                        id="enableEPF"
-                                                        checked={item.is_active}
-                                                      />
-                                                      <Label
-                                                        className="form-check-label"
-                                                        for="enableEPF"
-                                                      >
-                                                        Active
-                                                      </Label>
-                                                    </div>
-                                                    <a
-                                                      onClick={() =>
-                                                        handleTaxEdit(
-                                                          item.slabs
-                                                        )
-                                                      }
-                                                      className="text-primary d-inline-block edit-item-btn ms-2"
-                                                      href="javascript:void(0)"
-                                                    >
-                                                      <i class="ri-pencil-fill fs-16"></i>
-                                                    </a>
-                                                  </div>
-                                                </div>
+                                              Active
+                                            </Label>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="py-3">
+                                    <Row className="gy-3">
+                                      <Col xs={4}>
+                                        <div>
+                                          <p className="text-muted mb-1">
+                                            Deduction Cycle
+                                          </p>
+                                          <h5 className="fs-14">Monthly</h5>
+                                        </div>
+                                      </Col>
+                                      <Col xs={4}>
+                                        <div>
+                                          <p className="text-muted mb-1">
+                                            Employee's Contribution
+                                          </p>
+                                          <h5 className="fs-14">
+                                            0.75 % of Gross Pay
+                                          </h5>
+                                        </div>
+                                      </Col>
+                                      <Col xs={4}>
+                                        <div>
+                                          <p className="text-muted mb-1">
+                                            Employer's Contribution
+                                          </p>
+                                          <h5 className="fs-14">
+                                            3.25 % of Gross Pay
+                                          </h5>
+                                        </div>
+                                      </Col>
+                                      <Col md={12} lg={12} xxl={12}>
+                                        <Card>
+                                          <CardBody className="bg-info-subtle">
+                                            <div className="d-flex">
+                                              <div className="flex-shrink-0">
+                                                <FeatherIcon
+                                                  icon="info"
+                                                  className="text-info icon-dual-info"
+                                                />
                                               </div>
-                                            </div>
-
-                                            <div className="py-3">
-                                              <Row className="gy-3">
-                                                <Col xs={4}>
-                                                  <div>
-                                                    <p className="text-muted mb-1">
-                                                      Address{" "}
-                                                    </p>
-                                                    <h5 className="fs-14">
-                                                      {item.add}
-                                                    </h5>
-                                                  </div>
-                                                </Col>
-                                                <Col xs={2}>
-                                                  <div>
-                                                    <p className="text-muted mb-1">
-                                                      State
-                                                    </p>
-                                                    <h5 className="fs-14">
-                                                      {item.state}
-                                                    </h5>
-                                                  </div>
-                                                </Col>
-                                                <Col xs={2}>
-                                                  <div>
-                                                    <p className="text-muted mb-1">
-                                                      Deduction Cycle
-                                                    </p>
-                                                    <h5 className="fs-14">
-                                                      {item.tax_cycle}
-                                                    </h5>
-                                                  </div>
-                                                </Col>
-                                                <Col xs={2}>
-                                                  <div>
-                                                    <p className="text-muted mb-1">
-                                                      PT Slabs
-                                                    </p>
-
-                                                    <p>
-                                                      <Link
-                                                        to="#"
-                                                        onClick={() =>
-                                                          show_taxSlabModal(
-                                                            item.slabs
-                                                          )
-                                                        }
-                                                        className="link-success"
-                                                      >
-                                                        View Tax Slabs
-                                                      </Link>
-                                                    </p>
-                                                  </div>
-                                                </Col>
-                                              </Row>
+                                              <div className="flex-grow-1 ms-3">
+                                                <h6 className="fs-15">Note!</h6>
+                                                <p className="text-muted mb-0 hide">
+                                                  ESI deductions will be made
+                                                  only if the employee’s monthly
+                                                  salary is less than or equal
+                                                  to ₹ 21,000. If the employee
+                                                  gets a salary revision which
+                                                  increases their monthly salary
+                                                  above ₹ 21,000, they would
+                                                  have to continue making ESI
+                                                  contributions till the end of
+                                                  the contribution period in
+                                                  which the salary was revised
+                                                  (April-September or
+                                                  October-March).
+                                                </p>
+                                              </div>
                                             </div>
                                           </CardBody>
                                         </Card>
-                                      ))}
-                                    </Col>
+                                      </Col>
+                                    </Row>
                                   </div>
-                                </TabPane>
+                                </CardBody>
+                              </Card>
+                            </Col>
+                          </div>
+                        </TabPane>
 
-                                <TabPane tabId="4">
-                                  <div className="d-flex">
-                                    <Card>
-                                      <CardBody>
-                                        <div
-                                          className={`p-3 mt-n3 mx-n3 bg-${
-                                            payrollobj.basic_components
-                                              .labour_fund
-                                              ? "success"
-                                              : "dark"
-                                          }-subtle rounded-top`}
-                                        >
-                                          <div className="d-flex align-items-center">
-                                            <div className="flex-grow-1">
-                                              <h5 className="mb-0 fs-14">
-                                                <Link
-                                                  to="#"
-                                                  className="text-body"
-                                                >
-                                                  Tamil Nadu
-                                                </Link>
-                                              </h5>
-                                            </div>
-                                            <div className="flex-shrink-0">
-                                              <div className="d-flex gap-1 align-items-center my-n2">
-                                                <div className="form-check form-switch form-switch-success  ">
-                                                  <Input
-                                                    className="form-check-input"
-                                                    type="checkbox"
-                                                    role="switch"
-                                                    id="enableEPF"
-                                                    checked={
-                                                      payrollobj
-                                                        .basic_components
-                                                        .labour_fund
-                                                    }
-                                                  />
-                                                  <Label
-                                                    className="form-check-label"
-                                                    for="enableEPF"
-                                                  >
-                                                    Active
-                                                  </Label>
-                                                </div>
+                        {/* EPF Tab */}
+                        <TabPane tabId="2">
+                          <div className="d-flex">
+                            <Col xxl={12} sm={12} className="project-card">
+                              <Card>
+                                <CardBody>
+                                  <div
+                                    className={`p-3 mt-n3 mx-n3 bg-${
+                                      payrollobj.basic_components.epf.is_active
+                                        ? "success"
+                                        : "dark"
+                                    }-subtle rounded-top`}
+                                  >
+                                    <div className="d-flex align-items-center">
+                                      <div className="flex-grow-1">
+                                        <h5 className="mb-0 fs-14">
+                                          <Link to="#" className="text-body">
+                                            EPF
+                                          </Link>
+                                        </h5>
+                                      </div>
+                                      <div className="flex-shrink-0">
+                                        <div className="d-flex gap-1 align-items-center my-n2">
+                                          <div className="form-check form-switch form-switch-success  ">
+                                            <Input
+                                              className="form-check-input"
+                                              type="checkbox"
+                                              role="switch"
+                                              id="enableEPF"
+                                              checked={
+                                                payrollobj.basic_components.epf
+                                                  .is_active
+                                              }
+                                            />
+                                            <Label
+                                              className="form-check-label"
+                                              for="enableEPF"
+                                            >
+                                              Active
+                                            </Label>
+                                          </div>
+                                          <a
+                                            onClick={() =>
+                                              handleEPFEdit(
+                                                payrollobj.basic_components.epf
+                                              )
+                                            }
+                                            className="text-primary d-inline-block edit-item-btn ms-2"
+                                            href="javascript:void(0)"
+                                          >
+                                            <i class="ri-pencil-fill fs-16"></i>
+                                          </a>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="py-3">
+                                    <Row className="gy-3">
+                                      <Col xs={4}>
+                                        <div>
+                                          <p className="text-muted mb-1">
+                                            Deduction Cycle
+                                          </p>
+                                          <h5 className="fs-14">
+                                            {
+                                              payrollobj.basic_components.epf
+                                                .epf_type
+                                            }
+                                          </h5>
+                                        </div>
+                                      </Col>
+                                      <Col xs={4}>
+                                        <div>
+                                          <p className="text-muted mb-1">
+                                            Employee's Contribution
+                                          </p>
+                                          <h5 className="fs-14">
+                                            {payrollobj.basic_components.epf
+                                              .epf_cycle
+                                              ? EPFCycle.find(
+                                                  (obj) =>
+                                                    obj.id ===
+                                                    payrollobj.basic_components
+                                                      .epf.epf_cycle
+                                                ).Employee
+                                              : []}
+                                          </h5>
+                                        </div>
+                                      </Col>
+                                      <Col xs={4}>
+                                        <div>
+                                          <p className="text-muted mb-1">
+                                            Employer's Contribution
+                                          </p>
+                                          <h5 className="fs-14">
+                                            {payrollobj.basic_components.epf
+                                              .epf_cycle
+                                              ? EPFCycle.find(
+                                                  (obj) =>
+                                                    obj.id ===
+                                                    payrollobj.basic_components
+                                                      .epf.epf_cycle
+                                                ).Employer
+                                              : []}
+                                          </h5>
+                                        </div>
+                                      </Col>
+                                      <Col md={12} lg={12} xxl={12}>
+                                        <Card>
+                                          <CardBody className="bg-info-subtle">
+                                            <div className="d-flex">
+                                              <div className="flex-shrink-0">
+                                                <FeatherIcon
+                                                  icon="info"
+                                                  className="text-info icon-dual-info"
+                                                />
                                               </div>
+                                              <div className="flex-grow-1 ms-3">
+                                                <h6 className="fs-15">Note!</h6>
+                                                <p className="text-muted mb-0 hide">
+                                                  Employer's EPF Contribution
+                                                  would include EDLI & Admin
+                                                  charge in CTC salary
+                                                  structure.
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </CardBody>
+                                        </Card>
+                                      </Col>
+                                    </Row>
+                                  </div>
+                                </CardBody>
+                              </Card>
+                            </Col>
+                          </div>
+                        </TabPane>
+
+                        <TabPane tabId="3">
+                          <div className="d-flex">
+                            <Col xxl={12} sm={12} className="project-card">
+                              {(payrollobj.basic_components.pro_tax || []).map(
+                                (item, key) => (
+                                  <Card key={key}>
+                                    <CardBody>
+                                      <div
+                                        className={`p-3 mt-n3 mx-n3 bg-${
+                                          item.is_active ? "success" : "dark"
+                                        }-subtle rounded-top`}
+                                      >
+                                        <div className="d-flex align-items-center">
+                                          <div className="flex-grow-1">
+                                            <h5 className="mb-0 fs-14">
+                                              <Link
+                                                to="#"
+                                                className="text-body"
+                                              >
+                                                {item.company}
+                                                <span className="badge border border-dark text-body ms-2">
+                                                  {item.tag}
+                                                </span>
+                                              </Link>
+                                            </h5>
+                                          </div>
+                                          <div className="flex-shrink-0">
+                                            <div className="d-flex gap-1 align-items-center my-n2">
+                                              <div className="form-check form-switch form-switch-success  ">
+                                                <Input
+                                                  className="form-check-input"
+                                                  type="checkbox"
+                                                  role="switch"
+                                                  id="enableEPF"
+                                                  checked={item.is_active}
+                                                />
+                                                <Label
+                                                  className="form-check-label"
+                                                  for="enableEPF"
+                                                >
+                                                  Active
+                                                </Label>
+                                              </div>
+                                              <a
+                                                onClick={() =>
+                                                  handleTaxEdit(item.slabs)
+                                                }
+                                                className="text-primary d-inline-block edit-item-btn ms-2"
+                                                href="javascript:void(0)"
+                                              >
+                                                <i class="ri-pencil-fill fs-16"></i>
+                                              </a>
                                             </div>
                                           </div>
                                         </div>
+                                      </div>
 
-                                        <div className="py-3">
-                                          <Row className="gy-3">
-                                            <Col xs={4}>
-                                              <div>
-                                                <p className="text-muted mb-1">
-                                                  Deduction Cycle
-                                                </p>
-                                                <h5 className="fs-14">
-                                                  Yearly
-                                                </h5>
-                                              </div>
-                                            </Col>
-                                            <Col xs={4}>
-                                              <div>
-                                                <p className="text-muted mb-1">
-                                                  Employee's Contribution
-                                                </p>
-                                                <h5 className="fs-14">₹ 20</h5>
-                                              </div>
-                                            </Col>
-                                            <Col xs={4}>
-                                              <div>
-                                                <p className="text-muted mb-1">
-                                                  Employer's Contribution
-                                                </p>
-                                                <h5 className="fs-14">₹ 40</h5>
-                                              </div>
-                                            </Col>
-                                          </Row>
-                                        </div>
-                                      </CardBody>
-                                    </Card>
-                                  </div>
-                                </TabPane>
-                              </TabContent>
+                                      <div className="py-3">
+                                        <Row className="gy-3">
+                                          <Col xs={4}>
+                                            <div>
+                                              <p className="text-muted mb-1">
+                                                Address{" "}
+                                              </p>
+                                              <h5 className="fs-14">
+                                                {item.add}
+                                              </h5>
+                                            </div>
+                                          </Col>
+                                          <Col xs={2}>
+                                            <div>
+                                              <p className="text-muted mb-1">
+                                                State
+                                              </p>
+                                              <h5 className="fs-14">
+                                                {item.state}
+                                              </h5>
+                                            </div>
+                                          </Col>
+                                          <Col xs={2}>
+                                            <div>
+                                              <p className="text-muted mb-1">
+                                                Deduction Cycle
+                                              </p>
+                                              <h5 className="fs-14">
+                                                {item.tax_cycle}
+                                              </h5>
+                                            </div>
+                                          </Col>
+                                          <Col xs={2}>
+                                            <div>
+                                              <p className="text-muted mb-1">
+                                                PT Slabs
+                                              </p>
+
+                                              <p>
+                                                <Link
+                                                  to="#"
+                                                  onClick={() =>
+                                                    show_taxSlabModal(
+                                                      item.slabs
+                                                    )
+                                                  }
+                                                  className="link-success"
+                                                >
+                                                  View Tax Slabs
+                                                </Link>
+                                              </p>
+                                            </div>
+                                          </Col>
+                                        </Row>
+                                      </div>
+                                    </CardBody>
+                                  </Card>
+                                )
+                              )}
                             </Col>
-                          </Row>
-                        </TabPane>
-                        {/* Basic Components Tab End */}
-
-                        {/* Salary Components Tab Start */}
-                        <TabPane tabId="4" id="v-pills-settings">
-                          <Row>
-                            <Col xxl={12}>
-                              <Nav
-                                tabs
-                                className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3"
-                              >
-                                <NavItem>
-                                  <NavLink
-                                    style={{ cursor: "pointer" }}
-                                    className={classnames({
-                                      active: customActiveTab1 === "1",
-                                    })}
-                                    onClick={() => {
-                                      toggleCustom1("1");
-                                    }}
-                                  >
-                                    Earnings
-                                  </NavLink>
-                                </NavItem>
-                                <NavItem>
-                                  <NavLink
-                                    style={{ cursor: "pointer" }}
-                                    className={classnames({
-                                      active: customActiveTab1 === "2",
-                                    })}
-                                    onClick={() => {
-                                      toggleCustom1("2");
-                                    }}
-                                  >
-                                    Allowances
-                                  </NavLink>
-                                </NavItem>
-                                <NavItem>
-                                  <NavLink
-                                    style={{ cursor: "pointer" }}
-                                    className={classnames({
-                                      active: customActiveTab1 === "3",
-                                    })}
-                                    onClick={() => {
-                                      toggleCustom1("3");
-                                    }}
-                                  >
-                                    Deductions
-                                  </NavLink>
-                                </NavItem>
-                              </Nav>
-
-                              <TabContent
-                                activeTab={customActiveTab1}
-                                className="text-muted"
-                              >
-                                {/* Earnings Tab */}
-                                <TabPane tabId="1" id="home1">
-                                  <Row>
-                                    <Col md={12} lg={12} xxl={12}>
-                                      <div className=" mb-2">
-                                        <div className="table-responsive">
-                                          <Table className="table-borderless align-middle table-nowrap mb-0">
-                                            <thead>
-                                              <tr>
-                                                <th scope="col">Name</th>
-                                                <th scope="col">Description</th>
-                                                <th scope="col">Pro-rata</th>
-                                                <th scope="col">Taxable</th>
-                                                <th scope="col">
-                                                  Contribute to Insurance & Fund
-                                                </th>
-                                                <th scope="col">Action</th>
-                                              </tr>
-                                            </thead>
-                                            <tbody>
-                                              {payrollobj.salary_components.earnings.map(
-                                                (item, key) => (
-                                                  <tr key={key}>
-                                                    <td className="fw-medium">
-                                                      {item.name}
-                                                    </td>
-                                                    <td>{item.desc}</td>
-                                                    <td>
-                                                      {item.pro_rata
-                                                        ? "Yes"
-                                                        : "No"}
-                                                    </td>
-                                                    <td>
-                                                      {item.tax ? "Yes" : "No"}
-                                                    </td>
-                                                    <td>
-                                                      {item.contribute
-                                                        ? "Yes : "
-                                                        : "No"}
-                                                      {item.epf ? (
-                                                        <span className="badge border border-light text-body">
-                                                          EPF
-                                                        </span>
-                                                      ) : (
-                                                        ""
-                                                      )}
-                                                      {item.esi ? (
-                                                        <span className="badge border border-light text-body">
-                                                          ESI
-                                                        </span>
-                                                      ) : (
-                                                        ""
-                                                      )}
-                                                    </td>
-                                                    <td>
-                                                      <div className="hstack gap-3 fs-15">
-                                                        <Link
-                                                          to="#"
-                                                          className="link-primary"
-                                                          onClick={() => {
-                                                            handleCreateAndUpdate(
-                                                              item
-                                                            );
-                                                          }}
-                                                        >
-                                                          <i className="ri-pencil-fill fs-16"></i>
-                                                        </Link>
-                                                        <Link>
-                                                          <span
-                                                            style={{
-                                                              margin: "0 2px",
-                                                            }}
-                                                          ></span>
-                                                          <i className="ri-delete-bin-5-fill fs-16"></i>
-                                                        </Link>
-                                                      </div>
-                                                    </td>
-                                                  </tr>
-                                                )
-                                              )}
-                                            </tbody>
-                                          </Table>
-                                          <Button
-                                            color="primary"
-                                            onClick={() => {
-                                              handleEaringAdd(0);
-                                            }}
-                                          >
-                                            <i className="ri-add-line align-bottom me-1"></i>
-                                            Add
-                                          </Button>{" "}
-                                        </div>
-                                      </div>
-                                    </Col>
-                                  </Row>
-                                </TabPane>
-
-                                {/* Allowances Tab */}
-                                <TabPane tabId="2">
-                                  {" "}
-                                  <Row>
-                                    <Col md={12} lg={12} xxl={12}>
-                                      <div className=" mb-2">
-                                        <div className="table-responsive">
-                                          <Table className="table-borderless align-middle table-nowrap mb-0">
-                                            <thead>
-                                              <tr>
-                                                <th scope="col">Name</th>
-                                                <th scope="col">Description</th>
-                                                <th scope="col">Pro-rata</th>
-                                                <th scope="col">Taxable</th>
-                                                <th scope="col">
-                                                  Contribute to Insurance & Fund
-                                                </th>
-                                                <th scope="col">Action</th>
-                                              </tr>
-                                            </thead>
-                                            <tbody>
-                                              {payrollobj.salary_components.allowances.map(
-                                                (item, key) => (
-                                                  <tr key={key}>
-                                                    <td className="fw-medium">
-                                                      {item.name}
-                                                    </td>
-                                                    <td>{item.desc}</td>
-                                                    <td>
-                                                      {item.pro_rata
-                                                        ? "Yes"
-                                                        : "No"}
-                                                    </td>
-                                                    <td>
-                                                      {item.tax ? "Yes" : "No"}
-                                                    </td>
-                                                    <td>
-                                                      {item.contribute
-                                                        ? "Yes : "
-                                                        : "No"}
-                                                      {item.epf ? (
-                                                        <span className="badge border border-light text-body">
-                                                          EPF
-                                                        </span>
-                                                      ) : (
-                                                        ""
-                                                      )}
-                                                      {item.esi ? (
-                                                        <span className="badge border border-light text-body">
-                                                          ESI
-                                                        </span>
-                                                      ) : (
-                                                        ""
-                                                      )}
-                                                    </td>
-                                                    <td>
-                                                      <div className="hstack gap-3 fs-15">
-                                                        <Link
-                                                          to="#"
-                                                          className="link-primary"
-                                                          onClick={() => {
-                                                            handleCreateAndUpdate(
-                                                              item
-                                                            );
-                                                          }}
-                                                        >
-                                                          <i className="ri-pencil-fill fs-16"></i>
-                                                        </Link>
-                                                        <Link>
-                                                          <span
-                                                            style={{
-                                                              margin: "0 2px",
-                                                            }}
-                                                          ></span>
-                                                          <i className="ri-delete-bin-5-fill fs-16"></i>
-                                                        </Link>
-                                                      </div>
-                                                    </td>
-                                                  </tr>
-                                                )
-                                              )}
-                                            </tbody>
-                                          </Table>
-                                          <Button
-                                            color="primary"
-                                            onClick={() => {
-                                              // handleAllowencesAdd(0);
-                                              handleEaringAdd(0);
-                                            }}
-                                          >
-                                            <i className="ri-add-line align-bottom me-1"></i>
-                                            Add
-                                          </Button>{" "}
-                                        </div>
-                                      </div>
-                                    </Col>
-                                  </Row>
-                                </TabPane>
-
-                                {/* Deductions Tab */}
-                                <TabPane tabId="3">
-                                  {" "}
-                                  <Row>
-                                    <Col md={12} lg={12} xxl={12}>
-                                      <div className=" mb-2">
-                                        <div className="table-responsive">
-                                          <Table className="table-borderless align-middle table-nowrap mb-0">
-                                            <thead>
-                                              <tr>
-                                                <th scope="col">Name</th>
-                                                <th scope="col">Description</th>
-                                                <th scope="col">Pro-rata</th>
-                                                <th scope="col">Taxable</th>
-                                                <th scope="col">
-                                                  Contribute to Insurance & Fund
-                                                </th>
-                                                <th scope="col">Action</th>
-                                              </tr>
-                                            </thead>
-                                            <tbody>
-                                              {payrollobj.salary_components.deductions.map(
-                                                (item, key) => (
-                                                  <tr key={key}>
-                                                    <td className="fw-medium">
-                                                      {item.name}
-                                                    </td>
-                                                    <td>{item.desc}</td>
-                                                    <td>
-                                                      {item.pro_rata
-                                                        ? "Yes"
-                                                        : "No"}
-                                                    </td>
-                                                    <td>
-                                                      {item.tax ? "Yes" : "No"}
-                                                    </td>
-                                                    <td>
-                                                      {item.contribute
-                                                        ? "Yes : "
-                                                        : "No"}
-                                                      {item.epf ? (
-                                                        <span className="badge border border-light text-body">
-                                                          EPF
-                                                        </span>
-                                                      ) : (
-                                                        ""
-                                                      )}
-                                                      {item.esi ? (
-                                                        <span className="badge border border-light text-body">
-                                                          ESI
-                                                        </span>
-                                                      ) : (
-                                                        ""
-                                                      )}
-                                                    </td>
-                                                    <td>
-                                                      <div className="hstack gap-3 fs-15">
-                                                        <Link
-                                                          to="#"
-                                                          className="link-primary"
-                                                          onClick={() => {
-                                                            handleCreateAndUpdate(
-                                                              item
-                                                            );
-                                                          }}
-                                                        >
-                                                          <i className="ri-pencil-fill fs-16"></i>
-                                                        </Link>
-                                                        <Link>
-                                                          <span
-                                                            style={{
-                                                              margin: "0 2px",
-                                                            }}
-                                                          ></span>
-                                                          <i className="ri-delete-bin-5-fill fs-16"></i>
-                                                        </Link>
-                                                      </div>
-                                                    </td>
-                                                  </tr>
-                                                )
-                                              )}
-                                            </tbody>
-                                          </Table>
-                                          <Button
-                                            color="primary"
-                                            onClick={() => {
-                                              // handleDeductionsAdd(0);
-                                              handleEaringAdd(0);
-                                            }}
-                                          >
-                                            <i className="ri-add-line align-bottom me-1"></i>
-                                            Add
-                                          </Button>{" "}
-                                        </div>
-                                      </div>
-                                    </Col>
-                                  </Row>
-                                </TabPane>
-                              </TabContent>
-                            </Col>
-                          </Row>
-                        </TabPane>
-                        {/* Salary Components Tab End */}
-
-                        {/* Salary Policies Tab Start */}
-                        <TabPane tabId="5" id="v-pills-home">
-                          <div className="d-flex mb-2">
-                            <div className="flex-shrink-0">
-                              <img
-                                src="https://local-lcedu-static.s3.amazonaws.com/dev/employee/profile/18ba4128-f7f0-435b-a841-96c01c829d0b.jpg"
-                                alt=""
-                                width="150"
-                                className="rounded"
-                              />
-                            </div>
-
-                            <div className="flex-grow-1 ms-3">
-                              <Button
-                                color="primary"
-                                onClick={() => {
-                                  handleSalaryPoliciesAdd(0);
-                                }}
-                              >
-                                <i className="ri-add-line align-bottom me-1"></i>
-                                Add
-                              </Button>{" "}
-                              <p className="mb-0">
-                                <br></br>
-                                You always want to make sure that your fonts
-                                work well together and try to limit the number
-                                of fonts you use to three or less. Experiment
-                                and play around with the fonts that you already
-                                have in the software you’re working with
-                                reputable font websites.
-                              </p>
-                            </div>
                           </div>
-                          <p className="mb-0">
-                            This may be the most commonly encountered tip I
-                            received from the designers I spoke with. They
-                            highly encourage that you use different fonts in one
-                            design, but do not over-exaggerate and go overboard.
-                          </p>
                         </TabPane>
-                        {/* Salary Policies Tab End */}
+
+                        <TabPane tabId="4">
+                          <div className="d-flex">
+                            <Card>
+                              <CardBody>
+                                <div
+                                  className={`p-3 mt-n3 mx-n3 bg-${
+                                    payrollobj.basic_components.labour_fund
+                                      ? "success"
+                                      : "dark"
+                                  }-subtle rounded-top`}
+                                >
+                                  <div className="d-flex align-items-center">
+                                    <div className="flex-grow-1">
+                                      <h5 className="mb-0 fs-14">
+                                        <Link to="#" className="text-body">
+                                          Tamil Nadu
+                                        </Link>
+                                      </h5>
+                                    </div>
+                                    <div className="flex-shrink-0">
+                                      <div className="d-flex gap-1 align-items-center my-n2">
+                                        <div className="form-check form-switch form-switch-success  ">
+                                          <Input
+                                            className="form-check-input"
+                                            type="checkbox"
+                                            role="switch"
+                                            id="enableEPF"
+                                            checked={
+                                              payrollobj.basic_components
+                                                .labour_fund
+                                            }
+                                          />
+                                          <Label
+                                            className="form-check-label"
+                                            for="enableEPF"
+                                          >
+                                            Active
+                                          </Label>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="py-3">
+                                  <Row className="gy-3">
+                                    <Col xs={4}>
+                                      <div>
+                                        <p className="text-muted mb-1">
+                                          Deduction Cycle
+                                        </p>
+                                        <h5 className="fs-14">Yearly</h5>
+                                      </div>
+                                    </Col>
+                                    <Col xs={4}>
+                                      <div>
+                                        <p className="text-muted mb-1">
+                                          Employee's Contribution
+                                        </p>
+                                        <h5 className="fs-14">₹ 20</h5>
+                                      </div>
+                                    </Col>
+                                    <Col xs={4}>
+                                      <div>
+                                        <p className="text-muted mb-1">
+                                          Employer's Contribution
+                                        </p>
+                                        <h5 className="fs-14">₹ 40</h5>
+                                      </div>
+                                    </Col>
+                                  </Row>
+                                </div>
+                              </CardBody>
+                            </Card>
+                          </div>
+                        </TabPane>
                       </TabContent>
                     </Col>
                   </Row>
-                </CardBody>
-              </Card>
+                </TabPane>
+                {/* Basic Components Tab End */}
+
+                {/* Salary Components Tab Start */}
+                <TabPane tabId="4" id="v-pills-settings">
+                  <Row>
+                    <Col xxl={12}>
+                      <Nav
+                        tabs
+                        className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3"
+                      >
+                        <NavItem>
+                          <NavLink
+                            style={{ cursor: "pointer" }}
+                            className={classnames({
+                              active: customActiveTab1 === "1",
+                            })}
+                            onClick={() => {
+                              toggleCustom1("1");
+                            }}
+                          >
+                            Earnings
+                          </NavLink>
+                        </NavItem>
+                        <NavItem>
+                          <NavLink
+                            style={{ cursor: "pointer" }}
+                            className={classnames({
+                              active: customActiveTab1 === "2",
+                            })}
+                            onClick={() => {
+                              toggleCustom1("2");
+                            }}
+                          >
+                            Allowances
+                          </NavLink>
+                        </NavItem>
+                        <NavItem>
+                          <NavLink
+                            style={{ cursor: "pointer" }}
+                            className={classnames({
+                              active: customActiveTab1 === "3",
+                            })}
+                            onClick={() => {
+                              toggleCustom1("3");
+                            }}
+                          >
+                            Deductions
+                          </NavLink>
+                        </NavItem>
+                      </Nav>
+
+                      <TabContent
+                        activeTab={customActiveTab1}
+                        className="text-muted"
+                      >
+                        {/* Earnings Tab */}
+                        <TabPane tabId="1" id="home1">
+                          <Row>
+                            <Col md={12} lg={12} xxl={12}>
+                              <div className=" mb-2">
+                                <div className="table-responsive">
+                                  <Table className="table-borderless align-middle table-nowrap mb-0">
+                                    <thead>
+                                      <tr>
+                                        <th scope="col">Name</th>
+                                        <th scope="col">Description</th>
+                                        <th scope="col">Pro-rata</th>
+                                        <th scope="col">Taxable</th>
+                                        <th scope="col">
+                                          Contribute to Insurance & Fund
+                                        </th>
+                                        <th scope="col">Action</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {payrollobj.salary_components.earnings.map(
+                                        (item, key) => (
+                                          <tr key={key}>
+                                            <td className="fw-medium">
+                                              {item.name}
+                                            </td>
+                                            <td>{item.desc}</td>
+                                            <td>
+                                              {item.pro_rata ? "Yes" : "No"}
+                                            </td>
+                                            <td>{item.tax ? "Yes" : "No"}</td>
+                                            <td>
+                                              {item.contribute
+                                                ? "Yes : "
+                                                : "No"}
+                                              {item.epf ? (
+                                                <span className="badge border border-light text-body">
+                                                  EPF
+                                                </span>
+                                              ) : (
+                                                ""
+                                              )}
+                                              {item.esi ? (
+                                                <span className="badge border border-light text-body">
+                                                  ESI
+                                                </span>
+                                              ) : (
+                                                ""
+                                              )}
+                                            </td>
+                                            <td>
+                                              <div className="hstack gap-3 fs-15">
+                                                <Link
+                                                  to="#"
+                                                  className="link-primary"
+                                                  onClick={() => {
+                                                    handleCreateAndUpdate(item);
+                                                  }}
+                                                >
+                                                  <i className="ri-pencil-fill fs-16"></i>
+                                                </Link>
+                                                <Link>
+                                                  <span
+                                                    style={{
+                                                      margin: "0 2px",
+                                                    }}
+                                                  ></span>
+                                                  <i className="ri-delete-bin-5-fill fs-16"></i>
+                                                </Link>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        )
+                                      )}
+                                    </tbody>
+                                  </Table>
+                                  <Button
+                                    color="primary"
+                                    onClick={() => {
+                                      handleEaringAdd(0);
+                                    }}
+                                  >
+                                    <i className="ri-add-line align-bottom me-1"></i>
+                                    Add
+                                  </Button>{" "}
+                                </div>
+                              </div>
+                            </Col>
+                          </Row>
+                        </TabPane>
+
+                        {/* Allowances Tab */}
+                        <TabPane tabId="2">
+                          {" "}
+                          <Row>
+                            <Col md={12} lg={12} xxl={12}>
+                              <div className=" mb-2">
+                                <div className="table-responsive">
+                                  <Table className="table-borderless align-middle table-nowrap mb-0">
+                                    <thead>
+                                      <tr>
+                                        <th scope="col">Name</th>
+                                        <th scope="col">Description</th>
+                                        <th scope="col">Pro-rata</th>
+                                        <th scope="col">Taxable</th>
+                                        <th scope="col">
+                                          Contribute to Insurance & Fund
+                                        </th>
+                                        <th scope="col">Action</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {payrollobj.salary_components.allowances.map(
+                                        (item, key) => (
+                                          <tr key={key}>
+                                            <td className="fw-medium">
+                                              {item.name}
+                                            </td>
+                                            <td>{item.desc}</td>
+                                            <td>
+                                              {item.pro_rata ? "Yes" : "No"}
+                                            </td>
+                                            <td>{item.tax ? "Yes" : "No"}</td>
+                                            <td>
+                                              {item.contribute
+                                                ? "Yes : "
+                                                : "No"}
+                                              {item.epf ? (
+                                                <span className="badge border border-light text-body">
+                                                  EPF
+                                                </span>
+                                              ) : (
+                                                ""
+                                              )}
+                                              {item.esi ? (
+                                                <span className="badge border border-light text-body">
+                                                  ESI
+                                                </span>
+                                              ) : (
+                                                ""
+                                              )}
+                                            </td>
+                                            <td>
+                                              <div className="hstack gap-3 fs-15">
+                                                <Link
+                                                  to="#"
+                                                  className="link-primary"
+                                                  onClick={() => {
+                                                    handleCreateAndUpdate(item);
+                                                  }}
+                                                >
+                                                  <i className="ri-pencil-fill fs-16"></i>
+                                                </Link>
+                                                <Link>
+                                                  <span
+                                                    style={{
+                                                      margin: "0 2px",
+                                                    }}
+                                                  ></span>
+                                                  <i className="ri-delete-bin-5-fill fs-16"></i>
+                                                </Link>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        )
+                                      )}
+                                    </tbody>
+                                  </Table>
+                                  <Button
+                                    color="primary"
+                                    onClick={() => {
+                                      // handleAllowencesAdd(0);
+                                      handleEaringAdd(0);
+                                    }}
+                                  >
+                                    <i className="ri-add-line align-bottom me-1"></i>
+                                    Add
+                                  </Button>{" "}
+                                </div>
+                              </div>
+                            </Col>
+                          </Row>
+                        </TabPane>
+
+                        {/* Deductions Tab */}
+                        <TabPane tabId="3">
+                          {" "}
+                          <Row>
+                            <Col md={12} lg={12} xxl={12}>
+                              <div className=" mb-2">
+                                <div className="table-responsive">
+                                  <Table className="table-borderless align-middle table-nowrap mb-0">
+                                    <thead>
+                                      <tr>
+                                        <th scope="col">Name</th>
+                                        <th scope="col">Description</th>
+                                        <th scope="col">Pro-rata</th>
+                                        <th scope="col">Taxable</th>
+                                        <th scope="col">
+                                          Contribute to Insurance & Fund
+                                        </th>
+                                        <th scope="col">Action</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {payrollobj.salary_components.deductions.map(
+                                        (item, key) => (
+                                          <tr key={key}>
+                                            <td className="fw-medium">
+                                              {item.name}
+                                            </td>
+                                            <td>{item.desc}</td>
+                                            <td>
+                                              {item.pro_rata ? "Yes" : "No"}
+                                            </td>
+                                            <td>{item.tax ? "Yes" : "No"}</td>
+                                            <td>
+                                              {item.contribute
+                                                ? "Yes : "
+                                                : "No"}
+                                              {item.epf ? (
+                                                <span className="badge border border-light text-body">
+                                                  EPF
+                                                </span>
+                                              ) : (
+                                                ""
+                                              )}
+                                              {item.esi ? (
+                                                <span className="badge border border-light text-body">
+                                                  ESI
+                                                </span>
+                                              ) : (
+                                                ""
+                                              )}
+                                            </td>
+                                            <td>
+                                              <div className="hstack gap-3 fs-15">
+                                                <Link
+                                                  to="#"
+                                                  className="link-primary"
+                                                  onClick={() => {
+                                                    handleCreateAndUpdate(item);
+                                                  }}
+                                                >
+                                                  <i className="ri-pencil-fill fs-16"></i>
+                                                </Link>
+                                                <Link>
+                                                  <span
+                                                    style={{
+                                                      margin: "0 2px",
+                                                    }}
+                                                  ></span>
+                                                  <i className="ri-delete-bin-5-fill fs-16"></i>
+                                                </Link>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        )
+                                      )}
+                                    </tbody>
+                                  </Table>
+                                  <Button
+                                    color="primary"
+                                    onClick={() => {
+                                      // handleDeductionsAdd(0);
+                                      handleEaringAdd(0);
+                                    }}
+                                  >
+                                    <i className="ri-add-line align-bottom me-1"></i>
+                                    Add
+                                  </Button>{" "}
+                                </div>
+                              </div>
+                            </Col>
+                          </Row>
+                        </TabPane>
+                      </TabContent>
+                    </Col>
+                  </Row>
+                </TabPane>
+                {/* Salary Components Tab End */}
+
+                {/* Salary Policies Tab Start */}
+                <TabPane tabId="5" id="v-pills-home">
+                  <div className="d-flex mb-2">
+                    <div className="flex-shrink-0">
+                      <img
+                        src="https://local-lcedu-static.s3.amazonaws.com/dev/employee/profile/18ba4128-f7f0-435b-a841-96c01c829d0b.jpg"
+                        alt=""
+                        width="150"
+                        className="rounded"
+                      />
+                    </div>
+
+                    <div className="flex-grow-1 ms-3">
+                      <Button
+                        color="primary"
+                        onClick={() => {
+                          handleSalaryPoliciesAdd(0);
+                        }}
+                      >
+                        <i className="ri-add-line align-bottom me-1"></i>
+                        Add
+                      </Button>{" "}
+                      <p className="mb-0">
+                        <br></br>
+                        You always want to make sure that your fonts work well
+                        together and try to limit the number of fonts you use to
+                        three or less. Experiment and play around with the fonts
+                        that you already have in the software you’re working
+                        with reputable font websites.
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mb-0">
+                    This may be the most commonly encountered tip I received
+                    from the designers I spoke with. They highly encourage that
+                    you use different fonts in one design, but do not
+                    over-exaggerate and go overboard.
+                  </p>
+                </TabPane>
+                {/* Salary Policies Tab End */}
+              </TabContent>
             </Col>
           </Row>
-        </Container>
-      </div>
+        </CardBody>
+      </Card>
 
       <Modal
         id="flipModal"

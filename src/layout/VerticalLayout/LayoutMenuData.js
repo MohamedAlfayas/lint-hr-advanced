@@ -247,13 +247,13 @@ const Navdata = () => {
           parentId: "baseUi",
           perm: "attendance",
         },
-        {
-          id: "attendanceconfig",
-          label: "Attendance Configuration",
-          link: "/attendanceconfig",
-          parentId: "baseUi",
-          perm: "attendance_config",
-        },
+        // {
+        //   id: "attendanceconfig",
+        //   label: "Attendance Configuration",
+        //   link: "/attendanceconfig",
+        //   parentId: "baseUi",
+        //   perm: "attendance_config",
+        // },
         {
           id: "payroll",
           label: "Pay Roll",
@@ -261,13 +261,13 @@ const Navdata = () => {
           parentId: "payroll",
           perm: "payroll",
         },
-        {
-          id: "payrollconfig",
-          label: "Pay Roll Configuration",
-          link: "/payrollconfig",
-          parentId: "baseUi",
-          perm: "payroll_config",
-        },
+        // {
+        //   id: "payrollconfig",
+        //   label: "Pay Roll Configuration",
+        //   link: "/payrollconfig",
+        //   parentId: "baseUi",
+        //   perm: "payroll_config",
+        // },
         {
           id: "payrollconfig",
           label: "Attendance Report",

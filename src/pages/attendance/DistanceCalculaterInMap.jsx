@@ -9,11 +9,39 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import { Col } from "reactstrap";
 import { map_radius_options } from "../../common/constant/Constants";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
 const mapIconOffice = require("../../assets/images/icons/office.png");
 const mapIconEmployee = require("../../assets/images/icons/location.png");
 
-function DistanceCalculaterInMap({ branchObj }) {
+const DistanceCalculaterInMap = ({ locationData, locationType }) => {
+  let locationObj;
+
+  if (locationType === "in") {
+    locationObj = locationData.entry_log[0] || null;
+  } else {
+    locationObj = locationData.entry_log
+      .filter((entry) => entry.entry_type === 2)
+      .slice(-1)[0];
+  }
+
+  console.log("Location Type", locationType);
+  console.log("locationObj", locationObj);
+
+  const employeeData = GetLocalStorageData("employee") || [];
+  const branchData = GetLocalStorageData("branch") || [];
+  console.log("locationData", locationData);
+
+  const employeeBracnchID = employeeData.find(
+    (d) => locationData.employee_id === d.id
+  );
+
+  const branchObj = branchData.find((b) =>
+    employeeBracnchID.branch_id_list.includes(b.id)
+  );
+  console.log("employeeBracnchID", employeeBracnchID);
+  console.log("branchObj", branchObj);
+
   const [mapZoom, setMapZoom] = useState(21);
 
   const [mapCenter, setMapCenter] = useState({
@@ -21,10 +49,10 @@ function DistanceCalculaterInMap({ branchObj }) {
     lng: 77.608336,
   });
 
-  const locations = [
-    { lat: 8.3865046, lng: 77.608336, name: "Lintcloud Office" }, // New York City
-    { lat: 8.389969903467833, lng: 77.60979309924807, name: "A4 Agency" }, // Los Angeles
-  ];
+  // const locations = [
+  //   { lat: 8.3865046, lng: 77.608336, name: "Lintcloud Office" }, // New York City
+  //   { lat: 8.389969903467833, lng: 77.60979309924807, name: "A4 Agency" }, // Los Angeles
+  // ];
 
   useEffect(() => {
     if (!!branchObj?.radius_range) {
@@ -105,14 +133,14 @@ function DistanceCalculaterInMap({ branchObj }) {
   useEffect(() => {
     // Calculate total distance of the polyline
     let totalDistance = 0;
-    for (let i = 1; i < locations.length; i++) {
-      totalDistance += calculateDistance(
-        locations[i - 1].lat,
-        locations[i - 1].lng,
-        locations[i].lat,
-        locations[i].lng
-      );
-    }
+
+    totalDistance += calculateDistance(
+      branchObj.latitude,
+      branchObj.longitude,
+      locationObj.latitude,
+      locationObj.longitude
+    );
+
     setDistance(totalDistance.toFixed(2)); // Set distance state
   }, []);
 
@@ -120,11 +148,17 @@ function DistanceCalculaterInMap({ branchObj }) {
     // Fit map bounds based on polyline path
     if (mapRef.current && distance) {
       const bounds = new window.google.maps.LatLngBounds();
-      locations.forEach((location) => {
-        bounds.extend(
-          new window.google.maps.LatLng(location.lat, location.lng)
-        );
-      });
+
+      bounds.extend(
+        new window.google.maps.LatLng(
+          locationObj.latitude,
+          locationObj.longitude
+        )
+      );
+      bounds.extend(
+        new window.google.maps.LatLng(branchObj.latitude, branchObj.longitude)
+      );
+
       mapRef.current.fitBounds(bounds);
     }
   }, [distance]);
@@ -134,11 +168,17 @@ function DistanceCalculaterInMap({ branchObj }) {
   useEffect(() => {
     if (mapRefCenter.current) {
       const bounds = new window.google.maps.LatLngBounds();
-      locations.forEach((location) => {
-        bounds.extend(
-          new window.google.maps.LatLng(location.lat, location.lng)
-        );
-      });
+
+      bounds.extend(
+        new window.google.maps.LatLng(
+          locationObj.latitude,
+          locationObj.longitude
+        )
+      );
+      bounds.extend(
+        new window.google.maps.LatLng(branchObj.latitude, branchObj.longitude)
+      );
+
       mapRefCenter.current.fitBounds(bounds);
     }
   }, []);
@@ -147,10 +187,10 @@ function DistanceCalculaterInMap({ branchObj }) {
 
   // Function to calculate heading between two points
   const calculateHeading = (pointA, pointB) => {
-    const lat1 = (pointA.lat * Math.PI) / 180;
-    const lon1 = (pointA.lng * Math.PI) / 180;
-    const lat2 = (pointB.lat * Math.PI) / 180;
-    const lon2 = (pointB.lng * Math.PI) / 180;
+    const lat1 = (pointA.latitude * Math.PI) / 180;
+    const lon1 = (pointA.longitude * Math.PI) / 180;
+    const lat2 = (pointB.latitude * Math.PI) / 180;
+    const lon2 = (pointB.longitude * Math.PI) / 180;
 
     const dLon = lon2 - lon1;
 
@@ -164,6 +204,17 @@ function DistanceCalculaterInMap({ branchObj }) {
 
     return brng;
   };
+  const rotation = calculateHeading(branchObj, locationObj);
+  const paths = [
+    {
+      lat: parseFloat(branchObj.latitude),
+      lng: parseFloat(branchObj.longitude),
+    },
+    {
+      lat: parseFloat(locationObj.latitude),
+      lng: parseFloat(locationObj.longitude),
+    },
+  ];
 
   return isLoaded ? (
     <React.Fragment>
@@ -209,32 +260,52 @@ function DistanceCalculaterInMap({ branchObj }) {
           })} */}
 
           {/* Markers for the two points */}
-          {locations.map((location, index) => {
-            const nextLocation =
-              locations[index === locations.length - 1 ? 0 : index + 1];
-            const rotation = calculateHeading(location, nextLocation);
-            return (
-              <Marker
-                key={index}
-                position={location}
-                title={location.name} // Add title to the marker
-                icon={{
-                  url: index === 0 ? mapIconOffice : mapIconEmployee,
+          <>
+            <Marker
+              position={{
+                lat: parseFloat(branchObj.latitude),
+                lng: parseFloat(branchObj.longitude),
+              }}
+              title={branchObj.name} // Add title to the marker
+              icon={{
+                url: mapIconOffice,
 
-                  scaledSize: new window.google.maps.Size(40, 40),
-                  rotation: rotation,
-                }}
-                onClick={() => setSelectedMarker(location)}
-              />
-            );
-          })}
+                scaledSize: new window.google.maps.Size(40, 40),
+                rotation: rotation,
+              }}
+              onClick={() => setSelectedMarker(branchObj)}
+            />
+            <Marker
+              position={{
+                lat: parseFloat(locationObj.latitude),
+                lng: parseFloat(locationObj.longitude),
+              }}
+              title={locationObj.location}
+              icon={{
+                url: mapIconEmployee,
+                scaledSize: new window.google.maps.Size(40, 40),
+                rotation: rotation, // You can adjust this if needed
+              }}
+              onClick={() => setSelectedMarker(locationObj)}
+            />
+          </>
+
           {/* InfoWindow to display label */}
           {selectedMarker && (
             <InfoWindow
-              position={selectedMarker}
+              position={{
+                lat: parseFloat(selectedMarker.latitude),
+                lng: parseFloat(selectedMarker.longitude),
+              }}
               onCloseClick={() => setSelectedMarker(null)}
             >
-              <div>{selectedMarker.name}</div>
+              <div>
+                {selectedMarker.name ? (
+                  <> {selectedMarker.name}</>
+                ) : (
+                  <>{selectedMarker.location}</>
+                )}
+              </div>
             </InfoWindow>
           )}
           <Circle
@@ -249,7 +320,7 @@ function DistanceCalculaterInMap({ branchObj }) {
           />
           {/* Polyline to connect the two points */}
           <Polyline
-            path={locations}
+            path={paths}
             options={{
               strokeColor: "#FF0000",
               strokeOpacity: 1.0,
@@ -283,6 +354,6 @@ function DistanceCalculaterInMap({ branchObj }) {
   ) : (
     <></>
   );
-}
+};
 
 export default DistanceCalculaterInMap;
