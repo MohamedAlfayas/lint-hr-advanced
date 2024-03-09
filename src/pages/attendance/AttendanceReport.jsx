@@ -122,8 +122,7 @@ const AttendanceReport = () => {
         },
       };
 
-      const headers = ["Employee Name", "Email", "Emp ID", "Attendane", "Paid Hr", "Work Schedule", "In", "Out","Total", "Status", "Activity", "OT", "Edited Hours", "Total", "In Location", "Out Location"];
-
+      const headers = ["Employee Name", "Email", "Emp ID", "Attendane","Status", "Activity", "Work Schedule","Checked In","OT", "Paid Hr","Edited Hours",  "In", "Out",   "Total", "In Location", "Out Location"];
       // Assuming `team_daily_attendance_report` is available
       const employeeDatesXls = Array.from(new Set(team_daily_attendance_report.flatMap((employee) =>
         employee.workday_data.map((report) => report.date)
@@ -149,6 +148,8 @@ const AttendanceReport = () => {
       
           const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds);
           const workScheduleHr = ConvertSecondsToTime(attendance_data.work_schedule_hr_without_break_in_seconds);
+          const checkedInHr = ConvertSecondsToTime(attendance_data.checked_in_hr_in_seconds);
+          console.log("checkedInHr",checkedInHr);
           const status = attendance_data.hr_status;
           function getStatusText(hr_status) {
             switch (hr_status) {
@@ -180,9 +181,9 @@ const AttendanceReport = () => {
           }
       
           const otHours =  ConvertSecondsToTime(attendance_data.final_ot_hr_in_seconds);
-          console.log("jhjh",otHours); 
-          const editedHours = ConvertSecondsToTime(attendance_data.checked_in_hr_in_seconds - attendance_data.edited_checked_in_hr_in_seconds);
-         
+     
+          const editedHours = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds - attendance_data.checked_in_hr_in_seconds);
+          console.log("entry",editedHours);
    
       
           const entryLogs = attendance_data.entry_log.map(entry => {
@@ -192,25 +193,55 @@ const AttendanceReport = () => {
           });
           const entryLogIn = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 1);
           const entryLogOut = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 2);
+       
       
+
           const inLength = entryLogIn.length;
           const outLength = entryLogOut.length;
           const maxIterations = Math.max(inLength, outLength);
       
           // If either entryLogIn or entryLogOut is empty, push an empty row
           if (inLength === 0 || outLength === 0) {
-            const row = [formatDate(date), emp_name, foundEmployee ? foundEmployee.email : "", employee_id, attend_data, total_hour, workScheduleHr];
-            row.push(inLength === 0 ? "-" : entryLogIn[0]);
-            row.push(outLength === 0 ? "-" : entryLogOut[0]);
-            row.push(statusText || "-"); // If statusText is falsy, push "-"
-            row.push(entry_status || "-"); // If entry_status is falsy, push "-"
-            row.push(otHours || "-");
-            row.push(editedHours || "-");
+            const row = [
+              formatDate(date), 
+              emp_name, 
+              foundEmployee ? foundEmployee.email : "", 
+              employee_id, 
+              attend_data,
+              statusText || "-", // Attendance Status
+              entry_status || "-", // Activity
+              workScheduleHr, // Work Schedule
+              checkedInHr, // Check In
+              otHours || "-", // OT
+              total_hour, // Paid Hr
+            
+            
+              editedHours || "-", // Edited Hr
+            ];            row.push(inLength === 0 ? "-" : entryLogIn[0]);
+           
+           
             sheet.addRow(row);
           } else {
             for (let i = 0; i < maxIterations; i++) {
-              const row = [formatDate(date), emp_name, foundEmployee ? foundEmployee.email : "", employee_id, attend_data, total_hour, workScheduleHr];
+              const row = [
+                formatDate(date), 
+                emp_name, 
+                foundEmployee ? foundEmployee.email : "", 
+                employee_id, 
+                attend_data,
+                statusText || "-", // Attendance Status
+                entry_status || "-", // Activity
+                workScheduleHr, // Work Schedule
+                checkedInHr, // Check In
+                otHours || "-", // OT
+                total_hour, // Paid Hr
+               
+                editedHours || "-", // Edited Hr
+              ];      
+             
       
+           
+          
               if (i < inLength) {
                 row.push(entryLogIn[i]);
               } else {
@@ -222,11 +253,9 @@ const AttendanceReport = () => {
               } else {
                 row.push(""); // Push an empty value if entryLogOut is empty
               }
-      
-              row.push(statusText || "-"); // If statusText is falsy, push "-"
-              row.push(entry_status || "-"); // If entry_status is falsy, push "-"
-              row.push(otHours || "-");
-              row.push(editedHours || "-");
+            //  const total = entryLogIn[i] + entryLogOut[i]
+            //  console.log("total",total);  
+            //  row.push(totalLoggedTime)
               sheet.addRow(row);
             }
           }
