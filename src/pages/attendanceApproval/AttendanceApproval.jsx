@@ -25,6 +25,7 @@ import SimpleBar from "simplebar-react";
 import { differenceInMinutes } from "date-fns";
 import { GetAmPmDateTime } from "../../common/js/ConvertDateTimeToAmPm";
 import "./../../common/css/lc_style.css";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 const AttendanceApproval = () => {
   const dispatch = useDispatch();
 
@@ -46,20 +47,21 @@ const AttendanceApproval = () => {
     const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
       .toString()
       .padStart(2, "0")}`;
-
+    dispatch(setLoaderVisible(true));
     Api({
       type: "GET",
       url:
         "attendance/get-attendance-data-for-approval/?thisMonth=" +
         thisMonth +
-        "&department_id=0",
+        "&employee_type=0",
     })
       .then((res) => {
-        console.log("res", res);
+        dispatch(setLoaderVisible(false));
         dispatch(setAttendanceApprovalData(res?.data?.data));
       })
       .catch((err) => {
         console.log("ERR = ", err);
+        dispatch(setLoaderVisible(false));
       });
   }, []);
 

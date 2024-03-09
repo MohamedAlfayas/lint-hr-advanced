@@ -94,6 +94,8 @@ const AttendanceEmployeeTable = () => {
 
   const [showSaveBtn, setShowSaveBtn] = useState(false);
   const [leaveCount, setLeaveCount] = useState(0);
+  const [locationData, setLocationData] = useState([]);
+  const [locationType, setLocationType] = useState("");
 
   const { individual_attendance_report_data } = useSelector(
     (state) => state.AttendanceReportReducer
@@ -110,9 +112,15 @@ const AttendanceEmployeeTable = () => {
     settimeline_modal(!timeline_modal);
   }
 
-  function open_location() {
+  function open_location(rowData, dataKey) {
     setLocationModal(!locationModal);
+    setLocationData(rowData);
+    setLocationType(dataKey);
   }
+
+  const close_location = () => {
+    setLocationModal(false);
+  };
 
   const closeNotesModal = () => {
     setNotes_modal(false);
@@ -206,7 +214,7 @@ const AttendanceEmployeeTable = () => {
             <Link
               href="#"
               onClick={() => {
-                open_location();
+                open_location(rowData, dataKey);
               }}
             >
               <i className="mdi mdi-map-marker-outline"></i> {location_text}
@@ -732,11 +740,11 @@ const AttendanceEmployeeTable = () => {
             <HeaderCell style={{ offsetTop: 0 }}>Total IN</HeaderCell>
             <SecondsToTimeCell dataKey="final_checked_in_hr_in_seconds" />
           </Column>
-          <Column width={125}>
+          <Column width={100}>
             <HeaderCell style={{ offsetTop: 0 }}>OT</HeaderCell>
             <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
           </Column>
-          <Column width={125}>
+          <Column width={100}>
             <HeaderCell style={{ offsetTop: 0 }}>Paid Hr</HeaderCell>
             <SecondsToTimeCell dataKey="final_paid_hr_in_seconds" />
           </Column>
@@ -1147,11 +1155,14 @@ const AttendanceEmployeeTable = () => {
         size="lg"
         isOpen={locationModal}
         toggle={() => {
-          open_location();
+          close_location();
         }}
         centered
       >
-        <DistanceCalculaterInMap />
+        <DistanceCalculaterInMap
+          locationData={locationData}
+          locationType={locationType}
+        />
       </Modal>
       {/* Notes Modal */}
       <Modal

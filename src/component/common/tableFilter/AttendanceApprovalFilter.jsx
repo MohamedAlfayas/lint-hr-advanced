@@ -13,27 +13,22 @@ import { useDispatch } from "react-redux";
 dayjs.extend(customParseFormat);
 
 const AttendanceApprovalFilter = () => {
-  const [filteredDepType, setFilteredDepType] = useState(0);
+  const [employeeType, setEmployeeType] = useState(0);
   const [filteredMonth, setFilteredMonth] = useState(
     `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
       .toString()
       .padStart(2, "0")}`
   );
-  const dep_options = useMemo(
-    () => GetLocalStorageData("department") || [],
-    []
-  );
 
   const dispatch = useDispatch();
 
-  const [depOptions, setDepOptions] = useState([]);
+  const employeeTypeOptions = [
+    { id: "0", label: "All Employee", value: "0" },
+    { id: "1", label: "My Team Members", value: "1" },
+  ];
 
-  useEffect(() => {
-    setDepOptions([{ id: "0", label: "All", value: "0" }, ...dep_options]);
-  }, []);
-
-  const handleDepartmentChange = (e, name) => {
-    setFilteredDepType(e.value);
+  const handleEmployeeTypeChange = (e, name) => {
+    setEmployeeType(e.value);
   };
 
   const handleDateRangeChange = (e, monthStr) => {
@@ -47,12 +42,12 @@ const AttendanceApprovalFilter = () => {
       url:
         "attendance/get-attendance-data-for-approval/?thisMonth=" +
         filteredMonth +
-        "&department_id=" +
-        filteredDepType,
+        "&employee_type=" +
+        employeeType,
     })
       .then((res) => {
-        console.log("res", res);
         dispatch(setAttendanceApprovalData(res?.data?.data));
+        dispatch(setLoaderVisible(false));
       })
       .catch((err) => {
         console.log("ERR = ", err);
@@ -68,30 +63,15 @@ const AttendanceApprovalFilter = () => {
           name="employee_filter"
           isClearable={false}
           isMulti={false}
-          options={depOptions || []}
+          options={employeeTypeOptions || []}
           className="basic-multi-select"
-          placeholder="Select Employee"
+          placeholder="Select Employee Type"
           allowClear={false}
-          // onChange={(e) =>
-          //   handleDepartmentChange(e, "primary_department_id_list")
-          // }
-          // value={depOptions.find((d) => d.id === filteredDepType) || []}
-        />
-      </Col>
-      <Col md={3}>
-        <Select
-          id="department_filter"
-          name="department_filter"
-          isClearable={false}
-          isMulti={false}
-          options={depOptions || []}
-          className="basic-multi-select"
-          placeholder="Select Department"
-          allowClear={false}
-          onChange={(e) =>
-            handleDepartmentChange(e, "primary_department_id_list")
+          onChange={handleEmployeeTypeChange}
+          value={
+            employeeTypeOptions.find((d) => d.id === employeeType) ||
+            employeeTypeOptions[0]
           }
-          value={depOptions.find((d) => d.id === filteredDepType) || []}
         />
       </Col>
       <Col md={3}>

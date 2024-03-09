@@ -1,7 +1,5 @@
 import React, { useState } from "react";
-
 import "react-toastify/dist/ReactToastify.css";
-
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import InfoTable from "../../component/common/table/InfoTable";
 import { MetaTitle } from "../../common/data/MetaTitle";
@@ -12,6 +10,7 @@ import { setLeaveApproval } from "../../redux/reducers/ChildReducer/LeaveApprova
 import { Api } from "../../common/api/Api";
 import { Badge, Button, UncontrolledTooltip } from "reactstrap";
 import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 
 const LeaveApproval = () => {
   const dispatch = useDispatch();
@@ -29,42 +28,21 @@ const LeaveApproval = () => {
   };
 
   useEffect(() => {
+    dispatch(setLoaderVisible(true));
     Api({
       method: "GET",
       url: "leave/leave-application-for-approval/get/",
     })
       .then((res) => {
         dispatch(setLeaveApproval(res?.data?.data));
+        dispatch(setLoaderVisible(false));
       })
       .catch((err) => {
         dispatch(setLeaveApproval([]));
+        dispatch(setLoaderVisible(false));
       });
   }, [version]);
 
-  const [LeaveData, setLeavedata] = useState([
-    {
-      id: 1,
-      employee: 41,
-      department: 15,
-      start_date: "2023-05-01",
-      end_date: "2023-05-03",
-      total_days: "3 Days",
-      leave_type: 1,
-      reason: "Family Function",
-      status: 1,
-    },
-    {
-      id: 2,
-      employee: 43,
-      department: 14,
-      start_date: "2023-05-30 ",
-      end_date: "2023-05-30 ",
-      total_days: "2 Hours",
-      leave_type: 3,
-      reason: "Traffic",
-      status: 2,
-    },
-  ]);
   // Column
   const additionalColumn = [
     {
