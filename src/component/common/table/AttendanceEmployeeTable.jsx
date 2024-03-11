@@ -207,18 +207,31 @@ const AttendanceEmployeeTable = () => {
       let in_location = rowData?.first_check_in_location || "";
       let out_location = rowData?.last_check_out_location || "";
       let location_text = dataKey === "in" ? in_location : out_location;
+      let latitudeData =
+        dataKey === "in"
+          ? rowData.entry_log[0]
+          : rowData.entry_log.filter((e) => e.entry_type === 2).slice(-1)[0];
 
       return (
         <Cell {...props} className="link-group">
           {location_text !== "" && (
-            <Link
-              href="#"
-              onClick={() => {
-                open_location(rowData, dataKey);
-              }}
-            >
-              <i className="mdi mdi-map-marker-outline"></i> {location_text}
-            </Link>
+            <>
+              {latitudeData?.latitude === null ? (
+                <div style={{ color: "dimgrey" }}>
+                  <i className="mdi mdi-laptop"></i> Web Check{" "}
+                  {latitudeData?.entry_type === 1 ? "In" : "Out"}
+                </div>
+              ) : (
+                <Link
+                  href="#"
+                  onClick={() => {
+                    open_location(rowData, dataKey);
+                  }}
+                >
+                  <i className="mdi mdi-map-marker-outline"></i> {location_text}
+                </Link>
+              )}
+            </>
           )}
         </Cell>
       );
@@ -421,10 +434,20 @@ const AttendanceEmployeeTable = () => {
       );
     }
 
-    if (rowData.is_holiday === true) {
+    if (
+      rowData.is_holiday === true ||
+      (rowData.is_week_off === true && rowData.is_present === false)
+    ) {
       return (
-        <Cell {...props} className="link-group">
-          {null}
+        <Cell
+          {...props}
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <span>-</span>
         </Cell>
       );
     } else {

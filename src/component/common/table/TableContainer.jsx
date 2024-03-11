@@ -23,8 +23,7 @@ import {
   attendance_approval_component_name,
   holiday_component_name,
   attendance_pending_table,
-  leave_pending_table
-
+  leave_pending_table,
 } from "../../../common/constant/Constants";
 import LeaveApprovalFilter from "../tableFilter/LeaveApprovalFilter";
 import LeaveTypeFilter from "../tableFilter/LeaveTypeFilter";
@@ -150,7 +149,7 @@ const TableContainer = ({
           )}
           <CardBody className="border border-dashed border-end-0 border-start-0">
             <Row>
-            {formname === attendance_pending_table ? null : formname ===
+              {formname === attendance_pending_table ? null : formname ===
                 attendance_approval_component_name ? null : formname ===
                 leave_approval_component_name ? null : formname ===
                 leave_pending_table ? null : (
@@ -172,12 +171,6 @@ const TableContainer = ({
               )}
 
               {formname === employee_component_name && <EmployeeTableFilter />}
-              {formname == attendance_approval_component_name && (
-                <AttendanceApprovalFilter />
-              )}
-              {formname === leave_approval_component_name && (
-                <LeaveApprovalFilter />
-              )}
               {formname === leave_type_component_name && <LeaveTypeFilter />}
               {formname === holiday_component_name && <HolidayFilter />}
 
@@ -195,53 +188,56 @@ const TableContainer = ({
         </Row>
       )}
 
-     <div className={`${divClass} custom-table-container`}>
-  <Table hover {...getTableProps()} className={`${tableClass} custom-table`}>
-    <thead className={`${theadClass} custom-table-header`}>
-      {headerGroups.map((headerGroup) => (
-        <tr
-          className={`${trClass} custom-table-row`}
-          key={headerGroup.id}
-          {...headerGroup.getHeaderGroupProps()}
+      <div className={`${divClass} custom-table-container`}>
+        <Table
+          hover
+          {...getTableProps()}
+          className={`${tableClass} custom-table`}
         >
-          {headerGroup.headers.map((column) => (
-            <th
-              key={column.id}
-              className={`${thClass} custom-table-header-cell`}
-              {...column.getSortByToggleProps()}
-            >
-              {column.render("Header")}
-              {generateSortingIndicator(column)}
-              {/* <Filter column={column} /> */}
-            </th>
-          ))}
-        </tr>
-      ))}
-    </thead>
+          <thead className={`${theadClass} custom-table-header`}>
+            {headerGroups.map((headerGroup) => (
+              <tr
+                className={`${trClass} custom-table-row`}
+                key={headerGroup.id}
+                {...headerGroup.getHeaderGroupProps()}
+              >
+                {headerGroup.headers.map((column) => (
+                  <th
+                    key={column.id}
+                    className={`${thClass} custom-table-header-cell`}
+                    {...column.getSortByToggleProps()}
+                  >
+                    {column.render("Header")}
+                    {generateSortingIndicator(column)}
+                    {/* <Filter column={column} /> */}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
 
-    <tbody {...getTableBodyProps()} className="custom-table-body">
-      {page.map((row) => {
-        prepareRow(row);
-        return (
-          <Fragment key={row.getRowProps().key}>
-            <tr className="custom-table-row">
-              {row.cells.map((cell) => (
-                <td
-                  className={`${tdClass} custom-table-cell`}
-                  key={cell.id}
-                  {...cell.getCellProps()}
-                >
-                  {cell.render("Cell")}
-                </td>
-              ))}
-            </tr>
-          </Fragment>
-        );
-      })}
-    </tbody>
-  </Table>
-</div>
-
+          <tbody {...getTableBodyProps()} className="custom-table-body">
+            {page.map((row) => {
+              prepareRow(row);
+              return (
+                <Fragment key={row.getRowProps().key}>
+                  <tr className="custom-table-row">
+                    {row.cells.map((cell) => (
+                      <td
+                        className={`${tdClass} custom-table-cell`}
+                        key={cell.id}
+                        {...cell.getCellProps()}
+                      >
+                        {cell.render("Cell")}
+                      </td>
+                    ))}
+                  </tr>
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </Table>
+      </div>
 
       {showInfo === true && (
         <Row className="align-items-center g-3 text-center text-sm-start mb-3">

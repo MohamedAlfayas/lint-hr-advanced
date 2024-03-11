@@ -8,9 +8,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { setLeaveApproval } from "../../redux/reducers/ChildReducer/LeaveApprovalReducer";
 import { Api } from "../../common/api/Api";
-import { Badge, Button, UncontrolledTooltip } from "reactstrap";
+import { Badge, Button, Container, UncontrolledTooltip } from "reactstrap";
 import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import LeaveApprovalFilter from "../../component/common/tableFilter/LeaveApprovalFilter";
 
 const LeaveApproval = () => {
   const dispatch = useDispatch();
@@ -315,6 +316,13 @@ const LeaveApproval = () => {
   document.title = `Leave Approval | ${MetaTitle}`;
   return (
     <React.Fragment>
+      <Container fluid>
+        <div className="page-content" style={{ marginBottom: "-135px" }}>
+          <div style={{ zIndex: 1000, position: "relative" }}>
+            <LeaveApprovalFilter />
+          </div>
+        </div>
+      </Container>
       <InfoTable
         additionalColumn={additionalColumn}
         tabledata={leave_approval_data}

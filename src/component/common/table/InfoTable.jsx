@@ -69,7 +69,7 @@ import {
   leave_approval_component_name,
   leave_type_component_name,
   attendance_pending_table,
-  leave_pending_table
+  leave_pending_table,
 } from "../../../common/constant/Constants";
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
@@ -115,20 +115,20 @@ const InfoTable = ({
     formname === employee_component_name
       ? employee_table_filter_keys
       : formname === leave_type_component_name
-        ? leave_type_table_filter_keys
-        : formname === attendance_approval_component_name
-          ? attendance_approval_table_filter_keys
-          : {};
+      ? leave_type_table_filter_keys
+      : formname === attendance_approval_component_name
+      ? attendance_approval_table_filter_keys
+      : {};
 
   console.log("table_filter_keys = ", table_filter_keys);
 
   const tabOptions = filterOptions
     ? filterOptions.map((obj, idx) => {
-      return {
-        ...obj,
-        idx: idx + 2,
-      };
-    })
+        return {
+          ...obj,
+          idx: idx + 2,
+        };
+      })
     : [];
 
   const [activeTab, setActiveTab] = useState(1);
@@ -153,47 +153,21 @@ const InfoTable = ({
   // Checked All
   const checkedAll = useCallback(() => {
     const checkall = document.getElementById("checkBoxAll");
-    const ele = document.querySelectorAll(".dataCheckBox");
-    const checkboxes = document.querySelectorAll(
-      ".dataCheckBox.form-check-input:not(:disabled)"
-    );
-    const checkboxesArray = Array.from(checkboxes);
-    // checkboxesArray.map((checkbox) => {
-    //   // Do something with each checkbox
-    //   if (checkall.checked) {
-    //     ele.forEach((ele) => {
-    //       ele.checked = true;
-    //       setSelectedGroupIds((prevIds) => [...prevIds, parseInt(checkbox.defaultValue)]);
-    //     });
-    //   } else {
-    //     ele.forEach((ele) => {
-    //       ele.checked = false;
-    //       setSelectedGroupIds([])
-    //     });
-    //   }
-    //   // Perform other actions based on the checkbox
-    // });
+    const ele = document.querySelectorAll(".dataCheckBox:not(:disabled)");
+    const checkboxesArray = Array.from(ele);
 
     checkboxesArray.forEach((checkbox) => {
-      // Do something with each checkbox
-      if (!checkbox.disabled) {
-        if (checkall.checked) {
-          ele.forEach((ele) => {
-            ele.checked = true;
-          });
-          setSelectedGroupIds((prevIds) => [
-            ...prevIds,
-            parseInt(checkbox.value),
-          ]);
-        } else {
-          ele.forEach((ele) => {
-            ele.checked = false;
-          });
-          setSelectedGroupIds([]);
-        }
+      if (checkall.checked) {
+        checkbox.checked = true;
+        setSelectedGroupIds((prevIds) => [
+          ...prevIds,
+          parseInt(checkbox.value),
+        ]);
+      } else {
+        checkbox.checked = false;
       }
-      // Perform other actions based on the checkbox
     });
+
     deleteCheckbox();
     approveRejectCheckbox();
   }, []);
@@ -220,15 +194,18 @@ const InfoTable = ({
     let textValue;
 
     let content =
-      formname === leave_approval_component_name || formname === leave_pending_table
+      formname === leave_approval_component_name ||
+      formname === leave_pending_table
         ? `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To <strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `
         : `<span>Are You Sure to <strong style='color:green'>Accept </strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
-          new Date(orderData.date),
-          "dd MMM, yyyy"
-        )}</span>
+            new Date(orderData.date),
+            "dd MMM, yyyy"
+          )}</span>
           <div>
-          ${formname === attendance_approval_component_name || formname === attendance_pending_table
-          ? `<span style="display: inline-block; margin-top: 20px;">
+          ${
+            formname === attendance_approval_component_name ||
+            formname === attendance_pending_table
+              ? `<span style="display: inline-block; margin-top: 20px;">
               <label for="select-hour" style="display: inline-block; margin-right: 5px;">Edit Paid Hr:</label>      
               <b className="mt-2 me-1 ms-2">H</b>
               <Select id="select-hour" class="swal2-input" style="display: inline-block; width: auto; margin-left: 5px;">
@@ -239,8 +216,8 @@ const InfoTable = ({
                 ${generateOptions(60, minutes)}
               </Select>
             </span>`
-          : undefined
-        }
+              : undefined
+          }
         </div>`;
 
     let btnText = "Yes, Approve";
@@ -255,29 +232,38 @@ const InfoTable = ({
       confirmButtonClass: "btn btn-success",
       cancelButtonClass: "btn btn-danger",
       input:
-        formname === attendance_approval_component_name || formname === attendance_pending_table  ? "text" : undefined,
+        formname === attendance_approval_component_name ||
+        formname === attendance_pending_table
+          ? "text"
+          : undefined,
 
       inputPlaceholder:
-        formname === attendance_approval_component_name || formname === attendance_pending_table
+        formname === attendance_approval_component_name ||
+        formname === attendance_pending_table
           ? "Enter reason"
           : undefined,
       inputAttributes:
-        formname === attendance_approval_component_name || formname === attendance_pending_table
+        formname === attendance_approval_component_name ||
+        formname === attendance_pending_table
           ? {
-            style:
-              "margin: 10px auto; padding: 10px; border-radius: 5px; display: block;",
-          }
+              style:
+                "margin: 10px auto; padding: 10px; border-radius: 5px; display: block;",
+            }
           : undefined,
       inputValidator:
-        formname === attendance_approval_component_name || formname === attendance_pending_table
+        formname === attendance_approval_component_name ||
+        formname === attendance_pending_table
           ? (value) => {
-            if (!value) {
-              return "Reason is required!";
+              if (!value) {
+                return "Reason is required!";
+              }
             }
-          }
           : undefined,
     }).then(async (result) => {
-      if (formname === leave_approval_component_name || formname === leave_pending_table) {
+      if (
+        formname === leave_approval_component_name ||
+        formname === leave_pending_table
+      ) {
         if (result.value) {
           const data = {
             leave_application_id_list: [orderData.id],
@@ -297,7 +283,10 @@ const InfoTable = ({
             toast.error(Api?.data?.message || Api?.data?.detail);
           }
         }
-      } else if (formname === attendance_approval_component_name || formname === attendance_pending_table ) {
+      } else if (
+        formname === attendance_approval_component_name ||
+        formname === attendance_pending_table
+      ) {
         if (result.value) {
           selectedHour = document.getElementById("select-hour").value;
           selectedMinute = document.getElementById("select-minute").value;
@@ -340,12 +329,13 @@ const InfoTable = ({
     // const unitLabel = orderData.unit === 1 ? 'day' : 'hour';
 
     let content =
-      formname === leave_approval_component_name || formname === leave_pending_table
+      formname === leave_approval_component_name ||
+      formname === leave_pending_table
         ? `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To <strong style='color:#7066e0'> ${employee_fname} </strong> on ${orderData.start} to  ${orderData.end} </span>`
         : `<span>Are You Sure to <strong style='color:red'>Reject</strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
-          new Date(orderData.date),
-          "dd MMM, yyyy"
-        )}</span> `;
+            new Date(orderData.date),
+            "dd MMM, yyyy"
+          )}</span> `;
     let btnText = "Yes, Reject";
 
     Swal.fire({
@@ -369,7 +359,10 @@ const InfoTable = ({
         }
       },
     }).then(async (result) => {
-      if (formname === leave_approval_component_name || formname === leave_pending_table) {
+      if (
+        formname === leave_approval_component_name ||
+        formname === leave_pending_table
+      ) {
         if (result.value) {
           const data = {
             leave_application_id_list: [orderData.id],
@@ -388,7 +381,10 @@ const InfoTable = ({
             toast.error(Api?.data?.message || Api?.data?.detail);
           }
         }
-      } else if (formname == attendance_approval_component_name || formname === attendance_pending_table) {
+      } else if (
+        formname == attendance_approval_component_name ||
+        formname === attendance_pending_table
+      ) {
         if (result.value) {
           console.log("RESULT", result);
           const data = {
@@ -445,17 +441,17 @@ const InfoTable = ({
       inputAttributes:
         formname === attendance_approval_component_name
           ? {
-            style:
-              "margin: 10px auto; padding: 10px; border-radius: 5px; display: block;",
-          }
+              style:
+                "margin: 10px auto; padding: 10px; border-radius: 5px; display: block;",
+            }
           : undefined,
       inputValidator:
         formname === attendance_approval_component_name
           ? (value) => {
-            if (!value) {
-              return "Reason is required!";
+              if (!value) {
+                return "Reason is required!";
+              }
             }
-          }
           : undefined,
     }).then(async (result) => {
       if (formname === leave_approval_component_name) {
@@ -771,7 +767,7 @@ const InfoTable = ({
                 </li>
               </ul>
             );
-          }else if (
+          } else if (
             formname &&
             (formname === attendance_approval_component_name ||
               formname === attendance_pending_table) &&
@@ -1069,17 +1065,23 @@ const InfoTable = ({
         />
         <Container fluid>
           <Card id="dataList">
-            <CardHeader className="bdata-0">
-              <Row className="align-items-center gy-3">
-                <div className="col-sm">
-                  <h5
-                    className="card-title mb-0"
-                    style={{ textTransform: "capitalize" }}
-                  >
-                    {formname.split("_").join(" ")}
-                  </h5>
-
-                  {/* {formname && formname === holiday_component_name && (
+            {formname &&
+              formname !== attendance_pending_table &&
+              formname !== leave_pending_table && (
+                <CardHeader className="bdata-0">
+                  <Row className="align-items-center gy-3">
+                    <div className="col-sm">
+                      {formname &&
+                        formname !== attendance_pending_table &&
+                        formname !== leave_pending_table && (
+                          <h5
+                            className="card-title mb-0"
+                            style={{ textTransform: "capitalize" }}
+                          >
+                            {formname.split("_").join(" ")}
+                          </h5>
+                        )}
+                      {/* {formname && formname === holiday_component_name && (
                     <center>
                       <div className="flex-shrink-0 ms-5 mt-0">
                         <UncontrolledDropdown className="card-header-dropdown">
@@ -1111,47 +1113,46 @@ const InfoTable = ({
                       </div>
                     </center>
                   )} */}
-                </div>
-                <div className="col-sm-auto">
-                  <div className="d-flex gap-1 flex-wrap">
-                  {formname &&
-                      formname !== leave_approval_component_name &&
-                      formname !== attendance_approval_component_name &&
-                      formname !== attendance_pending_table &&
-                      formname !== leave_pending_table && (
-                        <button
-                          type="button"
-                          className="btn btn-success add-btn"
-                          id="create-btn"
-                          style={{ textTransform: "capitalize" }}
-                          onClick={() => {
-                            handleCreateAndUpdate(0);
-                          }}
-                        >
-                          <i className="ri-add-line align-bottom me-1"></i>{" "}
-                          Create {formname.split("_").join(" ")}
-                        </button>
-                      )}{" "}
-                    <div className="d-flex gap-1 flex-wrap">
-                      {formname &&
-                        component_list_for_import_btn_access.includes(
-                          formname
-                        ) && (
-                          <button
-                            type="button"
-                            className="btn btn-primary add-btn"
-                            id="create-btn"
-                            style={{ textTransform: "capitalize" }}
-                            onClick={() => {
-                              HandleImportExport();
-                            }}
-                          >
-                            <i className="ri-file-download-line align-bottom me-1"></i>{" "}
-                            Import
-                          </button>
-                        )}
-                      {" "}
-                      {/* <div>
+                    </div>
+                    <div className="col-sm-auto">
+                      <div className="d-flex gap-1 flex-wrap">
+                        {formname &&
+                          formname !== leave_approval_component_name &&
+                          formname !== attendance_approval_component_name &&
+                          formname !== attendance_pending_table &&
+                          formname !== leave_pending_table && (
+                            <button
+                              type="button"
+                              className="btn btn-success add-btn"
+                              id="create-btn"
+                              style={{ textTransform: "capitalize" }}
+                              onClick={() => {
+                                handleCreateAndUpdate(0);
+                              }}
+                            >
+                              <i className="ri-add-line align-bottom me-1"></i>{" "}
+                              Create {formname.split("_").join(" ")}
+                            </button>
+                          )}{" "}
+                        <div className="d-flex gap-1 flex-wrap">
+                          {formname &&
+                            component_list_for_import_btn_access.includes(
+                              formname
+                            ) && (
+                              <button
+                                type="button"
+                                className="btn btn-primary add-btn"
+                                id="create-btn"
+                                style={{ textTransform: "capitalize" }}
+                                onClick={() => {
+                                  HandleImportExport();
+                                }}
+                              >
+                                <i className="ri-file-download-line align-bottom me-1"></i>{" "}
+                                Import
+                              </button>
+                            )}{" "}
+                          {/* <div>
                         {formname &&
                           formname === leave_approval_component_name && (
                             <div
@@ -1284,29 +1285,27 @@ const InfoTable = ({
                             </button>
                           </div>
                         )} */}
-                   {formname &&
-                        formname !== attendance_pending_table &&
-                        formname !== leave_pending_table && (
-                          <button
-                            type="button"
-                            className="btn btn-info"
-                            onClick={() => setIsExportCSV(true)}
-                          >
-                            <i className="ri-file-download-line align-bottom me-1"></i>{" "}
-                            Export
-                          </button>
-                        )
-                      }
-                      {" "}
-                      {isMultiDeleteButton && (
-                        <div>
-                          <button
-                            className="btn btn-soft-danger"
-                            onClick={() => setDeleteModalMulti(true)}
-                          >
-                            <i className="ri-delete-bin-2-line"></i>
-                          </button>{" "}
-                          {/* {formname === leave_approval_component_name && (
+                          {formname &&
+                            formname !== attendance_pending_table &&
+                            formname !== leave_pending_table && (
+                              <button
+                                type="button"
+                                className="btn btn-info"
+                                onClick={() => setIsExportCSV(true)}
+                              >
+                                <i className="ri-file-download-line align-bottom me-1"></i>{" "}
+                                Export
+                              </button>
+                            )}{" "}
+                          {isMultiDeleteButton && (
+                            <div>
+                              <button
+                                className="btn btn-soft-danger"
+                                onClick={() => setDeleteModalMulti(true)}
+                              >
+                                <i className="ri-delete-bin-2-line"></i>
+                              </button>{" "}
+                              {/* {formname === leave_approval_component_name && (
                             <>
                               <button
                                 type="button"
@@ -1326,33 +1325,34 @@ const InfoTable = ({
                               </button>{" "}
                             </>
                           )} */}
-                        </div>
-                      )}
-                      {selectApproveReject &&
-                        (formname === leave_approval_component_name ||
-                          formname === attendance_approval_component_name) && (
-                          <div>
-                            <button
-                              type="button"
-                              className="btn btn-success add-btn"
-                              id="bulk-approve-btn"
-                              onClick={() => handleBulkApproval()}
-                            >
-                              <i className="ri-check-line fs-16"></i> Bulk
-                              Approve
-                            </button>{" "}
-                            <button
-                              type="button"
-                              className="btn btn-danger add-btn"
-                              id="bulk-reject-btn"
-                              onClick={() => handleBulkReject()}
-                            >
-                              <i className="ri-close-line fs-16"></i> Bulk
-                              Reject
-                            </button>{" "}
-                          </div>
-                        )}
-                      {/* {selectApproveReject &&
+                            </div>
+                          )}
+                          {selectApproveReject &&
+                            (formname === leave_approval_component_name ||
+                              formname ===
+                                attendance_approval_component_name) && (
+                              <div>
+                                <button
+                                  type="button"
+                                  className="btn btn-success add-btn"
+                                  id="bulk-approve-btn"
+                                  onClick={() => handleBulkApproval()}
+                                >
+                                  <i className="ri-check-line fs-16"></i> Bulk
+                                  Approve
+                                </button>{" "}
+                                <button
+                                  type="button"
+                                  className="btn btn-danger add-btn"
+                                  id="bulk-reject-btn"
+                                  onClick={() => handleBulkReject()}
+                                >
+                                  <i className="ri-close-line fs-16"></i> Bulk
+                                  Reject
+                                </button>{" "}
+                              </div>
+                            )}
+                          {/* {selectApproveReject &&
                         formname === attendance_approval_component_name && (
                           <div>
                             <button
@@ -1375,11 +1375,12 @@ const InfoTable = ({
                             </button>{" "}
                           </div>
                         )} */}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </Row>
-            </CardHeader>
+                  </Row>
+                </CardHeader>
+              )}
 
             <CardBody className="pt-0">
               <div>
@@ -1387,7 +1388,7 @@ const InfoTable = ({
                   className="nav-tabs nav-tabs-custom nav-success"
                   role="tablist"
                 >
-                 {formname === attendance_pending_table ? null : formname ===
+                  {formname === attendance_pending_table ? null : formname ===
                     leave_pending_table ? null : (
                     <NavItem>
                       <NavLink
@@ -1400,7 +1401,8 @@ const InfoTable = ({
                         }}
                         href="#"
                       >
-                        <i className="ri-store-2-fill me-1 align-bottom"></i> All Datas
+                        <i className="ri-store-2-fill me-1 align-bottom"></i>{" "}
+                        All Datas
                         {tabledata && tabledata.length > 0 && (
                           <Badge
                             color={activeTab === 1 ? "success" : "primary"}
@@ -1450,7 +1452,34 @@ const InfoTable = ({
                     data={
                       (search.trim().length
                         ? dataList
-                          .filter((obj) => {
+                            .filter((obj) => {
+                              return Object.entries(table_filter_keys).every(
+                                ([key, value]) => {
+                                  // Exclude keys with value 0 from filtering
+                                  if (value === 0) {
+                                    return true; // Skip filtering for keys with value 0
+                                  }
+
+                                  // Check if the key exists in the employee object and the values match
+                                  return (
+                                    obj[key] !== undefined &&
+                                    (Array.isArray(obj[key])
+                                      ? obj[key].includes(value)
+                                      : obj[key] === value)
+                                  );
+                                }
+                              );
+                            })
+                            .filter((d) =>
+                              Object.values(d).some(
+                                (value) =>
+                                  typeof value === "string" &&
+                                  value
+                                    .toLowerCase()
+                                    .includes(search.toLowerCase())
+                              )
+                            )
+                        : dataList.filter((obj) => {
                             return Object.entries(table_filter_keys).every(
                               ([key, value]) => {
                                 // Exclude keys with value 0 from filtering
@@ -1458,7 +1487,7 @@ const InfoTable = ({
                                   return true; // Skip filtering for keys with value 0
                                 }
 
-                                // Check if the key exists in the employee object and the values match
+                                // Check if the key exists in the obj object and the values match
                                 return (
                                   obj[key] !== undefined &&
                                   (Array.isArray(obj[key])
@@ -1467,34 +1496,7 @@ const InfoTable = ({
                                 );
                               }
                             );
-                          })
-                          .filter((d) =>
-                            Object.values(d).some(
-                              (value) =>
-                                typeof value === "string" &&
-                                value
-                                  .toLowerCase()
-                                  .includes(search.toLowerCase())
-                            )
-                          )
-                        : dataList.filter((obj) => {
-                          return Object.entries(table_filter_keys).every(
-                            ([key, value]) => {
-                              // Exclude keys with value 0 from filtering
-                              if (value === 0) {
-                                return true; // Skip filtering for keys with value 0
-                              }
-
-                              // Check if the key exists in the obj object and the values match
-                              return (
-                                obj[key] !== undefined &&
-                                (Array.isArray(obj[key])
-                                  ? obj[key].includes(value)
-                                  : obj[key] === value)
-                              );
-                            }
-                          );
-                        })) || []
+                          })) || []
                     }
                     isPagination={true}
                     isGlobalFilter={true}
@@ -1509,39 +1511,37 @@ const InfoTable = ({
                     showInfo={true}
                   />
                 ) : (
-                  <React.Fragment>
-                    <div
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      height: "25vh",
+                    }}
+                  >
+                    <lord-icon
+                      src="https://cdn.lordicon.com/msoeawqm.json"
+                      trigger="loop"
+                      colors="primary:#405189,secondary:#0ab39c"
                       style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: "25vh",
+                        marginTop: "20px",
+                        width: "150px",
+                        height: "80px",
+                        marginBottom: "20px",
+                      }}
+                    ></lord-icon>
+                    <p
+                      style={{
+                        width: "300px",
+                        color: "#405189",
+                        fontSize: "20px",
+                        textAlign: "center",
                       }}
                     >
-                      <lord-icon
-                        src="https://cdn.lordicon.com/msoeawqm.json"
-                        trigger="loop"
-                        colors="primary:#405189,secondary:#0ab39c"
-                        style={{
-                          marginTop: "20px",
-                          width: "150px",
-                          height: "80px",
-                          marginBottom: "20px",
-                        }}
-                      ></lord-icon>
-                      <p
-                        style={{
-                          width: "300px",
-                          color: "#405189",
-                          fontSize: "20px",
-                          textAlign: "center",
-                        }}
-                      >
-                        Sorry! No Result Found
-                      </p>
-                    </div>
-                  </React.Fragment>
+                      Sorry! No Result Found
+                    </p>
+                  </div>
                 )}
               </div>
               <Modal id="showModal" isOpen={modal} toggle={toggle} centered>
@@ -1569,15 +1569,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Order Id"
                         type="text"
-                      // validate={{
-                      //     required: { value: true },
-                      // }}
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={validation.values.orderId || ""}
-                      // invalid={
-                      //     validation.touched.orderId && validation.errors.orderId ? true : false
-                      // }
+                        // validate={{
+                        //     required: { value: true },
+                        // }}
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={validation.values.orderId || ""}
+                        // invalid={
+                        //     validation.touched.orderId && validation.errors.orderId ? true : false
+                        // }
                       />
                       {/* {validation.touched.orderId && validation.errors.orderId ? (
                                                     <FormFeedback type="invalid">{validation.errors.orderId}</FormFeedback>
@@ -1597,15 +1597,15 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Name"
                         type="text"
-                      // validate={{
-                      //     required: { value: true },
-                      // }}
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={validation.values.customer || ""}
-                      // invalid={
-                      //     validation.touched.customer && validation.errors.customer ? true : false
-                      // }
+                        // validate={{
+                        //     required: { value: true },
+                        // }}
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={validation.values.customer || ""}
+                        // invalid={
+                        //     validation.touched.customer && validation.errors.customer ? true : false
+                        // }
                       />
                       {/* {validation.touched.customer && validation.errors.customer ? (
                                                     <FormFeedback type="invalid">{validation.errors.customer}</FormFeedback>
@@ -1677,12 +1677,12 @@ const InfoTable = ({
                           <Input
                             name="amount"
                             type="text"
-                          // onChange={validation.handleChange}
-                          // onBlur={validation.handleBlur}
-                          // value={validation.values.amount || ""}
-                          // invalid={
-                          //     validation.touched.amount && validation.errors.amount ? true : false
-                          // }
+                            // onChange={validation.handleChange}
+                            // onBlur={validation.handleBlur}
+                            // value={validation.values.amount || ""}
+                            // invalid={
+                            //     validation.touched.amount && validation.errors.amount ? true : false
+                            // }
                           />
                           {/* {validation.touched.amount && validation.errors.amount ? (
                                                             <FormFeedback type="invalid">{validation.errors.amount}</FormFeedback>
@@ -1699,11 +1699,11 @@ const InfoTable = ({
                             name="payment"
                             type="select"
                             className="form-select"
-                          // onChange={validation.handleChange}
-                          // onBlur={validation.handleBlur}
-                          // value={
-                          //     validation.values.payment || ""
-                          // }
+                            // onChange={validation.handleChange}
+                            // onBlur={validation.handleBlur}
+                            // value={
+                            //     validation.values.payment || ""
+                            // }
                           >
                             {/* {orderpayement.map((item, key) => (
                                                                 <React.Fragment key={key}>
@@ -1730,11 +1730,11 @@ const InfoTable = ({
                         name="status"
                         type="select"
                         className="form-select"
-                      // onChange={validation.handleChange}
-                      // onBlur={validation.handleBlur}
-                      // value={
-                      //     validation.values.status || ""
-                      // }
+                        // onChange={validation.handleChange}
+                        // onBlur={validation.handleBlur}
+                        // value={
+                        //     validation.values.status || ""
+                        // }
                       >
                         {/* {orderstatus.map((item, key) => (
                                                         <React.Fragment key={key}>

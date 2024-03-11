@@ -25,12 +25,8 @@ const DistanceCalculaterInMap = ({ locationData, locationType }) => {
       .slice(-1)[0];
   }
 
-  console.log("Location Type", locationType);
-  console.log("locationObj", locationObj);
-
   const employeeData = GetLocalStorageData("employee") || [];
   const branchData = GetLocalStorageData("branch") || [];
-  console.log("locationData", locationData);
 
   const employeeBracnchID = employeeData.find(
     (d) => locationData.employee_id === d.id
@@ -39,8 +35,6 @@ const DistanceCalculaterInMap = ({ locationData, locationType }) => {
   const branchObj = branchData.find((b) =>
     employeeBracnchID.branch_id_list.includes(b.id)
   );
-  console.log("employeeBracnchID", employeeBracnchID);
-  console.log("branchObj", branchObj);
 
   const [mapZoom, setMapZoom] = useState(21);
 

@@ -82,8 +82,6 @@ const AttendanceConfig = () => {
     }
   };
 
-  document.title = `Attendance-config | ${MetaTitle || "Lint HR"} `;
-
   return (
     <React.Fragment>
       <Card>

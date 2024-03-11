@@ -15,6 +15,7 @@ import {
   UncontrolledTooltip,
   Row,
   Col,
+  Container,
 } from "reactstrap";
 import { setAttendanceApprovalTableFilterKeys } from "../../redux/reducers/ChildReducer/TableFilterReducer";
 import { format } from "date-fns";
@@ -26,6 +27,7 @@ import { differenceInMinutes } from "date-fns";
 import { GetAmPmDateTime } from "../../common/js/ConvertDateTimeToAmPm";
 import "./../../common/css/lc_style.css";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import AttendanceApprovalFilter from "../../component/common/tableFilter/AttendanceApprovalFilter";
 const AttendanceApproval = () => {
   const dispatch = useDispatch();
 
@@ -390,7 +392,15 @@ const AttendanceApproval = () => {
 
   document.title = `Attendance Approval | ${MetaTitle}`;
   return (
-    <div>
+    <React.Fragment>
+      <Container fluid>
+        <div className="page-content" style={{ marginBottom: "-135px" }}>
+          <div style={{ zIndex: 1000, position: "relative" }}>
+            <AttendanceApprovalFilter />
+          </div>
+        </div>
+      </Container>
+
       <InfoTable
         additionalColumn={additionalColumn}
         tabledata={attendance_approval_data}
@@ -650,7 +660,7 @@ const AttendanceApproval = () => {
           </div>
         </ModalBody>
       </Modal>
-    </div>
+    </React.Fragment>
   );
 };
 

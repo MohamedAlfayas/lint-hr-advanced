@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Col, Label } from "reactstrap";
+import { Card, CardHeader, Col, Label, Row } from "reactstrap";
 import Select from "react-select";
 import { leave_approval_table_filter_options } from "../../../common/constant/Constants";
 import { useDispatch, useSelector } from "react-redux";
@@ -53,45 +53,51 @@ const LeaveApprovalFilter = () => {
 
   return (
     <React.Fragment>
-      <Col md={3}>
-        <Select
-          id="employee_filter"
-          name="employee_filter"
-          isClearable={false}
-          isMulti={false}
-          options={employeeTypeOptions || []}
-          className="basic-multi-select"
-          placeholder="Select Employee Type"
-          allowClear={false}
-          onChange={handleEmployeeTypeChange}
-          value={
-            employeeTypeOptions.find((d) => d.id === employeeType) ||
-            employeeTypeOptions[0]
-          }
-        />
-      </Col>
-      <Col md={3}>
-        <DatePicker
-          value={dayjs(filteredMonth)}
-          format={MonthFormat}
-          picker="month"
-          allowClear={false}
-          className="form-control"
-          placeholder="Select Month"
-          onChange={handleDateRangeChange}
-        />
-      </Col>
-      <div className="col-lg-auto">
-        <div className="hstack gap-2">
-          <button
-            type="button"
-            // onClick={handleFilter}
-            className="btn btn-danger"
-          >
-            <i className="ri-equalizer-fill me-1 align-bottom"></i> Filter
-          </button>
-        </div>
-      </div>
+      <Card>
+        <CardHeader className="border-0 rounded">
+          <Row className="g-2">
+            <Col md={3}>
+              <Select
+                id="employee_filter"
+                name="employee_filter"
+                isClearable={false}
+                isMulti={false}
+                options={employeeTypeOptions || []}
+                className="basic-multi-select"
+                placeholder="Select Employee Type"
+                allowClear={false}
+                onChange={handleEmployeeTypeChange}
+                value={
+                  employeeTypeOptions.find((d) => d.id === employeeType) ||
+                  employeeTypeOptions[0]
+                }
+              />
+            </Col>
+            <Col md={3}>
+              <DatePicker
+                value={dayjs(filteredMonth)}
+                format={MonthFormat}
+                picker="month"
+                allowClear={false}
+                className="form-control"
+                placeholder="Select Month"
+                onChange={handleDateRangeChange}
+              />
+            </Col>
+            <div className="col-lg-auto">
+              <div className="hstack gap-2">
+                <button
+                  type="button"
+                  // onClick={handleFilter}
+                  className="btn btn-danger"
+                >
+                  <i className="ri-equalizer-fill me-1 align-bottom"></i> Filter
+                </button>
+              </div>
+            </div>
+          </Row>
+        </CardHeader>
+      </Card>
     </React.Fragment>
   );
 };

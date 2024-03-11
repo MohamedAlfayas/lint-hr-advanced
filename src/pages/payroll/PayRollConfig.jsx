@@ -493,8 +493,6 @@ const PayRollConfig = () => {
     dispatch(toggleRSBView(true));
   };
 
-  document.title = `PayRoll | ${MetaTitle || "Lint HR"} `;
-
   return (
     <React.Fragment>
       <Card>
