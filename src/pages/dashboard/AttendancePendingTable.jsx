@@ -79,7 +79,8 @@ const AttendancePendingTable = () => {
   }
 
   const AttendancependingData = attendance_approval_data.filter(item => item.hr_status === 3);
-  console.log("data",AttendancependingData);
+  const DataLength = AttendancependingData.length
+  console.log("data",DataLength);
 
   const viewNotes = (obj) => {
     console.log("This rowData = ", obj);

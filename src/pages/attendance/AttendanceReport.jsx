@@ -170,7 +170,7 @@ const AttendanceReport = () => {
           let entry_status;
           const activity = attendance_data.day_status;
           if (activity === null) {
-            entry_status = on_time_entry_display.text;
+            entry_status = "-";
           } else {
             entry_status =
               activity.early_in === true ? earlyin_display.text :
@@ -193,7 +193,7 @@ const AttendanceReport = () => {
           });
           const entryLogIn = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 1);
           const entryLogOut = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 2);
-       
+       console.log("LOg",entryLogIn);
       
 
           const inLength = entryLogIn.length;
@@ -243,19 +243,23 @@ const AttendanceReport = () => {
            
           
               if (i < inLength) {
+                const currentEntryLogIn = entryLogIn[i];
+                console.log("Entry Log In:", currentEntryLogIn);
                 row.push(entryLogIn[i]);
               } else {
                 row.push(""); // Push an empty value if entryLogIn is empty
               }
       
               if (i < outLength) {
+                const currentEntryLogOut = entryLogOut[i];
+                console.log("Entry Log Out:", currentEntryLogOut);
                 row.push(entryLogOut[i]);
+                
               } else {
                 row.push(""); // Push an empty value if entryLogOut is empty
               }
-            //  const total = entryLogIn[i] + entryLogOut[i]
-            //  console.log("total",total);  
-            //  row.push(totalLoggedTime)
+              
+          
               sheet.addRow(row);
             }
           }

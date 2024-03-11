@@ -24,7 +24,8 @@ const LeaveApprovalPending = () => {
   const { version } = useSelector((data) => data.MetaReducer);
 
   const pendingData = leave_approval_data.filter(item => item.status === 1);
-  console.log("data",pendingData);
+  const DataLength =pendingData.length
+  console.log("data",DataLength);
 
   const getUnitId = (id) => {
     const day_type = LeaveTypeData?.find((val) => val?.value === id)?.unit;
