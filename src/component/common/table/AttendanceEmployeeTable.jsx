@@ -307,8 +307,14 @@ const AttendanceEmployeeTable = () => {
       let class_name = at_hr_status_data?.class || "";
       let label = at_hr_status_data?.label || "";
 
+      console.log("LABEL  = ", label);
+
       return (
-        <Cell {...props} className="link-group">
+        <Cell
+          {...props}
+          className="link-group"
+          style={{ textOverflow: "unset" }}
+        >
           <span className={`badge bg-${class_name}-subtle text-${class_name}`}>
             <b className="fs-7"> {label}</b>
           </span>

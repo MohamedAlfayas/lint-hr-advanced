@@ -67,6 +67,12 @@ const AttendanceFilter = () => {
       });
   }, []);
 
+  const ResetLoaderVisible = () => {
+    setTimeout(() => {
+      dispatch(setLoaderVisible(false));
+    }, 1000);
+  };
+
   const handleDateRangeChange = (e, monthStr) => {
     console.log("This Month = ", e);
     console.log("This Month Str = ", monthStr);
@@ -166,11 +172,11 @@ const AttendanceFilter = () => {
       } else {
         dispatch(setShowTeamTable(false));
       }
+      ResetLoaderVisible();
     } else {
       toast.error(attendanceApi?.data?.message || attendanceApi?.data?.detail);
+      ResetLoaderVisible();
     }
-
-    dispatch(setLoaderVisible(false));
   };
 
   return (

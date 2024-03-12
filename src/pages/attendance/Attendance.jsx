@@ -53,18 +53,23 @@ const AttendanceDashboard = () => {
       url: "attendance/get_attendance_entry_log/?thisMonth=" + thisMonth,
     })
       .then((res) => {
-        dispatch(setLoaderVisible(false));
         dispatch(setIndividualAttendanceReportData(res?.data?.data));
         dispatch(setShowTeamTable(false));
+        ResetLoaderVisible();
       })
       .catch((err) => {
-        dispatch(setLoaderVisible(false));
         console.log("Something Went Wrong !!");
+        ResetLoaderVisible();
       });
   }, []);
 
+  const ResetLoaderVisible = () => {
+    setTimeout(() => {
+      dispatch(setLoaderVisible(false));
+    }, 1000);
+  };
+
   useEffect(() => {
-    dispatch(setLoaderVisible(true));
     Api({
       type: "GET",
       url: `leave/get-leave-type-details-for-employee/?employee_id=${profile_data.id}`,
@@ -76,7 +81,6 @@ const AttendanceDashboard = () => {
       .catch((err) => {
         console.log("Something Went Wrong!!!");
       });
-    dispatch(setLoaderVisible(false));
   }, []);
 
   return (
