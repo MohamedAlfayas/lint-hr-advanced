@@ -240,26 +240,48 @@ const AttendanceReport = () => {
               ];      
              
       
-           
+           let currentEntryLogIn;
+           let currentEntryLogOut;
           
               if (i < inLength) {
-                const currentEntryLogIn = entryLogIn[i];
+                 currentEntryLogIn = entryLogIn[i];
                 console.log("Entry Log In:", currentEntryLogIn);
-                row.push(entryLogIn[i]);
+                row.push(currentEntryLogIn );
               } else {
-                row.push(""); // Push an empty value if entryLogIn is empty
+                row.push("-"); // Push an empty value if entryLogIn is empty
               }
-      
+            
               if (i < outLength) {
-                const currentEntryLogOut = entryLogOut[i];
+                 currentEntryLogOut = entryLogOut[i];
                 console.log("Entry Log Out:", currentEntryLogOut);
-                row.push(entryLogOut[i]);
+                row.push(currentEntryLogOut);
                 
               } else {
-                row.push(""); // Push an empty value if entryLogOut is empty
+                row.push("-"); // Push an empty value if entryLogOut is empty
               }
-              
-          
+              if (currentEntryLogIn && currentEntryLogOut) { 
+                let logInTime = new Date("2000-01-01 " + currentEntryLogIn);
+                let logOutTime = new Date("2000-01-01 " + currentEntryLogOut);
+                
+                let timeDifferenceMs = logOutTime - logInTime;
+            
+                // If the difference is negative, it means it spans over multiple days, adjust it to be positive
+                if (timeDifferenceMs < 0) {
+                    timeDifferenceMs += 24 * 60 * 60 * 1000; // Add 24 hours
+                }
+                
+                // Convert milliseconds to hours and minutes
+                let hours = Math.floor(timeDifferenceMs / (1000 * 60 * 60));
+                let minutes = Math.floor((timeDifferenceMs % (1000 * 60 * 60)) / (1000 * 60));
+                
+                // Format the result
+                let differenceFormatted = hours.toString().padStart(2, '0') + ":" + minutes.toString().padStart(2, '0') + " hr";
+                
+                row.push(differenceFormatted); // Push the formatted difference
+            } else {
+                row.push("-"); // Push '-' if either logInTime or logOutTime is not available
+            }
+            
               sheet.addRow(row);
             }
           }
