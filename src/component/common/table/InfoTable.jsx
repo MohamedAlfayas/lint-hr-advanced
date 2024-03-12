@@ -856,7 +856,10 @@ const InfoTable = ({
           } else {
             return (
               <ul className="list-inline hstack gap-2 mb-0">
-                {orderData.status === 2 || orderData.status === 3 ? (
+                {orderData.status === 2 ||
+                orderData.status === 3 ||
+                orderData.hr_status === 2 ||
+                orderData.hr_status === 4 ? (
                   <li className="list-inline-item">
                     <Link to="#" className="text-primary d-inline-block">
                       <i className="ri-eye-fill fs-16"></i>

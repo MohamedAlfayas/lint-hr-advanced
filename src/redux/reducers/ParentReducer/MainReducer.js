@@ -24,6 +24,7 @@ import AttendanceApprovalReducer from "../ChildReducer/AttendanceApprovalReducer
 import TeamDailyAttendanceReportReducer from "../ChildReducer/TeamDailyAttendanceReportReducer";
 import TeamTodaysAttendanceReducer from "../ChildReducer/TeamTodaysAttendanceReducer";
 import EmployeeLeaveReducer from "../ChildReducer/EmployeeLeaveReducer";
+import TimeTrackingReducer from "./../ChildReducer/TimeTrackingReducer";
 
 export const MainReducer = combineReducers({
   MetaReducer: MetaReducer,
@@ -51,4 +52,5 @@ export const MainReducer = combineReducers({
   TeamDailyAttendanceReportReducer: TeamDailyAttendanceReportReducer,
   TeamTodaysAttendanceReducer: TeamTodaysAttendanceReducer,
   EmployeeLeaveReducer: EmployeeLeaveReducer,
+  TimeTrackingReducer: TimeTrackingReducer,
 });

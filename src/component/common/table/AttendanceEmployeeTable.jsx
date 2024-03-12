@@ -105,6 +105,21 @@ const AttendanceEmployeeTable = () => {
     (state) => state.EmployeeLeaveReducer
   );
 
+  const workScheduleData = GetLocalStorageData("work_schedule") || [];
+  const employeeData = GetLocalStorageData("employee") || [];
+
+  const employeeInformation =
+    Array.isArray(individual_attendance_report_data) &&
+    individual_attendance_report_data.length > 0
+      ? employeeData.find(
+          (e) => e.id === individual_attendance_report_data[0].employee_id
+        )
+      : [];
+  const employeeWorkSchedule =
+    workScheduleData.find(
+      (w) => w.id === employeeInformation.work_schedule_id
+    ) || [];
+
   const day_leave_types = employee_leave_data.filter((d) => d.unit === 1);
   // const hour_types = employee_leave_data.filter((d) => d.unit === 2);
 
@@ -209,17 +224,17 @@ const AttendanceEmployeeTable = () => {
       let location_text = dataKey === "in" ? in_location : out_location;
       let latitudeData =
         dataKey === "in"
-          ? rowData.entry_log[0]
-          : rowData.entry_log.filter((e) => e.entry_type === 2).slice(-1)[0];
+          ? rowData.first_check_in_latitude
+          : rowData.last_check_out_latitude;
+      let branch_text = dataKey === "in" ? "Web Check In" : "Web Check Out";
 
       return (
         <Cell {...props} className="link-group">
           {location_text !== "" && (
             <>
-              {latitudeData?.latitude === null ? (
+              {latitudeData === null ? (
                 <div style={{ color: "dimgrey" }}>
-                  <i className="mdi mdi-laptop"></i> Web Check{" "}
-                  {latitudeData?.entry_type === 1 ? "In" : "Out"}
+                  <i className="mdi mdi-laptop"></i> {branch_text}
                 </div>
               ) : (
                 <Link
@@ -306,8 +321,6 @@ const AttendanceEmployeeTable = () => {
 
       let class_name = at_hr_status_data?.class || "";
       let label = at_hr_status_data?.label || "";
-
-      console.log("LABEL  = ", label);
 
       return (
         <Cell
@@ -769,10 +782,12 @@ const AttendanceEmployeeTable = () => {
             <HeaderCell style={{ offsetTop: 0 }}>Total IN</HeaderCell>
             <SecondsToTimeCell dataKey="final_checked_in_hr_in_seconds" />
           </Column>
-          <Column width={100}>
-            <HeaderCell style={{ offsetTop: 0 }}>OT</HeaderCell>
-            <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
-          </Column>
+          {employeeWorkSchedule.has_ot === true && (
+            <Column width={100}>
+              <HeaderCell style={{ offsetTop: 0 }}>OT</HeaderCell>
+              <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
+            </Column>
+          )}
           <Column width={100}>
             <HeaderCell style={{ offsetTop: 0 }}>Paid Hr</HeaderCell>
             <SecondsToTimeCell dataKey="final_paid_hr_in_seconds" />
@@ -924,73 +939,77 @@ const AttendanceEmployeeTable = () => {
                   </Col>
                 </Row>
               </Col>
-              <Col md={12} lg={12} xxl={12}>
-                <Row className="mb-2">
-                  <Col>
-                    <Label htmlFor="calculation" className="form-label">
-                      OT:
-                    </Label>
-                  </Col>
-                  <Col>
-                    <div style={{ display: "flex" }}>
-                      <b className="mt-2 me-1 ms-2">H</b>
-                      <Select
-                        id="ot_hr"
-                        name="ot_hr"
-                        placeholder={"00"}
-                        options={hourOptions || []}
-                        value={hourOptions.find(
-                          (option) =>
-                            option.value ===
-                            String(
-                              Math.floor(
-                                attendanceEditData.final_ot_hr_in_seconds / 3600
-                              )
-                            ).padStart(2, "0")
-                        )}
-                        onChange={(selectedOption) =>
-                          EditHourChange(
-                            selectedOption.value,
-                            Math.floor(
-                              (attendanceEditData.final_ot_hr_in_seconds %
-                                3600) /
-                                60
-                            ),
-                            "final_ot_hr_in_seconds"
-                          )
-                        }
-                      />
-                      <b className="mt-2 me-1 ms-2">M</b>
-                      <Select
-                        id="ot_min"
-                        name="ot_min"
-                        placeholder={"00"}
-                        options={AllMinuteOptions || []}
-                        value={AllMinuteOptions.find(
-                          (option) =>
-                            option.value ===
-                            String(
+              {employeeWorkSchedule.has_ot === true && (
+                <Col md={12} lg={12} xxl={12}>
+                  <Row className="mb-2">
+                    <Col>
+                      <Label htmlFor="calculation" className="form-label">
+                        OT:
+                      </Label>
+                    </Col>
+                    <Col>
+                      <div style={{ display: "flex" }}>
+                        <b className="mt-2 me-1 ms-2">H</b>
+                        <Select
+                          id="ot_hr"
+                          name="ot_hr"
+                          placeholder={"00"}
+                          options={hourOptions || []}
+                          value={hourOptions.find(
+                            (option) =>
+                              option.value ===
+                              String(
+                                Math.floor(
+                                  attendanceEditData.final_ot_hr_in_seconds /
+                                    3600
+                                )
+                              ).padStart(2, "0")
+                          )}
+                          onChange={(selectedOption) =>
+                            EditHourChange(
+                              selectedOption.value,
                               Math.floor(
                                 (attendanceEditData.final_ot_hr_in_seconds %
                                   3600) /
                                   60
-                              )
-                            ).padStart(2, "0")
-                        )}
-                        onChange={(selectedOption) =>
-                          EditHourChange(
-                            Math.floor(
-                              attendanceEditData.final_ot_hr_in_seconds / 3600
-                            ),
-                            selectedOption.value,
-                            "final_ot_hr_in_seconds"
-                          )
-                        }
-                      />
-                    </div>
-                  </Col>
-                </Row>
-              </Col>
+                              ),
+                              "final_ot_hr_in_seconds"
+                            )
+                          }
+                        />
+                        <b className="mt-2 me-1 ms-2">M</b>
+                        <Select
+                          id="ot_min"
+                          name="ot_min"
+                          placeholder={"00"}
+                          options={AllMinuteOptions || []}
+                          value={AllMinuteOptions.find(
+                            (option) =>
+                              option.value ===
+                              String(
+                                Math.floor(
+                                  (attendanceEditData.final_ot_hr_in_seconds %
+                                    3600) /
+                                    60
+                                )
+                              ).padStart(2, "0")
+                          )}
+                          onChange={(selectedOption) =>
+                            EditHourChange(
+                              Math.floor(
+                                attendanceEditData.final_ot_hr_in_seconds / 3600
+                              ),
+                              selectedOption.value,
+                              "final_ot_hr_in_seconds"
+                            )
+                          }
+                        />
+                      </div>
+                    </Col>
+                  </Row>
+                </Col>
+              )}
+
               <Col md={12} lg={12} xxl={12}>
                 <Row className="mb-2">
                   <Col>

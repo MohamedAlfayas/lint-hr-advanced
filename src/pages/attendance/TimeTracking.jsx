@@ -3,6 +3,7 @@ import { Button, Card, CardBody } from "reactstrap";
 import WebCheckInOut from "../../component/common/timer/WebCheckInOut";
 import { useSelector } from "react-redux";
 import { Api } from "../../common/api/Api";
+import { employee_total_work_duration } from "./../../redux/reducers/ChildReducer/TimeTrackingReducer";
 const TimeTracking = () => {
   const [firstCheckInTime, setFirstCheckInTime] = useState(null);
 
@@ -20,6 +21,10 @@ const TimeTracking = () => {
 
   const { total_seconds, currently_checked_in } = useSelector(
     (state) => state.ClockReducer
+  );
+
+  const { employee_total_work_duration } = useSelector(
+    (state) => state.TimeTrackingReducer
   );
 
   const getCurrentDate = () => {
@@ -47,7 +52,8 @@ const TimeTracking = () => {
       try {
         const data = await Api.get("/attendance/get-total-work-duration/");
         console.log("RES = ", data.data.data.first_check_in_time);
-        const fetchFirstCheckInTime = data.data.data.first_check_in_time;
+        const fetchFirstCheckInTime =
+          employee_total_work_duration.first_check_in_time;
 
         if (!!fetchFirstCheckInTime) {
           const [datePart, timePart] = fetchFirstCheckInTime.split(" ");
@@ -66,7 +72,7 @@ const TimeTracking = () => {
     };
 
     fetchData();
-  }, []);
+  }, [employee_total_work_duration]);
 
   return (
     <React.Fragment>
