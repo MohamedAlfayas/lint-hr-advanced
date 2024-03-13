@@ -21,11 +21,24 @@ const AttendanceApprovalReducer = createSlice({
             if ((payload?.id).includes(d.id)) {
               return {
                 ...d,
-                hr_status: payload?.hr_status
-              }
+                hr_status: payload?.hr_status,
+              };
+            } else {
+              return d;
             }
-            else {
-              return d
+          }
+        ),
+      };
+    },
+    updateAttendanceApprovalNotes: (state, { type, payload }) => {
+      return {
+        ...state,
+        attendance_approval_data: [...state?.attendance_approval_data].map(
+          (d) => {
+            if (d.id === payload.id) {
+              return payload;
+            } else {
+              return d;
             }
           }
         ),
@@ -34,6 +47,9 @@ const AttendanceApprovalReducer = createSlice({
   },
 });
 
-export const { setAttendanceApprovalData, updateAttendanceApprovalData } =
-  AttendanceApprovalReducer.actions;
+export const {
+  setAttendanceApprovalData,
+  updateAttendanceApprovalData,
+  updateAttendanceApprovalNotes,
+} = AttendanceApprovalReducer.actions;
 export default AttendanceApprovalReducer.reducer;

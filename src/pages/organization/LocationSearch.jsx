@@ -105,6 +105,29 @@ function LocationSearch({ branchObj, setBranchObj, FormikForm }) {
     placesService.getDetails({ placeId }, (place, status) => {
       if (status === "OK") {
         console.log("Selected Place:", place);
+        let city;
+        let country;
+        let state;
+        let pincode;
+
+        {
+          place?.address_components.forEach((component) => {
+            if (component.types.includes("country")) {
+              country = component.long_name;
+            } else if (
+              component.types.includes("administrative_area_level_1")
+            ) {
+              state = component.long_name;
+            } else if (component.types.includes("locality")) {
+              city = component.long_name;
+            } else if (component.types.includes("postal_code")) {
+              pincode = component.long_name;
+            } else {
+              return null;
+            }
+          });
+        }
+
         setBranchObj({
           ...branchObj,
           map_data: place,
@@ -112,6 +135,11 @@ function LocationSearch({ branchObj, setBranchObj, FormikForm }) {
           location_id: place?.place_id,
           latitude: String(place.geometry.location.lat()),
           longitude: String(place.geometry.location.lng()),
+          address: place?.formatted_address,
+          country: country,
+          state: state,
+          city: city,
+          pincode: pincode,
         });
       }
     });

@@ -207,6 +207,7 @@ const DistanceCalculaterInMap = ({ locationData, locationType }) => {
           ref={mapRefCenter}
           onLoad={(map) => (mapRef.current = map)}
           onUnmount={onUnmount}
+          options={{ gestureHandling: "greedy" }}
         >
           {/* Markers for the two points */}
           {/* {locations.map((location, index) => (

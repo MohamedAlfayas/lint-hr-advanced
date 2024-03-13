@@ -2381,3 +2381,8 @@ export const earlyin_display = {
   class: "success",
   text: "Early In",
 };
+
+export const not_applicable = {
+  class: "black",
+  text: "N/A",
+};

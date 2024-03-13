@@ -13,7 +13,7 @@ import { Api } from "../../common/api/Api";
 import { Badge, Button, UncontrolledTooltip } from "reactstrap";
 import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
 
-const LeaveApprovalPending = () => {
+const LeaveApprovalPending = ({ onDataLengthChange }) => {
   const dispatch = useDispatch();
 
   const { leave_approval_data } = useSelector(
@@ -23,9 +23,12 @@ const LeaveApprovalPending = () => {
   const LeaveTypeData = GetLocalStorageData("leave_types") || [];
   const { version } = useSelector((data) => data.MetaReducer);
 
-  const pendingData = leave_approval_data.filter(item => item.status === 1);
-  const DataLength =pendingData.length
-  console.log("data",DataLength);
+  const pendingData = leave_approval_data.filter((item) => item.status === 1);
+  const DataLength = pendingData.length;
+
+  useEffect(() => {
+    onDataLengthChange(DataLength);
+  }, [DataLength, onDataLengthChange]);
 
   const getUnitId = (id) => {
     const day_type = LeaveTypeData?.find((val) => val?.value === id)?.unit;
@@ -38,13 +41,13 @@ const LeaveApprovalPending = () => {
       url: "leave/leave-application-for-approval/get/",
     })
       .then((res) => {
-        console.log("API Response:", res.data); 
+        console.log("API Response:", res.data);
         dispatch(setLeaveApproval(res?.data?.data));
       })
       .catch((err) => {
         dispatch(setLeaveApproval([]));
       });
-  }, [version]);
+  }, [dispatch]);
 
   const [LeaveData, setLeavedata] = useState([
     {
@@ -124,7 +127,7 @@ const LeaveApprovalPending = () => {
         );
       },
     },
-   
+
     {
       Header: "Start Date",
       accessor: "start",
@@ -192,8 +195,6 @@ const LeaveApprovalPending = () => {
         return <b>{obj.reason}</b>;
       },
     },
-
- 
   ];
 
   const initialFormObj = useMemo(() => {
@@ -230,7 +231,7 @@ const LeaveApprovalPending = () => {
   //     label: "Pending",
   //     count: leave_approval_data.filter((e) => e[filterKey] === 1).length || 0,
   //   },
-   
+
   // ];
 
   document.title = `Leave Approval | ${MetaTitle}`;
@@ -244,6 +245,7 @@ const LeaveApprovalPending = () => {
         // filterKey={filterKey}
         // filterOptions={filterOptions}
         width_per={"35%"}
+        table_class={"Lc_leave_apply_table"}
       />
     </React.Fragment>
   );

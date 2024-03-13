@@ -65,8 +65,10 @@ import {
   on_time_entry_display,
   earlyin_display,
   earlyout_display,
+  not_applicable,
 } from "../../../common/constant/Constants";
 import DistanceCalculaterInMap from "../../../pages/attendance/DistanceCalculaterInMap";
+import WebCheckInOut from "./../timer/WebCheckInOut";
 
 const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
@@ -226,7 +228,23 @@ const AttendanceEmployeeTable = () => {
         dataKey === "in"
           ? rowData.first_check_in_latitude
           : rowData.last_check_out_latitude;
-      let branch_text = dataKey === "in" ? "Web Check In" : "Web Check Out";
+      let CheckInOutType =
+        dataKey === "in"
+          ? rowData.entry_log[0].punched_by
+          : (
+              rowData.entry_log
+                .filter((e) => e.entry_type === 2)
+                .slice(-1)[0] || {}
+            ).punched_by;
+
+      let branch_text =
+        dataKey === "in"
+          ? CheckInOutType === 1
+            ? "Web Check In"
+            : "Mobile Check In"
+          : CheckInOutType === 1
+          ? "Web Check Out"
+          : "Mobile Check Out";
 
       return (
         <Cell {...props} className="link-group">
@@ -234,7 +252,12 @@ const AttendanceEmployeeTable = () => {
             <>
               {latitudeData === null ? (
                 <div style={{ color: "dimgrey" }}>
-                  <i className="mdi mdi-laptop"></i> {branch_text}
+                  {CheckInOutType === 1 ? (
+                    <i className="mdi mdi-laptop"></i>
+                  ) : (
+                    <i className="mdi mdi-cellphone"></i>
+                  )}{" "}
+                  {branch_text}
                 </div>
               ) : (
                 <Link
@@ -346,7 +369,7 @@ const AttendanceEmployeeTable = () => {
     } else {
       let entry_status;
       if (rowData.day_status === null) {
-        entry_status = on_time_entry_display;
+        entry_status = not_applicable;
         return (
           <Cell {...props} className="link-group">
             <i
@@ -367,7 +390,7 @@ const AttendanceEmployeeTable = () => {
             ? late_entry_display
             : rowData.day_status?.early_out === true
             ? earlyout_display
-            : on_time_entry_display;
+            : not_applicable;
         return (
           <Cell {...props} className="link-group">
             <i
@@ -472,9 +495,7 @@ const AttendanceEmployeeTable = () => {
     } else {
       if (
         rowData?.status === false &&
-        (rowData?.hr_status === 1 ||
-          rowData?.hr_status === 3 ||
-          rowData?.hr_status === 4)
+        (rowData?.hr_status === 1 || rowData?.hr_status === 3)
       ) {
         return (
           <Cell

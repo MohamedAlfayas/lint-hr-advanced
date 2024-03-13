@@ -3,7 +3,10 @@ import { useEffect, useState } from "react";
 import { MetaTitle } from "../../common/data/MetaTitle";
 import InfoTable from "../../component/common/table/InfoTable";
 import { useDispatch, useSelector } from "react-redux";
-import { setAttendanceApprovalData } from "../../redux/reducers/ChildReducer/AttendanceApprovalReducer";
+import {
+  setAttendanceApprovalData,
+  updateAttendanceApprovalNotes,
+} from "../../redux/reducers/ChildReducer/AttendanceApprovalReducer";
 import { Api } from "../../common/api/Api";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import {
@@ -28,6 +31,8 @@ import { GetAmPmDateTime } from "../../common/js/ConvertDateTimeToAmPm";
 import "./../../common/css/lc_style.css";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import AttendanceApprovalFilter from "../../component/common/tableFilter/AttendanceApprovalFilter";
+import { PostApi } from "../../common/api/PostApi";
+import { toast } from "react-toastify";
 const AttendanceApproval = () => {
   const dispatch = useDispatch();
 
@@ -68,11 +73,12 @@ const AttendanceApproval = () => {
   }, []);
 
   const [timelineList, setTimelineList] = useState([]);
-  console.log("list", timelineList);
   const [timelineDate, setTimeLineDate] = useState("");
   const [timeline_modal, settimeline_modal] = useState(false);
   const [notes_modal, setNotes_modal] = useState(false);
   const [notesList, setNotesList] = useState([]);
+  const [notesData, setNotesData] = useState({});
+  const [notesObj, setNotesObj] = useState(null);
   const [date, setDate] = useState(null);
   const closeNotesModal = () => {
     setNotes_modal(false);
@@ -84,11 +90,30 @@ const AttendanceApproval = () => {
 
   const viewNotes = (obj) => {
     console.log("This rowData = ", obj);
-
+    const intialObj = {
+      id: obj?.id,
+      final_checked_in_hr_in_seconds: obj?.final_checked_in_hr_in_seconds,
+      final_ot_hr_in_seconds: obj?.final_ot_hr_in_seconds,
+      final_paid_hr_in_seconds: obj?.final_paid_hr_in_seconds,
+      notes: "",
+    };
+    setNotesObj(intialObj);
     setNotesList(obj?.notes);
     setDate(obj?.date);
-
+    setNotesData(obj);
     setNotes_modal(true);
+  };
+  const updateNotes = async () => {
+    dispatch(setLoaderVisible(true));
+    const Api = await PostApi("/attendance/update-notes/", notesObj, false);
+    if (Api.status && Api.status === 200) {
+      setNotes_modal(false);
+      dispatch(updateAttendanceApprovalNotes(Api?.data?.data));
+      toast.success(Api?.data?.message);
+    } else {
+      toast.error(Api?.data?.message || Api?.data?.detail);
+    }
+    dispatch(setLoaderVisible(false));
   };
 
   const additionalColumn = [
@@ -643,6 +668,30 @@ const AttendanceApproval = () => {
             </SimpleBar>
             <form className="mt-4">
               <Row className="g-3">
+                {notesData.hr_status !== 2 && (
+                  <Col xs={12}>
+                    <label
+                      htmlFor="exampleFormControlTextarea1"
+                      className="form-label text-body"
+                    >
+                      Leave a Notes
+                    </label>
+                    <textarea
+                      className="form-control bg-light border-light"
+                      id="exampleFormControlTextarea1"
+                      rows="3"
+                      placeholder="Enter your comment..."
+                      value={notesObj?.notes || ""}
+                      onChange={(e) =>
+                        setNotesObj({
+                          ...notesObj,
+                          notes: e.target.value,
+                        })
+                      }
+                    ></textarea>
+                  </Col>
+                )}
+
                 <Col xs={12} className="text-end">
                   <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
                     <button
@@ -653,10 +702,76 @@ const AttendanceApproval = () => {
                     >
                       Close
                     </button>
+                    {!!notesObj?.notes &&
+                      (notesObj?.notes).trim().length > 0 &&
+                      notesData.hrStatus != 2 && (
+                        <button
+                          type="button"
+                          className="btn w-sm btn-success"
+                          data-bs-dismiss="modal"
+                          onClick={updateNotes}
+                        >
+                          <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                          Save
+                        </button>
+                      )}
                   </div>
                 </Col>
               </Row>
             </form>
+            {/* <form className="mt-4">
+              <Row className="g-3">
+                {hrStatus != 2 && (
+                  <Col xs={12}>
+                    <label
+                      htmlFor="exampleFormControlTextarea1"
+                      className="form-label text-body"
+                    >
+                      Leave a Notes
+                    </label>
+                    <textarea
+                      className="form-control bg-light border-light"
+                      id="exampleFormControlTextarea1"
+                      rows="3"
+                      placeholder="Enter your comment..."
+                      value={notesUpdateObj?.notes || ""}
+                      onChange={(e) =>
+                        setNotesUpdateObj({
+                          ...notesUpdateObj,
+                          notes: e.target.value,
+                        })
+                      }
+                    ></textarea>
+                  </Col>
+                )}
+                <Col xs={12} className="text-end">
+                  <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
+                    <button
+                      type="button"
+                      className="btn btn-warning"
+                      data-bs-dismiss="modal"
+                      onClick={closeNotesModal}
+                    >
+                      Close
+                    </button>
+
+                    {!!notesUpdateObj?.notes &&
+                      (notesUpdateObj?.notes).trim().length > 0 &&
+                      hrStatus != 2 && (
+                        <button
+                          type="button"
+                          className="btn w-sm btn-success"
+                          data-bs-dismiss="modal"
+                          onClick={updateNotes}
+                        >
+                          <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                          Save
+                        </button>
+                      )}
+                  </div>
+                </Col>
+              </Row>
+            </form> */}
           </div>
         </ModalBody>
       </Modal>

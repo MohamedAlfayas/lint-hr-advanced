@@ -130,20 +130,6 @@ const Section = () => {
                   <NavItem>
                     <NavLink
                       className={classnames(
-                        { active: activeTab === "4" },
-                        "fw-semibold"
-                      )}
-                      onClick={() => {
-                        toggleTab("4");
-                      }}
-                      href="#"
-                    >
-                      Payroll Configuration
-                    </NavLink>
-                  </NavItem>
-                  <NavItem>
-                    <NavLink
-                      className={classnames(
                         { active: activeTab === "5" },
                         "fw-semibold"
                       )}
@@ -153,6 +139,20 @@ const Section = () => {
                       href="#"
                     >
                       Attendance Configuration
+                    </NavLink>
+                  </NavItem>
+                  <NavItem>
+                    <NavLink
+                      className={classnames(
+                        { active: activeTab === "4" },
+                        "fw-semibold"
+                      )}
+                      onClick={() => {
+                        toggleTab("4");
+                      }}
+                      href="#"
+                    >
+                      Payroll Configuration
                     </NavLink>
                   </NavItem>
                 </Nav>

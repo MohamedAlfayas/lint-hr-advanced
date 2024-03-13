@@ -25,7 +25,7 @@ import SimpleBar from "simplebar-react";
 import { differenceInMinutes } from "date-fns";
 import { GetAmPmDateTime } from "../../common/js/ConvertDateTimeToAmPm";
 import "./../../common/css/lc_style.css";
-const AttendancePendingTable = () => {
+const AttendancePendingTable = ({ onDataLengthChange }) => {
   const dispatch = useDispatch();
 
   const { attendance_approval_data } = useSelector(
@@ -78,9 +78,14 @@ const AttendancePendingTable = () => {
     settimeline_modal(!timeline_modal);
   }
 
-  const AttendancependingData = attendance_approval_data.filter(item => item.hr_status === 3);
-  const DataLength = AttendancependingData.length
-  console.log("data",DataLength);
+  const AttendancependingData = attendance_approval_data.filter(
+    (item) => item.hr_status === 3
+  );
+  const DataLength = AttendancependingData.length;
+
+  useEffect(() => {
+    onDataLengthChange(DataLength);
+  }, [DataLength, onDataLengthChange]);
 
   const viewNotes = (obj) => {
     console.log("This rowData = ", obj);
@@ -143,7 +148,7 @@ const AttendancePendingTable = () => {
         );
       },
     },
-    
+
     {
       Header: "Date",
       accessor: "date",
@@ -272,8 +277,6 @@ const AttendancePendingTable = () => {
         );
       },
     },
-
-   
   ];
 
   // const filterKey = "hr_status";
@@ -284,7 +287,7 @@ const AttendancePendingTable = () => {
   //     count:
   //       attendance_approval_data.filter((e) => e[filterKey] === 3).length || 0,
   //   },
-   
+
   // ];
 
   document.title = `Attendance Approval | ${MetaTitle}`;
@@ -297,6 +300,7 @@ const AttendancePendingTable = () => {
         // filterKey={filterKey}
         // filterOptions={filterOptions}
         width_per={"35%"}
+        table_class={"Lc_leave_apply_table"}
       />
       <Modal
         isOpen={timeline_modal}
