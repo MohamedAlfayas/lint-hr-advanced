@@ -112,217 +112,201 @@ const AttendanceReport = () => {
       const sheet = workbook.addWorksheet("My Sheet", {});
       sheet.properties.defaultRowHeight = 20;
       sheet.autoFilter = {
-        from: {
-          row: 1, // Assuming your headers start from row 1
-          column: 1, // Assuming "Employee Name" is the first column
-        },
-        to: {
-          row: 2, // Assuming all rows are populated
-          column: 2, // Assuming "Email" is the second column
-        },
+          from: {
+              row: 1, // Assuming your headers start from row 1
+              column: 1, // Assuming "Employee Name" is the first column
+          },
+          to: {
+              row: 2, // Assuming all rows are populated
+              column: 2, // Assuming "Email" is the second column
+          },
       };
-
-      const headers = ["Employee Name", "Email", "Emp ID", "Attendane","Status", "Activity", "Work Schedule","Checked In","OT", "Paid Hr","Edited Hours",  "In", "Out",   "Total", "In Location", "Out Location"];
+  
+      const headers = ["Employee Name", "Email", "Emp ID", "Attendance","Status", "Activity", "Work Schedule","Checked In","OT", "Paid Hr","Edited Hours", "In Location", "Out Location",  "In", "Out",   "Total"];
       // Assuming `team_daily_attendance_report` is available
       const employeeDatesXls = Array.from(new Set(team_daily_attendance_report.flatMap((employee) =>
-        employee.workday_data.map((report) => report.date)
+          employee.workday_data.map((report) => report.date)
       )));
-
+  
       const foundEmployee = employee_data.find((emp) => rowData.employee_id === emp.id);
       const emp_name = foundEmployee ? foundEmployee.fname : "";
       const employee_id = foundEmployee ? foundEmployee.emp_id : "";
-
+  
       // Add headers row
       const headerRow = sheet.addRow(["Date", ...headers]);
       const entry_status_column = [];
       // Add data rows
       employeeDatesXls.forEach((date, index) => {
-        const attendance_data = rowData.workday_data.find((day) => day.date === date);
-        if (attendance_data) {
-          const attend_data =
-            attendance_data.is_present === true ? "P" :
-            attendance_data.is_holiday === true ? "H" :
-            attendance_data.is_day_on === false ? "WO" :
-            attendance_data.is_leave_approved === true ? "L" :
-            attendance_data.leave_taken_without_approval === true ? "A" : "A";
-      
-          const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds);
-          const workScheduleHr = ConvertSecondsToTime(attendance_data.work_schedule_hr_without_break_in_seconds);
-          const checkedInHr = ConvertSecondsToTime(attendance_data.checked_in_hr_in_seconds);
-          console.log("checkedInHr",checkedInHr);
-          const status = attendance_data.hr_status;
-          function getStatusText(hr_status) {
-            switch (hr_status) {
-              case 1:
-                return "Auto Approval";
-              case 2:
-                return "Approval";
-              case 3:
-                return "Pending";
-              case 4:
-                return "Reject";
-              default:
-                return "Unknown";
-            }
-          }
-          const statusText = getStatusText(status);
-      
-          let entry_status;
-          const activity = attendance_data.day_status;
-          if (activity === null) {
-            entry_status = "-";
-          } else {
-            entry_status =
-              activity.early_in === true ? earlyin_display.text :
-              activity.ontime === true ? on_time_entry_display.text :
-              activity.late === true ? late_entry_display.text :
-              activity.early_out === true ? earlyout_display.text :
-              on_time_entry_display.text;
-          }
-      
-          const otHours =  ConvertSecondsToTime(attendance_data.final_ot_hr_in_seconds);
-     
-          const editedHours = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds - attendance_data.checked_in_hr_in_seconds);
-          console.log("entry",editedHours);
-   
-      
-          const entryLogs = attendance_data.entry_log.map(entry => {
-            const entryTime = entry.entry_time;
-            const location = entry.location;
-            return format(ParseTime(entryTime), "h:mm a");
-          });
-          const entryLogIn = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 1);
-          const entryLogOut = entryLogs.filter((_, index) => attendance_data.entry_log[index].entry_type === 2);
-       console.log("LOg",entryLogIn);
-      
-
-          const inLength = entryLogIn.length;
-          const outLength = entryLogOut.length;
-          const maxIterations = Math.max(inLength, outLength);
-      
-          // If either entryLogIn or entryLogOut is empty, push an empty row
-          if (inLength === 0 || outLength === 0) {
-            const row = [
-              formatDate(date), 
-              emp_name, 
-              foundEmployee ? foundEmployee.email : "", 
-              employee_id, 
-              attend_data,
-              statusText || "-", // Attendance Status
-              entry_status || "-", // Activity
-              workScheduleHr, // Work Schedule
-              checkedInHr, // Check In
-              otHours || "-", // OT
-              total_hour, // Paid Hr
-            
-            
-              editedHours || "-", // Edited Hr
-            ];            row.push(inLength === 0 ? "-" : entryLogIn[0]);
-           
-           
-            sheet.addRow(row);
-          } else {
-            for (let i = 0; i < maxIterations; i++) {
-              const row = [
-                formatDate(date), 
-                emp_name, 
-                foundEmployee ? foundEmployee.email : "", 
-                employee_id, 
-                attend_data,
-                statusText || "-", // Attendance Status
-                entry_status || "-", // Activity
-                workScheduleHr, // Work Schedule
-                checkedInHr, // Check In
-                otHours || "-", // OT
-                total_hour, // Paid Hr
-               
-                editedHours || "-", // Edited Hr
-              ];      
-             
-      
-           let currentEntryLogIn;
-           let currentEntryLogOut;
-          
-              if (i < inLength) {
-                 currentEntryLogIn = entryLogIn[i];
-                console.log("Entry Log In:", currentEntryLogIn);
-                row.push(currentEntryLogIn );
-              } else {
-                row.push("-"); // Push an empty value if entryLogIn is empty
+          const attendance_data = rowData.workday_data.find((day) => day.date === date);
+          if (attendance_data) {
+              const attend_data =
+                  attendance_data.is_present === true ? "P" :
+                  attendance_data.is_holiday === true ? "H" :
+                  attendance_data.is_day_on === false ? "WO" :
+                  attendance_data.is_leave_approved === true ? "L" :
+                  attendance_data.leave_taken_without_approval === true ? "A" : "A";
+  
+              const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds);
+              const workScheduleHr = ConvertSecondsToTime(attendance_data.work_schedule_hr_without_break_in_seconds);
+              const checkedInHr = ConvertSecondsToTime(attendance_data.checked_in_hr_in_seconds);
+              console.log("checkedInHr",checkedInHr);
+              const status = attendance_data.hr_status;
+              function getStatusText(hr_status) {
+                  switch (hr_status) {
+                      case 1:
+                          return "Auto Approval";
+                      case 2:
+                          return "Approval";
+                      case 3:
+                          return "Pending";
+                      case 4:
+                          return "Reject";
+                      default:
+                          return "Unknown";
+                  }
               }
-            
-              if (i < outLength) {
-                 currentEntryLogOut = entryLogOut[i];
-                console.log("Entry Log Out:", currentEntryLogOut);
-                row.push(currentEntryLogOut);
-                
+              const statusText = getStatusText(status);
+  
+              let entry_status;
+              const activity = attendance_data.day_status;
+              if (activity === null) {
+                  entry_status = "-";
               } else {
-                row.push("-"); // Push an empty value if entryLogOut is empty
+                  entry_status =
+                      activity.early_in === true ? earlyin_display.text :
+                      activity.ontime === true ? on_time_entry_display.text :
+                      activity.late === true ? late_entry_display.text :
+                      activity.early_out === true ? earlyout_display.text :
+                      on_time_entry_display.text;
               }
-              if (currentEntryLogIn && currentEntryLogOut) { 
-                let logInTime = new Date("2000-01-01 " + currentEntryLogIn);
-                let logOutTime = new Date("2000-01-01 " + currentEntryLogOut);
-                
-                let timeDifferenceMs = logOutTime - logInTime;
+  
+              const otHours =  ConvertSecondsToTime(attendance_data.final_ot_hr_in_seconds);
+  
+              const editedHours = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds - attendance_data.checked_in_hr_in_seconds);
+              console.log("entry",editedHours);
+  
+              const entryLogs = attendance_data.entry_log.map(entry => {
+                const entryTime = entry.entry_time;
+                const location = entry.location;
+                return {
+                    time: format(ParseTime(entryTime), "h:mm a"),
+                    location: entry.location,
+                    type: entry.entry_type
+                };
+            });
             
-                // If the difference is negative, it means it spans over multiple days, adjust it to be positive
-                if (timeDifferenceMs < 0) {
-                    timeDifferenceMs += 24 * 60 * 60 * 1000; // Add 24 hours
-                }
-                
-                // Convert milliseconds to hours and minutes
-                let hours = Math.floor(timeDifferenceMs / (1000 * 60 * 60));
-                let minutes = Math.floor((timeDifferenceMs % (1000 * 60 * 60)) / (1000 * 60));
-                
-                // Format the result
-                let differenceFormatted = hours.toString().padStart(2, '0') + ":" + minutes.toString().padStart(2, '0') + " hr";
-                
-                row.push(differenceFormatted); // Push the formatted difference
+            const entryLogIn = entryLogs.filter(entry => entry.type === 1);
+            const entryLogOut = entryLogs.filter(entry => entry.type === 2);
+            console.log("LOg", entryLogIn);
+            
+            const inLength = entryLogIn.length;
+            console.log("in", inLength);
+            const outLength = entryLogOut.length;
+            const maxIterations = Math.max(inLength, outLength);
+            
+            // If either entryLogIn or entryLogOut is empty, push an empty row
+            if (inLength === 0 || outLength === 0) {
+                const row = [
+                    formatDate(date),
+                    emp_name,
+                    foundEmployee ? foundEmployee.email : "",
+                    employee_id,
+                    attend_data,
+                    statusText || "-", // Attendance Status
+                    entry_status || "-", // Activity
+                    workScheduleHr, // Work Schedule
+                    checkedInHr, // Check In
+                    otHours || "-", // OT
+                    total_hour, // Paid Hr
+                    editedHours || "-", // Edited Hr
+                    inLength > 0 ? entryLogIn.map(entry => entry.location).join(", ") : "-", // In Location
+                    outLength > 0 ? entryLogOut.map(entry => entry.location).join(", ") : "-" ,// Out Location
+                    inLength > 0 ? entryLogIn[0].time : "-", // In Time
+                    outLength > 0 ? entryLogOut[0].time : "-", // Out Time
+                ];
+                sheet.addRow(row);
             } else {
-                row.push("-"); // Push '-' if either logInTime or logOutTime is not available
-            }
+                for (let i = 0; i < maxIterations; i++) {
+                    const row = [
+                        formatDate(date),
+                        emp_name,
+                        foundEmployee ? foundEmployee.email : "",
+                        employee_id,
+                        attend_data,
+                        statusText || "-", // Attendance Status
+                        entry_status || "-", // Activity
+                        workScheduleHr, // Work Schedule
+                        checkedInHr, // Check In
+                        otHours || "-", // OT
+                        total_hour, // Paid Hr
+                        editedHours || "-", // Edited Hr
+                        i < inLength ? entryLogIn[i].location : "-", // In Location
+                        i < outLength ? entryLogOut[i].location : "-" ,// Out Location
+                        i < inLength ? entryLogIn[i].time : "-", // In Time
+                        i < outLength ? entryLogOut[i].time : "-", // Out Time
+                    ];
+                    if (entryLogIn[i] && entryLogOut[i]) {
+                      let logInTime = new Date("2000-01-01 " +  entryLogIn[i].time);
+                      let logOutTime = new Date("2000-01-01 " + entryLogOut[i].time);
+  
+                      let timeDifferenceMs = logOutTime - logInTime;
+  
+                      // If the difference is negative, it means it spans over multiple days, adjust it to be positive
+                      if (timeDifferenceMs < 0) {
+                          timeDifferenceMs += 24 * 60 * 60 * 1000; // Add 24 hours
+                      }
+  
+                      // Convert milliseconds to hours and minutes
+                      let hours = Math.floor(timeDifferenceMs / (1000 * 60 * 60));
+                      let minutes = Math.floor((timeDifferenceMs % (1000 * 60 * 60)) / (1000 * 60));
+  
+                      // Format the result
+                      let differenceFormatted = hours.toString().padStart(2, '0') + ":" + minutes.toString().padStart(2, '0') + " hr";
+  
+                      row.push(differenceFormatted); // Push the formatted difference
+                  } else {
+                      row.push("-"); // Push '-' if either logInTime or logOutTime is not available
+                  }
+                    sheet.addRow(row);
+                }
             
-              sheet.addRow(row);
-            }
+              }
           }
-        }
       });
-
-
-
-
-
+      
+  
       // Set column widths and cell borders
       sheet.columns.forEach((column) => {
-        column.width = 15;
-        column.eachCell({ includeEmpty: true }, (cell) => {
-          cell.border = {
-            top: { style: "thin" },
-            left: { style: "thin" },
-            bottom: { style: "thin" },
-            right: { style: "thin" },
-          };
-          cell.alignment = { horizontal: "center" };
-        });
+          column.width = 15;
+          column.eachCell({ includeEmpty: true }, (cell) => {
+              cell.border = {
+                  top: { style: "thin" },
+                  left: { style: "thin" },
+                  bottom: { style: "thin" },
+                  right: { style: "thin" },
+              };
+              cell.alignment = { horizontal: "center" };
+          });
       });
       const monthYear = employeeDatesXls.map((dateString) => {
-        const date = new Date(dateString);
-        const month = date.toLocaleString("default", { month: "short" });
-        const year = date.getFullYear();
-        return `${month}${year}`;
+          const date = new Date(dateString);
+          const month = date.toLocaleString("default", { month: "short" });
+          const year = date.getFullYear();
+          return `${month}${year}`;
       });
-
+  
       workbook.xlsx.writeBuffer().then((data) => {
-        const blob = new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-        const url = window.URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        const filename = `${emp_name}_${employee_id}_Attendance_${monthYear[0]}.xlsx`;
-        anchor.href = url;
-        anchor.download = filename;
-        anchor.click();
-        window.URL.revokeObjectURL(url);
+          const blob = new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+          const url = window.URL.createObjectURL(blob);
+          const anchor = document.createElement("a");
+          const filename = `${emp_name}_${employee_id}_Attendance_${monthYear[0]}.xlsx`;
+          anchor.href = url;
+          anchor.download = filename;
+          anchor.click();
+          window.URL.revokeObjectURL(url);
       });
-    };
+  };
+  
 
 
 
