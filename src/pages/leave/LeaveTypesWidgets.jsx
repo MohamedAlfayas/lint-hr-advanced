@@ -110,18 +110,20 @@ const LeaveTypesWidgets = ({
                           </span>
                         </p>
                       </div>
-                      <Button
-                        color="success"
-                        className="btn-label ms-0 mt-2"
-                        size="sm"
-                        onClick={() => {
-                          handleApplyLeave(item?.id);
-                        }}
-                      >
-                        {" "}
-                        <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                        Apply{" "}
-                      </Button>
+                      {item.balance_leave_count > 0 && (
+                        <Button
+                          color="success"
+                          className="btn-label ms-0 mt-2"
+                          size="sm"
+                          onClick={() => {
+                            handleApplyLeave(item?.id);
+                          }}
+                        >
+                          {" "}
+                          <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                          Apply{" "}
+                        </Button>
+                      )}
                     </Col>
                     <Col xs={5}>
                       <div className="apex-charts crypto-widget" dir="ltr">

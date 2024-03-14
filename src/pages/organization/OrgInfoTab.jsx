@@ -65,10 +65,15 @@ import {
   CountryCodeDisplayInSelect,
   CountryCodeDisplayStyles,
 } from "../../common/js/CountryCodeDisplayInSelect";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { useDispatch } from "react-redux";
+import { PostApi } from "../../common/api/PostApi";
 // import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 
 const OrgInfoTab = () => {
   const [stateListOptions, setStateListOptions] = useState([]);
+
+  const dispatch = useDispatch();
 
   const CountryListOptions = CountryList.filter((c) => c.show === true).map(
     (d) => {
@@ -268,24 +273,27 @@ const OrgInfoTab = () => {
           form_data.append(key[0], key[1]);
         }
       });
+      console.log("form_data", form_data);
 
-      Api({
-        method: "POST",
-        url: "/company/save-profile/",
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        data: form_data,
-      })
-        .then((res) => {
-          console.log("RES ==== ", res);
-          toast.success(res?.data?.message);
-        })
-        .catch((err) => {
-          console.log("ERRR === ", err);
-          toast.error(err?.response?.data?.message);
-        });
-      dispatch(setLoaderVisible(false));
+      // Api({
+      //   method: "POST",
+      //   url: "/company/save-profile/",
+      //   headers: {
+      //     "Content-Type": "multipart/form-data",
+      //   },
+      //   data: form_data,
+      // })
+      const Api = await PostApi("/company/save-profile/", form_data, true);
+      console.log("API RES = ", Api);
+      if (Api.status && Api.status === 200) {
+        console.log("RES ==== ", res);
+        toast.success(res?.data?.message);
+        dispatch(setLoaderVisible(false));
+      } else {
+        console.log("ERRR === ", err);
+        toast.error(err?.response?.data?.message);
+        dispatch(setLoaderVisible(false));
+      }
     },
   });
 
@@ -1052,7 +1060,15 @@ const OrgInfoTab = () => {
                       </Col>
 
                       <Col xxl={12} md={12}>
-                        <Button type="submit">Submit</Button>
+                        <Button
+                          type="submit"
+                          color="success"
+                          className="btn-label"
+                        >
+                          {" "}
+                          <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                          Submit{" "}
+                        </Button>{" "}
                       </Col>
                     </Row>
                   </div>

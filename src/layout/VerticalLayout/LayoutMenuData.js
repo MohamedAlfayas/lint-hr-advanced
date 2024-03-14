@@ -212,13 +212,13 @@ const Navdata = () => {
           parentId: "baseUi",
           perm: "leave_type",
         },
-        {
-          id: "customfield",
-          label: "Custom Field",
-          link: "/custom-field",
-          parentId: "baseUi",
-          perm: "custom_field",
-        },
+        // {
+        //   id: "customfield",
+        //   label: "Custom Field",
+        //   link: "/custom-field",
+        //   parentId: "baseUi",
+        //   perm: "custom_field",
+        // },
         {
           id: "employee",
           label: "Employee",

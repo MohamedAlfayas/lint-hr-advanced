@@ -20,6 +20,7 @@ import TeamTab from "./TeamTab";
 import OrgInfoTab from "./OrgInfoTab";
 import PayRollConfig from "./../payroll/PayRollConfig";
 import AttendanceConfig from "./../attendanceConfig/AttendanceConfig";
+import CustomField from "../customField/CustomField";
 
 const Section = () => {
   //Tab
@@ -130,20 +131,6 @@ const Section = () => {
                   <NavItem>
                     <NavLink
                       className={classnames(
-                        { active: activeTab === "5" },
-                        "fw-semibold"
-                      )}
-                      onClick={() => {
-                        toggleTab("5");
-                      }}
-                      href="#"
-                    >
-                      Attendance Configuration
-                    </NavLink>
-                  </NavItem>
-                  <NavItem>
-                    <NavLink
-                      className={classnames(
                         { active: activeTab === "4" },
                         "fw-semibold"
                       )}
@@ -152,7 +139,35 @@ const Section = () => {
                       }}
                       href="#"
                     >
-                      Payroll Configuration
+                      Attendance
+                    </NavLink>
+                  </NavItem>
+                  <NavItem>
+                    <NavLink
+                      className={classnames(
+                        { active: activeTab === "5" },
+                        "fw-semibold"
+                      )}
+                      onClick={() => {
+                        toggleTab("5");
+                      }}
+                      href="#"
+                    >
+                      Payroll
+                    </NavLink>
+                  </NavItem>
+                  <NavItem>
+                    <NavLink
+                      className={classnames(
+                        { active: activeTab === "6" },
+                        "fw-semibold"
+                      )}
+                      onClick={() => {
+                        toggleTab("6");
+                      }}
+                      href="#"
+                    >
+                      Custom Field
                     </NavLink>
                   </NavItem>
                 </Nav>
@@ -174,10 +189,13 @@ const Section = () => {
               <Branch />
             </TabPane>
             <TabPane tabId="4">
-              <PayRollConfig />
+              <AttendanceConfig />
             </TabPane>
             <TabPane tabId="5">
-              <AttendanceConfig />
+              <PayRollConfig />
+            </TabPane>
+            <TabPane tabId="6">
+              <CustomField />
             </TabPane>
           </TabContent>
         </Col>

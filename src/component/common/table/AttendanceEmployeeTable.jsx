@@ -228,26 +228,28 @@ const AttendanceEmployeeTable = () => {
         dataKey === "in"
           ? rowData.first_check_in_latitude
           : rowData.last_check_out_latitude;
+
       let CheckInOutType =
         rowData?.entry_log !== null
           ? dataKey === "in"
-            ? rowData.entry_log[0].punched_by
-            : (
-                rowData.entry_log
-                  .filter((e) => e.entry_type === 2)
-                  .slice(-1)[0] || {}
-              ).punched_by
-          : "";
+            ? rowData?.entry_log[0]?.punched_by || 0
+            : rowData?.entry_log.filter((e) => e.entry_type === 2).slice(-1)[0]
+                ?.punched_by || 0
+          : 0;
 
       let branch_text =
         rowData?.entry_log !== null
           ? dataKey === "in"
             ? CheckInOutType === 1
               ? "Web Check In"
-              : "Mobile Check In"
+              : CheckInOutType === 2
+              ? "Mobile Check In"
+              : ""
             : CheckInOutType === 1
             ? "Web Check Out"
-            : "Mobile Check Out"
+            : CheckInOutType === 2
+            ? "Mobile Check Out"
+            : ""
           : "";
 
       return (
@@ -1437,6 +1439,9 @@ const AttendanceEmployeeTable = () => {
                           (d) => d.id === leaveApplyData?.leave_type
                         )
                       : []
+                  }
+                  isOptionDisabled={(option) =>
+                    option.balance_leave_count === 0
                   }
                   onChange={(e) => {
                     setLeaveApplyData((prevData) => {

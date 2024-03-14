@@ -3,7 +3,10 @@ import { useEffect, useState } from "react";
 import { MetaTitle } from "../../common/data/MetaTitle";
 import InfoTable from "../../component/common/table/InfoTable";
 import { useDispatch, useSelector } from "react-redux";
-import { setAttendanceApprovalData } from "../../redux/reducers/ChildReducer/AttendanceApprovalReducer";
+import {
+  setAttendanceApprovalData,
+  updateAttendanceApprovalNotes,
+} from "../../redux/reducers/ChildReducer/AttendanceApprovalReducer";
 import { Api } from "../../common/api/Api";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import {
@@ -25,6 +28,9 @@ import SimpleBar from "simplebar-react";
 import { differenceInMinutes } from "date-fns";
 import { GetAmPmDateTime } from "../../common/js/ConvertDateTimeToAmPm";
 import "./../../common/css/lc_style.css";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { PostApi } from "../../common/api/PostApi";
+import { toast } from "react-toastify";
 const AttendancePendingTable = ({ onDataLengthChange }) => {
   const dispatch = useDispatch();
 
@@ -52,7 +58,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
       url:
         "attendance/get-attendance-data-for-approval/?thisMonth=" +
         thisMonth +
-        "&department_id=0",
+        "&employee_type=1",
     })
       .then((res) => {
         console.log("res", res);
@@ -70,6 +76,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
   const [notes_modal, setNotes_modal] = useState(false);
   const [notesList, setNotesList] = useState([]);
   const [date, setDate] = useState(null);
+  const [notesUpdateObj, setNotesUpdateObj] = useState(null);
   const closeNotesModal = () => {
     setNotes_modal(false);
   };
@@ -89,11 +96,36 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
 
   const viewNotes = (obj) => {
     console.log("This rowData = ", obj);
+    let initial_obj = {
+      id: obj?.id,
+      final_checked_in_hr_in_seconds: obj?.final_checked_in_hr_in_seconds,
+      final_ot_hr_in_seconds: obj?.final_ot_hr_in_seconds,
+      final_paid_hr_in_seconds: obj?.final_paid_hr_in_seconds,
+      notes: "",
+    };
+    setNotesUpdateObj(initial_obj);
 
     setNotesList(obj?.notes);
     setDate(obj?.date);
 
     setNotes_modal(true);
+  };
+
+  const updateNotes = async () => {
+    dispatch(setLoaderVisible(true));
+    const Api = await PostApi(
+      "/attendance/update-notes/",
+      notesUpdateObj,
+      false
+    );
+    if (Api.status && Api.status === 200) {
+      setNotes_modal(false);
+      dispatch(updateAttendanceApprovalNotes(Api?.data?.data));
+      toast.success(Api?.data?.message);
+    } else {
+      toast.error(Api?.data?.message || Api?.data?.detail);
+    }
+    dispatch(setLoaderVisible(false));
   };
 
   const additionalColumn = [
@@ -536,6 +568,27 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
             </SimpleBar>
             <form className="mt-4">
               <Row className="g-3">
+                <Col xs={12}>
+                  <label
+                    htmlFor="exampleFormControlTextarea1"
+                    className="form-label text-body"
+                  >
+                    Leave a Notes
+                  </label>
+                  <textarea
+                    className="form-control bg-light border-light"
+                    id="exampleFormControlTextarea1"
+                    rows="3"
+                    placeholder="Enter your comment..."
+                    value={notesUpdateObj?.notes || ""}
+                    onChange={(e) =>
+                      setNotesUpdateObj({
+                        ...notesUpdateObj,
+                        notes: e.target.value,
+                      })
+                    }
+                  ></textarea>
+                </Col>
                 <Col xs={12} className="text-end">
                   <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
                     <button
@@ -546,6 +599,18 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
                     >
                       Close
                     </button>
+                    {!!notesUpdateObj?.notes &&
+                      (notesUpdateObj?.notes).trim().length > 0 && (
+                        <button
+                          type="button"
+                          className="btn w-sm btn-success"
+                          data-bs-dismiss="modal"
+                          onClick={updateNotes}
+                        >
+                          <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                          Save
+                        </button>
+                      )}
                   </div>
                 </Col>
               </Row>

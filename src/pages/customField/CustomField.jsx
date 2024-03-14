@@ -15,6 +15,7 @@ import {
   custom_field_component_name,
   custom_field_types,
 } from "../../common/constant/Constants";
+import { Card, CardBody } from "reactstrap";
 
 const CustomField = () => {
   // const [CustomData, setCustomdata] = useState([
@@ -171,7 +172,6 @@ const CustomField = () => {
     },
   ];
 
-  document.title = `Custom Field | ${MetaTitle}`;
   return (
     <React.Fragment>
       <InfoTable
@@ -182,6 +182,7 @@ const CustomField = () => {
         filterKey={filterKey}
         filterOptions={filterOptions}
         width_per={"35%"}
+        table_class={"Lc_leave_apply_table me-n3 ms-n3"}
       />
     </React.Fragment>
   );

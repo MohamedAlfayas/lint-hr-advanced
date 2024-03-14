@@ -63,6 +63,7 @@ const ApplyLeaveForm = () => {
   const [toDate, setToDate] = useState(null);
   const [hourDiff, setHourDiff] = useState(null);
   const [inBetweenDays, setInBetweenDays] = useState([]);
+  const [leaveBalanceCount, setLeaveBalanceCount] = useState(0);
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
   const profileData = GetLocalStorageData("my_profile") || [];
@@ -124,7 +125,7 @@ const ApplyLeaveForm = () => {
     let leave_type_obj = leave_type_for_current_employee.find(
       (d) => d.id === e.id
     );
-
+    setLeaveBalanceCount(leave_type_obj.balance_leave_count);
     handleStartEndDatesChange(leave_type_obj);
   };
 
@@ -214,8 +215,8 @@ const ApplyLeaveForm = () => {
 
     setInBetweenDays(ValidDays);
     const ValidDaysCount = ValidDays.length;
-    setDaysCount(ValidDaysCount);
 
+    setDaysCount(ValidDaysCount);
     setLeaveApplyObj({
       ...leaveapplyObj,
       start: !!startDate
@@ -259,6 +260,8 @@ const ApplyLeaveForm = () => {
     } else {
       updatedDaysCount = 0;
     }
+    console.log();
+
     setLeaveApplyObj({
       ...leaveapplyObj,
       day_type: value,
@@ -267,7 +270,6 @@ const ApplyLeaveForm = () => {
         value === 1 ? [leaveapplyObj.start] : value === 2 ? [] : [],
     });
     setDaysCount(updatedDaysCount);
-    console.log("InbetweenDays", inBetweenDays);
   };
 
   useEffect(() => {
@@ -355,7 +357,6 @@ const ApplyLeaveForm = () => {
       const formattedResultForSetting = roundedHours + remainingMinutes / 60;
 
       setHourDiff(formattedResult);
-
       setLeaveApplyObj({
         ...leaveapplyObj,
         requested_leave_count: formattedResultForSetting,
@@ -377,6 +378,8 @@ const ApplyLeaveForm = () => {
       dispatch(setLoaderVisible(true));
       if (values.requested_leave_count === 0) {
         toast.error("Total Hour Can't Be Zero");
+      } else if (values.requested_leave_count > leaveBalanceCount) {
+        toast.error("Selected Leave Exceeds Balance Leave");
       } else {
         const Api = await PostApi(
           "leave/leave-application/create/",
@@ -431,6 +434,9 @@ const ApplyLeaveForm = () => {
                     name="leave_type"
                     isMulti={false}
                     options={leave_type_for_current_employee || []}
+                    isOptionDisabled={(option) =>
+                      option.balance_leave_count === 0
+                    }
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
