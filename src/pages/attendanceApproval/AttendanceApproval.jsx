@@ -60,7 +60,7 @@ const AttendanceApproval = () => {
       url:
         "attendance/get-attendance-data-for-approval/?thisMonth=" +
         thisMonth +
-        "&employee_type=0",
+        "&employee_type=1",
     })
       .then((res) => {
         dispatch(setLoaderVisible(false));

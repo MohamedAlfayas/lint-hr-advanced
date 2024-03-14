@@ -229,22 +229,26 @@ const AttendanceEmployeeTable = () => {
           ? rowData.first_check_in_latitude
           : rowData.last_check_out_latitude;
       let CheckInOutType =
-        dataKey === "in"
-          ? rowData.entry_log[0].punched_by
-          : (
-              rowData.entry_log
-                .filter((e) => e.entry_type === 2)
-                .slice(-1)[0] || {}
-            ).punched_by;
+        rowData?.entry_log !== null
+          ? dataKey === "in"
+            ? rowData.entry_log[0].punched_by
+            : (
+                rowData.entry_log
+                  .filter((e) => e.entry_type === 2)
+                  .slice(-1)[0] || {}
+              ).punched_by
+          : "";
 
       let branch_text =
-        dataKey === "in"
-          ? CheckInOutType === 1
-            ? "Web Check In"
-            : "Mobile Check In"
-          : CheckInOutType === 1
-          ? "Web Check Out"
-          : "Mobile Check Out";
+        rowData?.entry_log !== null
+          ? dataKey === "in"
+            ? CheckInOutType === 1
+              ? "Web Check In"
+              : "Mobile Check In"
+            : CheckInOutType === 1
+            ? "Web Check Out"
+            : "Mobile Check Out"
+          : "";
 
       return (
         <Cell {...props} className="link-group">

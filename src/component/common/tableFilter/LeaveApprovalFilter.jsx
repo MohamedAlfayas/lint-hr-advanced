@@ -9,6 +9,7 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { setLeaveApproval } from "../../../redux/reducers/ChildReducer/LeaveApprovalReducer";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
+import { Api } from "../../../common/api/Api";
 dayjs.extend(customParseFormat);
 
 const LeaveApprovalFilter = () => {
@@ -39,7 +40,11 @@ const LeaveApprovalFilter = () => {
     dispatch(setLoaderVisible(true));
     Api({
       type: "GET",
-      url: "",
+      url:
+        "leave/get-leave-application-for-approval/?thisMonth=" +
+        filteredMonth +
+        "&employee_type=" +
+        employeeType,
     })
       .then((res) => {
         dispatch(setLeaveApproval(res?.data?.data));
@@ -47,8 +52,8 @@ const LeaveApprovalFilter = () => {
       })
       .catch((err) => {
         console.log("ERR = ", err);
+        dispatch(setLoaderVisible(false));
       });
-    dispatch(setLoaderVisible(false));
   };
 
   return (
@@ -69,7 +74,7 @@ const LeaveApprovalFilter = () => {
                 onChange={handleEmployeeTypeChange}
                 value={
                   employeeTypeOptions.find((d) => d.id === employeeType) ||
-                  employeeTypeOptions[0]
+                  employeeTypeOptions[1]
                 }
               />
             </Col>
@@ -88,7 +93,7 @@ const LeaveApprovalFilter = () => {
               <div className="hstack gap-2">
                 <button
                   type="button"
-                  // onClick={handleFilter}
+                  onClick={handleFilter}
                   className="btn btn-danger"
                 >
                   <i className="ri-equalizer-fill me-1 align-bottom"></i> Filter

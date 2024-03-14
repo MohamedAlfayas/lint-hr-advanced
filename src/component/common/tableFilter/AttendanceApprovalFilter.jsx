@@ -73,7 +73,7 @@ const AttendanceApprovalFilter = () => {
                 onChange={handleEmployeeTypeChange}
                 value={
                   employeeTypeOptions.find((d) => d.id === employeeType) ||
-                  employeeTypeOptions[0]
+                  employeeTypeOptions[1]
                 }
               />
             </Col>

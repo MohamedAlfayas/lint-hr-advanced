@@ -30,9 +30,16 @@ const LeaveApproval = () => {
 
   useEffect(() => {
     dispatch(setLoaderVisible(true));
+    const today = new Date();
+    const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}`;
     Api({
       method: "GET",
-      url: "leave/leave-application-for-approval/get/",
+      url:
+        "leave/get-leave-application-for-approval/?thisMonth=" +
+        thisMonth +
+        "&employee_type=1",
     })
       .then((res) => {
         dispatch(setLeaveApproval(res?.data?.data));
