@@ -13,7 +13,7 @@ import { useDispatch } from "react-redux";
 dayjs.extend(customParseFormat);
 
 const AttendanceApprovalFilter = () => {
-  const [employeeType, setEmployeeType] = useState(0);
+  const [employeeType, setEmployeeType] = useState(1);
   const [filteredMonth, setFilteredMonth] = useState(
     `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
       .toString()

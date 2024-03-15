@@ -569,7 +569,7 @@ const ApplyLeaveForm = () => {
                             format: "HH:mm",
                           }}
                           format={DateTimeFormat}
-                          disabledDate={disabledDate}
+                          // disabledDate={disabledDate}
                           onChange={handleFromDateChange}
                           value={
                             !!leaveapplyObj?.start
@@ -597,7 +597,7 @@ const ApplyLeaveForm = () => {
                             format: "HH:mm",
                           }}
                           format={DateTimeFormat}
-                          disabledDate={disabledDate}
+                          // disabledDate={disabledDate}
                           onChange={handleToDateChange}
                           value={
                             !!leaveapplyObj?.end

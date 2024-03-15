@@ -127,12 +127,20 @@ const LeaveTypeForm = () => {
 
   const handleUnitChange = (e) => {
     console.log("Unit Change = ", e);
-    setLeaveTypeData({
+
+    let newLeaveTypeData = {
       ...leaveTypeData,
       unit: e,
       hour_allowed_in_day: 0,
       allowed_count: 0,
-    });
+    };
+
+    if (e === 2) {
+      newLeaveTypeData["weekend_between_leave"] = true;
+      newLeaveTypeData["holiday_between_leave"] = true;
+    }
+
+    setLeaveTypeData(newLeaveTypeData);
     setCurrentUnit(e);
   };
 
@@ -560,59 +568,62 @@ const LeaveTypeForm = () => {
                   </div>
                 )}
               </Col>
-
-              <Col md={12} lg={12} xxl={12}>
-                <div>
-                  <Label htmlFor="lt_weekend" className="form-label">
-                    Weekend Between Leave
-                  </Label>
-                  <div className="mb-2">
-                    <div
-                      className="form-check form-switch form-switch-md form-switch-success"
-                      dir="ltr"
-                    >
-                      <Input
-                        type="checkbox"
-                        className="form-check-input form-switch-md"
-                        id="lt_weekend"
-                        checked={leaveTypeData.weekend_between_leave}
-                        onChange={(e) =>
-                          setLeaveTypeData({
-                            ...leaveTypeData,
-                            weekend_between_leave: e.target.checked,
-                          })
-                        }
-                      />
+              {currentUnit && currentUnit === leave_type_day_unit && (
+                <>
+                  <Col md={12} lg={12} xxl={12}>
+                    <div>
+                      <Label htmlFor="lt_weekend" className="form-label">
+                        Weekend Between Leave
+                      </Label>
+                      <div className="mb-2">
+                        <div
+                          className="form-check form-switch form-switch-md form-switch-success"
+                          dir="ltr"
+                        >
+                          <Input
+                            type="checkbox"
+                            className="form-check-input form-switch-md"
+                            id="lt_weekend"
+                            checked={leaveTypeData.weekend_between_leave}
+                            onChange={(e) =>
+                              setLeaveTypeData({
+                                ...leaveTypeData,
+                                weekend_between_leave: e.target.checked,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </Col>
-              <Col md={12} lg={12} xxl={12}>
-                <div>
-                  <Label htmlFor="lt_holiday" className="form-label">
-                    Holiday Between Leave
-                  </Label>
-                  <div className="mb-2">
-                    <div
-                      className="form-check form-switch form-switch-md form-switch-success"
-                      dir="ltr"
-                    >
-                      <Input
-                        type="checkbox"
-                        className="form-check-input form-switch-md"
-                        id="lt_holiday"
-                        checked={leaveTypeData.holiday_between_leave}
-                        onChange={(e) =>
-                          setLeaveTypeData({
-                            ...leaveTypeData,
-                            holiday_between_leave: e.target.checked,
-                          })
-                        }
-                      />
+                  </Col>
+                  <Col md={12} lg={12} xxl={12}>
+                    <div>
+                      <Label htmlFor="lt_holiday" className="form-label">
+                        Holiday Between Leave
+                      </Label>
+                      <div className="mb-2">
+                        <div
+                          className="form-check form-switch form-switch-md form-switch-success"
+                          dir="ltr"
+                        >
+                          <Input
+                            type="checkbox"
+                            className="form-check-input form-switch-md"
+                            id="lt_holiday"
+                            checked={leaveTypeData.holiday_between_leave}
+                            onChange={(e) =>
+                              setLeaveTypeData({
+                                ...leaveTypeData,
+                                holiday_between_leave: e.target.checked,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </Col>
+                  </Col>
+                </>
+              )}
               <Col md={12} lg={12} xxl={12}>
                 <div className="mb-3">
                   <Label className="form-label" htmlFor="lt_desc">

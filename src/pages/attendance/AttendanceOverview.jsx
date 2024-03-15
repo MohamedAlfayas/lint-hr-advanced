@@ -97,11 +97,11 @@ const AttendanceOverview = () => {
           holiday_hours_count = 0;
           weekend_hours_count = 0;
           inactive_hours_count = 0;
-          leave_hours_count = daily_work_hour_duration_without_break;
+          leave_hours_count = d.maximum_full_day_work_duration;
         } else if (d.is_holiday === true) {
           final_paid_hr_count = 0;
           balance_hr_count = 0;
-          holiday_hours_count = daily_work_hour_duration_without_break;
+          holiday_hours_count = d.maximum_full_day_work_duration;
           weekend_hours_count = 0;
           leave_hours_count = 0;
           inactive_hours_count = 0;
@@ -110,7 +110,7 @@ const AttendanceOverview = () => {
           final_paid_hr_count = 0;
           balance_hr_count = 0;
           holiday_hours_count = 0;
-          weekend_hours_count = daily_work_hour_duration_without_break;
+          weekend_hours_count = d.maximum_full_day_work_duration;
           leave_hours_count = 0;
           inactive_hours_count = 0;
         } else if (d.leave_taken_without_approval === true) {
@@ -119,14 +119,14 @@ const AttendanceOverview = () => {
           holiday_hours_count = 0;
           weekend_hours_count = 0;
           leave_hours_count = 0;
-          inactive_hours_count = daily_work_hour_duration_without_break;
+          inactive_hours_count = d.maximum_full_day_work_duration;
         } else {
           final_paid_hr_count = 0;
           balance_hr_count = 0;
           holiday_hours_count = 0;
           weekend_hours_count = 0;
           leave_hours_count = 0;
-          inactive_hours_count = daily_work_hour_duration_without_break;
+          inactive_hours_count = d.maximum_full_day_work_duration;
         }
 
         in_hours.push(final_paid_hr_count);

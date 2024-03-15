@@ -85,6 +85,7 @@ const WorkScheduleForm = () => {
   const handleDurationChange = (selectedHour, selectedMinute, name) => {
     const newDuration =
       parseInt(selectedHour) * 3600 + parseInt(selectedMinute) * 60;
+    console.log("workScheduleData", workScheduleData);
 
     setWorkScheduleData({
       ...workScheduleData,
@@ -194,36 +195,43 @@ const WorkScheduleForm = () => {
       name: Yup.string().trim().required("Please Enter Work Schedule Name"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
-      toggleArrowTab(activeArrowTab + 1);
-      dispatch(setLoaderVisible(true));
+      if (
+        values.fullday_work_duration === 0 ||
+        values.halfday_work_duration === 0
+      ) {
+        toast.error("WorkSchedule Hour Can't Be Zero");
+      } else {
+        console.log("SUCCESSSS !!!! Formik Values = ", values);
+        toggleArrowTab(activeArrowTab + 1);
+        dispatch(setLoaderVisible(true));
 
-      const Api = await PostApi(
-        "/work-schedule/create/",
-        workScheduleData,
-        false
-      );
-      console.log("API RES = ", Api);
-      if (Api.status && Api.status === 200) {
-        // workScheduleData.id === 0
-        //   ? dispatch(addWorkSchedule(Api?.data.data))
-        //   : dispatch(editWorkSchedule(Api?.data?.data));
+        const Api = await PostApi(
+          "/work-schedule/create/",
+          workScheduleData,
+          false
+        );
+        console.log("API RES = ", Api);
+        if (Api.status && Api.status === 200) {
+          // workScheduleData.id === 0
+          //   ? dispatch(addWorkSchedule(Api?.data.data))
+          //   : dispatch(editWorkSchedule(Api?.data?.data));
 
-        if (workScheduleData.id === 0) {
-          dispatch(addWorkSchedule(Api?.data.data));
-          SetLocalStorage("work_schedule", Api?.data.data, 2);
+          if (workScheduleData.id === 0) {
+            dispatch(addWorkSchedule(Api?.data.data));
+            SetLocalStorage("work_schedule", Api?.data.data, 2);
+          } else {
+            dispatch(editWorkSchedule(Api?.data?.data));
+            SetLocalStorage("work_schedule", Api?.data.data, 3);
+          }
+
+          dispatch(toggleRSBView(false));
+          toast.success(Api?.data?.message);
         } else {
-          dispatch(editWorkSchedule(Api?.data?.data));
-          SetLocalStorage("work_schedule", Api?.data.data, 3);
+          toast.error(Api?.data?.message || Api?.data?.detail);
         }
 
-        dispatch(toggleRSBView(false));
-        toast.success(Api?.data?.message);
-      } else {
-        toast.error(Api?.data?.message || Api?.data?.detail);
+        dispatch(setLoaderVisible(false));
       }
-
-      dispatch(setLoaderVisible(false));
     },
   });
 
@@ -267,21 +275,6 @@ const WorkScheduleForm = () => {
                     }}
                   >
                     2)Select Working Hours
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    id="steparrow-gen-info-tab"
-                    className={classnames({
-                      active: activeArrowTab === 6,
-                      done: activeArrowTab <= 6 && activeArrowTab > 5,
-                    })}
-                    onClick={() => {
-                      toggleArrowTab(6);
-                    }}
-                  >
-                    3)Finish
                   </NavLink>
                 </NavItem>
               </Nav>
@@ -844,18 +837,6 @@ const WorkScheduleForm = () => {
                     <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
                     Submit
                   </button>
-                </div>
-              </TabPane>
-
-              <TabPane id="pills-experience" tabId={6}>
-                <div className="text-center">
-                  <div className="avatar-md mt-5 mb-4 mx-auto">
-                    <div className="avatar-title bg-light text-success display-4 rounded-circle">
-                      <i className="ri-checkbox-circle-fill"></i>
-                    </div>
-                  </div>
-                  <h5>Well Done !</h5>
-                  <p className="text-muted">You have Successfully Signed Up</p>
                 </div>
               </TabPane>
             </TabContent>

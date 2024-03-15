@@ -703,15 +703,18 @@ const AttendanceEmployeeTable = () => {
     console.log("final Update Obj = ", attendanceEditData);
 
     dispatch(setLoaderVisible(true));
-
-    const Api = await PostApi("/attendance/edit/", attendanceEditData, false);
-
-    if (Api.status && Api.status === 200) {
-      setEditModalOpen(false);
-      dispatch(updateIndividualAttendanceReportData(Api?.data?.data));
-      toast.success(Api?.data?.message);
+    if (attendanceEditData.final_paid_hr_in_seconds === 0) {
+      toast.error("Final Paid Hour Can't be zero");
     } else {
-      toast.error(Api?.data?.message || Api?.data?.detail);
+      const Api = await PostApi("/attendance/edit/", attendanceEditData, false);
+
+      if (Api.status && Api.status === 200) {
+        setEditModalOpen(false);
+        dispatch(updateIndividualAttendanceReportData(Api?.data?.data));
+        toast.success(Api?.data?.message);
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
+      }
     }
 
     dispatch(setLoaderVisible(false));

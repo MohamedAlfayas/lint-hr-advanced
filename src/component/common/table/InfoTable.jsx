@@ -294,28 +294,32 @@ const InfoTable = ({
           const finalHr =
             parseInt(selectedHour) * 3600 + parseInt(selectedMinute) * 60;
 
-          const data = {
-            id: [orderData.id],
-            hr_status: 2,
-            notes: result.value,
-            final_paid_hr_in_seconds: finalHr,
-            is_single_approval: true,
-          };
-
-          const Api = await PostApi(
-            "attendance/approve-or-reject/",
-            data,
-            false
-          );
-          console.log("Approve OR Reject Status = ", Api);
-          if (Api.status && Api.status === 200) {
-            dispatch(updateAttendanceApprovalData(data));
-            toast.success(Api?.data?.message);
+          if (finalHr === 0) {
+            toast.error("Final Hour Can't Be Zero");
           } else {
-            toast.error(Api?.data?.message || Api?.data?.detail);
-          }
+            const data = {
+              id: [orderData.id],
+              hr_status: 2,
+              notes: result.value,
+              final_paid_hr_in_seconds: finalHr,
+              is_single_approval: true,
+            };
 
-          console.log("Accepted Data", data);
+            const Api = await PostApi(
+              "attendance/approve-or-reject/",
+              data,
+              false
+            );
+            console.log("Approve OR Reject Status = ", Api);
+            if (Api.status && Api.status === 200) {
+              dispatch(updateAttendanceApprovalData(data));
+              toast.success(Api?.data?.message);
+            } else {
+              toast.error(Api?.data?.message || Api?.data?.detail);
+            }
+
+            console.log("Accepted Data", data);
+          }
         }
       } else {
         toast.error("Something Went Wrong");
