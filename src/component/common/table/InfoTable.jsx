@@ -624,12 +624,24 @@ const InfoTable = ({
       title: "Reset Password",
       html: `
         <form id="resetPasswordForm">
-          <label for="adminPassword" class="label-lc">Admin Password (${fname} ${lname})</label>
-          <input type="password" id="adminPassword" class="swal2-input"  placeholder="Enter Admin Password" required >
-          <label for="newPassword" class="label-lc">New Password (${orderData.fname} ${orderData.lname})</label>
-          <input type="password" id="newPassword" class="swal2-input"  placeholder="Enter New Password" required >
-          <label for="confirmPassword" class="label-lc">Confirm Password (${orderData.fname} ${orderData.lname})</label>
-          <input type="password" id="confirmPassword" class="swal2-input"  placeholder="Enter Confirm Password" required>
+        <div class="position-relative">
+        <label for="adminPassword" class="label-lc">Admin Password (${fname} ${lname})</label>
+        <div class="input-group">
+          <input type="password" id="adminPassword" class="form-control swal2-input" placeholder="Enter Admin Password" required>
+          <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-toggle" type="button"><i class="ri-eye-fill align-middle"></i></button>
+        </div>
+      </div>
+      <label for="newPassword" class="label-lc">New Password (${orderData.fname} ${orderData.lname})</label>
+      <div class="input-group">
+        <input type="password" id="newPassword" class="form-control swal2-input" placeholder="Enter New Password" required>
+        <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-toggle" type="button"><i class="ri-eye-fill align-middle"></i></button>
+      </div>
+      <label for="confirmPassword" class="label-lc">Confirm Password (${orderData.fname} ${orderData.lname})</label>
+      <div class="input-group">
+        <input type="password" id="confirmPassword" class="form-control swal2-input" placeholder="Enter Confirm Password" required         <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-toggle" type="button"><i class="ri-eye-fill align-middle"></i></button>
+>
+        <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-toggle" type="button"><i class="ri-eye-fill align-middle"></i></button>
+      </div>
         </form>
       `,
       icon: false,
@@ -667,12 +679,22 @@ const InfoTable = ({
         return { newPassword, confirmPassword };
       },
       didOpen: () => {
+        // Add event listener to the eye buttons for each password input
+        const passwordToggleButtons = document.querySelectorAll(".password-toggle");
+        passwordToggleButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            const passwordInput = button.previousElementSibling;
+            togglePasswordVisibility(passwordInput);
+          });
+        });
+    
         // Focus on the Admin Password input field
         const adminPasswordInput = document.getElementById("adminPassword");
         if (adminPasswordInput) {
           adminPasswordInput.focus();
         }
-      },
+      }
+    
     }).then((result) => {
       if (result.isConfirmed) {
         const { newPassword, confirmPassword } = result.value;
@@ -685,7 +707,13 @@ const InfoTable = ({
       }
     });
   };
-
+  function togglePasswordVisibility(passwordInput) {
+    if (passwordInput.type === "password") {
+      passwordInput.type = "text";
+    } else {
+      passwordInput.type = "password";
+    }
+  }
   // Column
   const columns = useMemo(
     () => [

@@ -322,7 +322,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
 
   // ];
 
-  document.title = `Attendance Approval | ${MetaTitle}`;
+  // document.title = `Attendance Approval | ${MetaTitle}`;
   return (
     <div>
       <InfoTable

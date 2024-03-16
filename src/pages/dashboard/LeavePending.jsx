@@ -241,7 +241,7 @@ const LeaveApprovalPending = ({ onDataLengthChange }) => {
 
   // ];
 
-  document.title = `Leave Approval | ${MetaTitle}`;
+  // document.title = `Leave Approval | ${MetaTitle}`;
   return (
     <React.Fragment>
       <InfoTable

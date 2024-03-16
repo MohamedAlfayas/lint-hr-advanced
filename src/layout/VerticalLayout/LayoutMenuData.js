@@ -9,6 +9,7 @@ const Navdata = () => {
   const [isAuth, setIsAuth] = useState(false);
   const [isPages, setIsPages] = useState(false);
   const [isBaseUi, setIsBaseUi] = useState(false);
+  const [isAttendance, setIsAttendance] = useState(false);
   const [isAdvanceUi, setIsAdvanceUi] = useState(false);
   const [isForms, setIsForms] = useState(false);
   const [isTables, setIsTables] = useState(false);
@@ -87,6 +88,9 @@ const Navdata = () => {
     if (iscurrentState !== "BaseUi") {
       setIsBaseUi(false);
     }
+    if (iscurrentState !== "Attendance") {
+      setIsAttendance(false);
+    }
     if (iscurrentState !== "AdvanceUi") {
       setIsAdvanceUi(false);
     }
@@ -123,6 +127,7 @@ const Navdata = () => {
     isAuth,
     isPages,
     isBaseUi,
+    isAttendance,
     isAdvanceUi,
     isForms,
     isTables,
@@ -141,33 +146,152 @@ const Navdata = () => {
       id: "dashboard",
       label: "Dashboards",
       icon: "ri-dashboard-2-line",
-      link: "/#",
+      link: "/dashboard",
+      parentId: "dashboard",
+      perm: "all",
       stateVariables: isDashboard,
-      click: function (e) {
-        e.preventDefault();
-        setIsDashboard(!isDashboard);
-        setIscurrentState("Dashboard");
-        updateIconSidebar(e);
-        // history('/')
-      },
-      subItems: [
-        {
-          id: "analytics",
-          label: "Analytics",
-          link: "/dashboard",
-          parentId: "dashboard",
-          perm: "all",
-        },
-      ],
+      // click: function (e) {
+      //   e.preventDefault();
+      //   setIsDashboard(!isDashboard);
+      //   setIscurrentState("Dashboard");
+      //   updateIconSidebar(e);
+      //   // history('/')
+      // },
+      // subItems: [
+      //   {
+      //     id: "analytics",
+      //     label: "Analytics",
+      //     link: "/dashboard",
+      //     parentId: "dashboard",
+      //     perm: "all",
+      //   },
+      // ],
     },
     {
       label: "General",
       isHeader: true,
     },
     {
+      id: "employee",
+      label: "Employee",
+      link: "/employee",
+      parentId: "baseUi",
+      perm: "employee",
+      icon:"ri-account-circle-line"
+    },
+    {
+      id: "attendance",
+      label: "Atttendance",
+      icon: " ri-user-follow-line",
+      link: "/#",
+      click: function (e) {
+        e.preventDefault();
+        setIsAttendance(!isAttendance);
+        setIscurrentState("Attendance");
+        updateIconSidebar(e);
+      },
+      stateVariables: isAttendance,
+      subItems: [
+        {
+          id: "attendance",
+          label: "Att.Overview",
+          link: "/attendance",
+          parentId: "baseUi",
+          perm: "attendance",
+        },
+        {
+          id: "holidays",
+          label: "Holidays",
+          link: "/holidays",
+          parentId: "baseUi",
+          perm: "holidays",
+        },
+        {
+          id: "leaves",
+          label: "Leave",
+          link: "/leaves",
+          parentId: "baseUi",
+          perm: "leaves",
+        },
+        {
+          id: "attendanceapproval",
+          label: "Attendance Approval",
+          link: "/attendanceapproval",
+          parentId: "baseUi",
+          perm: "attendance_approval",
+        },
+        {
+          id: "leaveapproval",
+          label: "Leave Approval",
+          link: "/leave-approval",
+          parentId: "baseUi",
+          perm: "leave_apporval",
+        },
+        {
+          id: "leavetype",
+          label: "Leave Type",
+          link: "/leavetype",
+          parentId: "baseUi",
+          perm: "leave_type",
+        },
+        {
+          id: "workschedule",
+          label: "WorkSchedule",
+          link: "/workschedule",
+          parentId: "baseUi",
+          perm: "work_schedule",
+        },
+      
+        // {
+        //   id: "customfield",
+        //   label: "Custom Field",
+        //   link: "/custom-field",
+        //   parentId: "baseUi",
+        //   perm: "custom_field",
+        // },
+        
+       
+       
+       
+        // {
+        //   id: "attendanceconfig",
+        //   label: "Attendance Configuration",
+        //   link: "/attendanceconfig",
+        //   parentId: "baseUi",
+        //   perm: "attendance_config",
+        // },
+       
+        // {
+        //   id: "payrollconfig",
+        //   label: "Pay Roll Configuration",
+        //   link: "/payrollconfig",
+        //   parentId: "baseUi",
+        //   perm: "payroll_config",
+        // },
+      
+        
+      ],
+    },
+    {
+      id: "payroll",
+      label: "Pay Roll",
+      link: "/payroll",
+      parentId: "payroll",
+      perm: "payroll",
+      icon: " ri-currency-line",
+    },
+    {
+      id: "attendancereport",
+      label: "Report",
+      link: "/attendancereport",
+      parentId: "baseUi",
+      perm: "attendance_report",
+      icon:"ri-file-chart-line"
+    },
+    {
       id: "baseUi",
-      label: "Settings",
-      icon: "ri-pencil-ruler-2-line",
+      label: "Configuration",
+      icon: "ri-settings-3-line",
       link: "/#",
       click: function (e) {
         e.preventDefault();
@@ -191,97 +315,9 @@ const Navdata = () => {
           parentId: "baseUi",
           perm: "roles",
         },
-        {
-          id: "workschedule",
-          label: "WorkSchedule",
-          link: "/workschedule",
-          parentId: "baseUi",
-          perm: "work_schedule",
-        },
-        {
-          id: "holidays",
-          label: "Holidays",
-          link: "/holidays",
-          parentId: "baseUi",
-          perm: "holidays",
-        },
-        {
-          id: "leavetype",
-          label: "Leave Type",
-          link: "/leavetype",
-          parentId: "baseUi",
-          perm: "leave_type",
-        },
-        // {
-        //   id: "customfield",
-        //   label: "Custom Field",
-        //   link: "/custom-field",
-        //   parentId: "baseUi",
-        //   perm: "custom_field",
-        // },
-        {
-          id: "employee",
-          label: "Employee",
-          link: "/employee",
-          parentId: "baseUi",
-          perm: "employee",
-        },
-        {
-          id: "leaves",
-          label: "Leaves",
-          link: "/leaves",
-          parentId: "baseUi",
-          perm: "leaves",
-        },
-        {
-          id: "leaveapproval",
-          label: "Leave Approval",
-          link: "/leave-approval",
-          parentId: "baseUi",
-          perm: "leave_apporval",
-        },
-        {
-          id: "attendance",
-          label: "Attendance",
-          link: "/attendance",
-          parentId: "baseUi",
-          perm: "attendance",
-        },
-        // {
-        //   id: "attendanceconfig",
-        //   label: "Attendance Configuration",
-        //   link: "/attendanceconfig",
-        //   parentId: "baseUi",
-        //   perm: "attendance_config",
-        // },
-        {
-          id: "payroll",
-          label: "Pay Roll",
-          link: "/payroll",
-          parentId: "payroll",
-          perm: "payroll",
-        },
-        // {
-        //   id: "payrollconfig",
-        //   label: "Pay Roll Configuration",
-        //   link: "/payrollconfig",
-        //   parentId: "baseUi",
-        //   perm: "payroll_config",
-        // },
-        {
-          id: "payrollconfig",
-          label: "Attendance Report",
-          link: "/attendancereport",
-          parentId: "baseUi",
-          perm: "attendance_report",
-        },
-        {
-          id: "attendanceapproval",
-          label: "Attendance Approval",
-          link: "/attendanceapproval",
-          parentId: "baseUi",
-          perm: "attendance_approval",
-        },
+      
+      
+        
       ],
     },
     //     {

@@ -8,7 +8,7 @@ const PayrollWidgets = () => {
       id: 1,
       icon: "ri-money-dollar-circle-fill",
       label: "Total Invested",
-      counter: "2390.68",
+      counter: "",
       badge: "ri-arrow-up-s-fill",
       badgeColor: "success",
       percentage: "6.24",
@@ -20,7 +20,7 @@ const PayrollWidgets = () => {
       id: 2,
       icon: "ri-arrow-up-circle-fill",
       label: "Total Change",
-      counter: "19523.25",
+      counter: "",
       badge: "ri-arrow-up-s-fill",
       badgeColor: "success",
       percentage: "3.67",
@@ -32,7 +32,7 @@ const PayrollWidgets = () => {
       id: 3,
       icon: "ri-arrow-down-circle-fill",
       label: "Day Change",
-      counter: "14799.44",
+      counter: "",
       badge: "ri-arrow-down-s-fill",
       badgeColor: "danger",
       percentage: "4.80",
@@ -80,7 +80,7 @@ const PayrollWidgets = () => {
                     }
                   >
                     <i className={"align-middle me-1 " + item.badge}></i>
-                    {item.percentage} %<span></span>
+                    {/* {item.percentage} %<span></span> */}
                   </span>
                 </div>
               </div>
