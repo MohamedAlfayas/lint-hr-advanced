@@ -152,7 +152,7 @@ const AttendanceGraph = () => {
   return (
     <React.Fragment>
       <Col xxl={12}>
-        <Card>
+        <Card className="h-100">
           <CardHeader className="border-0 pb-0">
             <h6 className="card-title mb-0">Employee Attendance Trend</h6>
           </CardHeader>

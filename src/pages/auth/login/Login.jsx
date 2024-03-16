@@ -57,8 +57,8 @@ const Login = () => {
     enableReinitialize: true,
 
     initialValues: {
-      email: userLogin.email || "elan@lintcloud.com" || "",
-      password: userLogin.password || "lint@123" || "",
+      email: userLogin.email || "",
+      password: userLogin.password || "",
     },
     validate,
     validationSchema: Yup.object({

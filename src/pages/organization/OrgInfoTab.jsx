@@ -125,7 +125,7 @@ const OrgInfoTab = () => {
   useEffect(() => {
     Api({
       method: "GET",
-      url: "/company/get-profile/",
+      url: "/branch/get-company-profile/",
     })
       .then((res) => {
         const response = res?.data?.data;
@@ -283,16 +283,21 @@ const OrgInfoTab = () => {
       //   },
       //   data: form_data,
       // })
-      const Api = await PostApi("/company/save-profile/", form_data, true);
+      const Api = await PostApi(
+        "/branch/save-company-profile/",
+        form_data,
+        true
+      );
       console.log("API RES = ", Api);
-      if (Api.status && Api.status === 200) {
+      console.log("API RES = ", Api.status);
+      if (!!Api.status && Api.status === 200) {
         console.log("RES ==== ", res);
-        toast.success(res?.data?.message);
         dispatch(setLoaderVisible(false));
+        toast.success(res?.data?.message);
       } else {
         console.log("ERRR === ", err);
-        toast.error(err?.response?.data?.message);
         dispatch(setLoaderVisible(false));
+        toast.error(err?.response?.data?.message);
       }
     },
   });

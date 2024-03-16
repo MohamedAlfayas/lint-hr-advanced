@@ -39,7 +39,9 @@ const Dashboard = () => {
                       <AttendanceGraph />
                     </Row>
                   </Col>
-                  <Col xl={12}><AttendanceLeaveApprovalTable /></Col>
+                  <Col xl={12}>
+                    <AttendanceLeaveApprovalTable />
+                  </Col>
                   <Col xl={12}> {/* <DeptWiseAttendanceWidgets /> */}</Col>
                 </Row>
               </div>

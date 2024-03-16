@@ -195,9 +195,17 @@ const WorkScheduleForm = () => {
       name: Yup.string().trim().required("Please Enter Work Schedule Name"),
     }),
     onSubmit: async (values) => {
+      const filteredWorkdays = values.workday.filter((workday) => {
+        return workday.is_day_on === true && workday.total_work_duration === 0;
+      });
+      const filteredDayon = values.workday.filter((workday) => {
+        return workday.is_day_on === true;
+      });
       if (
         values.fullday_work_duration === 0 ||
-        values.halfday_work_duration === 0
+        values.halfday_work_duration === 0 ||
+        filteredWorkdays.length > 0 ||
+        filteredDayon.length === 0
       ) {
         toast.error("WorkSchedule Hour Can't Be Zero");
       } else {
@@ -800,17 +808,40 @@ const WorkScheduleForm = () => {
                           </th>
                           <th>
                             <span className="mb-2 text-info">
-                              {workday.is_day_on === false
-                                ? "W/O"
-                                : `${String(
-                                    Math.floor(
-                                      workday.total_work_duration / 3600
-                                    )
-                                  ).padStart(2, "0")}:${String(
-                                    Math.floor(
-                                      (workday.total_work_duration % 3600) / 60
-                                    )
-                                  ).padStart(2, "0")} Hrs`}
+                              {workday.is_day_on === false ? (
+                                "W/O"
+                              ) : (
+                                <span className="mb-2 text-success">
+                                  {workScheduleData.fullday_work_duration >
+                                    workday.total_work_duration ||
+                                  workScheduleData.fullday_work_duration <
+                                    workday.total_work_duration ? (
+                                    <span className="mb-2 text-danger">
+                                      {`${String(
+                                        Math.floor(
+                                          workday.total_work_duration / 3600
+                                        )
+                                      ).padStart(2, "0")}:${String(
+                                        Math.floor(
+                                          (workday.total_work_duration % 3600) /
+                                            60
+                                        )
+                                      ).padStart(2, "0")} Hrs`}
+                                    </span>
+                                  ) : (
+                                    `${String(
+                                      Math.floor(
+                                        workday.total_work_duration / 3600
+                                      )
+                                    ).padStart(2, "0")}:${String(
+                                      Math.floor(
+                                        (workday.total_work_duration % 3600) /
+                                          60
+                                      )
+                                    ).padStart(2, "0")} Hrs`
+                                  )}
+                                </span>
+                              )}
                             </span>
                           </th>
                         </tr>
