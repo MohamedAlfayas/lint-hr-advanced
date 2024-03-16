@@ -477,7 +477,7 @@ const EmployeeOverview = (props) => {
                   </div>
                 </Col>
 
-                <Col xs={6} md={4}>
+                {/* <Col xs={6} md={4}>
                   <div className="d-flex mt-4">
                     <div className="flex-shrink-0 avatar-xs align-self-center me-3">
                       <div className="avatar-title bg-light rounded-circle fs-16 text-primary">
@@ -496,7 +496,7 @@ const EmployeeOverview = (props) => {
                       </Link>
                     </div>
                   </div>
-                </Col>
+                </Col> */}
               </Row>
             </CardBody>
           </Card>

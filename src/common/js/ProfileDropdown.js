@@ -31,20 +31,19 @@ const ProfileDropdown = () => {
   const dispatch = useDispatch();
 
   const logout = async () => {
-
     const newFCMToken = await generateToken();
 
     console.log("newFCMToken On Logout = ", newFCMToken);
 
     const values = {
-      'device_type': 1,
-      "fcm_token": newFCMToken
-    }
+      device_type: 1,
+      fcm_token: newFCMToken,
+    };
 
-    const token = JSON.parse(localStorage.getItem('lint_hr_token'));
+    const token = JSON.parse(localStorage.getItem("lint_hr_token"));
 
     if (token) {
-      values['refresh_token'] = token?.refresh
+      values["refresh_token"] = token?.refresh;
     }
 
     const Api = await PostApi("employee/auth/logout/", values, false);
@@ -73,7 +72,6 @@ const ProfileDropdown = () => {
     } else {
       toast.error(Api?.data?.message || Api?.data?.detail);
     }
-
   };
 
   //Dropdown Toggle
@@ -167,7 +165,7 @@ const ProfileDropdown = () => {
             >
               <i className="mdi mdi-wallet text-muted fs-16 align-middle me-1"></i>{" "}
               <span className="align-middle">
-                Balance : <b>$5971.67</b>
+                Balance : <b>$0.00</b>
               </span>
             </Link>
           </DropdownItem>
