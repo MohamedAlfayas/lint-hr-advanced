@@ -21,6 +21,7 @@ import OrgInfoTab from "./OrgInfoTab";
 import PayRollConfig from "./../payroll/PayRollConfig";
 import AttendanceConfig from "./../attendanceConfig/AttendanceConfig";
 import CustomField from "../customField/CustomField";
+import { useSelector } from "react-redux";
 
 const Section = () => {
   //Tab
@@ -30,6 +31,11 @@ const Section = () => {
       setActiveTab(tab);
     }
   };
+
+  const { company_detail } = useSelector((state) => state.CompanyReducer);
+
+  console.log("company_detail = ", company_detail);
+
   return (
     <React.Fragment>
       <Row>
@@ -50,7 +56,7 @@ const Section = () => {
                       <div className="col-md">
                         <div>
                           <h4 className="fw-bold">
-                            Lintcloud It Service Pvt Ltd.
+                            {company_detail?.full_name || ""}
                           </h4>
                           <div className="hstack gap-3 flex-wrap">
                             <div>

@@ -68,6 +68,7 @@ import {
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { useDispatch } from "react-redux";
 import { PostApi } from "../../common/api/PostApi";
+import { setCompanyDetail } from "../../redux/reducers/ChildReducer/CompanyReducer";
 // import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 
 const OrgInfoTab = () => {
@@ -145,6 +146,8 @@ const OrgInfoTab = () => {
             cf = CustomFieldsForThisForm;
           }
           setProfileData({ ...response, cf_values: cf });
+
+          dispatch(setCompanyDetail({ ...response, cf_values: cf }));
 
           setStateListOptions(
             CountryListOptions.find((d) => d.value === response?.country)
@@ -255,10 +258,7 @@ const OrgInfoTab = () => {
       timezone: Yup.string().required("Please Select Time Zone"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
       dispatch(setLoaderVisible(true));
-
-      console.log("company Profile form submit Obj = ", profileData);
 
       let form_data = new FormData();
       darkLogoFile !== null &&
@@ -273,31 +273,18 @@ const OrgInfoTab = () => {
           form_data.append(key[0], key[1]);
         }
       });
-      console.log("form_data", form_data);
 
-      // Api({
-      //   method: "POST",
-      //   url: "/company/save-profile/",
-      //   headers: {
-      //     "Content-Type": "multipart/form-data",
-      //   },
-      //   data: form_data,
-      // })
       const Api = await PostApi(
         "/branch/save-company-profile/",
         form_data,
         true
       );
-      console.log("API RES = ", Api);
-      console.log("API RES = ", Api.status);
-      if (!!Api.status && Api.status === 200) {
-        console.log("RES ==== ", res);
+      if (Api.status && Api.status === 200) {
+        toast.success(Api?.data?.message);
         dispatch(setLoaderVisible(false));
-        toast.success(res?.data?.message);
       } else {
-        console.log("ERRR === ", err);
+        toast.error(Api?.data?.message || Api?.data?.detail);
         dispatch(setLoaderVisible(false));
-        toast.error(err?.response?.data?.message);
       }
     },
   });
