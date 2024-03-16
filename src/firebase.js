@@ -9,8 +9,8 @@ const firebaseConfig = {
     projectId: "linthrdev",
     storageBucket: "linthrdev.appspot.com",
     messagingSenderId: "580310805054",
-    appId: "1:580310805054:web:29f658af55f6e37b663f6f",
-    measurementId: "G-3PYFN7BHYW"
+    appId: "1:580310805054:web:a302152acb53eaa2663f6f",
+    measurementId: "G-DETN70BRM3"
 };
 
 // Initialize Firebase
