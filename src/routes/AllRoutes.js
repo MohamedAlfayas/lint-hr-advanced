@@ -29,6 +29,7 @@ const Register = lazy(() => import("../pages/auth/register/Register"));
 const ForgetPassword = lazy(() =>
   import("../pages/auth/forgotpassword/ForgetPassword")
 );
+const WorkSpace = lazy(() => import("../pages/auth/workspace/WorkSpace"));
 const ProjectOverview = lazy(() => import("../pages/organization"));
 const Employee = lazy(() => import("../pages/employee/Employee"));
 const EmployeeView = lazy(() => import("../pages/employee/EmployeeView"));
@@ -119,6 +120,7 @@ const publicRoutes = [
   { path: "/auth/login", component: <Login /> },
   { path: "/auth/forgot-password", component: <ForgetPassword /> },
   { path: "/auth/register", component: <Register /> },
+  { path: "/auth/workspace", component: <WorkSpace /> },
 ];
 
 export { publicRoutes, privateRoutes };
