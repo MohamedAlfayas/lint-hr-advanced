@@ -1,7 +1,6 @@
 import React, { useRef, useState } from "react";
 import { Card, CardHeader, Col, Label, Row } from "reactstrap";
 import Select from "react-select";
-import { leave_approval_table_filter_options } from "../../../common/constant/Constants";
 import { useDispatch, useSelector } from "react-redux";
 import { DatePicker } from "antd";
 import { MonthFormat } from "../../../common/constant/Constants";
@@ -10,9 +9,13 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 import { setLeaveApproval } from "../../../redux/reducers/ChildReducer/LeaveApprovalReducer";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
 import { Api } from "../../../common/api/Api";
+import { setAttendanceApprovalData } from "../../../redux/reducers/ChildReducer/AttendanceApprovalReducer";
+import { toast } from "react-toastify";
+import { Link } from "react-router-dom";
+import AttendanceApproval from "../../../pages/attendanceApproval/AttendanceApproval";
 dayjs.extend(customParseFormat);
 
-const LeaveApprovalFilter = () => {
+const LeaveApprovalFilter = ({ formname }) => {
   const inputRef = useRef();
 
   const dispatch = useDispatch();
@@ -23,6 +26,7 @@ const LeaveApprovalFilter = () => {
       .toString()
       .padStart(2, "0")}`
   );
+
   const employeeTypeOptions = [
     { id: "0", label: "All Employee", value: "0" },
     { id: "1", label: "My Team Members", value: "1" },
@@ -38,22 +42,43 @@ const LeaveApprovalFilter = () => {
 
   const handleFilter = async () => {
     dispatch(setLoaderVisible(true));
-    Api({
-      type: "GET",
-      url:
-        "leave/get-leave-application-for-approval/?thisMonth=" +
-        filteredMonth +
-        "&employee_type=" +
-        employeeType,
-    })
-      .then((res) => {
-        dispatch(setLeaveApproval(res?.data?.data));
-        dispatch(setLoaderVisible(false));
+    if (formname === "leave_approval_component_name") {
+      Api({
+        type: "GET",
+        url:
+          "leave/get-leave-application-for-approval/?thisMonth=" +
+          filteredMonth +
+          "&employee_type=" +
+          employeeType,
       })
-      .catch((err) => {
-        console.log("ERR = ", err);
-        dispatch(setLoaderVisible(false));
-      });
+        .then((res) => {
+          dispatch(setLeaveApproval(res?.data?.data));
+          dispatch(setLoaderVisible(false));
+        })
+        .catch((err) => {
+          console.log("ERR = ", err);
+          dispatch(setLoaderVisible(false));
+        });
+    } else if (formname === "attendance_approval_component_name") {
+      Api({
+        type: "GET",
+        url:
+          "attendance/get-attendance-data-for-approval/?thisMonth=" +
+          filteredMonth +
+          "&employee_type=" +
+          employeeType,
+      })
+        .then((res) => {
+          dispatch(setAttendanceApprovalData(res?.data?.data));
+          dispatch(setLoaderVisible(false));
+        })
+        .catch((err) => {
+          console.log("ERR = ", err);
+          dispatch(setLoaderVisible(false));
+        });
+    } else {
+      toast.error("Sometyhing Went Wrong!");
+    }
   };
 
   return (
@@ -79,16 +104,19 @@ const LeaveApprovalFilter = () => {
               />
             </Col>
             <Col md={3}>
-              <DatePicker
-                value={dayjs(filteredMonth)}
-                format={MonthFormat}
-                picker="month"
-                allowClear={false}
-                className="form-control"
-                placeholder="Select Month"
-                onChange={handleDateRangeChange}
-              />
+              <div className="form-icon right">
+                <DatePicker
+                  value={dayjs(filteredMonth)}
+                  format={MonthFormat}
+                  picker="month"
+                  allowClear={false}
+                  className="form-control"
+                  placeholder="Select Month"
+                  onChange={handleDateRangeChange}
+                />
+              </div>
             </Col>
+
             <div className="col-lg-auto">
               <div className="hstack gap-2">
                 <button
@@ -98,6 +126,20 @@ const LeaveApprovalFilter = () => {
                 >
                   <i className="ri-equalizer-fill me-1 align-bottom"></i> Filter
                 </button>
+              </div>
+            </div>
+            <div className="col-lg-auto">
+              <div className="hstack gap-2">
+                <Link to="/attendanceapproval" className="btn btn-info">
+                  <i className="ri-grid-fill"></i> Attendance Approval
+                </Link>
+              </div>
+            </div>
+            <div className="col-lg-auto">
+              <div className="hstack gap-2">
+                <Link to="/leave-approval" className="btn btn-info">
+                  <i className="ri-grid-fill"></i> Leave Approval
+                </Link>
               </div>
             </div>
           </Row>

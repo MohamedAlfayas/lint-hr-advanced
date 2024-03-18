@@ -15,7 +15,6 @@ import {
 import classnames from "classnames";
 import AttendanceApproval from "../attendanceApproval/AttendanceApproval";
 import AttendancePendingTable from "./AttendancePendingTable";
-import LeaveApprovalFilter from "../../component/common/tableFilter/LeaveApprovalFilter";
 import LeaveApprovalPending from "./LeavePending";
 
 const AttendanceLeaveApprovalTable = () => {

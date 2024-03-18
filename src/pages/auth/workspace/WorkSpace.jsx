@@ -25,10 +25,14 @@ const WorkSpace = () => {
       domain: domain || "",
     },
     validationSchema: Yup.object({
-      domain: Yup.string().trim().required("Please Enter Your Domain"),
+      domain: Yup.string()
+        .trim()
+        .matches(/^[a-zA-Z0-9.-]+$/, "Invalid domain URL")
+        .required("Domain URL is required"),
     }),
     onSubmit: (values) => {
       console.log("Values = ", values);
+
       //   if (domain.trim().length === 0) {
       //     toast.error("Please Fill Your Details");
       //   } else {
@@ -117,6 +121,14 @@ const WorkSpace = () => {
                                     id="passwordHelpBlock"
                                     className="form-text"
                                   ></div>
+                                  {!validation.errors.domain && (
+                                    <div
+                                      id="passwordHelpBlock"
+                                      className="form-text mb-3"
+                                    >
+                                      Domain name.
+                                    </div>
+                                  )}
                                 </div>
                               </Col>
                             </div>
@@ -131,34 +143,7 @@ const WorkSpace = () => {
                               </Button>
                             </div>
 
-                            <div className="mt-4 text-center">
-                              {/* <div className="signin-other-title">
-                                <h5 className="fs-13 mb-4 title">
-                                  Sign In with
-                                </h5>
-                              </div>
-
-                              <div>
-                                <Button
-                                  color="primary"
-                                  className="btn-icon me-1"
-                                >
-                                  <i className="ri-facebook-fill fs-16"></i>
-                                </Button>
-                                <Button
-                                  color="danger"
-                                  className="btn-icon me-1"
-                                >
-                                  <i className="ri-google-fill fs-16"></i>
-                                </Button>
-                                <Button color="dark" className="btn-icon me-1">
-                                  <i className="ri-github-fill fs-16"></i>
-                                </Button>
-                                <Button color="info" className="btn-icon">
-                                  <i className="ri-twitter-fill fs-16"></i>
-                                </Button>
-                              </div> */}
-                            </div>
+                            <div className="mt-4 text-center"></div>
                           </Form>
                         </div>
 

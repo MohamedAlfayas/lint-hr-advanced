@@ -30,15 +30,22 @@ import { differenceInMinutes } from "date-fns";
 import { GetAmPmDateTime } from "../../common/js/ConvertDateTimeToAmPm";
 import "./../../common/css/lc_style.css";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
-import AttendanceApprovalFilter from "../../component/common/tableFilter/AttendanceApprovalFilter";
 import { PostApi } from "../../common/api/PostApi";
 import { toast } from "react-toastify";
-const AttendanceApproval = () => {
+import ApprovalFilter from "../../component/common/tableFilter/ApprovalFilter";
+const AttendanceApproval = ({ formname, PendingLeave }) => {
   const dispatch = useDispatch();
 
   const { attendance_approval_data } = useSelector(
     (state) => state.AttendanceApprovalReducer
   );
+  const AttendancePending = attendance_approval_data.filter(
+    (d) => d.hr_status === 3
+  ).length;
+
+  // useEffect(() => {
+  //   onDataLengthChange(PendingLength);
+  // }, [PendingLength, onDataLengthChange]);
 
   const DepartmentData = GetLocalStorageData("department") || [];
   const EmployeeData = GetLocalStorageData("employee") || [];
@@ -421,7 +428,11 @@ const AttendanceApproval = () => {
       <Container fluid>
         <div className="page-content" style={{ marginBottom: "-135px" }}>
           <div style={{ zIndex: 1000, position: "relative" }}>
-            <AttendanceApprovalFilter />
+            <ApprovalFilter
+              formname={"attendance_approval_component_name"}
+              PendingLeave={PendingLeave}
+              AttendancePending={AttendancePending}
+            />
           </div>
         </div>
       </Container>
