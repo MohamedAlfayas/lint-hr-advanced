@@ -292,6 +292,7 @@ const AccountSettings = () => {
             ),
         });
     };
+
     const FormikForm = useFormik({
         enableReinitialize: true,
         initialValues: employeeObj,
@@ -413,7 +414,7 @@ const AccountSettings = () => {
     return (
         <React.Fragment>
             <div className="page-content">
-                
+
                 <Container fluid>
                     <div className="position-relative mx-n4 mt-n4">
                         <div className="profile-wid-bg profile-setting-img">
@@ -429,52 +430,61 @@ const AccountSettings = () => {
                                         </Label>
                                     </div> */}
                                 </div>
-                                <div className="flex-shrink-0" style={{ marginRight: "30px", marginTop:"120px"}}>
-                    <Link
-                      to="/accountsettings"
-                      className="btn btn-success"
-                    >
-                      <i className="ri-arrow-left-line align-bottom"></i> Back To Employee
-                   
-                    </Link>
-                  </div>
+                                <div className="flex-shrink-0" style={{ marginRight: "30px", marginTop: "120px" }}>
+                                    <Link
+                                        to="/accountsettings"
+                                        className="btn btn-success"
+                                    >
+                                        <i className="ri-arrow-left-line align-bottom"></i> Back To Employee
+
+                                    </Link>
+                                </div>
                             </div>
                         </div>
-                        
+
                     </div>
-                    
+
                     <Row>
                         <Col xxl={3} sm={3} md={3} lg={3}>
                             <Card className="mt-n5">
                                 <CardBody className="p-4">
                                     <div className="text-center">
-                                        <div className="profile-user position-relative d-inline-block mx-auto  mb-4">
-                                            {/* <div className="profile-wid-bg">
-                                                <img
-                                                    src={
-                                                        profileObj.profile_url ? profileObj.profile_url : DummyUserImg
-                                                    }
-                                                    style={{ objectFit: "cover" }}
-                                                    alt=""
-                                                    className="profile-wid-img"
-                                                />
-                                            </div> */}
-                                            <img src={avatar}
+                                        <div className="profile-user position-relative d-inline-block mx-auto mb-4">
+                                            <img
+                                                src={
+                                                    employeeObj.profile_url
+                                                        ? employeeObj.profile_url
+                                                        : DummyUserImg
+                                                }
                                                 className="rounded-circle avatar-xl img-thumbnail user-profile-image"
-                                                alt="user-profile" />
+                                                alt="user-profile"
+                                            />
                                             <div className="avatar-xs p-0 rounded-circle profile-photo-edit">
-                                                <Input id="profile-img-file-input" type="file"
-                                                    className="profile-img-file-input" />
-                                                <Label htmlFor="profile-img-file-input"
-                                                    className="profile-photo-edit avatar-xs">
+                                                <Input
+                                                    id="profile-img-file-input"
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="profile-img-file-input"
+                                                    onChange={handleProfileChange}
+                                                />
+                                                <Label
+                                                    htmlFor="profile-img-file-input"
+                                                    className="profile-photo-edit avatar-xs"
+                                                >
                                                     <span className="avatar-title rounded-circle bg-light text-body">
                                                         <i className="ri-camera-fill"></i>
                                                     </span>
                                                 </Label>
                                             </div>
                                         </div>
-                                        <h5 className="fs-16 mb-1">Anna Adame</h5>
-                                        <p className="text-muted mb-0">Lead Designer / Developer</p>
+                                        <h5 className="fs-16 mb-1">{employeeObj.fname}</h5>
+                                        <p className="text-muted mb-0">{employeeObj?.role_id
+                                            ? role_id_option.length
+                                                ? role_id_option.find(
+                                                    (d) => d.id === employeeObj?.role_id
+                                                )?.name
+                                                : ""
+                                            : ""}</p>
                                     </div>
                                 </CardBody>
                             </Card>
