@@ -21,6 +21,7 @@ import OrgInfoTab from "./OrgInfoTab";
 import PayRollConfig from "./../payroll/PayRollConfig";
 import AttendanceConfig from "./../attendanceConfig/AttendanceConfig";
 import CustomField from "../customField/CustomField";
+import Roles from "../roles/Roles";
 import { useSelector } from "react-redux";
 
 const Section = () => {
@@ -176,6 +177,20 @@ const Section = () => {
                       Custom Field
                     </NavLink>
                   </NavItem>
+                  <NavItem>
+                    <NavLink
+                      className={classnames(
+                        { active: activeTab === "7" },
+                        "fw-semibold"
+                      )}
+                      onClick={() => {
+                        toggleTab("7");
+                      }}
+                      href="#"
+                    >
+                      Roles
+                    </NavLink>
+                  </NavItem>
                 </Nav>
               </CardBody>
             </div>
@@ -202,6 +217,9 @@ const Section = () => {
             </TabPane>
             <TabPane tabId="6">
               <CustomField />
+            </TabPane>
+            <TabPane tabId="7">
+              <Roles />
             </TabPane>
           </TabContent>
         </Col>

@@ -292,33 +292,33 @@ const Navdata = () => {
       id: "baseUi",
       label: "Configuration",
       icon: "ri-settings-3-line",
-      link: "/#",
+      link: "/organization",
       click: function (e) {
         e.preventDefault();
         setIsBaseUi(!isBaseUi);
         setIscurrentState("BaseUi");
         updateIconSidebar(e);
       },
-      stateVariables: isBaseUi,
-      subItems: [
-        {
-          id: "organization",
-          label: "Organization",
-          link: "/organization",
-          parentId: "baseUi",
-          perm: "organization",
-        },
-        {
-          id: "roles",
-          label: "Roles",
-          link: "/roles",
-          parentId: "baseUi",
-          perm: "roles",
-        },
+      // stateVariables: isBaseUi,
+      // subItems: [
+      //   {
+      //     id: "organization",
+      //     label: "Organization",
+      //     link: "/organization",
+      //     parentId: "baseUi",
+      //     perm: "organization",
+      //   },
+      //   // {
+      //   //   id: "roles",
+      //   //   label: "Roles",
+      //   //   link: "/roles",
+      //   //   parentId: "baseUi",
+      //   //   perm: "roles",
+      //   // },
       
       
         
-      ],
+      // ],
     },
     //     {
     //         id: "advanceUi",

@@ -10,7 +10,11 @@ import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderRed
 import { Api } from "../../../common/api/Api";
 import { setAttendanceApprovalData } from "../../../redux/reducers/ChildReducer/AttendanceApprovalReducer";
 import { useDispatch } from "react-redux";
+import AttendanceApproval from "../../../pages/attendanceApproval/AttendanceApproval";
+import LeaveApproval from "../../../pages/leave/LeaveApproval";
+import { Link } from "react-router-dom";
 dayjs.extend(customParseFormat);
+
 
 const AttendanceApprovalFilter = () => {
   const [employeeType, setEmployeeType] = useState(1);
@@ -100,6 +104,29 @@ const AttendanceApprovalFilter = () => {
                 >
                   <i className="ri-equalizer-fill me-1 align-bottom"></i> Filter
                 </button>
+              </div>
+            </div>
+            <div className="col-lg-auto">
+              <div className="hstack gap-2">
+                <button
+                  type="button"
+                  onClick={<AttendanceApproval/>}
+                  className="btn btn-info"
+                >
+                  <i className="ri-grid-fill"></i> Attendance Approval
+                </button>
+              </div>
+            </div>
+            <div className="col-lg-auto">
+              <div className="hstack gap-2">
+                <Link
+              to="/leave-approval"
+                
+                   
+                  className="btn btn-info"
+                >
+                  <i className="ri-grid-fill"></i> Leave Approval
+                </Link>
               </div>
             </div>
           </Row>

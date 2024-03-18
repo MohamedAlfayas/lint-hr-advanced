@@ -628,20 +628,19 @@ const InfoTable = ({
         <label for="adminPassword" class="label-lc">Admin Password (${fname} ${lname})</label>
         <div class="input-group">
           <input type="password" id="adminPassword" class="form-control swal2-input" placeholder="Enter Admin Password" required>
-          <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-toggle" type="button"><i class="ri-eye-fill align-middle"></i></button>
         </div>
       </div>
       <label for="newPassword" class="label-lc">New Password (${orderData.fname} ${orderData.lname})</label>
       <div class="input-group">
         <input type="password" id="newPassword" class="form-control swal2-input" placeholder="Enter New Password" required>
-        <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-toggle" type="button"><i class="ri-eye-fill align-middle"></i></button>
       </div>
       <label for="confirmPassword" class="label-lc">Confirm Password (${orderData.fname} ${orderData.lname})</label>
       <div class="input-group">
-        <input type="password" id="confirmPassword" class="form-control swal2-input" placeholder="Enter Confirm Password" required         <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-toggle" type="button"><i class="ri-eye-fill align-middle"></i></button>
->
-        <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-toggle" type="button"><i class="ri-eye-fill align-middle"></i></button>
+        <input type="password" id="confirmPassword" class="form-control swal2-input" placeholder="Enter Confirm Password" required>    
+
       </div>
+      
+      
         </form>
       `,
       icon: false,

@@ -121,6 +121,7 @@ const Roles = () => {
         filterKey={filterKey}
         filterOptions={filterOptions}
         width_per={"60%"}
+        table_class={"Lc_leave_apply_table me-n3 ms-n3"}
       />
     </React.Fragment>
   );

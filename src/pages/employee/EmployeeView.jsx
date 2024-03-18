@@ -28,6 +28,7 @@ import { useEffect } from "react";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import EmployeeOverview from "./EmployeeOverview";
 import EmployeeAttendance from "./EmployeeAttendance";
+import AccountSettings from "./AccountSetting";
 
 const EmployeeView = () => {
   const { id } = useParams();
@@ -223,7 +224,7 @@ const EmployeeView = () => {
 
                   <div className="flex-shrink-0" style={{ marginLeft: "10px" }}>
                     <Link
-                      to="/pages-profile-settings"
+                      to="/accountsettings"
                       className="btn btn-success"
                     >
                       <i className="ri-edit-box-line align-bottom"></i> Account

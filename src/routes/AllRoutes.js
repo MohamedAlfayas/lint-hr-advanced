@@ -1,5 +1,6 @@
 import { Navigate } from "react-router";
 import React, { lazy } from "react";
+import AccountSettings from "../pages/employee/AccountSetting";
 
 // import Dashboard from "../pages/dashboard/Dashboard";
 // import Login from "../pages/auth/login/Login";
@@ -71,6 +72,7 @@ const privateRoutes = [
   { path: "/workschedule", component: <WorkSchedule />, perm: "work_schedule" },
   { path: "/holidays", component: <Holidays />, perm: "holidays" },
   { path: "/leavetype", component: <LeaveType />, perm: "leave_type" },
+  { path: "/accountsettings", component: <AccountSettings />, perm: "account_settings" },
   {
     path: "/leave-approval",
     component: <LeaveApproval />,
