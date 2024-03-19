@@ -73,10 +73,12 @@ const Login = () => {
       values["username"] = values.email;
       values["device_type"] = 1;
 
+      const domain = window.location.hostname.split(".")[0];
+
       axios({
         method: "POST",
-        url: `${BaseURL}employee/auth/login/`,
-        // url : `http://192.168.1.100:8000/employee/auth/login/`,
+        // url: `${BaseURL}employee/auth/login/`,
+        url: `https://${domain}.lintedu.com/employee/auth/login/`,
         data: values,
       })
         .then(async (res) => {
@@ -90,7 +92,8 @@ const Login = () => {
 
           axios({
             method: "POST",
-            url: `${BaseURL}employee/subscribe-topic/`,
+            // url: `${BaseURL}employee/subscribe-topic/`,
+            url: `https://${domain}.lintedu.com/employee/subscribe-topic/`,
             headers: {
               Authorization: `Bearer ${res?.data?.token?.access}`,
             },

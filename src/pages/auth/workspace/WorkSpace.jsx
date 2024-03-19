@@ -16,6 +16,7 @@ import { MetaTitle } from "../../../common/data/MetaTitle";
 import logoDark from "../../../assets/images/logo-dark.png";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import axios from "axios";
 
 const WorkSpace = () => {
   const [domain, setDomain] = useState("");
@@ -32,6 +33,25 @@ const WorkSpace = () => {
     }),
     onSubmit: (values) => {
       console.log("Values = ", values);
+
+      const domain = values?.domain;
+
+      if (!!domain) {
+        console.log("DOMAIN = ", domain);
+        axios({
+          method: "POST",
+          url: `https://${domain}.lintedu.com/validate-domain/`,
+          data: {
+            domain: domain,
+          },
+        })
+          .then((res) => {
+            console.log("Check Domain Res = ", res);
+          })
+          .catch((err) => {
+            console.log("Domain Err = ", err);
+          });
+      }
 
       //   if (domain.trim().length === 0) {
       //     toast.error("Please Fill Your Details");

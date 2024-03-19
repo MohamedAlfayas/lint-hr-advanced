@@ -2,7 +2,7 @@ import axios from "axios";
 import { BaseURL } from "./BaseURL";
 
 export const Api = axios.create({
-  baseURL: BaseURL,
+  baseURL: "",
 });
 
 let isRefreshing = false;
@@ -58,6 +58,13 @@ Api.interceptors.response.use(
     return response;
   },
   async (error) => {
+
+    console.log("Error Response = ", error);
+
+    if (!!error?.response && error.response.status === 404 && error.response.data.error === 'invalid_domain') {
+      window.location.href = "/auth/workspace";
+    }
+
     const originalRequest = error.config;
 
     // Handle token-related exceptions
@@ -103,12 +110,36 @@ Api.interceptors.response.use(
       }
     }
 
-    console.log("API ERROR = ", error);
-
     // Handle other types of errors
     return Promise.reject(error);
   }
 );
+
+// Function to get the base URL dynamically
+const getBaseURL = () => {
+  // Extract the domain from the current URL
+  const domain = window.location.hostname.split('.')[0];
+  console.log("Domain = ", domain);
+  // Construct the base URL dynamically
+  return `https://${domain}.lintedu.com/`;
+  // return BaseURL
+};
+
+// Set the dynamic base URL
+Api.defaults.baseURL = getBaseURL();
+
+// Update base URL whenever the window location changes
+window.addEventListener("popstate", () => {
+  Api.defaults.baseURL = getBaseURL();
+});
+
+window.addEventListener("pushstate", () => {
+  Api.defaults.baseURL = getBaseURL();
+});
+
+window.addEventListener("replacestate", () => {
+  Api.defaults.baseURL = getBaseURL();
+});
 
 const logout = () => {
   // Clear local storage or perform any other logout actions

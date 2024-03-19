@@ -120,7 +120,10 @@ const publicRoutes = [
   { path: "/auth/login", component: <Login /> },
   { path: "/auth/forgot-password", component: <ForgetPassword /> },
   { path: "/auth/register", component: <Register /> },
-  { path: "/auth/workspace", component: <WorkSpace /> },
 ];
 
-export { publicRoutes, privateRoutes };
+const workSpaceRoutes = [
+  { path: "/auth/workspace", component: <WorkSpace /> },
+]
+
+export { publicRoutes, privateRoutes, workSpaceRoutes };

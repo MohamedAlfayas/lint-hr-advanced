@@ -1,7 +1,7 @@
 import { Route, Routes } from "react-router";
 import PublicRoute from "./PublicRoute";
 import PrivateRoute from "./PrivateRoute";
-import { privateRoutes, publicRoutes } from "./AllRoutes";
+import { privateRoutes, publicRoutes, workSpaceRoutes } from "./AllRoutes";
 import Layout from "../layout/Layout";
 import React, { useEffect, useMemo, lazy, Suspense, } from "react";
 import LoadingBar from "react-top-loading-bar";
@@ -56,6 +56,21 @@ const Index = () => {
                                         {/* {route.component} */}
                                     </Layout>
                                 </PrivateRoute>
+                            }
+                            key={idx}
+                            exact={true}
+                        />
+                    ))}
+                </Route>
+
+                <Route>
+                    {workSpaceRoutes.map((route, idx) => (
+                        <Route
+                            path={route.path}
+                            element={
+                                <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
+                                    {route.component}
+                                </Suspense>
                             }
                             key={idx}
                             exact={true}
