@@ -215,18 +215,18 @@ const Navdata = () => {
         },
         {
           id: "attendanceapproval",
-          label: "Attendance Approval",
+          label: "Approval",
           link: "/attendanceapproval",
           parentId: "baseUi",
           perm: "attendance_approval",
         },
-        {
-          id: "leaveapproval",
-          label: "Leave Approval",
-          link: "/leave-approval",
-          parentId: "baseUi",
-          perm: "leave_apporval",
-        },
+        // {
+        //   id: "leaveapproval",
+        //   label: "Leave Approval",
+        //   link: "/leave-approval",
+        //   parentId: "baseUi",
+        //   perm: "leave_apporval",
+        // },
         {
           id: "leavetype",
           label: "Leave Type",
