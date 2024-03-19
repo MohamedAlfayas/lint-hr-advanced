@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Badge, Card, CardHeader, Col, Label, Row } from "reactstrap";
+import { Badge, Card, CardHeader, Col, Row } from "reactstrap";
 import Select from "react-select";
 import { useDispatch, useSelector } from "react-redux";
 import { DatePicker } from "antd";
@@ -14,9 +14,21 @@ import { toast } from "react-toastify";
 import { Link, useLocation } from "react-router-dom";
 dayjs.extend(customParseFormat);
 
-const ApprovalFilter = ({ formname, PendingLeave, AttendancePending }) => {
+const ApprovalFilter = ({ formname }) => {
+  const { leave_approval_data } = useSelector(
+    (data) => data.LeaveApprovalReducer
+  );
+  const PendingLeave = leave_approval_data.filter((d) => d.status === 1).length;
+
+  const { attendance_approval_data } = useSelector(
+    (state) => state.AttendanceApprovalReducer
+  );
+  const AttendancePending = attendance_approval_data.filter(
+    (d) => d.hr_status === 3
+  ).length;
+
   console.log("PendingLeave", PendingLeave);
-  console.log("AttendancePending", AttendancePending);
+  console.log("OverallPending", AttendancePending + PendingLeave);
   const inputRef = useRef();
   const location = useLocation();
   const pathname = location.pathname;

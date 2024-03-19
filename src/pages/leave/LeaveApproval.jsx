@@ -13,12 +13,11 @@ import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import ApprovalFilter from "../../component/common/tableFilter/ApprovalFilter";
 
-const LeaveApproval = ({ formname, AttendancePending }) => {
+const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
   const dispatch = useDispatch();
   const { leave_approval_data } = useSelector(
     (data) => data.LeaveApprovalReducer
   );
-  const PendingLeave = leave_approval_data.filter((d) => d.status === 1).length;
 
   // useEffect(() => {
   //   onDataLengthChange(PendingLength);

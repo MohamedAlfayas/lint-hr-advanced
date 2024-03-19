@@ -33,15 +33,12 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 import { PostApi } from "../../common/api/PostApi";
 import { toast } from "react-toastify";
 import ApprovalFilter from "../../component/common/tableFilter/ApprovalFilter";
-const AttendanceApproval = ({ formname, PendingLeave }) => {
+const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
   const dispatch = useDispatch();
 
   const { attendance_approval_data } = useSelector(
     (state) => state.AttendanceApprovalReducer
   );
-  const AttendancePending = attendance_approval_data.filter(
-    (d) => d.hr_status === 3
-  ).length;
 
   // useEffect(() => {
   //   onDataLengthChange(PendingLength);
