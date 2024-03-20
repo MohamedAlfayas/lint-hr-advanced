@@ -30,7 +30,7 @@ import avatar5 from "../../../assets/images/users/avatar-5.jpg";
 import avatar6 from "../../../assets/images/users/avatar-6.jpg";
 import avatar7 from "../../../assets/images/users/avatar-7.jpg";
 import { Api } from "../../../common/api/Api";
-import { BaseURL } from "../../../common/api/BaseURL";
+import { BaseURL, LCPlatform } from "../../../common/api/BaseURL";
 import axios from "axios";
 import { GetGlobalVersion } from "../../../meta/GetGlobalVersion";
 import { toast } from "react-toastify";
@@ -75,10 +75,20 @@ const Login = () => {
 
       const domain = window.location.hostname.split(".")[0];
 
+      let login_url = "";
+      let subscribe_topic_url = "";
+
+      if (!!LCPlatform && LCPlatform === "local") {
+        login_url = `${BaseURL}employee/auth/login/`;
+        subscribe_topic_url = `${BaseURL}employee/subscribe-topic/`;
+      } else {
+        login_url = `https://${domain}.lintedu.com/employee/auth/login/`;
+        subscribe_topic_url = `https://${domain}.lintedu.com/employee/subscribe-topic/`;
+      }
+
       axios({
         method: "POST",
-        // url: `${BaseURL}employee/auth/login/`,
-        url: `https://${domain}.lintedu.com/employee/auth/login/`,
+        url: login_url,
         data: values,
       })
         .then(async (res) => {
@@ -92,8 +102,7 @@ const Login = () => {
 
           axios({
             method: "POST",
-            // url: `${BaseURL}employee/subscribe-topic/`,
-            url: `https://${domain}.lintedu.com/employee/subscribe-topic/`,
+            url: subscribe_topic_url,
             headers: {
               Authorization: `Bearer ${res?.data?.token?.access}`,
             },
@@ -161,8 +170,8 @@ const Login = () => {
       console.log("Login Page Rendering !!!! - ", domain);
       axios({
         method: "POST",
-        url: `https://${domain}.lintedu.com/api/validate-domain/`,
-        // url: `${BaseURL}api/validate-domain/`,
+        // url: `https://${domain}.lintedu.com/api/validate-domain/`,
+        url: `${BaseURL}api/validate-domain/`,
         data: {
           domain: domain,
         },

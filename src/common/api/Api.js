@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BaseURL } from "./BaseURL";
+import { BaseURL, LCPlatform } from "./BaseURL";
 
 export const Api = axios.create({
   baseURL: "",
@@ -119,10 +119,17 @@ Api.interceptors.response.use(
 const getBaseURL = () => {
   // Extract the domain from the current URL
   const domain = window.location.hostname.split('.')[0];
-  console.log("Domain = ", domain);
-  // Construct the base URL dynamically
-  return `https://${domain}.lintedu.com/`;
-  // return BaseURL
+  if (!!LCPlatform && LCPlatform === 'local') {
+    return BaseURL
+  }
+  else {
+    // Construct the base URL dynamically
+    if (!!domain) {
+      return `https://${domain}.lintedu.com/`;
+    }
+  }
+
+
 };
 
 // Set the dynamic base URL
