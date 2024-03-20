@@ -25,17 +25,6 @@ const WorkSpace = () => {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src =
-      "https://www.google.com/recaptcha/enterprise.js?render=6LeknJ0pAAAAAHc6G0SDk5KjGzlbxvBLTTruQSzx";
-    script.async = true;
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
   const validation = useFormik({
     enableReinitialize: true,
     initialValues: {

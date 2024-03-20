@@ -650,6 +650,7 @@ const InfoTable = ({
       confirmButtonText: "Reset Password",
       preConfirm: () => {
         const adminPasswordInput = document.getElementById("adminPassword");
+        console.log("adminPasswordInput", adminPasswordInput.value);
         const adminPasswordValue = adminPasswordInput.value.trim();
         const newPasswordInput = document.getElementById("newPassword");
         const newPasswordValue = newPasswordInput.value.trim();
@@ -667,6 +668,7 @@ const InfoTable = ({
           Swal.showValidationMessage("Please enter Confirm Password");
           return false;
         }
+        const adminPassword = document.getElementById("adminPassword");
         const newPassword = document.getElementById("newPassword").value;
         const confirmPassword =
           document.getElementById("confirmPassword").value;
@@ -675,34 +677,45 @@ const InfoTable = ({
           Swal.showValidationMessage("Passwords do not match");
         }
 
-        return { newPassword, confirmPassword };
+        return { adminPassword, newPassword, confirmPassword };
       },
       didOpen: () => {
         // Add event listener to the eye buttons for each password input
-        const passwordToggleButtons = document.querySelectorAll(".password-toggle");
+        const passwordToggleButtons =
+          document.querySelectorAll(".password-toggle");
         passwordToggleButtons.forEach((button) => {
           button.addEventListener("click", () => {
             const passwordInput = button.previousElementSibling;
             togglePasswordVisibility(passwordInput);
           });
         });
-    
+
         // Focus on the Admin Password input field
         const adminPasswordInput = document.getElementById("adminPassword");
         if (adminPasswordInput) {
           adminPasswordInput.focus();
         }
-      }
-    
-    }).then((result) => {
+      },
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        const { newPassword, confirmPassword } = result.value;
-        // Handle reset password logic with newPassword and confirmPassword
-        Swal.fire(
-          "Password Reset!",
-          "Your password has been reset.",
-          "success"
-        );
+        const { adminPassword, newPassword, confirmPassword } = result.value;
+        const data = {
+          admin_password: adminPassword.value,
+          emp_uuid: orderData.emp_uuid,
+          new_password: newPassword,
+          confirm_password: confirmPassword,
+        };
+        console.log("Data", data);
+        const Api = await PostApi("employee/reset-password/", data, false);
+        if (Api.status && Api.status === 200) {
+          Swal.fire(
+            "Password Reset!",
+            "Password has been reset successfully.",
+            "success"
+          );
+        } else {
+          toast.error(Api?.data?.message);
+        }
       }
     });
   };

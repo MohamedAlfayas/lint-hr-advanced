@@ -1197,14 +1197,21 @@ const AttendanceEmployeeTable = () => {
                             </td>
                             <td>
                               <small className="mb-0 text-muted">
-                                <a
-                                  href={`https://maps.google.com/?q=${checkInData.location}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <i className="mdi mdi-map-marker"></i>{" "}
-                                  {checkInData.location || ""}
-                                </a>
+                                {checkInData.location_id !== null ? (
+                                  <a
+                                    href={`https://maps.google.com/?q=${checkInData.latitude},${checkInData.longitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <i className="mdi mdi-map-marker"></i>{" "}
+                                    {checkInData.location || ""}
+                                  </a>
+                                ) : (
+                                  <p>
+                                    <i className="mdi mdi-map-marker"></i>{" "}
+                                    {checkInData.location || ""}
+                                  </p>
+                                )}
                               </small>
                             </td>
                           </tr>
