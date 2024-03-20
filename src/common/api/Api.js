@@ -14,7 +14,18 @@ const getRefreshToken = async () => {
     localStorage.getItem("lint_hr_token")
   ).refresh;
   try {
-    const response = await axios.post(`${BaseURL}api/token/refresh/`, {
+    let refresh_token_url = ""
+    const domain = window.location.hostname.split('.')[0];
+    if (!!LCPlatform && LCPlatform === 'local') {
+      refresh_token_url = BaseURL
+    }
+    else {
+      // Construct the base URL dynamically
+      if (!!domain) {
+        refresh_token_url = `https://${domain}.lintedu.com/`;
+      }
+    }
+    const response = await axios.post(`${refresh_token_url}api/token/refresh/`, {
       refresh: refreshToken,
     });
 
