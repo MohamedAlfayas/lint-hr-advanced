@@ -1,5 +1,5 @@
 import { useFormik } from "formik";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -154,6 +154,37 @@ const Login = () => {
   });
 
   document.title = `Login | ${MetaTitle || "Lint HR"}`;
+
+  useEffect(() => {
+    const domain = window.location.hostname.split(".")[0];
+    if (!!domain) {
+      console.log("Login Page Rendering !!!! - ", domain);
+      axios({
+        method: "POST",
+        url: `https://${domain}.lintedu.com/api/validate-domain/`,
+        // url: `${BaseURL}api/validate-domain/`,
+        data: {
+          domain: domain,
+        },
+      })
+        .then((res) => {
+          console.log("domain validate success - ", res);
+          // window.location.href = "/dashboard";
+        })
+        .catch((error) => {
+          console.log("domain validate Error - ", error);
+          if (
+            !!error?.response &&
+            error.response.status === 404 &&
+            error.response.data.error === "invalid_domain"
+          ) {
+            window.location.href = "/auth/workspace";
+          } else {
+            toast?.error(error?.response?.data?.message);
+          }
+        });
+    }
+  }, []);
 
   return (
     <React.Fragment>

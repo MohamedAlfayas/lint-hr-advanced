@@ -56,7 +56,7 @@ const WorkSpace = () => {
         console.log("DOMAIN = ", domain);
         axios({
           method: "POST",
-          url: `https://${domain}.lintedu.com/validate-domain/`,
+          url: `https://${domain}.lintedu.com/api/validate-domain/`,
           data: {
             domain: domain,
           },
