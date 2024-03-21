@@ -13,8 +13,6 @@ import {
 } from "../../common/constant/Constants";
 
 const Roles = () => {
-  document.title = `Role | ${MetaTitle}`;
-
   const dispatch = useDispatch();
 
   const { role_data } = useSelector((state) => state.RoleReducer);

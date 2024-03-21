@@ -77,10 +77,10 @@ const OrgTable = ({ departmentId }) => {
                   className="link-body-emphasis mb-0"
                 >
                   {" "}
-                  <h5 className="fs-14 mb-1">{obj.fname}</h5>
+                  <h5 className="fs-14 mb-1 text text-start">{obj.fname}</h5>
                 </Link>
               </div>
-              <div>{obj.email}</div>
+              <div className="text-start">{obj.email}</div>
             </div>
           </div>
         );
@@ -246,10 +246,10 @@ const OrgTable = ({ departmentId }) => {
                 <div>
                   <Link to="#" className="link-body-emphasis mb-0">
                     {" "}
-                    <h5 className="fs-14 mb-1">{rm_obj.fname}</h5>
+                    <h5 className="fs-14 mb-1 text-start">{rm_obj.fname}</h5>
                   </Link>
                 </div>
-                <div>{rm_obj.email}</div>
+                <div className="text-start">{rm_obj.email}</div>
               </div>
             </div>
           )

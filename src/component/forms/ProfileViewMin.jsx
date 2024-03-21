@@ -46,6 +46,7 @@ const ProfileViewMin = () => {
   console.log("WS Data = ", WorkScheduleData);
   const [profileObj, setProfileObj] = useState({});
   const [empId, setEmpId] = useState(0);
+  const [empuid, setEmpuid] = useState();
   const [todayDate, setTodayDate] = useState(0);
   const [individualAttendanceReportData, setIndividualAttendanceReportData] =
     useState([]);
@@ -107,6 +108,7 @@ const ProfileViewMin = () => {
         });
       setProfileObj(form_obj);
       setEmpId(form_obj.id);
+      setEmpuid(form_obj.emp_uuid);
     }
   }, [form_obj]);
 
@@ -198,7 +200,7 @@ const ProfileViewMin = () => {
   };
   const navigatuser = () => {
     dispatch(toggleRSBView(false));
-    navigate(`/employee/view/${empId}`);
+    navigate(`/employee/view/${empuid}`);
     Api({
       type: "GET",
       url: `leave/get-leave-type-details-for-employee/?employee_id=${empId}`,

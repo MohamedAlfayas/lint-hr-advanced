@@ -650,7 +650,6 @@ const InfoTable = ({
       confirmButtonText: "Reset Password",
       preConfirm: () => {
         const adminPasswordInput = document.getElementById("adminPassword");
-        console.log("adminPasswordInput", adminPasswordInput.value);
         const adminPasswordValue = adminPasswordInput.value.trim();
         const newPasswordInput = document.getElementById("newPassword");
         const newPasswordValue = newPasswordInput.value.trim();
@@ -705,7 +704,7 @@ const InfoTable = ({
           new_password: newPassword,
           confirm_password: confirmPassword,
         };
-        console.log("Data", data);
+
         const Api = await PostApi("employee/reset-password/", data, false);
         if (Api.status && Api.status === 200) {
           Swal.fire(

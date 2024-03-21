@@ -33,6 +33,8 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const employee_data = GetLocalStorageData("employee");
   const { id } = useParams();
 
+  console.log("ID", id);
+
   useEffect(() => {
     Api({
       type: "GET",
@@ -40,6 +42,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
     })
       .then((res) => {
         const response = res?.data?.data;
+        console.log("response", response);
         let emp_options = response.map((d) =>
           employee_data.find((e) => e.id === d)
         );
@@ -98,7 +101,9 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const navigate = useNavigate();
 
   const handleEmployeeChange = (e) => {
-    navigate(`/employee/view/${e.value}`);
+    const emp_uid = employeeOptions.find((f) => f.id === e.value).emp_uuid;
+    console.log("emp_uuuis", emp_uid);
+    navigate(`/employee/view/${emp_uid}`);
     Api({
       type: "GET",
       url: `leave/get-leave-type-details-for-employee/?employee_id=${e.value}`,
@@ -172,9 +177,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
                       placeholder="Select Employee"
                       value={
                         (id &&
-                          employeeOptions.find(
-                            (e) => e.id === parseInt(id, 10)
-                          )) ||
+                          employeeOptions.find((e) => e.emp_uuid === id)) ||
                         []
                       }
                       onChange={handleEmployeeChange}

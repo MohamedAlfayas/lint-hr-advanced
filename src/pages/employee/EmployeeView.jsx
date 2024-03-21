@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
+  Button,
   Card,
   CardBody,
   Col,
@@ -29,11 +30,22 @@ import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import EmployeeOverview from "./EmployeeOverview";
 import EmployeeAttendance from "./EmployeeAttendance";
 import AccountSettings from "./AccountSetting";
+import { setEmployeeAccountSettingsData } from "../../redux/reducers/ChildReducer/AccountSettingsReducer";
+import { useDispatch } from "react-redux";
 
 const EmployeeView = () => {
   const { id } = useParams();
   const DepartmentData = GetLocalStorageData("department") || [];
   const RoleData = GetLocalStorageData("role") || [];
+  const EmployeeData = GetLocalStorageData("employee") || [];
+
+  const employeeAccountData = EmployeeData.find((d) => d.emp_uuid === id);
+
+  console.log("Employee Account settings Object", employeeAccountData);
+
+  console.log("ID", id);
+
+  const dispatch = useDispatch();
 
   const [profileObj, setProfileObj] = useState({});
   console.log("obj", profileObj);
@@ -43,7 +55,7 @@ const EmployeeView = () => {
   useEffect(() => {
     const EmployeeData = GetLocalStorageData("employee") || [];
     if (id && EmployeeData.length) {
-      const thisEmployeeData = EmployeeData.find((d) => d.id === parseInt(id));
+      const thisEmployeeData = EmployeeData.find((d) => d.emp_uuid === id);
 
       if (
         thisEmployeeData !== undefined &&
@@ -223,13 +235,19 @@ const EmployeeView = () => {
                   </div>
 
                   <div className="flex-shrink-0" style={{ marginLeft: "10px" }}>
-                    <Link
-                      to="/accountsettings"
+                    <Button
                       className="btn btn-success"
+                      onClick={() => {
+                        console.log("On Click", employeeAccountData);
+                        dispatch(
+                          setEmployeeAccountSettingsData(employeeAccountData)
+                        );
+                        navigate(`/accountsettings/`);
+                      }}
                     >
                       <i className="ri-edit-box-line align-bottom"></i> Account
                       Settings
-                    </Link>
+                    </Button>
                   </div>
                 </div>
 
