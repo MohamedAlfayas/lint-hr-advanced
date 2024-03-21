@@ -865,8 +865,8 @@ const WorkScheduleForm = () => {
                     type="submit"
                     className="btn btn-success btn-label right ms-auto nexttab nexttab"
                   >
-                    <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
-                    Submit
+                   <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
+                    Save
                   </button>
                 </div>
               </TabPane>

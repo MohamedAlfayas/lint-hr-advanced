@@ -121,7 +121,16 @@ const monthYear =employeeDate.map((dateString) => {
 
     const exportindividualExcelFile = () => {
       const workbook = new ExcelJs.Workbook();
-      const sheet = workbook.addWorksheet("My Sheet", {});
+      const sheet = workbook.addWorksheet("My Sheet", {
+        views: [
+          {
+            state: "frozen",
+            xSplit: 4,
+            ySplit: 2,
+          },
+        ],
+      });
+      // const sheet = workbook.addWorksheet("My Sheet", {});
       sheet.properties.defaultRowHeight = 20;
       sheet.autoFilter = {
           from: {
@@ -166,6 +175,7 @@ const monthYear =employeeDate.map((dateString) => {
             const workScheduleHr = ConvertSecondsToTime(attendance_data.work_schedule_hr_without_break_in_seconds);
             const checkedInHr = ConvertSecondsToTime(attendance_data.checked_in_hr_in_seconds);
             const status = attendance_data.hr_status;
+    
             function getStatusText(hr_status) {
                 switch (hr_status) {
                     case 1:
@@ -180,10 +190,12 @@ const monthYear =employeeDate.map((dateString) => {
                         return "Unknown";
                 }
             }
+    
             const statusText = getStatusText(status);
     
             let entry_status;
             const activity = attendance_data.day_status;
+    
             if (activity === null) {
                 entry_status = "-";
             } else {
@@ -214,7 +226,45 @@ const monthYear =employeeDate.map((dateString) => {
             const inLength = entryLogIn.length;
             const outLength = entryLogOut.length;
             const maxIterations = Math.max(inLength, outLength);
-    
+            function applyFontColor(cell, cellNumber, attend_data, statusText, entry_status) {
+              let fontColor = "000000"; // Default font color (black)
+              let isBold = false;
+              // Check cell number and corresponding data to determine font color
+              switch (cellNumber) {
+                // Attend Data
+                case 5:
+                  fontColor = attend_data === "P" ? "00FF00" : // Green for Present
+                    attend_data === "A" ? "FF0000" : // Red for Absent
+                      attend_data === "H" ? "000000" : // Blue for Holiday
+                      attend_data === "L" ? "FFA500" : // Orange for Leave
+                        attend_data === "WO" ? "888888" : // Blue for WeekOff
+                          "000000"; // Default for other cases
+                  isBold = true;
+                  break;
+                // Status Text
+                case 6:
+                  fontColor = statusText === "Auto Approval" ? "87CEEB" : // Sky blue for Auto Approval
+                  statusText === "Approval" ? "00FF00" : // Green for Approval
+                  statusText === "Pending" ? "FFA500" : // Orange for Pending
+                  statusText === "Reject" ? "FF0000" : // Red for Reject
+                          "000000"; // Default for other cases
+                  isBold = true;
+                  break;
+                // Entry Status
+                case 7:
+                  fontColor = entry_status === "Early In" ? "00FF00" : // Green for Early In
+                    entry_status === "OnTime" ? "00FF00" : // Green for On Time
+                      entry_status === "Late" ? "FFA500" : // Orange for Late
+                        entry_status === "Early Out" ? "FFA500" : // Orange for Early Out
+                          "000000"; // Default for other cases
+                  isBold = true;
+                  break;
+                // Add more cases for other cells if needed
+              }
+  
+              // Apply font color to the cell
+              cell.font = { color: { argb: fontColor }, bold: isBold};
+            }
             row.push(formatDate(date));
             row.push(emp_name);
             row.push(foundEmployee ? foundEmployee.email : "");
@@ -228,6 +278,9 @@ const monthYear =employeeDate.map((dateString) => {
             row.push(total_hour);
             row.push(editedHours || "-");
     
+            // Flag to track if in/out data has been added for the day
+            let inOutAdded = false;
+    
             // If either entryLogIn or entryLogOut is empty, push an empty row
             if (inLength === 0 || outLength === 0) {
                 row.push(inLength > 0 ? entryLogIn.map(entry => entry.location).join(", ") : "-"); // In Location
@@ -235,14 +288,22 @@ const monthYear =employeeDate.map((dateString) => {
                 row.push(inLength > 0 ? entryLogIn[0].time : "-"); // In Time
                 row.push(outLength > 0 ? entryLogOut[0].time : "-"); // Out Time
                 row.push("-"); // Total Hours
-                sheet.addRow(row);
+                sheet.addRow(row).eachCell((cell, cellNumber) => {
+                 // Assuming the text content for the cell is in the row array
+                  applyFontColor(cell, cellNumber,  attend_data, statusText, entry_status);
+              });
             } else {
                 for (let i = 0; i < maxIterations; i++) {
                     const newRow = [...row]; // Copy the existing row
+                    const inOut =[]
                     newRow.push(i < inLength ? entryLogIn[i].location : "-"); // In Location
                     newRow.push(i < outLength ? entryLogOut[i].location : "-"); // Out Location
                     newRow.push(i < inLength ? entryLogIn[i].time : "-"); // In Time
                     newRow.push(i < outLength ? entryLogOut[i].time : "-"); // Out Time
+                    inOut.push(i < inLength ? entryLogIn[i].location : "-"); // In Location
+                    inOut.push(i < outLength ? entryLogOut[i].location : "-"); // Out Location
+                    inOut.push(i < inLength ? entryLogIn[i].time : "-"); // In Time
+                    inOut.push(i < outLength ? entryLogOut[i].time : "-"); // Out Time
                     if (entryLogIn[i] && entryLogOut[i]) {
                         let logInTime = new Date("2000-01-01 " + entryLogIn[i].time);
                         let logOutTime = new Date("2000-01-01 " + entryLogOut[i].time);
@@ -257,14 +318,33 @@ const monthYear =employeeDate.map((dateString) => {
                         // Format the result
                         let differenceFormatted = hours.toString().padStart(2, '0') + ":" + minutes.toString().padStart(2, '0') + " hr";
                         newRow.push(differenceFormatted); // Push the formatted difference
+                        inOut.push(differenceFormatted);
                     } else {
                         newRow.push("-"); // Push '-' if either logInTime or logOutTime is not available
                     }
-                    sheet.addRow(newRow);
+                    
+                    // Add the new row based on the condition
+                    if (!inOutAdded) {
+                      sheet.addRow(newRow).eachCell((cell, cellNumber) => {
+                       // Assuming the text content for the cell is in the row array
+                        applyFontColor(cell, cellNumber, attend_data, statusText, entry_status);
+                    });
+                    } else {
+                        // Push empty values for other rows
+                        const emptyRow = [formatDate(date), "-", "", "-", "-", "-", "-", "-", "-", "-", "-", "-",];
+                        const inoutRow = [...emptyRow,inOut[0],inOut[1],inOut[2],inOut[3],inOut[4]]
+                        sheet.addRow(inoutRow).eachCell((cell, cellNumber) => {
+                           // Assuming the text content for the cell is in the row array
+                          applyFontColor(cell, cellNumber,  attend_data, statusText, entry_status);
+                      });
+                        // sheet.addRow(inOut);
+                    }
+                    inOutAdded = true; // Set flag to true after adding in/out data for the day
                 }
             }
         }
     });
+    
     
       
       const maxColumns = sheet.columns.length;
