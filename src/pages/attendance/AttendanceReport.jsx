@@ -65,7 +65,7 @@ const AttendanceReport = () => {
   useEffect(() => {
     const today = new Date();
     const thisMonth = `${today.getFullYear()}-${(today
-      .getMonth() +1 )
+      .getMonth() + 1)
       .toString()
       .padStart(2, "0")}`;
 
@@ -90,7 +90,7 @@ const AttendanceReport = () => {
   };
   const [filterKeys, setFilterKeys] = useState({
     month: `${new Date().getFullYear()}-${(new Date()
-      .getMonth() +1)
+      .getMonth() + 1)
       .toString()
       .padStart(2, "0")}`,
   });
@@ -107,14 +107,14 @@ const AttendanceReport = () => {
   };
 
   const employeeDate = Array.from(new Set(team_daily_attendance_report.flatMap((employee) =>
-  employee.workday_data.map((report) => report.date)
-)));
-const monthYear =employeeDate.map((dateString) => {
-  const date = new Date(dateString);
-  const month = date.toLocaleString("default", { month: "short" });
-  const year = date.getFullYear();
-  return `${month} ${year}`;
-});
+    employee.workday_data.map((report) => report.date)
+  )));
+  const monthYear = employeeDate.map((dateString) => {
+    const date = new Date(dateString);
+    const month = date.toLocaleString("default", { month: "short" });
+    const year = date.getFullYear();
+    return `${month} ${year}`;
+  });
 
 
   const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
@@ -133,277 +133,279 @@ const monthYear =employeeDate.map((dateString) => {
       // const sheet = workbook.addWorksheet("My Sheet", {});
       sheet.properties.defaultRowHeight = 20;
       sheet.autoFilter = {
-          from: {
-              row: 1, // Assuming your headers start from row 1
-              column: 1, // Assuming "Employee Name" is the first column
-          },
-          to: {
-              row: 2, // Assuming all rows are populated
-              column: 2, // Assuming "Email" is the second column
-          },
+        from: {
+          row: 1, // Assuming your headers start from row 1
+          column: 1, // Assuming "Employee Name" is the first column
+        },
+        to: {
+          row: 2, // Assuming all rows are populated
+          column: 2, // Assuming "Email" is the second column
+        },
       };
-  
-      const headers = ["Employee Name", "Email", "Emp ID", "Attendance","Status", "Activity", "Work Schedule","Checked In","OT", "Paid Hr","Edited Hours", "In Location", "Out Location",  "In", "Out",   "Total"];
+
+      const headers = ["Employee Name", "Email", "Emp ID", "Attendance", "Status", "Activity", "Work Schedule", "Checked In", "OT", "Paid Hr", "Edited Hours", "In Location", "Out Location", "In", "Out", "Total"];
       // Assuming `team_daily_attendance_report` is available
       const employeeDatesXls = Array.from(new Set(team_daily_attendance_report.flatMap((employee) =>
-          employee.workday_data.map((report) => report.date)
+        employee.workday_data.map((report) => report.date)
       )));
-  
+
       const foundEmployee = employee_data.find((emp) => rowData.employee_id === emp.id);
       const emp_name = foundEmployee ? foundEmployee.fname : "";
       const employee_id = foundEmployee ? foundEmployee.emp_id : "";
-  
+
       // Add headers row
       const headerRow = sheet.addRow(["Date", ...headers]);
       headerRow.eachCell((cell) => {
-    cell.font = { bold: true }; // Make the header cells bold
-});
+        cell.font = { bold: true }; // Make the header cells bold
+      });
       const entry_status_column = [];
       // Add data rows
       employeeDatesXls.forEach((date, index) => {
         const row = [];
         const attendance_data = rowData.workday_data.find((day) => day.date === date);
         if (attendance_data) {
-            const attend_data =
-                attendance_data.is_present === true ? "P" :
-                attendance_data.is_holiday === true ? "H" :
+          const attend_data =
+            attendance_data.is_present === true ? "P" :
+              attendance_data.is_holiday === true ? "H" :
                 attendance_data.is_day_on === false ? "WO" :
-                attendance_data.is_leave_approved === true ? "L" :
-                attendance_data.leave_taken_without_approval === true ? "A" : "A";
-    
-            const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds);
-            const workScheduleHr = ConvertSecondsToTime(attendance_data.work_schedule_hr_without_break_in_seconds);
-            const checkedInHr = ConvertSecondsToTime(attendance_data.checked_in_hr_in_seconds);
-            const status = attendance_data.hr_status;
-    
-            function getStatusText(hr_status) {
-                switch (hr_status) {
-                    case 1:
-                        return "Auto Approval";
-                    case 2:
-                        return "Approval";
-                    case 3:
-                        return "Pending";
-                    case 4:
-                        return "Reject";
-                    default:
-                        return "Unknown";
-                }
+                  attendance_data.is_leave_approved === true ? "L" :
+                    attendance_data.leave_taken_without_approval === true ? "A" : "A";
+
+          const total_hour = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds);
+          const workScheduleHr = ConvertSecondsToTime(attendance_data.work_schedule_hr_without_break_in_seconds);
+          const checkedInHr = ConvertSecondsToTime(attendance_data.checked_in_hr_in_seconds);
+          const status = attendance_data.hr_status;
+
+          function getStatusText(hr_status) {
+            switch (hr_status) {
+              case 1:
+                return "Auto Approval";
+              case 2:
+                return "Approval";
+              case 3:
+                return "Pending";
+              case 4:
+                return "Reject";
+              default:
+                return "Unknown";
             }
-    
-            const statusText = getStatusText(status);
-    
-            let entry_status;
-            const activity = attendance_data.day_status;
-    
-            if (activity === null) {
-                entry_status = "-";
-            } else {
-                entry_status =
-                    activity.early_in === true ? earlyin_display.text :
-                    activity.ontime === true ? on_time_entry_display.text :
-                    activity.late === true ? late_entry_display.text :
+          }
+
+          const statusText = getStatusText(status);
+          let entry_status;
+          const activity = attendance_data.day_status;
+
+          if (attendance_data.is_present === true && activity === null) {
+            entry_status = "N/A";
+          } else if (activity === null || attendance_data.is_holiday === true || attendance_data.is_leave_approved === true || attendance_data.leave_taken_without_approval === true) {
+            entry_status = "-";
+          } else {
+            entry_status =
+              activity.early_in === true ? earlyin_display.text :
+                activity.ontime === true ? on_time_entry_display.text :
+                  activity.late === true ? late_entry_display.text :
                     activity.early_out === true ? earlyout_display.text :
-                    on_time_entry_display.text;
-            }
-    
-            const otHours = ConvertSecondsToTime(attendance_data.final_ot_hr_in_seconds);
-            const editedHours = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds - attendance_data.checked_in_hr_in_seconds);
-    
-            const entryLogs = attendance_data.entry_log.map(entry => {
-                const entryTime = entry.entry_time;
-                const location = entry.location;
-                return {
-                    time: format(ParseTime(entryTime), "h:mm a"),
-                    location: entry.location,
-                    type: entry.entry_type
-                };
-            });
-    
-            const entryLogIn = entryLogs.filter(entry => entry.type === 1);
-            const entryLogOut = entryLogs.filter(entry => entry.type === 2);
-    
-            const inLength = entryLogIn.length;
-            const outLength = entryLogOut.length;
-            const maxIterations = Math.max(inLength, outLength);
-            function applyFontColor(cell, cellNumber, attend_data, statusText, entry_status) {
-              let fontColor = "000000"; // Default font color (black)
-              let isBold = false;
-              // Check cell number and corresponding data to determine font color
-              switch (cellNumber) {
-                // Attend Data
-                case 5:
-                  fontColor = attend_data === "P" ? "00FF00" : // Green for Present
-                    attend_data === "A" ? "FF0000" : // Red for Absent
-                      attend_data === "H" ? "000000" : // Blue for Holiday
+                      on_time_entry_display.text;
+          }
+
+          const otHours = ConvertSecondsToTime(attendance_data.final_ot_hr_in_seconds);
+          const editedHours = ConvertSecondsToTime(attendance_data.final_paid_hr_in_seconds - attendance_data.checked_in_hr_in_seconds);
+
+          const entryLogs = attendance_data.entry_log.map(entry => {
+            const entryTime = entry.entry_time;
+            const location = entry.location;
+            return {
+              time: format(ParseTime(entryTime), "h:mm a"),
+              location: entry.location,
+              type: entry.entry_type
+            };
+          });
+
+          const entryLogIn = entryLogs.filter(entry => entry.type === 1);
+          const entryLogOut = entryLogs.filter(entry => entry.type === 2);
+
+          const inLength = entryLogIn.length;
+          const outLength = entryLogOut.length;
+          const maxIterations = Math.max(inLength, outLength);
+          function applyFontColor(cell, cellNumber, attend_data, statusText, entry_status) {
+            let fontColor = "000000"; // Default font color (black)
+            let isBold = false;
+            // Check cell number and corresponding data to determine font color
+            switch (cellNumber) {
+              // Attend Data
+              case 5:
+                fontColor = attend_data === "P" ? "00FF00" : // Green for Present
+                  attend_data === "A" ? "FF0000" : // Red for Absent
+                    attend_data === "H" ? "000000" : // Blue for Holiday
                       attend_data === "L" ? "FFA500" : // Orange for Leave
                         attend_data === "WO" ? "888888" : // Blue for WeekOff
                           "000000"; // Default for other cases
-                  isBold = true;
-                  break;
-                // Status Text
-                case 6:
-                  fontColor = statusText === "Auto Approval" ? "87CEEB" : // Sky blue for Auto Approval
+                isBold = true;
+                break;
+              // Status Text
+              case 6:
+                fontColor = statusText === "Auto Approval" ? "87CEEB" : // Sky blue for Auto Approval
                   statusText === "Approval" ? "00FF00" : // Green for Approval
-                  statusText === "Pending" ? "FFA500" : // Orange for Pending
-                  statusText === "Reject" ? "FF0000" : // Red for Reject
-                          "000000"; // Default for other cases
-                  isBold = true;
-                  break;
-                // Entry Status
-                case 7:
-                  fontColor = entry_status === "Early In" ? "00FF00" : // Green for Early In
-                    entry_status === "OnTime" ? "00FF00" : // Green for On Time
-                      entry_status === "Late" ? "FFA500" : // Orange for Late
-                        entry_status === "Early Out" ? "FFA500" : // Orange for Early Out
-                          "000000"; // Default for other cases
-                  isBold = true;
-                  break;
-                // Add more cases for other cells if needed
-              }
-  
-              // Apply font color to the cell
-              cell.font = { color: { argb: fontColor }, bold: isBold};
+                    statusText === "Pending" ? "FFA500" : // Orange for Pending
+                      statusText === "Reject" ? "FF0000" : // Red for Reject
+
+                        "000000"; // Default for other cases
+                isBold = true;
+                break;
+              // Entry Status
+              case 7:
+                fontColor = entry_status === "Early In" ? "00FF00" : // Green for Early In
+                  entry_status === "OnTime" ? "00FF00" : // Green for On Time
+                    entry_status === "Late" ? "FFA500" : // Orange for Late
+                      entry_status === "Early Out" ? "FFA500" : // Orange for Early Out
+                        "000000"; // Default for other cases
+                isBold = true;
+                break;
+              // Add more cases for other cells if needed
             }
-            row.push(formatDate(date));
-            row.push(emp_name);
-            row.push(foundEmployee ? foundEmployee.email : "");
-            row.push(employee_id);
-            row.push(attend_data);
-            row.push(statusText || "-");
-            row.push(entry_status || "-");
-            row.push(workScheduleHr);
-            row.push(checkedInHr);
-            row.push(otHours || "-");
-            row.push(total_hour);
-            row.push(editedHours || "-");
-    
-            // Flag to track if in/out data has been added for the day
-            let inOutAdded = false;
-    
-            // If either entryLogIn or entryLogOut is empty, push an empty row
-            if (inLength === 0 || outLength === 0) {
-                row.push(inLength > 0 ? entryLogIn.map(entry => entry.location).join(", ") : "-"); // In Location
-                row.push(outLength > 0 ? entryLogOut.map(entry => entry.location).join(", ") : "-"); // Out Location
-                row.push(inLength > 0 ? entryLogIn[0].time : "-"); // In Time
-                row.push(outLength > 0 ? entryLogOut[0].time : "-"); // Out Time
-                row.push("-"); // Total Hours
-                sheet.addRow(row).eachCell((cell, cellNumber) => {
-                 // Assuming the text content for the cell is in the row array
-                  applyFontColor(cell, cellNumber,  attend_data, statusText, entry_status);
-              });
-            } else {
-                for (let i = 0; i < maxIterations; i++) {
-                    const newRow = [...row]; // Copy the existing row
-                    const inOut =[]
-                    newRow.push(i < inLength ? entryLogIn[i].location : "-"); // In Location
-                    newRow.push(i < outLength ? entryLogOut[i].location : "-"); // Out Location
-                    newRow.push(i < inLength ? entryLogIn[i].time : "-"); // In Time
-                    newRow.push(i < outLength ? entryLogOut[i].time : "-"); // Out Time
-                    inOut.push(i < inLength ? entryLogIn[i].location : "-"); // In Location
-                    inOut.push(i < outLength ? entryLogOut[i].location : "-"); // Out Location
-                    inOut.push(i < inLength ? entryLogIn[i].time : "-"); // In Time
-                    inOut.push(i < outLength ? entryLogOut[i].time : "-"); // Out Time
-                    if (entryLogIn[i] && entryLogOut[i]) {
-                        let logInTime = new Date("2000-01-01 " + entryLogIn[i].time);
-                        let logOutTime = new Date("2000-01-01 " + entryLogOut[i].time);
-                        let timeDifferenceMs = logOutTime - logInTime;
-                        // If the difference is negative, it means it spans over multiple days, adjust it to be positive
-                        if (timeDifferenceMs < 0) {
-                            timeDifferenceMs += 24 * 60 * 60 * 1000; // Add 24 hours
-                        }
-                        // Convert milliseconds to hours and minutes
-                        let hours = Math.floor(timeDifferenceMs / (1000 * 60 * 60));
-                        let minutes = Math.floor((timeDifferenceMs % (1000 * 60 * 60)) / (1000 * 60));
-                        // Format the result
-                        let differenceFormatted = hours.toString().padStart(2, '0') + ":" + minutes.toString().padStart(2, '0') + " hr";
-                        newRow.push(differenceFormatted); // Push the formatted difference
-                        inOut.push(differenceFormatted);
-                    } else {
-                        newRow.push("-"); // Push '-' if either logInTime or logOutTime is not available
-                    }
-                    
-                    // Add the new row based on the condition
-                    if (!inOutAdded) {
-                      sheet.addRow(newRow).eachCell((cell, cellNumber) => {
-                       // Assuming the text content for the cell is in the row array
-                        applyFontColor(cell, cellNumber, attend_data, statusText, entry_status);
-                    });
-                    } else {
-                        // Push empty values for other rows
-                        const emptyRow = [formatDate(date), "-", "", "-", "-", "-", "-", "-", "-", "-", "-", "-",];
-                        const inoutRow = [...emptyRow,inOut[0],inOut[1],inOut[2],inOut[3],inOut[4]]
-                        sheet.addRow(inoutRow).eachCell((cell, cellNumber) => {
-                           // Assuming the text content for the cell is in the row array
-                          applyFontColor(cell, cellNumber,  attend_data, statusText, entry_status);
-                      });
-                        // sheet.addRow(inOut);
-                    }
-                    inOutAdded = true; // Set flag to true after adding in/out data for the day
+
+            // Apply font color to the cell
+            cell.font = { color: { argb: fontColor }, bold: isBold };
+          }
+          row.push(formatDate(date));
+          row.push(emp_name);
+          row.push(foundEmployee ? foundEmployee.email : "");
+          row.push(employee_id);
+          row.push(attend_data);
+          row.push(statusText || "-");
+          row.push(entry_status || "-");
+          row.push(workScheduleHr);
+          row.push(checkedInHr);
+          row.push(otHours || "-");
+          row.push(total_hour);
+          row.push(editedHours || "-");
+
+          // Flag to track if in/out data has been added for the day
+          let inOutAdded = false;
+
+          // If either entryLogIn or entryLogOut is empty, push an empty row
+          if (inLength === 0 || outLength === 0) {
+            row.push(inLength > 0 ? entryLogIn.map(entry => entry.location).join(", ") : "-"); // In Location
+            row.push(outLength > 0 ? entryLogOut.map(entry => entry.location).join(", ") : "-"); // Out Location
+            row.push(inLength > 0 ? entryLogIn[0].time : "-"); // In Time
+            row.push(outLength > 0 ? entryLogOut[0].time : "-"); // Out Time
+            row.push("-"); // Total Hours
+            sheet.addRow(row).eachCell((cell, cellNumber) => {
+              // Assuming the text content for the cell is in the row array
+              applyFontColor(cell, cellNumber, attend_data, statusText, entry_status);
+            });
+          } else {
+            for (let i = 0; i < maxIterations; i++) {
+              const newRow = [...row]; // Copy the existing row
+              const inOut = []
+              newRow.push(i < inLength ? entryLogIn[i].location : "-"); // In Location
+              newRow.push(i < outLength ? entryLogOut[i].location : "-"); // Out Location
+              newRow.push(i < inLength ? entryLogIn[i].time : "-"); // In Time
+              newRow.push(i < outLength ? entryLogOut[i].time : "-"); // Out Time
+              inOut.push(i < inLength ? entryLogIn[i].location : "-"); // In Location
+              inOut.push(i < outLength ? entryLogOut[i].location : "-"); // Out Location
+              inOut.push(i < inLength ? entryLogIn[i].time : "-"); // In Time
+              inOut.push(i < outLength ? entryLogOut[i].time : "-"); // Out Time
+              if (entryLogIn[i] && entryLogOut[i]) {
+                let logInTime = new Date("2000-01-01 " + entryLogIn[i].time);
+                let logOutTime = new Date("2000-01-01 " + entryLogOut[i].time);
+                let timeDifferenceMs = logOutTime - logInTime;
+                // If the difference is negative, it means it spans over multiple days, adjust it to be positive
+                if (timeDifferenceMs < 0) {
+                  timeDifferenceMs += 24 * 60 * 60 * 1000; // Add 24 hours
                 }
+                // Convert milliseconds to hours and minutes
+                let hours = Math.floor(timeDifferenceMs / (1000 * 60 * 60));
+                let minutes = Math.floor((timeDifferenceMs % (1000 * 60 * 60)) / (1000 * 60));
+                // Format the result
+                let differenceFormatted = hours.toString().padStart(2, '0') + ":" + minutes.toString().padStart(2, '0') + " hr";
+                newRow.push(differenceFormatted); // Push the formatted difference
+                inOut.push(differenceFormatted);
+              } else {
+                newRow.push("-"); // Push '-' if either logInTime or logOutTime is not available
+              }
+
+              // Add the new row based on the condition
+              if (!inOutAdded) {
+                sheet.addRow(newRow).eachCell((cell, cellNumber) => {
+                  // Assuming the text content for the cell is in the row array
+                  applyFontColor(cell, cellNumber, attend_data, statusText, entry_status);
+                });
+              } else {
+                // Push empty values for other rows
+                const emptyRow = [formatDate(date), "-", "", "-", "-", "-", "-", "-", "-", "-", "-", "-",];
+                const inoutRow = [...emptyRow, inOut[0], inOut[1], inOut[2], inOut[3], inOut[4]]
+                sheet.addRow(inoutRow).eachCell((cell, cellNumber) => {
+                  // Assuming the text content for the cell is in the row array
+                  applyFontColor(cell, cellNumber, attend_data, statusText, entry_status);
+                });
+                // sheet.addRow(inOut);
+              }
+              inOutAdded = true; // Set flag to true after adding in/out data for the day
             }
+          }
         }
-    });
-    
-    
-      
+      });
+
+
+
       const maxColumns = sheet.columns.length;
       const maxRows = sheet.rowCount;
-      
+
       for (let rowIndex = 1; rowIndex <= maxRows; rowIndex++) {
-          for (let colIndex = 1; colIndex <= maxColumns; colIndex++) {
-              const cell = sheet.getCell(rowIndex, colIndex);
-              if (colIndex % 2 === 0) {
-                  cell.fill = {
-                      type: 'pattern',
-                      pattern: 'solid',
-                      fgColor: { argb: 'FFFFFF' } // Set the background color for even columns
-                  };
-              } else {
-                  cell.fill = {
-                      type: 'pattern',
-                      pattern: 'solid',
-                      fgColor: { argb: "e6f7ff" } // Set the background color for odd columns
-                  };
-              }
+        for (let colIndex = 1; colIndex <= maxColumns; colIndex++) {
+          const cell = sheet.getCell(rowIndex, colIndex);
+          if (colIndex % 2 === 0) {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFFFFF' } // Set the background color for even columns
+            };
+          } else {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: "e6f7ff" } // Set the background color for odd columns
+            };
           }
+        }
       }
       // Set column widths and cell borders
       sheet.columns.forEach((column) => {
         let maxLength = 0;
         column.eachCell({ includeEmpty: true }, cell => {
-            maxLength = Math.max(maxLength, cell.value ? cell.value.toString().length : 0);
-            cell.border = {
-              top: { style: "thin" },
-              left: { style: "thin" },
-              bottom: { style: "thin" },
-              right: { style: "thin" },
+          maxLength = Math.max(maxLength, cell.value ? cell.value.toString().length : 0);
+          cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
           };
           cell.alignment = { horizontal: "center" };
         });
         column.width = maxLength < 10 ? 10 : maxLength + 2;
-           
-          });
-  
+
+      });
+
       const monthYear = employeeDatesXls.map((dateString) => {
-          const date = new Date(dateString);
-          const month = date.toLocaleString("default", { month: "short" });
-          const year = date.getFullYear();
-          return `${month}${year}`;
+        const date = new Date(dateString);
+        const month = date.toLocaleString("default", { month: "short" });
+        const year = date.getFullYear();
+        return `${month}${year}`;
       });
-  
+
       workbook.xlsx.writeBuffer().then((data) => {
-          const blob = new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-          const url = window.URL.createObjectURL(blob);
-          const anchor = document.createElement("a");
-          const filename = `${emp_name}_${employee_id}_Attendance_${monthYear[0]}.xlsx`;
-          anchor.href = url;
-          anchor.download = filename;
-          anchor.click();
-          window.URL.revokeObjectURL(url);
+        const blob = new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const url = window.URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        const filename = `${emp_name}_${employee_id}_Attendance_${monthYear[0]}.xlsx`;
+        anchor.href = url;
+        anchor.download = filename;
+        anchor.click();
+        window.URL.revokeObjectURL(url);
       });
-  };
-  
+    };
+
 
 
 
@@ -994,7 +996,7 @@ const monthYear =employeeDate.map((dateString) => {
       const attendance_data = rowData.workday_data.find(
         (day) => day.date === date
       );
- 
+
       let attend_data =
         attendance_data.is_present === true
           ? "P"
@@ -1018,7 +1020,7 @@ const monthYear =employeeDate.map((dateString) => {
       const durationData = rowData.workday_data.find(
         (day) => day.date === date
       );
-    
+
       const total_hour = ConvertSecondsToTime(
         durationData.final_paid_hr_in_seconds
       );
@@ -1284,7 +1286,8 @@ const monthYear =employeeDate.map((dateString) => {
           <ModalBody className="text-left">
             <div>
               <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
-                <table className="table">
+                <table className="table table-auto">
+                  
                   <thead>
                     <tr>
                       <th>
@@ -1296,7 +1299,7 @@ const monthYear =employeeDate.map((dateString) => {
                         <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
                       </th>
                       <th>Total Hours</th>
-                      <th>Location</th>
+
                     </tr>
                   </thead>
                   <tbody>
@@ -1337,41 +1340,53 @@ const monthYear =employeeDate.map((dateString) => {
                           return (
                             <tr key={idx}>
                               <td>
-                                <p
-                                  className="text-muted mb-1"
-                                  style={{ fontWeight: "bold" }}
-                                >
+                                <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
                                   {checkInTime}
                                 </p>
+                                <small className="mb-0 text-muted"style={{ display: "inline-block", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {checkInData.location_id !== null ? (
+                                    <a
+                                      href={`https://maps.google.com/?q=${checkInData.latitude},${checkInData.longitude}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      <i className="mdi mdi-map-marker"></i> {checkInData.location || ""}
+                                    </a>
+                                  ) : (
+                                    checkInData && checkInData.location !== "" ? (
+                                        <span>
+                                            <i className="mdi mdi-map-marker"></i> {checkInData.location}
+                                        </span>
+                                    ) : null
+                                  )}
+                                </small>
                               </td>
                               <td>
-                                <p
-                                  className="text-muted mb-1"
-                                  style={{ fontWeight: "bold" }}
-                                >
+                                <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
                                   {checkOutTime}
                                 </p>
-                              </td>
-                              <td>
-                                <p
-                                  className="text-muted mb-1"
-                                  style={{ fontWeight: "bold" }}
-                                >
-                                  {formattedTotalHours}:{formattedTotalMinutes}{" "}
-                                  Hr
-                                </p>
-                              </td>
-                              <td>
-                                <small className="mb-0 text-muted">
-                                  <a
-                                    href={`https://maps.google.com/?q=${checkInData.location}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    <i className="mdi mdi-map-marker"></i>{" "}
-                                    {checkInData.location || ""}
-                                  </a>
+                                <small className="mb-0 text-muted"style={{ display: "inline-block", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {checkOutData && checkOutData.location_id !== null ? (
+                                    <a
+                                      href={`https://maps.google.com/?q=${checkOutData.latitude},${checkOutData.longitude}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      <i className="mdi mdi-map-marker"></i> {checkOutData.location || ""}
+                                    </a>
+                                  ) : (
+                                    checkOutData && checkOutData.location !== "" ? (
+                                        <span>
+                                            <i className="mdi mdi-map-marker"></i> {checkOutData.location}
+                                        </span>
+                                    ) : null
+                                  )}
                                 </small>
+                              </td>
+                              <td>
+                                <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
+                                  {formattedTotalHours}:{formattedTotalMinutes} Hr
+                                </p>
                               </td>
                             </tr>
                           );

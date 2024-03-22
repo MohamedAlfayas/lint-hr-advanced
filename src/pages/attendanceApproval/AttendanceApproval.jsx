@@ -474,7 +474,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
                       <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
                     </th>
                     <th>Total Hours</th>
-                    <th>Location</th>
+                  
                   </tr>
                 </thead>
                 <tbody>
@@ -511,43 +511,56 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
 
                         return (
                           <tr key={idx}>
-                            <td>
-                              <p
-                                className="text-muted mb-1"
-                                style={{ fontWeight: "bold" }}
-                              >
-                                {checkInTime}
-                              </p>
-                            </td>
-                            <td>
-                              <p
-                                className="text-muted mb-1"
-                                style={{ fontWeight: "bold" }}
-                              >
-                                {checkOutTime}
-                              </p>
-                            </td>
-                            <td>
-                              <p
-                                className="text-muted mb-1"
-                                style={{ fontWeight: "bold" }}
-                              >
-                                {formattedTotalHours}:{formattedTotalMinutes} Hr
-                              </p>
-                            </td>
-                            <td>
-                              <small className="mb-0 text-muted">
+                          <td>
+                            <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
+                              {checkInTime}
+                            </p>
+                            <small className="mb-0 text-muted"style={{ display: "inline-block", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {checkInData.location_id !== null ? (
                                 <a
-                                  href={`https://maps.google.com/?q=${checkInData.location}`}
+                                  href={`https://maps.google.com/?q=${checkInData.latitude},${checkInData.longitude}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >
-                                  <i className="mdi mdi-map-marker"></i>{" "}
-                                  {checkInData.location || ""}
+                                  <i className="mdi mdi-map-marker"></i> {checkInData.location || ""}
                                 </a>
-                              </small>
-                            </td>
-                          </tr>
+                              ) : (
+                                checkInData && checkInData.location !== "" ? (
+                                    <span>
+                                        <i className="mdi mdi-map-marker"></i> {checkInData.location}
+                                    </span>
+                                ) : null
+                              )}
+                            </small>
+                          </td>
+                          <td>
+                            <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
+                              {checkOutTime}
+                            </p>
+                            <small className="mb-0 text-muted"style={{ display: "inline-block", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {checkOutData && checkOutData.location_id !== null ? (
+                                <a
+                                  href={`https://maps.google.com/?q=${checkOutData.latitude},${checkOutData.longitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <i className="mdi mdi-map-marker"></i> {checkOutData.location || ""}
+                                </a>
+                              ) : (
+                                checkOutData && checkOutData.location !== "" ? (
+                                    <span>
+                                        <i className="mdi mdi-map-marker"></i> {checkOutData.location}
+                                    </span>
+                                ) : null
+                              )}
+                            </small>
+                          </td>
+                          <td>
+                            <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
+                              {formattedTotalHours}:{formattedTotalMinutes} Hr
+                            </p>
+                          </td>
+                        </tr>
                         );
                       }
                       return null; // Skip rendering if it's not a check-in entry

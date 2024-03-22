@@ -107,6 +107,7 @@ const DepartmentsTab = () => {
                       setDepartmentName(node.name);
                     }}
                     className="text-body  text-truncate d-block"
+                    style={{ width: "100px" }}
                   >
                     {node.label}
                   </Link>
