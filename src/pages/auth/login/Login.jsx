@@ -168,10 +168,19 @@ const Login = () => {
     const domain = window.location.hostname.split(".")[0];
     if (!!domain) {
       console.log("Login Page Rendering !!!! - ", domain);
+
+      let validate_domain_url = "";
+
+      if (!!LCPlatform && LCPlatform === "local") {
+        validate_domain_url = `${BaseURL}api/validate-domain/`;
+      } else {
+        validate_domain_url = `https://${domain}.lintedu.com/api/validate-domain/`;
+      }
+
       axios({
         method: "POST",
         // url: `https://${domain}.lintedu.com/api/validate-domain/`,
-        url: `${BaseURL}api/validate-domain/`,
+        url: validate_domain_url,
         data: {
           domain: domain,
         },
