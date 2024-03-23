@@ -9,6 +9,8 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 
 import ReactApexChart from "react-apexcharts";
+import Select from "react-select";
+import { employeeTypeOptions } from "../../common/constant/Constants";
 
 const AttendanceStatistics = () => {
   const dispatch = useDispatch();
@@ -19,6 +21,7 @@ const AttendanceStatistics = () => {
   const [notCheckedInData, setNotCheckedInData] = useState([]);
   const [onLeaveData, setOnLeaveData] = useState([]);
   const [checkedOutData, setCheckedOutData] = useState([]);
+  const [employeeType, setEmployeeType] = useState(1);
 
   const [checkedInPer, setCheckedInPer] = useState(0);
   const [notCheckedInPer, setNotCheckedInPer] = useState(0);
@@ -124,6 +127,10 @@ const AttendanceStatistics = () => {
     '["--vz-success", "--vz-danger", "--vz-info", "--vz-warning"]'
   );
 
+  const handleEmployeeTypeChange = (e) => {
+    setEmployeeType(e.value);
+  };
+
   var options = {
     labels: ["Checked In", "Not Checked In", "On Leave", "Checked Out"],
     chart: {
@@ -198,9 +205,26 @@ const AttendanceStatistics = () => {
       <Col xxl={12} xl={12} sm={12}>
         <div className="card card-height-100">
           <div className="card-header border-0 align-items-center d-flex">
-            <h4 className="card-title mb-0 flex-grow-1">
-              Attendance Statistics
-            </h4>
+            <Col xxxl={12} xl={12} sm={12}>
+              <h4 className="card-title mb-0 flex-grow-1">
+                Attendance Statistics
+              </h4>
+            </Col>
+          </div>
+          <div style={{ marginLeft: "10px", width: "50%" }}>
+            {" "}
+            <Select
+              id="emp_type"
+              name="Employee Type"
+              isMulti={false}
+              options={employeeTypeOptions || []}
+              className="basic-multi-select"
+              value={
+                employeeTypeOptions.find((d) => d.id === employeeType) ||
+                employeeTypeOptions[1]
+              }
+              onChange={handleEmployeeTypeChange}
+            />
           </div>
           <div className="card-body">
             <ReactApexChart

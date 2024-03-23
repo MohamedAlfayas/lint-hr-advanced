@@ -12,6 +12,7 @@ import { Api } from "../../../common/api/Api";
 import { setAttendanceApprovalData } from "../../../redux/reducers/ChildReducer/AttendanceApprovalReducer";
 import { toast } from "react-toastify";
 import { Link, useLocation } from "react-router-dom";
+import { employeeTypeOptions } from "../../../common/constant/Constants";
 dayjs.extend(customParseFormat);
 
 const ApprovalFilter = ({ formname }) => {
@@ -41,11 +42,6 @@ const ApprovalFilter = ({ formname }) => {
       .toString()
       .padStart(2, "0")}`
   );
-
-  const employeeTypeOptions = [
-    { id: "0", label: "All Employee", value: "0" },
-    { id: "1", label: "My Team Members", value: "1" },
-  ];
 
   const handleEmployeeTypeChange = (e, name) => {
     setEmployeeType(e.value);

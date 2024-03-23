@@ -12,7 +12,10 @@ import {
   DropdownMenu,
   DropdownToggle,
   Form,
+  FormFeedback,
   Input,
+  InputGroup,
+  InputGroupText,
   Label,
   Nav,
   NavItem,
@@ -65,10 +68,9 @@ dayjs.extend(customParseFormat);
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { useDispatch, useSelector } from "react-redux";
 import { account_settings_data } from "../../redux/reducers/ChildReducer/AccountSettingsReducer";
+import InputGroupAddon from "rsuite/esm/InputGroup/InputGroupAddon";
 const AccountSettings = () => {
   const { id } = useParams();
-
-  console.log("id in account settings", id);
 
   const dispatch = useDispatch();
 
@@ -76,10 +78,8 @@ const AccountSettings = () => {
     (state) => state.AccountSettingsReducer
   );
 
-  console.log("ACCounts Setting Data", account_settings_data);
-
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-  console.log("fgdf", form_obj);
+
   const [employeeObj, setEmployeeObj] = useState({});
 
   const employee_data = GetLocalStorageData("employee");
@@ -106,14 +106,21 @@ const AccountSettings = () => {
   const [joining_date, setJoinDate] = useState([]);
   const [activeTab, setActiveTab] = useState("1");
   const [profileObj, setProfileObj] = useState({});
-  console.log("obj", profileObj);
+  const [showPassword1, setShowPassword1] = useState(false);
+  const [showPassword2, setShowPassword2] = useState(false);
+  const [showPassword3, setShowPassword3] = useState(false);
+  const [changePassword, setChangePassword] = useState({
+    emp_uuid: account_settings_data.emp_uuid,
+    old_password: "",
+    new_password: "",
+    confirm_password: "",
+  });
   const tabChange = (tab) => {
     if (activeTab !== tab) setActiveTab(tab);
   };
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("account_settings_data Obj = ", account_settings_data);
     setEmployeeObj({
       ...account_settings_data,
       dob: ConvertISODateFormat(account_settings_data.dob),
@@ -167,7 +174,7 @@ const AccountSettings = () => {
 
   const handleBranchChange = (e) => {
     let branch_id_list = e.map((d) => d.value);
-    console.log("Branch Change ID List = ", branch_id_list);
+
     setEmployeeObj({
       ...employeeObj,
       branch_id_list: branch_id_list,
@@ -213,8 +220,6 @@ const AccountSettings = () => {
       }
     }
 
-    console.log("valid_dep_ids = ", valid_dep_ids);
-
     if (valid_dep_ids.length) {
       GetReportingManager(valid_dep_ids);
     } else {
@@ -227,8 +232,6 @@ const AccountSettings = () => {
       reporting_manager_id: 0,
     });
   };
-
-  console.log("REPOSTING MANAGERS", reportingManagerOptions);
 
   const handleDateChange = (selectedDates, dateStr, instance) => {
     setDob(dateStr);
@@ -285,7 +288,6 @@ const AccountSettings = () => {
 
   const handleCFFileChange = async (e, cf_id) => {
     const file = e.target.files[0];
-    console.log("CF FILE Change = ", file);
 
     let img_url = "";
 
@@ -313,6 +315,29 @@ const AccountSettings = () => {
       ),
     });
   };
+
+  const FormikFormPassword = useFormik({
+    enableReinitialize: true,
+    initialValues: changePassword,
+    validationSchema: Yup.object({
+      old_password: Yup.string()
+        .matches(/^\S*$/, "Password cannot contain spaces")
+        .required("Old Password is required"),
+      new_password: Yup.string()
+        .matches(/^\S*$/, "Password cannot contain spaces")
+        .notOneOf(
+          [Yup.ref("old_password"), null],
+          "New Password must be different from Old Password"
+        )
+        .required("New Password is required"),
+      confirm_password: Yup.string()
+        .oneOf([Yup.ref("new_password"), null], "Passwords must match")
+        .required("Confirm Password is required"),
+    }),
+    onSubmit: async (values) => {
+      console.log("Password values", values);
+    },
+  });
 
   const FormikForm = useFormik({
     enableReinitialize: true,
@@ -361,7 +386,6 @@ const AccountSettings = () => {
       } else {
         dispatch(setLoaderVisible(true));
 
-        console.log("emp Obj = ", employeeObj);
         let form_data = new FormData();
         employeeImage !== null &&
           form_data.append("profile", employeeImage, employeeImage.name);
@@ -398,6 +422,10 @@ const AccountSettings = () => {
       }
     },
   });
+
+  const handleChangePassword = () => {
+    console.log("ChangePassword", changePassword);
+  };
 
   useEffect(() => {
     if (
@@ -1429,7 +1457,10 @@ const AccountSettings = () => {
                     </TabPane>
 
                     <TabPane tabId="2">
-                      <Form>
+                      <Form
+                        onSubmit={FormikFormPassword.handleSubmit}
+                        action="javascript:void(0)"
+                      >
                         <Row className="g-2">
                           <Col xxl={4} sm={4} lg={4}>
                             <div>
@@ -1439,12 +1470,45 @@ const AccountSettings = () => {
                               >
                                 Old Password*
                               </Label>
-                              <Input
-                                type="password"
-                                className="form-control"
-                                id="oldpasswordInput"
-                                placeholder="Enter current password"
-                              />
+                              <div className="position-relative">
+                                <Input
+                                  name="old_password"
+                                  id="old_password"
+                                  type={showPassword1 ? "text" : "password"}
+                                  className="form-control"
+                                  placeholder="Enter current password"
+                                  onChange={(e) => {
+                                    setChangePassword({
+                                      ...changePassword,
+                                      old_password: e.target.value,
+                                    });
+                                  }}
+                                  value={changePassword.old_password || ""}
+                                  invalid={
+                                    FormikFormPassword.touched.old_password &&
+                                    FormikFormPassword.errors.old_password
+                                      ? true
+                                      : false
+                                  }
+                                />
+                                <i
+                                  className={`mdi mdi-${
+                                    showPassword1
+                                      ? "eye-off-outline"
+                                      : "eye-outline"
+                                  } position-absolute end-0 top-50 translate-middle-y`}
+                                  style={{
+                                    cursor: "pointer",
+                                    marginLeft: "10px",
+                                  }}
+                                  onClick={() =>
+                                    setShowPassword1(!showPassword1)
+                                  }
+                                />
+                              </div>
+                              <FormFeedback>
+                                {FormikFormPassword.errors.old_password}
+                              </FormFeedback>
                             </div>
                           </Col>
 
@@ -1456,12 +1520,52 @@ const AccountSettings = () => {
                               >
                                 New Password*
                               </Label>
-                              <Input
-                                type="password"
-                                className="form-control"
-                                id="newpasswordInput"
-                                placeholder="Enter new password"
-                              />
+                              <div className="position-relative">
+                                <Input
+                                  name="new_password"
+                                  id="new_password"
+                                  type={showPassword2 ? "text" : "password"}
+                                  className="form-control"
+                                  placeholder="Enter new password"
+                                  onChange={(e) =>
+                                    setChangePassword({
+                                      ...changePassword,
+                                      new_password: e.target.value,
+                                    })
+                                  }
+                                  value={changePassword.new_password || ""}
+                                  invalid={
+                                    FormikFormPassword.touched.new_password &&
+                                    FormikFormPassword.errors.new_password
+                                      ? true
+                                      : false
+                                  }
+                                />
+                                <div
+                                  style={{
+                                    marginLeft: "10px",
+                                    position: "absolute",
+                                    top: "50%",
+                                    transform: "translateY(-50%)",
+                                    cursor: "pointer",
+                                    right: "0",
+                                  }}
+                                  onClick={() =>
+                                    setShowPassword2(!showPassword2)
+                                  }
+                                >
+                                  <i
+                                    className={`mdi mdi-${
+                                      showPassword2
+                                        ? "eye-off-outline"
+                                        : "eye-outline"
+                                    }`}
+                                  />
+                                </div>
+                              </div>
+                              <FormFeedback>
+                                {FormikFormPassword.errors.new_password}
+                              </FormFeedback>
                             </div>
                           </Col>
 
@@ -1473,29 +1577,63 @@ const AccountSettings = () => {
                               >
                                 Confirm Password*
                               </Label>
-                              <Input
-                                type="password"
-                                className="form-control"
-                                id="confirmpasswordInput"
-                                placeholder="Confirm password"
-                              />
+                              <div className="position-relative">
+                                <Input
+                                  name="confirm_password"
+                                  id="confirm_password"
+                                  type={showPassword3 ? "text" : "password"}
+                                  className="form-control"
+                                  placeholder="Confirm password"
+                                  onChange={(e) =>
+                                    setChangePassword({
+                                      ...changePassword,
+                                      confirm_password: e.target.value,
+                                    })
+                                  }
+                                  value={changePassword.confirm_password || ""}
+                                  invalid={
+                                    FormikFormPassword.touched
+                                      .confirm_password &&
+                                    FormikFormPassword.errors.confirm_password
+                                      ? true
+                                      : false
+                                  }
+                                />
+                                <i
+                                  className={`mdi mdi-${
+                                    showPassword3
+                                      ? "eye-off-outline"
+                                      : "eye-outline"
+                                  } position-absolute end-0 top-50 translate-middle-y`}
+                                  style={{
+                                    cursor: "pointer",
+                                    marginLeft: "10px",
+                                  }}
+                                  onClick={() =>
+                                    setShowPassword3(!showPassword3)
+                                  }
+                                />
+                              </div>
+                              <FormFeedback>
+                                {FormikFormPassword.errors.confirm_password}
+                              </FormFeedback>
                             </div>
                           </Col>
 
                           <Col xxl={12} sm={12} lg={12}>
                             <div className="mb-3">
-                              <Link
+                              {/* <Link
                                 to="#"
                                 className="link-primary text-decoration-underline"
                               >
                                 Forgot Password ?
-                              </Link>
+                              </Link> */}
                             </div>
                           </Col>
 
                           <Col xxl={12} sm={12} lg={12}>
                             <div className="text-end">
-                              <button type="button" className="btn btn-success">
+                              <button type="submit" className="btn btn-success">
                                 Change Password
                               </button>
                             </div>

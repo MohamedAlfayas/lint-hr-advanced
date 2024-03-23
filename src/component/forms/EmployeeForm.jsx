@@ -148,7 +148,6 @@ const EmployeeForm = () => {
   };
 
   useEffect(() => {
-    console.log("Form Obj = ", form_obj);
     setEmployeeObj({
       ...form_obj,
       dob: ConvertISODateFormat(form_obj.dob),
@@ -204,7 +203,7 @@ const EmployeeForm = () => {
 
   const handleBranchChange = (e) => {
     let branch_id_list = e.map((d) => d.value);
-    console.log("Branch Change ID List = ", branch_id_list);
+
     setEmployeeObj({
       ...employeeObj,
       branch_id_list: branch_id_list,
@@ -248,8 +247,6 @@ const EmployeeForm = () => {
         valid_dep_ids.push(e[i].id);
       }
     }
-
-    console.log("valid_dep_ids = ", valid_dep_ids);
 
     if (valid_dep_ids.length) {
       GetReportingManager(valid_dep_ids);
@@ -319,7 +316,6 @@ const EmployeeForm = () => {
 
   const handleCFFileChange = async (e, cf_id) => {
     const file = e.target.files[0];
-    console.log("CF FILE Change = ", file);
 
     let img_url = "";
 
@@ -395,7 +391,6 @@ const EmployeeForm = () => {
       } else {
         dispatch(setLoaderVisible(true));
 
-        console.log("emp Obj = ", employeeObj);
         let form_data = new FormData();
         employeeImage !== null &&
           form_data.append("profile", employeeImage, employeeImage.name);
@@ -658,8 +653,8 @@ const EmployeeForm = () => {
                           ...provided,
                           borderColor:
                             !state.isFocused &&
-                              FormikForm.touched.email &&
-                              FormikForm.errors.email
+                            FormikForm.touched.email &&
+                            FormikForm.errors.email
                               ? "red !important"
                               : provided.borderColor,
                         }),
@@ -707,8 +702,8 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                            FormikForm.touched.gender &&
-                            FormikForm.errors.gender
+                          FormikForm.touched.gender &&
+                          FormikForm.errors.gender
                             ? "red !important"
                             : provided.borderColor,
                       }),
@@ -793,8 +788,8 @@ const EmployeeForm = () => {
                           ...provided,
                           borderColor:
                             !state.isFocused &&
-                              FormikForm.touched.contact_number &&
-                              FormikForm.errors.contact_number
+                            FormikForm.touched.contact_number &&
+                            FormikForm.errors.contact_number
                               ? "red !important"
                               : provided.borderColor,
                         }),
@@ -806,13 +801,13 @@ const EmployeeForm = () => {
                       }
                       invalid={
                         FormikForm.touched.contact_number &&
-                          FormikForm.errors.contact_number
+                        FormikForm.errors.contact_number
                           ? true
                           : false
                       }
                     />
                     {FormikForm.touched.contact_number &&
-                      FormikForm.errors.contact_number ? (
+                    FormikForm.errors.contact_number ? (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.contact_number}
                       </FormFeedback>
@@ -891,8 +886,8 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                            FormikForm.touched.branch_id_list &&
-                            FormikForm.errors.branch_id_list
+                          FormikForm.touched.branch_id_list &&
+                          FormikForm.errors.branch_id_list
                             ? "red !important"
                             : provided.borderColor,
                       }),
@@ -901,20 +896,20 @@ const EmployeeForm = () => {
                     value={
                       employeeObj?.branch_id_list
                         ? branch_options.filter((d) =>
-                          (employeeObj?.branch_id_list).includes(d.id)
-                        )
+                            (employeeObj?.branch_id_list).includes(d.id)
+                          )
                         : []
                     }
                     onChange={handleBranchChange}
                     invalid={
                       FormikForm.touched.branch_id_list &&
-                        FormikForm.errors.branch_id_list
+                      FormikForm.errors.branch_id_list
                         ? true
                         : false
                     }
                   />
                   {FormikForm.touched.branch_id_list &&
-                    FormikForm.errors.branch_id_list ? (
+                  FormikForm.errors.branch_id_list ? (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.branch_id_list}
                     </div>
@@ -948,8 +943,8 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                            FormikForm.touched.primary_department_id_list &&
-                            FormikForm.errors.primary_department_id_list
+                          FormikForm.touched.primary_department_id_list &&
+                          FormikForm.errors.primary_department_id_list
                             ? "red !important"
                             : provided.borderColor,
                       }),
@@ -958,22 +953,22 @@ const EmployeeForm = () => {
                     value={
                       employeeObj?.primary_department_id_list
                         ? dep_options.filter((d) =>
-                          (employeeObj?.primary_department_id_list).includes(
-                            d.id
+                            (employeeObj?.primary_department_id_list).includes(
+                              d.id
+                            )
                           )
-                        )
                         : []
                     }
                     onChange={handlePrimaryDepChange}
                     invalid={
                       FormikForm.touched.primary_department_id_list &&
-                        FormikForm.errors.primary_department_id_list
+                      FormikForm.errors.primary_department_id_list
                         ? true
                         : false
                     }
                   />
                   {FormikForm.touched.primary_department_id_list &&
-                    FormikForm.errors.primary_department_id_list ? (
+                  FormikForm.errors.primary_department_id_list ? (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.primary_department_id_list}
                     </div>
@@ -1056,8 +1051,8 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                            FormikForm.touched.reporting_manager_id &&
-                            FormikForm.errors.reporting_manager_id
+                          FormikForm.touched.reporting_manager_id &&
+                          FormikForm.errors.reporting_manager_id
                             ? "red !important"
                             : provided.borderColor,
                       }),
@@ -1070,12 +1065,14 @@ const EmployeeForm = () => {
                       null // Set value to null initially
                     }
                     onChange={(selectedOption) => {
-                      if (selectedOption) { // Check if an option is selected
+                      if (selectedOption) {
+                        // Check if an option is selected
                         setEmployeeObj({
                           ...employeeObj,
                           reporting_manager_id: selectedOption.id,
                         });
-                      } else { // Clear selection if null (clear button clicked)
+                      } else {
+                        // Clear selection if null (clear button clicked)
                         setEmployeeObj({
                           ...employeeObj,
                           reporting_manager_id: null,
@@ -1084,13 +1081,13 @@ const EmployeeForm = () => {
                     }}
                     invalid={
                       FormikForm.touched.reporting_manager_id &&
-                        FormikForm.errors.reporting_manager_id
+                      FormikForm.errors.reporting_manager_id
                         ? true
                         : false
                     }
                   />
                   {FormikForm.touched.reporting_manager_id &&
-                    FormikForm.errors.reporting_manager_id ? (
+                  FormikForm.errors.reporting_manager_id ? (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.reporting_manager_id}
                     </div>
@@ -1102,7 +1099,6 @@ const EmployeeForm = () => {
                   </div>
                 )}
               </Col>
-
 
               <Col lg={12}>
                 <div>
@@ -1121,8 +1117,8 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                            FormikForm.touched.role_id &&
-                            FormikForm.errors.role_id
+                          FormikForm.touched.role_id &&
+                          FormikForm.errors.role_id
                             ? "red !important"
                             : provided.borderColor,
                       }),
@@ -1171,8 +1167,8 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                            FormikForm.touched.work_schedule_id &&
-                            FormikForm.errors.work_schedule_id
+                          FormikForm.touched.work_schedule_id &&
+                          FormikForm.errors.work_schedule_id
                             ? "red !important"
                             : provided.borderColor,
                       }),
@@ -1189,13 +1185,13 @@ const EmployeeForm = () => {
                     }
                     invalid={
                       FormikForm.touched.work_schedule_id &&
-                        FormikForm.errors.work_schedule_id
+                      FormikForm.errors.work_schedule_id
                         ? true
                         : false
                     }
                   />
                   {FormikForm.touched.work_schedule_id &&
-                    FormikForm.errors.work_schedule_id ? (
+                  FormikForm.errors.work_schedule_id ? (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.work_schedule_id}
                     </div>
@@ -1641,87 +1637,87 @@ const EmployeeForm = () => {
               <hr></hr>
               {employeeObj.cf_values && employeeObj.cf_values.length
                 ? employeeObj.cf_values.map((obj) => (
-                  <Col lg={12}>
-                    <div className="mb-3">
-                      <Label htmlFor="obj.input_name" className="form-label">
-                        {obj.name}
-                      </Label>
-                      {form_default_input_types.includes(obj.type) && (
-                        <Fragment>
-                          <div className="form-icon right">
-                            <Input
-                              type={obj.type || "text"}
-                              name={obj.input_name}
-                              id={obj.input_name}
-                              className="form-control"
-                              placeholder={`Enter ${obj.name}`}
-                              value={obj.value || ""}
-                              onChange={(e) => handleCFInputChange(e, obj.id)}
-                            />
-                            <i className="ri-user-2-line"></i>
-                          </div>
-                          <div id="passwordHelpBlock" className="form-text">
-                            Enter {obj.name}
-                          </div>
-                        </Fragment>
-                      )}
-                      {obj.type === form_file_type && (
-                        <Fragment>
-                          <div className="form-icon right">
-                            <Input
-                              type={"file"}
-                              name={obj.input_name}
-                              id={obj.input_name}
-                              className="form-control"
-                              placeholder={`Enter ${obj.name}`}
-                              onChange={(e) => handleCFFileChange(e, obj.id)}
-                            />
-                            <i className="ri-user-2-line"></i>
-                          </div>
-                          <div id="passwordHelpBlock" className="form-text">
-                            Choose {obj.name}
-                          </div>
-                          {!!obj.value && obj.value !== "" && (
-                            <Fragment>{obj.name} Uploaded</Fragment>
-                          )}
-                        </Fragment>
-                      )}
-                      {obj.type === form_date_type && (
-                        <DatePicker
-                          name={obj.input_name}
-                          id={obj.input_name}
-                          className="form-control"
-                          format={DateFormat}
-                          value={
-                            obj.value === ""
-                              ? null
-                              : dayjs(
-                                ConvertDateFormat(obj.value),
-                                DateFormat
-                              )
-                          }
-                          allowClear={false}
-                          onChange={(e, dateStr) =>
-                            handleCFDateChange(e, dateStr, obj.id)
-                          }
-                        />
-                      )}
-                      {obj.type === form_select_type && (
-                        <Select
-                          name={obj.input_name}
-                          id={obj.input_name}
-                          options={obj.options}
-                          value={
-                            obj.options.find((d) => d.value === obj.value) ||
-                            []
-                          }
-                          onChange={(e) => handleCFSelectChange(e, obj.id)}
-                          placeholder={`Select ${obj.name}`}
-                        />
-                      )}
-                    </div>
-                  </Col>
-                ))
+                    <Col lg={12}>
+                      <div className="mb-3">
+                        <Label htmlFor="obj.input_name" className="form-label">
+                          {obj.name}
+                        </Label>
+                        {form_default_input_types.includes(obj.type) && (
+                          <Fragment>
+                            <div className="form-icon right">
+                              <Input
+                                type={obj.type || "text"}
+                                name={obj.input_name}
+                                id={obj.input_name}
+                                className="form-control"
+                                placeholder={`Enter ${obj.name}`}
+                                value={obj.value || ""}
+                                onChange={(e) => handleCFInputChange(e, obj.id)}
+                              />
+                              <i className="ri-user-2-line"></i>
+                            </div>
+                            <div id="passwordHelpBlock" className="form-text">
+                              Enter {obj.name}
+                            </div>
+                          </Fragment>
+                        )}
+                        {obj.type === form_file_type && (
+                          <Fragment>
+                            <div className="form-icon right">
+                              <Input
+                                type={"file"}
+                                name={obj.input_name}
+                                id={obj.input_name}
+                                className="form-control"
+                                placeholder={`Enter ${obj.name}`}
+                                onChange={(e) => handleCFFileChange(e, obj.id)}
+                              />
+                              <i className="ri-user-2-line"></i>
+                            </div>
+                            <div id="passwordHelpBlock" className="form-text">
+                              Choose {obj.name}
+                            </div>
+                            {!!obj.value && obj.value !== "" && (
+                              <Fragment>{obj.name} Uploaded</Fragment>
+                            )}
+                          </Fragment>
+                        )}
+                        {obj.type === form_date_type && (
+                          <DatePicker
+                            name={obj.input_name}
+                            id={obj.input_name}
+                            className="form-control"
+                            format={DateFormat}
+                            value={
+                              obj.value === ""
+                                ? null
+                                : dayjs(
+                                    ConvertDateFormat(obj.value),
+                                    DateFormat
+                                  )
+                            }
+                            allowClear={false}
+                            onChange={(e, dateStr) =>
+                              handleCFDateChange(e, dateStr, obj.id)
+                            }
+                          />
+                        )}
+                        {obj.type === form_select_type && (
+                          <Select
+                            name={obj.input_name}
+                            id={obj.input_name}
+                            options={obj.options}
+                            value={
+                              obj.options.find((d) => d.value === obj.value) ||
+                              []
+                            }
+                            onChange={(e) => handleCFSelectChange(e, obj.id)}
+                            placeholder={`Select ${obj.name}`}
+                          />
+                        )}
+                      </div>
+                    </Col>
+                  ))
                 : null}
 
               <Col lg={12}>

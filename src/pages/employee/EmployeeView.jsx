@@ -41,14 +41,9 @@ const EmployeeView = () => {
 
   const employeeAccountData = EmployeeData.find((d) => d.emp_uuid === id);
 
-  console.log("Employee Account settings Object", employeeAccountData);
-
-  console.log("ID", id);
-
   const dispatch = useDispatch();
 
   const [profileObj, setProfileObj] = useState({});
-  console.log("obj", profileObj);
 
   const navigate = useNavigate();
 
@@ -117,7 +112,6 @@ const EmployeeView = () => {
                   <h3 className="text-white mb-1">
                     {profileObj?.fname} {profileObj?.lname}
                   </h3>
-                  {console.log("profile Data", profileObj?.role_id)}
                   <p className="text-white text-opacity-75">
                     {profileObj?.role_id
                       ? RoleData.length
@@ -238,7 +232,6 @@ const EmployeeView = () => {
                     <Button
                       className="btn btn-success"
                       onClick={() => {
-                        console.log("On Click", employeeAccountData);
                         dispatch(
                           setEmployeeAccountSettingsData(employeeAccountData)
                         );

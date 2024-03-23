@@ -33,8 +33,6 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const employee_data = GetLocalStorageData("employee");
   const { id } = useParams();
 
-  console.log("ID", id);
-
   useEffect(() => {
     Api({
       type: "GET",
@@ -46,7 +44,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
         let emp_options = response.map((d) =>
           employee_data.find((e) => e.id === d)
         );
-        console.log("Emp Options = ", emp_options);
+
         setEmployeeOptions(emp_options);
       })
       .catch((err) => {
@@ -102,7 +100,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
 
   const handleEmployeeChange = (e) => {
     const emp_uid = employeeOptions.find((f) => f.id === e.value).emp_uuid;
-    console.log("emp_uuuis", emp_uid);
+
     navigate(`/employee/view/${emp_uid}`);
     Api({
       type: "GET",

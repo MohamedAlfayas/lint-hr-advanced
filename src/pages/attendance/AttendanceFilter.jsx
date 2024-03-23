@@ -56,7 +56,7 @@ const AttendanceFilter = () => {
         let emp_options = response.map((d) =>
           employee_data.find((e) => e.id === d)
         );
-        console.log("Emp Options = ", emp_options);
+
         setEmployeeOptions([
           { id: "0", label: "All", value: "0" },
           ...emp_options,
@@ -74,9 +74,6 @@ const AttendanceFilter = () => {
   };
 
   const handleDateRangeChange = (e, monthStr) => {
-    console.log("This Month = ", e);
-    console.log("This Month Str = ", monthStr);
-
     setFilterKeys({
       ...filterKeys,
       thisMonth: monthStr,
@@ -84,7 +81,6 @@ const AttendanceFilter = () => {
   };
 
   const handleHRStatusChange = (e) => {
-    console.log("HR STATUS = ", e);
     setFilterKeys({
       ...filterKeys,
       hr_status: e.value,
@@ -120,8 +116,6 @@ const AttendanceFilter = () => {
   };
 
   const handleFilter = async () => {
-    console.log("FILTER CLICKED !!!! === ", filterKeys);
-
     dispatch(setLoaderVisible(true));
 
     const attendanceApi = await PostApi(
@@ -129,7 +123,7 @@ const AttendanceFilter = () => {
       filterKeys,
       false
     );
-    console.log("API RES = ", attendanceApi);
+
     if (attendanceApi.status && attendanceApi.status === 200) {
       dispatch(
         setIndividualAttendanceReportData(
@@ -142,7 +136,6 @@ const AttendanceFilter = () => {
           url: `leave/get-leave-type-details-for-employee/?employee_id=${profile_data.id}`,
         })
           .then((res) => {
-            console.log(res?.data?.data);
             dispatch(setEmployeeLeaveType(res?.data?.data));
           })
           .catch((err) => {
@@ -155,7 +148,6 @@ const AttendanceFilter = () => {
           url: `leave/get-leave-type-details-for-employee/?employee_id=${filterKeys?.employee}`,
         })
           .then((res) => {
-            console.log(res?.data?.data);
             dispatch(setEmployeeLeaveType(res?.data?.data));
           })
           .catch((err) => {

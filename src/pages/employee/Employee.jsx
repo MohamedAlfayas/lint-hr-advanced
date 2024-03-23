@@ -56,8 +56,6 @@ const Employee = () => {
   const DepartmentData = GetLocalStorageData("department") || [];
 
   const viewEmployee = (obj) => {
-    console.log("Dep Edit = ", obj);
-
     dispatch(setFormTitle("Employee Details"));
     dispatch(setFormObj(obj));
     dispatch(setFormWidthPercentage("30%"));

@@ -4,7 +4,6 @@ import getChartColorsArray from "../../component/common/dynamicColor/ChartsDynam
 
 const AttendanceOverviewChart = ({ dataColors, chartData }) => {
   var chartColumnStacked100Colors = getChartColorsArray(dataColors);
-  console.log("Series = ", chartData?.series);
   // const series = [
   //   {
   //     name: "IN Hour",

@@ -75,7 +75,6 @@ const AttendanceDashboard = () => {
       url: `leave/get-leave-type-details-for-employee/?employee_id=${profile_data.id}`,
     })
       .then((res) => {
-        console.log("Employee Own Leave Type", res?.data?.data);
         dispatch(setEmployeeLeaveType(res?.data?.data));
       })
       .catch((err) => {
