@@ -27,6 +27,7 @@ import {
   resetEmployeeTableFilterKeys,
   setEmployeeTableFilterKeys,
 } from "../../redux/reducers/ChildReducer/TableFilterReducer";
+import { previousDateFormat } from "../../common/js/ConvertDateFormat";
 
 const Employee = () => {
   const dispatch = useDispatch();
@@ -348,7 +349,7 @@ const Employee = () => {
       fname: "",
       lname: "",
       email: "",
-      dob: String(new Date()),
+      dob: previousDateFormat(new Date()),
       joining_date: String(new Date()),
       id_proof: null,
       file_1: null,

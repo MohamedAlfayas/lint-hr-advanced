@@ -112,10 +112,10 @@ const AttendanceEmployeeTable = () => {
 
   const employeeInformation =
     Array.isArray(individual_attendance_report_data) &&
-    individual_attendance_report_data.length > 0
+      individual_attendance_report_data.length > 0
       ? employeeData.find(
-          (e) => e.id === individual_attendance_report_data[0].employee_id
-        )
+        (e) => e.id === individual_attendance_report_data[0].employee_id
+      )
       : [];
   const employeeWorkSchedule =
     workScheduleData.find(
@@ -234,7 +234,7 @@ const AttendanceEmployeeTable = () => {
           ? dataKey === "in"
             ? rowData?.entry_log[0]?.punched_by || 0
             : rowData?.entry_log.filter((e) => e.entry_type === 2).slice(-1)[0]
-                ?.punched_by || 0
+              ?.punched_by || 0
           : 0;
 
       let branch_text =
@@ -243,13 +243,13 @@ const AttendanceEmployeeTable = () => {
             ? CheckInOutType === 1
               ? "Web Check In"
               : CheckInOutType === 2
-              ? "Mobile Check In"
-              : ""
+                ? "Mobile Check In"
+                : ""
             : CheckInOutType === 1
-            ? "Web Check Out"
-            : CheckInOutType === 2
-            ? "Mobile Check Out"
-            : ""
+              ? "Web Check Out"
+              : CheckInOutType === 2
+                ? "Mobile Check Out"
+                : ""
           : "";
 
       return (
@@ -391,12 +391,12 @@ const AttendanceEmployeeTable = () => {
           rowData.day_status.early_in === true
             ? earlyin_display
             : rowData.day_status.ontime === true
-            ? on_time_entry_display
-            : rowData.day_status?.late === true
-            ? late_entry_display
-            : rowData.day_status?.early_out === true
-            ? earlyout_display
-            : not_applicable;
+              ? on_time_entry_display
+              : rowData.day_status?.late === true
+                ? late_entry_display
+                : rowData.day_status?.early_out === true
+                  ? earlyout_display
+                  : not_applicable;
         return (
           <Cell {...props} className="link-group">
             <i
@@ -919,7 +919,7 @@ const AttendanceEmployeeTable = () => {
                             String(
                               Math.floor(
                                 attendanceEditData.final_checked_in_hr_in_seconds /
-                                  3600
+                                3600
                               )
                             ).padStart(2, "0")
                         )}
@@ -930,7 +930,7 @@ const AttendanceEmployeeTable = () => {
                             Math.floor(
                               (attendanceEditData.final_checked_in_hr_in_seconds %
                                 3600) /
-                                60
+                              60
                             ),
                             "final_checked_in_hr_in_seconds"
                           );
@@ -949,7 +949,7 @@ const AttendanceEmployeeTable = () => {
                               Math.floor(
                                 (attendanceEditData.final_checked_in_hr_in_seconds %
                                   3600) /
-                                  60
+                                60
                               )
                             ).padStart(2, "0")
                         )}
@@ -958,7 +958,7 @@ const AttendanceEmployeeTable = () => {
                           EditHourChange(
                             Math.floor(
                               attendanceEditData.final_checked_in_hr_in_seconds /
-                                3600
+                              3600
                             ),
                             selectedOption.value,
                             "final_checked_in_hr_in_seconds"
@@ -991,7 +991,7 @@ const AttendanceEmployeeTable = () => {
                               String(
                                 Math.floor(
                                   attendanceEditData.final_ot_hr_in_seconds /
-                                    3600
+                                  3600
                                 )
                               ).padStart(2, "0")
                           )}
@@ -1001,7 +1001,7 @@ const AttendanceEmployeeTable = () => {
                               Math.floor(
                                 (attendanceEditData.final_ot_hr_in_seconds %
                                   3600) /
-                                  60
+                                60
                               ),
                               "final_ot_hr_in_seconds"
                             )
@@ -1020,7 +1020,7 @@ const AttendanceEmployeeTable = () => {
                                 Math.floor(
                                   (attendanceEditData.final_ot_hr_in_seconds %
                                     3600) /
-                                    60
+                                  60
                                 )
                               ).padStart(2, "0")
                           )}
@@ -1108,9 +1108,13 @@ const AttendanceEmployeeTable = () => {
           open_timeline();
         }}
         centered
-        className="custom-modal"
+        className="custom-modal-1"
       >
-        <ModalHeader>
+        <DistanceCalculaterInMap
+          locationData={locationData}
+          locationType={locationType}
+        />
+        <ModalHeader className="text-center">
           <h5
             className="modal-title"
             id="exampleModalToggleLabel"
@@ -1119,9 +1123,9 @@ const AttendanceEmployeeTable = () => {
             Date: {timelineDate}
           </h5>
         </ModalHeader>
-        <ModalBody className="text-left">
+        <ModalBody className="text-left" style={{ maxHeight: "400px", overflowY: "auto" }}>
           <div>
-            <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
+            <SimpleBar style={{ maxHeight: "calc(100% - 30px)" }} className="p-3 pt-0">
               <table className="table">
                 <thead>
                   <tr>
@@ -1134,7 +1138,7 @@ const AttendanceEmployeeTable = () => {
                       <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
                     </th>
                     <th>Total Hours</th>
-                   
+
                   </tr>
                 </thead>
                 <tbody>
@@ -1155,9 +1159,9 @@ const AttendanceEmployeeTable = () => {
                           : "";
                         let totalDifference = checkOutData
                           ? differenceInMinutes(
-                              ParseTime(checkOutData.entry_time),
-                              ParseTime(checkInData.entry_time)
-                            )
+                            ParseTime(checkOutData.entry_time),
+                            ParseTime(checkInData.entry_time)
+                          )
                           : 0;
                         let totalHours = Math.floor(totalDifference / 60);
                         let totalMinutes = totalDifference % 60;
@@ -1171,56 +1175,56 @@ const AttendanceEmployeeTable = () => {
 
                         return (
                           <tr key={idx}>
-                          <td>
-                            <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
-                              {checkInTime}
-                            </p>
-                            <small className="mb-0 text-muted"style={{ display: "inline-block", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {checkInData.location_id !== null ? (
-                                <a
-                                  href={`https://maps.google.com/?q=${checkInData.latitude},${checkInData.longitude}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <i className="mdi mdi-map-marker"></i> {checkInData.location || ""}
-                                </a>
-                              ) : (
-                                checkInData && checkInData.location !== "" ? (
+                            <td>
+                              <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
+                                {checkInTime}
+                              </p>
+                              <small className="mb-0 text-muted" style={{ display: "inline-block", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {checkInData.location_id !== null ? (
+                                  <a
+                                    href={`https://maps.google.com/?q=${checkInData.latitude},${checkInData.longitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <i className="mdi mdi-map-marker"></i> {checkInData.location || ""}
+                                  </a>
+                                ) : (
+                                  checkInData && checkInData.location !== "" ? (
                                     <span>
-                                        <i className="mdi mdi-map-marker"></i> {checkInData.location}
+                                      <i className="mdi mdi-map-marker"></i> {checkInData.location}
                                     </span>
-                                ) : null
-                              )}
-                            </small>
-                          </td>
-                          <td>
-                            <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
-                              {checkOutTime}
-                            </p>
-                            <small className="mb-0 text-muted"style={{ display: "inline-block", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {checkOutData && checkOutData.location_id !== null ? (
-                                <a
-                                  href={`https://maps.google.com/?q=${checkOutData.latitude},${checkOutData.longitude}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <i className="mdi mdi-map-marker"></i> {checkOutData.location || ""}
-                                </a>
-                              ) : (
-                                checkOutData && checkOutData.location !== "" ? (
+                                  ) : null
+                                )}
+                              </small>
+                            </td>
+                            <td>
+                              <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
+                                {checkOutTime}
+                              </p>
+                              <small className="mb-0 text-muted" style={{ display: "inline-block", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {checkOutData && checkOutData.location_id !== null ? (
+                                  <a
+                                    href={`https://maps.google.com/?q=${checkOutData.latitude},${checkOutData.longitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <i className="mdi mdi-map-marker"></i> {checkOutData.location || ""}
+                                  </a>
+                                ) : (
+                                  checkOutData && checkOutData.location !== "" ? (
                                     <span>
-                                        <i className="mdi mdi-map-marker"></i> {checkOutData.location}
+                                      <i className="mdi mdi-map-marker"></i> {checkOutData.location}
                                     </span>
-                                ) : null
-                              )}
-                            </small>
-                          </td>
-                          <td>
-                            <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
-                              {formattedTotalHours}:{formattedTotalMinutes} Hr
-                            </p>
-                          </td>
-                        </tr>
+                                  ) : null
+                                )}
+                              </small>
+                            </td>
+                            <td>
+                              <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
+                                {formattedTotalHours}:{formattedTotalMinutes} Hr
+                              </p>
+                            </td>
+                          </tr>
                         );
                       }
                       return null; // Skip rendering if it's not a check-in entry
@@ -1452,8 +1456,8 @@ const AttendanceEmployeeTable = () => {
                   value={
                     leaveApplyData?.leave_type
                       ? day_leave_types.find(
-                          (d) => d.id === leaveApplyData?.leave_type
-                        )
+                        (d) => d.id === leaveApplyData?.leave_type
+                      )
                       : []
                   }
                   isOptionDisabled={(option) =>
@@ -1468,8 +1472,8 @@ const AttendanceEmployeeTable = () => {
                       setLeaveCount(
                         newData.leave_type
                           ? employee_leave_data.find(
-                              (d) => d.id === newData.leave_type
-                            )?.balance_leave_count
+                            (d) => d.id === newData.leave_type
+                          )?.balance_leave_count
                           : ""
                       );
                       return newData;

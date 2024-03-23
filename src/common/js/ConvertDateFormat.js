@@ -29,6 +29,8 @@ export const ConvertDayNameFromISO = (start) => {
 export const ConvertISODateFormat = (dateString) => {
   const originalDate = new Date(String(dateString));
 
+  
+
   // Get the components of the date
   const year = originalDate.getFullYear();
   const month = (originalDate.getMonth() + 1).toString().padStart(2, "0"); // Adding 1 because months are zero-indexed
@@ -65,7 +67,18 @@ export const convertFromToDateFormat = (originalDate) => {
   const formattedDate = `${day}-${month}-${year} ${timePart}`;
   return formattedDate;
 };
+export const previousDateFormat = (dateString) => {
+  // Create a Date object from the provided dateString
+  const originalDate = new Date(dateString);
+  
+  // Subtract 18 years from the original date
+  const newDate = new Date(originalDate.getFullYear() - 18, originalDate.getMonth(), originalDate.getDate());
 
+  // Convert the new date to the desired format (assuming ISO format for now)
+  const isoDate = newDate.toISOString().split('T')[0]; // Extracting date portion
+
+  return isoDate;
+};
 // export const convertDateTimeFormat = (originalDate) => {
 //   const dateObject = new Date(originalDate);
 
