@@ -36,7 +36,7 @@ const EmployeeAttendance = ({ profileObj }) => {
       ...filterKeys,
       employee: profileObj?.id,
     };
-    BuildTable(updated_filter_keys);
+    // BuildTable(updated_filter_keys);
     setFilterKeys(updated_filter_keys);
   }, [profileObj]);
 
