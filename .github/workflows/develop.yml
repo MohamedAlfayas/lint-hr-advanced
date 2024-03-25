@@ -1,0 +1,42 @@
+name: Develop
+run-name: ${{github.actor}} is deploying to Develop.
+env:
+  s3_bucket: s3://dev-linthr-react
+  cloudfront_distribution_id: E14M216X0KILJZ
+  CI: false
+
+on:
+  push:
+    branches:
+      - develop
+
+  workflow_dispatch:
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup NodeJs
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.11.1
+      - name: Install Dependencies
+        run: yarn install
+
+      - name: Build Project
+        run: yarn build
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Sync build with s3
+        run: aws s3 sync build/ $s3_bucket
+
+      - name: Invalidate CloudFront cache
+        run: aws cloudfront create-invalidation --distribution-id $cloudfront_distribution_id --paths "/*"
