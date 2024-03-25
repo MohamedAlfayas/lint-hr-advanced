@@ -146,7 +146,7 @@ const EmployeeActivity = (props) => {
             </CardHeader>
             <CardBody className="p-0">
               <div className="p-2">
-                <div className="form-icon right">
+                <div className="form-icon right" style={{ width: "250px" }}>
                   <Select
                     id="emp_type"
                     name="Employee Type"
@@ -160,7 +160,7 @@ const EmployeeActivity = (props) => {
                     onChange={handleEmployeeTypeChange}
                   />
                 </div>
-                <div className="form-icon right mt-3">
+                <div className="form-icon right mt-3"style={{ width: "250px" }}>
                   <Input
                     type="text"
                     name="search"

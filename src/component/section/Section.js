@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Col, Row } from "reactstrap";
 import Flatpickr from "react-flatpickr";
 import {setMyProfileDataReducer} from "../../redux/reducers/ChildReducer/MyProfileReducer";
@@ -12,6 +12,22 @@ const Section = (props) => {
   const capitalizeFirstLetter = (str) => {
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
+  const [greeting, setGreeting] = useState('');
+  useEffect(() => {
+    const date = new Date();
+    const hour = date.getHours();
+
+    if (hour >= 5 && hour < 12) {
+      setGreeting('Good Morning');
+    } else if (hour >= 12 && hour < 17) {
+      setGreeting('Good Afternoon');
+    } else if (hour >= 17 && hour < 21) {
+      setGreeting('Good Evening');
+    } else {
+      setGreeting('Good Night');
+    }
+  }, []);
+  
   const capitalizedFirstName = capitalizeFirstLetter(profile_data.fname);
   return (
     <React.Fragment>
@@ -19,7 +35,7 @@ const Section = (props) => {
         <Col xs={12}>
           <div className="d-flex align-items-lg-center flex-lg-row flex-column">
             <div className="flex-grow-1">
-              <h4 className="fs-16 mb-1">Good Morning, {capitalizedFirstName}</h4>
+              <h4 className="fs-16 mb-1">{greeting}, {capitalizedFirstName}</h4>
               <p className="text-muted mb-0">
                 Here's what's happening with your Product today.
               </p>

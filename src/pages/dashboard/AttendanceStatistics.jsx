@@ -27,6 +27,10 @@ const AttendanceStatistics = () => {
   const [notCheckedInPer, setNotCheckedInPer] = useState(0);
   const [onLeavePer, setOnLeavePer] = useState(0);
   const [checkedOutPer, setCheckedOutPer] = useState(0);
+  const [selectedEmployee,setSelectedEmployee] = useState("Team")
+  const onChange = pType => {
+    setSelectedEmployee(pType);
+};
 
   const { team_todays_attendance } = useSelector(
     (state) => state.TeamTodaysAttendanceReducer
@@ -127,10 +131,11 @@ const AttendanceStatistics = () => {
     '["--vz-success", "--vz-danger", "--vz-info", "--vz-warning"]'
   );
 
-  const handleEmployeeTypeChange = (e) => {
-    setEmployeeType(e.value);
+  const handleEmployeeTypeChange = (selectedOption) => {
+    setEmployeeType(selectedOption.value);
   };
-
+  
+  const defaultOption = employeeTypeOptions.find(option => option.id === 1);
   var options = {
     labels: ["Checked In", "Not Checked In", "On Leave", "Checked Out"],
     chart: {
@@ -203,15 +208,29 @@ const AttendanceStatistics = () => {
   return (
     <React.Fragment>
       <Col xxl={12} xl={12} sm={12}>
-        <div className="card card-height-100">
-          <div className="card-header border-0 align-items-center d-flex">
-            <Col xxxl={12} xl={12} sm={12}>
-              <h4 className="card-title mb-0 flex-grow-1">
-                Attendance Statistics
-              </h4>
+      <div className="card card-height-100">
+      <div className="card-header border-0 align-items-center d-flex">
+        <Col xxxl={6} xl={6} sm={6} className="d-flex align-items-center">
+          <h4 className="card-title mb-0 flex-grow-1">
+            Attendance Statistics
+          </h4>
+        </Col>
+        <Col xxxl={6} xl={6} sm={6} className="d-flex align-items-center justify-content-end">
+          <div className="flex-shrink-0">
+            <UncontrolledDropdown className="card-header-dropdown">
+              <DropdownToggle tag="a" className="text-reset dropdown-btn" role="button">
+                <span className="fw-semibold fs-12">{selectedEmployee}</span><span className="text-muted"><i className="mdi mdi-chevron-down ms-1"></i></span>
+              </DropdownToggle>
+              <DropdownMenu className="dropdown-menu-end">
+                                    <DropdownItem onClick={() => { onChange("All"); }} >All</DropdownItem>
+                                    <DropdownItem onClick={() => { onChange("Team"); }} >Team</DropdownItem>
+                                   
+                                </DropdownMenu>
+            </UncontrolledDropdown>
+          </div>
             </Col>
           </div>
-          <div style={{ marginLeft: "10px", width: "50%" }}>
+          {/* <div style={{ marginLeft: "10px", width: "50%" }}>
             {" "}
             <Select
               id="emp_type"
@@ -225,7 +244,8 @@ const AttendanceStatistics = () => {
               }
               onChange={handleEmployeeTypeChange}
             />
-          </div>
+          </div> */}
+     
           <div className="card-body">
             <ReactApexChart
               dir="ltr"
