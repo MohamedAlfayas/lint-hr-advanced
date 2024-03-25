@@ -24,6 +24,7 @@ import { toast } from "react-toastify";
 import { EmployeeDisplayInSelect } from "../../common/js/EmployeeDisplayInSelect";
 import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
 import { profile_data } from "../../redux/reducers/ChildReducer/MyProfileReducer";
+import { BuildAttendanceReportChart } from "../../common/js/BuildAttendanceReportChart";
 dayjs.extend(customParseFormat);
 
 const AttendanceFilter = () => {
@@ -129,6 +130,10 @@ const AttendanceFilter = () => {
         setIndividualAttendanceReportData(
           attendanceApi?.data?.data?.individual_attendance_report
         )
+      );
+      BuildAttendanceReportChart(
+        attendanceApi?.data?.data?.individual_attendance_report,
+        dispatch
       );
       if (filterKeys?.type === "1") {
         Api({

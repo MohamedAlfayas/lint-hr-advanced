@@ -131,7 +131,6 @@ const AttendanceEmployeeTable = () => {
   }
 
   function open_location(rowData, dataKey) {
-    console.log("MAP",rowData);
     setLocationModal(!locationModal);
     setLocationData(rowData);
     setLocationType(dataKey);
@@ -674,9 +673,7 @@ const AttendanceEmployeeTable = () => {
         leaveApplyData,
         false
       );
-      console.log("API RES = ", Api);
       if (Api.status && Api.status === 200) {
-        console.log("LTE RES = ", Api?.data?.leave_type_for_employee);
         if (leaveApplyData.id === 0) {
           dispatch(addLeaveApplication(Api?.data.data));
           dispatch(
