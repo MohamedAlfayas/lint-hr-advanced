@@ -68,6 +68,7 @@ import {
   not_applicable,
 } from "../../../common/constant/Constants";
 import DistanceCalculaterInMap from "../../../pages/attendance/DistanceCalculaterInMap";
+import AllDistanceCalculater from "../../../pages/attendance/AllDistanceCalculater";
 import WebCheckInOut from "./../timer/WebCheckInOut";
 
 const AttendanceEmployeeTable = () => {
@@ -130,6 +131,7 @@ const AttendanceEmployeeTable = () => {
   }
 
   function open_location(rowData, dataKey) {
+    console.log("MAP",rowData);
     setLocationModal(!locationModal);
     setLocationData(rowData);
     setLocationType(dataKey);
@@ -1096,10 +1098,10 @@ const AttendanceEmployeeTable = () => {
         centered
         className="custom-modal-1"
       >
-        {/* <DistanceCalculaterInMap
+        <AllDistanceCalculater
           locationData={locationData}
           locationType={locationType}
-        /> */}
+        />
         <ModalHeader className="text-center">
           <h5
             className="modal-title"
