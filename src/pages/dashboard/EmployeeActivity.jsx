@@ -25,10 +25,12 @@ import { Link } from "react-router-dom";
 import { Api } from "../../common/api/Api";
 import { useDispatch, useSelector } from "react-redux";
 import { setTeamTodaysAttendanceData } from "../../redux/reducers/ChildReducer/TeamTodaysAttendanceReducer";
+import { employeeTypeOptions } from "../../common/constant/Constants";
 
 const EmployeeActivity = (props) => {
   const [lateData, setLateData] = useState([]);
   const [noData, setNoData] = useState([]);
+  const [employeeType, setEmployeeType] = useState(1);
 
   const { team_todays_attendance } = useSelector(
     (state) => state.TeamTodaysAttendanceReducer
@@ -68,6 +70,10 @@ const EmployeeActivity = (props) => {
         console.log("ERR = ", err);
       });
   }, []);
+
+  const handleEmployeeTypeChange = (e) => {
+    setEmployeeType(e.value);
+  };
 
   const [activeTab, setActiveTab] = useState("1");
   const toggleTab = (tab) => {
@@ -141,6 +147,20 @@ const EmployeeActivity = (props) => {
             <CardBody className="p-0">
               <div className="p-2">
                 <div className="form-icon right">
+                  <Select
+                    id="emp_type"
+                    name="Employee Type"
+                    isMulti={false}
+                    options={employeeTypeOptions || []}
+                    className="basic-multi-select"
+                    value={
+                      employeeTypeOptions.find((d) => d.id === employeeType) ||
+                      employeeTypeOptions[1]
+                    }
+                    onChange={handleEmployeeTypeChange}
+                  />
+                </div>
+                <div className="form-icon right mt-3">
                   <Input
                     type="text"
                     name="search"

@@ -605,8 +605,6 @@ const AttendanceEmployeeTable = () => {
     let newMin = Math.floor((new_obj?.final_paid_hr_in_seconds % 3600) / 60);
     let newNotes = new_obj?.notes;
 
-    console.log("Notes Length = ", newNotes.trim().length);
-
     if (
       initialHr === newHr &&
       initialMin === newMin &&
@@ -636,8 +634,6 @@ const AttendanceEmployeeTable = () => {
       old_paid_hr_in_seconds: rowData?.final_paid_hr_in_seconds,
       notes: "",
     };
-
-    console.log("Initial Obj = ", initial_obj);
 
     setInitialObj(initial_obj);
 
@@ -671,8 +667,6 @@ const AttendanceEmployeeTable = () => {
     if (leaveApplyData.leave_type === 0) {
       toast.error("Please Select Leave Type");
     } else {
-      console.log("SUCCESSSS !!!!", leaveApplyData);
-
       const Api = await PostApi(
         "leave/leave-application/create/",
         leaveApplyData,
@@ -700,8 +694,6 @@ const AttendanceEmployeeTable = () => {
   };
 
   const updateAttendance = async () => {
-    console.log("final Update Obj = ", attendanceEditData);
-
     dispatch(setLoaderVisible(true));
     if (attendanceEditData.final_paid_hr_in_seconds === 0) {
       toast.error("Final Paid Hour Can't be zero");
@@ -721,8 +713,6 @@ const AttendanceEmployeeTable = () => {
   };
 
   const viewNotes = (rowData) => {
-    console.log("This rowData = ", rowData);
-
     let initial_obj = {
       id: rowData?.id,
       final_checked_in_hr_in_seconds: rowData?.final_checked_in_hr_in_seconds,
@@ -740,8 +730,6 @@ const AttendanceEmployeeTable = () => {
   };
 
   const updateNotes = async () => {
-    console.log("UPdated Notes = ", notesUpdateObj);
-
     dispatch(setLoaderVisible(true));
 
     const Api = await PostApi(
@@ -924,7 +912,6 @@ const AttendanceEmployeeTable = () => {
                             ).padStart(2, "0")
                         )}
                         onChange={(selectedOption) => {
-                          console.log("SEL HR = ", selectedOption);
                           EditHourChange(
                             selectedOption.value,
                             Math.floor(
@@ -954,7 +941,6 @@ const AttendanceEmployeeTable = () => {
                             ).padStart(2, "0")
                         )}
                         onChange={(selectedOption) => {
-                          console.log("SLE Min = ", selectedOption);
                           EditHourChange(
                             Math.floor(
                               attendanceEditData.final_checked_in_hr_in_seconds /
@@ -1108,9 +1094,13 @@ const AttendanceEmployeeTable = () => {
           open_timeline();
         }}
         centered
-        className="custom-modal"
+        className="custom-modal-1"
       >
-        <ModalHeader>
+        {/* <DistanceCalculaterInMap
+          locationData={locationData}
+          locationType={locationType}
+        /> */}
+        <ModalHeader className="text-center">
           <h5
             className="modal-title"
             id="exampleModalToggleLabel"
@@ -1119,9 +1109,15 @@ const AttendanceEmployeeTable = () => {
             Date: {timelineDate}
           </h5>
         </ModalHeader>
-        <ModalBody className="text-left">
+        <ModalBody
+          className="text-left"
+          style={{ maxHeight: "400px", overflowY: "auto" }}
+        >
           <div>
-            <SimpleBar style={{ maxHeight: "410px" }} className="p-3 pt-0">
+            <SimpleBar
+              style={{ maxHeight: "calc(100% - 30px)" }}
+              className="p-3 pt-0"
+            >
               <table className="table">
                 <thead>
                   <tr>
@@ -1134,7 +1130,6 @@ const AttendanceEmployeeTable = () => {
                       <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
                     </th>
                     <th>Total Hours</th>
-                    <th>Location</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1178,6 +1173,33 @@ const AttendanceEmployeeTable = () => {
                               >
                                 {checkInTime}
                               </p>
+                              <small
+                                className="mb-0 text-muted"
+                                style={{
+                                  display: "inline-block",
+                                  maxWidth: "100px",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {checkInData.location_id !== null ? (
+                                  <a
+                                    href={`https://maps.google.com/?q=${checkInData.latitude},${checkInData.longitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <i className="mdi mdi-map-marker"></i>{" "}
+                                    {checkInData.location || ""}
+                                  </a>
+                                ) : checkInData &&
+                                  checkInData.location !== "" ? (
+                                  <span>
+                                    <i className="mdi mdi-map-marker"></i>{" "}
+                                    {checkInData.location}
+                                  </span>
+                                ) : null}
+                              </small>
                             </td>
                             <td>
                               <p
@@ -1186,6 +1208,34 @@ const AttendanceEmployeeTable = () => {
                               >
                                 {checkOutTime}
                               </p>
+                              <small
+                                className="mb-0 text-muted"
+                                style={{
+                                  display: "inline-block",
+                                  maxWidth: "100px",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {checkOutData &&
+                                checkOutData.location_id !== null ? (
+                                  <a
+                                    href={`https://maps.google.com/?q=${checkOutData.latitude},${checkOutData.longitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <i className="mdi mdi-map-marker"></i>{" "}
+                                    {checkOutData.location || ""}
+                                  </a>
+                                ) : checkOutData &&
+                                  checkOutData.location !== "" ? (
+                                  <span>
+                                    <i className="mdi mdi-map-marker"></i>{" "}
+                                    {checkOutData.location}
+                                  </span>
+                                ) : null}
+                              </small>
                             </td>
                             <td>
                               <p
@@ -1194,18 +1244,6 @@ const AttendanceEmployeeTable = () => {
                               >
                                 {formattedTotalHours}:{formattedTotalMinutes} Hr
                               </p>
-                            </td>
-                            <td>
-                              <small className="mb-0 text-muted">
-                                <a
-                                  href={`https://maps.google.com/?q=${checkInData.location}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <i className="mdi mdi-map-marker"></i>{" "}
-                                  {checkInData.location || ""}
-                                </a>
-                              </small>
                             </td>
                           </tr>
                         );

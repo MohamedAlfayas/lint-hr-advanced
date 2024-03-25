@@ -29,15 +29,8 @@ const AttendanceOverview = () => {
 
   useEffect(() => {
     if (!!individual_attendance_report_data) {
-      console.log(
-        "individual_attendance_report_data Overview = ",
-        individual_attendance_report_data
-      );
-
       let reversed_report_data =
         individual_attendance_report_data.slice().reverse() || [];
-
-      console.log("reversed_report_data = ", reversed_report_data);
 
       let dates = [];
 
@@ -106,7 +99,6 @@ const AttendanceOverview = () => {
           leave_hours_count = 0;
           inactive_hours_count = 0;
         } else if (d.is_week_off === true) {
-          console.log("Entered Week off");
           final_paid_hr_count = 0;
           balance_hr_count = 0;
           holiday_hours_count = 0;

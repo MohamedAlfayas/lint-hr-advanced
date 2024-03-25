@@ -135,7 +135,7 @@ const ProfileDropdown = () => {
           </DropdownItem>
           <DropdownItem className="p-0">
             <Link
-              to={process.env.PUBLIC_URL + "/apps-chat"}
+              // to={process.env.PUBLIC_URL + "/apps-chat"}
               className="dropdown-item"
             >
               <i className="mdi mdi-message-text-outline text-muted fs-16 align-middle me-1"></i>{" "}
@@ -143,14 +143,16 @@ const ProfileDropdown = () => {
             </Link>
           </DropdownItem>
           <DropdownItem className="p-0">
-            <Link to={"#"} className="dropdown-item">
+            <Link
+            //  to={"#"}
+              className="dropdown-item">
               <i className="mdi mdi-calendar-check-outline text-muted fs-16 align-middle me-1"></i>{" "}
               <span className="align-middle">Taskboard</span>
             </Link>
           </DropdownItem>
           <DropdownItem className="p-0">
             <Link
-              to={process.env.PUBLIC_URL + "/pages-faqs"}
+              // to={process.env.PUBLIC_URL + "/pages-faqs"}
               className="dropdown-item"
             >
               <i className="mdi mdi-lifebuoy text-muted fs-16 align-middle me-1"></i>{" "}
@@ -160,7 +162,7 @@ const ProfileDropdown = () => {
           <div className="dropdown-divider"></div>
           <DropdownItem className="p-0">
             <Link
-              to={process.env.PUBLIC_URL + "/pages-profile"}
+              // to={process.env.PUBLIC_URL + "/pages-profile"}
               className="dropdown-item"
             >
               <i className="mdi mdi-wallet text-muted fs-16 align-middle me-1"></i>{" "}
@@ -171,7 +173,7 @@ const ProfileDropdown = () => {
           </DropdownItem>
           <DropdownItem className="p-0">
             <Link
-              to={process.env.PUBLIC_URL + "/pages-profile-settings"}
+              // to={process.env.PUBLIC_URL + "/pages-profile-settings"}
               className="dropdown-item"
             >
               <span className="badge bg-success-subtle text-success mt-1 float-end">
@@ -183,7 +185,7 @@ const ProfileDropdown = () => {
           </DropdownItem>
           <DropdownItem className="p-0">
             <Link
-              to={process.env.PUBLIC_URL + "/auth-lockscreen-basic"}
+              // to={process.env.PUBLIC_URL + "/auth-lockscreen-basic"}
               className="dropdown-item"
             >
               <i className="mdi mdi-lock text-muted fs-16 align-middle me-1"></i>{" "}

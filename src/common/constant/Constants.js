@@ -2386,3 +2386,8 @@ export const not_applicable = {
   class: "black",
   text: "N/A",
 };
+
+export const employeeTypeOptions = [
+  { id: "0", label: "All Employee", value: "0" },
+  { id: "1", label: "My Team Members", value: "1" },
+];

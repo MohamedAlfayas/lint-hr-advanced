@@ -27,6 +27,7 @@ import {
   resetEmployeeTableFilterKeys,
   setEmployeeTableFilterKeys,
 } from "../../redux/reducers/ChildReducer/TableFilterReducer";
+import { previousDateFormat } from "../../common/js/ConvertDateFormat";
 
 const Employee = () => {
   const dispatch = useDispatch();
@@ -55,8 +56,6 @@ const Employee = () => {
   const DepartmentData = GetLocalStorageData("department") || [];
 
   const viewEmployee = (obj) => {
-    console.log("Dep Edit = ", obj);
-
     dispatch(setFormTitle("Employee Details"));
     dispatch(setFormObj(obj));
     dispatch(setFormWidthPercentage("30%"));
@@ -348,7 +347,7 @@ const Employee = () => {
       fname: "",
       lname: "",
       email: "",
-      dob: String(new Date()),
+      dob: previousDateFormat(new Date()),
       joining_date: String(new Date()),
       id_proof: null,
       file_1: null,

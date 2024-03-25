@@ -1,5 +1,6 @@
 import { Navigate } from "react-router";
 import React, { lazy } from "react";
+import AccountSettings from "../pages/employee/AccountSetting";
 
 // import Dashboard from "../pages/dashboard/Dashboard";
 // import Login from "../pages/auth/login/Login";
@@ -28,6 +29,7 @@ const Register = lazy(() => import("../pages/auth/register/Register"));
 const ForgetPassword = lazy(() =>
   import("../pages/auth/forgotpassword/ForgetPassword")
 );
+const WorkSpace = lazy(() => import("../pages/auth/workspace/WorkSpace"));
 const ProjectOverview = lazy(() => import("../pages/organization"));
 const Employee = lazy(() => import("../pages/employee/Employee"));
 const EmployeeView = lazy(() => import("../pages/employee/EmployeeView"));
@@ -71,6 +73,7 @@ const privateRoutes = [
   { path: "/workschedule", component: <WorkSchedule />, perm: "work_schedule" },
   { path: "/holidays", component: <Holidays />, perm: "holidays" },
   { path: "/leavetype", component: <LeaveType />, perm: "leave_type" },
+  { path: "/accountsettings", component: <AccountSettings />, perm: "account_settings" },
   {
     path: "/leave-approval",
     component: <LeaveApproval />,
@@ -119,4 +122,8 @@ const publicRoutes = [
   { path: "/auth/register", component: <Register /> },
 ];
 
-export { publicRoutes, privateRoutes };
+const workSpaceRoutes = [
+  { path: "/auth/workspace", component: <WorkSpace /> },
+]
+
+export { publicRoutes, privateRoutes, workSpaceRoutes };

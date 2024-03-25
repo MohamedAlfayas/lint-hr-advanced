@@ -1,15 +1,25 @@
 import React from "react";
 import { Col, Row } from "reactstrap";
 import Flatpickr from "react-flatpickr";
+import {setMyProfileDataReducer} from "../../redux/reducers/ChildReducer/MyProfileReducer";
 
+
+import { useDispatch, useSelector } from "react-redux";
 const Section = (props) => {
+
+  const { profile_data } = useSelector((state) => state.MyProfileReducer);
+  console.log("hfuynjgs",profile_data);
+  const capitalizeFirstLetter = (str) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
+  const capitalizedFirstName = capitalizeFirstLetter(profile_data.fname);
   return (
     <React.Fragment>
       <Row className="mb-3 pb-1">
         <Col xs={12}>
           <div className="d-flex align-items-lg-center flex-lg-row flex-column">
             <div className="flex-grow-1">
-              <h4 className="fs-16 mb-1">Good Morning</h4>
+              <h4 className="fs-16 mb-1">Good Morning, {capitalizedFirstName}</h4>
               <p className="text-muted mb-0">
                 Here's what's happening with your Product today.
               </p>

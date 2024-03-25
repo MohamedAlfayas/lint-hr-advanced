@@ -215,18 +215,18 @@ const Navdata = () => {
         },
         {
           id: "attendanceapproval",
-          label: "Attendance Approval",
+          label: "Approval",
           link: "/attendanceapproval",
           parentId: "baseUi",
           perm: "attendance_approval",
         },
-        {
-          id: "leaveapproval",
-          label: "Leave Approval",
-          link: "/leave-approval",
-          parentId: "baseUi",
-          perm: "leave_apporval",
-        },
+        // {
+        //   id: "leaveapproval",
+        //   label: "Leave Approval",
+        //   link: "/leave-approval",
+        //   parentId: "baseUi",
+        //   perm: "leave_apporval",
+        // },
         {
           id: "leavetype",
           label: "Leave Type",
@@ -292,33 +292,33 @@ const Navdata = () => {
       id: "baseUi",
       label: "Configuration",
       icon: "ri-settings-3-line",
-      link: "/#",
+      link: "/organization",
       click: function (e) {
         e.preventDefault();
         setIsBaseUi(!isBaseUi);
         setIscurrentState("BaseUi");
         updateIconSidebar(e);
       },
-      stateVariables: isBaseUi,
-      subItems: [
-        {
-          id: "organization",
-          label: "Organization",
-          link: "/organization",
-          parentId: "baseUi",
-          perm: "organization",
-        },
-        {
-          id: "roles",
-          label: "Roles",
-          link: "/roles",
-          parentId: "baseUi",
-          perm: "roles",
-        },
+      // stateVariables: isBaseUi,
+      // subItems: [
+      //   {
+      //     id: "organization",
+      //     label: "Organization",
+      //     link: "/organization",
+      //     parentId: "baseUi",
+      //     perm: "organization",
+      //   },
+      //   // {
+      //   //   id: "roles",
+      //   //   label: "Roles",
+      //   //   link: "/roles",
+      //   //   parentId: "baseUi",
+      //   //   perm: "roles",
+      //   // },
       
       
         
-      ],
+      // ],
     },
     //     {
     //         id: "advanceUi",

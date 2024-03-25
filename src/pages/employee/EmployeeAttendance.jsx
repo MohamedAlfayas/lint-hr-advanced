@@ -21,15 +21,6 @@ import { PostApi } from "../../common/api/PostApi";
 const EmployeeAttendance = ({ profileObj }) => {
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    let updated_filter_keys = {
-      ...filterKeys,
-      employee: profileObj?.id,
-    };
-    BuildTable(updated_filter_keys);
-    setFilterKeys(updated_filter_keys);
-  }, [profileObj]);
-
   const [filterKeys, setFilterKeys] = useState({
     thisMonth: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
       .toString()
@@ -40,9 +31,14 @@ const EmployeeAttendance = ({ profileObj }) => {
     employee: "0",
   });
 
-  const { showTeamTable } = useSelector(
-    (state) => state.AttendanceReportReducer
-  );
+  useEffect(() => {
+    let updated_filter_keys = {
+      ...filterKeys,
+      employee: profileObj?.id,
+    };
+    // BuildTable(updated_filter_keys);
+    setFilterKeys(updated_filter_keys);
+  }, [profileObj]);
 
   const BuildTable = async (payload) => {
     dispatch(setLoaderVisible(true));
@@ -55,14 +51,6 @@ const EmployeeAttendance = ({ profileObj }) => {
           Api?.data?.data?.individual_attendance_report
         )
       );
-      dispatch(
-        setTeamAttendanceReportData(Api?.data?.data?.team_attendance_report)
-      );
-      if (filterKeys?.type === "2" && filterKeys?.employee === "0") {
-        dispatch(setShowTeamTable(true));
-      } else {
-        dispatch(setShowTeamTable(false));
-      }
     } else {
       toast.error(Api?.data?.message || Api?.data?.detail);
     }
@@ -170,16 +158,14 @@ const EmployeeAttendance = ({ profileObj }) => {
               </Row>
             </CardBody>
           </CardHeader>
-          {!showTeamTable && (
-            <Col xxl={12}>
-              <AttendanceOverview />
-            </Col>
-          )}
-          {!showTeamTable && (
-            <Col xxl={12}>
-              <AttendanceEmployeeTable />
-            </Col>
-          )}
+
+          <Col xxl={12}>
+            <AttendanceOverview />
+          </Col>
+
+          <Col xxl={12}>
+            <AttendanceEmployeeTable />
+          </Col>
         </Card>
       </React.Fragment>
     </div>

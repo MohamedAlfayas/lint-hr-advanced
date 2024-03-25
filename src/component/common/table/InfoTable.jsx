@@ -120,8 +120,6 @@ const InfoTable = ({
       ? attendance_approval_table_filter_keys
       : {};
 
-  console.log("table_filter_keys = ", table_filter_keys);
-
   const tabOptions = filterOptions
     ? filterOptions.map((obj, idx) => {
         return {
@@ -182,7 +180,6 @@ const InfoTable = ({
   }
 
   const handleApproval = async (orderData) => {
-    console.log("data", orderData);
     let employee_fname =
       EmployeeData.find((e) => e.id === orderData.employee_id)?.fname || "";
 
@@ -271,7 +268,6 @@ const InfoTable = ({
             reason_from_authority: "",
           };
 
-          console.log("data ====", data);
           dispatch(editLeaveApproval(data));
 
           const Api = await PostApi("leave/approve-or-reject/", data, false);
@@ -317,8 +313,6 @@ const InfoTable = ({
             } else {
               toast.error(Api?.data?.message || Api?.data?.detail);
             }
-
-            console.log("Accepted Data", data);
           }
         }
       } else {
@@ -374,8 +368,6 @@ const InfoTable = ({
             reason_from_authority: result.value,
           };
 
-          console.log("data ====", data);
-
           const Api = await PostApi("leave/approve-or-reject/", data, false);
           console.log("API RES = ", Api);
           if (Api.status && Api.status === 200) {
@@ -390,7 +382,6 @@ const InfoTable = ({
         formname === attendance_pending_table
       ) {
         if (result.value) {
-          console.log("RESULT", result);
           const data = {
             id: [orderData.id],
             final_paid_hr_in_seconds: 0,
@@ -410,8 +401,6 @@ const InfoTable = ({
           } else {
             toast.error(Api?.data?.message || Api?.data?.detail);
           }
-
-          console.log("Rejected Data", data);
         }
       } else {
         toast.error("Something Went Wrong");
@@ -420,7 +409,6 @@ const InfoTable = ({
   };
 
   const handleBulkApproval = async () => {
-    console.log("id", selectedGroupIds);
     let content =
       formname === leave_approval_component_name
         ? "Are You Sure to <strong style='color:green'>Accept </strong>  Leave To Selected Employees?"
@@ -465,7 +453,6 @@ const InfoTable = ({
             status: 2,
             reason_from_authority: "",
           };
-          console.log("data ====", data);
 
           const Api = await PostApi("leave/approve-or-reject/", data, false);
           console.log("API RES = ", Api);
@@ -497,7 +484,6 @@ const InfoTable = ({
           } else {
             toast.error(Api?.data?.message || Api?.data?.detail);
           }
-          console.log("data ====", data);
         }
       } else {
         toast.error("Something Went Wrong");
@@ -540,8 +526,6 @@ const InfoTable = ({
             reason_from_authority: result.value,
           };
 
-          console.log("data ====", data);
-
           const Api = await PostApi("leave/approve-or-reject/", data, false);
           console.log("API RES = ", Api);
           if (Api.status && Api.status === 200) {
@@ -572,8 +556,6 @@ const InfoTable = ({
           } else {
             toast.error(Api?.data?.message || Api?.data?.detail);
           }
-
-          console.log("Data", data);
         }
       } else {
         toast.error("Something Went Wrong!");
@@ -609,8 +591,6 @@ const InfoTable = ({
   };
 
   const handleResetPassword = (orderData) => {
-    console.log("Deactivaet OD = ", orderData);
-
     const profile_data = JSON.parse(
       localStorage.getItem("lint_hr_profile_data")
     );
@@ -628,20 +608,19 @@ const InfoTable = ({
         <label for="adminPassword" class="label-lc">Admin Password (${fname} ${lname})</label>
         <div class="input-group">
           <input type="password" id="adminPassword" class="form-control swal2-input" placeholder="Enter Admin Password" required>
-          <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-toggle" type="button"><i class="ri-eye-fill align-middle"></i></button>
         </div>
       </div>
       <label for="newPassword" class="label-lc">New Password (${orderData.fname} ${orderData.lname})</label>
       <div class="input-group">
         <input type="password" id="newPassword" class="form-control swal2-input" placeholder="Enter New Password" required>
-        <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-toggle" type="button"><i class="ri-eye-fill align-middle"></i></button>
       </div>
       <label for="confirmPassword" class="label-lc">Confirm Password (${orderData.fname} ${orderData.lname})</label>
       <div class="input-group">
-        <input type="password" id="confirmPassword" class="form-control swal2-input" placeholder="Enter Confirm Password" required         <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-toggle" type="button"><i class="ri-eye-fill align-middle"></i></button>
->
-        <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-toggle" type="button"><i class="ri-eye-fill align-middle"></i></button>
+        <input type="password" id="confirmPassword" class="form-control swal2-input" placeholder="Enter Confirm Password" required>    
+
       </div>
+      
+      
         </form>
       `,
       icon: false,
@@ -668,6 +647,7 @@ const InfoTable = ({
           Swal.showValidationMessage("Please enter Confirm Password");
           return false;
         }
+        const adminPassword = document.getElementById("adminPassword");
         const newPassword = document.getElementById("newPassword").value;
         const confirmPassword =
           document.getElementById("confirmPassword").value;
@@ -676,34 +656,45 @@ const InfoTable = ({
           Swal.showValidationMessage("Passwords do not match");
         }
 
-        return { newPassword, confirmPassword };
+        return { adminPassword, newPassword, confirmPassword };
       },
       didOpen: () => {
         // Add event listener to the eye buttons for each password input
-        const passwordToggleButtons = document.querySelectorAll(".password-toggle");
+        const passwordToggleButtons =
+          document.querySelectorAll(".password-toggle");
         passwordToggleButtons.forEach((button) => {
           button.addEventListener("click", () => {
             const passwordInput = button.previousElementSibling;
             togglePasswordVisibility(passwordInput);
           });
         });
-    
+
         // Focus on the Admin Password input field
         const adminPasswordInput = document.getElementById("adminPassword");
         if (adminPasswordInput) {
           adminPasswordInput.focus();
         }
-      }
-    
-    }).then((result) => {
+      },
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        const { newPassword, confirmPassword } = result.value;
-        // Handle reset password logic with newPassword and confirmPassword
-        Swal.fire(
-          "Password Reset!",
-          "Your password has been reset.",
-          "success"
-        );
+        const { adminPassword, newPassword, confirmPassword } = result.value;
+        const data = {
+          admin_password: adminPassword.value,
+          emp_uuid: orderData.emp_uuid,
+          new_password: newPassword,
+          confirm_password: confirmPassword,
+        };
+
+        const Api = await PostApi("employee/reset-password/", data, false);
+        if (Api.status && Api.status === 200) {
+          Swal.fire(
+            "Password Reset!",
+            "Password has been reset successfully.",
+            "success"
+          );
+        } else {
+          toast.error(Api?.data?.message);
+        }
       }
     });
   };
@@ -745,13 +736,11 @@ const InfoTable = ({
                 const isChecked = event.target.checked;
 
                 if (isChecked) {
-                  console.log("OrderData Checked:", orderDataChecked);
                   setSelectedGroupIds((prevIds) => [
                     ...prevIds,
                     orderDataChecked,
                   ]);
                 } else {
-                  console.log("OrderData Unchecked:", orderDataChecked);
                   setSelectedGroupIds((prevIds) =>
                     prevIds.filter((id) => id !== orderDataChecked)
                   );
@@ -1027,8 +1016,6 @@ const InfoTable = ({
   // CUSTOM FORM
 
   const handleCreateAndUpdate = ($id, table_obj) => {
-    console.log("tabObj", $id, table_obj);
-
     let FormObj = {};
 
     if ($id === 0) {

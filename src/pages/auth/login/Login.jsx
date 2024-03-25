@@ -1,5 +1,5 @@
 import { useFormik } from "formik";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -30,7 +30,7 @@ import avatar5 from "../../../assets/images/users/avatar-5.jpg";
 import avatar6 from "../../../assets/images/users/avatar-6.jpg";
 import avatar7 from "../../../assets/images/users/avatar-7.jpg";
 import { Api } from "../../../common/api/Api";
-import { BaseURL } from "../../../common/api/BaseURL";
+import { BaseURL, LCPlatform } from "../../../common/api/BaseURL";
 import axios from "axios";
 import { GetGlobalVersion } from "../../../meta/GetGlobalVersion";
 import { toast } from "react-toastify";
@@ -73,74 +73,90 @@ const Login = () => {
       values["username"] = values.email;
       values["device_type"] = 1;
 
+      const domain = window.location.hostname.split(".")[0];
+
+      let login_url = "";
+      let subscribe_topic_url = "";
+
+      if (!!LCPlatform && LCPlatform === "local") {
+        login_url = `${BaseURL}employee/auth/login/`;
+        subscribe_topic_url = `${BaseURL}employee/subscribe-topic/`;
+      } else {
+        login_url = `https://${domain}.lintedu.com/employee/auth/login/`;
+        subscribe_topic_url = `https://${domain}.lintedu.com/employee/subscribe-topic/`;
+      }
+
       axios({
         method: "POST",
-        url: `${BaseURL}employee/auth/login/`,
-        // url : `http://192.168.1.100:8000/employee/auth/login/`,
+        url: login_url,
         data: values,
       })
         .then(async (res) => {
           console.log("adminResponse", res?.data);
 
-          await deleteToken(messaging);
+          try {
+            await deleteToken(messaging);
+          } catch (deleteError) {}
 
-          const newFCMToken = await generateToken();
+          try {
+            const newFCMToken = await generateToken();
 
-          console.log("newFCMToken After Delete = ", newFCMToken);
+            console.log("newFCMToken After Delete = ", newFCMToken);
 
-          axios({
-            method: "POST",
-            url: `${BaseURL}employee/subscribe-topic/`,
-            headers: {
-              Authorization: `Bearer ${res?.data?.token?.access}`,
-            },
-            data: {
-              fcm_token: newFCMToken,
-            },
-          })
-            .then((response) => {
-              console.log("Topic Subscribed Successfully !!! = ", response);
-              localStorage.setItem(
-                "lint_hr_globaldata",
-                JSON.stringify(res?.data?.meta_data)
-              );
-              localStorage.setItem(
-                "lint_hr_token",
-                JSON.stringify(res?.data?.token)
-              );
-              localStorage.setItem(
-                "lint_hr_profile_data",
-                JSON.stringify(res?.data?.profile_data)
-              );
-              localStorage.setItem(
-                "user_perm_list",
-                JSON.stringify([
-                  "organization",
-                  "employee",
-                  "leave_type",
-                  "custom_field",
-                ])
-              );
-              dispatch(setMyProfileDataReducer(res?.data?.profile_data));
-              // localStorage.setItem(
-              //   "left_side_bar_type",
-              //   leftsidbarSizeTypes.DEFAULT
-              // );
-              dispatch(
-                changeLeftsidebarSizeTypeAction(leftsidbarSizeTypes.DEFAULT)
-              );
-
-              setTimeout(() => {
-                toast.success(res?.data?.message);
-                navigate("/dashboard");
-                dispatch(setLoaderVisible(false));
-              }, 1000);
+            axios({
+              method: "POST",
+              url: subscribe_topic_url,
+              headers: {
+                Authorization: `Bearer ${res?.data?.token?.access}`,
+              },
+              data: {
+                fcm_token: newFCMToken,
+              },
             })
-            .catch((error) => {
-              console.log("ERR = ", error);
-              dispatch(setLoaderVisible(false));
-              toast.error(error?.response?.data?.message);
-            });
+              .then((response) => {
+                console.log("Topic Subscribed Successfully !!! = ", response);
+                localStorage.setItem(
+                  "lint_hr_globaldata",
+                  JSON.stringify(res?.data?.meta_data)
+                );
+                localStorage.setItem(
+                  "lint_hr_token",
+                  JSON.stringify(res?.data?.token)
+                );
+                localStorage.setItem(
+                  "lint_hr_profile_data",
+                  JSON.stringify(res?.data?.profile_data)
+                );
+                localStorage.setItem(
+                  "user_perm_list",
+                  JSON.stringify([
+                    "organization",
+                    "employee",
+                    "leave_type",
+                    "custom_field",
+                  ])
+                );
+                dispatch(setMyProfileDataReducer(res?.data?.profile_data));
+                // localStorage.setItem(
+                //   "left_side_bar_type",
+                //   leftsidbarSizeTypes.DEFAULT
+                // );
+                dispatch(
+                  changeLeftsidebarSizeTypeAction(leftsidbarSizeTypes.DEFAULT)
+                );
+
+                setTimeout(() => {
+                  toast.success(res?.data?.message);
+                  navigate("/dashboard");
+                  dispatch(setLoaderVisible(false));
+                }, 1000);
+              })
+              .catch((error) => {
+                console.log("ERR = ", error);
+                dispatch(setLoaderVisible(false));
+                toast.error(error?.response?.data?.message);
+              });
+          } catch (err) {}
         })
         .catch((err) => {
           console.log("err = ", err);
@@ -151,6 +167,46 @@ const Login = () => {
   });
 
   document.title = `Login | ${MetaTitle || "Lint HR"}`;
+
+  useEffect(() => {
+    const domain = window.location.hostname.split(".")[0];
+    if (!!domain) {
+      console.log("Login Page Rendering !!!! - ", domain);
+
+      let validate_domain_url = "";
+
+      if (!!LCPlatform && LCPlatform === "local") {
+        validate_domain_url = `${BaseURL}api/validate-domain/`;
+      } else {
+        validate_domain_url = `https://${domain}.lintedu.com/api/validate-domain/`;
+      }
+
+      axios({
+        method: "POST",
+        // url: `https://${domain}.lintedu.com/api/validate-domain/`,
+        url: validate_domain_url,
+        data: {
+          domain: domain,
+        },
+      })
+        .then((res) => {
+          console.log("domain validate success - ", res);
+          // window.location.href = "/dashboard";
+        })
+        .catch((error) => {
+          console.log("domain validate Error - ", error);
+          if (
+            !!error?.response &&
+            error.response.status === 404 &&
+            error.response.data.error === "invalid_domain"
+          ) {
+            window.location.href = "/auth/workspace";
+          } else {
+            toast?.error(error?.response?.data?.message);
+          }
+        });
+    }
+  }, []);
 
   return (
     <React.Fragment>

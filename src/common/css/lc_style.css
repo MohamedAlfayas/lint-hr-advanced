@@ -63,4 +63,8 @@
   color: #f3f6f9;
   border: var(--vz-border-width) solid #e9ebec;
 }
-
+.custom-modal-1 .modal-content {
+  max-width: 600px; 
+  max-height: 600px; 
+  padding: 0px;
+}

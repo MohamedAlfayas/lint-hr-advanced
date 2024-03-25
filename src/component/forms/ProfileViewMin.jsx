@@ -43,9 +43,9 @@ const ProfileViewMin = () => {
 
   const DepartmentData = GetLocalStorageData("department") || [];
   const WorkScheduleData = GetLocalStorageData("work_schedule") || [];
-  console.log("WS Data = ", WorkScheduleData);
   const [profileObj, setProfileObj] = useState({});
   const [empId, setEmpId] = useState(0);
+  const [empuid, setEmpuid] = useState();
   const [todayDate, setTodayDate] = useState(0);
   const [individualAttendanceReportData, setIndividualAttendanceReportData] =
     useState([]);
@@ -71,26 +71,6 @@ const ProfileViewMin = () => {
   );
 
   useEffect(() => {
-    const today = new Date();
-    const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
-      .toString()
-      .padStart(2, "0")}`;
-
-    Api({
-      type: "GET",
-      url: "attendance/get_attendance_entry_log/?thisMonth=" + thisMonth,
-    })
-      .then((res) => {
-        setIndividualAttendanceReportData(res?.data?.data);
-        // dispatch(setIndividualAttendanceReportData(res?.data?.data));
-      })
-      .catch((err) => {
-        console.log("Something Went Wrong !!");
-      });
-  }, []);
-
-  useEffect(() => {
-    console.log("Form Obj = ", form_obj);
     const currentDate = new Date();
     setTodayDate(ConvertISODateFormat(currentDate));
 
@@ -107,6 +87,7 @@ const ProfileViewMin = () => {
         });
       setProfileObj(form_obj);
       setEmpId(form_obj.id);
+      setEmpuid(form_obj.emp_uuid);
     }
   }, [form_obj]);
 
@@ -116,7 +97,6 @@ const ProfileViewMin = () => {
     if (customActiveTab !== tab) {
       setcustomActiveTab(tab);
     }
-    console.log(customActiveTab);
   };
 
   const navigate = useNavigate();
@@ -198,13 +178,12 @@ const ProfileViewMin = () => {
   };
   const navigatuser = () => {
     dispatch(toggleRSBView(false));
-    navigate(`/employee/view/${empId}`);
+    navigate(`/employee/view/${empuid}`);
     Api({
       type: "GET",
       url: `leave/get-leave-type-details-for-employee/?employee_id=${empId}`,
     })
       .then((res) => {
-        console.log("Leave Type for Employee", res?.data?.data);
         dispatch(setEmployeeLeaveType(res?.data?.data));
       })
       .catch((err) => {

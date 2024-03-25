@@ -30,15 +30,19 @@ import { differenceInMinutes } from "date-fns";
 import { GetAmPmDateTime } from "../../common/js/ConvertDateTimeToAmPm";
 import "./../../common/css/lc_style.css";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
-import AttendanceApprovalFilter from "../../component/common/tableFilter/AttendanceApprovalFilter";
 import { PostApi } from "../../common/api/PostApi";
 import { toast } from "react-toastify";
-const AttendanceApproval = () => {
+import ApprovalFilter from "../../component/common/tableFilter/ApprovalFilter";
+const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
   const dispatch = useDispatch();
 
   const { attendance_approval_data } = useSelector(
     (state) => state.AttendanceApprovalReducer
   );
+
+  // useEffect(() => {
+  //   onDataLengthChange(PendingLength);
+  // }, [PendingLength, onDataLengthChange]);
 
   const DepartmentData = GetLocalStorageData("department") || [];
   const EmployeeData = GetLocalStorageData("employee") || [];
@@ -89,7 +93,6 @@ const AttendanceApproval = () => {
   }
 
   const viewNotes = (obj) => {
-    console.log("This rowData = ", obj);
     const intialObj = {
       id: obj?.id,
       final_checked_in_hr_in_seconds: obj?.final_checked_in_hr_in_seconds,
@@ -421,7 +424,11 @@ const AttendanceApproval = () => {
       <Container fluid>
         <div className="page-content" style={{ marginBottom: "-135px" }}>
           <div style={{ zIndex: 1000, position: "relative" }}>
-            <AttendanceApprovalFilter />
+            <ApprovalFilter
+              formname={"attendance_approval_component_name"}
+              PendingLeave={PendingLeave}
+              AttendancePending={AttendancePending}
+            />
           </div>
         </div>
       </Container>
@@ -466,7 +473,6 @@ const AttendanceApproval = () => {
                       <i className="mdi mdi-arrow-up-thick arrow-icon"></i>
                     </th>
                     <th>Total Hours</th>
-                    <th>Location</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -510,6 +516,33 @@ const AttendanceApproval = () => {
                               >
                                 {checkInTime}
                               </p>
+                              <small
+                                className="mb-0 text-muted"
+                                style={{
+                                  display: "inline-block",
+                                  maxWidth: "100px",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {checkInData.location_id !== null ? (
+                                  <a
+                                    href={`https://maps.google.com/?q=${checkInData.latitude},${checkInData.longitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <i className="mdi mdi-map-marker"></i>{" "}
+                                    {checkInData.location || ""}
+                                  </a>
+                                ) : checkInData &&
+                                  checkInData.location !== "" ? (
+                                  <span>
+                                    <i className="mdi mdi-map-marker"></i>{" "}
+                                    {checkInData.location}
+                                  </span>
+                                ) : null}
+                              </small>
                             </td>
                             <td>
                               <p
@@ -518,6 +551,34 @@ const AttendanceApproval = () => {
                               >
                                 {checkOutTime}
                               </p>
+                              <small
+                                className="mb-0 text-muted"
+                                style={{
+                                  display: "inline-block",
+                                  maxWidth: "100px",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {checkOutData &&
+                                checkOutData.location_id !== null ? (
+                                  <a
+                                    href={`https://maps.google.com/?q=${checkOutData.latitude},${checkOutData.longitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <i className="mdi mdi-map-marker"></i>{" "}
+                                    {checkOutData.location || ""}
+                                  </a>
+                                ) : checkOutData &&
+                                  checkOutData.location !== "" ? (
+                                  <span>
+                                    <i className="mdi mdi-map-marker"></i>{" "}
+                                    {checkOutData.location}
+                                  </span>
+                                ) : null}
+                              </small>
                             </td>
                             <td>
                               <p
@@ -526,18 +587,6 @@ const AttendanceApproval = () => {
                               >
                                 {formattedTotalHours}:{formattedTotalMinutes} Hr
                               </p>
-                            </td>
-                            <td>
-                              <small className="mb-0 text-muted">
-                                <a
-                                  href={`https://maps.google.com/?q=${checkInData.location}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <i className="mdi mdi-map-marker"></i>{" "}
-                                  {checkInData.location || ""}
-                                </a>
-                              </small>
                             </td>
                           </tr>
                         );

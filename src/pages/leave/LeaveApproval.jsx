@@ -11,14 +11,18 @@ import { Api } from "../../common/api/Api";
 import { Badge, Button, Container, UncontrolledTooltip } from "reactstrap";
 import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
-import LeaveApprovalFilter from "../../component/common/tableFilter/LeaveApprovalFilter";
+import ApprovalFilter from "../../component/common/tableFilter/ApprovalFilter";
 
-const LeaveApproval = () => {
+const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
   const dispatch = useDispatch();
-
   const { leave_approval_data } = useSelector(
     (data) => data.LeaveApprovalReducer
   );
+
+  // useEffect(() => {
+  //   onDataLengthChange(PendingLength);
+  // }, [PendingLength, onDataLengthChange]);
+
   const DepartmentData = GetLocalStorageData("department") || [];
   const LeaveTypeData = GetLocalStorageData("leave_types") || [];
   const { version } = useSelector((data) => data.MetaReducer);
@@ -326,7 +330,11 @@ const LeaveApproval = () => {
       <Container fluid>
         <div className="page-content" style={{ marginBottom: "-135px" }}>
           <div style={{ zIndex: 1000, position: "relative" }}>
-            <LeaveApprovalFilter />
+            <ApprovalFilter
+              formname={"leave_approval_component_name"}
+              PendingLeave={PendingLeave}
+              AttendancePending={AttendancePending}
+            />
           </div>
         </div>
       </Container>

@@ -40,7 +40,7 @@ const DepartmentForm = () => {
   const [departmentData, setDepartmentData] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const DepartmentList = GetLocalStorageData("department") || [];
-  console.log("gggg", DepartmentList);
+
   const [selectedOption, setSelectedOption] = useState();
 
   const dispatch = useDispatch();
@@ -48,7 +48,6 @@ const DepartmentForm = () => {
   const [departmentOptions, setDepartmentOptions] = useState([]);
 
   useEffect(() => {
-    console.log("Dep Form Obj = ", form_obj);
     setDepartmentData(form_obj);
     setDepartmentOptions(
       DepartmentList.filter(

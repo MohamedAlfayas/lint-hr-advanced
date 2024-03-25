@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
+  Button,
   Card,
   CardBody,
   Col,
@@ -28,21 +29,28 @@ import { useEffect } from "react";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import EmployeeOverview from "./EmployeeOverview";
 import EmployeeAttendance from "./EmployeeAttendance";
+import AccountSettings from "./AccountSetting";
+import { setEmployeeAccountSettingsData } from "../../redux/reducers/ChildReducer/AccountSettingsReducer";
+import { useDispatch } from "react-redux";
 
 const EmployeeView = () => {
   const { id } = useParams();
   const DepartmentData = GetLocalStorageData("department") || [];
   const RoleData = GetLocalStorageData("role") || [];
+  const EmployeeData = GetLocalStorageData("employee") || [];
+
+  const employeeAccountData = EmployeeData.find((d) => d.emp_uuid === id);
+
+  const dispatch = useDispatch();
 
   const [profileObj, setProfileObj] = useState({});
-  console.log("obj", profileObj);
 
   const navigate = useNavigate();
 
   useEffect(() => {
     const EmployeeData = GetLocalStorageData("employee") || [];
     if (id && EmployeeData.length) {
-      const thisEmployeeData = EmployeeData.find((d) => d.id === parseInt(id));
+      const thisEmployeeData = EmployeeData.find((d) => d.emp_uuid === id);
 
       if (
         thisEmployeeData !== undefined &&
@@ -104,7 +112,6 @@ const EmployeeView = () => {
                   <h3 className="text-white mb-1">
                     {profileObj?.fname} {profileObj?.lname}
                   </h3>
-                  {console.log("profile Data", profileObj?.role_id)}
                   <p className="text-white text-opacity-75">
                     {profileObj?.role_id
                       ? RoleData.length
@@ -222,13 +229,18 @@ const EmployeeView = () => {
                   </div>
 
                   <div className="flex-shrink-0" style={{ marginLeft: "10px" }}>
-                    <Link
-                      to="/pages-profile-settings"
+                    <Button
                       className="btn btn-success"
+                      onClick={() => {
+                        dispatch(
+                          setEmployeeAccountSettingsData(employeeAccountData)
+                        );
+                        navigate(`/accountsettings/`);
+                      }}
                     >
                       <i className="ri-edit-box-line align-bottom"></i> Account
                       Settings
-                    </Link>
+                    </Button>
                   </div>
                 </div>
 

@@ -148,7 +148,6 @@ const EmployeeForm = () => {
   };
 
   useEffect(() => {
-    console.log("Form Obj = ", form_obj);
     setEmployeeObj({
       ...form_obj,
       dob: ConvertISODateFormat(form_obj.dob),
@@ -204,7 +203,7 @@ const EmployeeForm = () => {
 
   const handleBranchChange = (e) => {
     let branch_id_list = e.map((d) => d.value);
-    console.log("Branch Change ID List = ", branch_id_list);
+
     setEmployeeObj({
       ...employeeObj,
       branch_id_list: branch_id_list,
@@ -248,8 +247,6 @@ const EmployeeForm = () => {
         valid_dep_ids.push(e[i].id);
       }
     }
-
-    console.log("valid_dep_ids = ", valid_dep_ids);
 
     if (valid_dep_ids.length) {
       GetReportingManager(valid_dep_ids);
@@ -319,7 +316,6 @@ const EmployeeForm = () => {
 
   const handleCFFileChange = async (e, cf_id) => {
     const file = e.target.files[0];
-    console.log("CF FILE Change = ", file);
 
     let img_url = "";
 
@@ -395,7 +391,6 @@ const EmployeeForm = () => {
       } else {
         dispatch(setLoaderVisible(true));
 
-        console.log("emp Obj = ", employeeObj);
         let form_data = new FormData();
         employeeImage !== null &&
           form_data.append("profile", employeeImage, employeeImage.name);
@@ -1047,6 +1042,7 @@ const EmployeeForm = () => {
                     name="reporting_manager_id"
                     innerRef={inputRef}
                     isMulti={false}
+                    isClearable={true} // Enable clearable feature
                     options={reportingManagerOptions || []}
                     components={{ Option: EmployeeDisplayInSelect }}
                     className="basic-multi-select"
@@ -1066,14 +1062,23 @@ const EmployeeForm = () => {
                         reportingManagerOptions.find(
                           (e) => e.id === employeeObj.reporting_manager_id
                         )) ||
-                      []
+                      null // Set value to null initially
                     }
-                    onChange={(e) =>
-                      setEmployeeObj({
-                        ...employeeObj,
-                        reporting_manager_id: e.id,
-                      })
-                    }
+                    onChange={(selectedOption) => {
+                      if (selectedOption) {
+                        // Check if an option is selected
+                        setEmployeeObj({
+                          ...employeeObj,
+                          reporting_manager_id: selectedOption.id,
+                        });
+                      } else {
+                        // Clear selection if null (clear button clicked)
+                        setEmployeeObj({
+                          ...employeeObj,
+                          reporting_manager_id: null,
+                        });
+                      }
+                    }}
                     invalid={
                       FormikForm.touched.reporting_manager_id &&
                       FormikForm.errors.reporting_manager_id
