@@ -99,6 +99,7 @@ const AttendanceEmployeeTable = () => {
   const [leaveCount, setLeaveCount] = useState(0);
   const [locationData, setLocationData] = useState([]);
   const [locationType, setLocationType] = useState("");
+  const [allLocationData, setAllLocationData] = useState([]);
 
   const { individual_attendance_report_data } = useSelector(
     (state) => state.AttendanceReportReducer
@@ -126,8 +127,9 @@ const AttendanceEmployeeTable = () => {
   const day_leave_types = employee_leave_data.filter((d) => d.unit === 1);
   // const hour_types = employee_leave_data.filter((d) => d.unit === 2);
 
-  function open_timeline() {
+  function open_timeline(rowData) {
     settimeline_modal(!timeline_modal);
+    setAllLocationData(rowData);
   }
 
   function open_location(rowData, dataKey) {
@@ -138,6 +140,10 @@ const AttendanceEmployeeTable = () => {
 
   const close_location = () => {
     setLocationModal(false);
+  };
+
+  const close_timeLine = () => {
+    settimeline_modal(false);
   };
 
   const closeNotesModal = () => {
@@ -200,7 +206,7 @@ const AttendanceEmployeeTable = () => {
                 setTimeLineDate(
                   format(new Date(rowData?.date), "dd MMM, yyyy")
                 );
-                open_timeline();
+                open_timeline(rowData);
               }}
             >
               +
@@ -413,7 +419,7 @@ const AttendanceEmployeeTable = () => {
   };
 
   const NotesCell = ({ rowData, dataKey, ...props }) => {
-    if (rowData.is_present === false || rowData?.status === true) {
+    if (rowData.is_present === false) {
       return (
         <Cell {...props} className="link-group">
           {null}
@@ -1090,15 +1096,12 @@ const AttendanceEmployeeTable = () => {
       <Modal
         isOpen={timeline_modal}
         toggle={() => {
-          open_timeline();
+          close_timeLine();
         }}
         centered
         className="custom-modal-1"
       >
-        <AllDistanceCalculater
-          locationData={locationData}
-          locationType={locationType}
-        />
+        {/* <AllDistanceCalculater allLocationData={allLocationData} /> */}
         <ModalHeader className="text-center">
           <h5
             className="modal-title"
@@ -1256,7 +1259,7 @@ const AttendanceEmployeeTable = () => {
               <Button
                 className="btn btn-warning"
                 onClick={() => {
-                  open_timeline();
+                  close_timeLine();
                 }}
               >
                 Close
