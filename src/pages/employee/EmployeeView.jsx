@@ -32,6 +32,13 @@ import EmployeeAttendance from "./EmployeeAttendance";
 import AccountSettings from "./AccountSetting";
 import { setEmployeeAccountSettingsData } from "../../redux/reducers/ChildReducer/AccountSettingsReducer";
 import { useDispatch } from "react-redux";
+import { Api } from "../../common/api/Api";
+import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
+import { setIndividualAttendanceReportData } from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { PostApi } from "../../common/api/PostApi";
+import { toast } from "react-toastify";
+import { BuildAttendanceReportChart } from "../../common/js/BuildAttendanceReportChart";
 
 const EmployeeView = () => {
   const { id } = useParams();
@@ -47,7 +54,22 @@ const EmployeeView = () => {
 
   const navigate = useNavigate();
 
+  const [filterKeys, setFilterKeys] = useState({
+    thisMonth: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}`,
+    hr_status: "0",
+    record: "0",
+    type: "2",
+    employee: "0",
+  });
+
   useEffect(() => {
+    !!id && GetInitialApi(id);
+  }, [id]);
+
+  const GetInitialApi = async (id) => {
+    dispatch(setLoaderVisible(true));
     const EmployeeData = GetLocalStorageData("employee") || [];
     if (id && EmployeeData.length) {
       const thisEmployeeData = EmployeeData.find((d) => d.emp_uuid === id);
@@ -58,11 +80,61 @@ const EmployeeView = () => {
         Object.keys(thisEmployeeData).length > 0
       ) {
         setProfileObj(thisEmployeeData);
+
+        const att_api_payload = {
+          thisMonth: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
+            .toString()
+            .padStart(2, "0")}`,
+          hr_status: "0",
+          record: "0",
+          type: "2",
+          employee: thisEmployeeData.id,
+        };
+
+        setFilterKeys(att_api_payload);
+
+        const Att_Report_Api = await PostApi(
+          "report/get-attendance-report/",
+          att_api_payload,
+          false
+        );
+        if (Att_Report_Api.status && Att_Report_Api.status === 200) {
+          dispatch(
+            setIndividualAttendanceReportData(
+              Att_Report_Api?.data?.data?.individual_attendance_report
+            )
+          );
+
+          BuildAttendanceReportChart(
+            Att_Report_Api?.data?.data?.individual_attendance_report,
+            dispatch
+          );
+
+          Api({
+            type: "GET",
+            url: `leave/get-leave-type-details-for-employee/?employee_id=${thisEmployeeData.id}`,
+          })
+            .then((res) => {
+              dispatch(setEmployeeLeaveType(res?.data?.data));
+              dispatch(setLoaderVisible(false));
+            })
+            .catch((err) => {
+              dispatch(setEmployeeLeaveType([]));
+              console.log("Something Went Wrong!!!");
+              dispatch(setLoaderVisible(false));
+            });
+        } else {
+          toast.error(
+            Att_Report_Api?.data?.message || Att_Report_Api?.data?.detail
+          );
+          dispatch(setLoaderVisible(false));
+        }
       } else {
-        navigate("/404");
+        dispatch(setLoaderVisible(false));
+        navigate("/dashboard");
       }
     }
-  }, [id]);
+  };
 
   const [activeTab, setActiveTab] = useState("1");
 
@@ -165,9 +237,10 @@ const EmployeeView = () => {
                     role="tablist"
                   >
                     <NavItem className="fs-14">
-                      <NavLink
-                        href="#overview-tab"
-                        className={classnames({ active: activeTab === "1" })}
+                      <Button
+                        className={classnames("nav-link", {
+                          active: activeTab === "1",
+                        })}
                         onClick={() => {
                           toggleTab("1");
                         }}
@@ -176,12 +249,13 @@ const EmployeeView = () => {
                         <span className="d-none d-md-inline-block">
                           Overview
                         </span>
-                      </NavLink>
+                      </Button>
                     </NavItem>
                     <NavItem className="fs-14">
-                      <NavLink
-                        href="#attendance"
-                        className={classnames({ active: activeTab === "2" })}
+                      <Button
+                        className={classnames("nav-link", {
+                          active: activeTab === "2",
+                        })}
                         onClick={() => {
                           toggleTab("2");
                         }}
@@ -190,12 +264,13 @@ const EmployeeView = () => {
                         <span className="d-none d-md-inline-block">
                           Attendance
                         </span>
-                      </NavLink>
+                      </Button>
                     </NavItem>
                     <NavItem className="fs-14">
-                      <NavLink
-                        href="#payroll"
-                        className={classnames({ active: activeTab === "3" })}
+                      <Button
+                        className={classnames("nav-link", {
+                          active: activeTab === "3",
+                        })}
                         onClick={() => {
                           toggleTab("3");
                         }}
@@ -204,12 +279,13 @@ const EmployeeView = () => {
                         <span className="d-none d-md-inline-block">
                           Payroll
                         </span>
-                      </NavLink>
+                      </Button>
                     </NavItem>
                     <NavItem className="fs-14">
-                      <NavLink
-                        href="#documents"
-                        className={classnames({ active: activeTab === "4" })}
+                      <Button
+                        className={classnames("nav-link", {
+                          active: activeTab === "4",
+                        })}
                         onClick={() => {
                           toggleTab("4");
                         }}
@@ -218,7 +294,7 @@ const EmployeeView = () => {
                         <span className="d-none d-md-inline-block">
                           Documents
                         </span>
-                      </NavLink>
+                      </Button>
                     </NavItem>
                   </Nav>
                   <div className="flex-shrink-0">
@@ -235,7 +311,7 @@ const EmployeeView = () => {
                         dispatch(
                           setEmployeeAccountSettingsData(employeeAccountData)
                         );
-                        navigate(`/accountsettings/`);
+                        navigate(`/account-settings/`);
                       }}
                     >
                       <i className="ri-edit-box-line align-bottom"></i> Account
@@ -245,206 +321,217 @@ const EmployeeView = () => {
                 </div>
 
                 <TabContent activeTab={activeTab} className="pt-4">
-                  <TabPane tabId="1">
-                    <EmployeeOverview profileObj={profileObj} />
-                  </TabPane>
-                  <TabPane tabId="2">
-                    <EmployeeAttendance profileObj={profileObj} />
-                  </TabPane>
+                  {!!activeTab && activeTab === "1" && (
+                    <TabPane tabId="1">
+                      <EmployeeOverview profileObj={profileObj} />
+                    </TabPane>
+                  )}
+                  {!!activeTab && activeTab === "2" && (
+                    <TabPane tabId="2">
+                      <EmployeeAttendance
+                        profileObj={profileObj}
+                        filterKeys={filterKeys}
+                        setFilterKeys={setFilterKeys}
+                      />
+                    </TabPane>
+                  )}
 
-                  <TabPane tabId="3">
-                    <Card>
-                      <CardBody>
-                        <div className="d-flex align-items-center mb-4">
-                          <h5 className="card-title flex-grow-1 mb-0">
-                            Documents
-                          </h5>
-                          <div className="flex-shrink-0">
-                            <Input
-                              className="form-control d-none"
-                              type="file"
-                              id="formFile"
-                            />
-                            <Label
-                              htmlFor="formFile"
-                              className="btn btn-danger"
-                            >
-                              <i className="ri-upload-2-fill me-1 align-bottom"></i>{" "}
-                              Upload File
-                            </Label>
+                  {!!activeTab && activeTab === "3" && (
+                    <TabPane tabId="3">
+                      <Card>
+                        <CardBody>
+                          <div className="d-flex align-items-center mb-4">
+                            <h5 className="card-title flex-grow-1 mb-0">
+                              Documents
+                            </h5>
+                            <div className="flex-shrink-0">
+                              <Input
+                                className="form-control d-none"
+                                type="file"
+                                id="formFile"
+                              />
+                              <Label
+                                htmlFor="formFile"
+                                className="btn btn-danger"
+                              >
+                                <i className="ri-upload-2-fill me-1 align-bottom"></i>{" "}
+                                Upload File
+                              </Label>
+                            </div>
                           </div>
-                        </div>
-                        <Row>
-                          <Col lg={12}>
-                            <div className="table-responsive">
-                              <Table className="table-borderless align-middle mb-0">
-                                <thead className="table-light">
-                                  <tr>
-                                    <th scope="col">File Name</th>
-                                    <th scope="col">Type</th>
-                                    <th scope="col">Size</th>
-                                    <th scope="col">Upload Date</th>
-                                    <th scope="col">Action</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  <tr key="1">
-                                    <td>
-                                      <div className="d-flex align-items-center">
-                                        <div className="avatar-sm">
-                                          <div className="avatar-title bg-danger-subtle text-danger rounded fs-20">
-                                            <i className="ri-image-2-fill"></i>
+                          <Row>
+                            <Col lg={12}>
+                              <div className="table-responsive">
+                                <Table className="table-borderless align-middle mb-0">
+                                  <thead className="table-light">
+                                    <tr>
+                                      <th scope="col">File Name</th>
+                                      <th scope="col">Type</th>
+                                      <th scope="col">Size</th>
+                                      <th scope="col">Upload Date</th>
+                                      <th scope="col">Action</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr key="1">
+                                      <td>
+                                        <div className="d-flex align-items-center">
+                                          <div className="avatar-sm">
+                                            <div className="avatar-title bg-danger-subtle text-danger rounded fs-20">
+                                              <i className="ri-image-2-fill"></i>
+                                            </div>
+                                          </div>
+                                          <div className="ms-3 flex-grow-1">
+                                            <h6 className="fs-15 mb-0">
+                                              <Link to="#">Passport</Link>
+                                            </h6>
                                           </div>
                                         </div>
-                                        <div className="ms-3 flex-grow-1">
-                                          <h6 className="fs-15 mb-0">
-                                            <Link to="#">Passport</Link>
-                                          </h6>
-                                        </div>
-                                      </div>
-                                    </td>
-                                    <td>PNG File </td>
-                                    <td>879 KB</td>
-                                    <td>02 Nov 2021</td>
-                                    <td>
-                                      <UncontrolledDropdown direction="start">
-                                        <DropdownToggle
-                                          tag="a"
-                                          className="btn btn-light btn-icon"
-                                          id="dropdownMenuLink15"
-                                          role="button"
-                                        >
-                                          <i className="ri-equalizer-fill"></i>
-                                        </DropdownToggle>
-                                        <DropdownMenu>
-                                          <DropdownItem>
-                                            <i className="ri-eye-fill me-2 align-middle text-muted" />
-                                            View
-                                          </DropdownItem>
-                                          <DropdownItem>
-                                            <i className="ri-download-2-fill me-2 align-middle text-muted" />
-                                            Download
-                                          </DropdownItem>
-                                          <DropdownItem divider />
-                                          <DropdownItem>
-                                            <i className="ri-delete-bin-5-line me-2 align-middle text-muted" />
-                                            Delete
-                                          </DropdownItem>
-                                        </DropdownMenu>
-                                      </UncontrolledDropdown>
-                                    </td>
-                                  </tr>
-                                </tbody>
-                              </Table>
+                                      </td>
+                                      <td>PNG File </td>
+                                      <td>879 KB</td>
+                                      <td>02 Nov 2021</td>
+                                      <td>
+                                        <UncontrolledDropdown direction="start">
+                                          <DropdownToggle
+                                            tag="a"
+                                            className="btn btn-light btn-icon"
+                                            id="dropdownMenuLink15"
+                                            role="button"
+                                          >
+                                            <i className="ri-equalizer-fill"></i>
+                                          </DropdownToggle>
+                                          <DropdownMenu>
+                                            <DropdownItem>
+                                              <i className="ri-eye-fill me-2 align-middle text-muted" />
+                                              View
+                                            </DropdownItem>
+                                            <DropdownItem>
+                                              <i className="ri-download-2-fill me-2 align-middle text-muted" />
+                                              Download
+                                            </DropdownItem>
+                                            <DropdownItem divider />
+                                            <DropdownItem>
+                                              <i className="ri-delete-bin-5-line me-2 align-middle text-muted" />
+                                              Delete
+                                            </DropdownItem>
+                                          </DropdownMenu>
+                                        </UncontrolledDropdown>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </Table>
+                              </div>
+                              <div className="text-center mt-3">
+                                <Link to="#" className="text-success ">
+                                  <i className="mdi mdi-loading mdi-spin fs-20 align-middle me-2"></i>
+                                  Load more{" "}
+                                </Link>
+                              </div>
+                            </Col>
+                          </Row>
+                        </CardBody>
+                      </Card>
+                    </TabPane>
+                  )}
+                  {!!activeTab && activeTab === "4" && (
+                    <TabPane tabId="4">
+                      <Card>
+                        <CardBody>
+                          <div className="d-flex align-items-center mb-4">
+                            <h5 className="card-title flex-grow-1 mb-0">
+                              Documents
+                            </h5>
+                            <div className="flex-shrink-0">
+                              <Input
+                                className="form-control d-none"
+                                type="file"
+                                id="formFile"
+                              />
+                              <Label
+                                htmlFor="formFile"
+                                className="btn btn-danger"
+                              >
+                                <i className="ri-upload-2-fill me-1 align-bottom"></i>{" "}
+                                Upload File
+                              </Label>
                             </div>
-                            <div className="text-center mt-3">
-                              <Link to="#" className="text-success ">
-                                <i className="mdi mdi-loading mdi-spin fs-20 align-middle me-2"></i>
-                                Load more{" "}
-                              </Link>
-                            </div>
-                          </Col>
-                        </Row>
-                      </CardBody>
-                    </Card>
-                  </TabPane>
-
-                  <TabPane tabId="4">
-                    <Card>
-                      <CardBody>
-                        <div className="d-flex align-items-center mb-4">
-                          <h5 className="card-title flex-grow-1 mb-0">
-                            Documents
-                          </h5>
-                          <div className="flex-shrink-0">
-                            <Input
-                              className="form-control d-none"
-                              type="file"
-                              id="formFile"
-                            />
-                            <Label
-                              htmlFor="formFile"
-                              className="btn btn-danger"
-                            >
-                              <i className="ri-upload-2-fill me-1 align-bottom"></i>{" "}
-                              Upload File
-                            </Label>
                           </div>
-                        </div>
-                        <Row>
-                          <Col lg={12}>
-                            <div className="table-responsive">
-                              <Table className="table-borderless align-middle mb-0">
-                                <thead className="table-light">
-                                  <tr>
-                                    <th scope="col">File Name</th>
-                                    <th scope="col">Type</th>
-                                    <th scope="col">Size</th>
-                                    <th scope="col">Upload Date</th>
-                                    <th scope="col">Action</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  <tr key="1">
-                                    <td>
-                                      <div className="d-flex align-items-center">
-                                        <div className="avatar-sm">
-                                          <div className="avatar-title bg-danger-subtle text-danger rounded fs-20">
-                                            <i className="ri-image-2-fill"></i>
+                          <Row>
+                            <Col lg={12}>
+                              <div className="table-responsive">
+                                <Table className="table-borderless align-middle mb-0">
+                                  <thead className="table-light">
+                                    <tr>
+                                      <th scope="col">File Name</th>
+                                      <th scope="col">Type</th>
+                                      <th scope="col">Size</th>
+                                      <th scope="col">Upload Date</th>
+                                      <th scope="col">Action</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr key="1">
+                                      <td>
+                                        <div className="d-flex align-items-center">
+                                          <div className="avatar-sm">
+                                            <div className="avatar-title bg-danger-subtle text-danger rounded fs-20">
+                                              <i className="ri-image-2-fill"></i>
+                                            </div>
+                                          </div>
+                                          <div className="ms-3 flex-grow-1">
+                                            <h6 className="fs-15 mb-0">
+                                              <Link to="#">Passport</Link>
+                                            </h6>
                                           </div>
                                         </div>
-                                        <div className="ms-3 flex-grow-1">
-                                          <h6 className="fs-15 mb-0">
-                                            <Link to="#">Passport</Link>
-                                          </h6>
-                                        </div>
-                                      </div>
-                                    </td>
-                                    <td>PNG File </td>
-                                    <td>879 KB</td>
-                                    <td>02 Nov 2021</td>
-                                    <td>
-                                      <UncontrolledDropdown direction="start">
-                                        <DropdownToggle
-                                          tag="a"
-                                          className="btn btn-light btn-icon"
-                                          id="dropdownMenuLink15"
-                                          role="button"
-                                        >
-                                          <i className="ri-equalizer-fill"></i>
-                                        </DropdownToggle>
-                                        <DropdownMenu>
-                                          <DropdownItem>
-                                            <i className="ri-eye-fill me-2 align-middle text-muted" />
-                                            View
-                                          </DropdownItem>
-                                          <DropdownItem>
-                                            <i className="ri-download-2-fill me-2 align-middle text-muted" />
-                                            Download
-                                          </DropdownItem>
-                                          <DropdownItem divider />
-                                          <DropdownItem>
-                                            <i className="ri-delete-bin-5-line me-2 align-middle text-muted" />
-                                            Delete
-                                          </DropdownItem>
-                                        </DropdownMenu>
-                                      </UncontrolledDropdown>
-                                    </td>
-                                  </tr>
-                                </tbody>
-                              </Table>
-                            </div>
-                            <div className="text-center mt-3">
-                              <Link to="#" className="text-success ">
-                                <i className="mdi mdi-loading mdi-spin fs-20 align-middle me-2"></i>
-                                Load more{" "}
-                              </Link>
-                            </div>
-                          </Col>
-                        </Row>
-                      </CardBody>
-                    </Card>
-                  </TabPane>
+                                      </td>
+                                      <td>PNG File </td>
+                                      <td>879 KB</td>
+                                      <td>02 Nov 2021</td>
+                                      <td>
+                                        <UncontrolledDropdown direction="start">
+                                          <DropdownToggle
+                                            tag="a"
+                                            className="btn btn-light btn-icon"
+                                            id="dropdownMenuLink15"
+                                            role="button"
+                                          >
+                                            <i className="ri-equalizer-fill"></i>
+                                          </DropdownToggle>
+                                          <DropdownMenu>
+                                            <DropdownItem>
+                                              <i className="ri-eye-fill me-2 align-middle text-muted" />
+                                              View
+                                            </DropdownItem>
+                                            <DropdownItem>
+                                              <i className="ri-download-2-fill me-2 align-middle text-muted" />
+                                              Download
+                                            </DropdownItem>
+                                            <DropdownItem divider />
+                                            <DropdownItem>
+                                              <i className="ri-delete-bin-5-line me-2 align-middle text-muted" />
+                                              Delete
+                                            </DropdownItem>
+                                          </DropdownMenu>
+                                        </UncontrolledDropdown>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </Table>
+                              </div>
+                              <div className="text-center mt-3">
+                                <Link to="#" className="text-success ">
+                                  <i className="mdi mdi-loading mdi-spin fs-20 align-middle me-2"></i>
+                                  Load more{" "}
+                                </Link>
+                              </div>
+                            </Col>
+                          </Row>
+                        </CardBody>
+                      </Card>
+                    </TabPane>
+                  )}
                 </TabContent>
               </div>
             </Col>

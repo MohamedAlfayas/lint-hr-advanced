@@ -11,6 +11,13 @@ import { useSelector, useDispatch } from "react-redux";
 import ReactApexChart from "react-apexcharts";
 import Select from "react-select";
 import { employeeTypeOptions } from "../../common/constant/Constants";
+import {
+  setAllMembersTodaysAttendanceAsCurrent,
+  setTeamTodaysAttendanceAsCurrent,
+} from "../../redux/reducers/ChildReducer/TeamTodaysAttendanceReducer";
+import { Api } from "../../common/api/Api";
+import { setDashboardAttendanceStasticsType } from "../../redux/reducers/ChildReducer/DashboardAttendanceStasticsReducer";
+import { setTeamAttendanceReportData } from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
 
 const AttendanceStatistics = () => {
   const dispatch = useDispatch();
@@ -28,22 +35,33 @@ const AttendanceStatistics = () => {
   const [onLeavePer, setOnLeavePer] = useState(0);
   const [checkedOutPer, setCheckedOutPer] = useState(0);
 
-  const { team_todays_attendance } = useSelector(
+  const { dashboard_attendance_stastics_type } = useSelector(
+    (state) => state.DashboardAttendanceStasticsReducer
+  );
+
+  const onAttStasticsTypeChange = (pType, val) => {
+    dispatch(setDashboardAttendanceStasticsType(pType));
+
+    val === 0
+      ? dispatch(setAllMembersTodaysAttendanceAsCurrent())
+      : dispatch(setTeamTodaysAttendanceAsCurrent());
+  };
+
+  const { currently_displaying_todays_attendance } = useSelector(
     (state) => state.TeamTodaysAttendanceReducer
   );
 
-  console.log("notCheckedInPer = ", notCheckedInPer);
-
   useEffect(() => {
-    console.log("Stastics Report = ", team_todays_attendance);
-
     let ch_in_data = [];
     let not_ch_in_data = [];
     let ol_data = [];
     let ch_out_data = [];
 
-    if (!!team_todays_attendance && team_todays_attendance?.length) {
-      team_todays_attendance.map((d) => {
+    if (
+      !!currently_displaying_todays_attendance &&
+      currently_displaying_todays_attendance?.length
+    ) {
+      currently_displaying_todays_attendance.map((d) => {
         if (d.is_present === true) {
           if (d.currently_checked_in) {
             ch_in_data.push(d);
@@ -65,7 +83,7 @@ const AttendanceStatistics = () => {
       setCheckedInPer(
         Math.round(
           (parseInt(ch_in_data?.length) /
-            parseInt(team_todays_attendance.length)) *
+            parseInt(currently_displaying_todays_attendance.length)) *
             100
         )
       );
@@ -73,7 +91,7 @@ const AttendanceStatistics = () => {
       setNotCheckedInPer(
         Math.round(
           (parseInt(not_ch_in_data?.length) /
-            parseInt(team_todays_attendance.length)) *
+            parseInt(currently_displaying_todays_attendance.length)) *
             100
         )
       );
@@ -81,7 +99,7 @@ const AttendanceStatistics = () => {
       setOnLeavePer(
         Math.round(
           (parseInt(ol_data?.length) /
-            parseInt(team_todays_attendance.length)) *
+            parseInt(currently_displaying_todays_attendance.length)) *
             100
         )
       );
@@ -89,12 +107,12 @@ const AttendanceStatistics = () => {
       setCheckedOutPer(
         Math.round(
           (parseInt(ch_out_data?.length) /
-            parseInt(team_todays_attendance.length)) *
+            parseInt(currently_displaying_todays_attendance.length)) *
             100
         )
       );
     }
-  }, [team_todays_attendance]);
+  }, [currently_displaying_todays_attendance]);
 
   const getChartColorsArray = (colors) => {
     colors = JSON.parse(colors);
@@ -127,10 +145,7 @@ const AttendanceStatistics = () => {
     '["--vz-success", "--vz-danger", "--vz-info", "--vz-warning"]'
   );
 
-  const handleEmployeeTypeChange = (e) => {
-    setEmployeeType(e.value);
-  };
-
+  const defaultOption = employeeTypeOptions.find((option) => option.id === 1);
   var options = {
     labels: ["Checked In", "Not Checked In", "On Leave", "Checked Out"],
     chart: {
@@ -205,13 +220,52 @@ const AttendanceStatistics = () => {
       <Col xxl={12} xl={12} sm={12}>
         <div className="card card-height-100">
           <div className="card-header border-0 align-items-center d-flex">
-            <Col xxxl={12} xl={12} sm={12}>
+            <Col xxxl={6} xl={6} sm={6} className="d-flex align-items-center">
               <h4 className="card-title mb-0 flex-grow-1">
                 Attendance Statistics
               </h4>
             </Col>
+            <Col
+              xxxl={6}
+              xl={6}
+              sm={6}
+              className="d-flex align-items-center justify-content-end"
+            >
+              <div className="flex-shrink-0">
+                <UncontrolledDropdown className="card-header-dropdown">
+                  <DropdownToggle
+                    tag="a"
+                    className="text-reset dropdown-btn"
+                    role="button"
+                  >
+                    <span className="fw-semibold fs-12">
+                      {dashboard_attendance_stastics_type}
+                    </span>
+                    <span className="text-muted">
+                      <i className="mdi mdi-chevron-down ms-1"></i>
+                    </span>
+                  </DropdownToggle>
+                  <DropdownMenu className="dropdown-menu-end">
+                    <DropdownItem
+                      onClick={() => {
+                        onAttStasticsTypeChange("All", 0);
+                      }}
+                    >
+                      All
+                    </DropdownItem>
+                    <DropdownItem
+                      onClick={() => {
+                        onAttStasticsTypeChange("My Team", 1);
+                      }}
+                    >
+                      My Team
+                    </DropdownItem>
+                  </DropdownMenu>
+                </UncontrolledDropdown>
+              </div>
+            </Col>
           </div>
-          <div style={{ marginLeft: "10px", width: "50%" }}>
+          {/* <div style={{ marginLeft: "10px", width: "50%" }}>
             {" "}
             <Select
               id="emp_type"
@@ -225,7 +279,8 @@ const AttendanceStatistics = () => {
               }
               onChange={handleEmployeeTypeChange}
             />
-          </div>
+          </div> */}
+
           <div className="card-body">
             <ReactApexChart
               dir="ltr"

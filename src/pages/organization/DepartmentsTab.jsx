@@ -46,7 +46,7 @@ const DepartmentsTab = () => {
       id: 0,
       name: "",
       description: "",
-      is_location_required: false,
+      is_location_required: true,
       pid: 0,
       child_id_list: [],
     };

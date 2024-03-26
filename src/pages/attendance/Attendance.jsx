@@ -25,6 +25,7 @@ import AttendanceFilter from "./AttendanceFilter";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { profile_data } from "../../redux/reducers/ChildReducer/MyProfileReducer";
 import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
+import { BuildAttendanceReportChart } from "../../common/js/BuildAttendanceReportChart";
 
 const AttendanceDashboard = () => {
   document.title = `Attendance Overview | ${MetaTitle}`;
@@ -54,6 +55,7 @@ const AttendanceDashboard = () => {
     })
       .then((res) => {
         dispatch(setIndividualAttendanceReportData(res?.data?.data));
+        BuildAttendanceReportChart(res?.data?.data, dispatch);
         dispatch(setShowTeamTable(false));
         ResetLoaderVisible();
       })

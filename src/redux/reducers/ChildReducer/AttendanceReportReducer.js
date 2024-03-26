@@ -4,6 +4,18 @@ const initialState = {
     individual_attendance_report_data: [],
     team_attendance_report_data: [],
     showTeamTable: false,
+    chartData: {
+        categories: [],
+        series: [],
+    },
+    chartInfo: {
+        wsHours: 0,
+        checkInHours: 0,
+        otHours: 0,
+        paidHours: 0,
+        leaveHours: 0,
+        balanceHours: 0,
+    }
 }
 
 const AttendanceReportReducer = createSlice({
@@ -11,7 +23,6 @@ const AttendanceReportReducer = createSlice({
     initialState,
     reducers: {
         setIndividualAttendanceReportData: (state, { type, payload }) => {
-            console.log("PAYLOAD ---- = ", payload);
             return {
                 ...state,
                 individual_attendance_report_data: payload
@@ -37,16 +48,52 @@ const AttendanceReportReducer = createSlice({
             }
         },
         setShowTeamTable: (state, { type, payload }) => {
-            console.log("TTTTT REDUCER = ", payload);
             return {
                 ...state,
                 showTeamTable: payload
             }
         },
+        setAttendanceReportChartData: (state, { type, payload }) => {
+            return {
+                ...state,
+                chartData: payload
+            }
+        },
+        setAttendanceReportChartInfo: (state, { type, payload }) => {
+            return {
+                ...state,
+                chartInfo: payload
+            }
+        },
+        resetAttendanceReportChart: (state, { type, payload }) => {
+            return {
+                ...state,
+                chartData: {
+                    categories: [],
+                    series: [],
+                },
+                chartInfo: {
+                    wsHours: 0,
+                    checkInHours: 0,
+                    otHours: 0,
+                    paidHours: 0,
+                    leaveHours: 0,
+                    balanceHours: 0,
+                }
+            }
+        }
     }
 });
 
 
-export const { setIndividualAttendanceReportData, updateIndividualAttendanceReportData, setTeamAttendanceReportData, setShowTeamTable } = AttendanceReportReducer.actions;
+export const {
+    setIndividualAttendanceReportData,
+    updateIndividualAttendanceReportData,
+    setTeamAttendanceReportData,
+    setShowTeamTable,
+    setAttendanceReportChartData,
+    setAttendanceReportChartInfo,
+    resetAttendanceReportChart
+} = AttendanceReportReducer.actions;
 
 export default AttendanceReportReducer.reducer;

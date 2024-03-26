@@ -2391,3 +2391,8 @@ export const employeeTypeOptions = [
   { id: "0", label: "All Employee", value: "0" },
   { id: "1", label: "My Team Members", value: "1" },
 ];
+
+export const attendanceStasticsOptions = [
+  { id: 0, label: "All", value: "All" },
+  { id: 1, label: "My Team", value: "My Team" },
+];

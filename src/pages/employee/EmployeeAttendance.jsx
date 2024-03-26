@@ -18,38 +18,23 @@ import {
 import dayjs from "dayjs";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
-const EmployeeAttendance = ({ profileObj }) => {
+import { BuildAttendanceReportChart } from "../../common/js/BuildAttendanceReportChart";
+const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
   const dispatch = useDispatch();
-
-  const [filterKeys, setFilterKeys] = useState({
-    thisMonth: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
-      .toString()
-      .padStart(2, "0")}`,
-    hr_status: "0",
-    record: "0",
-    type: "2",
-    employee: "0",
-  });
-
-  useEffect(() => {
-    let updated_filter_keys = {
-      ...filterKeys,
-      employee: profileObj?.id,
-    };
-    // BuildTable(updated_filter_keys);
-    setFilterKeys(updated_filter_keys);
-  }, [profileObj]);
 
   const BuildTable = async (payload) => {
     dispatch(setLoaderVisible(true));
 
     const Api = await PostApi("report/get-attendance-report/", payload, false);
-    console.log("API RES = ", Api?.data?.data);
     if (Api.status && Api.status === 200) {
       dispatch(
         setIndividualAttendanceReportData(
           Api?.data?.data?.individual_attendance_report
         )
+      );
+      BuildAttendanceReportChart(
+        Api?.data?.data?.individual_attendance_report,
+        dispatch
       );
     } else {
       toast.error(Api?.data?.message || Api?.data?.detail);
@@ -80,7 +65,8 @@ const EmployeeAttendance = ({ profileObj }) => {
   };
 
   const handleFilter = async () => {
-    BuildTable(filterKeys);
+    const final_filter_keys = { ...filterKeys, employee: profileObj?.id };
+    BuildTable(final_filter_keys);
   };
 
   return (

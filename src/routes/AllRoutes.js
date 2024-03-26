@@ -73,7 +73,7 @@ const privateRoutes = [
   { path: "/workschedule", component: <WorkSchedule />, perm: "work_schedule" },
   { path: "/holidays", component: <Holidays />, perm: "holidays" },
   { path: "/leavetype", component: <LeaveType />, perm: "leave_type" },
-  { path: "/accountsettings", component: <AccountSettings />, perm: "account_settings" },
+  { path: "/account-settings", component: <AccountSettings />, perm: "account_settings" },
   {
     path: "/leave-approval",
     component: <LeaveApproval />,
