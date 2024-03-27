@@ -24,26 +24,36 @@ import EmployeeActivityTable from "./EmployeeActivityTable";
 import { Link } from "react-router-dom";
 import { Api } from "../../common/api/Api";
 import { useDispatch, useSelector } from "react-redux";
-import { setTeamTodaysAttendanceData } from "../../redux/reducers/ChildReducer/TeamTodaysAttendanceReducer";
-import { employeeTypeOptions } from "../../common/constant/Constants";
+import {
+  setAllMembersTodaysAttendanceAsCurrent,
+  setAllMembersTodaysAttendanceData,
+  setCurrentlyDisplayingTodaysAttendanceData,
+  setTeamTodaysAttendanceAsCurrent,
+  setTeamTodaysAttendanceData,
+} from "../../redux/reducers/ChildReducer/TeamTodaysAttendanceReducer";
+import {
+  attendanceStasticsOptions,
+  employeeTypeOptions,
+} from "../../common/constant/Constants";
+import { setDashboardAttendanceStasticsType } from "../../redux/reducers/ChildReducer/DashboardAttendanceStasticsReducer";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 
 const EmployeeActivity = (props) => {
   const [lateData, setLateData] = useState([]);
   const [noData, setNoData] = useState([]);
-  const [employeeType, setEmployeeType] = useState(1);
 
-  const { team_todays_attendance } = useSelector(
+  const { currently_displaying_todays_attendance } = useSelector(
     (state) => state.TeamTodaysAttendanceReducer
   );
 
   const dispatch = useDispatch();
 
   useEffect(() => {
-    if (!!team_todays_attendance) {
+    if (!!currently_displaying_todays_attendance) {
       let late_data = [];
       let no_data = [];
 
-      team_todays_attendance.map((d) => {
+      currently_displaying_todays_attendance.map((d) => {
         if (d.is_late === true) {
           late_data.push(d);
         } else if (d.no_data === true) {
@@ -54,25 +64,47 @@ const EmployeeActivity = (props) => {
       setLateData(late_data);
       setNoData(no_data);
     }
-  }, [team_todays_attendance]);
+  }, [currently_displaying_todays_attendance]);
 
   useEffect(() => {
-    console.log("Employee Activity Page !!!!");
-
+    dispatch(setLoaderVisible(true));
     Api({
       method: "GET",
-      url: "report/get-tm-todays-attendance-report/",
+      url: "report/get-tm-todays-attendance-report/?employee_type=0",
     })
       .then((res) => {
-        dispatch(setTeamTodaysAttendanceData(res?.data?.data));
+        dispatch(
+          setAllMembersTodaysAttendanceData(
+            res?.data?.all_team_members_todays_attendance_report
+          )
+        );
+        dispatch(
+          setTeamTodaysAttendanceData(
+            res?.data?.my_team_members_todays_attendance_report
+          )
+        );
+
+        dispatch(
+          setCurrentlyDisplayingTodaysAttendanceData(
+            res?.data?.all_team_members_todays_attendance_report
+          )
+        );
+        dispatch(setLoaderVisible(false));
       })
       .catch((err) => {
-        console.log("ERR = ", err);
+        dispatch(setLoaderVisible(false));
       });
   }, []);
 
-  const handleEmployeeTypeChange = (e) => {
-    setEmployeeType(e.value);
+  const { dashboard_attendance_stastics_type } = useSelector(
+    (state) => state.DashboardAttendanceStasticsReducer
+  );
+
+  const onAttStasticsTypeChange = (e) => {
+    dispatch(setDashboardAttendanceStasticsType(e.value));
+    e.id === 0
+      ? dispatch(setAllMembersTodaysAttendanceAsCurrent())
+      : dispatch(setTeamTodaysAttendanceAsCurrent());
   };
 
   const [activeTab, setActiveTab] = useState("1");
@@ -112,8 +144,8 @@ const EmployeeActivity = (props) => {
                       All{" "}
                       <small>
                         {`(${
-                          !!team_todays_attendance
-                            ? team_todays_attendance.length
+                          !!currently_displaying_todays_attendance
+                            ? currently_displaying_todays_attendance.length
                             : 0
                         })`}
                       </small>
@@ -151,16 +183,20 @@ const EmployeeActivity = (props) => {
                     id="emp_type"
                     name="Employee Type"
                     isMulti={false}
-                    options={employeeTypeOptions || []}
+                    options={attendanceStasticsOptions || []}
                     className="basic-multi-select"
                     value={
-                      employeeTypeOptions.find((d) => d.id === employeeType) ||
-                      employeeTypeOptions[1]
+                      attendanceStasticsOptions.find(
+                        (d) => d.value === dashboard_attendance_stastics_type
+                      ) || attendanceStasticsOptions[0]
                     }
-                    onChange={handleEmployeeTypeChange}
+                    onChange={(e) => onAttStasticsTypeChange(e)}
                   />
                 </div>
-                <div className="form-icon right mt-3"style={{ width: "250px" }}>
+                <div
+                  className="form-icon right mt-3"
+                  style={{ width: "250px" }}
+                >
                   <Input
                     type="text"
                     name="search"
@@ -174,7 +210,9 @@ const EmployeeActivity = (props) => {
 
               <TabContent activeTab={activeTab} className="p-0">
                 <TabPane tabId="1">
-                  <EmployeeActivityTable team_data={team_todays_attendance} />
+                  <EmployeeActivityTable
+                    team_data={currently_displaying_todays_attendance}
+                  />
 
                   {/* <SimpleBar style={{ maxHeight: "100%" }} className="p-3 pt-0">
                     <EmployeeActivityTable></EmployeeActivityTable>

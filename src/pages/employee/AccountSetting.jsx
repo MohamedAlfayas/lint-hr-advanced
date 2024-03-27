@@ -110,7 +110,6 @@ const AccountSettings = () => {
   const [showPassword2, setShowPassword2] = useState(false);
   const [showPassword3, setShowPassword3] = useState(false);
   const [changePassword, setChangePassword] = useState({
-    emp_uuid: account_settings_data.emp_uuid,
     old_password: "",
     new_password: "",
     confirm_password: "",
@@ -187,10 +186,10 @@ const AccountSettings = () => {
       { dep_id: valid_dep_ids },
       false
     );
-    console.log("API RES = ", Api);
+
     if (Api.status && Api.status === 200) {
       const response = Api?.data?.data;
-      console.log("Response", response);
+
       setReportingManagerOptions(
         employee_data.filter(
           (d) => d.id !== account_settings_data.id && response.includes(d.id)
@@ -299,9 +298,8 @@ const AccountSettings = () => {
       cf_form_data,
       true
     );
-    console.log("API RES = ", Api);
+
     if (Api.status && Api.status === 200) {
-      console.log("CF File Upload RES = ", Api?.data?.data);
       img_url = String(Api?.data?.data);
     } else {
       img_url = "";
@@ -335,7 +333,19 @@ const AccountSettings = () => {
         .required("Confirm Password is required"),
     }),
     onSubmit: async (values) => {
-      console.log("Password values", values);
+      const Api = await PostApi("employee/reset-own-password/", values, false);
+
+      if (Api.status && Api.status === 200) {
+        toast.success(Api?.data?.message);
+        setChangePassword({
+          old_password: "",
+          new_password: "",
+          confirm_password: "",
+        });
+        navigate(`/employee/view/${employeeObj.emp_uuid}`);
+      } else {
+        toast.error("Something Went Wrong");
+      }
     },
   });
 
@@ -373,8 +383,6 @@ const AccountSettings = () => {
         .min(1, "Please Select Work Schedule"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
-
       let root_department = dep_options.find((d) => d.is_root === true);
       let root_department_id = !!root_department && root_department.id;
 
@@ -398,7 +406,7 @@ const AccountSettings = () => {
         });
 
         const Api = await PostApi("employee/add-new/", form_data, true);
-        console.log("API RES = ", Api);
+
         if (Api.status && Api.status === 200) {
           // employeeObj.id === 0
           //   ? dispatch(addEmployee(Api?.data.data))
@@ -422,10 +430,6 @@ const AccountSettings = () => {
       }
     },
   });
-
-  const handleChangePassword = () => {
-    console.log("ChangePassword", changePassword);
-  };
 
   useEffect(() => {
     if (
