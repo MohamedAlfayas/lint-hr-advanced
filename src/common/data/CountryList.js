@@ -252,7 +252,7 @@ import yt from "../../assets/images/flags/yt.svg";
 import za from "../../assets/images/flags/za.svg";
 import zm from "../../assets/images/flags/zm.svg";
 import zw from "../../assets/images/flags/zw.svg";
-import { IndiaStates, SwitzerlandStates } from "../constant/Constants";
+import { IndiaStates, SwitzerlandStates,SriLankaStates } from "../constant/Constants";
 
 const CountryList = [
   {
@@ -1484,9 +1484,9 @@ const CountryList = [
     flagImg: lk,
     countryName: "Sri Lanka",
     countryCode: "+94",
-    show: false,
+    show: true,
     timezone: "",
-    states: [],
+    states: SriLankaStates,
   },
   {
     id: 138,

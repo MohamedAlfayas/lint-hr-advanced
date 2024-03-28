@@ -18,7 +18,8 @@ import {
 import { map_radius_options } from "../../common/constant/Constants";
 import Select from "react-select";
 
-function LocationSearch({ branchObj, setBranchObj, FormikForm }) {
+function LocationSearch({ branchLocationObj, setBranchLocationObj,LocationFormikForm }) {
+
   const [mapZoom, setMapZoom] = useState(21);
 
   const [mapCenter, setMapCenter] = useState({
@@ -27,24 +28,35 @@ function LocationSearch({ branchObj, setBranchObj, FormikForm }) {
   });
 
   useEffect(() => {
-    if (!!branchObj?.radius_range) {
+    if (!!branchLocationObj?.radius_range) {
       setMapCircleOptions({
         ...mapCircleOptions,
-        radius: branchObj?.radius_range,
+        radius: branchLocationObj?.radius_range,
       });
       setMapZoom(
-        map_radius_options.find((d) => d.value === branchObj?.radius_range).zoom
+        map_radius_options.find((d) => d.value === branchLocationObj?.radius_range).zoom
       );
     }
 
-    if (!!branchObj?.latitude && !!branchObj?.longitude) {
+    if (!!branchLocationObj?.latitude && !!branchLocationObj?.longitude) {
+    
       setMapCenter({
-        lat: parseFloat(branchObj?.latitude),
-        lng: parseFloat(branchObj?.longitude),
+        lat: parseFloat(branchLocationObj?.latitude),
+        lng: parseFloat(branchLocationObj?.longitude),
       });
+    
     }
-  }, [branchObj?.radius_range, branchObj?.latitude, branchObj?.longitude]);
+  }, [branchLocationObj?.radius_range, branchLocationObj?.latitude, branchLocationObj?.longitude]);
 
+ useEffect(()=>{
+ 
+  setMapCenter({
+    lat:parseFloat(branchLocationObj?.latitude),
+    lng:parseFloat(branchLocationObj?.longitude)
+  })
+ },[mapCenter])
+
+ 
   const [mapCircleOptions, setMapCircleOptions] = useState({
     strokeColor: "#FF0000",
     strokeOpacity: 0.3,
@@ -59,7 +71,6 @@ function LocationSearch({ branchObj, setBranchObj, FormikForm }) {
     zIndex: 1,
   });
 
-  console.log("Branch Obj = ", branchObj);
 
   const [predictions, setPredictions] = useState([]);
   const autocompleteRef = useRef(null);
@@ -72,8 +83,8 @@ function LocationSearch({ branchObj, setBranchObj, FormikForm }) {
   const handleLocationChange = (e) => {
     const { value } = e.target;
 
-    setBranchObj({
-      ...branchObj,
+    setBranchLocationObj({
+      ...branchLocationObj,
       accurate_address: value,
     });
 
@@ -104,7 +115,7 @@ function LocationSearch({ branchObj, setBranchObj, FormikForm }) {
 
     placesService.getDetails({ placeId }, (place, status) => {
       if (status === "OK") {
-        console.log("Selected Place:", place);
+      
         let city;
         let country;
         let state;
@@ -127,9 +138,8 @@ function LocationSearch({ branchObj, setBranchObj, FormikForm }) {
             }
           });
         }
-
-        setBranchObj({
-          ...branchObj,
+        setBranchLocationObj({
+          ...branchLocationObj,
           map_data: place,
           accurate_address: place?.name,
           location_id: place?.place_id,
@@ -146,8 +156,8 @@ function LocationSearch({ branchObj, setBranchObj, FormikForm }) {
 
     // Clear predictions and input
     setPredictions([]);
-    setBranchObj({
-      ...branchObj,
+    setBranchLocationObj({
+      ...branchLocationObj,
       accurate_address: "",
     });
   };
@@ -174,8 +184,8 @@ function LocationSearch({ branchObj, setBranchObj, FormikForm }) {
   const onMarkerDrag = (e) => {
     console.log("onMarkerDrag: ", e.latLng.lat());
 
-    setBranchObj({
-      ...branchObj,
+    setBranchLocationObj({
+      ...branchLocationObj,
       latitude: String(e.latLng.lat()),
       longitude: String(e.latLng.lng()),
     });
@@ -208,24 +218,24 @@ function LocationSearch({ branchObj, setBranchObj, FormikForm }) {
                 id="branchLocation"
                 placeholder="Search an address"
                 onChange={handleLocationChange}
-                value={branchObj?.accurate_address || ""}
+                value={branchLocationObj?.accurate_address || ""}
                 ref={autocompleteRef}
                 autoComplete={false}
                 invalid={
-                  FormikForm.touched.accurate_address &&
-                  FormikForm.errors.accurate_address
+                  LocationFormikForm.touched.accurate_address &&
+                  LocationFormikForm.errors.accurate_address
                     ? true
                     : false
                 }
               />
-              {!FormikForm.touched.accurate_address &&
-                !FormikForm.errors.accurate_address && (
+              {!LocationFormikForm.touched.accurate_address &&
+                !LocationFormikForm.errors.accurate_address && (
                   <i className="ri-map-pin-line"></i>
                 )}
-              {FormikForm.touched.accurate_address &&
-              FormikForm.errors.accurate_address ? (
+              {LocationFormikForm.touched.accurate_address &&
+              LocationFormikForm.errors.accurate_address ? (
                 <FormFeedback type="invalid">
-                  {FormikForm.errors.accurate_address}
+                  {LocationFormikForm.errors.accurate_address}
                 </FormFeedback>
               ) : null}
             </div>
@@ -259,16 +269,16 @@ function LocationSearch({ branchObj, setBranchObj, FormikForm }) {
               options={map_radius_options || []}
               className="basic-multi-select"
               value={
-                branchObj?.radius_range
+                branchLocationObj?.radius_range
                   ? map_radius_options.find(
                       (d) =>
-                        parseInt(d.value) === parseInt(branchObj?.radius_range)
+                        parseInt(d.value) === parseInt(branchLocationObj?.radius_range)
                     )
                   : []
               }
               onChange={(e) => {
-                setBranchObj({
-                  ...branchObj,
+                setBranchLocationObj({
+                  ...branchLocationObj,
                   radius_range: e.value,
                 });
               }}

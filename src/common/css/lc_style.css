@@ -68,3 +68,9 @@
   max-height: 600px; 
   padding: 0px;
 }
+.eye-icon {
+  position: absolute;
+  right: 3%;
+  top: 50%;
+  transform: translateY(-50%);
+}

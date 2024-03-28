@@ -1885,6 +1885,7 @@ export const salary_policy_form_component_name = "salary_policy_form";
 export const location_edit_form_component_name = "location_edit_form";
 export const attendance_pending_table = "attendance_pending_table";
 export const leave_pending_table = "leave_pending_table";
+export const branch_location_form = "BranchLocationForm"
 
 export const component_list_for_import_btn_access = [
   department_component_name,
@@ -2027,6 +2028,19 @@ export const SwitzerlandStates = [
   { id: "Zug", label: "Zug", value: "Zug" },
   { id: "Zurich", label: "Zurich", value: "Zurich" },
 ];
+export const SriLankaStates = [
+  { id: "Central Province", label: "Central Province", value: "Central Province" },
+  { id: "Eastern Province", label: "Eastern Province", value: "Eastern Province" },
+  { id: "Northern Province", label: "Northern Province", value: "Northern Province" },
+  { id: "North Central Province", label: "North Central Province", value: "North Central Province" },
+  { id: "North Western Province", label: "North Western Province", value: "North Western Province" },
+  { id: "Sabaragamuwa Province", label: "Sabaragamuwa Province", value: "Sabaragamuwa Province" },
+  { id: "Southern Province", label: "Southern Province", value: "Southern Province" },
+  { id: "Uva Province", label: "Uva Province", value: "Uva Province" },
+  { id: "Western Province", label: "Western Province", value: "Western Province" },
+];
+
+
 
 export const default_roles_list = [
   {

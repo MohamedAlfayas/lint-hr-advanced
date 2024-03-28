@@ -47,28 +47,35 @@ const Branch = () => {
 
   const initialFormObj = useMemo(() => {
     return {
+      location_detail : [],
       id: 0,
       name: "",
       contact_number: "",
       country_code: "+91",
       contact_email: "",
       about: "",
-      address: "",
-      city: "",
-      pincode: "",
-      country: "",
-      state: "",
-      timezone: "",
-      accurate_address: "",
-      radius_range: 10,
-      latitude: "8.3865046",
-      longitude: "77.608336",
-      location_id: "",
-      map_data: [],
+    
       cf_values: CustomFieldsForThisForm || [],
     };
   }, []);
-
+  // const locationFormObj = useMemo(() => {
+  //   return{
+  //   address: "",
+  //   city: "",
+  //   pincode: "",
+  //   country: "",
+  //   state: "",
+  //   timezone: "",
+  //   accurate_address: "",
+  //   radius_range: 10,
+  //   latitude: "8.3865046",
+  //   longitude: "77.608336",
+  //   location_id: "",
+  //   location_name:"",
+  //   map_data: [],
+  // };
+  // },[])
+ 
   const handleBranchEdit = (id, obj) => {
     let FormObj = {};
 

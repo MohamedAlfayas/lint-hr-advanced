@@ -573,7 +573,7 @@ const InfoTable = ({
   const handleDeactivate = (orderData) => {
     Swal.fire({
       title: "Deactivate",
-      text: ` Are you sure to deactivate Agent (${orderData.fname} ${orderData.lname})?`,
+      text: ` Are you sure to deactivate Employee (${orderData.fname} ${orderData.lname})?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#f06548",

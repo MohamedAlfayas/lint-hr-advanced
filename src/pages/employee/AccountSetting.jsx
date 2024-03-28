@@ -69,6 +69,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 import { useDispatch, useSelector } from "react-redux";
 import { account_settings_data } from "../../redux/reducers/ChildReducer/AccountSettingsReducer";
 import InputGroupAddon from "rsuite/esm/InputGroup/InputGroupAddon";
+import "../../common/css/lc_style.css";
 const AccountSettings = () => {
   const { id } = useParams();
 
@@ -1500,11 +1501,11 @@ const AccountSettings = () => {
                                     showPassword1
                                       ? "eye-off-outline"
                                       : "eye-outline"
-                                  } position-absolute end-0 top-50 translate-middle-y`}
-                                  style={{
-                                    cursor: "pointer",
-                                    marginLeft: "10px",
-                                  }}
+                                  } eye-icon`}
+                                  // style={{
+                                  //   cursor: "pointer",
+                                  //   marginLeft: "10px",
+                                  // }}
                                   onClick={() =>
                                     setShowPassword1(!showPassword1)
                                   }
@@ -1546,14 +1547,7 @@ const AccountSettings = () => {
                                   }
                                 />
                                 <div
-                                  style={{
-                                    marginLeft: "10px",
-                                    position: "absolute",
-                                    top: "50%",
-                                    transform: "translateY(-50%)",
-                                    cursor: "pointer",
-                                    right: "0",
-                                  }}
+                                 
                                   onClick={() =>
                                     setShowPassword2(!showPassword2)
                                   }
@@ -1563,7 +1557,7 @@ const AccountSettings = () => {
                                       showPassword2
                                         ? "eye-off-outline"
                                         : "eye-outline"
-                                    }`}
+                                    } eye-icon`}
                                   />
                                 </div>
                               </div>
@@ -1608,11 +1602,8 @@ const AccountSettings = () => {
                                     showPassword3
                                       ? "eye-off-outline"
                                       : "eye-outline"
-                                  } position-absolute end-0 top-50 translate-middle-y`}
-                                  style={{
-                                    cursor: "pointer",
-                                    marginLeft: "10px",
-                                  }}
+                                  } eye-icon`}
+                                
                                   onClick={() =>
                                     setShowPassword3(!showPassword3)
                                   }
