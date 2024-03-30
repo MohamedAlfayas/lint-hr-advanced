@@ -1094,17 +1094,17 @@ const AttendanceEmployeeTable = () => {
       </Modal>
       {/* IN/OUT List Modal */}
       <Modal
+        size="lg"
         isOpen={timeline_modal}
         toggle={() => {
           close_timeLine();
         }}
         centered
-        className="custom-modal-1"
       >
-        {/* <AllDistanceCalculater allLocationData={allLocationData} /> */}
+        <AllDistanceCalculater allLocationData={allLocationData} />
         <ModalHeader className="text-center">
           <h5
-            className="modal-title"
+            className="modal-title text-center"
             id="exampleModalToggleLabel"
             style={{ fontSize: "smaller" }}
           >
@@ -1116,10 +1116,7 @@ const AttendanceEmployeeTable = () => {
           style={{ maxHeight: "400px", overflowY: "auto" }}
         >
           <div>
-            <SimpleBar
-              style={{ maxHeight: "calc(100% - 30px)" }}
-              className="p-3 pt-0"
-            >
+            <SimpleBar style={{ maxHeight: "215px" }}>
               <table className="table">
                 <thead>
                   <tr>

@@ -14,20 +14,22 @@ const getRefreshToken = async () => {
     localStorage.getItem("lint_hr_token")
   ).refresh;
   try {
-    let refresh_token_url = ""
-    const domain = window.location.hostname.split('.')[0];
-    if (!!LCPlatform && LCPlatform === 'local') {
-      refresh_token_url = BaseURL
-    }
-    else {
+    let refresh_token_url = "";
+    const domain = window.location.hostname.split(".")[0];
+    if (!!LCPlatform && LCPlatform === "local") {
+      refresh_token_url = BaseURL;
+    } else {
       // Construct the base URL dynamically
       if (!!domain) {
         refresh_token_url = `https://${domain}.lintedu.com/`;
       }
     }
-    const response = await axios.post(`${refresh_token_url}api/token/refresh/`, {
-      refresh: refreshToken,
-    });
+    const response = await axios.post(
+      `${refresh_token_url}api/token/refresh/`,
+      {
+        refresh: refreshToken,
+      }
+    );
 
     console.log("RT RES = ", response?.data);
 
@@ -54,6 +56,7 @@ Api.interceptors.request.use(
     if (token) {
       req.headers["Authorization"] = "Bearer " + token?.access;
       req.headers["Accept"] = "application/json";
+      // req.headers["api_from"] = 1;
     }
     return req;
   },
@@ -69,17 +72,24 @@ Api.interceptors.response.use(
     return response;
   },
   async (error) => {
-
     console.log("Error Response = ", error);
 
-    if (!!error?.response && error.response.status === 404 && error.response.data.error === 'invalid_domain') {
+    if (
+      !!error?.response &&
+      error.response.status === 404 &&
+      error.response.data.error === "invalid_domain"
+    ) {
       window.location.href = "/auth/workspace";
     }
 
     const originalRequest = error.config;
 
     // Handle token-related exceptions
-    if (!!error?.response && error.response.status === 401 && !originalRequest._retry) {
+    if (
+      !!error?.response &&
+      error.response.status === 401 &&
+      !originalRequest._retry
+    ) {
       if (isRefreshing) {
         // If token is being refreshed, wait for the new token
         try {
@@ -129,18 +139,15 @@ Api.interceptors.response.use(
 // Function to get the base URL dynamically
 const getBaseURL = () => {
   // Extract the domain from the current URL
-  const domain = window.location.hostname.split('.')[0];
-  if (!!LCPlatform && LCPlatform === 'local') {
-    return BaseURL
-  }
-  else {
+  const domain = window.location.hostname.split(".")[0];
+  if (!!LCPlatform && LCPlatform === "local") {
+    return BaseURL;
+  } else {
     // Construct the base URL dynamically
     if (!!domain) {
       return `https://${domain}.lintedu.com/`;
     }
   }
-
-
 };
 
 // Set the dynamic base URL

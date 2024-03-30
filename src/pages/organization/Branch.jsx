@@ -47,14 +47,14 @@ const Branch = () => {
 
   const initialFormObj = useMemo(() => {
     return {
-      location_detail : [],
+      location_details: [],
       id: 0,
       name: "",
       contact_number: "",
       country_code: "+91",
       contact_email: "",
       about: "",
-    
+
       cf_values: CustomFieldsForThisForm || [],
     };
   }, []);
@@ -75,7 +75,7 @@ const Branch = () => {
   //   map_data: [],
   // };
   // },[])
- 
+
   const handleBranchEdit = (id, obj) => {
     let FormObj = {};
 

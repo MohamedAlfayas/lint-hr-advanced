@@ -20,8 +20,6 @@ const AllDistanceCalculater = ({ allLocationData }) => {
   const employeeData = GetLocalStorageData("employee") || [];
   const branchData = GetLocalStorageData("branch") || [];
 
-  console.log("alllocationData", allLocationData);
-
   const employeeBracnchID = employeeData.find(
     (d) => allLocationData.employee_id === d.id
   );
@@ -37,20 +35,16 @@ const AllDistanceCalculater = ({ allLocationData }) => {
     lng: 77.608336,
   });
 
-  const branchLocation = [
+  const branchLocations = [
     {
       lat: parseFloat(branchObj.latitude),
       lng: parseFloat(branchObj.longitude),
       name: branchObj.label,
+      type: 0,
     },
   ];
 
   const allLocations = [
-    {
-      lat: parseFloat(branchObj.latitude),
-      lng: parseFloat(branchObj.longitude),
-      name: branchObj.label,
-    },
     ...allLocationData.entry_log
       .map((entry) =>
         entry.location_id !== null
@@ -58,36 +52,12 @@ const AllDistanceCalculater = ({ allLocationData }) => {
               lat: parseFloat(entry.latitude),
               lng: parseFloat(entry.longitude),
               name: entry.location,
+              type: entry.entry_type,
             }
           : null
       )
-      .filter((location) => location !== null), // Filter out null values if any
+      .filter((location) => location !== null),
   ];
-  const checkInOut = allLocationData.entry_log.filter(
-    (d) => d.location_id !== null
-  );
-  console.log("check IN out", checkInOut);
-
-  const checkInOutLocation = [
-    checkInOut
-      .filter((e) => e.entry_type === 1)
-      .map((e) => ({
-        lat: parseFloat(e.latitude),
-        lng: parseFloat(e.longitude),
-        name: e.location,
-      })),
-    checkInOut
-      .filter((e) => e.entry_type === 2)
-      .map((e) => ({
-        lat: parseFloat(e.latitude),
-        lng: parseFloat(e.longitude),
-        name: e.location,
-      })),
-  ];
-
-  console.log("CheckInOutLocation", checkInOutLocation);
-
-  console.log("Location", allLocations);
 
   useEffect(() => {
     if (!!branchObj?.radius_range) {
@@ -109,10 +79,10 @@ const AllDistanceCalculater = ({ allLocationData }) => {
   }, [branchObj?.radius_range, branchObj?.latitude, branchObj?.longitude]);
 
   const [mapCircleOptions, setMapCircleOptions] = useState({
-    strokeColor: "#FF0000",
+    strokeColor: "#008000",
     strokeOpacity: 0.3,
     strokeWeight: 2,
-    fillColor: "#FF0000",
+    fillColor: "#008000",
     fillOpacity: 0.15,
     clickable: false,
     draggable: false,
@@ -120,6 +90,42 @@ const AllDistanceCalculater = ({ allLocationData }) => {
     visible: true,
     radius: 10,
     zIndex: 1,
+    styles: [
+      {
+        featureType: "administrative.locality",
+        elementType: "geometry.fill",
+        stylers: [
+          {
+            visibility: "off",
+          },
+        ],
+      },
+      {
+        featureType: "poi.business",
+        stylers: [
+          {
+            visibility: "off",
+          },
+        ],
+      },
+      {
+        featureType: "road",
+        elementType: "labels.icon",
+        stylers: [
+          {
+            visibility: "off",
+          },
+        ],
+      },
+      {
+        featureType: "transit",
+        stylers: [
+          {
+            visibility: "off",
+          },
+        ],
+      },
+    ],
   });
 
   const containerStyle = {
@@ -275,22 +281,24 @@ const AllDistanceCalculater = ({ allLocationData }) => {
               );
             })} */}
 
-          <Marker
-            position={branchLocation}
-            title={location.name} // Add title to the marker
+          {/* <Marker
+            position={{
+              lat: branchLocation.latitude,
+              lng: branchLocation.longitude,
+            }}
+            title={branchLocation.name}
             icon={{
-              mapIconOffice,
-
+              url: mapIconOffice,
               scaledSize: new window.google.maps.Size(40, 40),
             }}
             onClick={() => setSelectedMarker(branchLocation)}
-          />
+          /> */}
 
           {/* Markers for the two points */}
           {allLocations.map((location, index) => {
-            console.log("Location for Marker", location);
             const nextLocation =
               allLocations[index === allLocations.length - 1 ? 0 : index + 1];
+
             const rotation = calculateHeading(location, nextLocation);
 
             return (
@@ -299,20 +307,56 @@ const AllDistanceCalculater = ({ allLocationData }) => {
                 position={location}
                 title={location.name} // Add title to the marker
                 icon={{
-                  url: index === 0 ? mapIconOffice : mapIconEmployee,
+                  url: location.type === 1 ? mapCheckIn : mapCheckOut,
 
                   scaledSize: new window.google.maps.Size(40, 40),
                   rotation: rotation,
                 }}
-                onClick={() => setSelectedMarker(location)}
+                onClick={() => {
+                  setSelectedMarker(location);
+                  setMapZoom(21);
+                  setMapCenter({
+                    lat: location.lat,
+                    lng: location.lng,
+                  });
+                }}
               />
             );
           })}
+          <Marker
+            position={branchLocations}
+            title={branchLocations.name} // Add title to the marker
+            icon={{
+              url: mapIconOffice,
+
+              scaledSize: new window.google.maps.Size(40, 40),
+            }}
+            onClick={() => {
+              setSelectedMarker(branchLocations);
+              setMapZoom(21);
+              setMapCenter({
+                lat: branchLocations.lat,
+                lng: branchLocations.lng,
+              });
+            }}
+          />
           {/* InfoWindow to display label */}
           {selectedMarker && (
             <InfoWindow
               position={selectedMarker}
-              onCloseClick={() => setSelectedMarker(null)}
+              onCloseClick={() => {
+                setSelectedMarker(null);
+                const bounds = new window.google.maps.LatLngBounds();
+
+                allLocations.forEach((location) => {
+                  bounds.extend(
+                    new window.google.maps.LatLng(location.lat, location.lng)
+                  );
+                });
+                setMapZoom(mapRef.current.zoom);
+
+                mapRef.current.fitBounds(bounds);
+              }}
             >
               <div>{selectedMarker.name}</div>
             </InfoWindow>
@@ -328,14 +372,37 @@ const AllDistanceCalculater = ({ allLocationData }) => {
             options={mapCircleOptions}
           />
           {/* Polyline to connect the two points */}
-          {/* <Polyline
+          <Polyline
             path={allLocations}
             options={{
               strokeColor: "#FF0000",
               strokeOpacity: 1.0,
               strokeWeight: 2,
+              geodesic: true,
+              icons: [
+                {
+                  icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW },
+                  offset: "100%",
+                },
+              ],
             }}
-          /> */}
+            // options={{
+            //   strokeColor: "#FF0000",
+            //   strokeOpacity: 0,
+
+            //   icons: [
+            //     {
+            //       icon: {
+            //         path: "M 0,-1 0,1",
+            //         strokeOpacity: 1,
+            //         scale: 3,
+            //       },
+            //       offset: "0",
+            //       repeat: "20px", // Adjust the spacing between dots here
+            //     },
+            //   ],
+            // }}
+          />
           {/* Overlay to display distance above the polyline */}
           {distance && (
             <div
