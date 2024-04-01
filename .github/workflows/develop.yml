@@ -30,6 +30,7 @@ jobs:
         env:
           REACT_APP_BASE_URL: ${{ secrets.DEV_BASE_URL }}
           REACT_APP_MAP_API_KEY: ${{ secrets.DEV_MAP_API_KEY }}
+          REACT_APP_LC_PLATFORM: develop
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
