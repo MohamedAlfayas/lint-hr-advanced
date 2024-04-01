@@ -50,3 +50,8 @@ Thumbs.db
 *.wmv
 
 .vscode/extensions.json
+
+
+# Env
+
+.env

@@ -126,7 +126,7 @@ const ProfileDropdown = () => {
           <h6 className="dropdown-header">Welcome {userName}!</h6>
           <DropdownItem className="p-0">
             <Link
-              to={process.env.PUBLIC_URL + "/profile"}
+              to={"/profile"}
               className="dropdown-item"
             >
               <i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
@@ -135,7 +135,7 @@ const ProfileDropdown = () => {
           </DropdownItem>
           <DropdownItem className="p-0">
             <Link
-              // to={process.env.PUBLIC_URL + "/apps-chat"}
+              // to={"/apps-chat"}
               className="dropdown-item"
             >
               <i className="mdi mdi-message-text-outline text-muted fs-16 align-middle me-1"></i>{" "}
@@ -144,7 +144,7 @@ const ProfileDropdown = () => {
           </DropdownItem>
           <DropdownItem className="p-0">
             <Link
-            //  to={"#"}
+              //  to={"#"}
               className="dropdown-item">
               <i className="mdi mdi-calendar-check-outline text-muted fs-16 align-middle me-1"></i>{" "}
               <span className="align-middle">Taskboard</span>
@@ -152,7 +152,7 @@ const ProfileDropdown = () => {
           </DropdownItem>
           <DropdownItem className="p-0">
             <Link
-              // to={process.env.PUBLIC_URL + "/pages-faqs"}
+              // to={"/pages-faqs"}
               className="dropdown-item"
             >
               <i className="mdi mdi-lifebuoy text-muted fs-16 align-middle me-1"></i>{" "}
@@ -162,7 +162,7 @@ const ProfileDropdown = () => {
           <div className="dropdown-divider"></div>
           <DropdownItem className="p-0">
             <Link
-              // to={process.env.PUBLIC_URL + "/pages-profile"}
+              // to={"/pages-profile"}
               className="dropdown-item"
             >
               <i className="mdi mdi-wallet text-muted fs-16 align-middle me-1"></i>{" "}
@@ -173,7 +173,7 @@ const ProfileDropdown = () => {
           </DropdownItem>
           <DropdownItem className="p-0">
             <Link
-              // to={process.env.PUBLIC_URL + "/pages-profile-settings"}
+              // to={"/pages-profile-settings"}
               className="dropdown-item"
             >
               <span className="badge bg-success-subtle text-success mt-1 float-end">
@@ -185,7 +185,7 @@ const ProfileDropdown = () => {
           </DropdownItem>
           <DropdownItem className="p-0">
             <Link
-              // to={process.env.PUBLIC_URL + "/auth-lockscreen-basic"}
+              // to={"/auth-lockscreen-basic"}
               className="dropdown-item"
             >
               <i className="mdi mdi-lock text-muted fs-16 align-middle me-1"></i>{" "}

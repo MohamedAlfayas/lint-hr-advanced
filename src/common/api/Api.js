@@ -145,7 +145,7 @@ const getBaseURL = () => {
   } else {
     // Construct the base URL dynamically
     if (!!domain) {
-      return `https://${domain}.lintedu.com/`;
+      return `https://${domain}.${process.env.BASE_URL}/`;
     }
   }
 };
