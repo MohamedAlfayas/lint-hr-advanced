@@ -65,12 +65,13 @@ const BranchForm = () => {
   const dispatch = useDispatch();
   const initialBranchLocationObj = {
     id: 0,
+    row_id: 0,
     address: "",
     city: "",
     pincode: "",
     country: "",
     state: "",
-    timezone: "",
+    timezone: "Asia/Kolkata",
     accurate_address: "",
     radius_range: 10,
     latitude: "8.3865046",
@@ -78,11 +79,11 @@ const BranchForm = () => {
     location_id: "",
     name: "",
     image: null,
+    image_url: null,
     map_data: [],
   };
 
   const [stateListOptions, setStateListOptions] = useState([]);
-  const [rowId, setRowId] = useState(100);
   const [CountryCodeListOptions, setCountryCodeListOptions] = useState([]);
   const [branchLocationObj, setBranchLocationObj] = useState(
     initialBranchLocationObj
@@ -127,26 +128,6 @@ const BranchForm = () => {
     setCountryCodeListOptions(country_code_list);
     setCountryListOptions(country_list);
   }, []);
-
-  // const CountryListOptions1 = CountryList.filter((c) => c.show === true).map(
-  //   (d) => {
-  //     return {
-  //       ...d,
-  //       label: d.countryName,
-  //       value: d.countryName,
-  //     };
-  //   }
-  // );
-
-  // const CountryCodeListOptions1 = CountryList.filter((c) => c.show === true).map(
-  //   (d) => {
-  //     return {
-  //       ...d,
-  //       label: d.countryCode,
-  //       value: d.countryCode,
-  //     };
-  //   }
-  // );
 
   const inputRef = useRef();
 
@@ -219,6 +200,11 @@ const BranchForm = () => {
       CountryListOptions.find((d) => d.value === e.value).states || []
     );
   };
+
+  useEffect(() => {
+    console.log("Branch Obj = ", branchObj);
+  }, [branchObj]);
+
   const LocationFormikForm = useFormik({
     enableReinitialize: true,
     initialValues: branchLocationObj,
@@ -234,26 +220,40 @@ const BranchForm = () => {
       accurate_address: Yup.string().required("Please Enter Accurate Address"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
-      const updatedLocationDetail = [...branchObj.location_details];
+      console.log("SUCCESSSS !!!! Location Formik Values = ", values);
 
-      // If rowId is within the existing indices range, replace the data
-      if (rowId >= 0 && rowId < updatedLocationDetail.length) {
-        updatedLocationDetail[rowId] = values;
+      const existing_location_details = [...branchObj?.location_details];
+
+      if (values?.row_id === 0) {
+        const new_id =
+          existing_location_details.length > 0
+            ? existing_location_details[existing_location_details.length - 1]
+                .row_id + 1
+            : 1;
+        values["row_id"] = new_id;
+        console.log("New Values = ", values);
+
+        setBranchObj({
+          ...branchObj,
+          location_details: [...branchObj.location_details, values],
+        });
       } else {
-        // If rowId is beyond the end of the array, add new values to the end
-        updatedLocationDetail.push(values);
-      }
+        const new_location_details = existing_location_details.map((d) => {
+          if (d.id === values?.id) {
+            return values;
+          } else {
+            return d;
+          }
+        });
 
-      // Update branchObj with the modified location_detail
-      setBranchObj((prevBranchObj) => ({
-        ...prevBranchObj,
-        location_details: updatedLocationDetail,
-      }));
+        setBranchObj({
+          ...branchObj,
+          location_details: new_location_details,
+        });
+      }
 
       setShowTable(true);
       setModalOpen(false);
-      setRowId(100);
     },
   });
   useEffect(() => {
@@ -292,28 +292,61 @@ const BranchForm = () => {
     onSubmit: async (values) => {
       console.log("SUCCESSSS !!!! Formik Values = ", values);
 
-      dispatch(setLoaderVisible(true));
+      // dispatch(setLoaderVisible(true));
 
-      const Api = await PostApi("branch/add-new/", branchObj, true);
-      console.log("API RES = ", Api);
-      if (Api.status && Api.status === 200) {
-        // branchObj.id === 0
-        //   ? dispatch(addBranch(Api?.data?.data))
-        //   : dispatch(editBranch(Api?.data?.data));
+      let form_data = new FormData();
 
-        if (branchObj.id === 0) {
-          dispatch(addBranch(Api?.data.data));
-          SetLocalStorage("branch", Api?.data.data, 2);
+      // Object.entries(values).map((key, value) => {
+      //   if (key[0] === "cf_values" || key[0] == "map_data") {
+      //     form_data.append(key[0], JSON.stringify(key[1]));
+      //   }else {
+      //     form_data.append(key[0], key[1]);
+      //   }
+      // });
+
+      values.location_details.map((d, idx) => {
+        console.log("D = ", d);
+        if (d.image === null || d.image === undefined) {
+          form_data.append(`location_${idx + 1}_image`, null);
         } else {
-          dispatch(editBranch(Api?.data?.data));
-          SetLocalStorage("branch", Api?.data.data, 3);
+          console.log("D name = ", d.image.name);
+          form_data.append(`location_${idx + 1}_image`, d.image, d.image.name);
         }
+      });
 
-        dispatch(toggleRSBView(false));
-        toast.success(Api?.data?.message);
-      } else {
-        toast.error(Api?.data?.message || Api?.data?.detail);
-      }
+      Object.entries(values).forEach(([key, value]) => {
+        // Check if the value is an array and the key is "location_details"
+        if (
+          key === "cf_values" ||
+          key === "map_data" ||
+          key === "location_details"
+        ) {
+          // Handle cf_values array separately
+          form_data.append(key, JSON.stringify(value));
+        } else {
+          // Append other key-value pairs to FormData
+          form_data.append(key, value);
+        }
+      });
+
+      console.log("Form Data = ", form_data);
+
+      const Api = await PostApi("branch/add-new/", form_data, true);
+      console.log("API RES = ", Api);
+      // if (Api.status && Api.status === 200) {
+      //   if (branchObj.id === 0) {
+      //     dispatch(addBranch(Api?.data.data));
+      //     SetLocalStorage("branch", Api?.data.data, 2);
+      //   } else {
+      //     dispatch(editBranch(Api?.data?.data));
+      //     SetLocalStorage("branch", Api?.data.data, 3);
+      //   }
+
+      //   dispatch(toggleRSBView(false));
+      //   toast.success(Api?.data?.message);
+      // } else {
+      //   toast.error(Api?.data?.message || Api?.data?.detail);
+      // }
 
       dispatch(setLoaderVisible(false));
     },
@@ -345,7 +378,21 @@ const BranchForm = () => {
   const handleEditLocation = (location, index) => {
     setModalOpen(true);
     setBranchLocationObj(location);
-    setRowId(index);
+  };
+
+  const handleLocationImageUpdate = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (readerEvent) => {
+        const newImageSrc = readerEvent.target.result;
+        setBranchLocationObj({
+          ...branchLocationObj,
+          image: e.target.files[0],
+          image_url: newImageSrc,
+        });
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
   };
 
   return (
@@ -605,7 +652,7 @@ const BranchForm = () => {
                               <td>{location.accurate_address}</td>
                               <td>{location.radius_range}</td>
                               <td>
-                                <img src={location.image} />
+                                <img src={location.image_url} />
                               </td>
                               <td>
                                 <i
@@ -628,7 +675,7 @@ const BranchForm = () => {
                         <Col lg={6} className="text-start">
                           <Button
                             color="btn btn-primary"
-                            type="add"
+                            type="button"
                             onClick={handleAddClick}
                           >
                             Add{" "}
@@ -967,7 +1014,7 @@ const BranchForm = () => {
                                     id="image"
                                     className="form-control"
                                     placeholder={`Choose Image`}
-                                    onChange={updateLocationBranchObj}
+                                    onChange={handleLocationImageUpdate}
                                   />
                                   <i className="ri-user-2-line"></i>
                                   <div

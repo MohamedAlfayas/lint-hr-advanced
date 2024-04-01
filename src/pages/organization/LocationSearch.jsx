@@ -18,8 +18,11 @@ import {
 import { map_radius_options } from "../../common/constant/Constants";
 import Select from "react-select";
 
-function LocationSearch({ branchLocationObj, setBranchLocationObj,LocationFormikForm }) {
-
+function LocationSearch({
+  branchLocationObj,
+  setBranchLocationObj,
+  LocationFormikForm,
+}) {
   const [mapZoom, setMapZoom] = useState(21);
 
   const [mapCenter, setMapCenter] = useState({
@@ -34,29 +37,31 @@ function LocationSearch({ branchLocationObj, setBranchLocationObj,LocationFormik
         radius: branchLocationObj?.radius_range,
       });
       setMapZoom(
-        map_radius_options.find((d) => d.value === branchLocationObj?.radius_range).zoom
+        map_radius_options.find(
+          (d) => d.value === branchLocationObj?.radius_range
+        ).zoom
       );
     }
 
     if (!!branchLocationObj?.latitude && !!branchLocationObj?.longitude) {
-    
       setMapCenter({
         lat: parseFloat(branchLocationObj?.latitude),
         lng: parseFloat(branchLocationObj?.longitude),
       });
-    
     }
-  }, [branchLocationObj?.radius_range, branchLocationObj?.latitude, branchLocationObj?.longitude]);
+  }, [
+    branchLocationObj?.radius_range,
+    branchLocationObj?.latitude,
+    branchLocationObj?.longitude,
+  ]);
 
- useEffect(()=>{
- 
-  setMapCenter({
-    lat:parseFloat(branchLocationObj?.latitude),
-    lng:parseFloat(branchLocationObj?.longitude)
-  })
- },[mapCenter])
+  useEffect(() => {
+    setMapCenter({
+      lat: parseFloat(branchLocationObj?.latitude),
+      lng: parseFloat(branchLocationObj?.longitude),
+    });
+  }, [mapCenter]);
 
- 
   const [mapCircleOptions, setMapCircleOptions] = useState({
     strokeColor: "#FF0000",
     strokeOpacity: 0.3,
@@ -70,7 +75,6 @@ function LocationSearch({ branchLocationObj, setBranchLocationObj,LocationFormik
     radius: 10,
     zIndex: 1,
   });
-
 
   const [predictions, setPredictions] = useState([]);
   const autocompleteRef = useRef(null);
@@ -115,7 +119,6 @@ function LocationSearch({ branchLocationObj, setBranchLocationObj,LocationFormik
 
     placesService.getDetails({ placeId }, (place, status) => {
       if (status === "OK") {
-      
         let city;
         let country;
         let state;
@@ -272,7 +275,8 @@ function LocationSearch({ branchLocationObj, setBranchLocationObj,LocationFormik
                 branchLocationObj?.radius_range
                   ? map_radius_options.find(
                       (d) =>
-                        parseInt(d.value) === parseInt(branchLocationObj?.radius_range)
+                        parseInt(d.value) ===
+                        parseInt(branchLocationObj?.radius_range)
                     )
                   : []
               }
