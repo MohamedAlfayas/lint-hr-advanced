@@ -135,7 +135,7 @@ const AllDistanceCalculater = ({ allLocationData }) => {
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
-    googleMapsApiKey: process.env.DEV_MAP_API_KEY,
+    googleMapsApiKey: process.env.MAP_API_KEY,
   });
 
   const [map, setMap] = React.useState(null);
