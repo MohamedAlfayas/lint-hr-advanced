@@ -27,6 +27,9 @@ jobs:
 
       - name: Build Project
         run: yarn build
+        env:
+          REACT_APP_BASE_URL: ${{ secrets.DEV_BASE_URL }}
+          REACT_APP_MAP_API_KEY: ${{ secrets.DEV_MAP_API_KEY }}
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
