@@ -20,6 +20,6 @@ export const GetTotalWorkDuration = async (dispatch) => {
       dispatch(setTotalWorkDuration(res?.data?.data));
     })
     .catch((err) => {
-      console.log("Something Went Wrong - ", err);
+      console.log("Something Went Wrong");
     });
 };

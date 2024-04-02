@@ -101,7 +101,6 @@ const CustomFieldForm = () => {
         .min(1, "Select Applicable For"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
       let invalid_form_value = false;
 
       values.options.map((d) => {
@@ -110,20 +109,15 @@ const CustomFieldForm = () => {
         }
       });
 
-      console.log("invalid_form_value = ", invalid_form_value);
-
       if (invalid_form_value === true) {
         toast.error("Please Enter Label Value For Option");
       } else {
-        console.log("SUCCESS !!!!");
-
         dispatch(setLoaderVisible(true));
         const Api = await PostApi(
           "fields/custom-field/create/",
           customFieldObj,
           false
         );
-        console.log("API RES = ", Api);
         if (Api.status && Api.status === 200) {
           // customFieldObj.id === 0
           //   ? dispatch(addCustomField(Api?.data.data))
@@ -146,28 +140,6 @@ const CustomFieldForm = () => {
       }
     },
   });
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   console.log("employee data = ", customFieldObj);
-  //   dispatch(setLoaderVisible(true));
-  //   const Api = await PostApi(
-  //     "fields/custom-field/create/",
-  //     customFieldObj,
-  //     false
-  //   );
-  //   console.log("API RES = ", Api);
-  //   if (Api.status && Api.status === 200) {
-  //     customFieldObj.id === 0
-  //       ? dispatch(addCustomField(Api?.data.data))
-  //       : dispatch(editCustomField(Api?.data?.data));
-  //     dispatch(toggleRSBView(false));
-  //     toast.success(Api?.data?.message);
-  //   } else {
-  //     toast.error(Api?.data?.message || Api?.data?.detail);
-  //   }
-  //   dispatch(setLoaderVisible(false));
-  // };
 
   return (
     <React.Fragment>

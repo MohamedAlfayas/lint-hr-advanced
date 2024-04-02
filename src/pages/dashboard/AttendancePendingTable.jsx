@@ -61,16 +61,14 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
         "&employee_type=1",
     })
       .then((res) => {
-        console.log("res", res);
         dispatch(setAttendanceApprovalData(res?.data?.data));
       })
       .catch((err) => {
-        console.log("ERR = ", err);
+        console.log("ERR");
       });
   }, []);
 
   const [timelineList, setTimelineList] = useState([]);
-  console.log("list", timelineList);
   const [timelineDate, setTimeLineDate] = useState("");
   const [timeline_modal, settimeline_modal] = useState(false);
   const [notes_modal, setNotes_modal] = useState(false);

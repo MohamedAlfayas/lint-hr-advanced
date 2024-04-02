@@ -29,7 +29,6 @@ const Layout = ({ children }) => {
   const location = useLocation();
 
   useEffect(() => {
-    console.log("Location = ", location?.pathname);
     GetTotalWorkDuration(dispatch);
   }, [location]);
 
@@ -150,27 +149,6 @@ const Layout = ({ children }) => {
   const { showLoader } = useSelector((state) => state.LoaderReducer);
 
   let visibilityChangeTimeout;
-
-  // document.addEventListener("visibilitychange", function () {
-  //   clearTimeout(visibilityChangeTimeout);
-
-  //   visibilityChangeTimeout = setTimeout(() => {
-  //     if (document.visibilityState === "visible") {
-  //       console.log("has focus");
-  //       //LCGetTodaysWorkDuration();
-  //       //LCGetTodaysWorkDuration.init();
-  //       dispatch(
-  //         setMyProfileDataReducer(
-  //           JSON.parse(localStorage.getItem("lint_hr_profile_data"))
-  //         )
-  //       );
-  //       GetTotalWorkDuration(dispatch);
-  //     } else {
-  //       //clearInterval(interval);
-  //       console.log("lost focus");
-  //     }
-  //   }, 200);
-  // });
 
   useEffect(() => {
     const handleVisibilityChange = () => {

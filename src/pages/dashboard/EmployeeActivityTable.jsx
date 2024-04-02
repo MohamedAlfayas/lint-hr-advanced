@@ -26,8 +26,6 @@ const EmployeeActivityTable = ({ team_data }) => {
   const EmployeeData = GetLocalStorageData("employee") || [];
   const DepartmentData = GetLocalStorageData("department") || [];
 
-  console.log("Team data = ", team_data);
-
   return (
     <React.Fragment>
       <SimpleBar style={{ maxHeight: "750px" }} className="p-3 pt-0">

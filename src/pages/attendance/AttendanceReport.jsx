@@ -557,38 +557,6 @@ const AttendanceReport = () => {
     );
   };
 
-  // const handleFilter = async () => {
-  //   console.log("FILTER CLICKED !!!! === ", filterKeys);
-
-  //   dispatch(setLoaderVisible(true));
-
-  //   const Api = await PostApi(
-  //     "report/get-attendance-report/",
-  //     filterKeys,
-  //     false
-  //   );
-  //   console.log("API RES = ", Api);
-  //   if (Api.status && Api.status === 200) {
-  //     dispatch(
-  //       setIndividualAttendanceReportData(
-  //         Api?.data?.data?.individual_attendance_report
-  //       )
-  //     );
-  //     dispatch(
-  //       setTeamAttendanceReportData(Api?.data?.data?.team_attendance_report)
-  //     );
-  //     if (filterKeys?.type === "2" && filterKeys?.employee === "0") {
-  //       dispatch(setShowTeamTable(true));
-  //     } else {
-  //       dispatch(setShowTeamTable(false));
-  //     }
-  //   } else {
-  //     toast.error(Api?.data?.message || Api?.data?.detail);
-  //   }
-
-  //   dispatch(setLoaderVisible(false));
-  // };
-
   const employeeDatesXls = Array.from(
     new Set(
       team_daily_attendance_report.flatMap((employee) =>

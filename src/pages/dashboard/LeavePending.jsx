@@ -48,7 +48,6 @@ const LeaveApprovalPending = ({ onDataLengthChange }) => {
         "&employee_type=1",
     })
       .then((res) => {
-        console.log("API Response:", res.data);
         dispatch(setLeaveApproval(res?.data?.data));
       })
       .catch((err) => {

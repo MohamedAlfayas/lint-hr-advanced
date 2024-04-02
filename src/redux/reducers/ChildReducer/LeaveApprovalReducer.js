@@ -1,31 +1,30 @@
 import { createSlice } from "@reduxjs/toolkit"
 
 const initialState = {
-    leave_approval_data : []
+    leave_approval_data: []
 }
 
 const LeaveApprovalReducer = createSlice({
-    name : 'LeaveApprovalReducer',
-    initialState : initialState,
-    reducers : {
-        setLeaveApproval : (state, action) =>{
+    name: 'LeaveApprovalReducer',
+    initialState: initialState,
+    reducers: {
+        setLeaveApproval: (state, action) => {
             return {
                 ...state,
-                leave_approval_data : action.payload
+                leave_approval_data: action.payload
             }
         },
-        editLeaveApproval : (state, {type, payload}) =>{
-            console.log('edit leav approve payload = ',payload);
+        editLeaveApproval: (state, { type, payload }) => {
             return {
                 ...state,
-                leave_approval_data : [...state.leave_approval_data].map(d =>{
-                    if((payload?.leave_application_id_list).includes(d.id)){
+                leave_approval_data: [...state.leave_approval_data].map(d => {
+                    if ((payload?.leave_application_id_list).includes(d.id)) {
                         return {
                             ...d,
-                            status : payload?.status
+                            status: payload?.status
                         }
                     }
-                    else{
+                    else {
                         return d
                     }
                 })

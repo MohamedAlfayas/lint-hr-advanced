@@ -37,7 +37,6 @@ const AttendanceTeamTable = () => {
   const { team_attendance_report_data } = useSelector(
     (state) => state.AttendanceReportReducer
   );
-  console.log("team_attendance_report_data = ", team_attendance_report_data);
 
   function open_timeline(rowData) {
     settimeline_modal(!timeline_modal);

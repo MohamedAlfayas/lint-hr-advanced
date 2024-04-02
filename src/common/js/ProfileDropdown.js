@@ -33,8 +33,6 @@ const ProfileDropdown = () => {
   const logout = async () => {
     const newFCMToken = await generateToken();
 
-    console.log("newFCMToken On Logout = ", newFCMToken);
-
     const values = {
       device_type: 1,
       fcm_token: newFCMToken,

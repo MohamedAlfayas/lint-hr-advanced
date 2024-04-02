@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BaseURL, LCPlatform } from "./BaseURL";
+import { BaseURL } from "./BaseURL";
 
 export const Api = axios.create({
   baseURL: "",
@@ -16,12 +16,15 @@ const getRefreshToken = async () => {
   try {
     let refresh_token_url = "";
     const domain = window.location.hostname.split(".")[0];
-    if (!!LCPlatform && LCPlatform === "local") {
+    if (
+      !!process.env.REACT_APP_LC_PLATFORM &&
+      process.env.REACT_APP_LC_PLATFORM === "local"
+    ) {
       refresh_token_url = BaseURL;
     } else {
       // Construct the base URL dynamically
       if (!!domain) {
-        refresh_token_url = `https://${domain}.lintedu.com/`;
+        refresh_token_url = `https://${domain}.${process.env.REACT_APP_BASE_URL}/`;
       }
     }
     const response = await axios.post(
@@ -31,11 +34,7 @@ const getRefreshToken = async () => {
       }
     );
 
-    console.log("RT RES = ", response?.data);
-
     const newAccessToken = response.data.access;
-
-    console.log("New Token = ", newAccessToken);
 
     // Update the token in local storage
     const tokenData = JSON.parse(localStorage.getItem("lint_hr_token"));
@@ -45,7 +44,7 @@ const getRefreshToken = async () => {
     return newAccessToken;
   } catch (error) {
     // Handle error
-    console.error("Error refreshing token:", error);
+
     throw error; // Rethrow the error for the caller to handle
   }
 };
@@ -72,8 +71,6 @@ Api.interceptors.response.use(
     return response;
   },
   async (error) => {
-    console.log("Error Response = ", error);
-
     if (
       !!error?.response &&
       error.response.status === 404 &&
@@ -117,10 +114,8 @@ Api.interceptors.response.use(
           refreshSubscribers = [];
           return axios(originalRequest);
         } catch (refreshError) {
-          console.log("Refresh Error = ", refreshError);
           // Check if refresh token is expired
           if (!!refreshError.response && refreshError.response.status === 401) {
-            console.error("Refresh token expired");
             // Perform logout action (e.g., clear local storage, redirect to login page)
             logout();
           }
@@ -140,12 +135,16 @@ Api.interceptors.response.use(
 const getBaseURL = () => {
   // Extract the domain from the current URL
   const domain = window.location.hostname.split(".")[0];
-  if (!!LCPlatform && LCPlatform === "local") {
+
+  if (
+    !!process.env.REACT_APP_LC_PLATFORM &&
+    process.env.REACT_APP_LC_PLATFORM === "local"
+  ) {
     return BaseURL;
   } else {
     // Construct the base URL dynamically
     if (!!domain) {
-      return `https://${domain}.${process.env.BASE_URL}/`;
+      return `https://${domain}.${process.env.REACT_APP_BASE_URL}/`;
     }
   }
 };

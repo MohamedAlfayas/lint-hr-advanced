@@ -37,7 +37,6 @@ import { setDepartmentDetails } from "../../redux/reducers/ChildReducer/Departme
 
 const DepartmentsTab = () => {
   const EmployeeData = GetLocalStorageData("employee");
-  console.log("Datas", EmployeeData);
 
   const dispatch = useDispatch();
 

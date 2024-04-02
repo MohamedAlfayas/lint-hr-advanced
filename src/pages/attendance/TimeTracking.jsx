@@ -7,18 +7,6 @@ import { employee_total_work_duration } from "./../../redux/reducers/ChildReduce
 const TimeTracking = () => {
   const [firstCheckInTime, setFirstCheckInTime] = useState(null);
 
-  // const checkInOutToggle = (ele) => {
-  //   if (ele.closest("button").classList.contains("active")) {
-  //     ele.closest("button").classList.remove("active");
-  //     ele.closest("button").classList.remove("btn-outline-warning");
-  //     ele.closest("button").classList.add("btn-outline-secondary");
-  //   } else {
-  //     ele.closest("button").classList.remove("btn-outline-secondary");
-  //     ele.closest("button").classList.add("active");
-  //     ele.closest("button").classList.add("btn-outline-warning");
-  //   }
-  // };
-
   const { total_seconds, currently_checked_in } = useSelector(
     (state) => state.ClockReducer
   );
@@ -51,7 +39,6 @@ const TimeTracking = () => {
     const fetchData = async () => {
       try {
         const data = await Api.get("/attendance/get-total-work-duration/");
-        console.log("RES = ", data.data.data.first_check_in_time);
         const fetchFirstCheckInTime =
           employee_total_work_duration.first_check_in_time;
 
@@ -67,7 +54,7 @@ const TimeTracking = () => {
           setFirstCheckInTime("--:--");
         }
       } catch (error) {
-        console.log("ERR = ", error);
+        console.log("ERR");
       }
     };
 

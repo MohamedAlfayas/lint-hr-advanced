@@ -74,11 +74,9 @@ const DepartmentForm = () => {
         .min(1, "Please Select Parent Department"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
       dispatch(setLoaderVisible(true));
       const Api = await PostApi("department/create/", departmentData, false);
       if (Api.status && Api.status === 200) {
-        console.log("DEP RES = ", Api?.data);
         dispatch(setDepartmentDetails(Api?.data?.data));
         SetLocalStorage("department_details", Api?.data?.data, 1);
         SetLocalStorage("department", Api?.data?.department_data, 1);

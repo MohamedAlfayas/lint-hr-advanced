@@ -3,102 +3,107 @@ import PublicRoute from "./PublicRoute";
 import PrivateRoute from "./PrivateRoute";
 import { privateRoutes, publicRoutes, workSpaceRoutes } from "./AllRoutes";
 import Layout from "../layout/Layout";
-import React, { useEffect, useMemo, lazy, Suspense, } from "react";
+import React, { useEffect, useMemo, lazy, Suspense } from "react";
 import LoadingBar from "react-top-loading-bar";
 // import Basic404 from "../pages/error/Basic404";
 
-
-const Basic404 = lazy(() => import('../pages/error/Basic404'));
+const Basic404 = lazy(() => import("../pages/error/Basic404"));
 
 const Index = () => {
+  const filteredPrivateRoutes = useMemo(() => {
+    const user_perm_list = JSON.parse(localStorage.getItem("user_perm_list"));
+    if (!!user_perm_list) {
+      return privateRoutes.filter(
+        (route) => user_perm_list.includes(route?.perm) || route.perm === "all"
+      );
+    } else {
+      return privateRoutes;
+    }
+  }, []);
 
-    const filteredPrivateRoutes = useMemo(() => {
-        const user_perm_list = JSON.parse(localStorage.getItem('user_perm_list'));
-        console.log('user_perm_list = ', user_perm_list);
-        if (!!user_perm_list) {
-            return privateRoutes.filter(route => user_perm_list.includes(route?.perm) || route.perm === 'all');
-        } else {
-            return privateRoutes;
-        }
-    }, []);
+  return (
+    <React.Fragment>
+      <Routes>
+        <Route>
+          {publicRoutes.map((route, idx) => (
+            <Route
+              path={route.path}
+              element={
+                <PublicRoute>
+                  <Suspense
+                    fallback={<LoadingBar progress={100} color="#405189" />}
+                  >
+                    {route.component}
+                  </Suspense>
+                  {/* {route.component} */}
+                </PublicRoute>
+              }
+              key={idx}
+              exact={true}
+            />
+          ))}
+        </Route>
 
-    return (
-        <React.Fragment>
-            <Routes>
-                <Route>
-                    {publicRoutes.map((route, idx) => (
-                        <Route
-                            path={route.path}
-                            element={
-                                <PublicRoute>
-                                    <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
-                                        {route.component}
-                                    </Suspense>
-                                    {/* {route.component} */}
-                                </PublicRoute>
-                            }
-                            key={idx}
-                            exact={true}
-                        />
-                    ))}
-                </Route>
+        <Route>
+          {privateRoutes.map((route, idx) => (
+            <Route
+              path={route.path}
+              element={
+                <PrivateRoute>
+                  <Layout>
+                    <Suspense
+                      fallback={<LoadingBar progress={100} color="#405189" />}
+                    >
+                      {route.component}
+                    </Suspense>
+                    {/* {route.component} */}
+                  </Layout>
+                </PrivateRoute>
+              }
+              key={idx}
+              exact={true}
+            />
+          ))}
+        </Route>
 
-                <Route>
-                    {privateRoutes.map((route, idx) => (
-                        <Route
-                            path={route.path}
-                            element={
-                                <PrivateRoute>
-                                    <Layout>
-                                        <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
-                                            {route.component}
-                                        </Suspense>
-                                        {/* {route.component} */}
-                                    </Layout>
-                                </PrivateRoute>
-                            }
-                            key={idx}
-                            exact={true}
-                        />
-                    ))}
-                </Route>
+        <Route>
+          {workSpaceRoutes.map((route, idx) => (
+            <Route
+              path={route.path}
+              element={
+                <Suspense
+                  fallback={<LoadingBar progress={100} color="#405189" />}
+                >
+                  {route.component}
+                </Suspense>
+              }
+              key={idx}
+              exact={true}
+            />
+          ))}
+        </Route>
 
-                <Route>
-                    {workSpaceRoutes.map((route, idx) => (
-                        <Route
-                            path={route.path}
-                            element={
-                                <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
-                                    {route.component}
-                                </Suspense>
-                            }
-                            key={idx}
-                            exact={true}
-                        />
-                    ))}
-                </Route>
-
-                <Route
-                    path="*"
-                    element={
-                        <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
-                            <Basic404 />
-                        </Suspense>
-                        // <Basic404 />
-                    }
-                />
-                <Route
-                    path="/404"
-                    element={
-                        <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
-                            <Basic404 />
-                        </Suspense>
-                        // <Basic404 />
-                    }
-                />
-            </Routes>
-        </React.Fragment>
-    );
+        <Route
+          path="*"
+          element={
+            <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
+              <Basic404 />
+            </Suspense>
+            // <Basic404 />
+          }
+        />
+        <Route
+          path="/404"
+          element={
+            <Suspense fallback={<LoadingBar progress={100} color="#405189" />}>
+              <Basic404 />
+            </Suspense>
+            // <Basic404 />
+          }
+        />
+      </Routes>
+    </React.Fragment>
+  );
 };
 
 export default Index;

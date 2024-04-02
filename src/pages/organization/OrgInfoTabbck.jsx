@@ -110,7 +110,6 @@ const OrgInfoTab = () => {
       url: "/company/get-profile/",
     })
       .then((res) => {
-        console.log("res = ", res);
         let thisCFValues = [...res?.data?.data?.cf_values];
         let cf = [];
         if (thisCFValues && thisCFValues.length) {
@@ -124,7 +123,7 @@ const OrgInfoTab = () => {
         } else {
           cf = CustomFieldsForThisForm;
         }
-        console.log("CF === ", cf);
+
         setCountry(res?.data?.data?.country);
         setProfileData({ ...res?.data?.data, cf_values: cf });
         setState(res?.data?.data?.state);
@@ -153,7 +152,6 @@ const OrgInfoTab = () => {
       [name]: value,
     });
   };
-  console.log("hhh", profileData);
 
   const [changeId, setChangeId] = useState(1);
 

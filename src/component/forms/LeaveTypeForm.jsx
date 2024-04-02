@@ -60,7 +60,6 @@ const LeaveTypeForm = () => {
   const [selectedGenders, setSelectedGenders] = useState([]);
 
   useEffect(() => {
-    console.log("form_obj = ", form_obj);
     setLeaveTypeData(form_obj);
     setCurrentUnit(form_obj.unit);
     setSelectedWS(
@@ -109,7 +108,6 @@ const LeaveTypeForm = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     // const numericText = value.replace(/[^0-9]/g, "");
-    console.log("name = ", name, "   value = ", value);
     setLeaveTypeData({
       ...leaveTypeData,
       [name]: value,
@@ -126,8 +124,6 @@ const LeaveTypeForm = () => {
   };
 
   const handleUnitChange = (e) => {
-    console.log("Unit Change = ", e);
-
     let newLeaveTypeData = {
       ...leaveTypeData,
       unit: e,
@@ -160,7 +156,6 @@ const LeaveTypeForm = () => {
         .min(1, "Please Select Work Schedeule"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
       dispatch(setLoaderVisible(true));
       if (values.allowed_count === 0) {
         toast.error("Leave Days Must not be 0");
@@ -172,7 +167,6 @@ const LeaveTypeForm = () => {
           leaveTypeData,
           false
         );
-        console.log("API RES = ", Api);
         if (Api.status && Api.status === 200) {
           // leaveTypeData.id === 0
           //   ? dispatch(addLeaveType(Api?.data.data))
@@ -203,34 +197,11 @@ const LeaveTypeForm = () => {
       const firstErrorField = Object.keys(FormikForm.errors)[0];
       FormikForm.setFieldTouched(firstErrorField);
       const errorField = document.querySelector(`[name=${firstErrorField}]`);
-      console.log(firstErrorField);
       if (errorField) {
         errorField.focus();
       }
     }
   }, [FormikForm.submitCount, FormikForm.errors, FormikForm.setFieldTouched]);
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   console.log("Leave Type data = ", leaveTypeData);
-  //   dispatch(setLoaderVisible(true));
-  //   const Api = await PostApi(
-  //     "/leave/leave_type/create/",
-  //     leaveTypeData,
-  //     false
-  //   );
-  //   console.log("API RES = ", Api);
-  //   if (Api.status && Api.status === 200) {
-  //     leaveTypeData.id === 0
-  //       ? dispatch(addLeaveType(Api?.data.data))
-  //       : dispatch(editLeaveType(Api?.data?.data));
-  //     dispatch(toggleRSBView(false));
-  //     toast.success(Api?.data?.message);
-  //   } else {
-  //     toast.error(Api?.data?.message || Api?.data?.detail);
-  //   }
-  //   dispatch(setLoaderVisible(false));
-  // };
 
   return (
     <React.Fragment>

@@ -40,7 +40,6 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
     })
       .then((res) => {
         const response = res?.data?.data;
-        console.log("response", response);
         let emp_options = response.map((d) =>
           employee_data.find((e) => e.id === d)
         );
@@ -59,11 +58,9 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
     if (windowSize > 767) {
       var myElement = document.querySelector(".hamburger-icon");
       if (myElement.classList.contains("open")) {
-        console.log('The element has the "open" class.');
         localStorage.setItem("is_menu_open", "");
         localStorage.setItem("left_side_bar_type", leftsidbarSizeTypes.DEFAULT);
       } else {
-        console.log('The element does not have the "open" class.');
         localStorage.setItem("is_menu_open", "open");
         localStorage.setItem(
           "left_side_bar_type",

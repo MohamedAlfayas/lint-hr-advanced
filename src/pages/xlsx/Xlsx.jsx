@@ -1,19 +1,19 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from "react";
 import { Badge, Col, Container, Row } from "reactstrap";
-import { useDropzone } from 'react-dropzone';
+import { useDropzone } from "react-dropzone";
 // import 'react-dropzone-uploader/dist/styles.css';
 import * as XLSX from "xlsx";
-import '../../common/css/lc_style.css'
-import Papa from 'papaparse';
+import "../../common/css/lc_style.css";
+import Papa from "papaparse";
 const Xlsx = () => {
   const [data, setData] = useState([]);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
 
   const onDrop = useCallback((acceptedFiles) => {
     const file = acceptedFiles[0];
 
     if (!file) {
-      setErrorMessage('Please upload a file.');
+      setErrorMessage("Please upload a file.");
       return;
     }
 
@@ -21,13 +21,15 @@ const Xlsx = () => {
     const isCsv = /\.csv$/i.test(file.name);
 
     if (!(isXlsxOrXls || isCsv)) {
-      setErrorMessage('Invalid file format. Please upload a .xlsx, .xls, or .csv file.');
+      setErrorMessage(
+        "Invalid file format. Please upload a .xlsx, .xls, or .csv file."
+      );
       return;
     }
 
     const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSizeInBytes) {
-      setErrorMessage('File size exceeds the limit of 5MB.');
+      setErrorMessage("File size exceeds the limit of 5MB.");
       return;
     }
 
@@ -36,26 +38,22 @@ const Xlsx = () => {
       const fileData = e.target.result;
 
       if (isXlsxOrXls) {
-        const workbook = XLSX.read(fileData, { type: 'binary' });
+        const workbook = XLSX.read(fileData, { type: "binary" });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         const parsedData = XLSX.utils.sheet_to_json(sheet);
-        console.log('Imported XLSX/XLS Data:', parsedData);
-
 
         setData(parsedData);
       } else if (isCsv) {
         Papa.parse(file, {
           complete: (result) => {
-            console.log('Imported CSV Data:', result.data);
-
             setData(result.data);
           },
           header: true,
         });
       }
 
-      setErrorMessage('');
+      setErrorMessage("");
     };
 
     if (isXlsxOrXls) {
@@ -66,7 +64,7 @@ const Xlsx = () => {
   }, []);
 
   const { getRootProps, getInputProps } = useDropzone({
-    accept: '.xlsx, .xls, .csv',
+    accept: ".xlsx, .xls, .csv",
     onDrop,
   });
 
@@ -74,14 +72,18 @@ const Xlsx = () => {
     <React.Fragment>
       <div className="page-content">
         <Container>
-          <div {...getRootProps()} className="container" style={{ textAlign: 'center' }}>
+          <div
+            {...getRootProps()}
+            className="container"
+            style={{ textAlign: "center" }}
+          >
             <input {...getInputProps()} />
             <div className="mb-3">
               <i className="display-4 text-muted ri-upload-cloud-2-fill" />
             </div>
             <h4>Drop or upload your file here</h4>
             (.XLSX, .XLS, and .CSV formats supported; max file size 5MB)
-            {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
+            {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
           </div>
 
           {data.length > 0 && (
@@ -109,7 +111,5 @@ const Xlsx = () => {
     </React.Fragment>
   );
 };
-
-
 
 export default Xlsx;

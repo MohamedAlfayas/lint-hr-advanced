@@ -1,6 +1,17 @@
 import PropTypes from "prop-types";
 import React from "react";
-import { Row, Col, Alert, Card, CardBody, Container, FormFeedback, Input, Label, Form } from "reactstrap";
+import {
+  Row,
+  Col,
+  Alert,
+  Card,
+  CardBody,
+  Container,
+  FormFeedback,
+  Input,
+  Label,
+  Form,
+} from "reactstrap";
 
 //redux
 import { useSelector, useDispatch } from "react-redux";
@@ -21,29 +32,27 @@ import { MetaTitle } from "../../../common/data/MetaTitle";
 import AuthParticles from "../../../component/authparticles/AuthParticles";
 import { validate } from "../../../common/js/EmailValidate";
 
-const ForgetPassword = props => {
-
+const ForgetPassword = (props) => {
   const validation = useFormik({
     // enableReinitialize : use this flag when initial values needs to be changed
     enableReinitialize: true,
 
     initialValues: {
-      email: '',
+      email: "",
     },
     validate,
     validationSchema: Yup.object({
       email: Yup.string().required("Please Enter Your Email"),
     }),
     onSubmit: (values) => {
-      console.log("Forgot Password value = ",values);
-    }
+      console.log("Forgot Password value");
+    },
   });
 
   document.title = `Reset Password | ${MetaTitle || "Lint HR"}`;
   return (
     <AuthParticles>
       <div className="auth-page-content mt-lg-3">
-
         <Container>
           <Row>
             <Col lg={12}>
@@ -61,7 +70,6 @@ const ForgetPassword = props => {
           <Row className="justify-content-center">
             <Col md={8} lg={6} xl={5}>
               <Card className="mt-4">
-
                 <CardBody className="p-4">
                   <div className="text-center mt-2">
                     <h5 className="text-primary">Forgot Password?</h5>
@@ -73,15 +81,16 @@ const ForgetPassword = props => {
                       colors="primary:#0ab39c"
                       className="avatar-xl"
                       style={{ width: "120px", height: "120px" }}
-                    >
-                    </lord-icon>
-
+                    ></lord-icon>
                   </div>
 
-                  <Alert className="border-0 alert-warning text-center mb-2 mx-2" role="alert">
+                  <Alert
+                    className="border-0 alert-warning text-center mb-2 mx-2"
+                    role="alert"
+                  >
                     The Reset Link Will be sent to this Email
                   </Alert>
-                  <div className="p-2">                    
+                  <div className="p-2">
                     <Form
                       onSubmit={(e) => {
                         e.preventDefault();
@@ -100,16 +109,22 @@ const ForgetPassword = props => {
                           onBlur={validation.handleBlur}
                           value={validation.values.email || ""}
                           invalid={
-                            validation.touched.email && validation.errors.email ? true : false
+                            validation.touched.email && validation.errors.email
+                              ? true
+                              : false
                           }
                         />
                         {validation.touched.email && validation.errors.email ? (
-                          <FormFeedback type="invalid"><div>{validation.errors.email}</div></FormFeedback>
+                          <FormFeedback type="invalid">
+                            <div>{validation.errors.email}</div>
+                          </FormFeedback>
                         ) : null}
                       </div>
 
                       <div className="text-center mt-4">
-                        <button className="btn btn-success w-100" type="submit">Send Reset Link</button>
+                        <button className="btn btn-success w-100" type="submit">
+                          Send Reset Link
+                        </button>
                       </div>
                     </Form>
                   </div>
@@ -117,9 +132,17 @@ const ForgetPassword = props => {
               </Card>
 
               <div className="mt-4 text-center">
-                <p className="mb-0">Wait, I remember my password... <Link to="/auth/login" className="fw-semibold text-primary text-decoration-underline"> Click here </Link> </p>
+                <p className="mb-0">
+                  Wait, I remember my password...{" "}
+                  <Link
+                    to="/auth/login"
+                    className="fw-semibold text-primary text-decoration-underline"
+                  >
+                    {" "}
+                    Click here{" "}
+                  </Link>{" "}
+                </p>
               </div>
-
             </Col>
           </Row>
         </Container>

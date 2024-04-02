@@ -20,11 +20,8 @@ import {
 } from "reactstrap";
 
 const EPFWageForm = () => {
-
-  const {form_obj} = useSelector((state) => state.RightSideBarReducer);
-  const [EPFField, setEPFField] = useState(form_obj)
-  console.log("llee",form_obj);
-  
+  const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+  const [EPFField, setEPFField] = useState(form_obj);
 
   const deduction_cycle_option = useMemo(
     () => [
@@ -33,7 +30,7 @@ const EPFWageForm = () => {
     ],
     []
   );
-  
+
   return (
     <React.Fragment>
       <Row>
@@ -48,7 +45,13 @@ const EPFWageForm = () => {
                   options={deduction_cycle_option || []}
                   placeholder="Select Leave Type"
                   className="basic-multi-select"
-                  value={EPFField ? deduction_cycle_option.find(d => d.id === EPFField.epf_type_id) : []}
+                  value={
+                    EPFField
+                      ? deduction_cycle_option.find(
+                          (d) => d.id === EPFField.epf_type_id
+                        )
+                      : []
+                  }
                 />
               </div>
               <div id="passwordHelpBlock" className="form-text">
@@ -62,15 +65,21 @@ const EPFWageForm = () => {
                     <input
                       className="form-check-input"
                       type="radio"
-                      value={EPFField ? deduction_cycle_option.find(d => d.id === EPFField.epf_cycle) : []}
+                      value={
+                        EPFField
+                          ? deduction_cycle_option.find(
+                              (d) => d.id === EPFField.epf_cycle
+                            )
+                          : []
+                      }
                       name="EPFmethods"
                       id={"folderlistCheckbox_1"}
-                     checked={EPFField}
-                     
+                      checked={EPFField}
                     />
                     <label
                       className="form-check-label"
-                      htmlFor={"folderlistCheckbox_1"}>
+                      htmlFor={"folderlistCheckbox_1"}
+                    >
                       Method 1
                     </label>
                   </div>
@@ -110,7 +119,8 @@ const EPFWageForm = () => {
                     />
                     <label
                       className="form-check-label"
-                      htmlFor={"folderlistCheckbox_2"}>
+                      htmlFor={"folderlistCheckbox_2"}
+                    >
                       Method 2
                     </label>
                   </div>
@@ -152,7 +162,8 @@ const EPFWageForm = () => {
                     />
                     <label
                       className="form-check-label"
-                      htmlFor={"folderlistCheckbox_3"}>
+                      htmlFor={"folderlistCheckbox_3"}
+                    >
                       Method 3
                     </label>
                   </div>

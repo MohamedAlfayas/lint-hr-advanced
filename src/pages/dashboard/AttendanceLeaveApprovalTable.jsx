@@ -24,7 +24,6 @@ const AttendanceLeaveApprovalTable = () => {
       setActiveTab(tab);
     }
   };
-  console.log("active Tab", activeTab);
 
   const [leaveDataLength, setLeaveDataLength] = useState(0);
   const [attendDataLength, setAttendDataLength] = useState(0);

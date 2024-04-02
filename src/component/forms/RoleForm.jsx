@@ -60,9 +60,6 @@ const RoleForm = () => {
       name: Yup.string().trim().required("Please Enter Role Name"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
-      console.log("Role List = ", roleObj);
-
       let total_roles_checked = 0;
 
       roleObj.roles_list.map((d) => {
@@ -78,7 +75,6 @@ const RoleForm = () => {
         dispatch(setLoaderVisible(true));
 
         const Api = await PostApi("/role/create-role/", roleObj, false);
-        console.log("API RES = ", Api);
         if (Api.status && Api.status === 200) {
           roleObj.id === 0
             ? dispatch(addRole(Api?.data.data))
@@ -189,9 +185,6 @@ const RoleForm = () => {
   };
 
   const handleCheckboxChange = (role_id, perm_id) => {
-    console.log("role_id = ", role_id);
-    console.log("perm_id = ", perm_id);
-
     let roles_list = [...roleObj?.roles_list];
 
     let updated_roles_list = roles_list.map((d) => {
@@ -246,8 +239,6 @@ const RoleForm = () => {
             return res;
           }
         });
-
-        console.log("final_result = ", final_result);
 
         return {
           ...d,

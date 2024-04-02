@@ -24,11 +24,10 @@ const Roles = () => {
       url: "/role/get-role/",
     })
       .then((res) => {
-        console.log("RES = ", res);
         dispatch(setRole(res?.data?.data));
       })
       .catch((err) => {
-        console.log("ERR = ", err);
+        console.log("ERR");
       });
   }, []);
 

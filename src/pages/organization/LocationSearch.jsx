@@ -31,6 +31,12 @@ function LocationSearch({
   });
 
   useEffect(() => {
+    if (!!branchLocationObj?.latitude && !!branchLocationObj?.longitude) {
+      setMapCenter({
+        lat: parseFloat(branchLocationObj?.latitude),
+        lng: parseFloat(branchLocationObj?.longitude),
+      });
+    }
     if (!!branchLocationObj?.radius_range) {
       setMapCircleOptions({
         ...mapCircleOptions,
@@ -42,26 +48,12 @@ function LocationSearch({
         ).zoom
       );
     }
-
-    if (!!branchLocationObj?.latitude && !!branchLocationObj?.longitude) {
-      setMapCenter({
-        lat: parseFloat(branchLocationObj?.latitude),
-        lng: parseFloat(branchLocationObj?.longitude),
-      });
-    }
   }, [
     branchLocationObj?.radius_range,
     branchLocationObj?.latitude,
     branchLocationObj?.longitude,
   ]);
-
-  useEffect(() => {
-    setMapCenter({
-      lat: parseFloat(branchLocationObj?.latitude),
-      lng: parseFloat(branchLocationObj?.longitude),
-    });
-  }, [mapCenter]);
-
+  console.log("mapcenter", mapCenter);
   const [mapCircleOptions, setMapCircleOptions] = useState({
     strokeColor: "#FF0000",
     strokeOpacity: 0.3,
@@ -167,7 +159,7 @@ function LocationSearch({
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
-    googleMapsApiKey: process.env.MAP_API_KEY,
+    googleMapsApiKey: process.env.REACT_APP_MAP_API_KEY,
   });
 
   const [map, setMap] = React.useState(null);
@@ -292,6 +284,7 @@ function LocationSearch({
       </Row>
       <Col lg={12}>
         {" "}
+        {console.log("mapCenter before google map setting", mapCenter)}
         <GoogleMap
           mapContainerStyle={containerStyle}
           center={mapCenter}
