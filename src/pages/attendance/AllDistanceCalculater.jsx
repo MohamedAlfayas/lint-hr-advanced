@@ -35,14 +35,22 @@ const AllDistanceCalculater = ({ allLocationData }) => {
     lng: 77.608336,
   });
 
-  const branchLocations = [
-    {
-      lat: parseFloat(branchObj.latitude),
-      lng: parseFloat(branchObj.longitude),
-      name: branchObj.label,
-      type: 0,
-    },
-  ];
+  const branchLocations = [];
+
+  if (!!branchObj?.latitude && !!branchObj?.longitude) {
+    branchObj.location_details.forEach((d) => {
+      branchLocations.push({
+        lat: parseFloat(d.latitude),
+        lng: parseFloat(d.longitude),
+        radius: d.radius_range,
+        name: d.name,
+        type: 0,
+      });
+    });
+  }
+
+  console.log("branchLocations", branchLocations);
+  console.log("branchLocations", typeof branchLocations);
 
   const allLocations = [
     ...allLocationData.entry_log
@@ -59,22 +67,17 @@ const AllDistanceCalculater = ({ allLocationData }) => {
       .filter((location) => location !== null),
   ];
 
-  useEffect(() => {
-    if (!!branchObj?.radius_range) {
-      setMapCircleOptions({
-        ...mapCircleOptions,
-        radius: branchObj?.radius_range,
-      });
-      setMapZoom(
-        map_radius_options.find((d) => d.value === branchObj?.radius_range).zoom
-      );
-    }
+  console.log("allLocations", allLocations);
+  console.log("allLocations", typeof allLocations);
 
-    if (!!branchObj?.latitude && !!branchObj?.longitude) {
-      setMapCenter({
-        lat: parseFloat(branchObj?.latitude),
-        lng: parseFloat(branchObj?.longitude),
-      });
+  useEffect(() => {
+    if (!!branchObj) {
+      if (!!branchObj?.latitude && !!branchObj?.longitude) {
+        setMapCenter({
+          lat: parseFloat(branchObj?.latitude),
+          lng: parseFloat(branchObj?.longitude),
+        });
+      }
     }
   }, [branchObj?.radius_range, branchObj?.latitude, branchObj?.longitude]);
 
@@ -88,8 +91,19 @@ const AllDistanceCalculater = ({ allLocationData }) => {
     draggable: false,
     editable: false,
     visible: true,
+    center: {
+      lat: 8.3865046,
+      lng: 77.608336,
+    },
     radius: 10,
     zIndex: 1,
+  });
+
+  console.log("mapCircleOptions", mapCircleOptions);
+
+  const containerStyle = {
+    width: "100%",
+    height: "400px",
     styles: [
       {
         featureType: "administrative.locality",
@@ -126,16 +140,11 @@ const AllDistanceCalculater = ({ allLocationData }) => {
         ],
       },
     ],
-  });
-
-  const containerStyle = {
-    width: "100%",
-    height: "400px",
   };
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
-    googleMapsApiKey: process.env.MAP_API_KEY,
+    googleMapsApiKey: process.env.REACT_APP_MAP_API_KEY,
   });
 
   const [map, setMap] = React.useState(null);
@@ -323,23 +332,26 @@ const AllDistanceCalculater = ({ allLocationData }) => {
               />
             );
           })}
-          <Marker
-            position={branchLocations}
-            title={branchLocations.name} // Add title to the marker
-            icon={{
-              url: mapIconOffice,
+          {branchLocations.map((location, index) => (
+            <Marker
+              key={index}
+              position={location}
+              title={location.name} // Add title to the marker
+              icon={{
+                url: mapIconOffice,
+                scaledSize: new window.google.maps.Size(40, 40),
+              }}
+              // onClick={() => {
+              //   setSelectedMarker(branchLocations);
+              //   setMapZoom(21);
+              //   setMapCenter({
+              //     lat: location.lat,
+              //     lng: location.lng,
+              //   });
+              // }}
+            />
+          ))}
 
-              scaledSize: new window.google.maps.Size(40, 40),
-            }}
-            onClick={() => {
-              setSelectedMarker(branchLocations);
-              setMapZoom(21);
-              setMapCenter({
-                lat: branchLocations.lat,
-                lng: branchLocations.lng,
-              });
-            }}
-          />
           {/* InfoWindow to display label */}
           {selectedMarker && (
             <InfoWindow
@@ -361,16 +373,31 @@ const AllDistanceCalculater = ({ allLocationData }) => {
               <div>{selectedMarker.name}</div>
             </InfoWindow>
           )}
-          <Circle
-            // optional
-            onLoad={onLoadCircle}
-            // optional
-            onUnmount={onUnmountCircle}
-            // required
-            center={mapCenter}
-            // required
-            options={mapCircleOptions}
-          />
+
+          {branchLocations.map((d) => {
+            console.log("Latitude:", d.lat);
+            console.log("Longitude:", d.lng);
+            console.log("RAdius", d.radius);
+            return (
+              <Circle
+                key={`${d.lat}-${d.lng}`}
+                // optional
+                onLoad={onLoadCircle}
+                // optional
+                onUnmount={onUnmountCircle}
+                // required
+                center={{
+                  lat: d.lat,
+                  lng: d.lng,
+                }}
+                // required
+                options={{
+                  ...mapCircleOptions,
+                  radius: d.radius,
+                }}
+              />
+            );
+          })}
           {/* Polyline to connect the two points */}
           <Polyline
             path={allLocations}

@@ -35,8 +35,6 @@ const Section = () => {
 
   const { company_detail } = useSelector((state) => state.CompanyReducer);
 
-  console.log("company_detail = ", company_detail);
-
   return (
     <React.Fragment>
       <Row>

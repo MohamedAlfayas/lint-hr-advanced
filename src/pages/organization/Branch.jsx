@@ -33,7 +33,6 @@ const Branch = () => {
   const dispatch = useDispatch();
 
   const { branch_data } = useSelector((state) => state.BranchReducer);
-  console.log("Branch Data = ", branch_data);
 
   useEffect(() => {
     dispatch(setBranch(GetLocalStorageData("branch")));

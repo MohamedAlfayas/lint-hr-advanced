@@ -37,27 +37,22 @@ const WorkSpace = () => {
         .required("Domain URL is required"),
     }),
     onSubmit: (values) => {
-      console.log("Values = ", values);
-
       const domain = values?.domain;
 
       if (!!domain) {
-        console.log("DOMAIN = ", domain);
         axios({
           method: "POST",
-          url: `https://${domain}.lintedu.com/api/validate-domain/`,
+          url: `https://${domain}.${process.env.REACT_APP_BASE_URL}/api/validate-domain/`,
           data: {
             domain: domain,
           },
         })
           .then((res) => {
-            console.log("Check Domain Res = ", res);
             setErrorMessage(null);
             const dashboardUrl = `https://${domain}.linthr.com/dashboard/`;
             window.location.href = dashboardUrl;
           })
           .catch((err) => {
-            console.log("Domain Err = ", err);
             setErrorMessage(
               "We couldn’t find your workspace. Please Try Again."
             );

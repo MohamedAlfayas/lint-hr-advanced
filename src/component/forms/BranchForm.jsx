@@ -36,6 +36,7 @@ import * as Yup from "yup";
 //SimpleBar
 
 import CountryList from "../../common/data/CountryList";
+import no_image from "../../assets/images/users/no_img.jpg";
 
 import { toast } from "react-toastify";
 
@@ -134,7 +135,6 @@ const BranchForm = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
 
   useEffect(() => {
-    console.log("Form Obj = ", form_obj);
     setBranchObj(form_obj);
     if (!!form_obj?.country && form_obj?.country !== "") {
       setStateListOptions(
@@ -201,10 +201,6 @@ const BranchForm = () => {
     );
   };
 
-  useEffect(() => {
-    console.log("Branch Obj = ", branchObj);
-  }, [branchObj]);
-
   const LocationFormikForm = useFormik({
     enableReinitialize: true,
     initialValues: branchLocationObj,
@@ -220,8 +216,6 @@ const BranchForm = () => {
       accurate_address: Yup.string().required("Please Enter Accurate Address"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Location Formik Values = ", values);
-
       const existing_location_details = [...branchObj?.location_details];
 
       if (values?.row_id === 0) {
@@ -231,7 +225,6 @@ const BranchForm = () => {
                 .row_id + 1
             : 1;
         values["row_id"] = new_id;
-        console.log("New Values = ", values);
 
         setBranchObj({
           ...branchObj,
@@ -290,9 +283,7 @@ const BranchForm = () => {
         .required("Please Enter Email"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
-
-      // dispatch(setLoaderVisible(true));
+      dispatch(setLoaderVisible(true));
 
       let form_data = new FormData();
 
@@ -305,11 +296,9 @@ const BranchForm = () => {
       // });
 
       values.location_details.map((d, idx) => {
-        console.log("D = ", d);
         if (d.image === null || d.image === undefined) {
           form_data.append(`location_${idx + 1}_image`, null);
         } else {
-          console.log("D name = ", d.image.name);
           form_data.append(`location_${idx + 1}_image`, d.image, d.image.name);
         }
       });
@@ -329,24 +318,21 @@ const BranchForm = () => {
         }
       });
 
-      console.log("Form Data = ", form_data);
-
       const Api = await PostApi("branch/add-new/", form_data, true);
-      console.log("API RES = ", Api);
-      // if (Api.status && Api.status === 200) {
-      //   if (branchObj.id === 0) {
-      //     dispatch(addBranch(Api?.data.data));
-      //     SetLocalStorage("branch", Api?.data.data, 2);
-      //   } else {
-      //     dispatch(editBranch(Api?.data?.data));
-      //     SetLocalStorage("branch", Api?.data.data, 3);
-      //   }
+      if (Api.status && Api.status === 200) {
+        if (branchObj.id === 0) {
+          dispatch(addBranch(Api?.data.data));
+          SetLocalStorage("branch", Api?.data.data, 2);
+        } else {
+          dispatch(editBranch(Api?.data?.data));
+          SetLocalStorage("branch", Api?.data.data, 3);
+        }
 
-      //   dispatch(toggleRSBView(false));
-      //   toast.success(Api?.data?.message);
-      // } else {
-      //   toast.error(Api?.data?.message || Api?.data?.detail);
-      // }
+        dispatch(toggleRSBView(false));
+        toast.success(Api?.data?.message);
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
+      }
 
       dispatch(setLoaderVisible(false));
     },
@@ -650,17 +636,32 @@ const BranchForm = () => {
                             <tr key={index}>
                               <td>{location.name}</td>
                               <td>{location.accurate_address}</td>
-                              <td>{location.radius_range}</td>
+                              <td>{location.radius_range} m</td>
                               <td>
-                                <img src={location.image_url} />
+                                <img
+                                  src={
+                                    location.image_url
+                                      ? location.image_url
+                                      : no_image
+                                  }
+                                  style={{
+                                    width: "50px",
+                                    height: "50px",
+                                    objectFit: "-moz-initial",
+                                  }}
+                                />
                               </td>
+
                               <td>
-                                <i
-                                  className="ri-pencil-fill"
+                                <a
                                   onClick={() =>
                                     handleEditLocation(location, index)
                                   }
-                                ></i>
+                                  className="text-primary d-inline-block edit-item-btn ms-2"
+                                  href="javascript:void(0)"
+                                >
+                                  <i class="ri-pencil-fill fs-16"></i>
+                                </a>
                               </td>
                             </tr>
                           ))}

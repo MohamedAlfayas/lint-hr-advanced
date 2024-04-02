@@ -30,7 +30,7 @@ import avatar5 from "../../../assets/images/users/avatar-5.jpg";
 import avatar6 from "../../../assets/images/users/avatar-6.jpg";
 import avatar7 from "../../../assets/images/users/avatar-7.jpg";
 import { Api } from "../../../common/api/Api";
-import { BaseURL, LCPlatform } from "../../../common/api/BaseURL";
+import { BaseURL } from "../../../common/api/BaseURL";
 import axios from "axios";
 import { GetGlobalVersion } from "../../../meta/GetGlobalVersion";
 import { toast } from "react-toastify";
@@ -68,7 +68,6 @@ const Login = () => {
     onSubmit: (values) => {
       dispatch(setLoaderVisible(true));
 
-      console.log("Form Values = ", values);
       // localStorage.setItem("token", "abc");
       values["username"] = values.email;
       values["device_type"] = 1;
@@ -78,12 +77,15 @@ const Login = () => {
       let login_url = "";
       let subscribe_topic_url = "";
 
-      if (!!LCPlatform && LCPlatform === "local") {
+      if (
+        !!process.env.REACT_APP_LC_PLATFORM &&
+        process.env.REACT_APP_LC_PLATFORM === "local"
+      ) {
         login_url = `${BaseURL}employee/auth/login/`;
         subscribe_topic_url = `${BaseURL}employee/subscribe-topic/`;
       } else {
-        login_url = `https://${domain}.lintedu.com/employee/auth/login/`;
-        subscribe_topic_url = `https://${domain}.lintedu.com/employee/subscribe-topic/`;
+        login_url = `https://${domain}.${process.env.REACT_APP_BASE_URL}/employee/auth/login/`;
+        subscribe_topic_url = `https://${domain}.${process.env.REACT_APP_BASE_URL}/employee/subscribe-topic/`;
       }
 
       axios({
@@ -92,16 +94,12 @@ const Login = () => {
         data: values,
       })
         .then(async (res) => {
-          console.log("adminResponse", res?.data);
-
           try {
             await deleteToken(messaging);
           } catch (deleteError) {}
 
           try {
             const newFCMToken = await generateToken();
-
-            console.log("newFCMToken After Delete = ", newFCMToken);
 
             axios({
               method: "POST",
@@ -114,7 +112,6 @@ const Login = () => {
               },
             })
               .then((response) => {
-                console.log("Topic Subscribed Successfully !!! = ", response);
                 localStorage.setItem(
                   "lint_hr_globaldata",
                   JSON.stringify(res?.data?.meta_data)
@@ -152,14 +149,12 @@ const Login = () => {
                 }, 1000);
               })
               .catch((error) => {
-                console.log("ERR = ", error);
                 dispatch(setLoaderVisible(false));
                 toast.error(error?.response?.data?.message);
               });
           } catch (err) {}
         })
         .catch((err) => {
-          console.log("err = ", err);
           dispatch(setLoaderVisible(false));
           toast.error(err?.response?.data?.message);
         });
@@ -171,30 +166,28 @@ const Login = () => {
   useEffect(() => {
     const domain = window.location.hostname.split(".")[0];
     if (!!domain) {
-      console.log("Login Page Rendering !!!! - ", domain);
-
       let validate_domain_url = "";
 
-      if (!!LCPlatform && LCPlatform === "local") {
+      if (
+        !!process.env.REACT_APP_LC_PLATFORM &&
+        process.env.REACT_APP_LC_PLATFORM === "local"
+      ) {
         validate_domain_url = `${BaseURL}api/validate-domain/`;
       } else {
-        validate_domain_url = `https://${domain}.lintedu.com/api/validate-domain/`;
+        validate_domain_url = `https://${domain}.${process.env.REACT_APP_BASE_URL}/api/validate-domain/`;
       }
 
       axios({
         method: "POST",
-        // url: `https://${domain}.lintedu.com/api/validate-domain/`,
         url: validate_domain_url,
         data: {
           domain: domain,
         },
       })
         .then((res) => {
-          console.log("domain validate success - ", res);
           // window.location.href = "/dashboard";
         })
         .catch((error) => {
-          console.log("domain validate Error - ", error);
           if (
             !!error?.response &&
             error.response.status === 404 &&
