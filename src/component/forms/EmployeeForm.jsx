@@ -63,7 +63,6 @@ const EmployeeForm = () => {
   const dispatch = useDispatch();
 
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-  // console.log("fgdf",form_obj);
   const [employeeObj, setEmployeeObj] = useState({});
 
   const employee_data = GetLocalStorageData("employee");
@@ -216,7 +215,6 @@ const EmployeeForm = () => {
       { dep_id: valid_dep_ids },
       false
     );
-    console.log("API RES = ", Api);
     if (Api.status && Api.status === 200) {
       const response = Api?.data?.data;
       setReportingManagerOptions(
@@ -225,7 +223,7 @@ const EmployeeForm = () => {
         )
       );
     } else {
-      console.log("ERRR = ", Api?.data?.message);
+      console.log("ERRR");
     }
   };
 
@@ -327,9 +325,7 @@ const EmployeeForm = () => {
       cf_form_data,
       true
     );
-    console.log("API RES = ", Api);
     if (Api.status && Api.status === 200) {
-      console.log("CF File Upload RES = ", Api?.data?.data);
       img_url = String(Api?.data?.data);
     } else {
       img_url = "";
@@ -378,8 +374,6 @@ const EmployeeForm = () => {
         .min(1, "Please Select Work Schedule"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
-
       let root_department = dep_options.find((d) => d.is_root === true);
       let root_department_id = !!root_department && root_department.id;
 
@@ -403,7 +397,6 @@ const EmployeeForm = () => {
         });
 
         const Api = await PostApi("employee/add-new/", form_data, true);
-        console.log("API RES = ", Api);
         if (Api.status && Api.status === 200) {
           // employeeObj.id === 0
           //   ? dispatch(addEmployee(Api?.data.data))

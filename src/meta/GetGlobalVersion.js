@@ -19,11 +19,11 @@ export const GetGlobalVersion = async (dispatch) => {
                     dispatch(setMyProfileDataReducer(master?.data?.my_profile));
                 })
                 .catch(error => {
-                    console.log("ERRor == ", error);
+                    console.log("ERRor");
                 })
         }
     }).catch(err => {
-        console.log("Meta Version Error = ", err);
+        console.log("Meta Version Error");
     })
 }
 

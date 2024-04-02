@@ -8,8 +8,6 @@ const RsuiteTable = () => {
 
   const role_data = GetLocalStorageData("role") || [];
 
-  console.log("Role Data = ", role_data);
-
   return (
     <Fragment>
       <Table height={400} data={role_data} className="mb-5">
@@ -88,7 +86,8 @@ const RsuiteTable = () => {
             {(rowData) => (
               <Button
                 appearance="link"
-                onClick={() => alert(`name:${rowData.name}`)}>
+                onClick={() => alert(`name:${rowData.name}`)}
+              >
                 Edit
               </Button>
             )}

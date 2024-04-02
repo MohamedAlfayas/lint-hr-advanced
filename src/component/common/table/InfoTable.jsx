@@ -271,7 +271,6 @@ const InfoTable = ({
           dispatch(editLeaveApproval(data));
 
           const Api = await PostApi("leave/approve-or-reject/", data, false);
-          console.log("API RES = ", Api);
           if (Api.status && Api.status === 200) {
             dispatch(editLeaveApproval(data));
             toast.success(Api?.data?.message);
@@ -306,7 +305,6 @@ const InfoTable = ({
               data,
               false
             );
-            console.log("Approve OR Reject Status = ", Api);
             if (Api.status && Api.status === 200) {
               dispatch(updateAttendanceApprovalData(data));
               toast.success(Api?.data?.message);
@@ -369,7 +367,6 @@ const InfoTable = ({
           };
 
           const Api = await PostApi("leave/approve-or-reject/", data, false);
-          console.log("API RES = ", Api);
           if (Api.status && Api.status === 200) {
             dispatch(editLeaveApproval(data));
             toast.success(Api?.data?.message);
@@ -394,7 +391,6 @@ const InfoTable = ({
             data,
             false
           );
-          console.log("Approve OR Reject Status = ", Api);
           if (Api.status && Api.status === 200) {
             dispatch(updateAttendanceApprovalData(data));
             toast.success(Api?.data?.message);
@@ -455,7 +451,6 @@ const InfoTable = ({
           };
 
           const Api = await PostApi("leave/approve-or-reject/", data, false);
-          console.log("API RES = ", Api);
           if (Api.status && Api.status === 200) {
             dispatch(editLeaveApproval(data));
             toast.success(Api?.data?.message);
@@ -477,7 +472,6 @@ const InfoTable = ({
             data,
             false
           );
-          console.log("Approve OR Reject Status = ", Api);
           if (Api.status && Api.status === 200) {
             dispatch(updateAttendanceApprovalData(data));
             toast.success(Api?.data?.message);
@@ -527,7 +521,6 @@ const InfoTable = ({
           };
 
           const Api = await PostApi("leave/approve-or-reject/", data, false);
-          console.log("API RES = ", Api);
           if (Api.status && Api.status === 200) {
             dispatch(editLeaveApproval(data));
             toast.success(Api?.data?.message);
@@ -549,7 +542,6 @@ const InfoTable = ({
             data,
             false
           );
-          console.log("Approve OR Reject Status = ", Api);
           if (Api.status && Api.status === 200) {
             dispatch(updateAttendanceApprovalData(data));
             toast.success(Api?.data?.message);

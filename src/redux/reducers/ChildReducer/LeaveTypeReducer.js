@@ -28,7 +28,6 @@ const LeaveTypeReducer = createSlice({
             }
         },
         setLeaveTypeForCurrentEmployee: (state, { type, payload }) => {
-            console.log("LTE Payload = ", payload);
             return {
                 ...state,
                 leave_type_for_current_employee: payload

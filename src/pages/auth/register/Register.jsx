@@ -64,7 +64,6 @@ const Register = () => {
       }
     }
     setprogressbarvalue(value);
-    console.log("Tab = ", tab);
   }
 
   const validation = useFormik({
@@ -89,7 +88,6 @@ const Register = () => {
       domain: Yup.string().trim().required("Please Enter Your Domain"),
     }),
     onSubmit: (values) => {
-      console.log("Values = ", values);
       if (
         name.trim().length === 0 ||
         email.trim().length === 0 ||
@@ -101,7 +99,6 @@ const Register = () => {
       } else {
         toggleTab(activeTab + 1, 100);
         // localStorage.setItem("token", "abc")
-        console.log("Form Values = ", values);
         // navigate("/login")
 
         setTimeout(() => {
@@ -120,7 +117,6 @@ const Register = () => {
   };
 
   useEffect(() => {
-    console.log("Valid values = ", validation.values);
     if (domainChangeAccess === true) {
       setDomain(setDomainFormat(comapnyName));
     }
@@ -209,10 +205,6 @@ const Register = () => {
                                   "rounded-pill"
                                 )}
                                 onClick={() => {
-                                  console.log(
-                                    "validation.errors.email = ",
-                                    validation.errors.email
-                                  );
                                   if (
                                     name.trim().length === 0 ||
                                     (email.trim().length === 0 &&
@@ -380,10 +372,6 @@ const Register = () => {
                               type="button"
                               className="btn btn-success btn-label right ms-auto nexttab nexttab"
                               onClick={() => {
-                                console.log(
-                                  "validation.errors.email = ",
-                                  validation.errors
-                                );
                                 if (
                                   name.trim().length === 0 ||
                                   email.trim().length === 0 ||
@@ -400,7 +388,6 @@ const Register = () => {
                                 } else {
                                   toggleTab(activeTab + 1, 50);
                                 }
-                                console.log("Values = ", validation.values);
                               }}
                             >
                               <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
@@ -516,12 +503,6 @@ const Register = () => {
                               Back to General
                             </button>
                             <Button
-                              onClick={() => {
-                                console.log(
-                                  "final Values = ",
-                                  validation.values
-                                );
-                              }}
                               type="submit"
                               className="btn btn-success btn-label right ms-auto nexttab nexttab"
                             >

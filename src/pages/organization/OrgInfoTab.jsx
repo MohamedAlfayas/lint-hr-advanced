@@ -130,7 +130,6 @@ const OrgInfoTab = () => {
     })
       .then((res) => {
         const response = res?.data?.data;
-        console.log("org res = ", response);
         if (Object.keys(response).length) {
           let thisCFValues = [...response?.cf_values];
           let cf = [];
@@ -168,8 +167,6 @@ const OrgInfoTab = () => {
   };
 
   const handleCountryCodeChange = (e) => {
-    console.log("COUntry Code = ", e);
-
     setProfileData({
       ...profileData,
       country: e.countryName,
@@ -182,8 +179,6 @@ const OrgInfoTab = () => {
   };
 
   const handleCountryChange = (e) => {
-    console.log("Country Change = ", e);
-
     setProfileData({
       ...profileData,
       country: e.value,

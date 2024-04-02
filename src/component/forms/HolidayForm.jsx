@@ -55,7 +55,6 @@ const HolidayForm = () => {
   const [selectedWS, setSelectedWS] = useState([]);
 
   useEffect(() => {
-    console.log("HODILDAY FORM OBJ = ", form_obj);
     setHolidayObj({
       ...form_obj,
       date: ConvertISODateFormat(form_obj.date),
@@ -78,11 +77,9 @@ const HolidayForm = () => {
         .min(1, "Select Work Schedule"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
       dispatch(setLoaderVisible(true));
 
       const Api = await PostApi("holiday/create/", values, false);
-      console.log("API RES = ", Api);
       if (Api.status && Api.status === 200) {
         if (holidayObj.id === 0) {
           dispatch(addHoliday(Api?.data.data));

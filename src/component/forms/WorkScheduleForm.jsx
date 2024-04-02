@@ -85,7 +85,6 @@ const WorkScheduleForm = () => {
   const handleDurationChange = (selectedHour, selectedMinute, name) => {
     const newDuration =
       parseInt(selectedHour) * 3600 + parseInt(selectedMinute) * 60;
-    console.log("workScheduleData", workScheduleData);
 
     setWorkScheduleData({
       ...workScheduleData,
@@ -209,7 +208,6 @@ const WorkScheduleForm = () => {
       ) {
         toast.error("WorkSchedule Hour Can't Be Zero");
       } else {
-        console.log("SUCCESSSS !!!! Formik Values = ", values);
         toggleArrowTab(activeArrowTab + 1);
         dispatch(setLoaderVisible(true));
 
@@ -218,7 +216,6 @@ const WorkScheduleForm = () => {
           workScheduleData,
           false
         );
-        console.log("API RES = ", Api);
         if (Api.status && Api.status === 200) {
           // workScheduleData.id === 0
           //   ? dispatch(addWorkSchedule(Api?.data.data))
@@ -373,7 +370,6 @@ const WorkScheduleForm = () => {
                                 ).padStart(2, "0")
                             )}
                             onChange={(selectedOption) => {
-                              console.log("SEL HR = ", selectedOption);
                               handleDurationChange(
                                 selectedOption.value,
                                 Math.floor(
@@ -403,7 +399,6 @@ const WorkScheduleForm = () => {
                                 ).padStart(2, "0")
                             )}
                             onChange={(selectedOption) => {
-                              console.log("Sel Min = ", selectedOption);
                               handleDurationChange(
                                 Math.floor(
                                   workScheduleData.fullday_work_duration / 3600
@@ -674,7 +669,7 @@ const WorkScheduleForm = () => {
                           toggleArrowTab(activeArrowTab + 1);
                         } else {
                           // Validation errors, display an error message or handle accordingly
-                          console.log("Validation errors:", errors);
+                          console.log("Validation errors:");
                           toast.error("Please Enter Work Schedule");
                         }
                       });
@@ -865,7 +860,7 @@ const WorkScheduleForm = () => {
                     type="submit"
                     className="btn btn-success btn-label right ms-auto nexttab nexttab"
                   >
-                   <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
+                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
                     Save
                   </button>
                 </div>

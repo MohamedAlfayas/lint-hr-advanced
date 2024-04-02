@@ -9,7 +9,6 @@ const MyProfileReducer = createSlice({
     initialState,
     reducers: {
         setMyProfileDataReducer: (state, { type, payload }) => {
-            console.log("Profile Payload = ", payload);
             return {
                 ...state,
                 profile_data: payload

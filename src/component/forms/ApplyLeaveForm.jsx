@@ -75,7 +75,6 @@ const ApplyLeaveForm = () => {
 
   useEffect(() => {
     if (!!form_obj) {
-      console.log("Form Obj = ", form_obj);
       !!thisEmpWS &&
         setWeekOffDays(
           thisEmpWS.workday
@@ -134,8 +133,6 @@ const ApplyLeaveForm = () => {
   );
 
   const handleStartEndDatesChange = (leave_type_obj) => {
-    console.log("Leave Type Obj = ", leave_type_obj);
-
     leave_type_obj?.weekend_between_leave === true
       ? setWeekOffDays([])
       : !!thisEmpWS &&
@@ -201,8 +198,6 @@ const ApplyLeaveForm = () => {
       return dates;
     };
 
-    console.log("dateStrings = ", dateStrings);
-
     const intermediateDates = generateIntermediaryDates() || [];
     const ValidDays = intermediateDates.filter((d) => {
       if (
@@ -242,7 +237,6 @@ const ApplyLeaveForm = () => {
   };
 
   const handleInputChange = (e) => {
-    console.log("Input Change = ", e);
     const { name, value } = e.target;
     setLeaveApplyObj({
       ...leaveapplyObj,
@@ -260,7 +254,6 @@ const ApplyLeaveForm = () => {
     } else {
       updatedDaysCount = 0;
     }
-    console.log();
 
     setLeaveApplyObj({
       ...leaveapplyObj,
@@ -274,9 +267,6 @@ const ApplyLeaveForm = () => {
 
   useEffect(() => {
     if (toDate && fromDate) {
-      console.log("From Date = ", fromDate);
-      console.log("To Date = ", toDate);
-
       const [fromDateDay, fromDateMonth, fromDateYear, fromDateTime] =
         fromDate.split(/[\s-:]/);
       const [toDateDay, toDateMonth, toDateYear, toDateTime] =
@@ -374,7 +364,6 @@ const ApplyLeaveForm = () => {
         .min(1, "Please Select Leave Type"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
       dispatch(setLoaderVisible(true));
       if (values.requested_leave_count === 0) {
         toast.error("Total Hour Can't Be Zero");
@@ -386,14 +375,7 @@ const ApplyLeaveForm = () => {
           values,
           false
         );
-        console.log("API RES = ", Api);
         if (Api.status && Api.status === 200) {
-          // leaveapplyObj.id === 0
-          //   ? dispatch(addLeaveApplication(Api?.data.data))
-          //   : dispatch(editLeaveApplication(Api?.data?.data));
-
-          console.log("LTE RES = ", Api?.data?.leave_type_for_employee);
-
           if (leaveapplyObj.id === 0) {
             dispatch(addLeaveApplication(Api?.data.data));
             dispatch(

@@ -28,7 +28,6 @@ export const initialState = {
   sidebarVisibilitytype: sidebarVisibilitytypes.SHOW
 };
 
-console.log("left_side_bar_type = ", localStorage.getItem('left_side_bar_type'));
 
 const Layoutreducer = createSlice({
   name: 'Layoutreducer',

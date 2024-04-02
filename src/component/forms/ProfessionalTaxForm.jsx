@@ -20,15 +20,10 @@ import {
   Table,
 } from "reactstrap";
 
-
 const ProfessionalTaxForm = () => {
-
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-  console.log("fghj", form_obj);
   const [tableData, setTableData] = useState(form_obj.range);
   const [cycleOption, setCycleOption] = useState(form_obj);
-
-
 
   const deduction_cycle_option = useMemo(
     () => [
@@ -55,8 +50,7 @@ const ProfessionalTaxForm = () => {
     }
   };
   const saveData = () => {
-
-    console.log('Saving data:', tableData);
+    console.log("Saving data:");
   };
   return (
     <React.Fragment>
@@ -89,7 +83,13 @@ const ProfessionalTaxForm = () => {
                   required
                   isMulti={false}
                   options={deduction_cycle_option || []}
-                  value={cycleOption ? deduction_cycle_option.find(d => d.id === cycleOption.cycle_id) : []}
+                  value={
+                    cycleOption
+                      ? deduction_cycle_option.find(
+                          (d) => d.id === cycleOption.cycle_id
+                        )
+                      : []
+                  }
                   placeholder="Select Leave Type"
                   className="basic-multi-select"
                 />
@@ -101,7 +101,6 @@ const ProfessionalTaxForm = () => {
             <Table>
               <thead>
                 <tr>
-
                   <th>Start</th>
                   <th>End</th>
                   <th>Amount</th>
@@ -110,7 +109,6 @@ const ProfessionalTaxForm = () => {
               <tbody>
                 {tableData.map((row, index) => (
                   <tr key={row.id}>
-
                     <td>
                       <Input
                         type="number"
@@ -157,8 +155,12 @@ const ProfessionalTaxForm = () => {
                       />
                     </td>
                     <td>
-                      {(index !== 0 && index === tableData.length - 1) && (
-                        <Button color="danger" onClick={() => deleteRow(row.id)} style={{ padding: '0.2rem 0.5rem', fontSize: '12px' }}>
+                      {index !== 0 && index === tableData.length - 1 && (
+                        <Button
+                          color="danger"
+                          onClick={() => deleteRow(row.id)}
+                          style={{ padding: "0.2rem 0.5rem", fontSize: "12px" }}
+                        >
                           <i className="ri-delete-bin-5-fill fs-16"></i>
                         </Button>
                       )}
@@ -167,19 +169,21 @@ const ProfessionalTaxForm = () => {
                 ))}
               </tbody>
             </Table>
-
-
             <Button color="primary" onClick={addRow}>
               <i className="ri-add-line align-bottom me-1"></i>
               Add
-            </Button>{' '}
-            <Button type="submit" color="success" className="btn-label" onClick={saveData}>
+            </Button>{" "}
+            <Button
+              type="submit"
+              color="success"
+              className="btn-label"
+              onClick={saveData}
+            >
               {" "}
               <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
               Save{" "}
             </Button>{" "}
           </Form>
-
         </Col>
       </Row>
     </React.Fragment>

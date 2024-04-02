@@ -1,5 +1,4 @@
 export const ConvertToISODateTimeFormat = (date) => {
-  console.log("Date = ", date);
   const [datePart, timePart] = String(date).split(" ");
   const [day, month, year] = datePart.split("-");
   const [hour, minute] = timePart.split(":");

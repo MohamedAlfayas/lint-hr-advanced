@@ -19,10 +19,11 @@ import { onMessage } from 'firebase/messaging';
 
 function App() {
 
+
+
   useEffect(() => {
     generateToken();
     onMessage(messaging, (payload) => {
-      console.log('Foreground message received:', payload);
       const notificationTitle = payload.data.title;
       const notificationOptions = {
         body: payload.data.body,

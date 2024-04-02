@@ -71,7 +71,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
         dispatch(setAttendanceApprovalData(res?.data?.data));
       })
       .catch((err) => {
-        console.log("ERR = ", err);
+        console.log("ERR");
         dispatch(setLoaderVisible(false));
       });
   }, []);

@@ -23,7 +23,7 @@ const LeaveDashboard = () => {
         dispatch(setLeaveApplication(res?.data?.data || []));
       })
       .catch((err) => {
-        console.log("ERR = ", err);
+        console.log("ERR");
       });
   }, []);
 
@@ -36,7 +36,7 @@ const LeaveDashboard = () => {
         dispatch(setLeaveTypeForCurrentEmployee(res?.data?.data || []));
       })
       .catch((err) => {
-        console.log("ERR = ", err);
+        console.log("ERR");
       });
   }, []);
 

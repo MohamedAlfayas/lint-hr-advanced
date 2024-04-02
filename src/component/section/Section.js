@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Col, Row } from "reactstrap";
 import Flatpickr from "react-flatpickr";
-import {setMyProfileDataReducer} from "../../redux/reducers/ChildReducer/MyProfileReducer";
+import { setMyProfileDataReducer } from "../../redux/reducers/ChildReducer/MyProfileReducer";
 
 
 import { useDispatch, useSelector } from "react-redux";
 const Section = (props) => {
 
   const { profile_data } = useSelector((state) => state.MyProfileReducer);
-  console.log("hfuynjgs",profile_data);
   const capitalizeFirstLetter = (str) => {
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
@@ -27,7 +26,7 @@ const Section = (props) => {
       setGreeting('Good Night');
     }
   }, []);
-  
+
   const capitalizedFirstName = capitalizeFirstLetter(profile_data.fname);
   return (
     <React.Fragment>

@@ -9,7 +9,6 @@ export const AccountSettingsReducer = createSlice({
   initialState,
   reducers: {
     setEmployeeAccountSettingsData: (state, { type, payload }) => {
-      console.log("PAYLOAD === ", payload);
       return {
         ...state,
         account_settings_data: payload,

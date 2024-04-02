@@ -41,8 +41,6 @@ const LeaveTypesWidgets = ({
 }) => {
   const dispatch = useDispatch();
 
-  console.log("WIdget Test = ", leaveTypeForEmployeeData);
-
   const handleApplyLeave = (lt) => {
     let FormObj = { ...initialFormObj, leave_type: lt };
 

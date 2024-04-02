@@ -19,7 +19,6 @@ const LeaveType = () => {
   const { leave_type_data } = useSelector((state) => state.LeaveTypeReducer);
 
   useEffect(() => {
-    console.log("LT UE RUNNING !!!!!");
     dispatch(setLeaveType(GetLocalStorageData("leave_types") || []));
     dispatch(setLeaveTypeTableFilterKeys({ unit: 0 }));
   }, []);
