@@ -85,6 +85,12 @@ const AccountSettings = () => {
 
   const employee_data = GetLocalStorageData("employee");
   const branch_options = GetLocalStorageData("branch") || [];
+  var contact_emails = branch_options.map(function(option, index) {
+    if (index === 0) {
+        return option.contact_email;
+    }
+});
+
   const dep_options = GetLocalStorageData("department") || [];
   const ws_options = GetLocalStorageData("work_schedule") || [];
   const role_id_option = GetLocalStorageData("role") || [];
@@ -603,7 +609,7 @@ const AccountSettings = () => {
                       className="form-control"
                       id="gitUsername"
                       placeholder="Username"
-                      defaultValue="@daveadame"
+                      defaultValue={contact_emails}
                     />
                   </div>
                   <div className="mb-3 d-flex">
@@ -617,7 +623,7 @@ const AccountSettings = () => {
                       className="form-control"
                       id="websiteInput"
                       placeholder="www.example.com"
-                      defaultValue="www.velzon.com"
+                      defaultValue={contact_emails}
                     />
                   </div>
                   <div className="mb-3 d-flex">
@@ -631,7 +637,7 @@ const AccountSettings = () => {
                       className="form-control"
                       id="dribbleName"
                       placeholder="Username"
-                      defaultValue="@dave_adame"
+                      defaultValue={contact_emails}
                     />
                   </div>
                   <div className="d-flex">
@@ -645,7 +651,7 @@ const AccountSettings = () => {
                       className="form-control"
                       id="pinterestName"
                       placeholder="Username"
-                      defaultValue="Advance Dave"
+                      defaultValue={contact_emails}
                     />
                   </div>
                 </CardBody>
@@ -733,6 +739,7 @@ const AccountSettings = () => {
                                   placeholder="Elon"
                                   value={employeeObj.fname || ""}
                                   onChange={handleInputChange}
+                               
                                   invalid={
                                     FormikForm.touched.fname &&
                                     FormikForm.errors.fname
@@ -833,6 +840,7 @@ const AccountSettings = () => {
                                   placeholder="LC001"
                                   value={employeeObj.emp_id || ""}
                                   onChange={handleInputChange}
+                                  disabled
                                   invalid={
                                     FormikForm.touched.emp_id &&
                                     FormikForm.errors.emp_id
@@ -1072,6 +1080,7 @@ const AccountSettings = () => {
                                   placeholder="name@company.com"
                                   value={employeeObj.email || ""}
                                   onChange={handleInputChange}
+                                  disabled
                                   invalid={
                                     FormikForm.touched.email &&
                                     FormikForm.errors.email
@@ -1136,6 +1145,7 @@ const AccountSettings = () => {
                                 format={DateFormat}
                                 allowClear={false}
                                 onChange={handleJoinDateChange}
+                                disabled
                               />
                             </div>
                             <div
@@ -1157,6 +1167,7 @@ const AccountSettings = () => {
                                 isMulti={true}
                                 closeMenuOnSelect={false}
                                 options={branch_options || []}
+                                isDisabled
                                 className="basic-multi-select"
                                 styles={{
                                   control: (provided, state) => ({
@@ -1217,6 +1228,7 @@ const AccountSettings = () => {
                                 innerRef={inputRef}
                                 isMulti={true}
                                 options={dep_options || []}
+                                isDisabled
                                 className="basic-multi-select"
                                 closeMenuOnSelect={false}
                                 styles={{
@@ -1280,6 +1292,7 @@ const AccountSettings = () => {
                                 isMulti={false}
                                 isClearable={true} // Enable clearable feature
                                 options={reportingManagerOptions || []}
+                                isDisabled
                                 components={{ Option: EmployeeDisplayInSelect }}
                                 className="basic-multi-select"
                                 styles={{
@@ -1351,6 +1364,7 @@ const AccountSettings = () => {
                                 isMulti={false}
                                 innerRef={inputRef}
                                 options={role_id_option || []}
+                                isDisabled
                                 className="basic-multi-select"
                                 styles={{
                                   control: (provided, state) => ({
@@ -1408,6 +1422,7 @@ const AccountSettings = () => {
                                 innerRef={inputRef}
                                 isMulti={false}
                                 options={ws_options || []}
+                                isDisabled
                                 className="basic-multi-select"
                                 styles={{
                                   control: (provided, state) => ({
