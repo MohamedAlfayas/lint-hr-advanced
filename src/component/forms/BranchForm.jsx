@@ -275,8 +275,6 @@ const BranchForm = () => {
         const response = Api?.data.data;
         const localStorageBranchData = GetLocalStorageData("branch");
 
-        console.log("localStorageBranchData = ", localStorageBranchData);
-
         if (values.id === 0) {
           setBranchObj({
             ...branchObj,

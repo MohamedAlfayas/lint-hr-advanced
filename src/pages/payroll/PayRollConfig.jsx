@@ -279,8 +279,6 @@ const PayRollConfig = () => {
     },
   ];
 
-  console.log(payrollobj);
-
   const location_option = useMemo(
     () => [
       { id: "India", label: "India", value: "India" },
@@ -357,13 +355,9 @@ const PayRollConfig = () => {
   };
 
   const handleTaxEdit = ($id, obj) => {
-    console.log("Calling handleTaxEdit with id:", $id, "and object:", tax_slab);
-
     dispatch(setFormTitle("Edit Professional Tax"));
     let tax_slab_obj = tax_slab.find((data) => data.id == $id);
     dispatch(setFormObj(tax_slab_obj));
-
-    console.log("test....", tax_slab_obj);
 
     dispatch(setFormWidthPercentage("40%"));
     dispatch(setComponentToShow(professional_tax_form_component_name));
@@ -437,10 +431,8 @@ const PayRollConfig = () => {
   const [tax_slabId, setTax_slabId] = useState(0);
 
   function show_taxSlabModal($id) {
-    console.log($id);
     setTax_slabId($id);
 
-    console.log(tax_slab.find((e) => e.id == $id).range);
     setmodal_animationZoom(!modal_animationZoom);
   }
 
@@ -452,7 +444,6 @@ const PayRollConfig = () => {
   ];
 
   const handleCreateAndUpdate = (item) => {
-    console.log("item", item, customActiveTab1);
     const value =
       customActiveTab1 == 1
         ? "Edit Earning"
@@ -464,28 +455,22 @@ const PayRollConfig = () => {
     dispatch(setFormTitle(value));
     let componentType;
     let componentObj;
-    console.log("edit clicked");
     if (customActiveTab1 == 1) {
       componentType = "earnings";
       componentObj = payrollobj.salary_components.earnings.find(
         (data) => data.name === item?.name
       );
-      console.log(`${componentType}:`, componentObj);
     } else if (customActiveTab1 == 2) {
       componentType = "allowances";
       componentObj = payrollobj.salary_components.allowances.find(
         (data) => data.name === item?.name
       );
-      console.log(`${componentType}:`, componentObj);
     } else if (customActiveTab1 == 3) {
       componentType = "deductions";
       componentObj = payrollobj.salary_components.deductions.find(
         (data) => data.name === item?.name
       );
-      console.log(`${componentType}:`, componentObj);
     }
-
-    console.log("jjj", componentObj);
     dispatch(setFormObj(componentObj));
 
     dispatch(setFormWidthPercentage("40%"));

@@ -81,7 +81,6 @@ const Branch = () => {
 
       FormObj = { ...obj, cf_values: cf };
     }
-    console.log("Form Obj for Branch Edit", FormObj);
 
     dispatch(setFormTitle("Branch Form"));
     dispatch(setFormObj(FormObj));
@@ -167,7 +166,6 @@ const Branch = () => {
                         <Row className="gy-3">
                           <Col xs={12}>
                             <div>
-                              <p className="text-muted mb-1">Overview </p>
                               <h5 className="fs-14">{bd?.about}</h5>
                             </div>
                             <hr />

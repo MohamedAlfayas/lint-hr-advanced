@@ -49,9 +49,6 @@ const AllDistanceCalculater = ({ allLocationData }) => {
     });
   }
 
-  console.log("branchLocations", branchLocations);
-  console.log("branchLocations", typeof branchLocations);
-
   const allLocations = [
     ...allLocationData.entry_log
       .map((entry) =>
@@ -68,10 +65,6 @@ const AllDistanceCalculater = ({ allLocationData }) => {
   ];
 
   const multipleLocations = branchLocations.concat(allLocations);
-
-  console.log("allLocations", allLocations);
-  console.log("multipleLocations", multipleLocations);
-  console.log("allLocations", typeof allLocations);
 
   useEffect(() => {
     if (!!branchObj) {
@@ -98,8 +91,6 @@ const AllDistanceCalculater = ({ allLocationData }) => {
     radius: 10,
     zIndex: 1,
   });
-
-  console.log("mapCircleOptions", mapCircleOptions);
 
   const containerStyle = {
     width: "100%",
@@ -226,7 +217,6 @@ const AllDistanceCalculater = ({ allLocationData }) => {
   }, []);
 
   useEffect(() => {
-    console.log("mapRefCenter", mapRefCenter);
     if (mapRefCenter.current) {
       const bounds = new window.google.maps.LatLngBounds();
       multipleLocations.forEach((location) => {
