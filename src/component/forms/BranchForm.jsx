@@ -48,6 +48,7 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 import {
   addBranch,
   editBranch,
+  setBranch,
 } from "../../redux/reducers/ChildReducer/BranchReducer";
 import {
   toggleRSBView,
@@ -61,12 +62,13 @@ import DistanceCalculaterInMap from "../../pages/attendance/DistanceCalculaterIn
 import LocationSearch from "../../pages/organization/LocationSearch";
 // import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 import BranchLocationForm from "./Common/BranchLocationForm";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
 const BranchForm = () => {
   const dispatch = useDispatch();
   const initialBranchLocationObj = {
+    branch_id: 0,
     id: 0,
-    row_id: 0,
     address: "",
     city: "",
     pincode: "",
@@ -102,9 +104,14 @@ const BranchForm = () => {
   const [showForm, setShowForm] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [showTable, setShowTable] = useState(false);
+  const [branchId, setBranchID] = useState(0);
   const handleAddClick = () => {
     setModalOpen(true);
-    setBranchLocationObj(initialBranchLocationObj);
+
+    setBranchLocationObj({
+      ...initialBranchLocationObj,
+      branch_id: branchObj?.id,
+    });
   };
   const handleModalClose = () => {
     setModalOpen(false);
@@ -216,37 +223,144 @@ const BranchForm = () => {
       accurate_address: Yup.string().required("Please Enter Accurate Address"),
     }),
     onSubmit: async (values) => {
-      const existing_location_details = [...branchObj?.location_details];
+      dispatch(setLoaderVisible(true));
+      const map_data_keys = [
+        "address_components",
+        "formatted_address",
+        "geometry",
+        "name",
+        "place_id",
+        "url",
+        "utc_offset",
+        "utc_offset_minutes",
+        "vicinity",
+      ];
 
-      if (values?.row_id === 0) {
-        const new_id =
-          existing_location_details.length > 0
-            ? existing_location_details[existing_location_details.length - 1]
-                .row_id + 1
-            : 1;
-        values["row_id"] = new_id;
-
-        setBranchObj({
-          ...branchObj,
-          location_details: [...branchObj.location_details, values],
-        });
-      } else {
-        const new_location_details = existing_location_details.map((d) => {
-          if (d.id === values?.id) {
-            return values;
-          } else {
-            return d;
+      if (
+        typeof values.map_data === "object" &&
+        values.map_data !== null &&
+        !Array.isArray(values.map_data)
+      ) {
+        let updated_mapdata = {};
+        for (const key of map_data_keys) {
+          if (values.map_data.hasOwnProperty(key)) {
+            updated_mapdata[key] = values.map_data[key];
           }
-        });
+        }
 
-        setBranchObj({
-          ...branchObj,
-          location_details: new_location_details,
-        });
+        values.map_data = updated_mapdata;
+      } else {
+        values.map_data = [];
       }
 
+      let form_data = new FormData();
+      Object.entries(values).forEach(([key, value]) => {
+        // Check if the value is an array and the key is "location_details"
+        if (key === "map_data") {
+          form_data.append(key, JSON.stringify(value));
+        } else if (key === "image") {
+          if (value === null || value === undefined) {
+            form_data.append(`image`, null);
+          } else {
+            form_data.append(`image`, value, value.name);
+          }
+        } else {
+          // Append other key-value pairs to FormData
+          form_data.append(key, value);
+        }
+      });
+      const existing_location_details = [...branchObj?.location_details];
+      const Api = await PostApi("location/add-location/", form_data, true);
+      if (!!Api.status && Api.status === 200) {
+        const response = Api?.data.data;
+        const localStorageBranchData = GetLocalStorageData("branch");
+
+        console.log("localStorageBranchData = ", localStorageBranchData);
+
+        if (values.id === 0) {
+          setBranchObj({
+            ...branchObj,
+            location_details: [...branchObj.location_details, response],
+          });
+
+          let updatedBranch = localStorageBranchData.map((d) => {
+            if (d.id === values?.branch_id) {
+              return {
+                ...d,
+                location_details: [...d.location_details, response],
+              };
+            } else {
+              return d;
+            }
+          });
+
+          let GlobalMetaData =
+            localStorage.getItem("lint_hr_globaldata") !== null
+              ? JSON.parse(localStorage.getItem("lint_hr_globaldata"))
+              : {};
+          GlobalMetaData["branch"] = updatedBranch;
+          localStorage.setItem(
+            "lint_hr_globaldata",
+            JSON.stringify(GlobalMetaData)
+          );
+
+          dispatch(setBranch(updatedBranch));
+        } else {
+          const new_location_details = existing_location_details.map((d) => {
+            if (d.id === response.id) {
+              return response;
+            } else {
+              return d;
+            }
+          });
+          setBranchObj({
+            ...branchObj,
+            location_details: new_location_details,
+          });
+
+          let updatedBranch = localStorageBranchData.map((d) => {
+            if (d.id === values?.branch_id) {
+              let newLD = d.location_details.map((loc) => {
+                if (loc.id === response.id) {
+                  return response;
+                } else {
+                  return loc;
+                }
+              });
+
+              return {
+                ...d,
+                location_details: newLD,
+              };
+            } else {
+              return d;
+            }
+          });
+
+          let GlobalMetaData =
+            localStorage.getItem("lint_hr_globaldata") !== null
+              ? JSON.parse(localStorage.getItem("lint_hr_globaldata"))
+              : {};
+          GlobalMetaData["branch"] = updatedBranch;
+          localStorage.setItem(
+            "lint_hr_globaldata",
+            JSON.stringify(GlobalMetaData)
+          );
+
+          dispatch(setBranch(updatedBranch));
+        }
+        dispatch(setLoaderVisible(false));
+        toast.success(Api?.data?.message);
+        setShowTable(true);
+        setModalOpen(false);
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
+        dispatch(toggleRSBView(false));
+        toast.error(Api?.data?.message);
+      }
       setShowTable(true);
       setModalOpen(false);
+      dispatch(setLoaderVisible(false));
     },
   });
   useEffect(() => {
@@ -285,40 +399,11 @@ const BranchForm = () => {
     onSubmit: async (values) => {
       dispatch(setLoaderVisible(true));
 
-      let form_data = new FormData();
+      const updatedObject = Object.fromEntries(
+        Object.entries(values).filter(([key]) => key !== "location_details")
+      );
 
-      // Object.entries(values).map((key, value) => {
-      //   if (key[0] === "cf_values" || key[0] == "map_data") {
-      //     form_data.append(key[0], JSON.stringify(key[1]));
-      //   }else {
-      //     form_data.append(key[0], key[1]);
-      //   }
-      // });
-
-      values.location_details.map((d, idx) => {
-        if (d.image === null || d.image === undefined) {
-          form_data.append(`location_${idx + 1}_image`, null);
-        } else {
-          form_data.append(`location_${idx + 1}_image`, d.image, d.image.name);
-        }
-      });
-
-      Object.entries(values).forEach(([key, value]) => {
-        // Check if the value is an array and the key is "location_details"
-        if (
-          key === "cf_values" ||
-          key === "map_data" ||
-          key === "location_details"
-        ) {
-          // Handle cf_values array separately
-          form_data.append(key, JSON.stringify(value));
-        } else {
-          // Append other key-value pairs to FormData
-          form_data.append(key, value);
-        }
-      });
-
-      const Api = await PostApi("branch/add-new/", form_data, true);
+      const Api = await PostApi("branch/add-new/", updatedObject, false);
       if (Api.status && Api.status === 200) {
         if (branchObj.id === 0) {
           dispatch(addBranch(Api?.data.data));
@@ -363,7 +448,8 @@ const BranchForm = () => {
 
   const handleEditLocation = (location, index) => {
     setModalOpen(true);
-    setBranchLocationObj(location);
+
+    setBranchLocationObj({ ...location, branch_id: branchObj?.id });
   };
 
   const handleLocationImageUpdate = (e) => {
@@ -645,9 +731,8 @@ const BranchForm = () => {
                                       : no_image
                                   }
                                   style={{
-                                    width: "50px",
                                     height: "50px",
-                                    objectFit: "-moz-initial",
+                                    objectFit: "cover",
                                   }}
                                 />
                               </td>
@@ -655,7 +740,11 @@ const BranchForm = () => {
                               <td>
                                 <a
                                   onClick={() =>
-                                    handleEditLocation(location, index)
+                                    handleEditLocation(
+                                      location,
+                                      index,
+                                      branchObj?.id
+                                    )
                                   }
                                   className="text-primary d-inline-block edit-item-btn ms-2"
                                   href="javascript:void(0)"
@@ -672,16 +761,17 @@ const BranchForm = () => {
 
                   <Row>
                     <Col>
-                      <Row>
+                      <Row className="mt-4" style={{ height: "50px" }}>
                         <Col lg={6} className="text-start">
-                          <Button
-                            color="btn btn-primary"
-                            type="button"
-                            onClick={handleAddClick}
-                          >
-                            Add{" "}
-                            <i className="ri-add-line align-bottom me-1"></i>
-                          </Button>
+                          {branchObj?.id !== 0 ? (
+                            <Button
+                              color="btn btn-primary"
+                              type="button"
+                              onClick={handleAddClick}
+                            >
+                              Add Location <i className="ri-map-pin-line"></i>
+                            </Button>
+                          ) : null}
                         </Col>
 
                         <Col lg={6} className="text-end">

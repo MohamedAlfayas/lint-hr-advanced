@@ -32,10 +32,12 @@ function LocationSearch({
 
   useEffect(() => {
     if (!!branchLocationObj?.latitude && !!branchLocationObj?.longitude) {
-      setMapCenter({
-        lat: parseFloat(branchLocationObj?.latitude),
-        lng: parseFloat(branchLocationObj?.longitude),
-      });
+      setTimeout(() => {
+        setMapCenter({
+          lat: parseFloat(branchLocationObj?.latitude),
+          lng: parseFloat(branchLocationObj?.longitude),
+        });
+      }, 250);
     }
     if (!!branchLocationObj?.radius_range) {
       setMapCircleOptions({
@@ -53,7 +55,7 @@ function LocationSearch({
     branchLocationObj?.latitude,
     branchLocationObj?.longitude,
   ]);
-  console.log("mapcenter", mapCenter);
+
   const [mapCircleOptions, setMapCircleOptions] = useState({
     strokeColor: "#FF0000",
     strokeOpacity: 0.3,
@@ -172,13 +174,9 @@ function LocationSearch({
     setMap(map);
   }, []);
 
-  const onLoadMarker = (marker) => {
-    console.log("marker: ", marker);
-  };
+  const onLoadMarker = (marker) => {};
 
   const onMarkerDrag = (e) => {
-    console.log("onMarkerDrag: ", e.latLng.lat());
-
     setBranchLocationObj({
       ...branchLocationObj,
       latitude: String(e.latLng.lat()),
@@ -190,13 +188,9 @@ function LocationSearch({
     setMap(null);
   }, []);
 
-  const onLoadCircle = (circle) => {
-    console.log("Circle onLoad circle: ", circle);
-  };
+  const onLoadCircle = (circle) => {};
 
-  const onUnmountCircle = (circle) => {
-    console.log("Circle onUnmount circle: ", circle);
-  };
+  const onUnmountCircle = (circle) => {};
 
   return isLoaded ? (
     <React.Fragment>
@@ -284,7 +278,6 @@ function LocationSearch({
       </Row>
       <Col lg={12}>
         {" "}
-        {console.log("mapCenter before google map setting", mapCenter)}
         <GoogleMap
           mapContainerStyle={containerStyle}
           center={mapCenter}

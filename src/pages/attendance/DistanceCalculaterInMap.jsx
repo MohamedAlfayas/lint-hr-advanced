@@ -54,21 +54,6 @@ const DistanceCalculaterInMap = ({ locationData, locationType }) => {
     },
   ];
 
-  // const allLocations = [
-  //   {
-  //     lat: parseFloat(branchObj.latitude),
-  //     lng: parseFloat(branchObj.longitude),
-  //     name: branchObj.label,
-  //   },
-  //   ...locationData.entry_log.map(entry => ({
-  //     lat: parseFloat(entry.latitude),
-  //     lng: parseFloat(entry.longitude),
-  //     name:entry.location
-  //     // You might want to add a name property here as well, if applicable
-  //   }))
-  // ];
-  // console.log("LOcat",allLocations);
-
   useEffect(() => {
     if (!!branchObj?.radius_range) {
       setMapCircleOptions({
@@ -118,13 +103,9 @@ const DistanceCalculaterInMap = ({ locationData, locationType }) => {
     setMap(null);
   }, []);
 
-  const onLoadCircle = (circle) => {
-    console.log("Circle onLoad circle: ", circle);
-  };
+  const onLoadCircle = (circle) => {};
 
-  const onUnmountCircle = (circle) => {
-    console.log("Circle onUnmount circle: ", circle);
-  };
+  const onUnmountCircle = (circle) => {};
 
   const [distance, setDistance] = useState(null);
   const mapRef = useRef(null);

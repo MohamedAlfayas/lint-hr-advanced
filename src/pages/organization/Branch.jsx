@@ -57,23 +57,6 @@ const Branch = () => {
       cf_values: CustomFieldsForThisForm || [],
     };
   }, []);
-  // const locationFormObj = useMemo(() => {
-  //   return{
-  //   address: "",
-  //   city: "",
-  //   pincode: "",
-  //   country: "",
-  //   state: "",
-  //   timezone: "",
-  //   accurate_address: "",
-  //   radius_range: 10,
-  //   latitude: "8.3865046",
-  //   longitude: "77.608336",
-  //   location_id: "",
-  //   location_name:"",
-  //   map_data: [],
-  // };
-  // },[])
 
   const handleBranchEdit = (id, obj) => {
     let FormObj = {};
@@ -98,6 +81,7 @@ const Branch = () => {
 
       FormObj = { ...obj, cf_values: cf };
     }
+    console.log("Form Obj for Branch Edit", FormObj);
 
     dispatch(setFormTitle("Branch Form"));
     dispatch(setFormObj(FormObj));
@@ -183,8 +167,8 @@ const Branch = () => {
                         <Row className="gy-3">
                           <Col xs={12}>
                             <div>
-                              <p className="text-muted mb-1">Address </p>
-                              <h5 className="fs-14">{bd?.address}</h5>
+                              <p className="text-muted mb-1">Overview </p>
+                              <h5 className="fs-14">{bd?.about}</h5>
                             </div>
                             <hr />
                           </Col>
@@ -200,8 +184,10 @@ const Branch = () => {
                           </Col>
                           <Col xs={4}>
                             <div>
-                              <p className="text-muted mb-1">Timezone</p>
-                              <h5 className="fs-14">{bd?.timezone}</h5>
+                              <p className="text-muted mb-1">Locations</p>
+                              <h5 className="fs-14">
+                                {bd?.location_details.length}
+                              </h5>
                             </div>
                           </Col>
                           <Col xs={3}>

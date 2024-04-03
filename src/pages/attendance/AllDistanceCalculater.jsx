@@ -37,7 +37,7 @@ const AllDistanceCalculater = ({ allLocationData }) => {
 
   const branchLocations = [];
 
-  if (!!branchObj?.latitude && !!branchObj?.longitude) {
+  if (!!branchObj) {
     branchObj.location_details.forEach((d) => {
       branchLocations.push({
         lat: parseFloat(d.latitude),
@@ -67,12 +67,16 @@ const AllDistanceCalculater = ({ allLocationData }) => {
       .filter((location) => location !== null),
   ];
 
+  const multipleLocations = branchLocations.concat(allLocations);
+
   console.log("allLocations", allLocations);
+  console.log("multipleLocations", multipleLocations);
   console.log("allLocations", typeof allLocations);
 
   useEffect(() => {
     if (!!branchObj) {
       if (!!branchObj?.latitude && !!branchObj?.longitude) {
+        branchObj;
         setMapCenter({
           lat: parseFloat(branchObj?.latitude),
           lng: parseFloat(branchObj?.longitude),
@@ -91,10 +95,6 @@ const AllDistanceCalculater = ({ allLocationData }) => {
     draggable: false,
     editable: false,
     visible: true,
-    center: {
-      lat: 8.3865046,
-      lng: 77.608336,
-    },
     radius: 10,
     zIndex: 1,
   });
@@ -216,6 +216,20 @@ const AllDistanceCalculater = ({ allLocationData }) => {
     if (mapRefCenter.current) {
       const bounds = new window.google.maps.LatLngBounds();
       allLocations.forEach((location) => {
+        bounds.extend(
+          new window.google.maps.LatLng(location.lat, location.lng)
+        );
+      });
+
+      mapRefCenter.current.fitBounds(bounds);
+    }
+  }, []);
+
+  useEffect(() => {
+    console.log("mapRefCenter", mapRefCenter);
+    if (mapRefCenter.current) {
+      const bounds = new window.google.maps.LatLngBounds();
+      multipleLocations.forEach((location) => {
         bounds.extend(
           new window.google.maps.LatLng(location.lat, location.lng)
         );
@@ -375,18 +389,15 @@ const AllDistanceCalculater = ({ allLocationData }) => {
           )}
 
           {branchLocations.map((d) => {
-            console.log("Latitude:", d.lat);
-            console.log("Longitude:", d.lng);
-            console.log("RAdius", d.radius);
             return (
               <Circle
-                key={`${d.lat}-${d.lng}`}
                 // optional
                 onLoad={onLoadCircle}
                 // optional
                 onUnmount={onUnmountCircle}
                 // required
                 center={{
+                  ...mapCircleOptions,
                   lat: d.lat,
                   lng: d.lng,
                 }}

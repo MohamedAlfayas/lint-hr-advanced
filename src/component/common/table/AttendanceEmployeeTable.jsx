@@ -134,7 +134,7 @@ const AttendanceEmployeeTable = () => {
 
   function open_location(rowData, dataKey) {
     setLocationModal(!locationModal);
-    setLocationData(rowData);
+    setAllLocationData(rowData);
     setLocationType(dataKey);
   }
 
@@ -1101,7 +1101,11 @@ const AttendanceEmployeeTable = () => {
         }}
         centered
       >
-        <AllDistanceCalculater allLocationData={allLocationData} />
+        {console.log("timelineList", timelineList)}
+        {timelineList.filter((d) => d.location_id !== null).length !== 0 ? (
+          <AllDistanceCalculater allLocationData={allLocationData} />
+        ) : null}
+
         <ModalHeader className="text-center">
           <h5
             className="modal-title text-center"
@@ -1274,10 +1278,7 @@ const AttendanceEmployeeTable = () => {
         }}
         centered
       >
-        <DistanceCalculaterInMap
-          locationData={locationData}
-          locationType={locationType}
-        />
+        <AllDistanceCalculater allLocationData={allLocationData} />
       </Modal>
       {/* Notes Modal */}
       <Modal
