@@ -48,11 +48,11 @@
 }
 .custom-select-medium {
   /* padding: 0.375rem 0.75rem;   */
-  height: 2rem;  
+  height: 2rem;
 }
 .custom-modal .modal-content {
-  max-width: 450px; 
-  max-height: 600px; 
+  max-width: 450px;
+  max-height: 600px;
   padding: 0px;
 }
 .my-select {
@@ -64,8 +64,8 @@
   border: var(--vz-border-width) solid #e9ebec;
 }
 .custom-modal-1 .modal-content {
-  max-width: 600px; 
-  max-height: 600px; 
+  max-width: 600px;
+  max-height: 600px;
   padding: 0px;
 }
 .eye-icon {
@@ -73,4 +73,8 @@
   right: 3%;
   top: 50%;
   transform: translateY(-50%);
+}
+
+.lc_multi_select .css-wsp0cs-MultiValueGeneric {
+  color: white !important;
 }

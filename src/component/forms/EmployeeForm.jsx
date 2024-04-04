@@ -873,7 +873,7 @@ const EmployeeForm = () => {
                     isMulti={true}
                     closeMenuOnSelect={false}
                     options={branch_options || []}
-                    className="basic-multi-select"
+                    className="basic-multi-select lc_multi_select"
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
