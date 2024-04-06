@@ -95,43 +95,43 @@ const AllDistanceCalculater = ({ allLocationData }) => {
   const containerStyle = {
     width: "100%",
     height: "400px",
-    styles: [
-      {
-        featureType: "administrative.locality",
-        elementType: "geometry.fill",
-        stylers: [
-          {
-            visibility: "off",
-          },
-        ],
-      },
-      {
-        featureType: "poi.business",
-        stylers: [
-          {
-            visibility: "off",
-          },
-        ],
-      },
-      {
-        featureType: "road",
-        elementType: "labels.icon",
-        stylers: [
-          {
-            visibility: "off",
-          },
-        ],
-      },
-      {
-        featureType: "transit",
-        stylers: [
-          {
-            visibility: "off",
-          },
-        ],
-      },
-    ],
   };
+
+  const mapStyles = [
+    {
+      featureType: "administrative.locality",
+      elementType: "geometry.fill",
+      stylers: [
+        {
+          visibility: "off",
+        },
+      ],
+    },
+    {
+      featureType: "poi.business",
+      stylers: [
+        {
+          visibility: "off",
+        },
+      ],
+    },
+    {
+      featureType: "poi.place_of_worship",
+      stylers: [
+        {
+          visibility: "off",
+        },
+      ],
+    },
+    {
+      featureType: "poi.school",
+      stylers: [
+        {
+          visibility: "off",
+        },
+      ],
+    },
+  ];
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -230,6 +230,7 @@ const AllDistanceCalculater = ({ allLocationData }) => {
   }, []);
 
   const [selectedMarker, setSelectedMarker] = useState(null);
+  const [selectedMarkerBranch, setSelectedMarkerBranch] = useState(null);
 
   // Function to calculate heading between two points
   const calculateHeading = (pointA, pointB) => {
@@ -261,7 +262,7 @@ const AllDistanceCalculater = ({ allLocationData }) => {
           ref={mapRefCenter}
           onLoad={(map) => (mapRef.current = map)}
           onUnmount={onUnmount}
-          options={{ gestureHandling: "greedy" }}
+          options={{ gestureHandling: "greedy", styles: mapStyles }}
         >
           {/* Markers for the two points */}
           {/* {locations.map((location, index) => (
@@ -345,18 +346,29 @@ const AllDistanceCalculater = ({ allLocationData }) => {
                 url: mapIconOffice,
                 scaledSize: new window.google.maps.Size(40, 40),
               }}
-              // onClick={() => {
-              //   setSelectedMarker(branchLocations);
-              //   setMapZoom(21);
-              //   setMapCenter({
-              //     lat: location.lat,
-              //     lng: location.lng,
-              //   });
-              // }}
+              onClick={() => {
+                setSelectedMarkerBranch(location);
+                setMapZoom(21);
+                setMapCenter({
+                  lat: location.lat,
+                  lng: location.lng,
+                });
+              }}
             />
           ))}
 
           {/* InfoWindow to display label */}
+          {selectedMarkerBranch && (
+            <InfoWindow
+              position={selectedMarkerBranch}
+              onCloseClick={() => {
+                setSelectedMarkerBranch(null);
+              }}
+            >
+              <div>{selectedMarkerBranch.name}</div>
+            </InfoWindow>
+          )}
+
           {selectedMarker && (
             <InfoWindow
               position={selectedMarker}
