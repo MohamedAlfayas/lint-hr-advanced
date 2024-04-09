@@ -145,7 +145,7 @@ const AttendanceReport = () => {
         "Employee Name",
         "Email",
         "Emp ID",
-        "Attendance",
+        "#",
         "Status",
         "Activity",
         "Work Schedule",
@@ -153,6 +153,7 @@ const AttendanceReport = () => {
         "OT",
         "Paid Hr",
         "Edited Hours",
+        "Notes",
         "In Location",
         "Out Location",
         "In",
@@ -260,6 +261,16 @@ const AttendanceReport = () => {
               attendance_data.checked_in_hr_in_seconds
           );
 
+       
+          const notes = attendance_data.notes;
+
+          const message = notes && notes.length > 0
+              ? notes.length > 1
+                  ? `${notes[0].message} (${notes.length - 1})`
+                  : notes[0].message
+              : "-";
+          
+  
           const entryLogs = attendance_data.entry_log.map((entry) => {
             const entryTime = entry.entry_time;
             const location = entry.location;
@@ -349,6 +360,7 @@ const AttendanceReport = () => {
           row.push(otHours || "-");
           row.push(total_hour);
           row.push(editedHours || "-");
+          row.push(message || "-");
 
           // Flag to track if in/out data has been added for the day
           let inOutAdded = false;
@@ -602,10 +614,11 @@ const AttendanceReport = () => {
 
     employeeDatesXls.forEach((date, index) => {
       headers.push("", "", formatDate(date), "");
-      subheaders.push("Attendance", "Check-in", "Check-out", "Duration");
+      subheaders.push("#", "Check-in", "Check-out", "Duration","Notes");
     });
 
     headers.push("Total Days", "Present Days");
+    subheaders.push("Total Days", "Present Days")
     const headerRow = sheet.addRow(headers);
     const subheaderRow = sheet.addRow(subheaders);
 
@@ -613,8 +626,8 @@ const AttendanceReport = () => {
     subheaderRow.font = { bold: true };
 
     for (let i = 0; i < employeeDatesXls.length; i++) {
-      const startCol = i * 4 + 3;
-      const endCol = i * 4 + 6;
+      const startCol = i * 5 + 3;
+      const endCol = i * 5 + 7;
       const dateHeader = formatDate(employeeDatesXls[i]);
 
       sheet.mergeCells(1, startCol, 1, endCol);
@@ -623,7 +636,7 @@ const AttendanceReport = () => {
       mergedCell.alignment = { horizontal: "center" };
 
       const fillColor = i % 2 === 0 ? "FFFFFF" : "e6f7ff";
-      [0, 1, 2, 3].forEach((offset) => {
+      [0, 1, 2, 3,4].forEach((offset) => {
         const col = startCol + offset;
         sheet.getColumn(col).eachCell({ includeEmpty: true }, (cell) => {
           cell.fill = {
@@ -669,6 +682,13 @@ const AttendanceReport = () => {
             ? "A"
             : "A";
         row.push(attend_data);
+        const notes = attendance_data.notes;
+
+        const message = notes && notes.length > 0
+            ? notes.length > 1
+                ? `${notes[0].message} (${notes.length - 1})`
+                : notes[0].message
+            : "-";
 
         if (attendance_data) {
           const checkInLog = attendance_data.entry_log.find(
@@ -695,8 +715,9 @@ const AttendanceReport = () => {
           row.push(firstCheckIn);
           row.push(lastCheckOut);
           row.push(duration);
+          row.push(message);
         } else {
-          row.push("", "", "", "");
+          row.push("", "", "", "","");
         }
       });
 
@@ -728,176 +749,176 @@ const AttendanceReport = () => {
         if (cellNumber > 1) {
           cell.alignment = { horizontal: "center" };
         }
-        if (cellNumber >= 7 && cellNumber <= 10) {
+        if (cellNumber >= 8 && cellNumber <= 12) {
           const fillColor = colIndex % 2 === 0 ? "FFFFFF" : "e6f7ff";
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: fillColor },
           };
-        } else if (cellNumber >= 11 && cellNumber <= 14) {
+        } else if (cellNumber >= 13 && cellNumber <= 17) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF" },
           };
-        } else if (cellNumber >= 15 && cellNumber <= 18) {
+        } else if (cellNumber >= 18 && cellNumber <= 22) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "e6f7ff" },
           };
-        } else if (cellNumber >= 19 && cellNumber <= 22) {
+        } else if (cellNumber >= 23 && cellNumber <= 27) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF" },
           };
-        } else if (cellNumber >= 23 && cellNumber <= 26) {
+        } else if (cellNumber >= 28 && cellNumber <= 32) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "e6f7ff" },
           };
-        } else if (cellNumber >= 27 && cellNumber <= 30) {
+        } else if (cellNumber >= 33 && cellNumber <= 37) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF" },
           };
-        } else if (cellNumber >= 31 && cellNumber <= 34) {
+        } else if (cellNumber >= 38 && cellNumber <= 42) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "e6f7ff" },
           };
-        } else if (cellNumber >= 35 && cellNumber <= 38) {
+        } else if (cellNumber >= 43 && cellNumber <= 47) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF" },
           };
-        } else if (cellNumber >= 39 && cellNumber <= 42) {
+        } else if (cellNumber >= 48 && cellNumber <= 52) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "e6f7ff" },
           };
-        } else if (cellNumber >= 43 && cellNumber <= 46) {
+        } else if (cellNumber >= 53 && cellNumber <= 57) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF" },
           };
-        } else if (cellNumber >= 47 && cellNumber <= 50) {
+        } else if (cellNumber >= 58 && cellNumber <= 62) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "e6f7ff" },
           };
-        } else if (cellNumber >= 51 && cellNumber <= 54) {
+        } else if (cellNumber >= 63 && cellNumber <= 67) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF" },
           };
-        } else if (cellNumber >= 55 && cellNumber <= 58) {
+        } else if (cellNumber >= 68 && cellNumber <= 72) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "e6f7ff" },
           };
-        } else if (cellNumber >= 59 && cellNumber <= 62) {
+        } else if (cellNumber >= 73 && cellNumber <= 77) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF" },
           };
-        } else if (cellNumber >= 63 && cellNumber <= 66) {
+        } else if (cellNumber >= 78 && cellNumber <= 82) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "e6f7ff" },
           };
-        } else if (cellNumber >= 67 && cellNumber <= 70) {
+        } else if (cellNumber >= 83 && cellNumber <= 87) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF" },
           };
-        } else if (cellNumber >= 71 && cellNumber <= 74) {
+        } else if (cellNumber >= 88 && cellNumber <= 92) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "e6f7ff" },
           };
-        } else if (cellNumber >= 75 && cellNumber <= 78) {
+        } else if (cellNumber >= 93 && cellNumber <= 97) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF" },
           };
-        } else if (cellNumber >= 79 && cellNumber <= 82) {
+        } else if (cellNumber >= 98 && cellNumber <= 102) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "e6f7ff" },
           };
-        } else if (cellNumber >= 83 && cellNumber <= 86) {
+        } else if (cellNumber >= 103 && cellNumber <= 107) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF" },
           };
-        } else if (cellNumber >= 87 && cellNumber <= 90) {
+        } else if (cellNumber >= 108 && cellNumber <= 112) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "e6f7ff" },
           };
-        } else if (cellNumber >= 91 && cellNumber <= 94) {
+        } else if (cellNumber >= 113 && cellNumber <= 117) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF" },
           };
-        } else if (cellNumber >= 95 && cellNumber <= 98) {
+        } else if (cellNumber >= 118 && cellNumber <= 122) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "e6f7ff" },
           };
-        } else if (cellNumber >= 99 && cellNumber <= 102) {
+        } else if (cellNumber >= 123 && cellNumber <= 127) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF" },
           };
-        } else if (cellNumber >= 103 && cellNumber <= 106) {
+        } else if (cellNumber >= 128 && cellNumber <= 132) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "e6f7ff" },
           };
-        } else if (cellNumber >= 107 && cellNumber <= 110) {
+        } else if (cellNumber >= 133 && cellNumber <= 137) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF" },
           };
-        } else if (cellNumber >= 111 && cellNumber <= 114) {
+        } else if (cellNumber >= 138 && cellNumber <= 142) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "e6f7ff" },
           };
-        } else if (cellNumber >= 115 && cellNumber <= 118) {
+        } else if (cellNumber >= 143 && cellNumber <= 147) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF" },
           };
-        } else if (cellNumber >= 119 && cellNumber <= 122) {
+        } else if (cellNumber >= 148 && cellNumber <= 152) {
           cell.fill = {
             type: "pattern",
             pattern: "solid",

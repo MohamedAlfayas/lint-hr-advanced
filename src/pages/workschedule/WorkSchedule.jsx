@@ -22,6 +22,27 @@ const WorkSchedule = () => {
     dispatch(setWorkSchedule(GetLocalStorageData("work_schedule") || []));
   }, []);
 
+  const data = work_schedule_data;
+  console.log("DAta",data);
+
+  // Assuming work_schedule_data is an array, we iterate over each item
+  data.forEach(item => {
+    // Assuming each item has a property named 'workday' which is an array
+    item.workday.forEach(workday => {
+      // Assuming each 'workday' object has a property named 's_hr'
+      const s_hr = workday.s_hr;
+      const s_min = workday.s_min;
+      const e_hr = workday.e_hr;
+      const e_min = workday.e_min;
+
+      // Log the values of s_hr, s_min, e_hr, and e_min for each workday object
+      // console.log("s_hr:", s_hr);
+      // console.log("s_min:", s_min);
+      // console.log("e_hr:", e_hr);
+      // console.log("e_min:", e_min);
+    });
+  });
+
   const additionalColumn = [
     {
       Header: "Name",
@@ -59,33 +80,55 @@ const WorkSchedule = () => {
           for (let j = 0; j < obj.workday.length; j++) {
             if (
               days[i].desc.toLowerCase() ==
-                obj.workday[j].s_day.toLowerCase() &&
-              obj.workday[j].is_day_on
+              obj.workday[j].s_day.toLowerCase()
             ) {
-              timings.push(days[i].id);
+              timings.push({
+                id: days[i].id,
+                name: obj.workday[j].s_day,
+                s_hr: obj.workday[j].s_hr,
+                s_min: obj.workday[j].s_min,
+                e_hr: obj.workday[j].e_hr,
+                e_min: obj.workday[j].e_min,
+                is_day_on : obj.workday[j].is_day_on,
+              });
             }
           }
         }
-
-        let htmltag = days.map((day, i) => (
-          <>
+        // console.log("Obj Name = ",obj.name," TIMIMGS", timings);
+        let htmltag = days.map((day, i) => {
+          let thisDayTimeObj = timings.find((timing) => timing.id === day.id)
+          console.log("Obj Name = ",obj.name," thisDayTimeObj = ",thisDayTimeObj);
+          return (
+            <>
             <span
               className={
-                timings.includes(day.id)
-                  ? "fw-bold me-1"
-                  : "fw-normal fw-lighter me-1"
+                (!!thisDayTimeObj && thisDayTimeObj?.is_day_on === true)
+                ? "fw-bold me-1"
+                : "fw-normal fw-lighter me-1"
               }
-              key={day.id}
-              id={`t_${day.desc}`}
+              key={thisDayTimeObj.id}
+              id={`t_${thisDayTimeObj?.id}`}
             >
-              {day.name}
+              {day?.name}
+             
             </span>
-            <UncontrolledTooltip placement="top" target={`t_${day.desc}`}>
+            <UncontrolledTooltip className="lc_tooltip" placement="top" target={`t_${thisDayTimeObj?.id}`}>
               {" "}
-              {day.desc}{" "}
+              {thisDayTimeObj?.name}{" "}
+
+              {!!thisDayTimeObj && thisDayTimeObj?.is_day_on === true && (
+                <>
+                  {`${thisDayTimeObj?.s_hr}:${thisDayTimeObj?.s_min} - ${thisDayTimeObj?.e_hr}:${thisDayTimeObj?.e_min}`}
+                </>
+              )}
+             
+              
             </UncontrolledTooltip>
           </>
-        ));
+          )
+        });
+
+        console.log("HTML TAG = ",htmltag);
 
         return <> {htmltag} </>;
       },
