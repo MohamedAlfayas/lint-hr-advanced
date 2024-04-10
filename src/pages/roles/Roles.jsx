@@ -52,14 +52,7 @@ const Roles = () => {
       filterable: false,
       id: "roles",
       accessor: (obj) => {
-        let total_roles = 0;
-
-        obj.roles_list.map((d) => {
-          let this_dep_role = d.permission.filter(
-            (p) => p.checked === true
-          ).length;
-          total_roles += this_dep_role;
-        });
+        let total_roles = obj.roles_list.length;
 
         return <b>{total_roles}</b>;
       },
@@ -88,9 +81,10 @@ const Roles = () => {
       id: 0,
       name: "",
       total_employees: 0,
-      roles_list: default_roles_list,
+      roles_list: [],
       status: 1,
       description: "",
+      is_admin: false,
     };
   }, []);
 
