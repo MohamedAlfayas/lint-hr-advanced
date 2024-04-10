@@ -50,6 +50,7 @@ const RoleForm = () => {
   const inputRef = useRef();
 
   useEffect(() => {
+    console.log("FormObj = ", form_obj);
     setRoleObj(form_obj);
   }, [form_obj]);
 
@@ -60,14 +61,7 @@ const RoleForm = () => {
       name: Yup.string().trim().required("Please Enter Role Name"),
     }),
     onSubmit: async (values) => {
-      let total_roles_checked = 0;
-
-      roleObj.roles_list.map((d) => {
-        let this_dep_role = d.permission.filter(
-          (p) => p.checked === true
-        ).length;
-        total_roles_checked += this_dep_role;
-      });
+      let total_roles_checked = roleObj.roles_list.length;
 
       if (total_roles_checked === 0) {
         toast.error("Select Atleast One Permission");
@@ -177,82 +171,51 @@ const RoleForm = () => {
   }, [focusedPermission, focusedRole]);
 
   const getCheckedCount = (role_id) => {
-    let this_permission_list = !!roleObj?.roles_list
-      ? roleObj?.roles_list?.find((d) => d.id === role_id).permission
-      : [];
+    // let this_permission_list = !!roleObj?.roles_list
+    //   ? roleObj?.roles_list?.find((d) => d.id === role_id).permission
+    //   : [];
 
-    return this_permission_list.filter((d) => d.checked === true).length;
+    // return this_permission_list.filter((d) => d.checked === true).length;
+
+    return 0;
   };
 
-  const handleCheckboxChange = (role_id, perm_id) => {
-    let roles_list = [...roleObj?.roles_list];
+  const handleCheckboxChange = (e, perm, role_id) => {
+    const { checked } = e.target;
 
-    let updated_roles_list = roles_list.map((d) => {
-      if (d.id === role_id) {
-        let this_perm_list = [...d?.permission];
-        let result = [];
-        let dep_id = [];
-        let status_to_be_changed = false;
+    if (checked === true) {
+      let updated_roles_list = [...roleObj?.roles_list, perm?.role_uuid];
 
-        result = this_perm_list.map((obj) => {
-          if (obj.id === perm_id) {
-            status_to_be_changed = !obj.checked;
-            let dep_list = obj.dependency;
-            dep_id = dep_list.map(
-              (d) => this_perm_list.find((dl) => dl.element === d).id
-            );
-            return {
-              ...obj,
-              checked: !obj.checked,
-            };
-          } else {
-            return obj;
+      let this_permission_list =
+        default_roles_list?.find((d) => d.id === role_id).permission || [];
+
+      let this_dependency_element_list = perm?.dependency_to_element_list;
+
+      for (var i = 0; i < this_dependency_element_list.length; i++) {
+        let this_role_uuid = this_permission_list.find(
+          (p) => p.element === this_dependency_element_list[i]
+        ).role_uuid;
+
+        if (!!this_role_uuid) {
+          if (updated_roles_list.includes(this_role_uuid) === false) {
+            updated_roles_list.push(this_role_uuid);
           }
-        });
-
-        let final_result = result.map((res) => {
-          if (dep_id.includes(res?.id)) {
-            let disabled = false;
-            if (status_to_be_changed === true) {
-              disabled = true;
-            } else {
-              let has_active_dep = false;
-              result.map((r) => {
-                if (r.dependency.includes(res?.element) && r.checked === true) {
-                  has_active_dep = true;
-                }
-              });
-              if (has_active_dep === true) {
-                disabled = true;
-                status_to_be_changed = true;
-              } else {
-                disabled = false;
-                status_to_be_changed = false;
-              }
-            }
-            return {
-              ...res,
-              checked: status_to_be_changed,
-              disabled: disabled,
-            };
-          } else {
-            return res;
-          }
-        });
-
-        return {
-          ...d,
-          permission: final_result,
-        };
-      } else {
-        return d;
+        }
       }
-    });
 
-    setRoleObj({
-      ...roleObj,
-      roles_list: updated_roles_list,
-    });
+      setRoleObj({
+        ...roleObj,
+        roles_list: updated_roles_list,
+      });
+    } else {
+      let updated_roles_list = [...roleObj?.roles_list].filter(
+        (d) => d !== perm.role_uuid
+      );
+      setRoleObj({
+        ...roleObj,
+        roles_list: updated_roles_list,
+      });
+    }
   };
 
   return (
@@ -335,8 +298,8 @@ const RoleForm = () => {
             <Col lg={3} className="border-end">
               <Nav className="flex-column custom-nav nav-pills sticky-top">
                 <div className="mt-1"></div>
-                {!!roleObj?.roles_list &&
-                  roleObj?.roles_list.map((role) => (
+                {!!default_roles_list &&
+                  default_roles_list.map((role) => (
                     <NavItem key={role.id}>
                       <NavLink
                         href="#"
@@ -348,7 +311,7 @@ const RoleForm = () => {
                         <div>
                           <span class="step-title me-2">
                             <i class="ri-close-circle-fill step-icon me-2"></i>
-                            {role.Name}
+                            {role.name}
                           </span>
                         </div>
 
@@ -370,20 +333,20 @@ const RoleForm = () => {
 
             <Col lg={9}>
               <div className="px-lg-4">
-                {!!roleObj?.roles_list &&
-                  roleObj?.roles_list.map((role) => (
-                    <div key={role.id}>
+                {!!default_roles_list &&
+                  default_roles_list.map((role_list) => (
+                    <div key={role_list.id}>
                       <div className="mt-4">
-                        <h5>{role.Name}</h5>
+                        <h5>{role_list.name}</h5>
                       </div>
                       <ListGroup>
-                        {role.permission.map((permission) => (
+                        {role_list.permission.map((role) => (
                           <ListGroupItem
-                            key={permission.id}
-                            id={`permission_${role.id}_${permission.id}`}
+                            key={role.id}
+                            id={`permission_${role_list.id}_${role.id}`}
                             className={
-                              focusedRole === role.id &&
-                              focusedPermission === permission.id
+                              focusedRole === role_list.id &&
+                              focusedPermission === role.id
                                 ? "focused"
                                 : ""
                             }
@@ -392,13 +355,31 @@ const RoleForm = () => {
                               <Input
                                 className="form-check-input me-1"
                                 type="checkbox"
-                                disabled={permission?.disabled}
-                                checked={permission?.checked}
-                                onChange={() =>
-                                  handleCheckboxChange(role.id, permission.id)
+                                disabled={
+                                  !!roleObj?.roles_list
+                                    ? roleObj?.is_admin === true
+                                      ? true
+                                      : (role?.dependency_for_uuid_list).some(
+                                          (d) => roleObj?.roles_list.includes(d)
+                                        )
+                                    : false
+                                }
+                                checked={
+                                  !!roleObj?.roles_list
+                                    ? roleObj?.is_admin === true
+                                      ? true
+                                      : roleObj?.roles_list.includes(
+                                          role?.role_uuid
+                                        )
+                                      ? true
+                                      : false
+                                    : false
+                                }
+                                onChange={(e) =>
+                                  handleCheckboxChange(e, role, role_list.id)
                                 }
                               />
-                              {permission.notes}
+                              {role.notes}
                             </label>
                           </ListGroupItem>
                         ))}
