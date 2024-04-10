@@ -2273,6 +2273,10 @@ export const default_roles_list = [
           "2ebd3c5d-dca8-45cc-8334-5a32f2451893",
           "6aa0e447-7a32-4664-a53b-ae8c729d05af",
           "99cb748f-2de4-4fe7-9b47-77b9d929f5f1",
+          "1b5d106f-f3e8-41f3-8041-d3f71a19d27d",
+          "d6bbf8dd-ccd3-4866-9c57-afdc1cc9268a",
+          "08cd201a-d20d-45d3-8b60-3a6fb7e4acc0",
+          "15c51336-a05b-488b-af43-29061deec942"
         ],
         notes: "User Can View Attendance",
         element: "per_attendance_view",
@@ -2343,6 +2347,55 @@ export const default_roles_list = [
         notes: "User Can Approve/Reject All Attendance",
         element: "per_approve_reject_all",
         dependency_to_element_list: ["per_attendance_view", "per_attendance_view_all"],
+        checked: false,
+        disabled: false,
+      },
+
+      {
+        id: 308,
+        role_uuid: "1b5d106f-f3e8-41f3-8041-d3f71a19d27d",
+        dependency_for_uuid_list: [
+          "d6bbf8dd-ccd3-4866-9c57-afdc1cc9268a",
+        ],
+        notes: "User Can View Team's Leave Approval",
+        element: "per_teams_leave_approval_view",
+        dependency_to_element_list: ["per_attendance_view"],
+        checked: false,
+        disabled: false,
+      },
+      {
+        id: 309,
+        role_uuid: "d6bbf8dd-ccd3-4866-9c57-afdc1cc9268a",
+        dependency_for_uuid_list: [
+
+        ],
+        notes: "User Can Approve/Reject Team's Leave",
+        element: "per_approve_reject_teams_leave",
+        dependency_to_element_list: ["per_attendance_view", "per_teams_leave_approval_view"],
+        checked: false,
+        disabled: false,
+      },
+      {
+        id: 310,
+        role_uuid: "08cd201a-d20d-45d3-8b60-3a6fb7e4acc0",
+        dependency_for_uuid_list: [
+          "15c51336-a05b-488b-af43-29061deec942",
+        ],
+        notes: "User Can View All Leave Approval",
+        element: "per_all_leave_approval_view",
+        dependency_to_element_list: ["per_attendance_view"],
+        checked: false,
+        disabled: false,
+      },
+      {
+        id: 311,
+        role_uuid: "15c51336-a05b-488b-af43-29061deec942",
+        dependency_for_uuid_list: [
+
+        ],
+        notes: "User Can Approve/Reject All Leave",
+        element: "per_approve_reject_all_leave",
+        dependency_to_element_list: ["per_attendance_view", "per_all_leave_approval_view"],
         checked: false,
         disabled: false,
       },

@@ -8,6 +8,7 @@ import LoadingBar from "react-top-loading-bar";
 // import Basic404 from "../pages/error/Basic404";
 
 const Basic404 = lazy(() => import("../pages/error/Basic404"));
+const AccessDenied = lazy(() => import("../pages/accessDenied/AccessDenied"));
 
 const Index = () => {
   const filteredPrivateRoutes = useMemo(() => {
