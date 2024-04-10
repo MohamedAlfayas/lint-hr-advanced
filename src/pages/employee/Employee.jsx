@@ -28,6 +28,7 @@ import {
   setEmployeeTableFilterKeys,
 } from "../../redux/reducers/ChildReducer/TableFilterReducer";
 import { previousDateFormat } from "../../common/js/ConvertDateFormat";
+import { setWorkSchedule } from "../../redux/reducers/ChildReducer/WorkScheduleReducer";
 
 const Employee = () => {
   const dispatch = useDispatch();
@@ -55,6 +56,8 @@ const Employee = () => {
   const CustomFieldsForThisForm = GetCustomField("employee") || [];
   const DepartmentData = GetLocalStorageData("department") || [];
 
+
+
   const viewEmployee = (obj) => {
     dispatch(setFormTitle("Employee Details"));
     dispatch(setFormObj(obj));
@@ -62,6 +65,7 @@ const Employee = () => {
     dispatch(setComponentToShow(profile_view_component_name));
     dispatch(toggleRSBView(true));
   };
+
 
   // Column
   const additionalColumn = [
@@ -89,7 +93,10 @@ const Employee = () => {
                   className="link-body-emphasis mb-0"
                 >
                   {" "}
-                  <h5 className="fs-14 mb-1">{obj.fname}</h5>
+                  <h5 className="fs-14 mb-1">
+                    <span >{obj.fname}</span>
+                    <span style={{ color: '#a29797' }}>#{obj.emp_id}</span>
+                  </h5>
                 </Link>
               </div>
               <div>{obj.email}</div>
@@ -121,8 +128,12 @@ const Employee = () => {
                   onClick={() => viewEmployee(obj)}
                   className="link-body-emphasis mb-0"
                 >
+
                   {" "}
-                  <h5 className="fs-14 mb-1">{obj.fname}</h5>
+                  <h5 className="fs-14 mb-1">
+                    <span >{obj.fname}</span>
+                    <span style={{ color: '#a29797' }}>#{obj.emp_id}</span>
+                  </h5>
                 </Link>
               </div>
               <div>{obj.email}</div>
@@ -133,30 +144,30 @@ const Employee = () => {
       // filterable: false,
       // id: "nameAndEmail",
     },
-    {
-      Header: " Employee ID",
-      accessor: "emp_id",
-      filterable: false,
-      id: "emp_id",
-      accessor: (obj) => {
-        return (
-          <>
-            <div className="flex-grow-1">
-              <div>
-                <Link
-                  to="#"
-                  onClick={() => viewEmployee(obj)}
-                  className="link-body-emphasis mb-0"
-                >
-                  {" "}
-                  <React.Fragment>{obj.emp_id}</React.Fragment>
-                </Link>
-              </div>
-            </div>
-          </>
-        );
-      },
-    },
+    // {
+    //   Header: " Employee ID",
+    //   accessor: "emp_id",
+    //   filterable: false,
+    //   id: "emp_id",
+    //   accessor: (obj) => {
+    //     return (
+    //       <>
+    //         <div className="flex-grow-1">
+    //           <div>
+    //             <Link
+    //               to="#"
+    //               onClick={() => viewEmployee(obj)}
+    //               className="link-body-emphasis mb-0"
+    //             >
+    //               {" "}
+    //               <React.Fragment>{obj.emp_id}</React.Fragment>
+    //             </Link>
+    //           </div>
+    //         </div>
+    //       </>
+    //     );
+    //   },
+    // },
 
     {
       Header: "Role",
@@ -183,8 +194,8 @@ const Employee = () => {
       accessor: (obj) => {
         let thisDepartment = DepartmentData
           ? DepartmentData.filter((data) =>
-              obj.primary_department_id_list.includes(data.id)
-            )
+            obj.primary_department_id_list.includes(data.id)
+          )
           : [];
 
         let firstDep_name = thisDepartment?.length
@@ -193,10 +204,10 @@ const Employee = () => {
 
         let subDepList = thisDepartment?.length
           ? thisDepartment.filter((datas, index) => {
-              if (index !== 0) {
-                return datas;
-              }
-            })
+            if (index !== 0) {
+              return datas;
+            }
+          })
           : [];
 
         return (
@@ -245,18 +256,77 @@ const Employee = () => {
       filterable: false,
       accessor: (obj) => {
         const WorkSchedule = GetLocalStorageData("work_schedule");
-        let workscheduleData = WorkSchedule
-          ? WorkSchedule.filter((data) => obj.work_schedule_id === data.id)
-          : [];
+        let workscheduleData = WorkSchedule ? WorkSchedule.filter((data) => obj.work_schedule_id === data.id) : [];
+        const workdayData = workscheduleData.length > 0 ? workscheduleData[0].workday : [];
+        const days = [
+          { id: 1, name: "M", desc: "Monday" },
+          { id: 2, name: "T", desc: "Tuesday" },
+          { id: 3, name: "W", desc: "Wednesday" },
+          { id: 4, name: "T", desc: "Thursday" },
+          { id: 5, name: "F", desc: "Friday" },
+          { id: 6, name: "S", desc: "Saturday" },
+          { id: 7, name: "S", desc: "Sunday" },
+        ];
+        let timings = [];
+    
+        for (let i = 0; i < days.length; i++) {
+          for (let j = 0; j < workdayData.length; j++) {
+            if (
+              days[i].desc.toLowerCase() === workdayData[j].s_day.toLowerCase() &&
+              workdayData[j].is_day_on
+            ) {
+              timings.push({
+                id: days[i].id,
+                name: workdayData[j].s_day,
+                s_hr: workdayData[j].s_hr,
+                s_min: workdayData[j].s_min,
+                e_hr: workdayData[j].e_hr,
+                e_min: workdayData[j].e_min,
+                is_day_on: workdayData[j].is_day_on,
+              });
+            }
+          }
+        }
+    
+        let htmltag = days.map((day, i) => {
+          let thisDayTimeObj = timings.find((timing) => timing.id === day.id);
+          console.log("Obj Name = ", obj.name, " thisDayTimeObj = ", thisDayTimeObj);
+          return (
+            <React.Fragment key={day.id}>
+              <span
+                className={
+                  !!thisDayTimeObj && thisDayTimeObj.is_day_on === true
+                    ? "fw-bold me-1"
+                    : "fw-normal fw-lighter me-1"
+                }
+                id={`t_${thisDayTimeObj?.id}`}
+              >
+                {day.name}
+              </span>
+              <UncontrolledTooltip className="lc_tooltip" placement="top" target={`t_${thisDayTimeObj?.id}`}>
+                {thisDayTimeObj?.name}
+                {!!thisDayTimeObj && thisDayTimeObj.is_day_on === true && (
+                  <>
+                    {`${thisDayTimeObj.s_hr}:${thisDayTimeObj.s_min} - ${thisDayTimeObj.e_hr}:${thisDayTimeObj.e_min}`}
+                  </>
+                )}
+              </UncontrolledTooltip>
+            </React.Fragment>
+          );
+        });
         return (
           <>
             {workscheduleData.map((d) => (
-              <React.Fragment>{d.name}</React.Fragment>
+              <div key={d.id}>
+                {d.name}
+                <div>{htmltag}</div>
+              </div>
             ))}
           </>
         );
       },
-    },
+    }
+    ,
     {
       Header: "Reporting Manager",
       filterable: false,

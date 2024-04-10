@@ -22,6 +22,17 @@ const WorkSchedule = () => {
     dispatch(setWorkSchedule(GetLocalStorageData("work_schedule") || []));
   }, []);
 
+  const data = work_schedule_data;
+
+  data.forEach((item) => {
+    item.workday.forEach((workday) => {
+      const s_hr = workday.s_hr;
+      const s_min = workday.s_min;
+      const e_hr = workday.e_hr;
+      const e_min = workday.e_min;
+    });
+  });
+
   const additionalColumn = [
     {
       Header: "Name",
@@ -58,34 +69,58 @@ const WorkSchedule = () => {
         for (let i = 0; i < days.length; i++) {
           for (let j = 0; j < obj.workday.length; j++) {
             if (
-              days[i].desc.toLowerCase() ==
-                obj.workday[j].s_day.toLowerCase() &&
-              obj.workday[j].is_day_on
+              days[i].desc.toLowerCase() == obj.workday[j].s_day.toLowerCase()
             ) {
-              timings.push(days[i].id);
+              timings.push({
+                ws_id: obj.id,
+                id: days[i].id,
+                name: obj.workday[j].s_day,
+                s_hr: obj.workday[j].s_hr,
+                s_min: obj.workday[j].s_min,
+                e_hr: obj.workday[j].e_hr,
+                e_min: obj.workday[j].e_min,
+                is_day_on: obj.workday[j].is_day_on,
+              });
             }
           }
         }
 
-        let htmltag = days.map((day, i) => (
-          <>
-            <span
-              className={
-                timings.includes(day.id)
-                  ? "fw-bold me-1"
-                  : "fw-normal fw-lighter me-1"
-              }
-              key={day.id}
-              id={`t_${day.desc}`}
-            >
-              {day.name}
-            </span>
-            <UncontrolledTooltip placement="top" target={`t_${day.desc}`}>
-              {" "}
-              {day.desc}{" "}
-            </UncontrolledTooltip>
-          </>
-        ));
+        let timings_data = timings.filter((d) => d.ws_id === obj.id);
+
+        let htmltag = days.map((day, i) => {
+          let thisDayTimeObj = timings_data.find(
+            (timing) => timing.id === day.id
+          );
+
+          return (
+            <>
+              <span
+                className={
+                  !!thisDayTimeObj && thisDayTimeObj?.is_day_on === true
+                    ? "fw-bold me-1"
+                    : "fw-normal fw-lighter me-1"
+                }
+                key={thisDayTimeObj.id}
+                id={`t_${thisDayTimeObj?.ws_id}_${thisDayTimeObj?.id}`}
+              >
+                {day?.name}
+              </span>
+              <UncontrolledTooltip
+                className="lc_tooltip"
+                placement="top"
+                target={`t_${thisDayTimeObj?.ws_id}_${thisDayTimeObj?.id}`}
+              >
+                {" "}
+                {thisDayTimeObj?.name}{" "}
+                {!!thisDayTimeObj && thisDayTimeObj?.is_day_on === true && (
+                  <>
+                    {`${thisDayTimeObj?.s_hr}:${thisDayTimeObj?.s_min} - ${thisDayTimeObj?.e_hr}:${thisDayTimeObj?.e_min}`}
+                  </>
+                )}
+              </UncontrolledTooltip>
+            </>
+          );
+        });
 
         return <> {htmltag} </>;
       },
