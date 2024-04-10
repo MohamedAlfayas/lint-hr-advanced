@@ -1187,10 +1187,11 @@ const AttendanceReport = () => {
         >
           <Column
             width={100}
+            className="lc_attendance_style"
             align="center"
             style={{ backgroundColor: index % 2 === 0 ? "white" : "#e6f7ff" }}
           >
-            <HeaderCell style={{ fontWeight: "bold" }}>Attendance</HeaderCell>
+            <HeaderCell className="lc_column" style={{ fontWeight: "bold" }}>Attendance</HeaderCell>
             <AttendanceData date={date} />
           </Column>
 
