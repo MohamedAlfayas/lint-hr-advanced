@@ -1,6 +1,7 @@
 import { Navigate } from "react-router";
 import React, { lazy } from "react";
 import AccountSettings from "../pages/employee/AccountSetting";
+import ApprovalFilter from "../component/common/tableFilter/ApprovalFilter";
 
 // import Dashboard from "../pages/dashboard/Dashboard";
 // import Login from "../pages/auth/login/Login";
@@ -56,6 +57,16 @@ const AttendanceApproval = lazy(() =>
   import("../pages/attendanceApproval/AttendanceApproval")
 );
 
+const defaultRoutes = [
+  { path: "/dashboard", component: <Dashboard />, perm: "all" },
+  {
+    path: "/",
+    exact: true,
+    component: <Navigate to="/dashboard" />,
+    perm: "all",
+  },
+]
+
 const privateRoutes = [
   { path: "/dashboard", component: <Dashboard />, perm: "all" },
   {
@@ -77,36 +88,41 @@ const privateRoutes = [
   {
     path: "/leave-approval",
     component: <LeaveApproval />,
-    perm: "leave_approval",
+    perm: "all",
   },
   { path: "/leaves", component: <LeaveDashboard />, perm: "all" },
-  { path: "/custom-field", component: <CustomField />, perm: "custom_field" },
-  { path: "/payroll", component: <PayRoll />, perm: "payroll" },
+  { path: "/custom-field", component: <CustomField />, perm: ["9057d872-1f18-42c8-b2fb-89b29f2c05cf"] },
+  { path: "/payroll", component: <PayRoll />, perm: "all" },
   {
     path: "/payrollconfig",
     component: <PayRollConfig />,
-    perm: "payroll_config",
+    perm: "all",
   },
   {
     path: "/attendance",
     component: <AttendanceDashboard />,
     perm: "attendance",
   },
-  { path: "/xlsx", component: <Xlsx />, perm: "xlsx" },
+  { path: "/xlsx", component: <Xlsx />, perm: "all" },
   {
     path: "/attendanceconfig",
     component: <AttendanceConfig />,
-    perm: "attendance_config",
+    perm: "all",
   },
   {
     path: "/attendancereport",
     component: <AttendanceReport />,
-    perm: "attendance_report",
+    perm: ["c77528b2-5d9f-49ad-b6d1-5f95e61a66a0"],
   },
   {
     path: "/attendanceapproval",
     component: <AttendanceApproval />,
-    prem: "attendance_approval",
+    perm: "all",
+  },
+  {
+    path: "/approval",
+    component: <ApprovalFilter />,
+    perm: "all",
   },
   {
     path: "/",
@@ -126,4 +142,4 @@ const workSpaceRoutes = [
   { path: "/auth/workspace", component: <WorkSpace /> },
 ]
 
-export { publicRoutes, privateRoutes, workSpaceRoutes };
+export { defaultRoutes, publicRoutes, privateRoutes, workSpaceRoutes };

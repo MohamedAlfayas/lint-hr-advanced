@@ -1,26 +1,46 @@
 import { Route, Routes } from "react-router";
 import PublicRoute from "./PublicRoute";
 import PrivateRoute from "./PrivateRoute";
-import { privateRoutes, publicRoutes, workSpaceRoutes } from "./AllRoutes";
+import { defaultRoutes, privateRoutes, publicRoutes, workSpaceRoutes } from "./AllRoutes";
 import Layout from "../layout/Layout";
 import React, { useEffect, useMemo, lazy, Suspense } from "react";
 import LoadingBar from "react-top-loading-bar";
+import { useLocation } from 'react-router-dom';
 // import Basic404 from "../pages/error/Basic404";
+
+import { useDispatch, useSelector } from "react-redux";
+import { setLoaderVisible } from "../redux/reducers/ChildReducer/LoaderReducer";
 
 const Basic404 = lazy(() => import("../pages/error/Basic404"));
 const AccessDenied = lazy(() => import("../pages/accessDenied/AccessDenied"));
 
 const Index = () => {
+
+  const { pathname } = useLocation();
+
+  const dispatch = useDispatch()
+
   const filteredPrivateRoutes = useMemo(() => {
-    const user_perm_list = JSON.parse(localStorage.getItem("user_perm_list"));
-    if (!!user_perm_list) {
-      return privateRoutes.filter(
-        (route) => user_perm_list.includes(route?.perm) || route.perm === "all"
-      );
-    } else {
-      return privateRoutes;
+
+    dispatch(setLoaderVisible(true))
+
+    const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+
+    if (!!profile_data && !!profile_data.is_admin && profile_data?.is_admin === true) {
+      dispatch(setLoaderVisible(false))
+      return privateRoutes
     }
-  }, []);
+    else if (!!profile_data && !!profile_data.permission_list) {
+      dispatch(setLoaderVisible(false))
+      return privateRoutes.filter(
+        (route) => (Array.isArray(route?.perm) && ((route?.perm).some(d => profile_data?.permission_list.includes(d)))) || (typeof (route?.perm) === 'string' && route?.perm === 'all')
+      )
+    }
+    else {
+      dispatch(setLoaderVisible(false))
+      return privateRoutes
+    }
+  }, [pathname]);
 
   return (
     <React.Fragment>
@@ -46,7 +66,7 @@ const Index = () => {
         </Route>
 
         <Route>
-          {privateRoutes.map((route, idx) => (
+          {filteredPrivateRoutes.map((route, idx) => (
             <Route
               path={route.path}
               element={
