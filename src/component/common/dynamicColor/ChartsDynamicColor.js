@@ -1,5 +1,11 @@
 const getChartColorsArray = (colors) => {
-    colors = JSON.parse(colors);
+    try {
+        colors = JSON.parse(colors);
+    } catch (error) {
+        console.error("Error parsing JSON:", error);
+        return []; // Return an empty array if parsing fails
+    }
+
     return colors.map(function (value) {
         var newValue = value.replace(" ", "");
         if (newValue.indexOf(",") === -1) {

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 import "react-toastify/dist/ReactToastify.css";
-
+import { Card, CardBody, CardHeader, Col, Container, Row } from 'reactstrap';
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import InfoTable from "../../component/common/table/InfoTable";
 import { MetaTitle } from "../../common/data/MetaTitle";
@@ -28,7 +28,10 @@ import {
   setEmployeeTableFilterKeys,
 } from "../../redux/reducers/ChildReducer/TableFilterReducer";
 import { previousDateFormat } from "../../common/js/ConvertDateFormat";
-import { setWorkSchedule } from "../../redux/reducers/ChildReducer/WorkScheduleReducer";
+
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { Api } from "../../common/api/Api";
+import { SimpleRadialbar } from "./SimpleRadialbar";
 
 const Employee = () => {
   const dispatch = useDispatch();
@@ -36,12 +39,31 @@ const Employee = () => {
 
   const { version } = useSelector((state) => state.MetaReducer);
 
+
+
   const EmployeeData = GetLocalStorageData("employee") || [];
 
   useEffect(() => {
     dispatch(setEmployee(EmployeeData));
   }, [version]);
+  // let AllEmployeeData = []
+  // useEffect(() => {
+  //   dispatch(setLoaderVisible(true));
+  //   Api({
+  //     method: "GET",
+  //     url: "report/get-tm-todays-attendance-report/?employee_type=0",
+  //   })
 
+  //     .then((res) => {
+  //       dispatch(setLoaderVisible(false));
+  //       AllEmployeeData = res.data.all_team_members_todays_attendance_report
+
+
+  //     })
+  //     .catch((err) => {
+  //       dispatch(setLoaderVisible(false));
+  //     });
+  // }, []);
   useEffect(() => {
     // dispatch(
     //   setEmployeeTableFilterKeys({
@@ -71,79 +93,89 @@ const Employee = () => {
   const additionalColumn = [
     {
       Header: "Name",
-      accessor: "fname",
-      filterable: false,
-      id: "fname",
+      id: "name",
       accessor: (obj) => {
         return obj.profile_url ? (
-          <div className="d-flex gap-2 align-items-center">
-            <div className="flex-shrink-0">
-              <img
-                src={obj.profile_url}
-                alt=""
-                className="avatar-xs rounded-circle"
-                style={{ objectFit: "cover" }}
-              />
-            </div>
-            <div className="flex-grow-1">
-              <div>
-                <Link
-                  to="#"
-                  onClick={() => viewEmployee(obj)}
-                  className="link-body-emphasis mb-0"
-                >
-                  {" "}
-                  <h5 className="fs-14 mb-1">
-                    <span >{obj.fname}</span>
-                    <span style={{ color: '#a29797' }}>#{obj.emp_id}</span>
-                  </h5>
-                </Link>
+          <CardBody style={{ padding: 0, display: 'flex', alignItems: 'center' }}>
+            <div>
+              <div style={{ position: 'relative', marginRight: '10px' }}>
+                <SimpleRadialbar dataColors={["--vz-success"]} />
+                <img
+            src={obj.profile_url}
+            alt=""
+            className="avatar-xs rounded-circle"
+            style={{ 
+              position: 'absolute',
+              top: '48%',
+              left: '51%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 1,
+            }}
+                />
               </div>
-              <div>{obj.email}</div>
             </div>
-          </div>
-        ) : (
-          <div className="d-flex gap-2 align-items-center">
-            <div className="flex-shrink-0">
-              <div
-                className="avatar-xs rounded-circle"
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  background: "#0ab39c",
-                }}
-                data-bs-toggle="tooltip"
-                title={obj.fname}
+            <div>
+              <Link
+                to="#"
+                onClick={() => viewEmployee(obj)}
+                className="link-body-emphasis mb-0"
+                style={{ marginTop: '2px' }} 
               >
-                <span className="first_letter" style={{ color: "white" }}>
-                  {obj.fname.charAt(0)}
-                </span>
-              </div>
+                <h5 className="fs-14 mb-1" style={{ margin: '0' }}>
+                  <span >{obj.fname}</span>
+                  <span style={{ color: '#a29797', fontSize: 'smaller' }}>{""} #{obj.emp_id}</span>
+                </h5>
+              </Link>
+              <div >{obj.email}</div>
             </div>
-            <div className="flex-grow-1">
-              <div>
-                <Link
-                  to="#"
-                  onClick={() => viewEmployee(obj)}
-                  className="link-body-emphasis mb-0"
+          </CardBody>
+        ) : (
+          <CardBody style={{ padding: 0, display: 'flex', alignItems: 'center' }}>
+            <div>
+              <div style={{ position: 'relative', marginRight: '10px' }}>
+                <SimpleRadialbar dataColors={["--vz-success"]} />
+                <div
+            className="avatar-xs rounded-circle "
+            style={{ 
+              position: 'absolute',
+              top: '48%',
+              left: '51%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 1,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              background: "#0ab39c",
+            }}
+                  data-bs-toggle="tooltip"
+                  title={obj.fname}
                 >
-
-                  {" "}
-                  <h5 className="fs-14 mb-1">
-                    <span >{obj.fname}</span>
-                    <span style={{ color: '#a29797' }}>#{obj.emp_id}</span>
-                  </h5>
-                </Link>
+                  <span className="first_letter" style={{ color: "white" }}>
+                    {obj.fname.charAt(0)}
+                  </span>
+                </div>
               </div>
-              <div>{obj.email}</div>
             </div>
-          </div>
+            <div>
+              <Link
+                to="#"
+                onClick={() => viewEmployee(obj)}
+                className="link-body-emphasis mb-0"
+                style={{ marginTop: '2px' }} 
+              >
+                <h5 className="fs-14 mb-1" style={{ margin: '0' }}>
+                  <span>{obj.fname}</span>
+                  <span style={{ color: '#a29797', fontSize: 'smaller' }}> {""} #{obj.emp_id}</span>
+                </h5>
+              </Link>
+              <div >{obj.email}</div>
+            </div>
+          </CardBody>
         );
-      },
-      // filterable: false,
-      // id: "nameAndEmail",
-    },
+      }
+    }
+    ,
+    
     // {
     //   Header: " Employee ID",
     //   accessor: "emp_id",
@@ -256,8 +288,11 @@ const Employee = () => {
       filterable: false,
       accessor: (obj) => {
         const WorkSchedule = GetLocalStorageData("work_schedule");
-        let workscheduleData = WorkSchedule ? WorkSchedule.filter((data) => obj.work_schedule_id === data.id) : [];
-        const workdayData = workscheduleData.length > 0 ? workscheduleData[0].workday : [];
+        let workscheduleData = WorkSchedule
+          ? WorkSchedule.filter((data) => obj.work_schedule_id === data.id)
+          : [];
+        const workdayData =
+          workscheduleData.length > 0 ? workscheduleData[0].workday : [];
         const days = [
           { id: 1, name: "M", desc: "Monday" },
           { id: 2, name: "T", desc: "Tuesday" },
@@ -268,14 +303,17 @@ const Employee = () => {
           { id: 7, name: "S", desc: "Sunday" },
         ];
         let timings = [];
-    
+        const ws_rowId = workscheduleData.find(
+          (d) => d.id === obj.work_schedule_id
+        );
+
         for (let i = 0; i < days.length; i++) {
           for (let j = 0; j < workdayData.length; j++) {
             if (
-              days[i].desc.toLowerCase() === workdayData[j].s_day.toLowerCase() &&
-              workdayData[j].is_day_on
+              days[i].desc.toLowerCase() === workdayData[j].s_day.toLowerCase()
             ) {
               timings.push({
+                ws_id: ws_rowId.id,
                 id: days[i].id,
                 name: workdayData[j].s_day,
                 s_hr: workdayData[j].s_hr,
@@ -287,10 +325,10 @@ const Employee = () => {
             }
           }
         }
-    
+
         let htmltag = days.map((day, i) => {
           let thisDayTimeObj = timings.find((timing) => timing.id === day.id);
-          console.log("Obj Name = ", obj.name, " thisDayTimeObj = ", thisDayTimeObj);
+
           return (
             <React.Fragment key={day.id}>
               <span
@@ -299,12 +337,16 @@ const Employee = () => {
                     ? "fw-bold me-1"
                     : "fw-normal fw-lighter me-1"
                 }
-                id={`t_${thisDayTimeObj?.id}`}
+                id={`t_${thisDayTimeObj?.ws_id}_${thisDayTimeObj?.id}`}
               >
                 {day.name}
               </span>
-              <UncontrolledTooltip className="lc_tooltip" placement="top" target={`t_${thisDayTimeObj?.id}`}>
-                {thisDayTimeObj?.name}
+              <UncontrolledTooltip
+                className="lc_tooltip"
+                placement="top"
+                target={`t_${thisDayTimeObj?.ws_id}_${thisDayTimeObj?.id}`}
+              >
+                {thisDayTimeObj?.name}{" "}
                 {!!thisDayTimeObj && thisDayTimeObj.is_day_on === true && (
                   <>
                     {`${thisDayTimeObj.s_hr}:${thisDayTimeObj.s_min} - ${thisDayTimeObj.e_hr}:${thisDayTimeObj.e_min}`}
@@ -325,8 +367,8 @@ const Employee = () => {
           </>
         );
       },
-    }
-    ,
+    },
+
     {
       Header: "Reporting Manager",
       filterable: false,
