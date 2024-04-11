@@ -77,6 +77,10 @@ import { PostApi } from "../../../common/api/PostApi";
 import { editLeaveApproval } from "../../../redux/reducers/ChildReducer/LeaveApprovalReducer";
 import { updateAttendanceApprovalData } from "../../../redux/reducers/ChildReducer/AttendanceApprovalReducer";
 import { setTableDataReducer } from "../../../redux/reducers/ChildReducer/TableDataReducer";
+import { Api } from "../../../common/api/Api";
+import { setEmployeeActiveStatus } from "../../../redux/reducers/ChildReducer/EmployeeReducer";
+import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
+import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
 defineElement(loadAnimation);
 
 const InfoTable = ({
@@ -562,22 +566,71 @@ const InfoTable = ({
   const handleTypeFilterChange = (event) => {
     setTypeFilter(event.target.value);
   };
-  const handleDeactivate = (orderData) => {
+  const handleActiveStatus = (orderData) => {
+    console.log("Order Data = ", orderData);
+
+    let orderInfo = {
+      text: orderData?.is_active === true ? "Deactivate" : "Activate",
+      icon: orderData?.is_active === true ? "warning" : "success",
+      confirmBtnColor: orderData?.is_active === true ? "#f06548" : "#0ab39c",
+      statusCode: orderData?.is_active === true ? 2 : 1,
+      statusToChange: orderData?.is_active === true ? false : true,
+    };
+
     Swal.fire({
-      title: "Deactivate",
-      text: ` Are you sure to deactivate Employee (${orderData.fname} ${orderData.lname})?`,
-      icon: "warning",
+      title: orderInfo.text,
+      text: ` Are you sure to ${orderInfo?.text} Employee (${orderData.fname} ${orderData.lname})?`,
+      icon: `${orderInfo?.icon}`,
       showCancelButton: true,
-      confirmButtonColor: "#f06548",
+      confirmButtonColor: `${orderInfo?.confirmBtnColor}`,
       cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, deactivate!",
+      confirmButtonText: `Yes, ${orderInfo?.text}`,
     }).then((result) => {
       if (result.isConfirmed) {
-        Swal.fire(
-          "Deactivated!",
-          "Your account has been deactivated.",
-          "success"
-        );
+        dispatch(setLoaderVisible(true));
+        Api({
+          method: "GET",
+          url: `employee/activate-or-deactivate-employee/?emp_uuid=${orderData?.emp_uuid}&status=${orderInfo?.statusCode}`,
+        })
+          .then((res) => {
+            console.log(res);
+            dispatch(
+              setEmployeeActiveStatus({
+                id: orderData.id,
+                is_active: orderInfo?.statusToChange,
+              })
+            );
+
+            const thisMetaData = GetLocalStorageData("employee");
+            let updated_md = [...thisMetaData].map((d) => {
+              if (d.id === orderData.id) {
+                return {
+                  ...d,
+                  is_active: orderInfo?.statusToChange,
+                };
+              } else {
+                return d;
+              }
+            });
+
+            let GlobalMetaData =
+              localStorage.getItem("lint_hr_globaldata") !== null
+                ? JSON.parse(localStorage.getItem("lint_hr_globaldata"))
+                : {};
+            GlobalMetaData["employee"] = updated_md;
+            localStorage.setItem(
+              "lint_hr_globaldata",
+              JSON.stringify(GlobalMetaData)
+            );
+
+            dispatch(setLoaderVisible(false));
+            toast.success(res?.data?.message);
+          })
+          .catch((err) => {
+            console.log("ERR = ", err);
+            dispatch(setLoaderVisible(false));
+            toast.error(err?.response?.data?.message);
+          });
       }
     });
   };
@@ -825,13 +878,18 @@ const InfoTable = ({
                     </span>
                   </DropdownToggle>
                   <DropdownMenu className="dropdown-menu-end">
-                    <DropdownItem
-                      onClick={() => {
-                        handleDeactivate(orderData);
-                      }}
-                    >
-                      <i className="ri-shut-down-line"></i> Deactivate
-                    </DropdownItem>
+                    {!!orderData && (
+                      <DropdownItem
+                        onClick={() => {
+                          handleActiveStatus(orderData);
+                        }}
+                      >
+                        <i className="ri-shut-down-line"></i>{" "}
+                        {orderData?.is_active === true
+                          ? "Deactivate"
+                          : "Activate"}
+                      </DropdownItem>
+                    )}
                     <DropdownItem
                       onClick={() => {
                         handleResetPassword(orderData);

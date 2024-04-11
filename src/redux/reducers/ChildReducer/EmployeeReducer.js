@@ -14,7 +14,7 @@ const EmployeeReducer = createSlice({
                 employee_data: payload
             }
         },
-        addEmployee: (state, action) => {            
+        addEmployee: (state, action) => {
             return {
                 ...state,
                 employee_data: [...state.employee_data, action.payload]
@@ -25,10 +25,17 @@ const EmployeeReducer = createSlice({
                 ...state,
                 employee_data: [...state.employee_data].map(obj => obj.id === action.payload.id ? action.payload : obj)
             }
+        },
+        setEmployeeActiveStatus: (state, action) => {
+            console.log("PAYLOAD = ", action.payload);
+            return {
+                ...state,
+                employee_data: [...state.employee_data].map(obj => obj.id === action.payload.id ? { ...obj, is_active: action.payload.is_active } : obj)
+            }
         }
     }
 });
 
-export const { setEmployee, addEmployee, editEmployee } = EmployeeReducer.actions;
+export const { setEmployee, addEmployee, editEmployee, setEmployeeActiveStatus } = EmployeeReducer.actions;
 
 export default EmployeeReducer.reducer

@@ -88,7 +88,7 @@ const privateRoutes = [
   {
     path: "/leave-approval",
     component: <LeaveApproval />,
-    perm: "all",
+    perm: ["1b5d106f-f3e8-41f3-8041-d3f71a19d27d", "08cd201a-d20d-45d3-8b60-3a6fb7e4acc0"],
   },
   { path: "/leaves", component: <LeaveDashboard />, perm: "all" },
   { path: "/custom-field", component: <CustomField />, perm: ["9057d872-1f18-42c8-b2fb-89b29f2c05cf"] },
@@ -101,13 +101,13 @@ const privateRoutes = [
   {
     path: "/attendance",
     component: <AttendanceDashboard />,
-    perm: "attendance",
+    perm: "all",
   },
   { path: "/xlsx", component: <Xlsx />, perm: "all" },
   {
     path: "/attendanceconfig",
     component: <AttendanceConfig />,
-    perm: "all",
+    perm: [],
   },
   {
     path: "/attendancereport",
@@ -117,12 +117,17 @@ const privateRoutes = [
   {
     path: "/attendanceapproval",
     component: <AttendanceApproval />,
-    perm: "all",
+    perm: ["8d33a155-2d7e-4a5d-8608-35431a44662c", "2ebd3c5d-dca8-45cc-8334-5a32f2451893"],
   },
   {
     path: "/approval",
     component: <ApprovalFilter />,
-    perm: "all",
+    perm: [
+      "8d33a155-2d7e-4a5d-8608-35431a44662c",
+      "2ebd3c5d-dca8-45cc-8334-5a32f2451893",
+      "1b5d106f-f3e8-41f3-8041-d3f71a19d27d",
+      "08cd201a-d20d-45d3-8b60-3a6fb7e4acc0"
+    ],
   },
   {
     path: "/",
