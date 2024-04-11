@@ -177,7 +177,7 @@ const Navdata = () => {
       link: "/employee",
       parentId: "baseUi",
       perm: "employee",
-      icon:"ri-account-circle-line"
+      icon: "ri-account-circle-line",
     },
     {
       id: "attendance",
@@ -214,11 +214,11 @@ const Navdata = () => {
           perm: "leaves",
         },
         {
-          id: "attendanceapproval",
+          id: "approval",
           label: "Approval",
-          link: "/attendanceapproval",
+          link: "/approval",
           parentId: "baseUi",
-          perm: "attendance_approval",
+          perm: "approval",
         },
         // {
         //   id: "leaveapproval",
@@ -241,7 +241,7 @@ const Navdata = () => {
           parentId: "baseUi",
           perm: "work_schedule",
         },
-      
+
         // {
         //   id: "customfield",
         //   label: "Custom Field",
@@ -249,10 +249,7 @@ const Navdata = () => {
         //   parentId: "baseUi",
         //   perm: "custom_field",
         // },
-        
-       
-       
-       
+
         // {
         //   id: "attendanceconfig",
         //   label: "Attendance Configuration",
@@ -260,7 +257,7 @@ const Navdata = () => {
         //   parentId: "baseUi",
         //   perm: "attendance_config",
         // },
-       
+
         // {
         //   id: "payrollconfig",
         //   label: "Pay Roll Configuration",
@@ -268,8 +265,6 @@ const Navdata = () => {
         //   parentId: "baseUi",
         //   perm: "payroll_config",
         // },
-      
-        
       ],
     },
     {
@@ -286,7 +281,7 @@ const Navdata = () => {
       link: "/attendancereport",
       parentId: "baseUi",
       perm: "attendance_report",
-      icon:"ri-file-chart-line"
+      icon: "ri-file-chart-line",
     },
     {
       id: "baseUi",
@@ -315,9 +310,7 @@ const Navdata = () => {
       //   //   parentId: "baseUi",
       //   //   perm: "roles",
       //   // },
-      
-      
-        
+
       // ],
     },
     //     {

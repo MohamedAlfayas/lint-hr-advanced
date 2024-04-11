@@ -1,5 +1,16 @@
 import React, { useRef, useState } from "react";
-import { Badge, Card, CardHeader, Col, Row } from "reactstrap";
+import {
+  Badge,
+  Card,
+  CardHeader,
+  Col,
+  Row,
+  Nav,
+  NavItem,
+  NavLink,
+  TabPane,
+  TabContent,
+} from "reactstrap";
 import Select from "react-select";
 import { useDispatch, useSelector } from "react-redux";
 import { DatePicker } from "antd";
@@ -13,6 +24,10 @@ import { setAttendanceApprovalData } from "../../../redux/reducers/ChildReducer/
 import { toast } from "react-toastify";
 import { Link, useLocation } from "react-router-dom";
 import { employeeTypeOptions } from "../../../common/constant/Constants";
+import AttendanceApproval from "../../../pages/attendanceApproval/AttendanceApproval";
+import LeaveApproval from "../../../pages/leave/LeaveApproval";
+import classnames from "classnames";
+
 dayjs.extend(customParseFormat);
 
 const ApprovalFilter = ({ formname }) => {
@@ -21,6 +36,13 @@ const ApprovalFilter = ({ formname }) => {
   );
   const PendingLeave = leave_approval_data.filter((d) => d.status === 1).length;
 
+  const [activeTab, setActiveTab] = useState("1");
+  const toggleTab = (tab) => {
+    if (activeTab !== tab) {
+      setActiveTab(tab);
+    }
+  };
+
   const { attendance_approval_data } = useSelector(
     (state) => state.AttendanceApprovalReducer
   );
@@ -28,8 +50,6 @@ const ApprovalFilter = ({ formname }) => {
     (d) => d.hr_status === 3
   ).length;
 
-  console.log("PendingLeave", PendingLeave);
-  console.log("OverallPending", AttendancePending + PendingLeave);
   const inputRef = useRef();
   const location = useLocation();
   const pathname = location.pathname;
@@ -52,8 +72,9 @@ const ApprovalFilter = ({ formname }) => {
   };
 
   const handleFilter = async () => {
+    console.log("ActiveTab", activeTab);
     dispatch(setLoaderVisible(true));
-    if (formname === "leave_approval_component_name") {
+    if (activeTab === "2") {
       Api({
         type: "GET",
         url:
@@ -70,7 +91,7 @@ const ApprovalFilter = ({ formname }) => {
           console.log("ERR = ", err);
           dispatch(setLoaderVisible(false));
         });
-    } else if (formname === "attendance_approval_component_name") {
+    } else if (activeTab === "1") {
       Api({
         type: "GET",
         url:
@@ -88,106 +109,181 @@ const ApprovalFilter = ({ formname }) => {
           dispatch(setLoaderVisible(false));
         });
     } else {
+      dispatch(setLoaderVisible(false));
       toast.error("Sometyhing Went Wrong!");
     }
   };
 
   return (
     <React.Fragment>
-      <Card>
-        <CardHeader className="border-0 rounded">
-          <Row className="g-2">
-            <Col md={3}>
-              <Select
-                id="employee_filter"
-                name="employee_filter"
-                isClearable={false}
-                isMulti={false}
-                options={employeeTypeOptions || []}
-                className="basic-multi-select"
-                placeholder="Select Employee Type"
-                allowClear={false}
-                onChange={handleEmployeeTypeChange}
-                value={
-                  employeeTypeOptions.find((d) => d.id === employeeType) ||
-                  employeeTypeOptions[1]
-                }
-              />
-            </Col>
-            <Col md={3}>
-              <div className="form-icon right">
-                <DatePicker
-                  value={dayjs(filteredMonth)}
-                  format={MonthFormat}
-                  picker="month"
-                  allowClear={false}
-                  className="form-control"
-                  placeholder="Select Month"
-                  onChange={handleDateRangeChange}
-                />
-              </div>
-            </Col>
-            <Col md={2}>
-              <div className="col-lg-auto">
-                <div className="hstack gap-2">
-                  <button
-                    type="button"
-                    onClick={handleFilter}
-                    className="btn btn-danger"
-                  >
-                    <i className="ri-equalizer-fill me-1 align-bottom"></i>{" "}
-                    Filter
-                  </button>
-                </div>
-              </div>
-            </Col>
-            <Col md={4}>
+      <div className="page-content" style={{ marginBottom: "-135px" }}>
+        <div style={{ zIndex: 1000, position: "relative" }}>
+          <Card>
+            <CardHeader className="border-0 rounded">
               <Row className="g-2">
-                <div className="d-flex justify-content-end">
-                  <div className="col-lg-auto me-2">
-                    <Link
-                      to="/attendanceapproval"
-                      className={`btn btn-${
-                        pathname === "/attendanceapproval" ? "info" : "grey"
-                      }`}
-                    >
-                      Attendance Approval{" "}
-                      <Badge
-                        color={
-                          pathname === "/attendanceapproval"
-                            ? "primary"
-                            : "info"
-                        }
-                        style={{ marginLeft: "5px" }}
-                      >
-                        {AttendancePending}
-                      </Badge>
-                    </Link>
-                  </div>{" "}
-                  <div className="col-lg-auto">
-                    <Link
-                      to="/leave-approval"
-                      className={`btn btn-${
-                        pathname === "/leave-approval" ? "info" : "grey"
-                      }`}
-                    >
-                      Leave Approval{" "}
-                      <Badge
-                        color={
-                          pathname === "/leave-approval" ? "primary" : "info"
-                        }
-                        style={{ marginLeft: "5px" }}
-                      >
-                        {PendingLeave}
-                      </Badge>
-                    </Link>
+                <Col md={3}>
+                  <Select
+                    id="employee_filter"
+                    name="employee_filter"
+                    isClearable={false}
+                    isMulti={false}
+                    options={employeeTypeOptions || []}
+                    className="basic-multi-select"
+                    placeholder="Select Employee Type"
+                    allowClear={false}
+                    onChange={handleEmployeeTypeChange}
+                    value={
+                      employeeTypeOptions.find((d) => d.id === employeeType) ||
+                      employeeTypeOptions[1]
+                    }
+                  />
+                </Col>
+                <Col md={3}>
+                  <div className="form-icon right">
+                    <DatePicker
+                      value={dayjs(filteredMonth)}
+                      format={MonthFormat}
+                      picker="month"
+                      allowClear={false}
+                      className="form-control"
+                      placeholder="Select Month"
+                      onChange={handleDateRangeChange}
+                    />
                   </div>
-                </div>
+                </Col>
+                <Col md={2}>
+                  <div className="col-lg-auto">
+                    <div className="hstack gap-2">
+                      <button
+                        type="button"
+                        onClick={handleFilter}
+                        className="btn btn-danger"
+                      >
+                        <i className="ri-equalizer-fill me-1 align-bottom"></i>{" "}
+                        Filter
+                      </button>
+                    </div>
+                  </div>
+                </Col>
+                <Col md={4}>
+                  <Row className="g-2">
+                    <div className="d-flex justify-content-end">
+                      <div className="col-lg-auto me-2">
+                        <Nav
+                          className="nav-tabs nav-tabs-custom nav-success"
+                          role="tablist"
+                        >
+                          <NavItem>
+                            <NavLink
+                              className={classnames(
+                                { active: activeTab === "1" },
+                                `fw-semibold ${
+                                  activeTab === "1"
+                                    ? "text-success"
+                                    : "text-primary"
+                                }`
+                              )}
+                              onClick={() => {
+                                toggleTab("1");
+                                handleFilter();
+                              }}
+                              href="#"
+                            >
+                              Attendance Approval{" "}
+                              <Badge
+                                color={
+                                  activeTab === "1" ? "success" : "primary"
+                                }
+                                style={{ marginLeft: "5px" }}
+                              >
+                                {AttendancePending}
+                              </Badge>
+                            </NavLink>
+                          </NavItem>
+                          <NavItem>
+                            <NavLink
+                              className={classnames(
+                                { active: activeTab === "2" },
+                                `fw-semibold ${
+                                  activeTab === "2"
+                                    ? "text-success"
+                                    : "text-primary"
+                                }`
+                              )}
+                              onClick={() => {
+                                toggleTab("2"), handleFilter();
+                              }}
+                              href="#"
+                            >
+                              Leave Approval{" "}
+                              <Badge
+                                color={
+                                  activeTab === "2" ? "success" : "primary"
+                                }
+                                style={{ marginLeft: "5px" }}
+                              >
+                                {PendingLeave}
+                              </Badge>
+                            </NavLink>
+                          </NavItem>
+                        </Nav>
+                        {/* <Link
+                          to="/attendanceapproval"
+                          className={`btn btn-${
+                            pathname === "/attendanceapproval" ? "info" : "grey"
+                          }`}
+                        >
+                          Attendance Approval{" "}
+                          <Badge
+                            color={
+                              pathname === "/attendanceapproval"
+                                ? "primary"
+                                : "info"
+                            }
+                            style={{ marginLeft: "5px" }}
+                          >
+                            {AttendancePending}
+                          </Badge>
+                        </Link> */}
+                      </div>{" "}
+                      <div className="col-lg-auto">
+                        {/* <Link
+                          to="/leave-approval"
+                          className={`btn btn-${
+                            pathname === "/leave-approval" ? "info" : "grey"
+                          }`}
+                        >
+                          Leave Approval{" "}
+                          <Badge
+                            color={
+                              pathname === "/leave-approval"
+                                ? "primary"
+                                : "info"
+                            }
+                            style={{ marginLeft: "5px" }}
+                          >
+                            {PendingLeave}
+                          </Badge>
+                        </Link> */}
+                      </div>
+                    </div>
+                  </Row>
+                </Col>
               </Row>
-            </Col>
-          </Row>
-        </CardHeader>
-      </Card>
+            </CardHeader>
+          </Card>
+        </div>
+      </div>
+      <Col lg={12}>
+        <TabContent activeTab={activeTab} className="text-muted">
+          <TabPane tabId="1">
+            <AttendanceApproval />
+          </TabPane>
+          <TabPane tabId="2">
+            <LeaveApproval />
+          </TabPane>
+        </TabContent>
+      </Col>
     </React.Fragment>
   );
 };

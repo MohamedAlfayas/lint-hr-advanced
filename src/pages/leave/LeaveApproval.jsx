@@ -327,17 +327,6 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
   document.title = `Leave Approval | ${MetaTitle}`;
   return (
     <React.Fragment>
-      <Container fluid>
-        <div className="page-content" style={{ marginBottom: "-135px" }}>
-          <div style={{ zIndex: 1000, position: "relative" }}>
-            <ApprovalFilter
-              formname={"leave_approval_component_name"}
-              PendingLeave={PendingLeave}
-              AttendancePending={AttendancePending}
-            />
-          </div>
-        </div>
-      </Container>
       <InfoTable
         additionalColumn={additionalColumn}
         tabledata={leave_approval_data}
