@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Col, Container, Row } from "reactstrap";
 
 // Import Images
-import errorImg from "../../assets/images/error.svg";
+import errorImg from "../../assets/images/error400-cover.png";
 import { MetaTitle } from "../../common/data/MetaTitle";
 
 const Basic404 = () => {
@@ -16,14 +16,10 @@ const Basic404 = () => {
             <Col lg={12}>
               <div className="text-center pt-4">
                 <div className="">
-                  <img
-                    src={errorImg}
-                    alt=""
-                    className="error-basic-img move-animation"
-                  />
+                  <img src={errorImg} alt="" className="error-basic-img" />
                 </div>
-                <div className="mt-n4">
-                  <h1 className="display-1 fw-medium">OOPS !!!</h1>
+                <div className="mt-4">
+                  <h2 className="display-1 fw-medium">OOPS !!!</h2>
                   <h3 className="text-uppercase">Sorry, Page not Found 😭</h3>
                   <p className="text-muted mb-4">
                     The page you are looking for not available!

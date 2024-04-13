@@ -3,7 +3,7 @@ import PublicRoute from "./PublicRoute";
 import PrivateRoute from "./PrivateRoute";
 import { defaultRoutes, privateRoutes, publicRoutes, workSpaceRoutes } from "./AllRoutes";
 import Layout from "../layout/Layout";
-import React, { useEffect, useMemo, lazy, Suspense } from "react";
+import React, { useEffect, useMemo, lazy, Suspense, useState } from "react";
 import LoadingBar from "react-top-loading-bar";
 import { useLocation } from 'react-router-dom';
 // import Basic404 from "../pages/error/Basic404";
@@ -18,29 +18,45 @@ const Index = () => {
 
   const { pathname } = useLocation();
 
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
-  const filteredPrivateRoutes = useMemo(() => {
+  const [allowedRoutes, setAllowedRoutes] = useState([]);
+  const [deniedRoutes, setDeniedRoutes] = useState([]);
 
+  useEffect(() => {
     dispatch(setLoaderVisible(true))
 
     const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
     if (!!profile_data && !!profile_data.is_admin && profile_data?.is_admin === true) {
-      dispatch(setLoaderVisible(false))
-      return privateRoutes
+      setAllowedRoutes(privateRoutes);
+      setDeniedRoutes([]);
+      dispatch(setLoaderVisible(false));
     }
     else if (!!profile_data && !!profile_data.permission_list) {
-      dispatch(setLoaderVisible(false))
-      return privateRoutes.filter(
-        (route) => (Array.isArray(route?.perm) && ((route?.perm).some(d => profile_data?.permission_list.includes(d)))) || (typeof (route?.perm) === 'string' && route?.perm === 'all')
-      )
+      let allowed_r = [];
+      let denied_r = [];
+
+      privateRoutes.map((route) => {
+        if ((Array.isArray(route?.perm) && ((route?.perm).some(d => profile_data?.permission_list.includes(d)))) || (typeof (route?.perm) === 'string' && route?.perm === 'all')) {
+          allowed_r.push(route);
+        }
+        else {
+          denied_r.push(route);
+        }
+      });
+
+      setAllowedRoutes(allowed_r);
+      setDeniedRoutes(denied_r);
+      dispatch(setLoaderVisible(false));
     }
     else {
-      dispatch(setLoaderVisible(false))
-      return privateRoutes
+      setAllowedRoutes(privateRoutes);
+      setDeniedRoutes([])
+      dispatch(setLoaderVisible(false));
     }
-  }, [pathname]);
+  }, [pathname])
+
 
   return (
     <React.Fragment>
@@ -66,7 +82,7 @@ const Index = () => {
         </Route>
 
         <Route>
-          {filteredPrivateRoutes.map((route, idx) => (
+          {allowedRoutes.map((route, idx) => (
             <Route
               path={route.path}
               element={
@@ -80,6 +96,23 @@ const Index = () => {
                     {/* {route.component} */}
                   </Layout>
                 </PrivateRoute>
+              }
+              key={idx}
+              exact={true}
+            />
+          ))}
+        </Route>
+
+        <Route>
+          {deniedRoutes.map((route, idx) => (
+            <Route
+              path={route.path}
+              element={
+                <Suspense
+                  fallback={<LoadingBar progress={100} color="#405189" />}
+                >
+                  <AccessDenied />
+                </Suspense>
               }
               key={idx}
               exact={true}

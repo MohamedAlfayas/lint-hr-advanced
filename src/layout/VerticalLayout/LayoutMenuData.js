@@ -137,394 +137,210 @@ const Navdata = () => {
     isMultiLevel,
   ]);
 
-  const menuItems = [
-    {
-      label: "Menu",
-      isHeader: true,
-    },
-    {
-      id: "dashboard",
-      label: "Dashboards",
-      icon: "ri-dashboard-2-line",
-      link: "/dashboard",
-      parentId: "dashboard",
-      perm: "all",
-      stateVariables: isDashboard,
-      // click: function (e) {
-      //   e.preventDefault();
-      //   setIsDashboard(!isDashboard);
-      //   setIscurrentState("Dashboard");
-      //   updateIconSidebar(e);
-      //   // history('/')
-      // },
-      // subItems: [
-      //   {
-      //     id: "analytics",
-      //     label: "Analytics",
-      //     link: "/dashboard",
-      //     parentId: "dashboard",
-      //     perm: "all",
-      //   },
-      // ],
-    },
-    {
-      label: "General",
-      isHeader: true,
-    },
-    {
-      id: "employee",
-      label: "Employee",
-      link: "/employee",
-      parentId: "baseUi",
-      perm: "employee",
-      icon: "ri-account-circle-line",
-    },
-    {
-      id: "attendance",
-      label: "Atttendance",
-      icon: " ri-user-follow-line",
-      link: "/#",
-      click: function (e) {
-        e.preventDefault();
-        setIsAttendance(!isAttendance);
-        setIscurrentState("Attendance");
-        updateIconSidebar(e);
+  const menuItems = () => {
+
+    const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+
+    console.log("profile_data = ", profile_data);
+
+    let menuList = [
+      {
+        label: "Menu",
+        isHeader: true,
       },
-      stateVariables: isAttendance,
-      subItems: [
-        {
-          id: "attendance",
-          label: "Att.Overview",
-          link: "/attendance",
-          parentId: "baseUi",
-          perm: "attendance",
-        },
-        {
-          id: "holidays",
-          label: "Holidays",
-          link: "/holidays",
-          parentId: "baseUi",
-          perm: "holidays",
-        },
-        {
-          id: "leaves",
-          label: "Leave",
-          link: "/leaves",
-          parentId: "baseUi",
-          perm: "leaves",
-        },
-        {
-          id: "approval",
-          label: "Approval",
-          link: "/approval",
-          parentId: "baseUi",
-          perm: "approval",
-        },
-        // {
-        //   id: "leaveapproval",
-        //   label: "Leave Approval",
-        //   link: "/leave-approval",
-        //   parentId: "baseUi",
-        //   perm: "leave_apporval",
-        // },
-        {
-          id: "leavetype",
-          label: "Leave Type",
-          link: "/leavetype",
-          parentId: "baseUi",
-          perm: "leave_type",
-        },
-        {
-          id: "workschedule",
-          label: "WorkSchedule",
-          link: "/workschedule",
-          parentId: "baseUi",
-          perm: "work_schedule",
-        },
-
-        // {
-        //   id: "customfield",
-        //   label: "Custom Field",
-        //   link: "/custom-field",
-        //   parentId: "baseUi",
-        //   perm: "custom_field",
-        // },
-
-        // {
-        //   id: "attendanceconfig",
-        //   label: "Attendance Configuration",
-        //   link: "/attendanceconfig",
-        //   parentId: "baseUi",
-        //   perm: "attendance_config",
-        // },
-
-        // {
-        //   id: "payrollconfig",
-        //   label: "Pay Roll Configuration",
-        //   link: "/payrollconfig",
-        //   parentId: "baseUi",
-        //   perm: "payroll_config",
-        // },
-      ],
-    },
-    {
-      id: "payroll",
-      label: "Pay Roll",
-      link: "/payroll",
-      parentId: "payroll",
-      perm: "payroll",
-      icon: " ri-currency-line",
-    },
-    {
-      id: "attendancereport",
-      label: "Report",
-      link: "/attendancereport",
-      parentId: "baseUi",
-      perm: "attendance_report",
-      icon: "ri-file-chart-line",
-    },
-    {
-      id: "baseUi",
-      label: "Configuration",
-      icon: "ri-settings-3-line",
-      link: "/organization",
-      click: function (e) {
-        e.preventDefault();
-        setIsBaseUi(!isBaseUi);
-        setIscurrentState("BaseUi");
-        updateIconSidebar(e);
+      {
+        id: "dashboard",
+        label: "Dashboards",
+        icon: "ri-dashboard-2-line",
+        link: "/dashboard",
+        parentId: "dashboard",
+        perm: "all",
+        stateVariables: isDashboard,
       },
-      // stateVariables: isBaseUi,
-      // subItems: [
-      //   {
-      //     id: "organization",
-      //     label: "Organization",
-      //     link: "/organization",
-      //     parentId: "baseUi",
-      //     perm: "organization",
-      //   },
-      //   // {
-      //   //   id: "roles",
-      //   //   label: "Roles",
-      //   //   link: "/roles",
-      //   //   parentId: "baseUi",
-      //   //   perm: "roles",
-      //   // },
+      {
+        label: "General",
+        isHeader: true,
+      },
+      {
+        id: "employee",
+        label: "Employee",
+        link: "/employee",
+        parentId: "baseUi",
+        perm: ["a196c41a-5ecb-40c2-ace9-02b5f4819b29"],
+        icon: "ri-account-circle-line",
+      },
+      {
+        id: "attendance",
+        label: "Atttendance",
+        icon: " ri-user-follow-line",
+        perm: "all",
+        link: "/#",
+        click: function (e) {
+          e.preventDefault();
+          setIsAttendance(!isAttendance);
+          setIscurrentState("Attendance");
+          updateIconSidebar(e);
+        },
+        stateVariables: isAttendance,
+        subItems: [
+          {
+            id: "attendance",
+            label: "Att.Overview",
+            link: "/attendance",
+            parentId: "baseUi",
+            perm: "all",
+          },
+          {
+            id: "holidays",
+            label: "Holidays",
+            link: "/holidays",
+            parentId: "baseUi",
+            perm: [],
+          },
+          {
+            id: "leaves",
+            label: "Leave",
+            link: "/leaves",
+            parentId: "baseUi",
+            perm: "all",
+          },
+          {
+            id: "approval",
+            label: "Approval",
+            link: "/approval",
+            parentId: "baseUi",
+            perm: [
+              "8d33a155-2d7e-4a5d-8608-35431a44662c",
+              "2ebd3c5d-dca8-45cc-8334-5a32f2451893",
+              "1b5d106f-f3e8-41f3-8041-d3f71a19d27d",
+              "08cd201a-d20d-45d3-8b60-3a6fb7e4acc0"
+            ],
+          },
+          // {
+          //   id: "leaveapproval",
+          //   label: "Leave Approval",
+          //   link: "/leave-approval",
+          //   parentId: "baseUi",
+          //   perm: "leave_apporval",
+          // },
+          {
+            id: "leavetype",
+            label: "Leave Type",
+            link: "/leavetype",
+            parentId: "baseUi",
+            perm: [],
+          },
+          {
+            id: "workschedule",
+            label: "WorkSchedule",
+            link: "/workschedule",
+            parentId: "baseUi",
+            perm: [],
+          },
 
-      // ],
-    },
-    //     {
-    //         id: "advanceUi",
-    //         label: "Advance UI",
-    //         icon: "ri-stack-line",
-    //         link: "/#",
-    //         click: function (e) {
-    //             e.preventDefault();
-    //             setIsAdvanceUi(!isAdvanceUi);
-    //             setIscurrentState('AdvanceUi');
-    //             updateIconSidebar(e);
-    //         },
-    //         stateVariables: isAdvanceUi,
-    //         subItems: [
-    //             { id: "nestablelist", label: "Nestable List", link: "#", parentId: "advanceUi" },
-    //             { id: "scrollbar", label: "Scrollbar", link: "#", parentId: "advanceUi" },
-    //             { id: "animation", label: "Animation", link: "#", parentId: "advanceUi" },
-    //             { id: "tour", label: "Tour", link: "#", parentId: "advanceUi" },
-    //             { id: "swiperslider", label: "Swiper Slider", link: "#", parentId: "advanceUi" },
-    //             { id: "ratings", label: "Ratings", link: "#", parentId: "advanceUi" },
-    //             { id: "highlight", label: "Highlight", link: "#", parentId: "advanceUi" },
-    //         ],
-    //     },
-    //     {
-    //         id: "widgets",
-    //         label: "Widgets",
-    //         icon: "ri-honour-line",
-    //         link: "#",
-    //         click: function (e) {
-    //             e.preventDefault();
-    //             setIscurrentState('Widgets');
-    //         }
-    //     },
-    //     {
-    //         id: "forms",
-    //         label: "Forms",
-    //         icon: "ri-file-list-3-line",
-    //         link: "/#",
-    //         click: function (e) {
-    //             e.preventDefault();
-    //             setIsForms(!isForms);
-    //             setIscurrentState('Forms');
-    //             updateIconSidebar(e);
-    //         },
-    //         stateVariables: isForms,
-    //         subItems: [
-    //             { id: "basicelements", label: "Basic Elements", link: "#", parentId: "forms" },
-    //             { id: "formselect", label: "Form Select", link: "#", parentId: "forms" },
-    //             { id: "checkboxsradios", label: "Checkboxs & Radios", link: "#", parentId: "forms" },
-    //             { id: "pickers", label: "Pickers", link: "#", parentId: "forms" },
-    //             { id: "inputmasks", label: "Input Masks", link: "#", parentId: "forms" },
-    //             { id: "advanced", label: "Advanced", link: "#", parentId: "forms" },
-    //             { id: "rangeslider", label: "Range Slider", link: "#", parentId: "forms" },
-    //             { id: "validation", label: "Validation", link: "#", parentId: "forms" },
-    //             { id: "wizard", label: "Wizard", link: "#", parentId: "forms" },
-    //             { id: "editors", label: "Editors", link: "#", parentId: "forms" },
-    //             { id: "fileuploads", label: "File Uploads", link: "#", parentId: "forms" },
-    //             { id: "formlayouts", label: "Form Layouts", link: "#", parentId: "forms" },
-    //             { id: "select2", label: "Select2", link: "#", parentId: "forms" },
-    //         ],
-    //     },
-    //     {
-    //         id: "tables",
-    //         label: "Tables",
-    //         icon: "ri-layout-grid-line",
-    //         link: "/#",
-    //         click: function (e) {
-    //             e.preventDefault();
-    //             setIsTables(!isTables);
-    //             setIscurrentState('Tables');
-    //             updateIconSidebar(e);
-    //         },
-    //         stateVariables: isTables,
-    //         subItems: [
-    //             { id: "basictables", label: "Basic Tables", link: "#", parentId: "tables" },
-    //             { id: "listjs", label: "List Js", link: "#", parentId: "tables" },
-    //             { id: "reactdatatables", label: "React Datatables", link: "#", parentId: "tables" },
-    //         ],
-    //     },
-    //     {
-    //         id: "charts",
-    //         label: "Charts",
-    //         icon: "ri-pie-chart-line",
-    //         link: "/#",
-    //         click: function (e) {
-    //             e.preventDefault();
-    //             setIsCharts(!isCharts);
-    //             setIscurrentState('Charts');
-    //             updateIconSidebar(e);
-    //         },
-    //         stateVariables: isCharts,
-    //         subItems: [
-    //             {
-    //                 id: "apexcharts",
-    //                 label: "Apexcharts",
-    //                 link: "/#",
-    //                 isChildItem: true,
-    //                 click: function (e) {
-    //                     e.preventDefault();
-    //                     setIsApex(!isApex);
-    //                 },
-    //                 stateVariables: isApex,
-    //                 childItems: [
-    //                     { id: 1, label: "Line", link: "#" },
-    //                     { id: 2, label: "Area", link: "#" },
-    //                     { id: 3, label: "Column", link: "#" },
-    //                     { id: 4, label: "Bar", link: "#" },
-    //                     { id: 5, label: "Mixed", link: "#" },
-    //                     { id: 6, label: "Timeline", link: "#" },
-    //                     { id: 7, label: "Range Area", link: "#", parentId: "apexcharts", badgeColor: "success", badgeName: "New" },
-    //                     { id: 8, label: "Funnel", link: "#", parentId: "apexcharts", badgeColor: "success", badgeName: "New" },
-    //                     { id: 9, label: "Candlstick", link: "#" },
-    //                     { id: 10, label: "Boxplot", link: "#" },
-    //                     { id: 11, label: "Bubble", link: "#" },
-    //                     { id: 12, label: "Scatter", link: "#" },
-    //                     { id: 13, label: "Heatmap", link: "#" },
-    //                     { id: 14, label: "Treemap", link: "#" },
-    //                     { id: 15, label: "Pie", link: "#" },
-    //                     { id: 16, label: "Radialbar", link: "#" },
-    //                     { id: 17, label: "Radar", link: "#" },
-    //                     { id: 18, label: "Polar Area", link: "#" },
-    //                 ]
-    //             },
-    //             { id: "chartjs", label: "Chartjs", link: "#", parentId: "charts" },
-    //             { id: "echarts", label: "Echarts", link: "#", parentId: "charts" },
+          // {
+          //   id: "customfield",
+          //   label: "Custom Field",
+          //   link: "/custom-field",
+          //   parentId: "baseUi",
+          //   perm: "custom_field",
+          // },
 
-    //         ],
-    //     },
-    //     {
-    //         id: "icons",
-    //         label: "Icons",
-    //         icon: "ri-compasses-2-line",
-    //         link: "/#",
-    //         click: function (e) {
-    //             e.preventDefault();
-    //             setIsIcons(!isIcons);
-    //             setIscurrentState('Icons');
-    //             updateIconSidebar(e);
-    //         },
-    //         stateVariables: isIcons,
-    //         subItems: [
-    //             { id: "remix", label: "Remix", link: "#", parentId: "icons" },
-    //             { id: "boxicons", label: "Boxicons", link: "#", parentId: "icons" },
-    //             { id: "materialdesign", label: "Material Design", link: "#", parentId: "icons" },
-    //             { id: "lineawesome", label: "Line Awesome", link: "#", parentId: "icons" },
-    //             { id: "feather", label: "Feather", link: "#", parentId: "icons" },
-    //             { id: "crypto", label: "Crypto SVG", link: "#", parentId: "icons" },
-    //         ],
-    //     },
-    //     {
-    //         id: "maps",
-    //         label: "Maps",
-    //         icon: "ri-map-pin-line",
-    //         link: "/#",
-    //         click: function (e) {
-    //             e.preventDefault();
-    //             setIsMaps(!isMaps);
-    //             setIscurrentState('Maps');
-    //             updateIconSidebar(e);
-    //         },
-    //         stateVariables: isMaps,
-    //         subItems: [
-    //             { id: "google", label: "Google", link: "#", parentId: "maps" },
-    //             { id: "vector", label: "Vector", link: "#", parentId: "maps" },
-    //             { id: "leaflet", label: "Leaflet", link: "#", parentId: "maps" },
-    //         ],
-    //     },
-    //     {
-    //         id: "multilevel",
-    //         label: "Multi Level",
-    //         icon: "ri-share-line",
-    //         link: "#",
-    //         click: function (e) {
-    //             e.preventDefault();
-    //             setIsMultiLevel(!isMultiLevel);
-    //             setIscurrentState('MuliLevel');
-    //             updateIconSidebar(e);
-    //         },
-    //         stateVariables: isMultiLevel,
-    //         subItems: [
-    //             { id: "level1.1", label: "Level 1.1", link: "#", parentId: "multilevel" },
-    //             {
-    //                 id: "level1.2",
-    //                 label: "Level 1.2",
-    //                 link: "#",
-    //                 isChildItem: true,
-    //                 click: function (e) {
-    //                     e.preventDefault();
-    //                     setIsLevel1(!isLevel1);
-    //                 },
-    //                 stateVariables: isLevel1,
-    //                 childItems: [
-    //                     { id: 1, label: "Level 2.1", link: "#" },
-    //                     {
-    //                         id: "level2.2",
-    //                         label: "Level 2.2",
-    //                         link: "#",
-    //                         isChildItem: true,
-    //                         click: function (e) {
-    //                             e.preventDefault();
-    //                             setIsLevel2(!isLevel2);
-    //                         },
-    //                         stateVariables: isLevel2,
-    //                         childItems: [
-    //                             { id: 1, label: "Level 3.1", link: "#" },
-    //                             { id: 2, label: "Level 3.2", link: "#" },
-    //                         ]
-    //                     },
-    //                 ]
-    //             },
-    //         ],
-    //     },
-  ];
-  return <React.Fragment>{menuItems}</React.Fragment>;
+          // {
+          //   id: "attendanceconfig",
+          //   label: "Attendance Configuration",
+          //   link: "/attendanceconfig",
+          //   parentId: "baseUi",
+          //   perm: "attendance_config",
+          // },
+
+          // {
+          //   id: "payrollconfig",
+          //   label: "Pay Roll Configuration",
+          //   link: "/payrollconfig",
+          //   parentId: "baseUi",
+          //   perm: "payroll_config",
+          // },
+        ],
+      },
+      {
+        id: "payroll",
+        label: "Pay Roll",
+        link: "/payroll",
+        parentId: "payroll",
+        perm: "all",
+        icon: " ri-currency-line",
+      },
+      {
+        id: "attendancereport",
+        label: "Report",
+        link: "/attendancereport",
+        parentId: "baseUi",
+        perm: ["c77528b2-5d9f-49ad-b6d1-5f95e61a66a0"],
+        icon: "ri-file-chart-line",
+      },
+      {
+        id: "baseUi",
+        label: "Configuration",
+        icon: "ri-settings-3-line",
+        link: "/organization",
+        perm: ["dac690d1-6712-4aa6-9b4f-7d71bc4f8eb1"],
+        click: function (e) {
+          e.preventDefault();
+          setIsBaseUi(!isBaseUi);
+          setIscurrentState("BaseUi");
+          updateIconSidebar(e);
+        },
+      },
+    ]
+
+
+    if (!!profile_data && !!profile_data.is_admin && profile_data?.is_admin === true) {
+      return menuList
+    }
+    else if (!!profile_data && !!profile_data.permission_list) {
+      let updated_menu = [];
+      menuList.map((route) => {
+        if (
+          (Array.isArray(route?.perm) &&
+            (route?.perm).some((d) =>
+              profile_data?.permission_list.includes(d)
+            )) ||
+          (typeof route?.perm === "string" && route?.perm === "all")
+        ) {
+          let thisSubMenu = route.subItems;
+          let updatedSubMenu = [];
+
+          if (!!thisSubMenu) {
+            thisSubMenu.map((ts) => {
+              if (
+                (Array.isArray(ts?.perm) &&
+                  (ts?.perm).some((d) =>
+                    profile_data?.permission_list.includes(d)
+                  )) ||
+                (typeof ts?.perm === "string" && ts?.perm === "all")
+              ) {
+                updatedSubMenu.push(ts);
+              }
+            });
+
+            route.subItems = updatedSubMenu;
+
+            console.log("ROUTE = ", route);
+          }
+
+          updated_menu.push(route);
+        }
+      });
+
+      return updated_menu
+    }
+    else {
+      return menuList
+    }
+  }
+
+
+  return <React.Fragment>{menuItems()}</React.Fragment>;
 };
 export default Navdata;
