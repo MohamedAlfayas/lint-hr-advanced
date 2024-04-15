@@ -34,6 +34,11 @@ import avatar3 from "../../assets/images/users/avatar-3.jpg";
 import OrgModal from "./common/OrgModal";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setDepartmentDetails } from "../../redux/reducers/ChildReducer/DepartmentReducer";
+import {
+  CREATE_DEPARTMENT_ACCESS_KEY,
+  EDIT_DEPARTMENT_ACCESS_KEY,
+  department_component_name,
+} from "../../common/constant/Constants";
 
 const DepartmentsTab = () => {
   const EmployeeData = GetLocalStorageData("employee");
@@ -51,7 +56,7 @@ const DepartmentsTab = () => {
     };
   }, []);
 
-  const handleDepartmentEdit = ($id, obj) => {
+  const handleDepartmentCreateOrEdit = ($id, obj) => {
     const depObj = $id === 0 ? newDepObj : obj;
     dispatch(setFormTitle("Departments"));
     dispatch(setFormObj(depObj));
@@ -62,21 +67,37 @@ const DepartmentsTab = () => {
 
   const { department_data } = useSelector((state) => state.DepartmentReducer);
 
+  const [showCreateBtn, setShowCreateBtn] = useState(false);
+  const [showEditBtn, setShowEditBtn] = useState(false);
+
   useEffect(() => {
+    const profile_data = JSON.parse(
+      localStorage.getItem("lint_hr_profile_data")
+    );
+
+    if (
+      !!profile_data &&
+      !!profile_data.is_admin &&
+      profile_data?.is_admin === true
+    ) {
+      setShowCreateBtn(true);
+      setShowEditBtn(true);
+    } else if (!!profile_data && !!profile_data.permission_list) {
+      if (profile_data.permission_list.includes(CREATE_DEPARTMENT_ACCESS_KEY)) {
+        setShowCreateBtn(true);
+      }
+      if (profile_data.permission_list.includes(EDIT_DEPARTMENT_ACCESS_KEY)) {
+        setShowEditBtn(true);
+      }
+    } else {
+      setShowCreateBtn(true);
+      setShowEditBtn(true);
+    }
+
     dispatch(
       setDepartmentDetails(GetLocalStorageData("department_details") || [])
     );
   }, []);
-
-  const item = {
-    subItem: [
-      { id: 1, img: avatar1, name: "ELan" },
-      { id: 2, img: avatar2, name: "ELan1" },
-      // { id: 3, img: avatar3 },
-
-      { id: 3, imgNumber: "4", bgcolor: "bg-info" },
-    ],
-  };
 
   const [showOrgModal, setShowOrgModal] = useState(false);
   function toggleOrgModal() {
@@ -211,13 +232,17 @@ const DepartmentsTab = () => {
                   >
                     <i className="ri-eye-line"></i>
                   </button>
-                  <button
-                    onClick={() => handleDepartmentEdit(node.id, node)}
-                    type="button"
-                    className="btn btn-icon text-muted btn-sm fs-18"
-                  >
-                    <i className="ri-pencil-fill"></i>
-                  </button>
+                  {showEditBtn && (
+                    <button
+                      onClick={() =>
+                        handleDepartmentCreateOrEdit(node.id, node)
+                      }
+                      type="button"
+                      className="btn btn-icon text-muted btn-sm fs-18"
+                    >
+                      <i className="ri-pencil-fill"></i>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -231,19 +256,21 @@ const DepartmentsTab = () => {
     <React.Fragment>
       <Card>
         <CardHeader>
-          <span className="float-end">
-            <button
-              type="button"
-              className="btn btn-success add-btn"
-              id="create-btn"
-              style={{ textTransform: "capitalize" }}
-              onClick={() => {
-                handleDepartmentEdit(0);
-              }}
-            >
-              <i className="ri-add-line align-bottom me-1"></i>New Department{" "}
-            </button>
-          </span>
+          {showCreateBtn === true && (
+            <span className="float-end">
+              <button
+                type="button"
+                className="btn btn-success add-btn"
+                id="create-btn"
+                style={{ textTransform: "capitalize" }}
+                onClick={() => {
+                  handleDepartmentCreateOrEdit(0);
+                }}
+              >
+                <i className="ri-add-line align-bottom me-1"></i>New Department{" "}
+              </button>
+            </span>
+          )}
           <h5 className="card-title">Department</h5>
         </CardHeader>
         <CardBody>

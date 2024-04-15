@@ -141,8 +141,6 @@ const Navdata = () => {
 
     const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
-    console.log("profile_data = ", profile_data);
-
     let menuList = [
       {
         label: "Menu",
@@ -195,7 +193,7 @@ const Navdata = () => {
             label: "Holidays",
             link: "/holidays",
             parentId: "baseUi",
-            perm: [],
+            perm: "all",
           },
           {
             id: "leaves",
@@ -306,7 +304,8 @@ const Navdata = () => {
             (route?.perm).some((d) =>
               profile_data?.permission_list.includes(d)
             )) ||
-          (typeof route?.perm === "string" && route?.perm === "all")
+          (typeof route?.perm === "string" && route?.perm === "all") ||
+          (route.isHeader === true)
         ) {
           let thisSubMenu = route.subItems;
           let updatedSubMenu = [];
@@ -325,8 +324,6 @@ const Navdata = () => {
             });
 
             route.subItems = updatedSubMenu;
-
-            console.log("ROUTE = ", route);
           }
 
           updated_menu.push(route);

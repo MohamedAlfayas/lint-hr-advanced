@@ -21,7 +21,11 @@ import {
 } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { Link } from "react-router-dom";
 import { GetCustomField } from "../../common/js/GetCustomField";
-import { organization_component_name } from "../../common/constant/Constants";
+import {
+  CREATE_BRANCH_ACCESS_KEY,
+  EDIT_BRANCH_ACCESS_KEY,
+  organization_component_name,
+} from "../../common/constant/Constants";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setBranch } from "../../redux/reducers/ChildReducer/BranchReducer";
 
@@ -34,7 +38,33 @@ const Branch = () => {
 
   const { branch_data } = useSelector((state) => state.BranchReducer);
 
+  const [showCreateBtn, setShowCreateBtn] = useState(false);
+  const [showEditBtn, setShowEditBtn] = useState(false);
+
   useEffect(() => {
+    const profile_data = JSON.parse(
+      localStorage.getItem("lint_hr_profile_data")
+    );
+
+    if (
+      !!profile_data &&
+      !!profile_data.is_admin &&
+      profile_data?.is_admin === true
+    ) {
+      setShowCreateBtn(true);
+      setShowEditBtn(true);
+    } else if (!!profile_data && !!profile_data.permission_list) {
+      if (profile_data.permission_list.includes(CREATE_BRANCH_ACCESS_KEY)) {
+        setShowCreateBtn(true);
+      }
+      if (profile_data.permission_list.includes(EDIT_BRANCH_ACCESS_KEY)) {
+        setShowEditBtn(true);
+      }
+    } else {
+      setShowCreateBtn(true);
+      setShowEditBtn(true);
+    }
+
     dispatch(setBranch(GetLocalStorageData("branch")));
   }, []);
 
@@ -58,7 +88,7 @@ const Branch = () => {
     };
   }, []);
 
-  const handleBranchEdit = (id, obj) => {
+  const handleBranchCreateOrEdit = (id, obj) => {
     let FormObj = {};
 
     if (parseInt(id) === 0) {
@@ -93,19 +123,21 @@ const Branch = () => {
     <React.Fragment>
       <Card>
         <CardHeader>
-          <span className="float-end">
-            <button
-              type="button"
-              className="btn btn-success add-btn"
-              id="create-btn"
-              style={{ textTransform: "capitalize" }}
-              onClick={() => {
-                handleBranchEdit(0);
-              }}
-            >
-              <i className="ri-add-line align-bottom me-1"></i>New Branch{" "}
-            </button>
-          </span>
+          {showCreateBtn && (
+            <span className="float-end">
+              <button
+                type="button"
+                className="btn btn-success add-btn"
+                id="create-btn"
+                style={{ textTransform: "capitalize" }}
+                onClick={() => {
+                  handleBranchCreateOrEdit(0);
+                }}
+              >
+                <i className="ri-add-line align-bottom me-1"></i>New Branch{" "}
+              </button>
+            </span>
+          )}
 
           <h4 className="card-title mb-0">Branch</h4>
         </CardHeader>
@@ -150,13 +182,17 @@ const Branch = () => {
                                   Active
                                 </Label>
                               </div>
-                              <a
-                                onClick={() => handleBranchEdit(bd?.id, bd)}
-                                className="text-primary d-inline-block edit-item-btn ms-2"
-                                href="javascript:void(0)"
-                              >
-                                <i class="ri-pencil-fill fs-16"></i>
-                              </a>
+                              {showEditBtn && (
+                                <a
+                                  onClick={() =>
+                                    handleBranchCreateOrEdit(bd?.id, bd)
+                                  }
+                                  className="text-primary d-inline-block edit-item-btn ms-2"
+                                  href="javascript:void(0)"
+                                >
+                                  <i class="ri-pencil-fill fs-16"></i>
+                                </a>
+                              )}
                             </div>
                           </div>
                         </div>

@@ -70,6 +70,12 @@ import {
   leave_type_component_name,
   attendance_pending_table,
   leave_pending_table,
+  CREATE_EMPLOYEE_ACCESS_KEY,
+  leave_application_component_name,
+  custom_field_component_name,
+  CREATE_CUSTOM_FIELD_ACCESS_KEY,
+  EDIT_EMPLOYEE_ACCESS_KEY,
+  EDIT_CUSTOM_FIELD_ACCESS_KEY,
 } from "../../../common/constant/Constants";
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
@@ -567,8 +573,6 @@ const InfoTable = ({
     setTypeFilter(event.target.value);
   };
   const handleActiveStatus = (orderData) => {
-    console.log("Order Data = ", orderData);
-
     let orderInfo = {
       text: orderData?.is_active === true ? "Deactivate" : "Activate",
       icon: orderData?.is_active === true ? "warning" : "success",
@@ -593,7 +597,6 @@ const InfoTable = ({
           url: `employee/activate-or-deactivate-employee/?emp_uuid=${orderData?.emp_uuid}&status=${orderInfo?.statusCode}`,
         })
           .then((res) => {
-            console.log(res);
             dispatch(
               setEmployeeActiveStatus({
                 id: orderData.id,
@@ -751,229 +754,306 @@ const InfoTable = ({
     }
   }
   // Column
-  const columns = useMemo(
-    () => [
-      {
-        Header: (
+  const initialColumns = [
+    {
+      Header: (
+        <input
+          type="checkbox"
+          id="checkBoxAll"
+          className="form-check-input"
+          onClick={() => checkedAll()}
+        />
+      ),
+      Cell: (cellProps) => {
+        const orderDataChecked = cellProps.row.original.id;
+        const orderData = cellProps.row.original;
+        return (
           <input
             type="checkbox"
-            id="checkBoxAll"
-            className="form-check-input"
-            onClick={() => checkedAll()}
-          />
-        ),
-        Cell: (cellProps) => {
-          const orderDataChecked = cellProps.row.original.id;
-          const orderData = cellProps.row.original;
-          return (
-            <input
-              type="checkbox"
-              className="dataCheckBox form-check-input"
-              disabled={
-                (formname === leave_approval_component_name &&
-                  orderData?.status !== 1) ||
-                (formname === attendance_approval_component_name &&
-                  orderData?.hr_status !== 3)
+            className="dataCheckBox form-check-input"
+            disabled={
+              (formname === leave_approval_component_name &&
+                orderData?.status !== 1) ||
+              (formname === attendance_approval_component_name &&
+                orderData?.hr_status !== 3)
+            }
+            id={`checkbox-${cellProps.row.original.id}`}
+            value={cellProps.row.original.id}
+            onClick={(event) => {
+              const isChecked = event.target.checked;
+
+              if (isChecked) {
+                setSelectedGroupIds((prevIds) => [
+                  ...prevIds,
+                  orderDataChecked,
+                ]);
+              } else {
+                setSelectedGroupIds((prevIds) =>
+                  prevIds.filter((id) => id !== orderDataChecked)
+                );
               }
-              id={`checkbox-${cellProps.row.original.id}`}
-              value={cellProps.row.original.id}
-              onClick={(event) => {
-                const isChecked = event.target.checked;
 
-                if (isChecked) {
-                  setSelectedGroupIds((prevIds) => [
-                    ...prevIds,
-                    orderDataChecked,
-                  ]);
-                } else {
-                  setSelectedGroupIds((prevIds) =>
-                    prevIds.filter((id) => id !== orderDataChecked)
-                  );
-                }
-
-                deleteCheckbox(`checkbox-${cellProps.row.original.id}`);
-                approveRejectCheckbox(`checkbox-${cellProps.row.original.id}`);
-              }}
-            />
-          );
-        },
-        id: "#",
+              deleteCheckbox(`checkbox-${cellProps.row.original.id}`);
+              approveRejectCheckbox(`checkbox-${cellProps.row.original.id}`);
+            }}
+          />
+        );
       },
-      {
-        Header: "Action",
-        Cell: (cellProps) => {
-          const orderData = cellProps.row.original;
-          if (
-            formname &&
-            (formname === leave_approval_component_name ||
-              formname === leave_pending_table) &&
-            orderData.status === 1
-          ) {
-            return (
-              <ul className="list-inline hstack gap-2 mb-0">
-                <li className="list-inline-item edit">
-                  <Link
-                    to="javascript:void(0)"
-                    className="text-success d-inline-block edit-item-btn"
-                    onClick={() => {
-                      handleApproval(orderData);
-                    }}
-                  >
-                    <i className="ri-check-line fs-16"></i>
-                  </Link>
-                </li>
-                <li className="list-inline-item">
-                  <Link
-                    to="javascript:void(0)"
-                    className="text-danger d-inline-block remove-item-btn"
-                    onClick={() => handleReject(orderData)}
-                  >
-                    <i className="ri-close-line fs-16"></i>
-                  </Link>
-                </li>
-              </ul>
-            );
-          } else if (
-            formname &&
-            (formname === attendance_approval_component_name ||
-              formname === attendance_pending_table) &&
-            orderData.hr_status === 3
-          ) {
-            return (
-              <ul className="list-inline hstack gap-2 mb-0">
-                <li className="list-inline-item edit">
-                  <Link
-                    to="javascript:void(0)"
-                    className="text-success d-inline-block edit-item-btn"
-                    onClick={() => {
-                      handleApproval(orderData);
-                    }}
-                  >
-                    <i className="ri-check-line fs-16"></i>
-                  </Link>
-                </li>
-                <li className="list-inline-item">
-                  <Link
-                    to="javascript:void(0)"
-                    className="text-danger d-inline-block remove-item-btn"
-                    onClick={() => handleReject(orderData)}
-                  >
-                    <i className="ri-close-line fs-16"></i>
-                  </Link>
-                </li>
-              </ul>
-            );
-          } else if (formname && formname === employee_component_name) {
-            return (
-              <ul className="list-inline hstack gap-2 mb-0">
-                <UncontrolledDropdown className="float-end">
-                  <DropdownToggle
-                    tag="a"
-                    className="text-reset dropdown-btn"
-                    href=""
-                    onClick={(e) => e.preventDefault()}
-                  >
-                    <span className="text-primary d-inline-block edit-item-btn fs-16">
-                      <i className="mdi mdi-dots-horizontal"></i>
-                    </span>
-                  </DropdownToggle>
-                  <DropdownMenu className="dropdown-menu-end">
-                    {!!orderData && (
-                      <DropdownItem
-                        onClick={() => {
-                          handleActiveStatus(orderData);
-                        }}
-                      >
-                        <i className="ri-shut-down-line"></i>{" "}
-                        {orderData?.is_active === true
-                          ? "Deactivate"
-                          : "Activate"}
-                      </DropdownItem>
-                    )}
+      id: "#",
+      is_action: false,
+    },
+    {
+      Header: "Action",
+      Cell: (cellProps) => {
+        const orderData = cellProps.row.original;
+        if (
+          formname &&
+          (formname === leave_approval_component_name ||
+            formname === leave_pending_table) &&
+          orderData.status === 1
+        ) {
+          return (
+            <ul className="list-inline hstack gap-2 mb-0">
+              <li className="list-inline-item edit">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-success d-inline-block edit-item-btn"
+                  onClick={() => {
+                    handleApproval(orderData);
+                  }}
+                >
+                  <i className="ri-check-line fs-16"></i>
+                </Link>
+              </li>
+              <li className="list-inline-item">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-danger d-inline-block remove-item-btn"
+                  onClick={() => handleReject(orderData)}
+                >
+                  <i className="ri-close-line fs-16"></i>
+                </Link>
+              </li>
+            </ul>
+          );
+        } else if (
+          formname &&
+          (formname === attendance_approval_component_name ||
+            formname === attendance_pending_table) &&
+          orderData.hr_status === 3
+        ) {
+          return (
+            <ul className="list-inline hstack gap-2 mb-0">
+              <li className="list-inline-item edit">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-success d-inline-block edit-item-btn"
+                  onClick={() => {
+                    handleApproval(orderData);
+                  }}
+                >
+                  <i className="ri-check-line fs-16"></i>
+                </Link>
+              </li>
+              <li className="list-inline-item">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-danger d-inline-block remove-item-btn"
+                  onClick={() => handleReject(orderData)}
+                >
+                  <i className="ri-close-line fs-16"></i>
+                </Link>
+              </li>
+            </ul>
+          );
+        } else if (formname && formname === employee_component_name) {
+          return (
+            <ul className="list-inline hstack gap-2 mb-0">
+              <UncontrolledDropdown className="float-end">
+                <DropdownToggle
+                  tag="a"
+                  className="text-reset dropdown-btn"
+                  href=""
+                  onClick={(e) => e.preventDefault()}
+                >
+                  <span className="text-primary d-inline-block edit-item-btn fs-16">
+                    <i className="mdi mdi-dots-horizontal"></i>
+                  </span>
+                </DropdownToggle>
+                <DropdownMenu className="dropdown-menu-end">
+                  {!!orderData && (
                     <DropdownItem
                       onClick={() => {
-                        handleResetPassword(orderData);
+                        handleActiveStatus(orderData);
                       }}
                     >
-                      <i className="ri-refresh-line"></i> Reset Password
+                      <i className="ri-shut-down-line"></i>{" "}
+                      {orderData?.is_active === true
+                        ? "Deactivate"
+                        : "Activate"}
                     </DropdownItem>
-                  </DropdownMenu>
-                </UncontrolledDropdown>
+                  )}
+                  <DropdownItem
+                    onClick={() => {
+                      handleResetPassword(orderData);
+                    }}
+                  >
+                    <i className="ri-refresh-line"></i> Reset Password
+                  </DropdownItem>
+                </DropdownMenu>
+              </UncontrolledDropdown>
 
-                <li className="list-inline-item edit">
-                  <Link
-                    to="javascript:void(0)"
-                    className="text-primary d-inline-block edit-item-btn"
-                    onClick={() => {
-                      handleCreateAndUpdate(orderData.id, orderData);
-                    }}
-                  >
-                    <i className="ri-pencil-fill fs-16"></i>
-                  </Link>
-                </li>
+              <li className="list-inline-item edit">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-primary d-inline-block edit-item-btn"
+                  onClick={() => {
+                    handleCreateAndUpdate(orderData.id, orderData);
+                  }}
+                >
+                  <i className="ri-pencil-fill fs-16"></i>
+                </Link>
+              </li>
+              <li className="list-inline-item">
+                <Link
+                  to="#"
+                  className="text-danger d-inline-block remove-item-btn"
+                  onClick={() => {
+                    const orderData = cellProps.row.original;
+                  }}
+                >
+                  <i className="ri-delete-bin-5-fill fs-16"></i>
+                </Link>
+              </li>
+            </ul>
+          );
+        } else {
+          return (
+            <ul className="list-inline hstack gap-2 mb-0">
+              {orderData.status === 2 ||
+              orderData.status === 3 ||
+              orderData.hr_status === 2 ||
+              orderData.hr_status === 4 ? (
                 <li className="list-inline-item">
-                  <Link
-                    to="#"
-                    className="text-danger d-inline-block remove-item-btn"
-                    onClick={() => {
-                      const orderData = cellProps.row.original;
-                    }}
-                  >
-                    <i className="ri-delete-bin-5-fill fs-16"></i>
+                  <Link to="#" className="text-primary d-inline-block">
+                    <i className="ri-eye-fill fs-16"></i>
                   </Link>
                 </li>
-              </ul>
-            );
-          } else {
-            return (
-              <ul className="list-inline hstack gap-2 mb-0">
-                {orderData.status === 2 ||
-                orderData.status === 3 ||
-                orderData.hr_status === 2 ||
-                orderData.hr_status === 4 ? (
-                  <li className="list-inline-item">
-                    <Link to="#" className="text-primary d-inline-block">
-                      <i className="ri-eye-fill fs-16"></i>
+              ) : (
+                <>
+                  <li className="list-inline-item edit">
+                    <Link
+                      to="javascript:void(0)"
+                      className="text-primary d-inline-block edit-item-btn"
+                      onClick={() => {
+                        handleCreateAndUpdate(orderData.id, orderData);
+                      }}
+                    >
+                      <i className="ri-pencil-fill fs-16"></i>
                     </Link>
                   </li>
-                ) : (
-                  <>
-                    <li className="list-inline-item edit">
-                      <Link
-                        to="javascript:void(0)"
-                        className="text-primary d-inline-block edit-item-btn"
-                        onClick={() => {
-                          handleCreateAndUpdate(orderData.id, orderData);
-                        }}
-                      >
-                        <i className="ri-pencil-fill fs-16"></i>
-                      </Link>
-                    </li>
-                    <li className="list-inline-item">
-                      <Link
-                        to="#"
-                        className="text-danger d-inline-block remove-item-btn"
-                        onClick={() => {
-                          const orderData = cellProps.row.original;
-                        }}
-                      >
-                        <i className="ri-delete-bin-5-fill fs-16"></i>
-                      </Link>
-                    </li>
-                  </>
-                )}
-              </ul>
-            );
-          }
-        },
+                  <li className="list-inline-item">
+                    <Link
+                      to="#"
+                      className="text-danger d-inline-block remove-item-btn"
+                      onClick={() => {
+                        const orderData = cellProps.row.original;
+                      }}
+                    >
+                      <i className="ri-delete-bin-5-fill fs-16"></i>
+                    </Link>
+                  </li>
+                </>
+              )}
+            </ul>
+          );
+        }
       },
-    ],
-    []
-  );
+      is_action: true,
+    },
+  ];
+
+  const [showCreateBtn, setShowCreateBtn] = useState(false);
+  const [showEditBtn, setShowEditBtn] = useState(false);
 
   useEffect(() => {
-    columns.splice(1, 0, ...additionalColumn);
-  }, []);
+    const profile_data = JSON.parse(
+      localStorage.getItem("lint_hr_profile_data")
+    );
+
+    CheckCreateAccess(profile_data, formname);
+    CheckEditAccess(profile_data, formname);
+
+    // setShowEditBtn(true);
+  }, [formname]);
+
+  const CheckCreateAccess = (profile_data, thisFormName) => {
+    if (
+      !!profile_data &&
+      !!profile_data.is_admin &&
+      profile_data?.is_admin === true
+    ) {
+      setShowCreateBtn(true);
+    } else if (!!profile_data && !!profile_data.permission_list) {
+      if (!!thisFormName) {
+        if (
+          (thisFormName === employee_component_name &&
+            profile_data.permission_list.includes(
+              CREATE_EMPLOYEE_ACCESS_KEY
+            )) ||
+          (thisFormName === custom_field_component_name &&
+            profile_data.permission_list.includes(
+              CREATE_CUSTOM_FIELD_ACCESS_KEY
+            ))
+        ) {
+          setShowCreateBtn(true);
+        } else if (thisFormName === leave_application_component_name) {
+          setShowCreateBtn(true);
+        }
+      }
+    } else {
+      setShowCreateBtn(true);
+    }
+  };
+
+  const CheckEditAccess = (profile_data, thisFormName) => {
+    if (
+      !!profile_data &&
+      !!profile_data.is_admin &&
+      profile_data?.is_admin === true
+    ) {
+      setShowEditBtn(true);
+    } else if (!!profile_data && !!profile_data.permission_list) {
+      if (!!thisFormName) {
+        if (
+          (thisFormName === employee_component_name &&
+            profile_data.permission_list.includes(EDIT_EMPLOYEE_ACCESS_KEY)) ||
+          (thisFormName === custom_field_component_name &&
+            profile_data.permission_list.includes(EDIT_CUSTOM_FIELD_ACCESS_KEY))
+        ) {
+          setShowEditBtn(true);
+        } else if (thisFormName === leave_application_component_name) {
+          setShowEditBtn(true);
+        }
+      }
+    } else {
+      setShowEditBtn(true);
+    }
+  };
+
+  const [tableColumn, setTableColumn] = useState(initialColumns);
+
+  useEffect(() => {
+    if (showEditBtn === true) {
+      const newColumns = [...initialColumns];
+      newColumns.splice(1, 0, ...additionalColumn);
+      setTableColumn(newColumns);
+    } else {
+      const newColumns = [...initialColumns];
+      newColumns.splice(1, 1, ...additionalColumn);
+      setTableColumn(newColumns);
+    }
+  }, [showEditBtn]);
 
   const toggleTab = (tab, type) => {
     if (activeTab !== tab) {
@@ -1192,7 +1272,8 @@ const InfoTable = ({
                           formname !== leave_approval_component_name &&
                           formname !== attendance_approval_component_name &&
                           formname !== attendance_pending_table &&
-                          formname !== leave_pending_table && (
+                          formname !== leave_pending_table &&
+                          showCreateBtn && (
                             <button
                               type="button"
                               className="btn btn-success add-btn"
@@ -1520,7 +1601,7 @@ const InfoTable = ({
                 </Nav>
                 {dataList.length ? (
                   <TableContainer
-                    columns={columns}
+                    columns={tableColumn}
                     data={
                       (search.trim().length
                         ? dataList

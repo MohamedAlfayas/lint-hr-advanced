@@ -16,6 +16,7 @@ export const GetGlobalVersion = async (dispatch) => {
                     localStorage.setItem("lint_hr_globaldata", JSON.stringify(master?.data));
                     localStorage.setItem("lint_hr_v", res?.data?.version);
                     dispatch(setVersion(res?.data?.version));
+                    localStorage.setItem("lint_hr_profile_data", JSON.stringify(master?.data?.my_profile))
                     dispatch(setMyProfileDataReducer(master?.data?.my_profile));
                 })
                 .catch(error => {

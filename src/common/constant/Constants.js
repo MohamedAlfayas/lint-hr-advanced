@@ -2042,6 +2042,19 @@ export const SriLankaStates = [
 
 
 
+export const CREATE_DEPARTMENT_ACCESS_KEY = "9b6c1940-9007-4cf0-9d3b-ecb9d7e3dab0";
+export const EDIT_DEPARTMENT_ACCESS_KEY = "b2643df5-07f1-4b10-bc02-c8b130e3c34b";
+
+export const CREATE_BRANCH_ACCESS_KEY = "be79d1b3-3cc4-4a6d-b3c3-64e5a9d1c645";
+export const EDIT_BRANCH_ACCESS_KEY = "a78aa075-88e0-4c52-a503-b8de29ff45b2";
+
+export const CREATE_CUSTOM_FIELD_ACCESS_KEY = "5bb4b5d2-1913-4fd0-bcb0-fc0d95035f02";
+export const EDIT_CUSTOM_FIELD_ACCESS_KEY = "ac083d58-1cf4-4568-84f3-76f5506e8df3";
+
+export const CREATE_EMPLOYEE_ACCESS_KEY = "26c44a29-9b81-45cf-84ab-6d9f22a0b8a7";
+export const EDIT_EMPLOYEE_ACCESS_KEY = "723820ec-1fb9-472e-a64a-f526146c9b40";
+
+
 export const default_roles_list = [
   {
     id: 1,
@@ -2106,7 +2119,7 @@ export const default_roles_list = [
       },
       {
         id: 105,
-        role_uuid: "9b6c1940-9007-4cf0-9d3b-ecb9d7e3dab0",
+        role_uuid: CREATE_DEPARTMENT_ACCESS_KEY,
         dependency_for_uuid_list: [],
         notes: "User Can Create Department",
         element: "per_department_create",
@@ -2116,7 +2129,7 @@ export const default_roles_list = [
       },
       {
         id: 106,
-        role_uuid: "b2643df5-07f1-4b10-bc02-c8b130e3c34b",
+        role_uuid: EDIT_DEPARTMENT_ACCESS_KEY,
         dependency_for_uuid_list: [],
         notes: "User Can Update Department",
         element: "per_department_update",
@@ -2139,7 +2152,7 @@ export const default_roles_list = [
       },
       {
         id: 108,
-        role_uuid: "be79d1b3-3cc4-4a6d-b3c3-64e5a9d1c645",
+        role_uuid: CREATE_BRANCH_ACCESS_KEY,
         dependency_for_uuid_list: [],
         notes: "User Can Create Branch",
         element: "per_branch_create",
@@ -2149,7 +2162,7 @@ export const default_roles_list = [
       },
       {
         id: 109,
-        role_uuid: "a78aa075-88e0-4c52-a503-b8de29ff45b2",
+        role_uuid: EDIT_BRANCH_ACCESS_KEY,
         dependency_for_uuid_list: [],
         notes: "User Can Update Branch",
         element: "per_branch_update",
@@ -2172,7 +2185,7 @@ export const default_roles_list = [
       },
       {
         id: 111,
-        role_uuid: "5bb4b5d2-1913-4fd0-bcb0-fc0d95035f02",
+        role_uuid: CREATE_CUSTOM_FIELD_ACCESS_KEY,
         dependency_for_uuid_list: [],
         notes: "User Can Create Custom field",
         element: "per_custom_field_create",
@@ -2182,7 +2195,7 @@ export const default_roles_list = [
       },
       {
         id: 112,
-        role_uuid: "ac083d58-1cf4-4568-84f3-76f5506e8df3",
+        role_uuid: EDIT_CUSTOM_FIELD_ACCESS_KEY,
         dependency_for_uuid_list: [],
         notes: "User Can Update Custom field",
         element: "per_custom_field_update",
@@ -2215,7 +2228,7 @@ export const default_roles_list = [
       },
       {
         id: 202,
-        role_uuid: "26c44a29-9b81-45cf-84ab-6d9f22a0b8a7",
+        role_uuid: CREATE_EMPLOYEE_ACCESS_KEY,
         dependency_for_uuid_list: [],
         notes: "User Can Create Employee",
         element: "per_employee_create",
@@ -2225,7 +2238,7 @@ export const default_roles_list = [
       },
       {
         id: 203,
-        role_uuid: "723820ec-1fb9-472e-a64a-f526146c9b40",
+        role_uuid: EDIT_EMPLOYEE_ACCESS_KEY,
         dependency_for_uuid_list: [],
         notes: "User Can Update Employee",
         element: "per_employee_update",
