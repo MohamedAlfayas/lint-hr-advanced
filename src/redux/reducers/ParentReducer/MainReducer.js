@@ -28,6 +28,7 @@ import TimeTrackingReducer from "./../ChildReducer/TimeTrackingReducer";
 import CompanyReducer from "../ChildReducer/CompanyReducer";
 import AccountSettingsReducer from "../ChildReducer/AccountSettingsReducer";
 import DashboardAttendanceStasticsReducer from "../ChildReducer/DashboardAttendanceStasticsReducer";
+import ApprovalFilterReducer from "../ChildReducer/AprrovalFilterReducer";
 
 export const MainReducer = combineReducers({
   MetaReducer: MetaReducer,
@@ -59,4 +60,5 @@ export const MainReducer = combineReducers({
   CompanyReducer: CompanyReducer,
   AccountSettingsReducer: AccountSettingsReducer,
   DashboardAttendanceStasticsReducer: DashboardAttendanceStasticsReducer,
+  ApprovalFilterReducer: ApprovalFilterReducer,
 });

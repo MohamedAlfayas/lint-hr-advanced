@@ -27,6 +27,11 @@ import { employeeTypeOptions } from "../../../common/constant/Constants";
 import AttendanceApproval from "../../../pages/attendanceApproval/AttendanceApproval";
 import LeaveApproval from "../../../pages/leave/LeaveApproval";
 import classnames from "classnames";
+import {
+  setFilteredCurrentValue,
+  setFilteredLatestValue,
+} from "../../../redux/reducers/ChildReducer/AprrovalFilterReducer";
+import { set } from "lodash";
 
 dayjs.extend(customParseFormat);
 
@@ -34,15 +39,19 @@ const ApprovalFilter = ({ formname }) => {
   const { leave_approval_data } = useSelector(
     (data) => data.LeaveApprovalReducer
   );
+
+  const { filteredcurrentvalue } = useSelector(
+    (data) => data.ApprovalFilterReducer
+  );
+  const { filteredlatestvalue } = useSelector(
+    (data) => data.ApprovalFilterReducer
+  );
   const PendingLeave = leave_approval_data.filter((d) => d.status === 1).length;
 
   const [activeTab, setActiveTab] = useState("1");
   const toggleTab = (tab) => {
-    if (activeTab !== tab) {
-      setActiveTab(tab);
-    }
+    setActiveTab(tab);
   };
-
   const { attendance_approval_data } = useSelector(
     (state) => state.AttendanceApprovalReducer
   );
@@ -62,19 +71,32 @@ const ApprovalFilter = ({ formname }) => {
       .toString()
       .padStart(2, "0")}`
   );
+  const [filteredValue, setFilteredValue] = useState({
+    filteredMonth: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}`,
+    employeeType: 1,
+  });
 
   const handleEmployeeTypeChange = (e, name) => {
     setEmployeeType(e.value);
+    setFilteredValue({
+      ...filteredValue,
+      employeeType: e.value,
+    });
   };
 
   const handleDateRangeChange = (e, monthStr) => {
     setFilteredMonth(monthStr);
+    setFilteredValue({
+      ...filteredValue,
+      filteredMonth: monthStr,
+    });
   };
 
-  const handleFilter = async () => {
-    console.log("ActiveTab", activeTab);
+  const FilterData = async (tab) => {
     dispatch(setLoaderVisible(true));
-    if (activeTab === "2") {
+    if (tab === "2") {
       Api({
         type: "GET",
         url:
@@ -88,10 +110,9 @@ const ApprovalFilter = ({ formname }) => {
           dispatch(setLoaderVisible(false));
         })
         .catch((err) => {
-          console.log("ERR = ", err);
           dispatch(setLoaderVisible(false));
         });
-    } else if (activeTab === "1") {
+    } else if (tab === "1") {
       Api({
         type: "GET",
         url:
@@ -105,13 +126,17 @@ const ApprovalFilter = ({ formname }) => {
           dispatch(setLoaderVisible(false));
         })
         .catch((err) => {
-          console.log("ERR = ", err);
           dispatch(setLoaderVisible(false));
         });
     } else {
       dispatch(setLoaderVisible(false));
       toast.error("Sometyhing Went Wrong!");
     }
+  };
+
+  const handleFilter = async () => {
+    dispatch(setFilteredCurrentValue(filteredValue));
+    FilterData(activeTab);
   };
 
   return (
@@ -185,7 +210,15 @@ const ApprovalFilter = ({ formname }) => {
                               )}
                               onClick={() => {
                                 toggleTab("1");
-                                handleFilter();
+
+                                if (
+                                  filteredcurrentvalue !== filteredlatestvalue
+                                ) {
+                                  FilterData("1");
+                                  dispatch(
+                                    setFilteredLatestValue(filteredcurrentvalue)
+                                  );
+                                }
                               }}
                               href="#"
                             >
@@ -211,7 +244,16 @@ const ApprovalFilter = ({ formname }) => {
                                 }`
                               )}
                               onClick={() => {
-                                toggleTab("2"), handleFilter();
+                                toggleTab("2");
+
+                                if (
+                                  filteredcurrentvalue !== filteredlatestvalue
+                                ) {
+                                  FilterData("2");
+                                  dispatch(
+                                    setFilteredLatestValue(filteredcurrentvalue)
+                                  );
+                                }
                               }}
                               href="#"
                             >
