@@ -10,8 +10,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { Col } from "reactstrap";
 import { map_radius_options } from "../../common/constant/Constants";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
-import CheckOutIcon from "./CheckOutIcon";
-import CheckInIcon from "./CheckInIcon";
 
 const mapIconOffice = require("../../assets/images/icons/office.png");
 const mapIconEmployee = require("../../assets/images/icons/location.png");
