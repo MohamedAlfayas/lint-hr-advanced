@@ -63,7 +63,7 @@ const TimeTracking = () => {
 
   return (
     <React.Fragment>
-      <Card style={{ height: "325px" }}>
+      <Card style={{ height: "332px" }}>
         <CardBody className="text-center">
           <h6 className="card-title mb-3 flex-grow-1 text-start">
             Date: {getCurrentDate()}

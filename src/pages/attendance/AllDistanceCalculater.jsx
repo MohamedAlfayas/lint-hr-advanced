@@ -10,6 +10,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { Col } from "reactstrap";
 import { map_radius_options } from "../../common/constant/Constants";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import CheckOutIcon from "./CheckOutIcon";
+import CheckInIcon from "./CheckInIcon";
 
 const mapIconOffice = require("../../assets/images/icons/office.png");
 const mapIconEmployee = require("../../assets/images/icons/location.png");
@@ -65,6 +67,14 @@ const AllDistanceCalculater = ({ allLocationData }) => {
   ];
 
   const multipleLocations = branchLocations.concat(allLocations);
+
+  useEffect(() => {
+    if (allLocations.length === 1) {
+      setTimeout(() => {
+        setMapZoom(17);
+      }, 250);
+    }
+  }, []);
 
   useEffect(() => {
     if (!!branchObj) {
@@ -144,13 +154,9 @@ const AllDistanceCalculater = ({ allLocationData }) => {
     setMap(null);
   }, []);
 
-  const onLoadCircle = (circle) => {
-    console.log("Circle onLoad circle: ", circle);
-  };
+  const onLoadCircle = (circle) => {};
 
-  const onUnmountCircle = (circle) => {
-    console.log("Circle onUnmount circle: ", circle);
-  };
+  const onUnmountCircle = (circle) => {};
 
   const [distance, setDistance] = useState(null);
   const mapRef = useRef(null);
@@ -265,50 +271,6 @@ const AllDistanceCalculater = ({ allLocationData }) => {
           options={{ gestureHandling: "greedy", styles: mapStyles }}
         >
           {/* Markers for the two points */}
-          {/* {locations.map((location, index) => (
-              <Marker
-                key={index}
-                position={location}
-                title={location.name} // Add title to the marker
-              />
-            ))} */}
-          {/* Markers for the two points */}
-          {/* {locations.map((location, index) => {
-              const nextLocation =
-                locations[index === locations.length - 1 ? 0 : index + 1];
-              const rotation = calculateHeading(location, nextLocation);
-              return (
-                <Marker
-                  key={index}
-                  position={location}
-                  title={location.name} // Add title to the marker
-                  icon={{
-                    url: index === 0 ? mapIconOffice : mapIconEmployee,
-                    scaledSize: new window.google.maps.Size(40, 40),
-                    rotation: rotation,
-                  }}
-                >
-                  <InfoWindow>
-                    <div>{location.name}</div>
-                  </InfoWindow>
-                </Marker>
-              );
-            })} */}
-
-          {/* <Marker
-            position={{
-              lat: branchLocation.latitude,
-              lng: branchLocation.longitude,
-            }}
-            title={branchLocation.name}
-            icon={{
-              url: mapIconOffice,
-              scaledSize: new window.google.maps.Size(40, 40),
-            }}
-            onClick={() => setSelectedMarker(branchLocation)}
-          /> */}
-
-          {/* Markers for the two points */}
           {allLocations.map((location, index) => {
             const nextLocation =
               allLocations[index === allLocations.length - 1 ? 0 : index + 1];
@@ -319,11 +281,10 @@ const AllDistanceCalculater = ({ allLocationData }) => {
               <Marker
                 key={index}
                 position={location}
-                title={location.name} // Add title to the marker
+                title={location.name}
                 icon={{
                   url: location.type === 1 ? mapCheckIn : mapCheckOut,
-
-                  scaledSize: new window.google.maps.Size(40, 40),
+                  scaledSize: new window.google.maps.Size(45, 45),
                   rotation: rotation,
                 }}
                 onClick={() => {

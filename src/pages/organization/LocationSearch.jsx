@@ -44,11 +44,14 @@ function LocationSearch({
         ...mapCircleOptions,
         radius: branchLocationObj?.radius_range,
       });
-      setMapZoom(
-        map_radius_options.find(
-          (d) => d.value === branchLocationObj?.radius_range
-        ).zoom
-      );
+
+      setTimeout(() => {
+        setMapZoom(
+          map_radius_options.find(
+            (d) => d.value === branchLocationObj?.radius_range
+          ).zoom
+        );
+      }, 250);
     }
   }, [
     branchLocationObj?.radius_range,
