@@ -1049,8 +1049,8 @@ const InfoTable = ({
       newColumns.splice(1, 0, ...additionalColumn);
       setTableColumn(newColumns);
     } else {
-      const newColumns = [...initialColumns];
-      newColumns.splice(1, 1, ...additionalColumn);
+      const newColumns = [...additionalColumn];
+      // newColumns.splice(1, 1, ...additionalColumn);
       setTableColumn(newColumns);
     }
   }, [showEditBtn]);
