@@ -146,7 +146,7 @@ export const BuildAttendanceReportChart = (individual_attendance_report_data, di
                     data: weekend_hours,
                 },
                 {
-                    name: "Inactive",
+                    name: "Absent",
                     data: inactive_hours,
                 },
             ];

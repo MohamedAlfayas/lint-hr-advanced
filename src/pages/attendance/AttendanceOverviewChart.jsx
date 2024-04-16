@@ -67,7 +67,7 @@ const AttendanceOverviewChart = ({ dataColors, chartData }) => {
                 ? "L"
                 : w.config.series[seriesIndex].name == "Weekend"
                 ? "WO"
-                : w.config.series[seriesIndex].name == "Inactive"
+                : w.config.series[seriesIndex].name == "Absent"
                 ? "A"
                 : "";
 

@@ -81,7 +81,7 @@ const AttendanceReport = () => {
         dispatch(setLoaderVisible(false));
       })
       .catch((err) => {
-        console.log("Something Went Wrong !!");
+  
         dispatch(setLoaderVisible(false));
       });
   };
@@ -153,7 +153,7 @@ const AttendanceReport = () => {
         "OT",
         "Paid Hr",
         "Edited Hours",
-        "Notes",
+        // "Notes",
         "In Location",
         "Out Location",
         "In",
@@ -262,13 +262,13 @@ const AttendanceReport = () => {
           );
 
        
-          const notes = attendance_data.notes;
+          // const notes = attendance_data.notes;
 
-          const message = notes && notes.length > 0
-              ? notes.length > 1
-                  ? `${notes[0].message} (${notes.length - 1})`
-                  : notes[0].message
-              : "-";
+          // const message = notes && notes.length > 0
+          //     ? notes.length > 1
+          //         ? `${notes[0].message} (${notes.length - 1})`
+          //         : notes[0].message
+          //     : "-";
           
   
           const entryLogs = attendance_data.entry_log.map((entry) => {
@@ -360,7 +360,7 @@ const AttendanceReport = () => {
           row.push(otHours || "-");
           row.push(total_hour);
           row.push(editedHours || "-");
-          row.push(message || "-");
+          // row.push(message || "-");
 
           // Flag to track if in/out data has been added for the day
           let inOutAdded = false;
@@ -987,10 +987,10 @@ const AttendanceReport = () => {
         const date = new Date(dateString);
         const month = date.toLocaleString("default", { month: "short" });
         const year = date.getFullYear();
-        return `${month}${year}`;
+        return `${month}_${year}`;
       });
 
-      const filename = `Attendance_Report_${monthYear[0]}.xlsx`; // Assuming you want to use the first month-year combination in the array
+      const filename = `Attendance_${monthYear[0]}.xlsx`; // Assuming you want to use the first month-year combination in the array
 
       anchor.download = filename;
       anchor.click();

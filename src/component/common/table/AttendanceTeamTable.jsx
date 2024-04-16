@@ -654,7 +654,7 @@ const AttendanceTeamTable = () => {
                   rowData.workday_data[index].leave_taken_without_approval ===
                   true
                 ) {
-                  result_text = "Inactive";
+                  result_text = "Absent";
                   result_text_color = "red";
                 } else if (
                   rowData.workday_data[index].is_attendance_exists === false

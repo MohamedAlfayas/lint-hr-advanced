@@ -1101,7 +1101,7 @@ const AttendanceEmployeeTable = () => {
         }}
         centered
       >
-        {console.log("timelineList", timelineList)}
+       
         {timelineList.filter((d) => d.location_id !== null).length !== 0 ? (
           <AllDistanceCalculater allLocationData={allLocationData} />
         ) : null}
@@ -1117,7 +1117,7 @@ const AttendanceEmployeeTable = () => {
         </ModalHeader>
         <ModalBody
           className="text-left"
-          style={{ maxHeight: "400px", overflowY: "auto" }}
+          style={{ maxHeight: "100px", overflowY: "auto" }}
         >
           <div>
             <SimpleBar style={{ maxHeight: "215px" }}>
@@ -1300,7 +1300,7 @@ const AttendanceEmployeeTable = () => {
         </ModalHeader>
         <ModalBody className="text-left">
           <div>
-            <SimpleBar style={{ height: "300px" }} className="px-3 mx-n3 mb-2">
+            <SimpleBar style={{ height: "200px" }} className="px-3 mx-n3 mb-2">
               {notesList && notesList.length > 0 ? (
                 notesList.map((d) => {
                   let emp_details =

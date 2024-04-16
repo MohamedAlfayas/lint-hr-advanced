@@ -93,88 +93,123 @@ const Employee = () => {
   const additionalColumn = [
     {
       Header: "Name",
-      id: "name",
+      accessor: "fname",
+      filterable: false,
+      id: "fname",
       accessor: (obj) => {
+        console.log("obj", obj);
+        // console.log("EMP DAT", AllEmployeeData);
+        
+        // Declaring a variable outside of JSX
+        let employee = null;
+        // if (AllEmployeeData) {
+        //   employee = !!AllEmployeeData.find(employee => employee.employee_id === obj.emp_id);
+        //   console.log("data", employee);
+        // }
+    
         return obj.profile_url ? (
-          <CardBody style={{ padding: 0, display: 'flex', alignItems: 'center' }}>
-            <div>
-              <div style={{ position: 'relative', marginRight: '10px' }}>
-                <SimpleRadialbar dataColors={["--vz-success"]} />
-                <img
-            src={obj.profile_url}
-            alt=""
-            className="avatar-xs rounded-circle"
-            style={{ 
-              position: 'absolute',
-              top: '48%',
-              left: '51%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 1,
-            }}
-                />
-              </div>
+          <div className="d-flex gap-2 align-items-center">
+            <div className="flex-shrink-0">
+              <img
+                src={obj.profile_url}
+                alt=""
+                className="avatar-xs rounded-circle"
+                style={{ objectFit: "cover", border: "2px solid #22bb33" }}
+              />
             </div>
-            <div>
-              <Link
-                to="#"
-                onClick={() => viewEmployee(obj)}
-                className="link-body-emphasis mb-0"
-                style={{ marginTop: '2px' }} 
-              >
-                <h5 className="fs-14 mb-1" style={{ margin: '0' }}>
-                  <span >{obj.fname}</span>
-                  <span style={{ color: '#a29797', fontSize: 'smaller' }}>{""} #{obj.emp_id}</span>
-                </h5>
-              </Link>
-              <div >{obj.email}</div>
-            </div>
-          </CardBody>
-        ) : (
-          <CardBody style={{ padding: 0, display: 'flex', alignItems: 'center' }}>
-            <div>
-              <div style={{ position: 'relative', marginRight: '10px' }}>
-                <SimpleRadialbar dataColors={["--vz-success"]} />
-                <div
-            className="avatar-xs rounded-circle "
-            style={{ 
-              position: 'absolute',
-              top: '48%',
-              left: '51%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 1,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              background: "#0ab39c",
-            }}
-                  data-bs-toggle="tooltip"
-                  title={obj.fname}
+            <div className="flex-grow-1">
+              <div>
+                <Link
+                  to="#"
+                  onClick={() => viewEmployee(obj)}
+                  className="link-body-emphasis mb-0"
                 >
-                  <span className="first_letter" style={{ color: "white" }}>
-                    {obj.fname.charAt(0)}
-                  </span>
-                </div>
+                  <h5 className="fs-14 mb-1">
+                    <span>{obj.fname}</span>
+                    <span style={{ color: '#a29797' , fontSize:"smaller"}}> #{obj.emp_id}</span>
+                  </h5>
+                </Link>
+              </div>
+              <div>{obj.email}</div>
+              <div className="progress progress-sm animated-progess lc-color">
+            <div
+              className="progress-bar bg-success"
+              role="progressbar"
+              aria-valuenow="0"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              // style={{
+              //   width: Math.round(
+              //     (rowData.total_paid_hr_in_seconds /
+              //       rowData.total_work_schedule_hr_without_break_in_seconds) *
+              //       100 *
+              //       2
+              //   ),
+              // }}
+            ></div>
+          </div>
+         
+            </div>
+          </div>
+        ) : (
+          <div className="d-flex gap-2 align-items-center">
+            <div className="flex-shrink-0">
+              <div
+                className="avatar-xs rounded-circle"
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  background: "#0ab39c",
+                  border: "2px solid #22bb33"
+                }}
+                data-bs-toggle="tooltip"
+                title={obj.fname}
+              >
+                <span className="first_letter" style={{ color: "white" }}>
+                  {obj.fname.charAt(0)}
+                </span>
               </div>
             </div>
-            <div>
-              <Link
-                to="#"
-                onClick={() => viewEmployee(obj)}
-                className="link-body-emphasis mb-0"
-                style={{ marginTop: '2px' }} 
-              >
-                <h5 className="fs-14 mb-1" style={{ margin: '0' }}>
-                  <span>{obj.fname}</span>
-                  <span style={{ color: '#a29797', fontSize: 'smaller' }}> {""} #{obj.emp_id}</span>
-                </h5>
-              </Link>
-              <div >{obj.email}</div>
+            <div className="flex-grow-1">
+              <div>
+                <Link
+                  to="#"
+                  onClick={() => viewEmployee(obj)}
+                  className="link-body-emphasis mb-0"
+                >
+                  <h5 className="fs-14 mb-1">
+                    <span>{obj.fname}</span>
+                    <span style={{ color: '#a29797',fontSize:"smaller" }}> #{obj.emp_id}</span>
+                  </h5>
+                </Link>
+              </div>
+              <div>{obj.email}</div>
+              <div className="progress progress-sm animated-progess lc-color">
+            <div
+              className="progress-bar bg-success"
+              role="progressbar"
+              aria-valuenow="0"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              // style={{
+              //   width: Math.round(
+              //     (rowData.total_paid_hr_in_seconds /
+              //       rowData.total_work_schedule_hr_without_break_in_seconds) *
+              //       100 *
+              //       2
+              //   ),
+              // }}
+            ></div>
+          </div>
             </div>
-          </CardBody>
+          </div>
         );
-      }
-    }
-    ,
+      },
+      // filterable: false,
+      // id: "nameAndEmail",
+    },
+    
     
     // {
     //   Header: " Employee ID",
