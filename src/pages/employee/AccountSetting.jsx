@@ -85,11 +85,11 @@ const AccountSettings = () => {
 
   const employee_data = GetLocalStorageData("employee");
   const branch_options = GetLocalStorageData("branch") || [];
-  var contact_emails = branch_options.map(function(option, index) {
+  var contact_emails = branch_options.map(function (option, index) {
     if (index === 0) {
-        return option.contact_email;
+      return option.contact_email;
     }
-});
+  });
 
   const dep_options = GetLocalStorageData("department") || [];
   const ws_options = GetLocalStorageData("work_schedule") || [];
@@ -139,9 +139,9 @@ const AccountSettings = () => {
       )
     );
 
-    // (form_obj?.primary_department_id_list).length
-    //     ? GetReportingManager(form_obj?.primary_department_id_list)
-    //     : setReportingManagerOptions([]);
+    (form_obj?.primary_department_id_list).length
+      ? GetReportingManager(form_obj?.primary_department_id_list)
+      : setReportingManagerOptions([]);
 
     if (
       account_settings_data.country_code !== "" &&
@@ -360,34 +360,13 @@ const AccountSettings = () => {
     enableReinitialize: true,
     initialValues: employeeObj,
     validationSchema: Yup.object({
-      emp_id: Yup.string()
-        .trim()
-        .matches(
-          /^[A-Z0-9_-]+$/,
-          "Please enter a valid Employee ID with no spaces and only uppercase letters, numbers, hyphens, and underscores."
-        )
-        .required("Please Enter Employee ID"),
       fname: Yup.string().trim().required("Please Enter First Name"),
       lname: Yup.string().trim().required("Please Enter Last Name"),
-      email: Yup.string()
-        .email("Please Enter Valid Email")
-        .required("Please Enter Email"),
       gender: Yup.number()
         .required("Select Gender")
         .min(1, "Please Select Gender"),
       dob: Yup.string().trim().required("Please Select Date"),
       contact_number: Yup.string().required("Please Enter Phone Number"),
-      role_id: Yup.number()
-        .required("Select Role")
-        .min(1, "Please Select Role"),
-      branch_id_list: Yup.array().min(1, "Please Select Branch"),
-      primary_department_id_list: Yup.array().min(
-        1,
-        "Please Select Department"
-      ),
-      work_schedule_id: Yup.number()
-        .required("Select Work Schedule")
-        .min(1, "Please Select Work Schedule"),
     }),
     onSubmit: async (values) => {
       let root_department = dep_options.find((d) => d.is_root === true);
@@ -419,10 +398,7 @@ const AccountSettings = () => {
           //   ? dispatch(addEmployee(Api?.data.data))
           //   : dispatch(editEmployee(Api?.data?.data));
 
-          if (employeeObj.id === 0) {
-            dispatch(addEmployee(Api?.data.data));
-            SetLocalStorage("employee", Api?.data.data, 2);
-          } else {
+          if (employeeObj.id !== 0) {
             dispatch(editEmployee(Api?.data?.data));
             SetLocalStorage("employee", Api?.data.data, 3);
           }
@@ -521,6 +497,7 @@ const AccountSettings = () => {
                         className="rounded-circle avatar-xl img-thumbnail user-profile-image"
                         alt="user-profile"
                       />
+
                       <div className="avatar-xs p-0 rounded-circle profile-photo-edit">
                         <Input
                           id="profile-img-file-input"
@@ -739,7 +716,6 @@ const AccountSettings = () => {
                                   placeholder="Elon"
                                   value={employeeObj.fname || ""}
                                   onChange={handleInputChange}
-                               
                                   invalid={
                                     FormikForm.touched.fname &&
                                     FormikForm.errors.fname
@@ -1472,6 +1448,13 @@ const AccountSettings = () => {
                               </div>
                             )}
                           </Col>
+                          <Col xxl={12} sm={12} lg={12}>
+                            <div className="text-end">
+                              <button type="submit" className="btn btn-success">
+                                Save
+                              </button>
+                            </div>
+                          </Col>
                         </Row>
                       </Form>
                     </TabPane>
@@ -1562,7 +1545,6 @@ const AccountSettings = () => {
                                   }
                                 />
                                 <div
-                                 
                                   onClick={() =>
                                     setShowPassword2(!showPassword2)
                                   }
@@ -1618,7 +1600,6 @@ const AccountSettings = () => {
                                       ? "eye-off-outline"
                                       : "eye-outline"
                                   } eye-icon`}
-                                
                                   onClick={() =>
                                     setShowPassword3(!showPassword3)
                                   }
