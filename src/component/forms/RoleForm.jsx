@@ -171,13 +171,14 @@ const RoleForm = () => {
   }, [focusedPermission, focusedRole]);
 
   const getCheckedCount = (role_id) => {
-    // let this_permission_list = !!roleObj?.roles_list
-    //   ? roleObj?.roles_list?.find((d) => d.id === role_id).permission
-    //   : [];
-
-    // return this_permission_list.filter((d) => d.checked === true).length;
-
-    return 0;
+    const thisPermissionList =
+      default_roles_list.find((d) => d.id === parseInt(role_id)).permission ||
+      [];
+    const checkedRoles = !!roleObj?.roles_list ? roleObj?.roles_list : [];
+    const selectedAccessLength = thisPermissionList.filter((t) =>
+      checkedRoles.includes(String(t.role_uuid))
+    ).length;
+    return selectedAccessLength;
   };
 
   const handleCheckboxChange = (e, perm, role_id) => {

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 import "react-toastify/dist/ReactToastify.css";
-import { Card, CardBody, CardHeader, Col, Container, Row } from 'reactstrap';
+import { Card, CardBody, CardHeader, Col, Container, Row } from "reactstrap";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import InfoTable from "../../component/common/table/InfoTable";
 import { MetaTitle } from "../../common/data/MetaTitle";
@@ -39,8 +39,6 @@ const Employee = () => {
 
   const { version } = useSelector((state) => state.MetaReducer);
 
-
-
   const EmployeeData = GetLocalStorageData("employee") || [];
 
   useEffect(() => {
@@ -57,7 +55,6 @@ const Employee = () => {
   //     .then((res) => {
   //       dispatch(setLoaderVisible(false));
   //       AllEmployeeData = res.data.all_team_members_todays_attendance_report
-
 
   //     })
   //     .catch((err) => {
@@ -78,8 +75,6 @@ const Employee = () => {
   const CustomFieldsForThisForm = GetCustomField("employee") || [];
   const DepartmentData = GetLocalStorageData("department") || [];
 
-
-
   const viewEmployee = (obj) => {
     dispatch(setFormTitle("Employee Details"));
     dispatch(setFormObj(obj));
@@ -87,7 +82,6 @@ const Employee = () => {
     dispatch(setComponentToShow(profile_view_component_name));
     dispatch(toggleRSBView(true));
   };
-
 
   // Column
   const additionalColumn = [
@@ -97,16 +91,15 @@ const Employee = () => {
       filterable: false,
       id: "fname",
       accessor: (obj) => {
-        console.log("obj", obj);
         // console.log("EMP DAT", AllEmployeeData);
-        
+
         // Declaring a variable outside of JSX
         let employee = null;
         // if (AllEmployeeData) {
         //   employee = !!AllEmployeeData.find(employee => employee.employee_id === obj.emp_id);
         //   console.log("data", employee);
         // }
-    
+
         return obj.profile_url ? (
           <div className="d-flex gap-2 align-items-center">
             <div className="flex-shrink-0">
@@ -126,29 +119,31 @@ const Employee = () => {
                 >
                   <h5 className="fs-14 mb-1">
                     <span>{obj.fname}</span>
-                    <span style={{ color: '#a29797' , fontSize:"smaller"}}> #{obj.emp_id}</span>
+                    <span style={{ color: "#a29797", fontSize: "smaller" }}>
+                      {" "}
+                      #{obj.emp_id}
+                    </span>
                   </h5>
                 </Link>
               </div>
               <div>{obj.email}</div>
               <div className="progress progress-sm animated-progess lc-color">
-            <div
-              className="progress-bar bg-success"
-              role="progressbar"
-              aria-valuenow="0"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              // style={{
-              //   width: Math.round(
-              //     (rowData.total_paid_hr_in_seconds /
-              //       rowData.total_work_schedule_hr_without_break_in_seconds) *
-              //       100 *
-              //       2
-              //   ),
-              // }}
-            ></div>
-          </div>
-         
+                <div
+                  className="progress-bar bg-success"
+                  role="progressbar"
+                  aria-valuenow="0"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  // style={{
+                  //   width: Math.round(
+                  //     (rowData.total_paid_hr_in_seconds /
+                  //       rowData.total_work_schedule_hr_without_break_in_seconds) *
+                  //       100 *
+                  //       2
+                  //   ),
+                  // }}
+                ></div>
+              </div>
             </div>
           </div>
         ) : (
@@ -161,7 +156,7 @@ const Employee = () => {
                   justifyContent: "center",
                   alignItems: "center",
                   background: "#0ab39c",
-                  border: "2px solid #22bb33"
+                  border: "2px solid #22bb33",
                 }}
                 data-bs-toggle="tooltip"
                 title={obj.fname}
@@ -180,28 +175,31 @@ const Employee = () => {
                 >
                   <h5 className="fs-14 mb-1">
                     <span>{obj.fname}</span>
-                    <span style={{ color: '#a29797',fontSize:"smaller" }}> #{obj.emp_id}</span>
+                    <span style={{ color: "#a29797", fontSize: "smaller" }}>
+                      {" "}
+                      #{obj.emp_id}
+                    </span>
                   </h5>
                 </Link>
               </div>
               <div>{obj.email}</div>
               <div className="progress progress-sm animated-progess lc-color">
-            <div
-              className="progress-bar bg-success"
-              role="progressbar"
-              aria-valuenow="0"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              // style={{
-              //   width: Math.round(
-              //     (rowData.total_paid_hr_in_seconds /
-              //       rowData.total_work_schedule_hr_without_break_in_seconds) *
-              //       100 *
-              //       2
-              //   ),
-              // }}
-            ></div>
-          </div>
+                <div
+                  className="progress-bar bg-success"
+                  role="progressbar"
+                  aria-valuenow="0"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  // style={{
+                  //   width: Math.round(
+                  //     (rowData.total_paid_hr_in_seconds /
+                  //       rowData.total_work_schedule_hr_without_break_in_seconds) *
+                  //       100 *
+                  //       2
+                  //   ),
+                  // }}
+                ></div>
+              </div>
             </div>
           </div>
         );
@@ -209,8 +207,7 @@ const Employee = () => {
       // filterable: false,
       // id: "nameAndEmail",
     },
-    
-    
+
     // {
     //   Header: " Employee ID",
     //   accessor: "emp_id",
@@ -261,8 +258,8 @@ const Employee = () => {
       accessor: (obj) => {
         let thisDepartment = DepartmentData
           ? DepartmentData.filter((data) =>
-            obj.primary_department_id_list.includes(data.id)
-          )
+              obj.primary_department_id_list.includes(data.id)
+            )
           : [];
 
         let firstDep_name = thisDepartment?.length
@@ -271,10 +268,10 @@ const Employee = () => {
 
         let subDepList = thisDepartment?.length
           ? thisDepartment.filter((datas, index) => {
-            if (index !== 0) {
-              return datas;
-            }
-          })
+              if (index !== 0) {
+                return datas;
+              }
+            })
           : [];
 
         return (
