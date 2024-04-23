@@ -104,6 +104,7 @@ const ApprovalFilter = ({ formname }) => {
   };
 
   const FilterData = async (tab) => {
+    console.log("TAb", tab);
     dispatch(setLoaderVisible(true));
 
     if (tab === "2") {
@@ -115,6 +116,7 @@ const ApprovalFilter = ({ formname }) => {
           APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
         )
       ) {
+        console.log("Leave API Running");
         Api({
           type: "GET",
           url:
@@ -130,6 +132,9 @@ const ApprovalFilter = ({ formname }) => {
           .catch((err) => {
             dispatch(setLoaderVisible(false));
           });
+      } else {
+        dispatch(setLoaderVisible(false));
+        toast.error("Sometyhing Went Wrong!");
       }
     } else if (tab === "1") {
       if (
@@ -140,6 +145,8 @@ const ApprovalFilter = ({ formname }) => {
           APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
         )
       ) {
+        console.log("Attendance API Running");
+
         Api({
           type: "GET",
           url:
@@ -155,6 +162,9 @@ const ApprovalFilter = ({ formname }) => {
           .catch((err) => {
             dispatch(setLoaderVisible(false));
           });
+      } else {
+        dispatch(setLoaderVisible(false));
+        toast.error("Sometyhing Went Wrong!");
       }
     } else {
       dispatch(setLoaderVisible(false));
@@ -163,6 +173,8 @@ const ApprovalFilter = ({ formname }) => {
   };
 
   const handleFilter = async () => {
+    console.log("ActiveTab", activeTab);
+    console.log("Filtered", filteredValue);
     dispatch(setFilteredCurrentValue(filteredValue));
     FilterData(activeTab);
   };
@@ -232,7 +244,10 @@ const ApprovalFilter = ({ formname }) => {
                     </div>
                   </div>
                 </Col>
-                <Col md={4} className="order-last">
+                <div
+                  className="col-md-auto ms-auto"
+                  style={{ marginLeft: "10px" }}
+                >
                   <Row className="g-2">
                     <div className="d-flex justify-content-end">
                       <div className="col-lg-auto me-2">
@@ -284,6 +299,7 @@ const ApprovalFilter = ({ formname }) => {
                               </NavLink>
                             </NavItem>
                           ) : null}
+
                           {profile_data.permission_list.includes(
                             APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
                           ) ||
@@ -291,48 +307,72 @@ const ApprovalFilter = ({ formname }) => {
                             APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
                           ) ? (
                             <NavItem>
-                              <NavLink
-                                className={classnames(
-                                  { active: activeTab === "2" },
-                                  `fw-semibold ${
-                                    activeTab === "2"
-                                      ? "text-success"
-                                      : "text-primary"
-                                  }`
-                                )}
-                                onClick={() => {
-                                  toggleTab("2");
-
-                                  if (
-                                    filteredcurrentvalue !== filteredlatestvalue
-                                  ) {
-                                    FilterData("2");
-                                    dispatch(
-                                      setFilteredLatestValue(
-                                        filteredcurrentvalue
-                                      )
-                                    );
-                                  }
-                                }}
-                                href="#"
-                              >
-                                Leave Approval{" "}
-                                <Badge
-                                  color={
-                                    activeTab === "2" ? "success" : "primary"
-                                  }
-                                  style={{ marginLeft: "5px" }}
+                              {!profile_data.permission_list.includes(
+                                APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
+                              ) &&
+                              !profile_data.permission_list.includes(
+                                APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+                              ) ? (
+                                <NavLink
+                                  className={classnames(
+                                    { active: activeTab === "1" },
+                                    `fw-semibold ${"text-success"}`
+                                  )}
+                                  href="#"
                                 >
-                                  {PendingLeave}
-                                </Badge>
-                              </NavLink>
+                                  Leave Approval{" "}
+                                  <Badge
+                                    color={"success"}
+                                    style={{ marginLeft: "5px" }}
+                                  >
+                                    {PendingLeave}
+                                  </Badge>
+                                </NavLink>
+                              ) : (
+                                <NavLink
+                                  className={classnames(
+                                    { active: activeTab === "2" },
+                                    `fw-semibold ${
+                                      activeTab === "2"
+                                        ? "text-success"
+                                        : "text-primary"
+                                    }`
+                                  )}
+                                  onClick={() => {
+                                    toggleTab("2");
+
+                                    if (
+                                      filteredcurrentvalue !==
+                                      filteredlatestvalue
+                                    ) {
+                                      FilterData("2");
+                                      dispatch(
+                                        setFilteredLatestValue(
+                                          filteredcurrentvalue
+                                        )
+                                      );
+                                    }
+                                  }}
+                                  href="#"
+                                >
+                                  Leave Approval{" "}
+                                  <Badge
+                                    color={
+                                      activeTab === "2" ? "success" : "primary"
+                                    }
+                                    style={{ marginLeft: "5px" }}
+                                  >
+                                    {PendingLeave}
+                                  </Badge>
+                                </NavLink>
+                              )}
                             </NavItem>
                           ) : null}
                         </Nav>
                       </div>
                     </div>
                   </Row>
-                </Col>
+                </div>
               </Row>
             </CardHeader>
           </Card>
@@ -340,10 +380,32 @@ const ApprovalFilter = ({ formname }) => {
       </div>
       <Col lg={12}>
         <TabContent activeTab={activeTab} className="text-muted">
-          <TabPane tabId="1">
+          <TabPane
+            tabId={
+              profile_data.permission_list.includes(
+                APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
+              ) ||
+              profile_data.permission_list.includes(
+                APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+              )
+                ? "1"
+                : "0"
+            }
+          >
             <AttendanceApproval />
           </TabPane>
-          <TabPane tabId="2">
+          <TabPane
+            tabId={
+              !profile_data.permission_list.includes(
+                APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
+              ) &&
+              !profile_data.permission_list.includes(
+                APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+              )
+                ? "1"
+                : "2"
+            }
+          >
             <LeaveApproval />
           </TabPane>
         </TabContent>

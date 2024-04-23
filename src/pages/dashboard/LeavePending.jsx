@@ -12,6 +12,8 @@ import { setLeaveApproval } from "../../redux/reducers/ChildReducer/LeaveApprova
 import { Api } from "../../common/api/Api";
 import { Badge, Button, UncontrolledTooltip } from "reactstrap";
 import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
+import { APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY } from "../../common/constant/Constants";
+import { toast } from "react-toastify";
 
 const LeaveApprovalPending = ({ onDataLengthChange }) => {
   const dispatch = useDispatch();
@@ -34,25 +36,34 @@ const LeaveApprovalPending = ({ onDataLengthChange }) => {
     const day_type = LeaveTypeData?.find((val) => val?.value === id)?.unit;
     return day_type;
   };
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
   useEffect(() => {
     const today = new Date();
     const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
       .toString()
       .padStart(2, "0")}`;
-    Api({
-      method: "GET",
-      url:
-        "leave/get-leave-application-for-approval/?thisMonth=" +
-        thisMonth +
-        "&employee_type=1",
-    })
-      .then((res) => {
-        dispatch(setLeaveApproval(res?.data?.data));
-      })
-      .catch((err) => {
-        dispatch(setLeaveApproval([]));
-      });
+    {
+      if (
+        profile_data.permission_list.includes(
+          APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
+        )
+      ) {
+        Api({
+          method: "GET",
+          url:
+            "leave/get-leave-application-for-approval/?thisMonth=" +
+            thisMonth +
+            "&employee_type=1",
+        })
+          .then((res) => {
+            dispatch(setLeaveApproval(res?.data?.data));
+          })
+          .catch((err) => {
+            dispatch(setLeaveApproval([]));
+          });
+      }
+    }
   }, [dispatch]);
 
   const [LeaveData, setLeavedata] = useState([

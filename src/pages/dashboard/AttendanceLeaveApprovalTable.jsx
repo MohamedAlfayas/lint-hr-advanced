@@ -16,6 +16,10 @@ import classnames from "classnames";
 import AttendanceApproval from "../attendanceApproval/AttendanceApproval";
 import AttendancePendingTable from "./AttendancePendingTable";
 import LeaveApprovalPending from "./LeavePending";
+import {
+  APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
+  APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
+} from "../../common/constant/Constants";
 
 const AttendanceLeaveApprovalTable = () => {
   const [activeTab, setActiveTab] = useState("1");
@@ -35,76 +39,121 @@ const AttendanceLeaveApprovalTable = () => {
     setAttendDataLength(onDataLengthChange);
   };
 
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+
   return (
     <React.Fragment>
       <Col xl={12}>
         <Card>
           <CardHeader className="align-items-center border-0 d-flex">
             <h4 className="card-title mb-0 flex-grow-1">Pending Status</h4>
-            <div className="flex-shrink-0">
+            <div className="col-md-auto ms-auto" style={{ marginLeft: "10px" }}>
               <Nav
                 className="nav-tabs nav-tabs-custom nav-success"
                 role="tablist"
               >
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    className={classnames(
-                      { active: activeTab === "1" },
-                      `fw-semibold ${
-                        activeTab === "1" ? "text-success" : "text-primary"
-                      }`
-                    )}
-                    onClick={() => {
-                      toggleTab("1");
-                    }}
-                  >
-                    <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
-                    Attendace Approval{" "}
-                    <Badge
-                      color={activeTab === "1" ? "success" : "primary"}
-                      style={{ marginLeft: "5px" }}
+                {profile_data.permission_list.includes(
+                  APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+                ) ? (
+                  <NavItem>
+                    <NavLink
+                      href="#"
+                      className={classnames(
+                        { active: activeTab === "1" },
+                        `fw-semibold ${
+                          activeTab === "1" ? "text-success" : "text-primary"
+                        }`
+                      )}
+                      onClick={() => {
+                        toggleTab("1");
+                      }}
                     >
-                      {attendDataLength}
-                    </Badge>
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    className={classnames(
-                      { active: activeTab === "2" },
-                      `fw-semibold ${
-                        activeTab === "2" ? "text-success" : "text-primary"
-                      }`
+                      <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
+                      Attendace Approval{" "}
+                      <Badge
+                        color={activeTab === "1" ? "success" : "primary"}
+                        style={{ marginLeft: "5px" }}
+                      >
+                        {attendDataLength}
+                      </Badge>
+                    </NavLink>
+                  </NavItem>
+                ) : null}
+                {profile_data.permission_list.includes(
+                  APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
+                ) ? (
+                  <NavItem>
+                    {!profile_data.permission_list.includes(
+                      APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+                    ) ? (
+                      <NavLink
+                        href="#"
+                        className={classnames(
+                          { active: activeTab === "1" },
+                          `fw-semibold ${"text-success"}`
+                        )}
+                        color={"success"}
+                      >
+                        <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
+                        Leave Approval{" "}
+                        <Badge color={"success"} style={{ marginLeft: "5px" }}>
+                          {leaveDataLength}
+                        </Badge>
+                      </NavLink>
+                    ) : (
+                      <NavLink
+                        href="#"
+                        className={classnames(
+                          { active: activeTab === "2" },
+                          `fw-semibold ${
+                            activeTab === "2" ? "text-success" : "text-primary"
+                          }`
+                        )}
+                        color={activeTab === "2" ? "success" : "primary"}
+                        onClick={() => {
+                          toggleTab("2");
+                        }}
+                      >
+                        <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
+                        Leave Approval{" "}
+                        <Badge
+                          color={activeTab === "2" ? "success" : "primary"}
+                          style={{ marginLeft: "5px" }}
+                        >
+                          {leaveDataLength}
+                        </Badge>
+                      </NavLink>
                     )}
-                    color={activeTab === "2" ? "success" : "primary"}
-                    onClick={() => {
-                      toggleTab("2");
-                    }}
-                  >
-                    <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
-                    Leave Approval{" "}
-                    <Badge
-                      color={activeTab === "2" ? "success" : "primary"}
-                      style={{ marginLeft: "5px" }}
-                    >
-                      {leaveDataLength}
-                    </Badge>
-                  </NavLink>
-                </NavItem>
+                  </NavItem>
+                ) : null}
               </Nav>
             </div>
           </CardHeader>
           <div className="card-body p-0">
             <TabContent activeTab={activeTab} className="p-0">
-              <TabPane tabId="1">
+              <TabPane
+                tabId={
+                  profile_data.permission_list.includes(
+                    APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+                  )
+                    ? "1"
+                    : "0"
+                }
+              >
                 <AttendancePendingTable
                   onDataLengthChange={handleAttendLengthChange}
                 />
               </TabPane>
 
-              <TabPane tabId="2">
+              <TabPane
+                tabId={
+                  !profile_data.permission_list.includes(
+                    APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+                  )
+                    ? "1"
+                    : "2"
+                }
+              >
                 <LeaveApprovalPending
                   onDataLengthChange={handleLeaveLengthChange}
                 />

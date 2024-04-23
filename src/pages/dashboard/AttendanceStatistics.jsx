@@ -55,10 +55,6 @@ const AttendanceStatistics = () => {
   const { currently_displaying_todays_attendance } = useSelector(
     (state) => state.TeamTodaysAttendanceReducer
   );
-  console.log(
-    "currently Dispalying teams",
-    currently_displaying_todays_attendance
-  );
 
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 

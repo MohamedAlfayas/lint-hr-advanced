@@ -31,6 +31,7 @@ import "./../../common/css/lc_style.css";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
 import { toast } from "react-toastify";
+import { APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY } from "../../common/constant/Constants";
 const AttendancePendingTable = ({ onDataLengthChange }) => {
   const dispatch = useDispatch();
 
@@ -46,26 +47,32 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
       setAttendanceApprovalTableFilterKeys({ primary_department_id_list: 0 })
     );
   }, []);
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
   useEffect(() => {
     const today = new Date();
     const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
       .toString()
       .padStart(2, "0")}`;
-
-    Api({
-      type: "GET",
-      url:
-        "attendance/get-attendance-data-for-approval/?thisMonth=" +
-        thisMonth +
-        "&employee_type=1",
-    })
-      .then((res) => {
-        dispatch(setAttendanceApprovalData(res?.data?.data));
+    if (
+      profile_data.permission_list.includes(
+        APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+      )
+    ) {
+      Api({
+        type: "GET",
+        url:
+          "attendance/get-attendance-data-for-approval/?thisMonth=" +
+          thisMonth +
+          "&employee_type=1",
       })
-      .catch((err) => {
-        console.log("ERR");
-      });
+        .then((res) => {
+          dispatch(setAttendanceApprovalData(res?.data?.data));
+        })
+        .catch((err) => {
+          console.log("ERR");
+        });
+    }
   }, []);
 
   const [timelineList, setTimelineList] = useState([]);

@@ -338,7 +338,7 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
     },
   ];
 
-  document.title = `Leave Approval | ${MetaTitle}`;
+  document.title = `Approval | ${MetaTitle}`;
   return (
     <React.Fragment>
       <InfoTable

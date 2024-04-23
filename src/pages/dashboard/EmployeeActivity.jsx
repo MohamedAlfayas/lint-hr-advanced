@@ -52,6 +52,14 @@ const EmployeeActivity = (props) => {
 
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
+  let employee_type;
+
+  if (profile_data.permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)) {
+    employee_type = 0;
+  } else {
+    employee_type = 1;
+  }
+
   useEffect(() => {
     if (!!currently_displaying_todays_attendance) {
       let late_data = [];
@@ -74,7 +82,7 @@ const EmployeeActivity = (props) => {
     dispatch(setLoaderVisible(true));
     Api({
       method: "GET",
-      url: "report/get-tm-todays-attendance-report/?employee_type=0",
+      url: `report/get-tm-todays-attendance-report/?employee_type=${employee_type}`,
     })
       .then((res) => {
         dispatch(

@@ -8,6 +8,10 @@ import PayrollWidgets from "./PayrollWidgets";
 import AttendanceGraph from "./AttendanceGraph";
 import DeptWiseAttendanceWidgets from "./DeptWiseAttendanceWidgets";
 import AttendanceLeaveApprovalTable from "./AttendanceLeaveApprovalTable";
+import {
+  APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
+  APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
+} from "../../common/constant/Constants";
 
 const Dashboard = () => {
   document.title = `Dashboard | ${MetaTitle || "Lint HR"}`;
@@ -16,6 +20,8 @@ const Dashboard = () => {
   const toggleRightColumn = () => {
     setRightColumn(!rightColumn);
   };
+
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
   return (
     <React.Fragment>
@@ -39,9 +45,17 @@ const Dashboard = () => {
                       <AttendanceGraph />
                     </Row>
                   </Col>
-                  <Col xl={12}>
-                    <AttendanceLeaveApprovalTable />
-                  </Col>
+                  {profile_data.permission_list.includes(
+                    APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+                  ) ||
+                  profile_data.permission_list.includes(
+                    APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
+                  ) ? (
+                    <Col xl={12}>
+                      <AttendanceLeaveApprovalTable />
+                    </Col>
+                  ) : null}
+
                   <Col xl={12}> {/* <DeptWiseAttendanceWidgets /> */}</Col>
                 </Row>
               </div>
