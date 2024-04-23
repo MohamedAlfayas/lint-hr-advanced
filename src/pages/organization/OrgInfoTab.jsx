@@ -28,6 +28,7 @@ import {
   form_date_type,
   DateFormat,
   organization_component_name,
+  UPDATE_COMPANY_PROFILE_ACCESS_KEY,
 } from "../../common/constant/Constants";
 import {
   ConvertDateFormat,
@@ -69,6 +70,7 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 import { useDispatch } from "react-redux";
 import { PostApi } from "../../common/api/PostApi";
 import { setCompanyDetail } from "../../redux/reducers/ChildReducer/CompanyReducer";
+import { CheckRoleAccess } from "../../common/js/CheckRoleAccess";
 // import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 
 const OrgInfoTab = () => {
@@ -120,10 +122,15 @@ const OrgInfoTab = () => {
     };
   }, []);
 
-  const [timezone, setTimeZone] = useState("");
   const [profileData, setProfileData] = useState(initialData);
+  const [showUpdateBtn, setShowUpdateBtn] = useState(false);
 
   useEffect(() => {
+    GetCompanyProfileData();
+    setShowUpdateBtn(CheckRoleAccess(UPDATE_COMPANY_PROFILE_ACCESS_KEY));
+  }, []);
+
+  const GetCompanyProfileData = () => {
     Api({
       method: "GET",
       url: "/branch/get-company-profile/",
@@ -157,7 +164,7 @@ const OrgInfoTab = () => {
       .catch((err) => {
         console.log(err);
       });
-  }, []);
+  };
 
   const updateProfileData = (name, value) => {
     setProfileData({
@@ -1046,17 +1053,19 @@ const OrgInfoTab = () => {
                         </Row>
                       </Col>
 
-                      <Col xxl={12} md={12}>
-                        <Button
-                          type="submit"
-                          color="success"
-                          className="btn-label"
-                        >
-                          {" "}
-                          <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                          Submit{" "}
-                        </Button>{" "}
-                      </Col>
+                      {showUpdateBtn && (
+                        <Col xxl={12} md={12}>
+                          <Button
+                            type="submit"
+                            color="success"
+                            className="btn-label"
+                          >
+                            {" "}
+                            <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                            Update{" "}
+                          </Button>{" "}
+                        </Col>
+                      )}
                     </Row>
                   </div>
                 </Form>

@@ -28,6 +28,7 @@ import {
 } from "../../common/constant/Constants";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setBranch } from "../../redux/reducers/ChildReducer/BranchReducer";
+import { CheckRoleAccess } from "../../common/js/CheckRoleAccess";
 
 // const { Column, HeaderCell, Cell } = Table;
 
@@ -42,28 +43,8 @@ const Branch = () => {
   const [showEditBtn, setShowEditBtn] = useState(false);
 
   useEffect(() => {
-    const profile_data = JSON.parse(
-      localStorage.getItem("lint_hr_profile_data")
-    );
-
-    if (
-      !!profile_data &&
-      !!profile_data.is_admin &&
-      profile_data?.is_admin === true
-    ) {
-      setShowCreateBtn(true);
-      setShowEditBtn(true);
-    } else if (!!profile_data && !!profile_data.permission_list) {
-      if (profile_data.permission_list.includes(CREATE_BRANCH_ACCESS_KEY)) {
-        setShowCreateBtn(true);
-      }
-      if (profile_data.permission_list.includes(EDIT_BRANCH_ACCESS_KEY)) {
-        setShowEditBtn(true);
-      }
-    } else {
-      setShowCreateBtn(true);
-      setShowEditBtn(true);
-    }
+    setShowCreateBtn(CheckRoleAccess(CREATE_BRANCH_ACCESS_KEY));
+    setShowEditBtn(CheckRoleAccess(EDIT_BRANCH_ACCESS_KEY));
 
     dispatch(setBranch(GetLocalStorageData("branch")));
   }, []);

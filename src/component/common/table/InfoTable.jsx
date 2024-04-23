@@ -592,49 +592,6 @@ const InfoTable = ({
     }).then(async (result) => {
       if (result.isConfirmed) {
         dispatch(setLoaderVisible(true));
-        // Api({
-        //   method: "GET",
-        //   url: `employee/activate-or-deactivate-employee/?emp_uuid=${orderData?.emp_uuid}&status=${orderInfo?.statusCode}`,
-        // })
-        //   .then((res) => {
-        //     dispatch(
-        //       setEmployeeActiveStatus({
-        //         id: orderData.id,
-        //         is_active: orderInfo?.statusToChange,
-        //       })
-        //     );
-
-        //     const thisMetaData = GetLocalStorageData("employee");
-        //     let updated_md = [...thisMetaData].map((d) => {
-        //       if (d.id === orderData.id) {
-        //         return {
-        //           ...d,
-        //           is_active: orderInfo?.statusToChange,
-        //         };
-        //       } else {
-        //         return d;
-        //       }
-        //     });
-
-        //     let GlobalMetaData =
-        //       localStorage.getItem("lint_hr_globaldata") !== null
-        //         ? JSON.parse(localStorage.getItem("lint_hr_globaldata"))
-        //         : {};
-        //     GlobalMetaData["employee"] = updated_md;
-        //     localStorage.setItem(
-        //       "lint_hr_globaldata",
-        //       JSON.stringify(GlobalMetaData)
-        //     );
-
-        //     dispatch(setLoaderVisible(false));
-        //     toast.success(res?.data?.message);
-        //   })
-        //   .catch((err) => {
-        //     console.log("ERR = ", err);
-        //     dispatch(setLoaderVisible(false));
-        //     toast.error(err?.response?.data?.message);
-        //   });
-
         const payload = {
           emp_uuid: orderData?.emp_uuid,
           status: orderInfo?.statusCode,
@@ -1031,8 +988,6 @@ const InfoTable = ({
 
     CheckCreateAccess(profile_data, formname);
     CheckEditAccess(profile_data, formname);
-
-    // setShowEditBtn(true);
   }, [formname]);
 
   const CheckCreateAccess = (profile_data, thisFormName) => {

@@ -39,6 +39,7 @@ import {
   EDIT_DEPARTMENT_ACCESS_KEY,
   department_component_name,
 } from "../../common/constant/Constants";
+import { CheckRoleAccess } from "../../common/js/CheckRoleAccess";
 
 const DepartmentsTab = () => {
   const EmployeeData = GetLocalStorageData("employee");
@@ -71,28 +72,8 @@ const DepartmentsTab = () => {
   const [showEditBtn, setShowEditBtn] = useState(false);
 
   useEffect(() => {
-    const profile_data = JSON.parse(
-      localStorage.getItem("lint_hr_profile_data")
-    );
-
-    if (
-      !!profile_data &&
-      !!profile_data.is_admin &&
-      profile_data?.is_admin === true
-    ) {
-      setShowCreateBtn(true);
-      setShowEditBtn(true);
-    } else if (!!profile_data && !!profile_data.permission_list) {
-      if (profile_data.permission_list.includes(CREATE_DEPARTMENT_ACCESS_KEY)) {
-        setShowCreateBtn(true);
-      }
-      if (profile_data.permission_list.includes(EDIT_DEPARTMENT_ACCESS_KEY)) {
-        setShowEditBtn(true);
-      }
-    } else {
-      setShowCreateBtn(true);
-      setShowEditBtn(true);
-    }
+    setShowCreateBtn(CheckRoleAccess(CREATE_DEPARTMENT_ACCESS_KEY));
+    setShowEditBtn(CheckRoleAccess(EDIT_DEPARTMENT_ACCESS_KEY));
 
     dispatch(
       setDepartmentDetails(GetLocalStorageData("department_details") || [])
