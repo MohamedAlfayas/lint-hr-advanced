@@ -32,6 +32,8 @@ import {
   setTeamTodaysAttendanceData,
 } from "../../redux/reducers/ChildReducer/TeamTodaysAttendanceReducer";
 import {
+  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
+  VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
   attendanceStasticsOptions,
   employeeTypeOptions,
 } from "../../common/constant/Constants";
@@ -47,6 +49,8 @@ const EmployeeActivity = (props) => {
   );
 
   const dispatch = useDispatch();
+
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
   useEffect(() => {
     if (!!currently_displaying_todays_attendance) {
@@ -83,12 +87,22 @@ const EmployeeActivity = (props) => {
             res?.data?.my_team_members_todays_attendance_report
           )
         );
+        if (
+          profile_data.permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)
+        ) {
+          dispatch(
+            setCurrentlyDisplayingTodaysAttendanceData(
+              res?.data?.all_team_members_todays_attendance_report
+            )
+          );
+        } else {
+          dispatch(
+            setCurrentlyDisplayingTodaysAttendanceData(
+              res?.data?.my_team_members_todays_attendance_report
+            )
+          );
+        }
 
-        dispatch(
-          setCurrentlyDisplayingTodaysAttendanceData(
-            res?.data?.all_team_members_todays_attendance_report
-          )
-        );
         dispatch(setLoaderVisible(false));
       })
       .catch((err) => {
@@ -178,21 +192,28 @@ const EmployeeActivity = (props) => {
             </CardHeader>
             <CardBody className="p-0">
               <div className="p-2">
-                <div className="form-icon right" style={{ width: "250px" }}>
-                  <Select
-                    id="emp_type"
-                    name="Employee Type"
-                    isMulti={false}
-                    options={attendanceStasticsOptions || []}
-                    className="basic-multi-select"
-                    value={
-                      attendanceStasticsOptions.find(
-                        (d) => d.value === dashboard_attendance_stastics_type
-                      ) || attendanceStasticsOptions[0]
-                    }
-                    onChange={(e) => onAttStasticsTypeChange(e)}
-                  />
-                </div>
+                {profile_data.permission_list.includes(
+                  VIEW_ALL_EMPLOYEE_ACCESS_KEY
+                ) &&
+                profile_data.permission_list.includes(
+                  VIEW_TEAM_EMPLOYEE_ACCESS_KEY
+                ) ? (
+                  <div className="form-icon right" style={{ width: "250px" }}>
+                    <Select
+                      id="emp_type"
+                      name="Employee Type"
+                      isMulti={false}
+                      options={attendanceStasticsOptions || []}
+                      className="basic-multi-select"
+                      value={
+                        attendanceStasticsOptions.find(
+                          (d) => d.value === dashboard_attendance_stastics_type
+                        ) || attendanceStasticsOptions[0]
+                      }
+                      onChange={(e) => onAttStasticsTypeChange(e)}
+                    />
+                  </div>
+                ) : null}
                 <div
                   className="form-icon right mt-3"
                   style={{ width: "250px" }}

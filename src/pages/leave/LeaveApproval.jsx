@@ -12,6 +12,10 @@ import { Badge, Button, Container, UncontrolledTooltip } from "reactstrap";
 import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import ApprovalFilter from "../../component/common/tableFilter/ApprovalFilter";
+import {
+  APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY,
+  APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
+} from "../../common/constant/Constants";
 
 const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
   const dispatch = useDispatch();
@@ -31,6 +35,7 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
     const day_type = LeaveTypeData?.find((val) => val?.value === id)?.unit;
     return day_type;
   };
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
   useEffect(() => {
     dispatch(setLoaderVisible(true));
@@ -38,22 +43,31 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
     const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
       .toString()
       .padStart(2, "0")}`;
-    Api({
-      method: "GET",
-      url:
-        "leave/get-leave-application-for-approval/?thisMonth=" +
-        thisMonth +
-        "&employee_type=1",
-    })
-      .then((res) => {
-        dispatch(setLeaveApproval(res?.data?.data));
-        dispatch(setLoaderVisible(false));
+    if (
+      profile_data.permission_list.includes(
+        APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
+      ) ||
+      profile_data.permission_list.includes(
+        APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
+      )
+    ) {
+      Api({
+        method: "GET",
+        url:
+          "leave/get-leave-application-for-approval/?thisMonth=" +
+          thisMonth +
+          "&employee_type=1",
       })
-      .catch((err) => {
-        dispatch(setLeaveApproval([]));
-        dispatch(setLoaderVisible(false));
-      });
-  }, [version]);
+        .then((res) => {
+          dispatch(setLeaveApproval(res?.data?.data));
+          dispatch(setLoaderVisible(false));
+        })
+        .catch((err) => {
+          dispatch(setLeaveApproval([]));
+          dispatch(setLoaderVisible(false));
+        });
+    }
+  }, []);
 
   // Column
   const additionalColumn = [

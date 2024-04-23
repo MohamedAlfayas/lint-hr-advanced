@@ -10,7 +10,11 @@ import { useSelector, useDispatch } from "react-redux";
 
 import ReactApexChart from "react-apexcharts";
 import Select from "react-select";
-import { employeeTypeOptions } from "../../common/constant/Constants";
+import {
+  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
+  VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
+  employeeTypeOptions,
+} from "../../common/constant/Constants";
 import {
   setAllMembersTodaysAttendanceAsCurrent,
   setTeamTodaysAttendanceAsCurrent,
@@ -18,6 +22,7 @@ import {
 import { Api } from "../../common/api/Api";
 import { setDashboardAttendanceStasticsType } from "../../redux/reducers/ChildReducer/DashboardAttendanceStasticsReducer";
 import { setTeamAttendanceReportData } from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
 const AttendanceStatistics = () => {
   const dispatch = useDispatch();
@@ -50,6 +55,12 @@ const AttendanceStatistics = () => {
   const { currently_displaying_todays_attendance } = useSelector(
     (state) => state.TeamTodaysAttendanceReducer
   );
+  console.log(
+    "currently Dispalying teams",
+    currently_displaying_todays_attendance
+  );
+
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
   useEffect(() => {
     let ch_in_data = [];
@@ -232,36 +243,44 @@ const AttendanceStatistics = () => {
               className="d-flex align-items-center justify-content-end"
             >
               <div className="flex-shrink-0">
-                <UncontrolledDropdown className="card-header-dropdown">
-                  <DropdownToggle
-                    tag="a"
-                    className="text-reset dropdown-btn"
-                    role="button"
-                  >
-                    <span className="fw-semibold fs-12">
-                      {dashboard_attendance_stastics_type}
-                    </span>
-                    <span className="text-muted">
-                      <i className="mdi mdi-chevron-down ms-1"></i>
-                    </span>
-                  </DropdownToggle>
-                  <DropdownMenu className="dropdown-menu-end">
-                    <DropdownItem
-                      onClick={() => {
-                        onAttStasticsTypeChange("All", 0);
-                      }}
+                {profile_data.permission_list.includes(
+                  VIEW_ALL_EMPLOYEE_ACCESS_KEY
+                ) &&
+                profile_data.permission_list.includes(
+                  VIEW_TEAM_EMPLOYEE_ACCESS_KEY
+                ) ? (
+                  <UncontrolledDropdown className="card-header-dropdown">
+                    <DropdownToggle
+                      tag="a"
+                      className="text-reset dropdown-btn"
+                      role="button"
                     >
-                      All
-                    </DropdownItem>
-                    <DropdownItem
-                      onClick={() => {
-                        onAttStasticsTypeChange("My Team", 1);
-                      }}
-                    >
-                      My Team
-                    </DropdownItem>
-                  </DropdownMenu>
-                </UncontrolledDropdown>
+                      <span className="fw-semibold fs-12">
+                        {dashboard_attendance_stastics_type}
+                      </span>
+                      <span className="text-muted">
+                        <i className="mdi mdi-chevron-down ms-1"></i>
+                      </span>
+                    </DropdownToggle>
+                    <DropdownMenu className="dropdown-menu-end">
+                      <DropdownItem
+                        onClick={() => {
+                          onAttStasticsTypeChange("All", 0);
+                        }}
+                      >
+                        All
+                      </DropdownItem>
+
+                      <DropdownItem
+                        onClick={() => {
+                          onAttStasticsTypeChange("My Team", 1);
+                        }}
+                      >
+                        My Team
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </UncontrolledDropdown>
+                ) : null}
               </div>
             </Col>
           </div>

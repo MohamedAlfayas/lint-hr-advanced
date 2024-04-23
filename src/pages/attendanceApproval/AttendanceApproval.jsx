@@ -33,6 +33,10 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 import { PostApi } from "../../common/api/PostApi";
 import { toast } from "react-toastify";
 import ApprovalFilter from "../../component/common/tableFilter/ApprovalFilter";
+import {
+  APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY,
+  APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
+} from "../../common/constant/Constants";
 const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
   const dispatch = useDispatch();
 
@@ -52,6 +56,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
       setAttendanceApprovalTableFilterKeys({ primary_department_id_list: 0 })
     );
   }, []);
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
   useEffect(() => {
     const today = new Date();
@@ -59,21 +64,30 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
       .toString()
       .padStart(2, "0")}`;
     dispatch(setLoaderVisible(true));
-    Api({
-      type: "GET",
-      url:
-        "attendance/get-attendance-data-for-approval/?thisMonth=" +
-        thisMonth +
-        "&employee_type=1",
-    })
-      .then((res) => {
-        dispatch(setLoaderVisible(false));
-        dispatch(setAttendanceApprovalData(res?.data?.data));
+    if (
+      profile_data.permission_list.includes(
+        APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
+      ) ||
+      profile_data.permission_list.includes(
+        APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+      )
+    ) {
+      Api({
+        type: "GET",
+        url:
+          "attendance/get-attendance-data-for-approval/?thisMonth=" +
+          thisMonth +
+          "&employee_type=1",
       })
-      .catch((err) => {
-        console.log("ERR");
-        dispatch(setLoaderVisible(false));
-      });
+        .then((res) => {
+          dispatch(setLoaderVisible(false));
+          dispatch(setAttendanceApprovalData(res?.data?.data));
+        })
+        .catch((err) => {
+          console.log("ERR");
+          dispatch(setLoaderVisible(false));
+        });
+    }
   }, []);
 
   const [timelineList, setTimelineList] = useState([]);

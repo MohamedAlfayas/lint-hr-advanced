@@ -14,7 +14,13 @@ import {
 import Select from "react-select";
 import { useDispatch, useSelector } from "react-redux";
 import { DatePicker } from "antd";
-import { MonthFormat } from "../../../common/constant/Constants";
+import {
+  APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY,
+  APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY,
+  APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
+  APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
+  MonthFormat,
+} from "../../../common/constant/Constants";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { setLeaveApproval } from "../../../redux/reducers/ChildReducer/LeaveApprovalReducer";
@@ -46,6 +52,7 @@ const ApprovalFilter = ({ formname }) => {
   const { filteredlatestvalue } = useSelector(
     (data) => data.ApprovalFilterReducer
   );
+
   const PendingLeave = leave_approval_data.filter((d) => d.status === 1).length;
 
   const [activeTab, setActiveTab] = useState("1");
@@ -58,6 +65,8 @@ const ApprovalFilter = ({ formname }) => {
   const AttendancePending = attendance_approval_data.filter(
     (d) => d.hr_status === 3
   ).length;
+
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
   const inputRef = useRef();
   const location = useLocation();
@@ -96,38 +105,57 @@ const ApprovalFilter = ({ formname }) => {
 
   const FilterData = async (tab) => {
     dispatch(setLoaderVisible(true));
+
     if (tab === "2") {
-      Api({
-        type: "GET",
-        url:
-          "leave/get-leave-application-for-approval/?thisMonth=" +
-          filteredMonth +
-          "&employee_type=" +
-          employeeType,
-      })
-        .then((res) => {
-          dispatch(setLeaveApproval(res?.data?.data));
-          dispatch(setLoaderVisible(false));
+      if (
+        profile_data.permission_list.includes(
+          APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
+        ) ||
+        profile_data.permission_list.includes(
+          APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
+        )
+      ) {
+        Api({
+          type: "GET",
+          url:
+            "leave/get-leave-application-for-approval/?thisMonth=" +
+            filteredMonth +
+            "&employee_type=" +
+            employeeType,
         })
-        .catch((err) => {
-          dispatch(setLoaderVisible(false));
-        });
+          .then((res) => {
+            dispatch(setLeaveApproval(res?.data?.data));
+            dispatch(setLoaderVisible(false));
+          })
+          .catch((err) => {
+            dispatch(setLoaderVisible(false));
+          });
+      }
     } else if (tab === "1") {
-      Api({
-        type: "GET",
-        url:
-          "attendance/get-attendance-data-for-approval/?thisMonth=" +
-          filteredMonth +
-          "&employee_type=" +
-          employeeType,
-      })
-        .then((res) => {
-          dispatch(setAttendanceApprovalData(res?.data?.data));
-          dispatch(setLoaderVisible(false));
+      if (
+        profile_data.permission_list.includes(
+          APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
+        ) ||
+        profile_data.permission_list.includes(
+          APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+        )
+      ) {
+        Api({
+          type: "GET",
+          url:
+            "attendance/get-attendance-data-for-approval/?thisMonth=" +
+            filteredMonth +
+            "&employee_type=" +
+            employeeType,
         })
-        .catch((err) => {
-          dispatch(setLoaderVisible(false));
-        });
+          .then((res) => {
+            dispatch(setAttendanceApprovalData(res?.data?.data));
+            dispatch(setLoaderVisible(false));
+          })
+          .catch((err) => {
+            dispatch(setLoaderVisible(false));
+          });
+      }
     } else {
       dispatch(setLoaderVisible(false));
       toast.error("Sometyhing Went Wrong!");
@@ -146,23 +174,37 @@ const ApprovalFilter = ({ formname }) => {
           <Card>
             <CardHeader className="border-0 rounded">
               <Row className="g-2">
-                <Col md={3}>
-                  <Select
-                    id="employee_filter"
-                    name="employee_filter"
-                    isClearable={false}
-                    isMulti={false}
-                    options={employeeTypeOptions || []}
-                    className="basic-multi-select"
-                    placeholder="Select Employee Type"
-                    allowClear={false}
-                    onChange={handleEmployeeTypeChange}
-                    value={
-                      employeeTypeOptions.find((d) => d.id === employeeType) ||
-                      employeeTypeOptions[1]
-                    }
-                  />
-                </Col>
+                {(profile_data.permission_list.includes(
+                  APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
+                ) &&
+                  profile_data.permission_list.includes(
+                    APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+                  )) ||
+                (profile_data.permission_list.includes(
+                  APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
+                ) &&
+                  profile_data.permission_list.includes(
+                    APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
+                  )) ? (
+                  <Col md={3}>
+                    <Select
+                      id="employee_filter"
+                      name="employee_filter"
+                      isClearable={false}
+                      isMulti={false}
+                      options={employeeTypeOptions || []}
+                      className="basic-multi-select"
+                      placeholder="Select Employee Type"
+                      allowClear={false}
+                      onChange={handleEmployeeTypeChange}
+                      value={
+                        employeeTypeOptions.find(
+                          (d) => d.id === employeeType
+                        ) || employeeTypeOptions[1]
+                      }
+                    />
+                  </Col>
+                ) : null}
                 <Col md={3}>
                   <div className="form-icon right">
                     <DatePicker
@@ -190,7 +232,7 @@ const ApprovalFilter = ({ formname }) => {
                     </div>
                   </div>
                 </Col>
-                <Col md={4}>
+                <Col md={4} className="order-last">
                   <Row className="g-2">
                     <div className="d-flex justify-content-end">
                       <div className="col-lg-auto me-2">
@@ -198,115 +240,95 @@ const ApprovalFilter = ({ formname }) => {
                           className="nav-tabs nav-tabs-custom nav-success"
                           role="tablist"
                         >
-                          <NavItem>
-                            <NavLink
-                              className={classnames(
-                                { active: activeTab === "1" },
-                                `fw-semibold ${
-                                  activeTab === "1"
-                                    ? "text-success"
-                                    : "text-primary"
-                                }`
-                              )}
-                              onClick={() => {
-                                toggleTab("1");
+                          {profile_data.permission_list.includes(
+                            APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
+                          ) ||
+                          profile_data.permission_list.includes(
+                            APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+                          ) ? (
+                            <NavItem>
+                              <NavLink
+                                className={classnames(
+                                  { active: activeTab === "1" },
+                                  `fw-semibold ${
+                                    activeTab === "1"
+                                      ? "text-success"
+                                      : "text-primary"
+                                  }`
+                                )}
+                                onClick={() => {
+                                  toggleTab("1");
 
-                                if (
-                                  filteredcurrentvalue !== filteredlatestvalue
-                                ) {
-                                  FilterData("1");
-                                  dispatch(
-                                    setFilteredLatestValue(filteredcurrentvalue)
-                                  );
-                                }
-                              }}
-                              href="#"
-                            >
-                              Attendance Approval{" "}
-                              <Badge
-                                color={
-                                  activeTab === "1" ? "success" : "primary"
-                                }
-                                style={{ marginLeft: "5px" }}
+                                  if (
+                                    filteredcurrentvalue !== filteredlatestvalue
+                                  ) {
+                                    FilterData("1");
+                                    dispatch(
+                                      setFilteredLatestValue(
+                                        filteredcurrentvalue
+                                      )
+                                    );
+                                  }
+                                }}
+                                href="#"
                               >
-                                {AttendancePending}
-                              </Badge>
-                            </NavLink>
-                          </NavItem>
-                          <NavItem>
-                            <NavLink
-                              className={classnames(
-                                { active: activeTab === "2" },
-                                `fw-semibold ${
-                                  activeTab === "2"
-                                    ? "text-success"
-                                    : "text-primary"
-                                }`
-                              )}
-                              onClick={() => {
-                                toggleTab("2");
+                                Attendance Approval{" "}
+                                <Badge
+                                  color={
+                                    activeTab === "1" ? "success" : "primary"
+                                  }
+                                  style={{ marginLeft: "5px" }}
+                                >
+                                  {AttendancePending}
+                                </Badge>
+                              </NavLink>
+                            </NavItem>
+                          ) : null}
+                          {profile_data.permission_list.includes(
+                            APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
+                          ) ||
+                          profile_data.permission_list.includes(
+                            APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
+                          ) ? (
+                            <NavItem>
+                              <NavLink
+                                className={classnames(
+                                  { active: activeTab === "2" },
+                                  `fw-semibold ${
+                                    activeTab === "2"
+                                      ? "text-success"
+                                      : "text-primary"
+                                  }`
+                                )}
+                                onClick={() => {
+                                  toggleTab("2");
 
-                                if (
-                                  filteredcurrentvalue !== filteredlatestvalue
-                                ) {
-                                  FilterData("2");
-                                  dispatch(
-                                    setFilteredLatestValue(filteredcurrentvalue)
-                                  );
-                                }
-                              }}
-                              href="#"
-                            >
-                              Leave Approval{" "}
-                              <Badge
-                                color={
-                                  activeTab === "2" ? "success" : "primary"
-                                }
-                                style={{ marginLeft: "5px" }}
+                                  if (
+                                    filteredcurrentvalue !== filteredlatestvalue
+                                  ) {
+                                    FilterData("2");
+                                    dispatch(
+                                      setFilteredLatestValue(
+                                        filteredcurrentvalue
+                                      )
+                                    );
+                                  }
+                                }}
+                                href="#"
                               >
-                                {PendingLeave}
-                              </Badge>
-                            </NavLink>
-                          </NavItem>
+                                Leave Approval{" "}
+                                <Badge
+                                  color={
+                                    activeTab === "2" ? "success" : "primary"
+                                  }
+                                  style={{ marginLeft: "5px" }}
+                                >
+                                  {PendingLeave}
+                                </Badge>
+                              </NavLink>
+                            </NavItem>
+                          ) : null}
                         </Nav>
-                        {/* <Link
-                          to="/attendanceapproval"
-                          className={`btn btn-${
-                            pathname === "/attendanceapproval" ? "info" : "grey"
-                          }`}
-                        >
-                          Attendance Approval{" "}
-                          <Badge
-                            color={
-                              pathname === "/attendanceapproval"
-                                ? "primary"
-                                : "info"
-                            }
-                            style={{ marginLeft: "5px" }}
-                          >
-                            {AttendancePending}
-                          </Badge>
-                        </Link> */}
-                      </div>{" "}
-                      <div className="col-lg-auto">
-                        {/* <Link
-                          to="/leave-approval"
-                          className={`btn btn-${
-                            pathname === "/leave-approval" ? "info" : "grey"
-                          }`}
-                        >
-                          Leave Approval{" "}
-                          <Badge
-                            color={
-                              pathname === "/leave-approval"
-                                ? "primary"
-                                : "info"
-                            }
-                            style={{ marginLeft: "5px" }}
-                          >
-                            {PendingLeave}
-                          </Badge>
-                        </Link> */}
                       </div>
                     </div>
                   </Row>
