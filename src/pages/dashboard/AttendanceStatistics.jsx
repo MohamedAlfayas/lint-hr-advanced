@@ -56,7 +56,21 @@ const AttendanceStatistics = () => {
     (state) => state.TeamTodaysAttendanceReducer
   );
 
-  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+  const [showTeamAttendance, setShowTeamAttendance] = useState(false);
+  const [showAllAttendance, setShowAllAttendance] = useState(false);
+
+  useEffect(() => {
+    const profile_data = JSON.parse(
+      localStorage.getItem("lint_hr_profile_data")
+    );
+    if (
+      profile_data.permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY) &&
+      profile_data.permission_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)
+    ) {
+      setShowAllAttendance(true);
+      setShowTeamAttendance(true);
+    }
+  }, []);
 
   useEffect(() => {
     let ch_in_data = [];
@@ -239,12 +253,7 @@ const AttendanceStatistics = () => {
               className="d-flex align-items-center justify-content-end"
             >
               <div className="flex-shrink-0">
-                {profile_data.permission_list.includes(
-                  VIEW_ALL_EMPLOYEE_ACCESS_KEY
-                ) &&
-                profile_data.permission_list.includes(
-                  VIEW_TEAM_EMPLOYEE_ACCESS_KEY
-                ) ? (
+                {showAllAttendance && showTeamAttendance ? (
                   <UncontrolledDropdown className="card-header-dropdown">
                     <DropdownToggle
                       tag="a"
@@ -259,21 +268,25 @@ const AttendanceStatistics = () => {
                       </span>
                     </DropdownToggle>
                     <DropdownMenu className="dropdown-menu-end">
-                      <DropdownItem
-                        onClick={() => {
-                          onAttStasticsTypeChange("All", 0);
-                        }}
-                      >
-                        All
-                      </DropdownItem>
+                      {showAllAttendance && (
+                        <DropdownItem
+                          onClick={() => {
+                            onAttStasticsTypeChange("All", 0);
+                          }}
+                        >
+                          All
+                        </DropdownItem>
+                      )}
 
-                      <DropdownItem
-                        onClick={() => {
-                          onAttStasticsTypeChange("My Team", 1);
-                        }}
-                      >
-                        My Team
-                      </DropdownItem>
+                      {showTeamAttendance && (
+                        <DropdownItem
+                          onClick={() => {
+                            onAttStasticsTypeChange("My Team", 1);
+                          }}
+                        >
+                          My Team
+                        </DropdownItem>
+                      )}
                     </DropdownMenu>
                   </UncontrolledDropdown>
                 ) : null}

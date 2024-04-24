@@ -58,6 +58,30 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
   }, []);
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
+  let employee_type;
+
+  if (
+    profile_data.permission_list.includes(
+      APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
+    ) &&
+    profile_data.permission_list.includes(
+      APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+    )
+  ) {
+    employee_type = 1;
+  } else if (
+    profile_data.permission_list.includes(
+      APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
+    ) &&
+    !profile_data.permission_list.includes(
+      APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+    )
+  ) {
+    employee_type = 0;
+  } else {
+    employee_type = 1;
+  }
+
   useEffect(() => {
     const today = new Date();
     const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
@@ -74,10 +98,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
     ) {
       Api({
         type: "GET",
-        url:
-          "attendance/get-attendance-data-for-approval/?thisMonth=" +
-          thisMonth +
-          "&employee_type=1",
+        url: `attendance/get-attendance-data-for-approval/?thisMonth=${thisMonth}&employee_type=${employee_type}`,
       })
         .then((res) => {
           dispatch(setLoaderVisible(false));

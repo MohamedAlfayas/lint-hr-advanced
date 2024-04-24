@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Badge,
   Card,
@@ -67,6 +67,28 @@ const ApprovalFilter = ({ formname }) => {
   ).length;
 
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+  const [showTeamAttendanceApproval, setShowTeamAttendanceApproval] =
+    useState(false);
+  const [showAllAttendanceApproval, setShowAllAttendanceApproval] =
+    useState(false);
+  const [showTeamLeaveApproval, setShowTeamLeaveApproval] = useState(false);
+  const [showAllLeaveApproval, setShowAllLeaveApproval] = useState(false);
+
+  useEffect(() => {
+    const permissions = {
+      [APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY]: setShowAllAttendanceApproval,
+      [APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY]:
+        setShowTeamAttendanceApproval,
+      [APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY]: setShowAllLeaveApproval,
+      [APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY]: setShowTeamLeaveApproval,
+    };
+
+    Object.entries(permissions).forEach(([permissionKey, setState]) => {
+      if (profile_data.permission_list.includes(permissionKey)) {
+        setState(true);
+      }
+    });
+  }, []);
 
   const inputRef = useRef();
   const location = useLocation();
@@ -87,6 +109,25 @@ const ApprovalFilter = ({ formname }) => {
     employeeType: 1,
   });
 
+  useEffect(() => {
+    if (
+      (profile_data.permission_list.includes(
+        APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
+      ) &&
+        !profile_data.permission_list.includes(
+          APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+        )) ||
+      (profile_data.permission_list.includes(
+        APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
+      ) &&
+        !profile_data.permission_list.includes(
+          APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
+        ))
+    ) {
+      setEmployeeType(0);
+    }
+  }, []);
+
   const handleEmployeeTypeChange = (e, name) => {
     setEmployeeType(e.value);
     setFilteredValue({
@@ -104,19 +145,13 @@ const ApprovalFilter = ({ formname }) => {
   };
 
   const FilterData = async (tab) => {
-    console.log("TAb", tab);
     dispatch(setLoaderVisible(true));
 
-    if (tab === "2") {
-      if (
-        profile_data.permission_list.includes(
-          APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
-        ) ||
-        profile_data.permission_list.includes(
-          APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
-        )
-      ) {
-        console.log("Leave API Running");
+    if (
+      tab === "2" ||
+      (!showAllAttendanceApproval && !showTeamAttendanceApproval && tab === "1")
+    ) {
+      if (showAllLeaveApproval || showTeamLeaveApproval) {
         Api({
           type: "GET",
           url:
@@ -137,14 +172,7 @@ const ApprovalFilter = ({ formname }) => {
         toast.error("Sometyhing Went Wrong!");
       }
     } else if (tab === "1") {
-      if (
-        profile_data.permission_list.includes(
-          APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
-        ) ||
-        profile_data.permission_list.includes(
-          APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-        )
-      ) {
+      if (showAllAttendanceApproval || showTeamAttendanceApproval) {
         console.log("Attendance API Running");
 
         Api({
@@ -186,18 +214,8 @@ const ApprovalFilter = ({ formname }) => {
           <Card>
             <CardHeader className="border-0 rounded">
               <Row className="g-2">
-                {(profile_data.permission_list.includes(
-                  APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
-                ) &&
-                  profile_data.permission_list.includes(
-                    APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-                  )) ||
-                (profile_data.permission_list.includes(
-                  APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
-                ) &&
-                  profile_data.permission_list.includes(
-                    APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
-                  )) ? (
+                {(showAllAttendanceApproval && showTeamAttendanceApproval) ||
+                (showAllLeaveApproval && showTeamLeaveApproval) ? (
                   <Col md={3}>
                     <Select
                       id="employee_filter"
@@ -255,12 +273,8 @@ const ApprovalFilter = ({ formname }) => {
                           className="nav-tabs nav-tabs-custom nav-success"
                           role="tablist"
                         >
-                          {profile_data.permission_list.includes(
-                            APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
-                          ) ||
-                          profile_data.permission_list.includes(
-                            APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-                          ) ? (
+                          {showAllAttendanceApproval ||
+                          showTeamAttendanceApproval ? (
                             <NavItem>
                               <NavLink
                                 className={classnames(
@@ -300,19 +314,10 @@ const ApprovalFilter = ({ formname }) => {
                             </NavItem>
                           ) : null}
 
-                          {profile_data.permission_list.includes(
-                            APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
-                          ) ||
-                          profile_data.permission_list.includes(
-                            APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
-                          ) ? (
+                          {showAllLeaveApproval || showTeamLeaveApproval ? (
                             <NavItem>
-                              {!profile_data.permission_list.includes(
-                                APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
-                              ) &&
-                              !profile_data.permission_list.includes(
-                                APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-                              ) ? (
+                              {!showAllAttendanceApproval &&
+                              !showTeamAttendanceApproval ? (
                                 <NavLink
                                   className={classnames(
                                     { active: activeTab === "1" },
@@ -382,12 +387,7 @@ const ApprovalFilter = ({ formname }) => {
         <TabContent activeTab={activeTab} className="text-muted">
           <TabPane
             tabId={
-              profile_data.permission_list.includes(
-                APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
-              ) ||
-              profile_data.permission_list.includes(
-                APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-              )
+              showAllAttendanceApproval || showTeamAttendanceApproval
                 ? "1"
                 : "0"
             }
@@ -396,12 +396,7 @@ const ApprovalFilter = ({ formname }) => {
           </TabPane>
           <TabPane
             tabId={
-              !profile_data.permission_list.includes(
-                APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
-              ) &&
-              !profile_data.permission_list.includes(
-                APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-              )
+              !showAllAttendanceApproval && !showTeamAttendanceApproval
                 ? "1"
                 : "2"
             }

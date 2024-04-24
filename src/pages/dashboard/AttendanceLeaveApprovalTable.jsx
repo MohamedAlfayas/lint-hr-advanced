@@ -38,8 +38,30 @@ const AttendanceLeaveApprovalTable = () => {
   const handleAttendLengthChange = (onDataLengthChange) => {
     setAttendDataLength(onDataLengthChange);
   };
+  const [showTeamAttendanceApproval, setShowTeamAttendanceApproval] =
+    useState(false);
+  const [showTeamLeaveApproval, setShowTeamLeaveApproval] = useState(false);
 
-  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+  useEffect(() => {
+    const profile_data = JSON.parse(
+      localStorage.getItem("lint_hr_profile_data")
+    );
+
+    if (
+      profile_data.permission_list.includes(
+        APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+      )
+    ) {
+      setShowTeamAttendanceApproval(true);
+    }
+    if (
+      profile_data.permission_list.includes(
+        APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
+      )
+    ) {
+      setShowTeamLeaveApproval(true);
+    }
+  }, []);
 
   return (
     <React.Fragment>
@@ -52,9 +74,7 @@ const AttendanceLeaveApprovalTable = () => {
                 className="nav-tabs nav-tabs-custom nav-success"
                 role="tablist"
               >
-                {profile_data.permission_list.includes(
-                  APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-                ) ? (
+                {showTeamAttendanceApproval && (
                   <NavItem>
                     <NavLink
                       href="#"
@@ -78,14 +98,10 @@ const AttendanceLeaveApprovalTable = () => {
                       </Badge>
                     </NavLink>
                   </NavItem>
-                ) : null}
-                {profile_data.permission_list.includes(
-                  APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
-                ) ? (
+                )}
+                {showTeamLeaveApproval && (
                   <NavItem>
-                    {!profile_data.permission_list.includes(
-                      APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-                    ) ? (
+                    {!showTeamAttendanceApproval ? (
                       <NavLink
                         href="#"
                         className={classnames(
@@ -125,35 +141,19 @@ const AttendanceLeaveApprovalTable = () => {
                       </NavLink>
                     )}
                   </NavItem>
-                ) : null}
+                )}
               </Nav>
             </div>
           </CardHeader>
           <div className="card-body p-0">
             <TabContent activeTab={activeTab} className="p-0">
-              <TabPane
-                tabId={
-                  profile_data.permission_list.includes(
-                    APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-                  )
-                    ? "1"
-                    : "0"
-                }
-              >
+              <TabPane tabId={showTeamAttendanceApproval ? "1" : "0"}>
                 <AttendancePendingTable
                   onDataLengthChange={handleAttendLengthChange}
                 />
               </TabPane>
 
-              <TabPane
-                tabId={
-                  !profile_data.permission_list.includes(
-                    APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-                  )
-                    ? "1"
-                    : "2"
-                }
-              >
+              <TabPane tabId={!showTeamAttendanceApproval ? "1" : "2"}>
                 <LeaveApprovalPending
                   onDataLengthChange={handleLeaveLengthChange}
                 />

@@ -37,6 +37,26 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
   };
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
+  let employee_type;
+
+  if (
+    profile_data.permission_list.includes(
+      APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
+    ) &&
+    profile_data.permission_list.includes(APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY)
+  ) {
+    employee_type = 1;
+  } else if (
+    profile_data.permission_list.includes(
+      APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
+    ) &&
+    !profile_data.permission_list.includes(APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY)
+  ) {
+    employee_type = 0;
+  } else {
+    employee_type = 1;
+  }
+
   useEffect(() => {
     dispatch(setLoaderVisible(true));
     const today = new Date();
@@ -53,10 +73,7 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
     ) {
       Api({
         method: "GET",
-        url:
-          "leave/get-leave-application-for-approval/?thisMonth=" +
-          thisMonth +
-          "&employee_type=1",
+        url: `leave/get-leave-application-for-approval/?thisMonth=${thisMonth}&employee_type=${employee_type}`,
       })
         .then((res) => {
           dispatch(setLeaveApproval(res?.data?.data));

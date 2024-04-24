@@ -43,6 +43,7 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 const EmployeeActivity = (props) => {
   const [lateData, setLateData] = useState([]);
   const [noData, setNoData] = useState([]);
+  const [inData, setInData] = useState([]);
 
   const { currently_displaying_todays_attendance } = useSelector(
     (state) => state.TeamTodaysAttendanceReducer
@@ -50,7 +51,19 @@ const EmployeeActivity = (props) => {
 
   const dispatch = useDispatch();
 
+  const [showTeamAttendance, setShowTeamAttendance] = useState(false);
+  const [showAllAttendance, setShowAllAttendance] = useState(false);
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+
+  useEffect(() => {
+    if (
+      profile_data.permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY) &&
+      profile_data.permission_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)
+    ) {
+      setShowAllAttendance(true);
+      setShowTeamAttendance(true);
+    }
+  }, []);
 
   let employee_type;
 
@@ -62,19 +75,24 @@ const EmployeeActivity = (props) => {
 
   useEffect(() => {
     if (!!currently_displaying_todays_attendance) {
+      let in_data = [];
       let late_data = [];
       let no_data = [];
 
       currently_displaying_todays_attendance.map((d) => {
+        if (d.is_present === true) {
+          in_data.push(d);
+        }
         if (d.is_late === true) {
           late_data.push(d);
-        } else if (d.no_data === true) {
+        } else if (d.is_present === false) {
           no_data.push(d);
         }
       });
 
       setLateData(late_data);
       setNoData(no_data);
+      setInData(in_data);
     }
   }, [currently_displaying_todays_attendance]);
 
@@ -163,14 +181,7 @@ const EmployeeActivity = (props) => {
                         toggleTab("1");
                       }}
                     >
-                      All{" "}
-                      <small>
-                        {`(${
-                          !!currently_displaying_todays_attendance
-                            ? currently_displaying_todays_attendance.length
-                            : 0
-                        })`}
-                      </small>
+                      In <small>{`(${inData?.length || 0})`}</small>
                     </NavLink>
                   </NavItem>
                   <NavItem>
@@ -200,12 +211,7 @@ const EmployeeActivity = (props) => {
             </CardHeader>
             <CardBody className="p-0">
               <div className="p-2">
-                {profile_data.permission_list.includes(
-                  VIEW_ALL_EMPLOYEE_ACCESS_KEY
-                ) &&
-                profile_data.permission_list.includes(
-                  VIEW_TEAM_EMPLOYEE_ACCESS_KEY
-                ) ? (
+                {showAllAttendance && showTeamAttendance && (
                   <div className="form-icon right" style={{ width: "250px" }}>
                     <Select
                       id="emp_type"
@@ -221,7 +227,7 @@ const EmployeeActivity = (props) => {
                       onChange={(e) => onAttStasticsTypeChange(e)}
                     />
                   </div>
-                ) : null}
+                )}
                 <div
                   className="form-icon right mt-3"
                   style={{ width: "250px" }}
@@ -239,9 +245,7 @@ const EmployeeActivity = (props) => {
 
               <TabContent activeTab={activeTab} className="p-0">
                 <TabPane tabId="1">
-                  <EmployeeActivityTable
-                    team_data={currently_displaying_todays_attendance}
-                  />
+                  <EmployeeActivityTable team_data={inData} />
 
                   {/* <SimpleBar style={{ maxHeight: "100%" }} className="p-3 pt-0">
                     <EmployeeActivityTable></EmployeeActivityTable>
