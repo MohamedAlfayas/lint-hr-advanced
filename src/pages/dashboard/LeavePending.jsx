@@ -12,7 +12,7 @@ import { setLeaveApproval } from "../../redux/reducers/ChildReducer/LeaveApprova
 import { Api } from "../../common/api/Api";
 import { Badge, Button, UncontrolledTooltip } from "reactstrap";
 import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
-import { APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY } from "../../common/constant/Constants";
+import { VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY } from "../../common/constant/Constants";
 import { toast } from "react-toastify";
 
 const LeaveApprovalPending = ({ onDataLengthChange }) => {
@@ -46,7 +46,7 @@ const LeaveApprovalPending = ({ onDataLengthChange }) => {
     {
       if (
         profile_data.permission_list.includes(
-          APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
+          VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY
         )
       ) {
         Api({

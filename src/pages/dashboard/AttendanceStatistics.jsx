@@ -11,8 +11,8 @@ import { useSelector, useDispatch } from "react-redux";
 import ReactApexChart from "react-apexcharts";
 import Select from "react-select";
 import {
-  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
-  VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
+  VIEW_ALL_ATTENDANCE_ACCESS_KEY,
+  VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
   employeeTypeOptions,
 } from "../../common/constant/Constants";
 import {
@@ -64,8 +64,8 @@ const AttendanceStatistics = () => {
       localStorage.getItem("lint_hr_profile_data")
     );
     if (
-      profile_data.permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY) &&
-      profile_data.permission_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)
+      profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY) &&
+      profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY)
     ) {
       setShowAllAttendance(true);
       setShowTeamAttendance(true);

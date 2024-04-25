@@ -13,8 +13,8 @@ import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import ApprovalFilter from "../../component/common/tableFilter/ApprovalFilter";
 import {
-  APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY,
-  APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
+  VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
+  VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
 } from "../../common/constant/Constants";
 
 const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
@@ -40,17 +40,13 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
   let employee_type;
 
   if (
-    profile_data.permission_list.includes(
-      APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
-    ) &&
-    profile_data.permission_list.includes(APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY)
+    profile_data.permission_list.includes(VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY) &&
+    profile_data.permission_list.includes(VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY)
   ) {
     employee_type = 1;
   } else if (
-    profile_data.permission_list.includes(
-      APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
-    ) &&
-    !profile_data.permission_list.includes(APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY)
+    profile_data.permission_list.includes(VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY) &&
+    !profile_data.permission_list.includes(VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY)
   ) {
     employee_type = 0;
   } else {
@@ -65,11 +61,9 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
       .padStart(2, "0")}`;
     if (
       profile_data.permission_list.includes(
-        APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
+        VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY
       ) ||
-      profile_data.permission_list.includes(
-        APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
-      )
+      profile_data.permission_list.includes(VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY)
     ) {
       Api({
         method: "GET",

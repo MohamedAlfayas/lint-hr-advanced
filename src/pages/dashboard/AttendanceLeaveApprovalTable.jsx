@@ -17,8 +17,8 @@ import AttendanceApproval from "../attendanceApproval/AttendanceApproval";
 import AttendancePendingTable from "./AttendancePendingTable";
 import LeaveApprovalPending from "./LeavePending";
 import {
-  APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
-  APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
+  VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
+  VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
 } from "../../common/constant/Constants";
 
 const AttendanceLeaveApprovalTable = () => {
@@ -48,16 +48,12 @@ const AttendanceLeaveApprovalTable = () => {
     );
 
     if (
-      profile_data.permission_list.includes(
-        APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-      )
+      profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)
     ) {
       setShowTeamAttendanceApproval(true);
     }
     if (
-      profile_data.permission_list.includes(
-        APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
-      )
+      profile_data.permission_list.includes(VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY)
     ) {
       setShowTeamLeaveApproval(true);
     }

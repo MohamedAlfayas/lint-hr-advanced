@@ -31,7 +31,7 @@ import "./../../common/css/lc_style.css";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
 import { toast } from "react-toastify";
-import { APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY } from "../../common/constant/Constants";
+import { VIEW_TEAM_ATTENDANCE_ACCESS_KEY } from "../../common/constant/Constants";
 const AttendancePendingTable = ({ onDataLengthChange }) => {
   const dispatch = useDispatch();
 
@@ -55,9 +55,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
       .toString()
       .padStart(2, "0")}`;
     if (
-      profile_data.permission_list.includes(
-        APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-      )
+      profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)
     ) {
       Api({
         type: "GET",

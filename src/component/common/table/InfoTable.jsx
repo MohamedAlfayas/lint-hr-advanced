@@ -76,6 +76,10 @@ import {
   CREATE_CUSTOM_FIELD_ACCESS_KEY,
   EDIT_EMPLOYEE_ACCESS_KEY,
   EDIT_CUSTOM_FIELD_ACCESS_KEY,
+  APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY,
+  APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
+  APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY,
+  APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
 } from "../../../common/constant/Constants";
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
@@ -980,11 +984,44 @@ const InfoTable = ({
 
   const [showCreateBtn, setShowCreateBtn] = useState(false);
   const [showEditBtn, setShowEditBtn] = useState(false);
+  const [showAllLeaveApprovalBtn, setShowAllLeaveApprovalBtn] = useState(false);
+  const [showTeamLeaveApprovalBtn, setShowTeamLeaveApprovalBtn] =
+    useState(false);
+  const [showAllAttendanceApprovalBtn, setShowAllAttendanceApprovalBtn] =
+    useState(false);
+  const [showTeamAttendanceApprovalBtn, setShowTeamAttendanceApprovalBtn] =
+    useState(false);
 
   useEffect(() => {
     const profile_data = JSON.parse(
       localStorage.getItem("lint_hr_profile_data")
     );
+    if (
+      formname === leave_approval_component_name ||
+      attendance_approval_component_name
+    ) {
+      setShowAllLeaveApprovalBtn(
+        profile_data.permission_list.includes(
+          APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
+        )
+      );
+      setShowTeamLeaveApprovalBtn(
+        profile_data.permission_list.includes(
+          APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
+        )
+      );
+
+      setShowAllAttendanceApprovalBtn(
+        profile_data.permission_list.includes(
+          APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
+        )
+      );
+      setShowTeamAttendanceApprovalBtn(
+        profile_data.permission_list.includes(
+          APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+        )
+      );
+    }
 
     CheckCreateAccess(profile_data, formname);
     CheckEditAccess(profile_data, formname);

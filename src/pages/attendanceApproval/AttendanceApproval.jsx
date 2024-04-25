@@ -34,8 +34,8 @@ import { PostApi } from "../../common/api/PostApi";
 import { toast } from "react-toastify";
 import ApprovalFilter from "../../component/common/tableFilter/ApprovalFilter";
 import {
-  APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY,
-  APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
+  VIEW_ALL_ATTENDANCE_ACCESS_KEY,
+  VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
 } from "../../common/constant/Constants";
 const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
   const dispatch = useDispatch();
@@ -61,21 +61,13 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
   let employee_type;
 
   if (
-    profile_data.permission_list.includes(
-      APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
-    ) &&
-    profile_data.permission_list.includes(
-      APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-    )
+    profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY) &&
+    profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)
   ) {
     employee_type = 1;
   } else if (
-    profile_data.permission_list.includes(
-      APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
-    ) &&
-    !profile_data.permission_list.includes(
-      APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-    )
+    profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY) &&
+    !profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)
   ) {
     employee_type = 0;
   } else {
@@ -89,12 +81,8 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
       .padStart(2, "0")}`;
     dispatch(setLoaderVisible(true));
     if (
-      profile_data.permission_list.includes(
-        APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
-      ) ||
-      profile_data.permission_list.includes(
-        APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-      )
+      profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY) ||
+      profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)
     ) {
       Api({
         type: "GET",

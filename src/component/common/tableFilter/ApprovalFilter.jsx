@@ -15,10 +15,10 @@ import Select from "react-select";
 import { useDispatch, useSelector } from "react-redux";
 import { DatePicker } from "antd";
 import {
-  APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY,
-  APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY,
-  APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
-  APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
+  VIEW_ALL_ATTENDANCE_ACCESS_KEY,
+  VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
+  VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
+  VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
   MonthFormat,
 } from "../../../common/constant/Constants";
 import dayjs from "dayjs";
@@ -76,11 +76,10 @@ const ApprovalFilter = ({ formname }) => {
 
   useEffect(() => {
     const permissions = {
-      [APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY]: setShowAllAttendanceApproval,
-      [APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY]:
-        setShowTeamAttendanceApproval,
-      [APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY]: setShowAllLeaveApproval,
-      [APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY]: setShowTeamLeaveApproval,
+      [VIEW_ALL_ATTENDANCE_ACCESS_KEY]: setShowAllAttendanceApproval,
+      [VIEW_TEAM_ATTENDANCE_ACCESS_KEY]: setShowTeamAttendanceApproval,
+      [VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY]: setShowAllLeaveApproval,
+      [VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY]: setShowTeamLeaveApproval,
     };
 
     Object.entries(permissions).forEach(([permissionKey, setState]) => {
@@ -111,17 +110,15 @@ const ApprovalFilter = ({ formname }) => {
 
   useEffect(() => {
     if (
-      (profile_data.permission_list.includes(
-        APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
-      ) &&
+      (profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY) &&
         !profile_data.permission_list.includes(
-          APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+          VIEW_TEAM_ATTENDANCE_ACCESS_KEY
         )) ||
       (profile_data.permission_list.includes(
-        APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
+        VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY
       ) &&
         !profile_data.permission_list.includes(
-          APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
+          VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY
         ))
     ) {
       setEmployeeType(0);

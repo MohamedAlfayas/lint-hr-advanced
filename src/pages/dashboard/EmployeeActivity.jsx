@@ -32,8 +32,8 @@ import {
   setTeamTodaysAttendanceData,
 } from "../../redux/reducers/ChildReducer/TeamTodaysAttendanceReducer";
 import {
-  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
-  VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
+  VIEW_ALL_ATTENDANCE_ACCESS_KEY,
+  VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
   attendanceStasticsOptions,
   employeeTypeOptions,
 } from "../../common/constant/Constants";
@@ -57,8 +57,8 @@ const EmployeeActivity = (props) => {
 
   useEffect(() => {
     if (
-      profile_data.permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY) &&
-      profile_data.permission_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)
+      profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY) &&
+      profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)
     ) {
       setShowAllAttendance(true);
       setShowTeamAttendance(true);
@@ -67,7 +67,7 @@ const EmployeeActivity = (props) => {
 
   let employee_type;
 
-  if (profile_data.permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)) {
+  if (profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY)) {
     employee_type = 0;
   } else {
     employee_type = 1;
@@ -114,7 +114,7 @@ const EmployeeActivity = (props) => {
           )
         );
         if (
-          profile_data.permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)
+          profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY)
         ) {
           dispatch(
             setCurrentlyDisplayingTodaysAttendanceData(
