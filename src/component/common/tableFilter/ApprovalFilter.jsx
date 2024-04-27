@@ -15,9 +15,9 @@ import Select from "react-select";
 import { useDispatch, useSelector } from "react-redux";
 import { DatePicker } from "antd";
 import {
-  VIEW_ALL_ATTENDANCE_ACCESS_KEY,
+  VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
-  VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
+  VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
   MonthFormat,
 } from "../../../common/constant/Constants";
@@ -76,8 +76,8 @@ const ApprovalFilter = ({ formname }) => {
 
   useEffect(() => {
     const permissions = {
-      [VIEW_ALL_ATTENDANCE_ACCESS_KEY]: setShowAllAttendanceApproval,
-      [VIEW_TEAM_ATTENDANCE_ACCESS_KEY]: setShowTeamAttendanceApproval,
+      [VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY]: setShowAllAttendanceApproval,
+      [VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY]: setShowTeamAttendanceApproval,
       [VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY]: setShowAllLeaveApproval,
       [VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY]: setShowTeamLeaveApproval,
     };
@@ -110,9 +110,11 @@ const ApprovalFilter = ({ formname }) => {
 
   useEffect(() => {
     if (
-      (profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY) &&
+      (profile_data.permission_list.includes(
+        VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY
+      ) &&
         !profile_data.permission_list.includes(
-          VIEW_TEAM_ATTENDANCE_ACCESS_KEY
+          VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
         )) ||
       (profile_data.permission_list.includes(
         VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY
@@ -170,8 +172,6 @@ const ApprovalFilter = ({ formname }) => {
       }
     } else if (tab === "1") {
       if (showAllAttendanceApproval || showTeamAttendanceApproval) {
-        console.log("Attendance API Running");
-
         Api({
           type: "GET",
           url:
@@ -198,8 +198,6 @@ const ApprovalFilter = ({ formname }) => {
   };
 
   const handleFilter = async () => {
-    console.log("ActiveTab", activeTab);
-    console.log("Filtered", filteredValue);
     dispatch(setFilteredCurrentValue(filteredValue));
     FilterData(activeTab);
   };
@@ -382,24 +380,28 @@ const ApprovalFilter = ({ formname }) => {
       </div>
       <Col lg={12}>
         <TabContent activeTab={activeTab} className="text-muted">
-          <TabPane
-            tabId={
-              showAllAttendanceApproval || showTeamAttendanceApproval
-                ? "1"
-                : "0"
-            }
-          >
-            <AttendanceApproval />
-          </TabPane>
-          <TabPane
-            tabId={
-              !showAllAttendanceApproval && !showTeamAttendanceApproval
-                ? "1"
-                : "2"
-            }
-          >
-            <LeaveApproval />
-          </TabPane>
+          {(showAllAttendanceApproval || showTeamAttendanceApproval) && (
+            <TabPane
+              tabId={
+                showAllAttendanceApproval || showTeamAttendanceApproval
+                  ? "1"
+                  : "0"
+              }
+            >
+              <AttendanceApproval />
+            </TabPane>
+          )}
+          {(showAllLeaveApproval || showTeamLeaveApproval) && (
+            <TabPane
+              tabId={
+                !showAllAttendanceApproval && !showTeamAttendanceApproval
+                  ? "1"
+                  : "2"
+              }
+            >
+              <LeaveApproval />
+            </TabPane>
+          )}
         </TabContent>
       </Col>
     </React.Fragment>

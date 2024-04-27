@@ -105,12 +105,9 @@ const InfoTable = ({
   table_col,
   table_class,
 }) => {
-  // console.log("Page Refreshing !!!!", tabledata);
-
   const dispatch = useDispatch();
 
   const EmployeeData = GetLocalStorageData("employee");
-  // console.log("fsfa", EmployeeData);
 
   const { activeTableTab } = useSelector((state) => state.TableReducer);
 
@@ -197,7 +194,10 @@ const InfoTable = ({
     let employee_fname =
       EmployeeData.find((e) => e.id === orderData.employee_id)?.fname || "";
 
-    const totalSeconds = orderData.final_paid_hr_in_seconds;
+    const totalSeconds =
+      orderData.final_paid_hr_in_seconds === 0
+        ? orderData.work_schedule_duration_without_break
+        : orderData.final_paid_hr_in_seconds;
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     let selectedHour = hours;
@@ -208,29 +208,51 @@ const InfoTable = ({
       formname === leave_approval_component_name ||
       formname === leave_pending_table
         ? `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To <strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `
-        : `<span>Are You Sure to <strong style='color:green'>Accept </strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
+        : orderData.is_present === false
+        ? `<span>Oops, <strong style='color:#7066e0'>${employee_fname}</strong> didn't show up on <strong style='color:grey'>${format(
             new Date(orderData.date),
             "dd MMM, yyyy"
-          )}</span>
+          )}</strong>, Ready to regularize and approve?</span>
           <div>
-          ${
-            formname === attendance_approval_component_name ||
-            formname === attendance_pending_table
-              ? `<span style="display: inline-block; margin-top: 20px;">
-              <label for="select-hour" style="display: inline-block; margin-right: 5px;">Edit Paid Hr:</label>      
-              <b className="mt-2 me-1 ms-2">H</b>
-              <Select id="select-hour" class="swal2-input" style="display: inline-block; width: auto; margin-left: 5px;">
-                ${generateOptions(24, hours)}
-              </Select>
-              <b className="mt-2 me-1 ms-2">M</b>
-              <Select id="select-minute" class="swal2-input" style="display: inline-block; width: auto; margin-left: 5px;">
-                ${generateOptions(60, minutes)}
-              </Select>
-            </span>`
-              : undefined
-          }
-        </div>`;
-
+            ${
+              formname === attendance_approval_component_name ||
+              formname === attendance_pending_table
+                ? `<span style="display: inline-block; margin-top: 20px;">
+                  <label for="select-hour" style="display: inline-block; margin-right: 5px;">Edit Paid Hr:</label>      
+                  <b className="mt-2 me-1 ms-2">H</b>
+                  <Select id="select-hour" class="swal2-input" style="display: inline-block; width: auto; margin-left: 5px;">
+                    ${generateOptions(24, hours)}
+                  </Select>
+                  <b className="mt-2 me-1 ms-2">M</b>
+                  <Select id="select-minute" class="swal2-input" style="display: inline-block; width: auto; margin-left: 5px;">
+                    ${generateOptions(60, minutes)}
+                  </Select>
+                </span>`
+                : undefined
+            }
+          </div>`
+        : `<span><strong style='color:#7066e0'>${employee_fname}</strong> missed checkout on <strong style='color:grey'>${format(
+            new Date(orderData.date),
+            "dd MMM, yyyy"
+          )}, Would you like to regularize?</span>
+          <div>
+            ${
+              formname === attendance_approval_component_name ||
+              formname === attendance_pending_table
+                ? `<span style="display: inline-block; margin-top: 20px;">
+                  <label for="select-hour" style="display: inline-block; margin-right: 5px;">Edit Paid Hr:</label>      
+                  <b className="mt-2 me-1 ms-2">H</b>
+                  <Select id="select-hour" class="swal2-input" style="display: inline-block; width: auto; margin-left: 5px;">
+                    ${generateOptions(24, hours)}
+                  </Select>
+                  <b className="mt-2 me-1 ms-2">M</b>
+                  <Select id="select-minute" class="swal2-input" style="display: inline-block; width: auto; margin-left: 5px;">
+                    ${generateOptions(60, minutes)}
+                  </Select>
+                </span>`
+                : undefined
+            }
+          </div>`;
     let btnText = "Yes, Approve";
 
     Swal.fire({
@@ -342,10 +364,10 @@ const InfoTable = ({
       formname === leave_approval_component_name ||
       formname === leave_pending_table
         ? `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To <strong style='color:#7066e0'> ${employee_fname} </strong> on ${orderData.start} to  ${orderData.end} </span>`
-        : `<span>Are You Sure to <strong style='color:red'>Reject</strong> Attednace of<strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${format(
+        : `<span>Confirm Action : <strong style='color:red'>Reject</strong> pending status and mark <strong style='color:#7066e0'>  ${employee_fname}</strong>  as absent on   <strong style='color:grey'>${format(
             new Date(orderData.date),
             "dd MMM, yyyy"
-          )}</span> `;
+          )}</strong></span> `;
     let btnText = "Yes, Reject";
 
     Swal.fire({
@@ -1054,6 +1076,7 @@ const InfoTable = ({
     } else {
       setShowCreateBtn(true);
     }
+    f;
   };
 
   const CheckEditAccess = (profile_data, thisFormName) => {
@@ -1179,9 +1202,7 @@ const InfoTable = ({
     setSelectedCheckBoxApproveReject(ele);
   };
 
-  const handleDeleteData = (data) => {
-    console.log("data", data);
-  };
+  const handleDeleteData = (data) => {};
 
   // CUSTOM FORM
 
@@ -1525,24 +1546,55 @@ const InfoTable = ({
                               formname ===
                                 attendance_approval_component_name) && (
                               <div>
-                                <button
-                                  type="button"
-                                  className="btn btn-success add-btn"
-                                  id="bulk-approve-btn"
-                                  onClick={() => handleBulkApproval()}
-                                >
-                                  <i className="ri-check-line fs-16"></i> Bulk
-                                  Approve
-                                </button>{" "}
-                                <button
-                                  type="button"
-                                  className="btn btn-danger add-btn"
-                                  id="bulk-reject-btn"
-                                  onClick={() => handleBulkReject()}
-                                >
-                                  <i className="ri-close-line fs-16"></i> Bulk
-                                  Reject
-                                </button>{" "}
+                                {formname ===
+                                  attendance_approval_component_name &&
+                                  showAllAttendanceApprovalBtn &&
+                                  showTeamAttendanceApprovalBtn && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        className="btn btn-success add-btn"
+                                        id="bulk-approve-btn"
+                                        onClick={() => handleBulkApproval()}
+                                      >
+                                        <i className="ri-check-line fs-16"></i>{" "}
+                                        Bulk Approve
+                                      </button>{" "}
+                                      <button
+                                        type="button"
+                                        className="btn btn-danger add-btn"
+                                        id="bulk-reject-btn"
+                                        onClick={() => handleBulkReject()}
+                                      >
+                                        <i className="ri-close-line fs-16"></i>{" "}
+                                        Bulk Reject
+                                      </button>{" "}
+                                    </>
+                                  )}
+                                {formname === leave_approval_component_name &&
+                                  showAllLeaveApprovalBtn &&
+                                  showTeamLeaveApprovalBtn && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        className="btn btn-success add-btn"
+                                        id="bulk-approve-btn"
+                                        onClick={() => handleBulkApproval()}
+                                      >
+                                        <i className="ri-check-line fs-16"></i>{" "}
+                                        Bulk Approve
+                                      </button>{" "}
+                                      <button
+                                        type="button"
+                                        className="btn btn-danger add-btn"
+                                        id="bulk-reject-btn"
+                                        onClick={() => handleBulkReject()}
+                                      >
+                                        <i className="ri-close-line fs-16"></i>{" "}
+                                        Bulk Reject
+                                      </button>{" "}
+                                    </>
+                                  )}
                               </div>
                             )}
                           {/* {selectApproveReject &&

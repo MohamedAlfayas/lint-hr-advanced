@@ -13,11 +13,10 @@ import {
   TabPane,
 } from "reactstrap";
 import classnames from "classnames";
-import AttendanceApproval from "../attendanceApproval/AttendanceApproval";
 import AttendancePendingTable from "./AttendancePendingTable";
 import LeaveApprovalPending from "./LeavePending";
 import {
-  VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
+  VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
 } from "../../common/constant/Constants";
 
@@ -48,7 +47,9 @@ const AttendanceLeaveApprovalTable = () => {
     );
 
     if (
-      profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)
+      profile_data.permission_list.includes(
+        VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
+      )
     ) {
       setShowTeamAttendanceApproval(true);
     }
@@ -143,17 +144,21 @@ const AttendanceLeaveApprovalTable = () => {
           </CardHeader>
           <div className="card-body p-0">
             <TabContent activeTab={activeTab} className="p-0">
-              <TabPane tabId={showTeamAttendanceApproval ? "1" : "0"}>
-                <AttendancePendingTable
-                  onDataLengthChange={handleAttendLengthChange}
-                />
-              </TabPane>
+              {showTeamAttendanceApproval && (
+                <TabPane tabId={showTeamAttendanceApproval ? "1" : "0"}>
+                  <AttendancePendingTable
+                    onDataLengthChange={handleAttendLengthChange}
+                  />
+                </TabPane>
+              )}
 
-              <TabPane tabId={!showTeamAttendanceApproval ? "1" : "2"}>
-                <LeaveApprovalPending
-                  onDataLengthChange={handleLeaveLengthChange}
-                />
-              </TabPane>
+              {showTeamLeaveApproval && (
+                <TabPane tabId={!showTeamAttendanceApproval ? "1" : "2"}>
+                  <LeaveApprovalPending
+                    onDataLengthChange={handleLeaveLengthChange}
+                  />
+                </TabPane>
+              )}
             </TabContent>
           </div>
         </Card>

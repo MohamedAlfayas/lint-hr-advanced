@@ -2112,8 +2112,10 @@ export const VIEW_ALL_ATTENDANCE_ACCESS_KEY =
 export const VIEW_TEAM_ATTENDANCE_ACCESS_KEY =
   "8d33a155-2d7e-4a5d-8608-35431a44662c";
 
-// export const VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY="8d33a155-2d7e-4a5d-8608-35431a44662c";
-// export const VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY="2ebd3c5d-dca8-45cc-8334-5a32f2451893"
+export const VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY =
+  "5ac47d4f-3063-4730-a9da-c4f403ca7853";
+export const VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY =
+  "034d87cc-a1dd-42b0-9c20-f1163d4a5716";
 export const VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY =
   "1b5d106f-f3e8-41f3-8041-d3f71a19d27d";
 export const VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY =
@@ -2342,7 +2344,7 @@ export const default_roles_list = [
         checked: false,
         disabled: false,
       },
-      // Can View All Employee
+      // Can View All Employee\
       {
         id: 205,
         role_uuid: VIEW_ALL_EMPLOYEE_ACCESS_KEY,
@@ -2362,36 +2364,12 @@ export const default_roles_list = [
     note: "",
     permission: [
       {
-        id: 301,
-        role_uuid: "a31cc0f2-4440-44de-9b4c-f2b10540b9f5",
-        dependency_for_uuid_list: [
-          VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
-          "cc87c7e2-7a80-4d7f-b083-971bd25c9f6d",
-          APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
-          VIEW_ALL_ATTENDANCE_ACCESS_KEY,
-          "6aa0e447-7a32-4664-a53b-ae8c729d05af",
-          APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY,
-          VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
-          APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
-          VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
-          APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY,
-        ],
-        notes: "User Can View Attendance",
-        element: "per_attendance_view",
-        dependency_to_element_list: [],
-        checked: false,
-        disabled: false,
-      },
-      {
         id: 302,
         role_uuid: VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
-        dependency_for_uuid_list: [
-          "cc87c7e2-7a80-4d7f-b083-971bd25c9f6d",
-          APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
-        ],
+        dependency_for_uuid_list: ["cc87c7e2-7a80-4d7f-b083-971bd25c9f6d"],
         notes: "User Can View Team Attendance",
         element: "per_attendance_view_team",
-        dependency_to_element_list: ["per_attendance_view"],
+        dependency_to_element_list: [],
         checked: false,
         disabled: false,
       },
@@ -2401,10 +2379,17 @@ export const default_roles_list = [
         dependency_for_uuid_list: [],
         notes: "User Can Edit Team Attendance",
         element: "per_attendance_edit_team",
-        dependency_to_element_list: [
-          "per_attendance_view",
-          "per_attendance_view_team",
-        ],
+        dependency_to_element_list: ["per_attendance_view_team"],
+        checked: false,
+        disabled: false,
+      },
+      {
+        id: 312,
+        role_uuid: VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
+        dependency_for_uuid_list: [APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY],
+        notes: "User Can View Team's Attendance Approval",
+        element: "per_team_attendance_approval_view",
+        dependency_to_element_list: [],
         checked: false,
         disabled: false,
       },
@@ -2414,23 +2399,17 @@ export const default_roles_list = [
         dependency_for_uuid_list: [],
         notes: "User Can Approve/Reject Team Attendance",
         element: "per_approve_reject_team",
-        dependency_to_element_list: [
-          "per_attendance_view",
-          "per_attendance_view_team",
-        ],
+        dependency_to_element_list: ["per_team_attendance_approval_view"],
         checked: false,
         disabled: false,
       },
       {
         id: 305,
         role_uuid: VIEW_ALL_ATTENDANCE_ACCESS_KEY,
-        dependency_for_uuid_list: [
-          "6aa0e447-7a32-4664-a53b-ae8c729d05af",
-          APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY,
-        ],
+        dependency_for_uuid_list: ["6aa0e447-7a32-4664-a53b-ae8c729d05af"],
         notes: "User Can View All Attendance",
         element: "per_attendance_view_all",
-        dependency_to_element_list: ["per_attendance_view"],
+        dependency_to_element_list: [],
         checked: false,
         disabled: false,
       },
@@ -2440,10 +2419,17 @@ export const default_roles_list = [
         dependency_for_uuid_list: [],
         notes: "User Can Edit All Attendance",
         element: "per_attendance_edit_all",
-        dependency_to_element_list: [
-          "per_attendance_view",
-          "per_attendance_view_all",
-        ],
+        dependency_to_element_list: ["per_attendance_view_all"],
+        checked: false,
+        disabled: false,
+      },
+      {
+        id: 313,
+        role_uuid: VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
+        dependency_for_uuid_list: [APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY],
+        notes: "User Can View All Attendance Approval",
+        element: "per_all_attendance_approval_view",
+        dependency_to_element_list: [],
         checked: false,
         disabled: false,
       },
@@ -2453,10 +2439,7 @@ export const default_roles_list = [
         dependency_for_uuid_list: [],
         notes: "User Can Approve/Reject All Attendance",
         element: "per_approve_reject_all",
-        dependency_to_element_list: [
-          "per_attendance_view",
-          "per_attendance_view_all",
-        ],
+        dependency_to_element_list: ["per_all_attendance_approval_view"],
         checked: false,
         disabled: false,
       },
@@ -2467,7 +2450,7 @@ export const default_roles_list = [
         dependency_for_uuid_list: [APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY],
         notes: "User Can View Team's Leave Approval",
         element: "per_teams_leave_approval_view",
-        dependency_to_element_list: ["per_attendance_view"],
+        dependency_to_element_list: [],
         checked: false,
         disabled: false,
       },
@@ -2477,10 +2460,7 @@ export const default_roles_list = [
         dependency_for_uuid_list: [],
         notes: "User Can Approve/Reject Team's Leave",
         element: "per_approve_reject_teams_leave",
-        dependency_to_element_list: [
-          "per_attendance_view",
-          "per_teams_leave_approval_view",
-        ],
+        dependency_to_element_list: ["per_teams_leave_approval_view"],
         checked: false,
         disabled: false,
       },
@@ -2490,7 +2470,7 @@ export const default_roles_list = [
         dependency_for_uuid_list: [APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY],
         notes: "User Can View All Leave Approval",
         element: "per_all_leave_approval_view",
-        dependency_to_element_list: ["per_attendance_view"],
+        dependency_to_element_list: [],
         checked: false,
         disabled: false,
       },
@@ -2500,10 +2480,7 @@ export const default_roles_list = [
         dependency_for_uuid_list: [],
         notes: "User Can Approve/Reject All Leave",
         element: "per_approve_reject_all_leave",
-        dependency_to_element_list: [
-          "per_attendance_view",
-          "per_all_leave_approval_view",
-        ],
+        dependency_to_element_list: ["per_all_leave_approval_view"],
         checked: false,
         disabled: false,
       },
