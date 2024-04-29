@@ -1076,7 +1076,6 @@ const InfoTable = ({
     } else {
       setShowCreateBtn(true);
     }
-    f;
   };
 
   const CheckEditAccess = (profile_data, thisFormName) => {
