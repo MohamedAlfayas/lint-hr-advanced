@@ -183,28 +183,6 @@ const ApprovalFilter = ({ formname }) => {
       (!showAllAttendanceApproval && !showTeamAttendanceApproval && tab === "1")
     ) {
       if (showAllLeaveApproval || showTeamLeaveApproval) {
-        if (
-          profile_data.permission_list.includes(
-            VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY
-          ) &&
-          !profile_data.permission_list.includes(
-            VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY
-          )
-        ) {
-          setEmployeeType(0);
-        } else if (
-          !profile_data.permission_list.includes(
-            VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY
-          ) &&
-          profile_data.permission_list.includes(
-            VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY
-          )
-        ) {
-          setEmployeeType(1);
-        } else {
-          setEmployeeType(1);
-        }
-        console.log("Employee type in leave", employeeType);
         Api({
           type: "GET",
           url:
@@ -227,29 +205,6 @@ const ApprovalFilter = ({ formname }) => {
       }
     } else if (tab === "1") {
       if (showAllAttendanceApproval || showTeamAttendanceApproval) {
-        if (
-          profile_data.permission_list.includes(
-            VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY
-          ) &&
-          !profile_data.permission_list.includes(
-            VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
-          )
-        ) {
-          setEmployeeType(0);
-        } else if (
-          !profile_data.permission_list.includes(
-            VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY
-          ) &&
-          profile_data.permission_list.includes(
-            VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
-          )
-        ) {
-          setEmployeeType(1);
-        } else {
-          setEmployeeType(1);
-        }
-        console.log("Employee type in attendance", employeeType);
-
         Api({
           type: "GET",
           url:
