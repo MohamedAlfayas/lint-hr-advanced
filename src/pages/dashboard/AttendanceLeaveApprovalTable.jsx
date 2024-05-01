@@ -1,5 +1,5 @@
 import CountUp from "react-countup";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Badge,
   Card,
@@ -19,6 +19,8 @@ import {
   VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
 } from "../../common/constant/Constants";
+import { setDashPendingApprovalCom } from "../../redux/reducers/ChildReducer/ApprovalComponentReducer";
+import { useDispatch } from "react-redux";
 
 const AttendanceLeaveApprovalTable = () => {
   const [activeTab, setActiveTab] = useState("1");
@@ -27,6 +29,8 @@ const AttendanceLeaveApprovalTable = () => {
       setActiveTab(tab);
     }
   };
+
+  const dispatch = useDispatch();
 
   const [leaveDataLength, setLeaveDataLength] = useState(0);
   const [attendDataLength, setAttendDataLength] = useState(0);
@@ -40,7 +44,7 @@ const AttendanceLeaveApprovalTable = () => {
   const [showTeamAttendanceApproval, setShowTeamAttendanceApproval] =
     useState(false);
   const [showTeamLeaveApproval, setShowTeamLeaveApproval] = useState(false);
-
+  const firstEffectExecutedRef = useRef(false);
   useEffect(() => {
     const profile_data = JSON.parse(
       localStorage.getItem("lint_hr_profile_data")
@@ -58,7 +62,22 @@ const AttendanceLeaveApprovalTable = () => {
     ) {
       setShowTeamLeaveApproval(true);
     }
+    firstEffectExecutedRef.current = true;
   }, []);
+  useEffect(() => {
+    if (firstEffectExecutedRef.current) {
+      if (
+        activeTab === "2" ||
+        (!showTeamAttendanceApproval && activeTab === "1")
+      ) {
+        dispatch(setDashPendingApprovalCom("leave_pending_table"));
+      } else if (activeTab === "1") {
+        dispatch(setDashPendingApprovalCom("attendance_pending_table"));
+      } else {
+        setDashPendingApprovalCom("");
+      }
+    }
+  }, [activeTab, showTeamAttendanceApproval, firstEffectExecutedRef.current]);
 
   return (
     <React.Fragment>

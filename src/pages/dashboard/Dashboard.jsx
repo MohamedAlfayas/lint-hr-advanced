@@ -9,8 +9,8 @@ import AttendanceGraph from "./AttendanceGraph";
 import DeptWiseAttendanceWidgets from "./DeptWiseAttendanceWidgets";
 import AttendanceLeaveApprovalTable from "./AttendanceLeaveApprovalTable";
 import {
-  APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
-  APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
+  VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
 } from "../../common/constant/Constants";
 
 const Dashboard = () => {
@@ -46,10 +46,10 @@ const Dashboard = () => {
                     </Row>
                   </Col>
                   {profile_data.permission_list.includes(
-                    APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
+                    VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
                   ) ||
                   profile_data.permission_list.includes(
-                    APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
+                    VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY
                   ) ? (
                     <Col xl={12}>
                       <AttendanceLeaveApprovalTable />

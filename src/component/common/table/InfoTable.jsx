@@ -91,6 +91,10 @@ import { Api } from "../../../common/api/Api";
 import { setEmployeeActiveStatus } from "../../../redux/reducers/ChildReducer/EmployeeReducer";
 import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
+import {
+  setCurrentApprovalComponent,
+  setDashPendingApprovalCom,
+} from "../../../redux/reducers/ChildReducer/ApprovalComponentReducer";
 defineElement(loadAnimation);
 
 const InfoTable = ({
@@ -110,6 +114,11 @@ const InfoTable = ({
   const EmployeeData = GetLocalStorageData("employee");
 
   const { activeTableTab } = useSelector((state) => state.TableReducer);
+  const {
+    currentApprovalComponent,
+    approvalEmployeeTypeFilter,
+    dashPendingApprovalCom,
+  } = useSelector((state) => state.ApprovalComponentReducer);
 
   // useEffect(() => {
   //   !!activeTableTab && setActiveTab(activeTableTab);
@@ -1013,7 +1022,7 @@ const InfoTable = ({
     useState(false);
   const [showTeamAttendanceApprovalBtn, setShowTeamAttendanceApprovalBtn] =
     useState(false);
-
+  const firstEffectExecutedRef = useRef(false);
   useEffect(() => {
     const profile_data = JSON.parse(
       localStorage.getItem("lint_hr_profile_data")
@@ -1044,10 +1053,60 @@ const InfoTable = ({
         )
       );
     }
-
+    firstEffectExecutedRef.current = true;
     CheckCreateAccess(profile_data, formname);
     CheckEditAccess(profile_data, formname);
   }, [formname]);
+
+  useEffect(() => {
+    if (
+      formname === attendance_approval_component_name ||
+      formname === leave_approval_component_name
+    ) {
+      if (firstEffectExecutedRef.current) {
+        if (currentApprovalComponent === "attendance_approval_component_name") {
+          approvalEmployeeTypeFilter === 0 && showAllAttendanceApprovalBtn
+            ? setShowEditBtn(true)
+            : approvalEmployeeTypeFilter === 1 && showTeamAttendanceApprovalBtn
+            ? setShowEditBtn(true)
+            : setShowEditBtn(false);
+        }
+        if (currentApprovalComponent === "leave_approval_component_name") {
+          approvalEmployeeTypeFilter === 0 && showAllLeaveApprovalBtn
+            ? setShowEditBtn(true)
+            : approvalEmployeeTypeFilter === 1 && showTeamLeaveApprovalBtn
+            ? setShowEditBtn(true)
+            : setShowEditBtn(false);
+        }
+      }
+    }
+    if (
+      formname === attendance_pending_table ||
+      formname === leave_pending_table
+    ) {
+      if (firstEffectExecutedRef.current) {
+        if (dashPendingApprovalCom === "attendance_pending_table") {
+          showTeamAttendanceApprovalBtn === true
+            ? setShowEditBtn(true)
+            : setShowEditBtn(false);
+        }
+        if (dashPendingApprovalCom === "leave_pending_table") {
+          showTeamLeaveApprovalBtn === true
+            ? setShowEditBtn(true)
+            : setShowEditBtn(false);
+        }
+      }
+    }
+  }, [
+    currentApprovalComponent,
+    showAllAttendanceApprovalBtn,
+    showTeamAttendanceApprovalBtn,
+    showAllLeaveApprovalBtn,
+    showTeamLeaveApprovalBtn,
+    firstEffectExecutedRef.current,
+    approvalEmployeeTypeFilter,
+    dashPendingApprovalCom,
+  ]);
 
   const CheckCreateAccess = (profile_data, thisFormName) => {
     if (
@@ -1099,7 +1158,7 @@ const InfoTable = ({
         }
       }
     } else {
-      setShowEditBtn(true);
+      setShowEditBtn(false);
     }
   };
 

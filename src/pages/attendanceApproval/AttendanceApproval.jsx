@@ -37,6 +37,7 @@ import {
   VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
 } from "../../common/constant/Constants";
+import { setApprovalEmployeeTypeFilter } from "../../redux/reducers/ChildReducer/ApprovalComponentReducer";
 const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
   const dispatch = useDispatch();
 
@@ -77,6 +78,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
       VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
     )
   ) {
+    dispatch(setApprovalEmployeeTypeFilter(0));
     employee_type = 0;
   } else {
     employee_type = 1;

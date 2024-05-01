@@ -20,6 +20,8 @@ import {
   VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
   MonthFormat,
+  leave_approval_component_name,
+  attendance_approval_component_name,
 } from "../../../common/constant/Constants";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -38,6 +40,10 @@ import {
   setFilteredLatestValue,
 } from "../../../redux/reducers/ChildReducer/AprrovalFilterReducer";
 import { set } from "lodash";
+import {
+  setApprovalEmployeeTypeFilter,
+  setCurrentApprovalComponent,
+} from "../../../redux/reducers/ChildReducer/ApprovalComponentReducer";
 
 dayjs.extend(customParseFormat);
 
@@ -73,21 +79,6 @@ const ApprovalFilter = ({ formname }) => {
     useState(false);
   const [showTeamLeaveApproval, setShowTeamLeaveApproval] = useState(false);
   const [showAllLeaveApproval, setShowAllLeaveApproval] = useState(false);
-
-  useEffect(() => {
-    const permissions = {
-      [VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY]: setShowAllAttendanceApproval,
-      [VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY]: setShowTeamAttendanceApproval,
-      [VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY]: setShowAllLeaveApproval,
-      [VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY]: setShowTeamLeaveApproval,
-    };
-
-    Object.entries(permissions).forEach(([permissionKey, setState]) => {
-      if (profile_data.permission_list.includes(permissionKey)) {
-        setState(true);
-      }
-    });
-  }, []);
 
   const inputRef = useRef();
   const location = useLocation();
@@ -142,15 +133,78 @@ const ApprovalFilter = ({ formname }) => {
       filteredMonth: monthStr,
     });
   };
+  const firstEffectExecutedRef = useRef(false);
+  useEffect(() => {
+    const permissions = {
+      [VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY]: setShowAllAttendanceApproval,
+      [VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY]: setShowTeamAttendanceApproval,
+      [VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY]: setShowAllLeaveApproval,
+      [VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY]: setShowTeamLeaveApproval,
+    };
+
+    Object.entries(permissions).forEach(([permissionKey, setState]) => {
+      if (profile_data.permission_list.includes(permissionKey)) {
+        setState(true);
+      }
+    });
+    firstEffectExecutedRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (firstEffectExecutedRef.current) {
+      if (
+        activeTab === "2" ||
+        (!showAllAttendanceApproval &&
+          !showTeamAttendanceApproval &&
+          activeTab === "1")
+      ) {
+        dispatch(setCurrentApprovalComponent("leave_approval_component_name"));
+      } else if (activeTab === "1") {
+        dispatch(
+          setCurrentApprovalComponent("attendance_approval_component_name")
+        );
+      } else {
+        setCurrentApprovalComponent("");
+      }
+    }
+  }, [
+    activeTab,
+    showAllAttendanceApproval,
+    showTeamAttendanceApproval,
+    firstEffectExecutedRef.current,
+  ]);
 
   const FilterData = async (tab) => {
     dispatch(setLoaderVisible(true));
+    const integerEmployeeType = parseInt(employeeType, 10);
 
     if (
       tab === "2" ||
       (!showAllAttendanceApproval && !showTeamAttendanceApproval && tab === "1")
     ) {
       if (showAllLeaveApproval || showTeamLeaveApproval) {
+        if (
+          profile_data.permission_list.includes(
+            VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY
+          ) &&
+          !profile_data.permission_list.includes(
+            VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY
+          )
+        ) {
+          setEmployeeType(0);
+        } else if (
+          !profile_data.permission_list.includes(
+            VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY
+          ) &&
+          profile_data.permission_list.includes(
+            VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY
+          )
+        ) {
+          setEmployeeType(1);
+        } else {
+          setEmployeeType(1);
+        }
+        console.log("Employee type in leave", employeeType);
         Api({
           type: "GET",
           url:
@@ -160,6 +214,7 @@ const ApprovalFilter = ({ formname }) => {
             employeeType,
         })
           .then((res) => {
+            dispatch(setApprovalEmployeeTypeFilter(integerEmployeeType));
             dispatch(setLeaveApproval(res?.data?.data));
             dispatch(setLoaderVisible(false));
           })
@@ -172,6 +227,29 @@ const ApprovalFilter = ({ formname }) => {
       }
     } else if (tab === "1") {
       if (showAllAttendanceApproval || showTeamAttendanceApproval) {
+        if (
+          profile_data.permission_list.includes(
+            VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY
+          ) &&
+          !profile_data.permission_list.includes(
+            VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
+          )
+        ) {
+          setEmployeeType(0);
+        } else if (
+          !profile_data.permission_list.includes(
+            VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY
+          ) &&
+          profile_data.permission_list.includes(
+            VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
+          )
+        ) {
+          setEmployeeType(1);
+        } else {
+          setEmployeeType(1);
+        }
+        console.log("Employee type in attendance", employeeType);
+
         Api({
           type: "GET",
           url:
@@ -181,6 +259,7 @@ const ApprovalFilter = ({ formname }) => {
             employeeType,
         })
           .then((res) => {
+            dispatch(setApprovalEmployeeTypeFilter(integerEmployeeType));
             dispatch(setAttendanceApprovalData(res?.data?.data));
             dispatch(setLoaderVisible(false));
           })

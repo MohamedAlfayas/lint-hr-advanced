@@ -43,7 +43,6 @@ const LeaveTypesWidgets = ({
 
   const handleApplyLeave = (lt) => {
     let FormObj = { ...initialFormObj, leave_type: lt };
-
     dispatch(setFormTitle(formname));
     dispatch(setFormObj(FormObj));
     dispatch(setFormWidthPercentage(width_per));

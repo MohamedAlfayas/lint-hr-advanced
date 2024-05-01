@@ -72,7 +72,6 @@ const ApplyLeaveForm = () => {
   const { leave_type_for_current_employee } = useSelector(
     (state) => state.LeaveTypeReducer
   );
-
   useEffect(() => {
     if (!!form_obj) {
       !!thisEmpWS &&
@@ -91,6 +90,10 @@ const ApplyLeaveForm = () => {
       setHolidayDays(holidayData.map((d) => d?.date));
 
       if (form_obj?.leave_type !== 0) {
+        let leave_type_obj = leave_type_for_current_employee.find(
+          (d) => d.id === form_obj.leave_type
+        );
+        setLeaveBalanceCount(leave_type_obj.balance_leave_count);
         let thisLeaveTypeObj = leave_type_for_current_employee.find(
           (d) => d.id === form_obj?.leave_type
         );

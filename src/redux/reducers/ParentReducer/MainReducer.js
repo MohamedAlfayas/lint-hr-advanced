@@ -29,6 +29,7 @@ import CompanyReducer from "../ChildReducer/CompanyReducer";
 import AccountSettingsReducer from "../ChildReducer/AccountSettingsReducer";
 import DashboardAttendanceStasticsReducer from "../ChildReducer/DashboardAttendanceStasticsReducer";
 import ApprovalFilterReducer from "../ChildReducer/AprrovalFilterReducer";
+import ApprovalComponentReducer from "../ChildReducer/ApprovalComponentReducer";
 
 export const MainReducer = combineReducers({
   MetaReducer: MetaReducer,
@@ -61,4 +62,5 @@ export const MainReducer = combineReducers({
   AccountSettingsReducer: AccountSettingsReducer,
   DashboardAttendanceStasticsReducer: DashboardAttendanceStasticsReducer,
   ApprovalFilterReducer: ApprovalFilterReducer,
+  ApprovalComponentReducer: ApprovalComponentReducer,
 });

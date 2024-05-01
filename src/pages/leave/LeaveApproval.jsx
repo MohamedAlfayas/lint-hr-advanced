@@ -16,6 +16,7 @@ import {
   VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
 } from "../../common/constant/Constants";
+import { setApprovalEmployeeTypeFilter } from "../../redux/reducers/ChildReducer/ApprovalComponentReducer";
 
 const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
   const dispatch = useDispatch();
@@ -48,6 +49,7 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
     profile_data.permission_list.includes(VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY) &&
     !profile_data.permission_list.includes(VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY)
   ) {
+    dispatch(setApprovalEmployeeTypeFilter(0));
     employee_type = 0;
   } else {
     employee_type = 1;
