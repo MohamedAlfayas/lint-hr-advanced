@@ -723,6 +723,8 @@ const InfoTable = ({
         const newPasswordValue = newPasswordInput.value.trim();
         const confirmPasswordInput = document.getElementById("confirmPassword");
         const confirmPasswordValue = confirmPasswordInput.value.trim();
+        const pattern =
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
         if (!adminPasswordValue) {
           Swal.showValidationMessage("Please enter Admin Password");
           return false;
@@ -733,6 +735,12 @@ const InfoTable = ({
         }
         if (!confirmPasswordValue) {
           Swal.showValidationMessage("Please enter Confirm Password");
+          return false;
+        }
+        if (!pattern.test(newPasswordValue)) {
+          Swal.showValidationMessage(
+            "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character."
+          );
           return false;
         }
         const adminPassword = document.getElementById("adminPassword");

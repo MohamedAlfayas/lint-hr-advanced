@@ -329,7 +329,10 @@ const AccountSettings = () => {
         .matches(/^\S*$/, "Password cannot contain spaces")
         .required("Old Password is required"),
       new_password: Yup.string()
-        .matches(/^\S*$/, "Password cannot contain spaces")
+        .matches(
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/,
+          "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character."
+        )
         .notOneOf(
           [Yup.ref("old_password"), null],
           "New Password must be different from Old Password"
@@ -1494,24 +1497,28 @@ const AccountSettings = () => {
                                       : false
                                   }
                                 />
-                                <i
-                                  className={`mdi mdi-${
-                                    showPassword1
-                                      ? "eye-off-outline"
-                                      : "eye-outline"
-                                  } eye-icon`}
-                                  // style={{
-                                  //   cursor: "pointer",
-                                  //   marginLeft: "10px",
-                                  // }}
-                                  onClick={() =>
-                                    setShowPassword1(!showPassword1)
-                                  }
-                                />
+
+                                <FormFeedback type="invalid">
+                                  {FormikFormPassword.errors.old_password}
+                                </FormFeedback>
+                                {!FormikFormPassword.touched.old_password &&
+                                !FormikFormPassword.errors.old_password ? (
+                                  <i
+                                    className={`mdi mdi-${
+                                      showPassword1
+                                        ? "eye-off-outline"
+                                        : "eye-outline"
+                                    } eye-icon`}
+                                    // style={{
+                                    //   cursor: "pointer",
+                                    //   marginLeft: "10px",
+                                    // }}
+                                    onClick={() =>
+                                      setShowPassword1(!showPassword1)
+                                    }
+                                  />
+                                ) : null}
                               </div>
-                              <FormFeedback>
-                                {FormikFormPassword.errors.old_password}
-                              </FormFeedback>
                             </div>
                           </Col>
 
@@ -1544,23 +1551,26 @@ const AccountSettings = () => {
                                       : false
                                   }
                                 />
+                                <FormFeedback>
+                                  {FormikFormPassword.errors.new_password}
+                                </FormFeedback>
                                 <div
                                   onClick={() =>
                                     setShowPassword2(!showPassword2)
                                   }
                                 >
-                                  <i
-                                    className={`mdi mdi-${
-                                      showPassword2
-                                        ? "eye-off-outline"
-                                        : "eye-outline"
-                                    } eye-icon`}
-                                  />
+                                  {!FormikFormPassword.touched.new_password &&
+                                  !FormikFormPassword.errors.new_password ? (
+                                    <i
+                                      className={`mdi mdi-${
+                                        showPassword2
+                                          ? "eye-off-outline"
+                                          : "eye-outline"
+                                      } eye-icon`}
+                                    />
+                                  ) : null}
                                 </div>
                               </div>
-                              <FormFeedback>
-                                {FormikFormPassword.errors.new_password}
-                              </FormFeedback>
                             </div>
                           </Col>
 
@@ -1594,20 +1604,24 @@ const AccountSettings = () => {
                                       : false
                                   }
                                 />
-                                <i
-                                  className={`mdi mdi-${
-                                    showPassword3
-                                      ? "eye-off-outline"
-                                      : "eye-outline"
-                                  } eye-icon`}
-                                  onClick={() =>
-                                    setShowPassword3(!showPassword3)
-                                  }
-                                />
+
+                                <FormFeedback>
+                                  {FormikFormPassword.errors.confirm_password}
+                                </FormFeedback>
+                                {!FormikFormPassword.touched.confirm_password &&
+                                !FormikFormPassword.errors.confirm_password ? (
+                                  <i
+                                    className={`mdi mdi-${
+                                      showPassword3
+                                        ? "eye-off-outline"
+                                        : "eye-outline"
+                                    } eye-icon`}
+                                    onClick={() =>
+                                      setShowPassword3(!showPassword3)
+                                    }
+                                  />
+                                ) : null}
                               </div>
-                              <FormFeedback>
-                                {FormikFormPassword.errors.confirm_password}
-                              </FormFeedback>
                             </div>
                           </Col>
 

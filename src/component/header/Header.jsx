@@ -17,7 +17,11 @@ import Forms from "../common/form/CommonForm";
 import CommonForm from "../common/form/CommonForm";
 import WebCheckInOut from "../common/timer/WebCheckInOut";
 import { leftsidbarSizeTypes } from "../../layout/Constants";
-import { path_list_for_timer_hide } from "../../common/constant/Constants";
+import {
+  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
+  VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
+  path_list_for_timer_hide,
+} from "../../common/constant/Constants";
 import { GetTotalWorkDuration } from "../../common/js/GetTotalWorkDuration";
 import { setMyProfileDataReducer } from "../../redux/reducers/ChildReducer/MyProfileReducer";
 import { EmployeeDisplayInSelect } from "../../common/js/EmployeeDisplayInSelect";
@@ -49,6 +53,18 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
       .catch((err) => {
         console.log("Something Went Wrong !!");
       });
+  }, []);
+  const [showEmpTeam, setShowEmpTeam] = useState(false);
+  const [showEmpAll, setShowEmpAll] = useState(false);
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+
+  useEffect(() => {
+    if (profile_data.permission_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)) {
+      setShowEmpTeam(true);
+    }
+    if (profile_data.permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)) {
+      setShowEmpAll(true);
+    }
   }, []);
 
   const toogleMenuBtn = () => {
@@ -151,35 +167,39 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
                   <span></span>
                 </span>
               </button>
-              {location.pathname.includes(employee_view_component_name) ? (
-                <div className="form-icon right" style={{ marginTop: "17px" }}>
-                  <Col lg={12}>
-                    <Select
-                      name="employee_attendance"
-                      id="employee_attendance"
-                      options={employeeOptions || []}
-                      components={{
-                        Option: EmployeeDisplayInSelect,
-                      }}
-                      styles={{
-                        control: (provided) => ({
-                          ...provided,
-                          width: "200px",
-                          margin: 0,
-                          padding: 0,
-                        }),
-                      }}
-                      placeholder="Select Employee"
-                      value={
-                        (id &&
-                          employeeOptions.find((e) => e.emp_uuid === id)) ||
-                        []
-                      }
-                      onChange={handleEmployeeChange}
-                    />
-                  </Col>
-                </div>
-              ) : null}
+              {location.pathname.includes(employee_view_component_name) &&
+                (showEmpAll || showEmpTeam) && (
+                  <div
+                    className="form-icon right"
+                    style={{ marginTop: "17px" }}
+                  >
+                    <Col lg={12}>
+                      <Select
+                        name="employee_attendance"
+                        id="employee_attendance"
+                        options={employeeOptions || []}
+                        components={{
+                          Option: EmployeeDisplayInSelect,
+                        }}
+                        styles={{
+                          control: (provided) => ({
+                            ...provided,
+                            width: "200px",
+                            margin: 0,
+                            padding: 0,
+                          }),
+                        }}
+                        placeholder="Select Employee"
+                        value={
+                          (id &&
+                            employeeOptions.find((e) => e.emp_uuid === id)) ||
+                          []
+                        }
+                        onChange={handleEmployeeChange}
+                      />
+                    </Col>
+                  </div>
+                )}
             </div>
 
             <div className="d-flex align-items-center">

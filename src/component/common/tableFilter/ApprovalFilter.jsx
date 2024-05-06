@@ -174,53 +174,75 @@ const ApprovalFilter = ({ formname }) => {
     firstEffectExecutedRef.current,
   ]);
 
+  let integerEmployeeType;
+  const handleLeaveFilter = async (type) => {
+    integerEmployeeType = parseInt(type, 10);
+    const baseUrl =
+      "leave/get-leave-application-for-approval/?thisMonth=" +
+      filteredMonth +
+      "&employee_type=";
+    const url =
+      !showAllLeaveApproval && showTeamLeaveApproval
+        ? baseUrl + "1"
+        : showAllLeaveApproval && !showTeamLeaveApproval
+        ? baseUrl + "0"
+        : baseUrl + type;
+    try {
+      const response = await Api({
+        type: "GET",
+        url: url,
+      });
+      dispatch(setApprovalEmployeeTypeFilter(integerEmployeeType));
+      dispatch(setLeaveApproval(response?.data?.data));
+      dispatch(setLoaderVisible(false));
+    } catch (error) {
+      dispatch(setLoaderVisible(false));
+    }
+  };
+
+  const handleAttendanceFilter = async (type) => {
+    const integerEmployeeType = parseInt(type, 10);
+    const baseUrl =
+      "attendance/get-attendance-data-for-approval/?thisMonth=" +
+      filteredMonth +
+      "&employee_type=";
+
+    const url =
+      !showAllAttendanceApproval && showTeamAttendanceApproval
+        ? baseUrl + "1"
+        : showAllAttendanceApproval && !showTeamAttendanceApproval
+        ? baseUrl + "0"
+        : baseUrl + type;
+
+    try {
+      const response = await Api({
+        type: "GET",
+        url: url,
+      });
+      dispatch(setApprovalEmployeeTypeFilter(integerEmployeeType));
+      dispatch(setAttendanceApprovalData(response?.data?.data));
+      dispatch(setLoaderVisible(false));
+    } catch (error) {
+      dispatch(setLoaderVisible(false));
+      // Handle error
+    }
+  };
+
   const FilterData = async (tab) => {
     dispatch(setLoaderVisible(true));
-    const integerEmployeeType = parseInt(employeeType, 10);
-
     if (
       tab === "2" ||
       (!showAllAttendanceApproval && !showTeamAttendanceApproval && tab === "1")
     ) {
       if (showAllLeaveApproval || showTeamLeaveApproval) {
-        Api({
-          type: "GET",
-          url:
-            "leave/get-leave-application-for-approval/?thisMonth=" +
-            filteredMonth +
-            "&employee_type=" +
-            employeeType,
-        })
-          .then((res) => {
-            dispatch(setApprovalEmployeeTypeFilter(integerEmployeeType));
-            dispatch(setLeaveApproval(res?.data?.data));
-            dispatch(setLoaderVisible(false));
-          })
-          .catch((err) => {
-            dispatch(setLoaderVisible(false));
-          });
+        handleLeaveFilter(employeeType);
       } else {
         dispatch(setLoaderVisible(false));
         toast.error("Sometyhing Went Wrong!");
       }
     } else if (tab === "1") {
       if (showAllAttendanceApproval || showTeamAttendanceApproval) {
-        Api({
-          type: "GET",
-          url:
-            "attendance/get-attendance-data-for-approval/?thisMonth=" +
-            filteredMonth +
-            "&employee_type=" +
-            employeeType,
-        })
-          .then((res) => {
-            dispatch(setApprovalEmployeeTypeFilter(integerEmployeeType));
-            dispatch(setAttendanceApprovalData(res?.data?.data));
-            dispatch(setLoaderVisible(false));
-          })
-          .catch((err) => {
-            dispatch(setLoaderVisible(false));
-          });
+        handleAttendanceFilter(employeeType);
       } else {
         dispatch(setLoaderVisible(false));
         toast.error("Sometyhing Went Wrong!");

@@ -6,6 +6,8 @@ import {
   hr_status_options,
   record_options,
   attendance_type_options,
+  VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
+  VIEW_ALL_ATTENDANCE_ACCESS_KEY,
 } from "../../common/constant/Constants";
 import { DatePicker } from "antd";
 import Select from "react-select";
@@ -43,9 +45,26 @@ const AttendanceFilter = () => {
   const [employeeOptions, setEmployeeOptions] = useState([]);
   const [showEmployeeSelect, setShowEmployeeSelect] = useState(false);
 
-  const { profile_data } = useSelector((state) => state.MyProfileReducer);
-
   const employee_data = GetLocalStorageData("employee");
+
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+
+  const [attendanceViewFilter, setAttendanceViewFilter] = useState([]);
+  useEffect(() => {
+    if (profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY)) {
+      setAttendanceViewFilter(attendance_type_options);
+    } else if (
+      profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)
+    ) {
+      setAttendanceViewFilter(
+        attendance_type_options.filter((d) => d.id !== "3")
+      );
+    } else {
+      setAttendanceViewFilter(
+        attendance_type_options.filter((d) => d.id === "1")
+      );
+    }
+  }, []);
 
   useEffect(() => {
     Api({
@@ -233,11 +252,11 @@ const AttendanceFilter = () => {
                 <Select
                   name="type_attendance"
                   id="type_attendance"
-                  options={attendance_type_options || []}
+                  options={attendanceViewFilter || []}
                   placeholder="Select a Type"
                   value={
                     !!filterKeys?.type
-                      ? attendance_type_options.find(
+                      ? attendanceViewFilter.find(
                           (d) => d.id === filterKeys?.type
                         )
                       : []

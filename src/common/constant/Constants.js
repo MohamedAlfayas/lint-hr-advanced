@@ -1834,6 +1834,11 @@ export const attendance_type_options = [
     label: "Team Attendance",
     value: "2",
   },
+  {
+    id: "3",
+    label: "All Attendance",
+    value: "3",
+  },
 ];
 
 export const short_months = [
