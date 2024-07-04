@@ -21,11 +21,13 @@ import {
 } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { Link } from "react-router-dom";
 import { GetCustomField } from "../../common/js/GetCustomField";
+import { organization_component_name } from "../../common/constant/Constants";
+
 import {
   CREATE_BRANCH_ACCESS_KEY,
   EDIT_BRANCH_ACCESS_KEY,
-  organization_component_name,
-} from "../../common/constant/Constants";
+} from "../../common/constant/RoleConstants";
+
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setBranch } from "../../redux/reducers/ChildReducer/BranchReducer";
 import { CheckRoleAccess } from "../../common/js/CheckRoleAccess";

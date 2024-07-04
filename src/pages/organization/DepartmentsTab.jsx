@@ -34,11 +34,12 @@ import avatar3 from "../../assets/images/users/avatar-3.jpg";
 import OrgModal from "./common/OrgModal";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setDepartmentDetails } from "../../redux/reducers/ChildReducer/DepartmentReducer";
+
 import {
   CREATE_DEPARTMENT_ACCESS_KEY,
   EDIT_DEPARTMENT_ACCESS_KEY,
-  department_component_name,
-} from "../../common/constant/Constants";
+} from "../../common/constant/RoleConstants";
+
 import { CheckRoleAccess } from "../../common/js/CheckRoleAccess";
 
 const DepartmentsTab = () => {

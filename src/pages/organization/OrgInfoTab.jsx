@@ -28,8 +28,10 @@ import {
   form_date_type,
   DateFormat,
   organization_component_name,
-  UPDATE_COMPANY_PROFILE_ACCESS_KEY,
 } from "../../common/constant/Constants";
+
+import { UPDATE_COMPANY_PROFILE_ACCESS_KEY } from "../../common/constant/RoleConstants";
+
 import {
   ConvertDateFormat,
   ConvertISODateFormat,

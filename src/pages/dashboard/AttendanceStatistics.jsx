@@ -10,11 +10,11 @@ import { useSelector, useDispatch } from "react-redux";
 
 import ReactApexChart from "react-apexcharts";
 import Select from "react-select";
+import { employeeTypeOptions } from "../../common/constant/Constants";
 import {
   VIEW_ALL_ATTENDANCE_ACCESS_KEY,
   VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
-  employeeTypeOptions,
-} from "../../common/constant/Constants";
+} from "../../common/constant/RoleConstants";
 import {
   setAllMembersTodaysAttendanceAsCurrent,
   setTeamTodaysAttendanceAsCurrent,

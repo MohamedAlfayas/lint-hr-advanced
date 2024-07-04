@@ -15,7 +15,7 @@ import ApprovalFilter from "../../component/common/tableFilter/ApprovalFilter";
 import {
   VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
-} from "../../common/constant/Constants";
+} from "../../common/constant/RoleConstants";
 import { setApprovalEmployeeTypeFilter } from "../../redux/reducers/ChildReducer/ApprovalComponentReducer";
 
 const LeaveApproval = ({ PendingLeave, AttendancePending }) => {

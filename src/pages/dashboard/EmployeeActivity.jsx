@@ -32,11 +32,13 @@ import {
   setTeamTodaysAttendanceData,
 } from "../../redux/reducers/ChildReducer/TeamTodaysAttendanceReducer";
 import {
-  VIEW_ALL_ATTENDANCE_ACCESS_KEY,
-  VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
   attendanceStasticsOptions,
   employeeTypeOptions,
 } from "../../common/constant/Constants";
+import {
+  VIEW_ALL_ATTENDANCE_ACCESS_KEY,
+  VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
+} from "../../common/constant/RoleConstants";
 import { setDashboardAttendanceStasticsType } from "../../redux/reducers/ChildReducer/DashboardAttendanceStasticsReducer";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 

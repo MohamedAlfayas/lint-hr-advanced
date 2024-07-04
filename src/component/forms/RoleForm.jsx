@@ -34,7 +34,7 @@ import { PostApi } from "../../common/api/PostApi";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import classnames from "classnames";
-import { default_roles_list } from "../../common/constant/Constants";
+import { default_roles_list } from "../../common/constant/RoleConstants";
 <link
   rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css"
@@ -181,43 +181,63 @@ const RoleForm = () => {
     return selectedAccessLength;
   };
 
-  const handleCheckboxChange = (e, perm, role_id) => {
-    const { checked } = e.target;
+  // const handleCheckboxChange = (e, perm) => {
+  //   const { checked } = e.target;
 
-    if (checked === true) {
-      let updated_roles_list = [...roleObj?.roles_list, perm?.role_uuid];
+  //   if (checked === true) {
+  //     console.log("PERM === ", perm);
+  //     let this_dependency_element_list = perm?.dependency_to_element_list;
 
-      let this_permission_list =
-        default_roles_list?.find((d) => d.id === role_id).permission || [];
+  //     for(var i = 0;i<this_dependency_element_list.length;i++){
+  //       let this_permission_list = default_roles_list[i].permission || [];
 
-      let this_dependency_element_list = perm?.dependency_to_element_list;
+  //       for(var j = 0;j<this_permission_list.length;j++){
 
-      for (var i = 0; i < this_dependency_element_list.length; i++) {
-        let this_role_uuid = this_permission_list.find(
-          (p) => p.element === this_dependency_element_list[i]
-        ).role_uuid;
+  //       }
 
-        if (!!this_role_uuid) {
-          if (updated_roles_list.includes(this_role_uuid) === false) {
-            updated_roles_list.push(this_role_uuid);
-          }
-        }
-      }
+  //     }
 
-      setRoleObj({
-        ...roleObj,
-        roles_list: updated_roles_list,
-      });
-    } else {
-      let updated_roles_list = [...roleObj?.roles_list].filter(
-        (d) => d !== perm.role_uuid
-      );
-      setRoleObj({
-        ...roleObj,
-        roles_list: updated_roles_list,
-      });
-    }
-  };
+  //   } else {
+  //   }
+  // };
+
+  // const handleCheckboxChange = (e, perm, role_id) => {
+  //   const { checked } = e.target;
+
+  //   if (checked === true) {
+  //     let updated_roles_list = [...roleObj?.roles_list, perm?.role_uuid];
+
+  //     let this_permission_list =
+  //       default_roles_list?.find((d) => d.id === role_id).permission || [];
+
+  //     let this_dependency_element_list = perm?.dependency_to_element_list;
+
+  //     for (var i = 0; i < this_dependency_element_list.length; i++) {
+  //       let this_role_uuid = this_permission_list.find(
+  //         (p) => p.element === this_dependency_element_list[i]
+  //       ).role_uuid;
+
+  //       if (!!this_role_uuid) {
+  //         if (updated_roles_list.includes(this_role_uuid) === false) {
+  //           updated_roles_list.push(this_role_uuid);
+  //         }
+  //       }
+  //     }
+
+  //     setRoleObj({
+  //       ...roleObj,
+  //       roles_list: updated_roles_list,
+  //     });
+  //   } else {
+  //     let updated_roles_list = [...roleObj?.roles_list].filter(
+  //       (d) => d !== perm.role_uuid
+  //     );
+  //     setRoleObj({
+  //       ...roleObj,
+  //       roles_list: updated_roles_list,
+  //     });
+  //   }
+  // };
 
   return (
     <React.Fragment>
@@ -376,9 +396,10 @@ const RoleForm = () => {
                                       : false
                                     : false
                                 }
-                                onChange={(e) =>
-                                  handleCheckboxChange(e, role, role_list.id)
-                                }
+                                onChange={(e) => handleCheckboxChange(e, role)}
+                                // onChange={(e) =>
+                                //   handleCheckboxChange(e, role, role_list.id)
+                                // }
                               />
                               {role.notes}
                             </label>

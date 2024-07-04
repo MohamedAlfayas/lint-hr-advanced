@@ -31,7 +31,7 @@ import "./../../common/css/lc_style.css";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
 import { toast } from "react-toastify";
-import { VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY } from "../../common/constant/Constants";
+import { VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY } from "../../common/constant/RoleConstants";
 const AttendancePendingTable = ({ onDataLengthChange }) => {
   const dispatch = useDispatch();
 

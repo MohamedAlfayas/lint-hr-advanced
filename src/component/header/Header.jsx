@@ -17,11 +17,11 @@ import Forms from "../common/form/CommonForm";
 import CommonForm from "../common/form/CommonForm";
 import WebCheckInOut from "../common/timer/WebCheckInOut";
 import { leftsidbarSizeTypes } from "../../layout/Constants";
+import { path_list_for_timer_hide } from "../../common/constant/Constants";
 import {
   VIEW_ALL_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
-  path_list_for_timer_hide,
-} from "../../common/constant/Constants";
+} from "../../common/constant/RoleConstants";
 import { GetTotalWorkDuration } from "../../common/js/GetTotalWorkDuration";
 import { setMyProfileDataReducer } from "../../redux/reducers/ChildReducer/MyProfileReducer";
 import { EmployeeDisplayInSelect } from "../../common/js/EmployeeDisplayInSelect";

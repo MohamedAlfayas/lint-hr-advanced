@@ -7,10 +7,9 @@ import { Api } from "../../common/api/Api";
 import { useDispatch, useSelector } from "react-redux";
 import { setRole } from "../../redux/reducers/ChildReducer/RoleReducer";
 import RsuiteTable from "../../component/common/table/RsuiteTable";
-import {
-  default_roles_list,
-  role_component_name,
-} from "../../common/constant/Constants";
+import { role_component_name } from "../../common/constant/Constants";
+
+import { default_roles_list } from "../../common/constant/RoleConstants";
 
 const Roles = () => {
   const dispatch = useDispatch();

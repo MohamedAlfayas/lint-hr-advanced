@@ -70,9 +70,12 @@ import {
   leave_type_component_name,
   attendance_pending_table,
   leave_pending_table,
-  CREATE_EMPLOYEE_ACCESS_KEY,
   leave_application_component_name,
   custom_field_component_name,
+} from "../../../common/constant/Constants";
+
+import {
+  CREATE_EMPLOYEE_ACCESS_KEY,
   CREATE_CUSTOM_FIELD_ACCESS_KEY,
   EDIT_EMPLOYEE_ACCESS_KEY,
   EDIT_CUSTOM_FIELD_ACCESS_KEY,
@@ -80,7 +83,8 @@ import {
   APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
   APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY,
   APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
-} from "../../../common/constant/Constants";
+} from "../../../common/constant/RoleConstants";
+
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
 import { PostApi } from "../../../common/api/PostApi";

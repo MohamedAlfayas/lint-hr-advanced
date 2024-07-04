@@ -6,9 +6,11 @@ import {
   hr_status_options,
   record_options,
   attendance_type_options,
+} from "../../common/constant/Constants";
+import {
   VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
   VIEW_ALL_ATTENDANCE_ACCESS_KEY,
-} from "../../common/constant/Constants";
+} from "../../common/constant/RoleConstants";
 import { DatePicker } from "antd";
 import Select from "react-select";
 import dayjs from "dayjs";

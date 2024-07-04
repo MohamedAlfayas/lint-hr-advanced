@@ -11,7 +11,7 @@ import AttendanceLeaveApprovalTable from "./AttendanceLeaveApprovalTable";
 import {
   VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
-} from "../../common/constant/Constants";
+} from "../../common/constant/RoleConstants";
 
 const Dashboard = () => {
   document.title = `Dashboard | ${MetaTitle || "Lint HR"}`;

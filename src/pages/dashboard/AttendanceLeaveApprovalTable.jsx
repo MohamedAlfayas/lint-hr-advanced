@@ -18,7 +18,7 @@ import LeaveApprovalPending from "./LeavePending";
 import {
   VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
-} from "../../common/constant/Constants";
+} from "../../common/constant/RoleConstants";
 import { setDashPendingApprovalCom } from "../../redux/reducers/ChildReducer/ApprovalComponentReducer";
 import { useDispatch } from "react-redux";
 
