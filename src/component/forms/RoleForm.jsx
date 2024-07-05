@@ -181,25 +181,44 @@ const RoleForm = () => {
     return selectedAccessLength;
   };
 
-  // const handleCheckboxChange = (e, perm) => {
-  //   const { checked } = e.target;
+  const handleCheckboxChange = (e, perm) => {
+    const { checked } = e.target;
 
-  //   if (checked === true) {
-  //     console.log("PERM === ", perm);
-  //     let this_dependency_element_list = perm?.dependency_to_element_list;
+    if (checked === true) {
+      let updated_roles_list = [...roleObj?.roles_list, perm?.role_uuid];
 
-  //     for(var i = 0;i<this_dependency_element_list.length;i++){
-  //       let this_permission_list = default_roles_list[i].permission || [];
+      let this_dependency_element_list = perm?.dependency_to_element_list;
 
-  //       for(var j = 0;j<this_permission_list.length;j++){
+      for (var i = 0; i < this_dependency_element_list.length; i++) {
+        for (var j = 0; j < default_roles_list.length; j++) {
+          let this_permission_list = default_roles_list[j].permission || [];
+          let this_role_uuid = this_permission_list.find(
+            (r) => r.element === this_dependency_element_list[i]
+          );
+          if (!!this_role_uuid) {
+            if (
+              updated_roles_list.includes(this_role_uuid?.role_uuid) === false
+            ) {
+              updated_roles_list.push(this_role_uuid?.role_uuid);
+            }
+          }
+        }
+      }
 
-  //       }
-
-  //     }
-
-  //   } else {
-  //   }
-  // };
+      setRoleObj({
+        ...roleObj,
+        roles_list: updated_roles_list,
+      });
+    } else {
+      let updated_roles_list = [...roleObj?.roles_list].filter(
+        (d) => d !== perm.role_uuid
+      );
+      setRoleObj({
+        ...roleObj,
+        roles_list: updated_roles_list,
+      });
+    }
+  };
 
   // const handleCheckboxChange = (e, perm, role_id) => {
   //   const { checked } = e.target;

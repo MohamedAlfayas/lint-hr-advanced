@@ -700,7 +700,7 @@ const AttendanceTeamTable = () => {
     </Column>
   );
 
-  const allColumns = [...fixedColumns, ...dynamicColumns, actionColumn];
+  const allColumns = [...fixedColumns, ...dynamicColumns];
 
   return (
     <Fragment>
