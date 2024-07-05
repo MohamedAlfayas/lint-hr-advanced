@@ -2,7 +2,16 @@ import { Navigate } from "react-router";
 import React, { lazy } from "react";
 import AccountSettings from "../pages/employee/AccountSetting";
 import ApprovalFilter from "../component/common/tableFilter/ApprovalFilter";
-import {VIEW_TEAM_EMPLOYEE_ACCESS_KEY,VIEW_ALL_EMPLOYEE_ACCESS_KEY, VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY, VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY, CAN_VIEW_REPORT_ACCESS_KEY, VIEW_TEAM_ATTENDANCE_ACCESS_KEY, VIEW_ALL_ATTENDANCE_ACCESS_KEY} from "../common/constant/RoleConstants";
+import {
+  VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
+  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
+  VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
+  VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
+  CAN_VIEW_REPORT_ACCESS_KEY,
+  VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
+  VIEW_ALL_ATTENDANCE_ACCESS_KEY,
+  CUSTOM_FIELD_VIEW_ACCESS_KEY
+} from "../common/constant/RoleConstants";
 
 // import Dashboard from "../pages/dashboard/Dashboard";
 // import Login from "../pages/auth/login/Login";
@@ -75,7 +84,7 @@ const privateRoutes = [
     component: <ProjectOverview />,
     perm: ["dac690d1-6712-4aa6-9b4f-7d71bc4f8eb1"],
   },
-  { path: "/employee", component: <Employee />, perm: [VIEW_TEAM_EMPLOYEE_ACCESS_KEY, VIEW_ALL_EMPLOYEE_ACCESS_KEY ] },
+  { path: "/employee", component: <Employee />, perm: [VIEW_TEAM_EMPLOYEE_ACCESS_KEY, VIEW_ALL_EMPLOYEE_ACCESS_KEY] },
   {
     path: "/employee/view/:id",
     component: <EmployeeView />,
