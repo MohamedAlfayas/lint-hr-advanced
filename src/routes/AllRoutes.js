@@ -2,6 +2,7 @@ import { Navigate } from "react-router";
 import React, { lazy } from "react";
 import AccountSettings from "../pages/employee/AccountSetting";
 import ApprovalFilter from "../component/common/tableFilter/ApprovalFilter";
+import {VIEW_TEAM_EMPLOYEE_ACCESS_KEY,VIEW_ALL_EMPLOYEE_ACCESS_KEY, VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY, VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY, CAN_VIEW_REPORT_ACCESS_KEY, VIEW_TEAM_ATTENDANCE_ACCESS_KEY, VIEW_ALL_ATTENDANCE_ACCESS_KEY} from "../common/constant/RoleConstants";
 
 // import Dashboard from "../pages/dashboard/Dashboard";
 // import Login from "../pages/auth/login/Login";
@@ -74,7 +75,7 @@ const privateRoutes = [
     component: <ProjectOverview />,
     perm: ["dac690d1-6712-4aa6-9b4f-7d71bc4f8eb1"],
   },
-  { path: "/employee", component: <Employee />, perm: ["a196c41a-5ecb-40c2-ace9-02b5f4819b29"] },
+  { path: "/employee", component: <Employee />, perm: [VIEW_TEAM_EMPLOYEE_ACCESS_KEY, VIEW_ALL_EMPLOYEE_ACCESS_KEY ] },
   {
     path: "/employee/view/:id",
     component: <EmployeeView />,
@@ -88,10 +89,10 @@ const privateRoutes = [
   {
     path: "/leave-approval",
     component: <LeaveApproval />,
-    perm: ["1b5d106f-f3e8-41f3-8041-d3f71a19d27d", "08cd201a-d20d-45d3-8b60-3a6fb7e4acc0"],
+    perm: [VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY, VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY],
   },
   { path: "/leaves", component: <LeaveDashboard />, perm: "all" },
-  { path: "/custom-field", component: <CustomField />, perm: ["9057d872-1f18-42c8-b2fb-89b29f2c05cf"] },
+  { path: "/custom-field", component: <CustomField />, perm: [CUSTOM_FIELD_VIEW_ACCESS_KEY] },
   { path: "/payroll", component: <PayRoll />, perm: "all" },
   {
     path: "/payrollconfig",
@@ -112,21 +113,21 @@ const privateRoutes = [
   {
     path: "/attendancereport",
     component: <AttendanceReport />,
-    perm: ["c77528b2-5d9f-49ad-b6d1-5f95e61a66a0"],
+    perm: [CAN_VIEW_REPORT_ACCESS_KEY],
   },
   {
     path: "/attendanceapproval",
     component: <AttendanceApproval />,
-    perm: ["8d33a155-2d7e-4a5d-8608-35431a44662c", "2ebd3c5d-dca8-45cc-8334-5a32f2451893"],
+    perm: [VIEW_TEAM_ATTENDANCE_ACCESS_KEY, VIEW_ALL_ATTENDANCE_ACCESS_KEY],
   },
   {
     path: "/approval",
     component: <ApprovalFilter />,
     perm: [
-      "8d33a155-2d7e-4a5d-8608-35431a44662c",
-      "2ebd3c5d-dca8-45cc-8334-5a32f2451893",
-      "1b5d106f-f3e8-41f3-8041-d3f71a19d27d",
-      "08cd201a-d20d-45d3-8b60-3a6fb7e4acc0"
+      VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
+      VIEW_ALL_ATTENDANCE_ACCESS_KEY,
+      VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
+      VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY
     ],
   },
   {
