@@ -1101,7 +1101,6 @@ const AttendanceEmployeeTable = () => {
         }}
         centered
       >
-       
         {timelineList.filter((d) => d.location_id !== null).length !== 0 ? (
           <AllDistanceCalculater allLocationData={allLocationData} />
         ) : null}
@@ -1395,7 +1394,7 @@ const AttendanceEmployeeTable = () => {
                       htmlFor="exampleFormControlTextarea1"
                       className="form-label text-body"
                     >
-                      Leave a Notes
+                      Leave a Notesssss
                     </label>
                     <textarea
                       className="form-control bg-light border-light"

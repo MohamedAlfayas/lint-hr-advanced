@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Col, Container, Row } from "reactstrap";
 import Section from "../../component/section/Section";
 import { MetaTitle } from "../../common/data/MetaTitle";
@@ -9,6 +9,8 @@ import AttendanceGraph from "./AttendanceGraph";
 import DeptWiseAttendanceWidgets from "./DeptWiseAttendanceWidgets";
 import AttendanceLeaveApprovalTable from "./AttendanceLeaveApprovalTable";
 import {
+  VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
@@ -22,6 +24,24 @@ const Dashboard = () => {
   };
 
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+
+  const [showApprovalTable, setShowApprovalTable] = useState(false);
+
+  useEffect(() => {
+    console.log("Approval Table Comp");
+
+    let permission_list = profile_data?.permission_list || [];
+
+    if (
+      profile_data?.is_admin === true ||
+      permission_list.includes(VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY) ||
+      permission_list.includes(VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY) ||
+      permission_list.includes(VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY) ||
+      permission_list.includes(VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY)
+    ) {
+      setShowApprovalTable(true);
+    }
+  }, []);
 
   return (
     <React.Fragment>
@@ -45,16 +65,12 @@ const Dashboard = () => {
                       <AttendanceGraph />
                     </Row>
                   </Col>
-                  {profile_data.permission_list.includes(
-                    VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
-                  ) ||
-                  profile_data.permission_list.includes(
-                    VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY
-                  ) ? (
+
+                  {showApprovalTable && (
                     <Col xl={12}>
                       <AttendanceLeaveApprovalTable />
                     </Col>
-                  ) : null}
+                  )}
 
                   <Col xl={12}> {/* <DeptWiseAttendanceWidgets /> */}</Col>
                 </Row>

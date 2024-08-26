@@ -15,8 +15,10 @@ const OrgTable = ({ departmentId }) => {
   const EmployeeData = GetLocalStorageData("employee") || [];
   const DepartmentData = GetLocalStorageData("department") || [];
 
-  const TableData = EmployeeData.filter((d) =>
-    d.primary_department_id_list.includes(departmentId)
+  const TableData = EmployeeData.filter(
+    (d) =>
+      d.primary_department_id_list.includes(departmentId) &&
+      d.is_active === true
   );
 
   const columns = [

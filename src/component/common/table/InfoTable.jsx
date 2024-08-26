@@ -28,6 +28,8 @@ import {
   Button,
 } from "reactstrap";
 
+import Select from "react-select";
+
 import TableContainer from "../../../component/common/table/TableContainer";
 import DeleteModal from "../../../component/common/modal/DeleteModal";
 import Loader from "../../../component/common/loader/Loader";
@@ -92,13 +94,17 @@ import { editLeaveApproval } from "../../../redux/reducers/ChildReducer/LeaveApp
 import { updateAttendanceApprovalData } from "../../../redux/reducers/ChildReducer/AttendanceApprovalReducer";
 import { setTableDataReducer } from "../../../redux/reducers/ChildReducer/TableDataReducer";
 import { Api } from "../../../common/api/Api";
-import { setEmployeeActiveStatus } from "../../../redux/reducers/ChildReducer/EmployeeReducer";
+import {
+  editEmployee,
+  setEmployeeActiveStatus,
+} from "../../../redux/reducers/ChildReducer/EmployeeReducer";
 import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
 import {
   setCurrentApprovalComponent,
   setDashPendingApprovalCom,
 } from "../../../redux/reducers/ChildReducer/ApprovalComponentReducer";
+import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
 defineElement(loadAnimation);
 
 const InfoTable = ({
@@ -112,6 +118,7 @@ const InfoTable = ({
   import_width_per,
   table_col,
   table_class,
+  initialActiveTab,
 }) => {
   const dispatch = useDispatch();
 
@@ -153,7 +160,10 @@ const InfoTable = ({
       })
     : [];
 
-  const [activeTab, setActiveTab] = useState(1);
+  const [activeTab, setActiveTab] = useState(
+    !!initialActiveTab ? initialActiveTab : 1
+  );
+
   const [dataList, setDataList] = useState([]);
   const [isExportCSV, setIsExportCSV] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
@@ -630,56 +640,105 @@ const InfoTable = ({
       confirmButtonText: `Yes, ${orderInfo?.text}`,
     }).then(async (result) => {
       if (result.isConfirmed) {
-        dispatch(setLoaderVisible(true));
-        const payload = {
-          emp_uuid: orderData?.emp_uuid,
-          status: orderInfo?.statusCode,
-        };
-
-        const Api = await PostApi(
-          "employee/activate-or-deactivate-employee/",
-          payload,
-          false
-        );
-
-        if (!!Api.status && Api.status === 200) {
-          dispatch(
-            setEmployeeActiveStatus({
-              id: orderData.id,
-              is_active: orderInfo?.statusToChange,
-            })
-          );
-
-          const thisMetaData = GetLocalStorageData("employee");
-          let updated_md = [...thisMetaData].map((d) => {
-            if (d.id === orderData.id) {
-              return {
-                ...d,
-                is_active: orderInfo?.statusToChange,
-              };
-            } else {
-              return d;
-            }
-          });
-
-          let GlobalMetaData =
-            localStorage.getItem("lint_hr_globaldata") !== null
-              ? JSON.parse(localStorage.getItem("lint_hr_globaldata"))
-              : {};
-          GlobalMetaData["employee"] = updated_md;
-          localStorage.setItem(
-            "lint_hr_globaldata",
-            JSON.stringify(GlobalMetaData)
-          );
-
-          dispatch(setLoaderVisible(false));
-          toast.success(Api?.data?.message);
-        } else {
-          dispatch(setLoaderVisible(false));
-          toast.error(Api?.data?.message || Api?.data?.detail);
-        }
+        setActiveInactiveAPIOrderData(orderData);
+        setActiveInactiveAPIOrderInfo(orderInfo);
+        ActivateOrDeactivate(orderData, orderInfo);
       }
     });
+  };
+
+  const [activeInactiveAPIOrderData, setActiveInactiveAPIOrderData] =
+    useState(null);
+  const [activeInactiveAPIOrderInfo, setActiveInactiveAPIOrderInfo] =
+    useState(null);
+
+  const ActivateOrDeactivate = async (orderData, orderInfo) => {
+    console.log("ORder Data === ", orderData);
+    console.log("ORder Info === ", orderInfo);
+
+    // return false;
+
+    if (!!orderData && !!orderData?.is_active && orderData.is_active === true) {
+      DeactivateEmployeeAPI(orderData, orderInfo);
+    } else {
+      setShowActivateEmpModal(true);
+      setActivateEmpName(orderData?.fname);
+      setActivateEmpObj({
+        emp_uuid: orderData?.emp_uuid,
+        primary_department_id_list: [],
+        reporting_manager_id: 0,
+      });
+    }
+  };
+
+  const DeactivateEmployeeAPI = async (orderData, orderInfo) => {
+    dispatch(setLoaderVisible(true));
+
+    const payload = {
+      emp_uuid: orderData?.emp_uuid,
+      status: orderInfo?.statusCode,
+    };
+
+    const Api = await PostApi(
+      "employee/activate-or-deactivate-employee/",
+      payload,
+      false
+    );
+
+    if (!!Api.status && Api.status === 200) {
+      dispatch(
+        setEmployeeActiveStatus({
+          id: orderData.id,
+          is_active: orderInfo?.statusToChange,
+        })
+      );
+
+      const thisMetaData = GetLocalStorageData("employee");
+      let updated_md = [...thisMetaData].map((d) => {
+        if (d.id === orderData.id) {
+          return {
+            ...d,
+            is_active: orderInfo?.statusToChange,
+          };
+        } else {
+          return d;
+        }
+      });
+
+      let GlobalMetaData =
+        localStorage.getItem("lint_hr_globaldata") !== null
+          ? JSON.parse(localStorage.getItem("lint_hr_globaldata"))
+          : {};
+      GlobalMetaData["employee"] = updated_md;
+      localStorage.setItem(
+        "lint_hr_globaldata",
+        JSON.stringify(GlobalMetaData)
+      );
+
+      dispatch(setLoaderVisible(false));
+      toast.success(Api?.data?.message);
+    } else {
+      dispatch(setLoaderVisible(false));
+      if (
+        !!Api?.data?.is_rep_man_error &&
+        Api?.data?.is_rep_man_error === true
+      ) {
+        console.log(
+          "team_employees_to_be_updated = ",
+          Api?.data?.team_employees_to_be_updated
+        );
+
+        setRMEmpName(orderData?.fname);
+
+        setTeamsToBeUpdated(Api?.data?.team_employees_to_be_updated);
+
+        setShowRMModal(true);
+
+        console.log("HEHEHEHEEH");
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
+      }
+    }
   };
 
   const handleResetPassword = (orderData) => {
@@ -1189,6 +1248,7 @@ const InfoTable = ({
   }, [showEditBtn]);
 
   const toggleTab = (tab, type) => {
+    console.log("TOGGLE TAB === ", tab, " Active TAB = ", activeTab);
     if (activeTab !== tab) {
       setActiveTab(tab);
       let filteredDatas = [...tabledata];
@@ -1205,7 +1265,7 @@ const InfoTable = ({
   useEffect(() => {
     if (tabledata && tabledata.length) {
       let type = "";
-      if (parseInt(activeTab) === 1) {
+      if (activeTab === undefined || parseInt(activeTab) === 1) {
         type = "all";
       } else {
         type = tabOptions.length
@@ -1323,6 +1383,172 @@ const InfoTable = ({
       setDate(defaultdate());
     }
   }, [modal]);
+
+  const [rmEmpName, setRMEmpName] = useState("");
+  const [showRMModal, setShowRMModal] = useState(false);
+  const onRMModalCloseClick = () => {
+    setShowRMModal(false);
+  };
+
+  const [TeamsToBeUpdated, setTeamsToBeUpdated] = useState([]);
+
+  const handleNewReportingManager = (e, d_id) => {
+    const { value } = e;
+
+    console.log("Handle New Rep Man = ", value);
+
+    const new_rm = [...TeamsToBeUpdated].map((d) => {
+      if (d.id === d_id) {
+        return {
+          ...d,
+          new_reporting_manager_id: value,
+        };
+      } else {
+        return d;
+      }
+    });
+
+    setTeamsToBeUpdated(new_rm);
+  };
+
+  const assignNewReportingManager = async () => {
+    const f = TeamsToBeUpdated.filter(
+      (d) => parseInt(d.new_reporting_manager_id) === 0
+    );
+    if (f.length > 0) {
+      toast.error("Please Select New Reporting Manager");
+    } else {
+      dispatch(setLoaderVisible(true));
+      const Payload = TeamsToBeUpdated.map((d) => {
+        return {
+          employee_id: d?.employee_id,
+          new_reporting_manager_id: d?.new_reporting_manager_id,
+          sub_child_details: d?.employee_details,
+        };
+      });
+
+      console.log("API Payload = ", Payload);
+
+      const Api = await PostApi(
+        "employee/assign-new-reporting-manager/",
+        Payload,
+        false
+      );
+
+      if (Api.status && Api.status === 200) {
+        dispatch(setLoaderVisible(false));
+        DeactivateEmployeeAPI(
+          activeInactiveAPIOrderData,
+          activeInactiveAPIOrderInfo
+        );
+        setShowRMModal(false);
+      } else {
+        dispatch(setLoaderVisible(false));
+        console.log("API Exception === ", Api);
+        toast.error("Something Went Wrong");
+      }
+    }
+  };
+
+  // Activate employee
+
+  const [activateEmpName, setActivateEmpName] = useState("");
+  const [showActivateEmpModal, setShowActivateEmpModal] = useState(false);
+  const onActivateEmpModalClick = () => {
+    setShowActivateEmpModal(false);
+  };
+
+  const initialActivateEmpObj = useMemo(() => {
+    return {
+      emp_uuid: 0,
+      primary_department_id_list: [],
+      reporting_manager_id: 0,
+    };
+  });
+
+  const [activateEmpObj, setActivateEmpObj] = useState(initialActivateEmpObj);
+  const dep_options = GetLocalStorageData("department") || [];
+  const [reportingManagerOptions, setReportingManagerOptions] = useState([]);
+
+  const handlePrimaryDepChange = async (e) => {
+    let valid_dep_obj = [];
+    let valid_dep_ids = [];
+
+    for (var i = 0; i < e.length; i++) {
+      var is_child = false;
+      for (var j = 0; j < e.length; j++) {
+        if (i !== j) {
+          if (e[j].child_id_list.includes(e[i].id)) {
+            is_child = true;
+          }
+        }
+      }
+      if (is_child === false) {
+        valid_dep_obj.push(e[i]);
+        valid_dep_ids.push(e[i].id);
+      }
+    }
+
+    if (valid_dep_ids.length) {
+      GetReportingManager(valid_dep_ids);
+    } else {
+      setReportingManagerOptions([]);
+    }
+
+    setActivateEmpObj({
+      ...activateEmpObj,
+      primary_department_id_list: valid_dep_ids,
+      reporting_manager_id: 0,
+    });
+  };
+
+  const GetReportingManager = async (valid_dep_ids) => {
+    const Api = await PostApi(
+      "employee/get-employee-list-for-reporting-manager/",
+      { dep_id: valid_dep_ids },
+      false
+    );
+    if (Api.status && Api.status === 200) {
+      const response = Api?.data?.data;
+      setReportingManagerOptions(
+        EmployeeData.filter(
+          (d) => d.id !== activateEmpObj.id && response.includes(d.id)
+        )
+      );
+    } else {
+      console.log("ERRR");
+    }
+  };
+
+  const ActivateEmployeeAPI = async () => {
+    if (
+      !!activateEmpObj?.reporting_manager_id &&
+      activateEmpObj?.reporting_manager_id !== 0
+    ) {
+      dispatch(setLoaderVisible(true));
+      activateEmpObj["status"] = 1;
+
+      console.log("ACITVATE EMP OBJ === ", activateEmpObj);
+
+      const Api = await PostApi(
+        "employee/activate-or-deactivate-employee/",
+        activateEmpObj,
+        false
+      );
+      if (!!Api.status && Api.status === 200) {
+        dispatch(setLoaderVisible(false));
+        dispatch(editEmployee(Api?.data?.data));
+        SetLocalStorage("employee", Api?.data.data, 3);
+        setShowActivateEmpModal(false);
+        toast.success(Api?.data?.message);
+      } else {
+        dispatch(setLoaderVisible(false));
+        toast.error(Api?.data?.message || Api?.data?.detail);
+      }
+    } else {
+      toast.error("Please Select Reporting Manager");
+    }
+  };
 
   return (
     <Col lg={table_col || 12}>
@@ -2085,6 +2311,203 @@ const InfoTable = ({
                     </div>
                   </div>
                 </Form>
+              </Modal>
+
+              <Modal
+                fade={true}
+                isOpen={showRMModal}
+                toggle={onRMModalCloseClick}
+                centered={true}
+              >
+                <ModalBody className="py-2 px-3">
+                  <div className="mt-2 text-center">
+                    <div className="mt-4 pt-2 fs-15 mx-4">
+                      <h4>Assign New Reporting Manager</h4>
+                    </div>
+                    <div className="mt-3 pt-1">
+                      <p>
+                        <b>{rmEmpName}</b> is The Reporting Manager For The
+                        Following Employees
+                      </p>
+                    </div>
+                    <div className="mt-3 pt-1">
+                      {TeamsToBeUpdated &&
+                        TeamsToBeUpdated.map((d) => {
+                          return (
+                            <React.Fragment>
+                              <Row className="mt-2">
+                                <Col lg={12} style={{ textAlign: "left" }}>
+                                  <h5>{d?.name}</h5>
+                                </Col>
+                              </Row>
+                              <Row>
+                                <Col lg={6}>
+                                  <Select
+                                    name={`rep_man_select_${d.id}`}
+                                    id={`rep_man_id_${d.id}`}
+                                    options={d.rep_man_options}
+                                    components={{
+                                      Option: EmployeeDisplayInSelect,
+                                    }}
+                                    value={
+                                      d.rep_man_options.find(
+                                        (e) =>
+                                          e.id ===
+                                          parseInt(d.new_reporting_manager_id)
+                                      ) || []
+                                    }
+                                    onChange={(e) =>
+                                      handleNewReportingManager(e, d?.id)
+                                    }
+                                    className="basic-multi-select"
+                                  />
+                                </Col>
+                                <Col lg={6}>
+                                  <h5>Employees</h5>
+                                  {(d?.employee_details).map((m) => (
+                                    <>
+                                      <h6>{m?.name}</h6>
+                                    </>
+                                  ))}
+                                </Col>
+                              </Row>
+                            </React.Fragment>
+                          );
+                        })}
+                    </div>
+                  </div>
+                  <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
+                    <button
+                      type="button"
+                      className="btn w-sm btn-light"
+                      data-bs-dismiss="modal"
+                      onClick={() => setShowRMModal(false)}
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="button"
+                      className="btn w-sm btn-danger"
+                      id="assign-record"
+                      onClick={assignNewReportingManager}
+                    >
+                      Assign
+                    </button>
+                  </div>
+                </ModalBody>
+              </Modal>
+
+              <Modal
+                fade={true}
+                isOpen={showActivateEmpModal}
+                toggle={onActivateEmpModalClick}
+                centered={true}
+              >
+                <ModalBody className="py-2 px-3">
+                  <div className="mt-2 text-center">
+                    <div className="mt-4 pt-2 fs-15 mx-4">
+                      <h4>
+                        Assign New Department & Reporting Manager For{" "}
+                        <b>{activateEmpName}</b>
+                      </h4>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-1">
+                    <React.Fragment>
+                      <Row>
+                        <Col lg={12}>
+                          <div>
+                            <Label
+                              htmlFor="primary_department_id_list"
+                              className="form-label"
+                            >
+                              Primary Department
+                            </Label>
+                            <Select
+                              id="primary_department_id_list"
+                              name="primary_department_id_list"
+                              isMulti={true}
+                              options={dep_options || []}
+                              className="basic-multi-select"
+                              closeMenuOnSelect={false}
+                              placeholder={"Select Primary Department"}
+                              value={
+                                activateEmpObj?.primary_department_id_list
+                                  ? dep_options.filter((d) =>
+                                      (activateEmpObj?.primary_department_id_list).includes(
+                                        d.id
+                                      )
+                                    )
+                                  : []
+                              }
+                              onChange={handlePrimaryDepChange}
+                            />
+                          </div>
+                        </Col>
+
+                        <Col lg={12}>
+                          <div>
+                            <Label htmlFor="reporting_manager_id">
+                              Reporting Manager
+                            </Label>
+                            <Select
+                              id="reporting_manager_id"
+                              name="reporting_manager_id"
+                              isMulti={false}
+                              isClearable={true} // Enable clearable feature
+                              options={reportingManagerOptions || []}
+                              components={{ Option: EmployeeDisplayInSelect }}
+                              className="basic-multi-select"
+                              value={
+                                (activateEmpObj.reporting_manager_id &&
+                                  reportingManagerOptions.find(
+                                    (e) =>
+                                      e.id ===
+                                      activateEmpObj.reporting_manager_id
+                                  )) ||
+                                null // Set value to null initially
+                              }
+                              onChange={(selectedOption) => {
+                                if (selectedOption) {
+                                  // Check if an option is selected
+                                  setActivateEmpObj({
+                                    ...activateEmpObj,
+                                    reporting_manager_id: selectedOption.id,
+                                  });
+                                } else {
+                                  // Clear selection if null (clear button clicked)
+                                  setActivateEmpObj({
+                                    ...activateEmpObj,
+                                    reporting_manager_id: 0,
+                                  });
+                                }
+                              }}
+                            />
+                          </div>
+                        </Col>
+                      </Row>
+                    </React.Fragment>
+                  </div>
+
+                  <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
+                    <button
+                      type="button"
+                      className="btn w-sm btn-light"
+                      data-bs-dismiss="modal"
+                      onClick={() => setShowActivateEmpModal(false)}
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="button"
+                      className="btn w-sm btn-danger"
+                      id="assign-record"
+                      onClick={ActivateEmployeeAPI}
+                    >
+                      Assign
+                    </button>
+                  </div>
+                </ModalBody>
               </Modal>
             </CardBody>
           </Card>

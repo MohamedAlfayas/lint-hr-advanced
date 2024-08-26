@@ -150,6 +150,7 @@ const Holiday = () => {
           filterOptions={filterOptions}
           width_per={"40%"}
           import_width_per={"50%"}
+          initialActiveTab={"2"}
         />
       )}
     </React.Fragment>

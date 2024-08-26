@@ -13,7 +13,9 @@ import Select from "react-select";
 import { employeeTypeOptions } from "../../common/constant/Constants";
 import {
   VIEW_ALL_ATTENDANCE_ACCESS_KEY,
+  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
+  VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
 import {
   setAllMembersTodaysAttendanceAsCurrent,
@@ -63,13 +65,34 @@ const AttendanceStatistics = () => {
     const profile_data = JSON.parse(
       localStorage.getItem("lint_hr_profile_data")
     );
+    let permission_list = profile_data?.permission_list || [];
+    console.log("profile_data = ", profile_data);
+
     if (
-      profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY) &&
-      profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY)
+      profile_data?.is_admin === true ||
+      permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)
     ) {
+      console.log("HE MAY BE ADMIN OR HE HAS ALL ACCESS !!!!");
       setShowAllAttendance(true);
       setShowTeamAttendance(true);
+      onAttStasticsTypeChange("All", 0);
+    } else if (permission_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)) {
+      console.log("HE IS TEAM");
+      setShowTeamAttendance(true);
+      onAttStasticsTypeChange("My Team", 1);
+    } else {
+      console.log("HE IS NOTHING");
+      setShowAllAttendance(false);
+      setShowTeamAttendance(false);
     }
+
+    // if (
+    //   permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY) &&
+    //   permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY)
+    // ) {
+    //   setShowAllAttendance(true);
+    //   setShowTeamAttendance(true);
+    // }
   }, []);
 
   useEffect(() => {
@@ -253,7 +276,7 @@ const AttendanceStatistics = () => {
               className="d-flex align-items-center justify-content-end"
             >
               <div className="flex-shrink-0">
-                {showAllAttendance && showTeamAttendance ? (
+                {showAllAttendance || showTeamAttendance ? (
                   <UncontrolledDropdown className="card-header-dropdown">
                     <DropdownToggle
                       tag="a"

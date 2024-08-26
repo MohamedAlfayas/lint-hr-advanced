@@ -16,6 +16,8 @@ import classnames from "classnames";
 import AttendancePendingTable from "./AttendancePendingTable";
 import LeaveApprovalPending from "./LeavePending";
 import {
+  VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
@@ -41,35 +43,41 @@ const AttendanceLeaveApprovalTable = () => {
   const handleAttendLengthChange = (onDataLengthChange) => {
     setAttendDataLength(onDataLengthChange);
   };
-  const [showTeamAttendanceApproval, setShowTeamAttendanceApproval] =
-    useState(false);
-  const [showTeamLeaveApproval, setShowTeamLeaveApproval] = useState(false);
+  const [showAttendanceApproval, setShowAttendanceApproval] = useState(false);
+  const [showLeaveApproval, setShowLeaveApproval] = useState(false);
   const firstEffectExecutedRef = useRef(false);
   useEffect(() => {
     const profile_data = JSON.parse(
       localStorage.getItem("lint_hr_profile_data")
     );
 
+    let permission_list = profile_data?.permission_list || [];
+
+    // View Attendance Approval Access
+
     if (
-      profile_data.permission_list.includes(
-        VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
-      )
+      profile_data?.is_admin === true ||
+      permission_list.includes(VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY) ||
+      permission_list.includes(VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY)
     ) {
-      setShowTeamAttendanceApproval(true);
+      setShowAttendanceApproval(true);
     }
+
+    // View Leave Approval Access
+
     if (
-      profile_data.permission_list.includes(VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY)
+      profile_data?.is_admin === true ||
+      permission_list.includes(VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY) ||
+      permission_list.includes(VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY)
     ) {
-      setShowTeamLeaveApproval(true);
+      setShowLeaveApproval(true);
     }
     firstEffectExecutedRef.current = true;
   }, []);
+
   useEffect(() => {
     if (firstEffectExecutedRef.current) {
-      if (
-        activeTab === "2" ||
-        (!showTeamAttendanceApproval && activeTab === "1")
-      ) {
+      if (activeTab === "2" || (!showAttendanceApproval && activeTab === "1")) {
         dispatch(setDashPendingApprovalCom("leave_pending_table"));
       } else if (activeTab === "1") {
         dispatch(setDashPendingApprovalCom("attendance_pending_table"));
@@ -77,7 +85,7 @@ const AttendanceLeaveApprovalTable = () => {
         setDashPendingApprovalCom("");
       }
     }
-  }, [activeTab, showTeamAttendanceApproval, firstEffectExecutedRef.current]);
+  }, [activeTab, showAttendanceApproval, firstEffectExecutedRef.current]);
 
   return (
     <React.Fragment>
@@ -90,7 +98,7 @@ const AttendanceLeaveApprovalTable = () => {
                 className="nav-tabs nav-tabs-custom nav-success"
                 role="tablist"
               >
-                {showTeamAttendanceApproval && (
+                {showAttendanceApproval && (
                   <NavItem>
                     <NavLink
                       href="#"
@@ -115,9 +123,9 @@ const AttendanceLeaveApprovalTable = () => {
                     </NavLink>
                   </NavItem>
                 )}
-                {showTeamLeaveApproval && (
+                {showLeaveApproval && (
                   <NavItem>
-                    {!showTeamAttendanceApproval ? (
+                    {!showAttendanceApproval ? (
                       <NavLink
                         href="#"
                         className={classnames(
@@ -163,16 +171,16 @@ const AttendanceLeaveApprovalTable = () => {
           </CardHeader>
           <div className="card-body p-0">
             <TabContent activeTab={activeTab} className="p-0">
-              {showTeamAttendanceApproval && (
-                <TabPane tabId={showTeamAttendanceApproval ? "1" : "0"}>
+              {showAttendanceApproval && (
+                <TabPane tabId={showAttendanceApproval ? "1" : "0"}>
                   <AttendancePendingTable
                     onDataLengthChange={handleAttendLengthChange}
                   />
                 </TabPane>
               )}
 
-              {showTeamLeaveApproval && (
-                <TabPane tabId={!showTeamAttendanceApproval ? "1" : "2"}>
+              {showLeaveApproval && (
+                <TabPane tabId={!showAttendanceApproval ? "1" : "2"}>
                   <LeaveApprovalPending
                     onDataLengthChange={handleLeaveLengthChange}
                   />

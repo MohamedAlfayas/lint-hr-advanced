@@ -92,8 +92,10 @@ const DepartmentsTab = () => {
   const nodeTemplate1 = (node) => {
     if (true) {
       let emp_list_for_this_department =
-        EmployeeData.filter((d) =>
-          d.primary_department_id_list.includes(node.id)
+        EmployeeData.filter(
+          (d) =>
+            d.primary_department_id_list.includes(node.id) &&
+            d.is_active === true
         ) || [];
 
       return (

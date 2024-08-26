@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { VIEW_ALL_EMPLOYEE_ACCESS_KEY, VIEW_TEAM_EMPLOYEE_ACCESS_KEY } from "../../common/constant/RoleConstants";
 
 const Navdata = () => {
   const history = useNavigate();
@@ -164,7 +165,7 @@ const Navdata = () => {
         label: "Employee",
         link: "/employee",
         parentId: "baseUi",
-        perm: ["a196c41a-5ecb-40c2-ace9-02b5f4819b29"],
+        perm: [VIEW_ALL_EMPLOYEE_ACCESS_KEY, VIEW_TEAM_EMPLOYEE_ACCESS_KEY],
         icon: "ri-account-circle-line",
       },
       {

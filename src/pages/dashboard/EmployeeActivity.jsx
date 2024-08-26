@@ -37,7 +37,9 @@ import {
 } from "../../common/constant/Constants";
 import {
   VIEW_ALL_ATTENDANCE_ACCESS_KEY,
+  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
+  VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
 import { setDashboardAttendanceStasticsType } from "../../redux/reducers/ChildReducer/DashboardAttendanceStasticsReducer";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
@@ -51,6 +53,8 @@ const EmployeeActivity = (props) => {
     (state) => state.TeamTodaysAttendanceReducer
   );
 
+  const [filterOptions, setFilterOptions] = useState(attendanceStasticsOptions);
+
   const dispatch = useDispatch();
 
   const [showTeamAttendance, setShowTeamAttendance] = useState(false);
@@ -58,22 +62,30 @@ const EmployeeActivity = (props) => {
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
   useEffect(() => {
+    let permission_list = profile_data?.permission_list || [];
     if (
-      profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY) &&
-      profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)
+      profile_data?.is_admin === true ||
+      permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)
     ) {
+      console.log("HE MAY BE ADMIN OR HE HAS ALL ACCESS !!!!");
       setShowAllAttendance(true);
       setShowTeamAttendance(true);
+      onAttStasticsTypeChange(attendanceStasticsOptions[0]);
+      GetTodaysAttReport(0);
+      setFilterOptions(attendanceStasticsOptions);
+    } else if (permission_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)) {
+      console.log("HE IS TEAM");
+      setShowTeamAttendance(true);
+      onAttStasticsTypeChange(attendanceStasticsOptions[1]);
+      GetTodaysAttReport(1);
+      setFilterOptions(attendanceStasticsOptions.filter((d) => d.id === 1));
+    } else {
+      console.log("HE IS NOTHING");
+      setShowAllAttendance(false);
+      setShowTeamAttendance(false);
+      setFilterOptions([]);
     }
   }, []);
-
-  let employee_type;
-
-  if (profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY)) {
-    employee_type = 0;
-  } else {
-    employee_type = 1;
-  }
 
   useEffect(() => {
     if (!!currently_displaying_todays_attendance) {
@@ -98,7 +110,9 @@ const EmployeeActivity = (props) => {
     }
   }, [currently_displaying_todays_attendance]);
 
-  useEffect(() => {
+  useEffect(() => {}, []);
+
+  const GetTodaysAttReport = async (employee_type) => {
     dispatch(setLoaderVisible(true));
     Api({
       method: "GET",
@@ -136,7 +150,7 @@ const EmployeeActivity = (props) => {
       .catch((err) => {
         dispatch(setLoaderVisible(false));
       });
-  }, []);
+  };
 
   const { dashboard_attendance_stastics_type } = useSelector(
     (state) => state.DashboardAttendanceStasticsReducer
@@ -213,16 +227,16 @@ const EmployeeActivity = (props) => {
             </CardHeader>
             <CardBody className="p-0">
               <div className="p-2">
-                {showAllAttendance && showTeamAttendance && (
+                {(showAllAttendance || showTeamAttendance) && (
                   <div className="form-icon right" style={{ width: "250px" }}>
                     <Select
                       id="emp_type"
                       name="Employee Type"
                       isMulti={false}
-                      options={attendanceStasticsOptions || []}
+                      options={filterOptions || []}
                       className="basic-multi-select"
                       value={
-                        attendanceStasticsOptions.find(
+                        filterOptions.find(
                           (d) => d.value === dashboard_attendance_stastics_type
                         ) || attendanceStasticsOptions[0]
                       }

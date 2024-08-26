@@ -1,5 +1,7 @@
 import React, { Fragment, useEffect, useMemo, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import Swal from "sweetalert2";
+import { Modal, ModalBody } from "reactstrap";
 import {
   Button,
   Col,
@@ -374,52 +376,74 @@ const EmployeeForm = () => {
         .min(1, "Please Select Work Schedule"),
     }),
     onSubmit: async (values) => {
-      let root_department = dep_options.find((d) => d.is_root === true);
-      let root_department_id = !!root_department && root_department.id;
+      HandleEmployeeSaveAPI(values);
+    },
+  });
 
-      if (
-        !(values?.primary_department_id_list).includes(root_department_id) &&
-        values?.reporting_manager_id === 0
-      ) {
-        toast.error("Please Select Reporting Manager");
+  const HandleEmployeeSaveAPI = async (values) => {
+    console.log("employee Save API");
+    let root_department = dep_options.find((d) => d.is_root === true);
+    let root_department_id = !!root_department && root_department.id;
+
+    if (
+      !(values?.primary_department_id_list).includes(root_department_id) &&
+      values?.reporting_manager_id === 0
+    ) {
+      toast.error("Please Select Reporting Manager");
+    } else {
+      dispatch(setLoaderVisible(true));
+
+      let form_data = new FormData();
+      employeeImage !== null &&
+        form_data.append("profile", employeeImage, employeeImage.name);
+      Object.entries(employeeObj).map((key, value) => {
+        if (key[0] === "cf_values") {
+          form_data.append(key[0], JSON.stringify(key[1]));
+        } else {
+          form_data.append(key[0], key[1]);
+        }
+      });
+
+      const Api = await PostApi("employee/add-new/", form_data, true);
+      if (Api.status && Api.status === 200) {
+        // employeeObj.id === 0
+        //   ? dispatch(addEmployee(Api?.data.data))
+        //   : dispatch(editEmployee(Api?.data?.data));
+
+        if (employeeObj.id === 0) {
+          dispatch(addEmployee(Api?.data.data));
+          SetLocalStorage("employee", Api?.data.data, 2);
+        } else {
+          dispatch(editEmployee(Api?.data?.data));
+          SetLocalStorage("employee", Api?.data.data, 3);
+        }
+
+        dispatch(toggleRSBView(false));
+        toast.success(Api?.data?.message);
       } else {
-        dispatch(setLoaderVisible(true));
+        console.log("Employee Create Exception = ", Api);
+        if (
+          !!Api?.data?.is_rep_man_error &&
+          Api?.data?.is_rep_man_error === true
+        ) {
+          console.log(
+            "team_employees_to_be_updated = ",
+            Api?.data?.team_employees_to_be_updated
+          );
 
-        let form_data = new FormData();
-        employeeImage !== null &&
-          form_data.append("profile", employeeImage, employeeImage.name);
-        Object.entries(employeeObj).map((key, value) => {
-          if (key[0] === "cf_values") {
-            form_data.append(key[0], JSON.stringify(key[1]));
-          } else {
-            form_data.append(key[0], key[1]);
-          }
-        });
+          setTeamsToBeUpdated(Api?.data?.team_employees_to_be_updated);
 
-        const Api = await PostApi("employee/add-new/", form_data, true);
-        if (Api.status && Api.status === 200) {
-          // employeeObj.id === 0
-          //   ? dispatch(addEmployee(Api?.data.data))
-          //   : dispatch(editEmployee(Api?.data?.data));
+          setShowRMModal(true);
 
-          if (employeeObj.id === 0) {
-            dispatch(addEmployee(Api?.data.data));
-            SetLocalStorage("employee", Api?.data.data, 2);
-          } else {
-            dispatch(editEmployee(Api?.data?.data));
-            SetLocalStorage("employee", Api?.data.data, 3);
-          }
-
-          dispatch(toggleRSBView(false));
-          toast.success(Api?.data?.message);
+          console.log("HEHEHEHEEH");
         } else {
           toast.error(Api?.data?.message || Api?.data?.detail);
         }
-
-        dispatch(setLoaderVisible(false));
       }
-    },
-  });
+
+      dispatch(setLoaderVisible(false));
+    }
+  };
 
   useEffect(() => {
     if (
@@ -453,6 +477,71 @@ const EmployeeForm = () => {
           : item
       ),
     });
+  };
+
+  const [showRMModal, setShowRMModal] = useState(false);
+  const onRMModalCloseClick = () => {
+    setShowRMModal(false);
+  };
+
+  const [TeamsToBeUpdated, setTeamsToBeUpdated] = useState([]);
+
+  const handleNewReportingManager = (e, d_id) => {
+    const { value } = e;
+
+    console.log("Handle New Rep Man = ", value);
+
+    const new_rm = [...TeamsToBeUpdated].map((d) => {
+      if (d.id === d_id) {
+        return {
+          ...d,
+          new_reporting_manager_id: value,
+        };
+      } else {
+        return d;
+      }
+    });
+
+    setTeamsToBeUpdated(new_rm);
+  };
+
+  const assignNewReportingManager = async () => {
+    const f = TeamsToBeUpdated.filter(
+      (d) => parseInt(d.new_reporting_manager_id) === 0
+    );
+    if (f.length > 0) {
+      toast.error("Please Select New Reporting Manager");
+    } else {
+      console.log("SUCCESSSSS !!!!!!!!!!!!!!!!!!");
+      console.log("TeamsToBeUpdated === ", TeamsToBeUpdated);
+
+      const Payload = TeamsToBeUpdated.map((d) => {
+        return {
+          employee_id: d?.employee_id,
+          new_reporting_manager_id: d?.new_reporting_manager_id,
+          sub_child_details: d?.employee_details,
+        };
+      });
+
+      console.log("API Payoa = ", Payload);
+
+      const Api = await PostApi(
+        "employee/assign-new-reporting-manager/",
+        Payload,
+        false
+      );
+
+      console.log("API == ", Api);
+
+      if (Api.status && Api.status === 200) {
+        console.log("API Success === ", Api);
+        HandleEmployeeSaveAPI(employeeObj);
+        setShowRMModal(false);
+      } else {
+        console.log("API Exception === ", Api);
+        toast.error("Something Went Wrong");
+      }
+    }
   };
 
   return (
@@ -1590,7 +1679,7 @@ const EmployeeForm = () => {
                 </div>
               </Col>
 
-              <Col md={12} lg={12} xxl={12}>
+              {/* <Col md={12} lg={12} xxl={12}>
                 <div>
                   <Label htmlFor="isActive" className="form-label">
                     Is Active
@@ -1625,7 +1714,7 @@ const EmployeeForm = () => {
                   </b>{" "}
                   is Active State.
                 </div>
-              </Col>
+              </Col> */}
 
               <hr></hr>
               {employeeObj.cf_values && employeeObj.cf_values.length
@@ -1726,6 +1815,87 @@ const EmployeeForm = () => {
           </Form>
         </Col>
       </Row>
+
+      <Modal
+        fade={true}
+        isOpen={showRMModal}
+        toggle={onRMModalCloseClick}
+        centered={true}
+      >
+        <ModalBody className="py-2 px-3">
+          <div className="mt-2 text-center">
+            <div className="mt-4 pt-2 fs-15 mx-4">
+              <h4>Assign New Reporting Manager</h4>
+            </div>
+            <div className="mt-3 pt-1">
+              <p>
+                <b>{employeeObj?.fname} </b> is The Reporting Manager For The
+                Following Employees
+              </p>
+            </div>
+            <div className="mt-3 pt-1">
+              {TeamsToBeUpdated &&
+                TeamsToBeUpdated.map((d) => {
+                  return (
+                    <React.Fragment>
+                      <Row className="mt-2">
+                        <Col lg={12} style={{ textAlign: "left" }}>
+                          <h5>{d?.name}</h5>
+                        </Col>
+                      </Row>
+                      <Row>
+                        <Col lg={6}>
+                          <Select
+                            name={`rep_man_select_${d.id}`}
+                            id={`rep_man_id_${d.id}`}
+                            options={d.rep_man_options}
+                            components={{ Option: EmployeeDisplayInSelect }}
+                            value={
+                              d.rep_man_options.find(
+                                (e) =>
+                                  e.id === parseInt(d.new_reporting_manager_id)
+                              ) || []
+                            }
+                            onChange={(e) =>
+                              handleNewReportingManager(e, d?.id)
+                            }
+                            className="basic-multi-select"
+                          />
+                        </Col>
+                        <Col lg={6}>
+                          <h5>Employees</h5>
+                          {(d?.employee_details).map((m) => (
+                            <>
+                              <h6>{m?.name}</h6>
+                            </>
+                          ))}
+                        </Col>
+                      </Row>
+                    </React.Fragment>
+                  );
+                })}
+            </div>
+          </div>
+          <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
+            <button
+              type="button"
+              className="btn w-sm btn-light"
+              data-bs-dismiss="modal"
+              onClick={() => setShowRMModal(false)}
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              className="btn w-sm btn-danger"
+              id="assign-record"
+              onClick={assignNewReportingManager}
+            >
+              Assign
+            </button>
+          </div>
+        </ModalBody>
+      </Modal>
     </React.Fragment>
   );
 };

@@ -71,6 +71,7 @@ export const EmployeeDisplayInSelect = ({ innerProps, label, data }) => (
               alignItems: "center",
               background: "#0ab39c",
               marginRight: "10px",
+              marginBottom: "10px",
               marginLeft: "5px",
             }}
             data-bs-toggle="tooltip"
@@ -104,8 +105,8 @@ export const EmployeeDisplayInSelect = ({ innerProps, label, data }) => (
               {data?.primary_department_id_list
                 ? departmentData?.length
                   ? departmentData.find(
-                      (d) => d.id === data.primary_department_id_list[0]
-                    )?.name
+                    (d) => d.id === data.primary_department_id_list[0]
+                  )?.name
                   : ""
                 : ""}
             </span>

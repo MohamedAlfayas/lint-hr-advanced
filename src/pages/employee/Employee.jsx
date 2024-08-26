@@ -541,6 +541,7 @@ const Employee = () => {
         filterOptions={filterOptions}
         width_per={"35%"}
         import_width_per={"50%"}
+        initialActiveTab={"2"}
       />
     </React.Fragment>
   );
