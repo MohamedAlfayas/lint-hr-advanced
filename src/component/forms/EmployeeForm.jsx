@@ -1678,6 +1678,42 @@ const EmployeeForm = () => {
                   Select Time Zone
                 </div>
               </Col>
+              <Col md={12} lg={12} xxl={12}>
+                <div>
+                  <Label htmlFor="outside_range" className="form-label">
+                    Outside Range Notes Required
+                  </Label>
+
+                  <div className="mb-2">
+                    <div
+                      className="form-check form-switch form-switch-md form-switch-success"
+                      dir="ltr"
+                    >
+                      {" "}
+                      <Input
+                        id="outside_range"
+                        name="is_active"
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={employeeObj.outside_range_notes_required}
+                        onChange={(e) =>
+                          setEmployeeObj({
+                            ...employeeObj,
+                            outside_range_notes_required: e.target.checked,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div id="passwordHelpBlock" className="form-text mb-3">
+                  Check if{" "}
+                  <b>
+                    <i>{employeeObj.fname}</i>
+                  </b>{" "}
+                  is allowed to checkIn/CheckOut outside the branch range.
+                </div>
+              </Col>
 
               {/* <Col md={12} lg={12} xxl={12}>
                 <div>

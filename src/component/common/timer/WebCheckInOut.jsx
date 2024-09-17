@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 import { GetTotalWorkDuration } from "../../../common/js/GetTotalWorkDuration";
 import { setTimer } from "../../../redux/reducers/ChildReducer/ClockReducer";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
-const WebCheckInOut = ({ showTimer }) => {
+const WebCheckInOut = ({ showTimer, hideTimer }) => {
   const [loading, setLoading] = useState(false);
   const [currentlyCheckedIn, setCurrentlyCheckedIn] = useState(false);
   const { total_seconds, currently_checked_in } = useSelector(
@@ -115,6 +115,8 @@ const WebCheckInOut = ({ showTimer }) => {
     return `${hDisplay} : ${mDisplay} : ${sDisplay}`;
   };
 
+  console.log("Hide Timer ", hideTimer)
+
   // useEffect(() => {
   //   // Perform API call when the component mounts
   //   const fetchData = async () => {
@@ -140,38 +142,42 @@ const WebCheckInOut = ({ showTimer }) => {
 
   return (
     <React.Fragment>
-      <Col xxl={6} md={6}>
-        {loading ? (
-          <Button color="primary" className="btn-load" outline>
-            <span className="d-flex align-items-center">
-              <Spinner size="sm" className="flex-shrink-0">
-                {" "}
-                Loading...{" "}
-              </Spinner>
-              <span className="flex-grow-1 ms-2">Loading...</span>
-            </span>
-          </Button>
-        ) : (
-          <Button
-            color={currently_checked_in ? "warning" : "secondary"}
-            className="custom-toggle"
-            onClick={handleToggleClick}
-            outline
-          >
-            <span className="d-flex align-items-center">
-              {currently_checked_in ? (
-                <>
-                  <i className="ri-time-line align-bottom me-1" />
-                  <span className="flex-grow-1 ms-2">Check Out</span>
-                </>
+
+      <Col xxl={hideTimer ? 3 : 6} md={hideTimer ? 3 : 6}>
+      
+        {hideTimer === true ? null : (
+          loading ? (
+                <Button color="primary" className="btn-load" outline>
+                  <span className="d-flex align-items-center">
+                    <Spinner size="sm" className="flex-shrink-0">
+                      {" "}
+                      Loading...{" "}
+                    </Spinner>
+                    <span className="flex-grow-1 ms-2">Loading...</span>
+                  </span>
+                </Button>
               ) : (
-                <span className="icon-on">
-                  <i className="ri-time-line align-bottom me-1" />{" "}
-                  {currently_checked_in ? "Check OUT" : "Check IN"}
-                </span>
-              )}
-            </span>
-          </Button>
+                <Button
+                  color={currently_checked_in ? "warning" : "secondary"}
+                  className="custom-toggle"
+                  onClick={handleToggleClick}
+                  outline
+                >
+                  <span className="d-flex align-items-center">
+                    {currently_checked_in ? (
+                      <>
+                        <i className="ri-time-line align-bottom me-1" />
+                        <span className="flex-grow-1 ms-2">Check Out</span>
+                      </>
+                    ) : (
+                      <span className="icon-on">
+                        <i className="ri-time-line align-bottom me-1" />{" "}
+                        {currently_checked_in ? "Check OUT" : "Check IN"}
+                      </span>
+                    )}
+                  </span>
+                </Button>
+              )
         )}
 
         {showTimer && (

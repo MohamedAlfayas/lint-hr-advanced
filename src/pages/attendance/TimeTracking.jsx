@@ -4,7 +4,7 @@ import WebCheckInOut from "../../component/common/timer/WebCheckInOut";
 import { useSelector } from "react-redux";
 import { Api } from "../../common/api/Api";
 import { employee_total_work_duration } from "./../../redux/reducers/ChildReducer/TimeTrackingReducer";
-const TimeTracking = () => {
+const TimeTracking = ({hideTimer}) => {
   const [firstCheckInTime, setFirstCheckInTime] = useState(null);
 
   const { total_seconds, currently_checked_in } = useSelector(
@@ -68,7 +68,7 @@ const TimeTracking = () => {
           <h6 className="card-title mb-3 flex-grow-1 text-start">
             Date: {getCurrentDate()}
           </h6>
-          <div className="mb-2">
+          <div className={hideTimer === true ?"mb-4 mt-5" :  "mb-2"}>
             <lord-icon
               src="https://cdn.lordicon.com/kbtmbyzy.json"
               trigger={
@@ -85,7 +85,7 @@ const TimeTracking = () => {
             First In : <b> {firstCheckInTime}</b>
           </h5>
           <div className="hstack gap-2 justify-content-center">
-            <WebCheckInOut showTimer={false} />
+            <WebCheckInOut showTimer={false} hideTimer={hideTimer}/>
             {/* <Button
               outline
               className="custom-toggle btn-outline-secondary"

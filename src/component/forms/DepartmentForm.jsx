@@ -206,6 +206,38 @@ const DepartmentForm = () => {
                   Check if is required location based employee location.
                 </div>
               </Col>
+              <Col md={12} lg={12} xxl={12}>
+                <div>
+                  <Label htmlFor="allow_only_mobile_checkin" className="form-label">
+                    Allow Only Mobile Checkin
+                  </Label>
+
+                  <div className="mb-2">
+                    <div
+                      className="form-check form-switch form-switch-md form-switch-success"
+                      dir="ltr"
+                    >
+                      {" "}
+                      <Input
+                        id="allow_only_mobile_checkin"
+                        name="allow_only_mobile_checkin"
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={departmentData.allow_only_mobile_checkin}
+                        onChange={(e) =>
+                          setDepartmentData({
+                            ...departmentData,
+                            allow_only_mobile_checkin: e.target.checked,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div id="passwordHelpBlock" className="form-text mb-3">
+                  Check if allow only mobile checkin/checkout.
+                </div>
+              </Col>
               <Col lg={12}>
                 <label htmlFor="description" className="form-label">
                   Description

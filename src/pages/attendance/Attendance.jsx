@@ -26,6 +26,7 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 import { profile_data } from "../../redux/reducers/ChildReducer/MyProfileReducer";
 import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
 import { BuildAttendanceReportChart } from "../../common/js/BuildAttendanceReportChart";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
 const AttendanceDashboard = () => {
   document.title = `Attendance Overview | ${MetaTitle}`;
@@ -41,6 +42,18 @@ const AttendanceDashboard = () => {
   const { showTeamTable } = useSelector(
     (state) => state.AttendanceReportReducer
   );
+
+  const department_data = GetLocalStorageData("department");
+
+  const [hideTimer, setHideTimer] = useState(false);
+
+  const emp_department = profile_data.primary_department_id_list
+                                          ? department_data.filter((d) =>
+                                              (profile_data?.primary_department_id_list).includes(
+                                                d.id
+                                              )
+                                            )
+                                          : []
 
   useEffect(() => {
     dispatch(setLoaderVisible(true));
@@ -63,6 +76,20 @@ const AttendanceDashboard = () => {
         console.log("Something Went Wrong !!");
         ResetLoaderVisible();
       });
+
+      if (emp_department.length > 0) {
+
+        console.log("emp_department", emp_department)
+     
+        const isMobileCheckinAllowed = emp_department.every(
+          (d) => d.allow_only_mobile_checkin === true
+        );
+      
+        console.log("isMobileCheckinAllowed", isMobileCheckinAllowed);
+      
+        // Set hideTimer to true only if all allow_only_mobile_checkin are true
+        setHideTimer(isMobileCheckinAllowed);
+      }
   }, []);
 
   const ResetLoaderVisible = () => {
@@ -97,7 +124,7 @@ const AttendanceDashboard = () => {
           <Row className="project-wrapper">
             {!showTeamTable && (
               <Col xxl={3} xl={3} sm={3}>
-                <TimeTracking />
+                <TimeTracking hideTimer={hideTimer} />
               </Col>
             )}
             {!showTeamTable && (

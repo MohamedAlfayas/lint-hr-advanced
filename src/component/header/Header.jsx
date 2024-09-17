@@ -35,6 +35,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const { sidebarVisibilitytype } = useSelector((state) => state.LayoutReducer);
   const [employeeOptions, setEmployeeOptions] = useState([]);
   const employee_data = GetLocalStorageData("employee");
+  const department_data = GetLocalStorageData("department");
   const { id } = useParams();
 
   useEffect(() => {
@@ -56,7 +57,18 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   }, []);
   const [showEmpTeam, setShowEmpTeam] = useState(false);
   const [showEmpAll, setShowEmpAll] = useState(false);
+  const [hideTimer, setHideTimer] = useState(false);
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+
+  const emp_department = profile_data.primary_department_id_list
+                                          ? department_data.filter((d) =>
+                                              (profile_data?.primary_department_id_list).includes(
+                                                d.id
+                                              )
+                                            )
+                                          : []
+
+  
 
   useEffect(() => {
     if (profile_data.permission_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)) {
@@ -65,6 +77,16 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
     if (profile_data.permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)) {
       setShowEmpAll(true);
     }
+
+    if (emp_department.length > 0) {
+   
+      const isMobileCheckinAllowed = emp_department.every(
+        (d) => d.allow_only_mobile_checkin === true
+      );
+    
+      setHideTimer(isMobileCheckinAllowed);
+    }
+    
   }, []);
 
   const toogleMenuBtn = () => {
@@ -204,7 +226,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
 
             <div className="d-flex align-items-center">
               {path_list_for_timer_hide.includes(location.pathname) ? null : (
-                <WebCheckInOut showTimer={true} />
+                <WebCheckInOut showTimer={true} hideTimer={hideTimer} />
               )}
 
               {/* LanguageDropdown */}

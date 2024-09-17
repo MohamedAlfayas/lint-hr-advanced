@@ -512,6 +512,7 @@ const Employee = () => {
       is_manager: false,
       profile_url: null,
       cf_values: CustomFieldsForThisForm || [],
+      outside_range_notes_required : true
     };
   }, [version]);
 
