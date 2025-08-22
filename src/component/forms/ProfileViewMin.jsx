@@ -224,7 +224,7 @@ const ProfileViewMin = () => {
           <div className="mt-3">
             <h5 className="fs-15 profile-name">
               <Link to="#" className="link-primary">
-                {profileObj?.fname || ""}
+                {profileObj?.first_name || ""}
               </Link>
             </h5>
             <p className="text-muted profile-designation">

@@ -17,6 +17,8 @@ import SalaryCmpntForm from "../../forms/Common/SalaryCmpntForm";
 import SalaryPloiciesForm from "../../forms/Common/SalaryPoliciesForm";
 import LocationEditForm from "../../forms/Common/LocationEditForm";
 import BranchLocationForm from "../../forms/Common/BranchLocationForm";
+import StatusForm from "../../forms/Common/StatusForm";
+import PirioritiesForm from "../../forms/Common/PirioritiesForm";
 import {
   branch_component_name,
   custom_field_component_name,
@@ -34,8 +36,15 @@ import {
   work_schedule_component_name,
   location_edit_form_component_name,
   branch_location_form,
+  status_component_name,
+  piriorities_component_name,
+  contact_group_component_name,
+  contacts_component_name,
 } from "../../../common/constant/Constants";
 import BranchForm from "../../forms/BranchForm";
+import ContactGroupForm from "../../forms/Common/ContactGroupForm";
+import ContactsForm from "../../forms/Common/ContactsForm";
+
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
   const { form_title, form_width_percentage, component_to_show } = useSelector(
@@ -91,7 +100,16 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
                 <LocationEditForm />
               ) :  component_to_show === branch_location_form ? (
                 <BranchLocationForm />
-                ) : (
+                ) :
+                    component_to_show === status_component_name ? (
+                    <StatusForm/>
+                    ) : component_to_show === piriorities_component_name ? (
+                      <PirioritiesForm/>
+                      ) :  component_to_show === contact_group_component_name ? (
+                        <ContactGroupForm/>
+                        ) : component_to_show === contacts_component_name ? (
+                          <ContactsForm/>
+                          ) : (
                 <></>
               )}
             </div>

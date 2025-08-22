@@ -16,9 +16,36 @@ import Route from './routes';
 import './App.css';
 import { generateToken, messaging } from './firebase';
 import { onMessage } from 'firebase/messaging';
+import { setShowAttendanceTimer } from './redux/reducers/ChildReducer/ClockReducer';
+import { Api } from './common/api/Api';
+import { useDispatch } from 'react-redux';
+import { useLocation } from "react-router-dom";
 
 function App() {
+    const dispatch = useDispatch();
+    const location = useLocation();
 
+  useEffect(() => {
+    console.clear()
+    console.log("Api Called")
+    // Api({
+    //   method: "GET",
+    //   url: "branch/get-attendence-timer-visibility/",
+    // })
+    //   .then((res) => {
+    //     console.log("res", res?.data?.data);
+        
+    //     dispatch(setShowAttendanceTimer(res?.data?.data));
+    //   })
+    //   .catch((err) => {
+    //     dispatch(setShowAttendanceTimer([]));
+    //   });
+   const lintHrProfile = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+   console.log("CAn Web Checkin = ", lintHrProfile?.can_web_checkin);
+   if(lintHrProfile){
+    dispatch(setShowAttendanceTimer(lintHrProfile?.can_web_checkin));
+   }
+  }, [location.pathname]);
 
 
   useEffect(() => {

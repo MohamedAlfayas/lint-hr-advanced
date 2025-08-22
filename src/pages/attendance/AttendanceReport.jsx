@@ -41,7 +41,17 @@ import {
   earlyin_display,
   earlyout_display,
 } from "../../common/constant/Constants";
+
+import { changeLayoutMode } from "../../layout/HtmlLayoutHelpers";
 const AttendanceReport = () => {
+  const { layoutModeType } = useSelector((state) => state.LayoutReducer);
+
+  useEffect(() => {
+    if (layoutModeType) {
+      dispatch(changeLayoutMode(layoutModeType));
+    }
+  }, []);
+
   document.title = `Attendance Report | ${MetaTitle}`;
 
   const { Column, HeaderCell, Cell, ColumnGroup } = Table;
@@ -81,7 +91,6 @@ const AttendanceReport = () => {
         dispatch(setLoaderVisible(false));
       })
       .catch((err) => {
-  
         dispatch(setLoaderVisible(false));
       });
   };
@@ -172,7 +181,7 @@ const AttendanceReport = () => {
       const foundEmployee = employee_data.find(
         (emp) => rowData.employee_id === emp.id
       );
-      const emp_name = foundEmployee ? foundEmployee.fname : "";
+      const emp_name = foundEmployee ? foundEmployee.first_name : "";
       const employee_id = foundEmployee ? foundEmployee.emp_id : "";
 
       // Add headers row
@@ -261,7 +270,6 @@ const AttendanceReport = () => {
               attendance_data.checked_in_hr_in_seconds
           );
 
-       
           // const notes = attendance_data.notes;
 
           // const message = notes && notes.length > 0
@@ -269,8 +277,7 @@ const AttendanceReport = () => {
           //         ? `${notes[0].message} (${notes.length - 1})`
           //         : notes[0].message
           //     : "-";
-          
-  
+
           const entryLogs = attendance_data.entry_log.map((entry) => {
             const entryTime = entry.entry_time;
             const location = entry.location;
@@ -294,7 +301,7 @@ const AttendanceReport = () => {
             statusText,
             entry_status
           ) {
-            let fontColor = "000000"; // Default font color (black)
+            let fontColor = "000000"; // Default font color (#1a1d24)
             let isBold = false;
             // Check cell number and corresponding data to determine font color
             switch (cellNumber) {
@@ -361,7 +368,6 @@ const AttendanceReport = () => {
           row.push(total_hour);
           row.push(editedHours || "-");
           // row.push(message || "-");
-
           // Flag to track if in/out data has been added for the day
           let inOutAdded = false;
 
@@ -527,7 +533,6 @@ const AttendanceReport = () => {
         const year = date.getFullYear();
         return `${month}${year}`;
       });
-
       workbook.xlsx.writeBuffer().then((data) => {
         const blob = new Blob([data], {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -614,11 +619,11 @@ const AttendanceReport = () => {
 
     employeeDatesXls.forEach((date, index) => {
       headers.push("", "", formatDate(date), "");
-      subheaders.push("#", "Check-in", "Check-out", "Duration","Notes");
+      subheaders.push("#", "Check-in", "Check-out", "Duration", "Notes");
     });
 
     headers.push("Total Days", "Present Days");
-    subheaders.push("Total Days", "Present Days")
+    subheaders.push("Total Days", "Present Days");
     const headerRow = sheet.addRow(headers);
     const subheaderRow = sheet.addRow(subheaders);
 
@@ -636,7 +641,7 @@ const AttendanceReport = () => {
       mergedCell.alignment = { horizontal: "center" };
 
       const fillColor = i % 2 === 0 ? "FFFFFF" : "e6f7ff";
-      [0, 1, 2, 3,4].forEach((offset) => {
+      [0, 1, 2, 3, 4].forEach((offset) => {
         const col = startCol + offset;
         sheet.getColumn(col).eachCell({ includeEmpty: true }, (cell) => {
           cell.fill = {
@@ -660,7 +665,7 @@ const AttendanceReport = () => {
       const foundEmployee = employee_data.find(
         (emp) => rowData.employee_id === emp.id
       );
-      const emp_name = foundEmployee ? foundEmployee.fname : "";
+      const emp_name = foundEmployee ? foundEmployee.first_name : "";
       row.push(emp_name);
       row.push(foundEmployee ? foundEmployee.email : "");
 
@@ -684,10 +689,11 @@ const AttendanceReport = () => {
         row.push(attend_data);
         const notes = attendance_data.notes;
 
-        const message = notes && notes.length > 0
+        const message =
+          notes && notes.length > 0
             ? notes.length > 1
-                ? `${notes[0].message} (${notes.length - 1})`
-                : notes[0].message
+              ? `${notes[0].message} (${notes.length - 1})`
+              : notes[0].message
             : "-";
 
         if (attendance_data) {
@@ -717,7 +723,7 @@ const AttendanceReport = () => {
           row.push(duration);
           row.push(message);
         } else {
-          row.push("", "", "", "","");
+          row.push("", "", "", "", "");
         }
       });
 
@@ -1035,7 +1041,7 @@ const AttendanceReport = () => {
             <Link to="#" className="link-body-emphasis mb-0">
               {" "}
               <h5 className="fs-14 mb-1" style={{ textAlign: "left" }}>
-                {emp_name.fname}
+                {emp_name.first_name}
               </h5>
             </Link>
           </div>
@@ -1056,10 +1062,10 @@ const AttendanceReport = () => {
               background: "#0ab39c",
             }}
             data-bs-toggle="tooltip"
-            title={emp_name.fname}
+            title={emp_name.first_name}
           >
             <span className="first_letter" style={{ color: "white" }}>
-              {emp_name.fname.charAt(0)}
+              {emp_name?.first_name?.charAt(0) || ""}
             </span>
           </div>
         </div>
@@ -1068,7 +1074,7 @@ const AttendanceReport = () => {
             <Link to="#" className="link-body-emphasis mb-0">
               {" "}
               <h5 className="fs-14 mb-1" style={{ textAlign: "left" }}>
-                {emp_name.fname}
+                {emp_name.first_name}
               </h5>
             </Link>
           </div>
@@ -1082,7 +1088,19 @@ const AttendanceReport = () => {
       <Cell
         {...props}
         dataKey="id"
-        style={{ backgroundColor: index % 2 === 0 ? "white" : "#e6f7ff" }}
+        style={{
+          backgroundColor:
+            index % 2 === 0
+              ? layoutModeType === "dark"
+                ? "#1a1a1a"
+                : "white"
+              : layoutModeType === "dark"
+              ? "#242933"
+              : "#e6f7ff",
+              alignItems: "flex-start",
+              justifyContent: "flex-start",
+              paddingRight: "10px",
+        }}
       >
         {html_tag}
       </Cell>
@@ -1177,57 +1195,63 @@ const AttendanceReport = () => {
     };
 
     employeeDates.forEach((date, index) => {
+      const isEven = index % 2 === 0;
+      const isDarkMode = layoutModeType === "dark";
+      const isLightMode = layoutModeType === "light";
+
+      const bgColor = isEven
+        ? isLightMode
+          ? "white"
+          : "#1a1d24"
+        : isDarkMode
+        ? "#242933"
+        : "#e6f7ff";
+
       const dynamicColumn = (
         <ColumnGroup
+       
           key={`date_${date}`}
           align="center"
           header={
             <span style={{ fontWeight: "bold" }}>{formatDate(date)}</span>
           }
         >
-          <Column
-            width={100}
-            className="lc_attendance_style"
-            align="center"
-            style={{ backgroundColor: index % 2 === 0 ? "white" : "#e6f7ff" }}
-          >
-            <HeaderCell className="lc_column" style={{ fontWeight: "bold" }}>Attendance</HeaderCell>
-            <AttendanceData date={date} />
+          <Column width={100} align="center">
+            <HeaderCell style={{ fontWeight: "bold",  backgroundColor: bgColor, }}>
+              Attendance
+            </HeaderCell>
+            <AttendanceData date={date} style={{ backgroundColor: bgColor }} />
           </Column>
 
-          <Column
-            width={80}
-            align="center"
-            title="In"
-            style={{ backgroundColor: index % 2 === 0 ? "white" : "	#e6f7ff" }}
-          >
-            <HeaderCell style={{ fontWeight: "bold" }}>In/Out</HeaderCell>
-            <InOut date={date} />
+          <Column width={80} align="center" title="In">
+            <HeaderCell style={{ fontWeight: "bold", background: bgColor }}>
+              In/Out
+            </HeaderCell>
+            <InOut date={date} style={{ backgroundColor: bgColor }} />
           </Column>
-          <Column
-            width={80}
-            align="center"
-            title="In"
-            style={{ backgroundColor: index % 2 === 0 ? "white" : "	#e6f7ff" }}
-          >
-            <HeaderCell style={{ fontWeight: "bold" }}>Duration</HeaderCell>
-            <DurationData date={date} />
+
+          <Column width={80} align="center" title="In">
+            <HeaderCell style={{ fontWeight: "bold", background: bgColor }}>
+              Duration
+            </HeaderCell>
+            <DurationData date={date} style={{ backgroundColor: bgColor }} />
           </Column>
         </ColumnGroup>
       );
-
       allDynamicColumns.push(dynamicColumn);
     });
 
     return allDynamicColumns;
   };
 
+  const isDarkMode = layoutModeType === "dark";
+  const headerBgColor = isDarkMode ? "#1a1d24" : "white";
+
   const additionalColumns = [
-    <Column width={130} align="center">
+    <Column width={130} align="center" key="total-days">
       <HeaderCell
         style={{
-          background: "#e6f7ff",
-
+          background: headerBgColor,
           borderRadius: "1px",
           padding: "18px",
           fontWeight: "bold",
@@ -1235,13 +1259,16 @@ const AttendanceReport = () => {
       >
         Total Days
       </HeaderCell>
-      <Cell dataKey="total_working_days_count" fullText />
+      <Cell
+        dataKey="total_working_days_count"
+        fullText
+        style={{ background: headerBgColor, }}
+      />
     </Column>,
-    <Column width={130} align="center">
+    <Column width={130} align="center" key="present-days">
       <HeaderCell
         style={{
-          background: "#e6f7ff",
-
+          background: headerBgColor,
           borderRadius: "1px",
           padding: "18px",
           fontWeight: "bold",
@@ -1249,13 +1276,15 @@ const AttendanceReport = () => {
       >
         Present Days
       </HeaderCell>
-      <Cell dataKey="total_present_days_count" fullText />
+      <Cell
+        dataKey="total_present_days_count"
+        fullText
+        style={{ background: headerBgColor, }}
+      />
     </Column>,
-    <Column width={80} fixed="right">
+    <Column width={80} fixed="right" key="down-column">
       <HeaderCell
         style={{
-          background: "#e6f7ff",
-
           borderRadius: "1px",
           padding: "18px",
           fontWeight: "bold",
@@ -1263,12 +1292,14 @@ const AttendanceReport = () => {
       >
         Down
       </HeaderCell>
-      <EditableCell />
+      <EditableCell  style={{ backgroundColor: headerBgColor }}/>
     </Column>,
   ];
 
   const allColumns = [...dynamicColumns(), ...additionalColumns];
 
+  const isDarkTheme = layoutModeType === "dark";
+  const headerColor = isDarkTheme ? "#242933" : "#e6f7ff";
   return (
     <React.Fragment>
       <div className="page-content">
@@ -1348,6 +1379,7 @@ const AttendanceReport = () => {
             </CardHeader>
           </Card>
         </Container>
+
         <Table
           bordered
           cellBordered
@@ -1360,10 +1392,12 @@ const AttendanceReport = () => {
           className="mb-5"
           affixHorizontalScrollbar
         >
+          
           <Column width={250} fixed="left" align="center">
+          
             <HeaderCell
               style={{
-                background: "#e6f7ff",
+                background: headerColor,
                 borderRadius: "1px",
                 padding: "18px",
                 fontWeight: "bold",

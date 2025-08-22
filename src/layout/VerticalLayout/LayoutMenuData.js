@@ -11,6 +11,7 @@ const Navdata = () => {
   const [isPages, setIsPages] = useState(false);
   const [isBaseUi, setIsBaseUi] = useState(false);
   const [isAttendance, setIsAttendance] = useState(false);
+  const [isControlPanel, setIsControlPanel] = useState(false);
   const [isAdvanceUi, setIsAdvanceUi] = useState(false);
   const [isForms, setIsForms] = useState(false);
   const [isTables, setIsTables] = useState(false);
@@ -18,6 +19,7 @@ const Navdata = () => {
   const [isIcons, setIsIcons] = useState(false);
   const [isMaps, setIsMaps] = useState(false);
   const [isMultiLevel, setIsMultiLevel] = useState(false);
+  const [isContact, setIsContact] = useState(false);
 
   // Apps
   const [isEmail, setEmail] = useState(false);
@@ -89,8 +91,8 @@ const Navdata = () => {
     if (iscurrentState !== "BaseUi") {
       setIsBaseUi(false);
     }
-    if (iscurrentState !== "Attendance") {
-      setIsAttendance(false);
+    if (iscurrentState !== "Control Panel") {
+      setIsControlPanel(false);
     }
     if (iscurrentState !== "AdvanceUi") {
       setIsAdvanceUi(false);
@@ -119,6 +121,9 @@ const Navdata = () => {
     }
     if (iscurrentState !== "Landing") {
       setIsLanding(false);
+    }
+    if (iscurrentState !== "Contact") {
+      setIsContact(false);
     }
   }, [
     history,
@@ -291,7 +296,74 @@ const Navdata = () => {
           updateIconSidebar(e);
         },
       },
+      {
+        label: "Task",
+        isHeader: true,
+      },
+      {
+        id: "control-panel",
+        label: "Control Panel",
+        icon: " ri-list-settings-line",
+        perm: "all",
+        link: "/#",
+        click: function (e) {
+          e.preventDefault();
+          setIsControlPanel(!isControlPanel);
+          setIscurrentState("Control Panel");
+          updateIconSidebar(e);
+        },
+        stateVariables: isControlPanel,
+        subItems: [
+          {
+            id: "status",
+            label: "Status",
+            link: "/status",
+            parentId: "baseUi",
+            perm: "all",
+          },
+          {
+            id: "piriorities",
+            label: "Piriorities",
+            link: "/piriorities",
+            parentId: "baseUi",
+            perm: "all",
+          },
+        ],
+      },
+      {
+        id: "contact",
+        label: "Contact",
+        icon: "  ri-contacts-book-line",
+        perm: "all",
+        link: "/#",
+        click: function (e) {
+          e.preventDefault();
+          setIsContact(!isContact);
+          setIscurrentState("Contact");
+          updateIconSidebar(e);
+        },
+        stateVariables: isContact,
+        subItems: [
+          {
+            id: "contact-group",
+            label: "Contact Group",
+            link: "/contact-group",
+            parentId: "baseUi",
+            perm: "all",
+          },
+          {
+            id: "contacts",
+            label: "Contacts",
+            link: "/contacts",
+            parentId: "baseUi",
+            perm: "all",
+          },
+        ],
+      },
+      
+      
     ]
+    
 
 
     if (!!profile_data && !!profile_data.is_admin && profile_data?.is_admin === true) {

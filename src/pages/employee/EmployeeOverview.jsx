@@ -29,6 +29,8 @@ import SimpleBar from "simplebar-react";
 const EmployeeOverview = (props) => {
   SwiperCore.use([Autoplay]);
   const { profileObj } = props;
+  console.log("profileObj === ", profileObj);
+  
 
   const DepartmentData = GetLocalStorageData("department") || [];
   const RoleData = GetLocalStorageData("role") || [];
@@ -75,7 +77,7 @@ const EmployeeOverview = (props) => {
                         </th>
                         <td className="text-muted">
                           {" "}
-                          {profileObj?.fname} {profileObj?.lname}
+                          {profileObj?.first_name} {profileObj?.last_name}
                         </td>
                       </tr>
                       <tr>
@@ -146,10 +148,10 @@ const EmployeeOverview = (props) => {
                           Role :
                         </th>
                         <td className="text-muted">
-                          {profileObj?.role_id
+                          {profileObj?.role?.id
                             ? RoleData.length
                               ? RoleData.find(
-                                  (d) => d.id === profileObj?.role_id
+                                  (d) => d.id === profileObj?.role?.id
                                 )?.name
                               : ""
                             : ""}
@@ -455,9 +457,9 @@ const EmployeeOverview = (props) => {
                     <div className="flex-grow-1 overflow-hidden">
                       <p className="mb-1">Designation :</p>
                       <h6 className="text-truncate mb-0">
-                        {profileObj?.role_id
+                        {profileObj?.role?.id
                           ? RoleData.length
-                            ? RoleData.find((d) => d.id === profileObj?.role_id)
+                            ? RoleData.find((d) => d.id === profileObj?.role?.id)
                                 ?.name
                             : ""
                           : ""}{" "}

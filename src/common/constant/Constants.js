@@ -1891,6 +1891,10 @@ export const location_edit_form_component_name = "location_edit_form";
 export const attendance_pending_table = "attendance_pending_table";
 export const leave_pending_table = "leave_pending_table";
 export const branch_location_form = "BranchLocationForm";
+export const status_component_name = "Status";
+export const piriorities_component_name = "Piriority";
+export const contact_group_component_name = "Contact Group";
+export const contacts_component_name = "Contacts";
 
 export const component_list_for_import_btn_access = [
   department_component_name,
@@ -2176,4 +2180,18 @@ export const employeeTypeOptions = [
 export const attendanceStasticsOptions = [
   { id: 0, label: "All", value: "All" },
   { id: 1, label: "My Team", value: "My Team" },
+];
+
+export const behaviorTypeOptions = [
+  { id: "0", label: "Pending", value: 1 },
+  { id: "1", label: "Complete", value: 2 },
+  { id: "2", label: "Reopen", value: 3 },
+];
+
+export const phoneTypes = [
+  {id:"0", value: 1, label: "Work" },
+  {id:"1,",value: 2, label: "Mobile" },
+  {id:"2", value: 3, label: "Home" },
+  {id:"3", value: 4, label: "Whatsapp" },
+  {id:"4", value: 5, label: "Others" },
 ];

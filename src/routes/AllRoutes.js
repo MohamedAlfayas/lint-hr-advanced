@@ -12,6 +12,10 @@ import {
   VIEW_ALL_ATTENDANCE_ACCESS_KEY,
   CUSTOM_FIELD_VIEW_ACCESS_KEY
 } from "../common/constant/RoleConstants";
+import Status from "../pages/Task/Status/Status";
+import Piriorities from "../pages/Task/Piriorities/Piriorities";
+import ContactGroup from "../pages/Contact/ContactGroup/ContactGroup";
+import Contacts from "../pages/Contact/Contacts/Contacts";
 
 // import Dashboard from "../pages/dashboard/Dashboard";
 // import Login from "../pages/auth/login/Login";
@@ -145,6 +149,10 @@ const privateRoutes = [
     component: <Navigate to="/dashboard" />,
     perm: "all",
   },
+  { path: "/status", component: <Status />, perm: "all" },
+  { path: "/piriorities", component: <Piriorities />, perm: "all" },
+  { path: "/contact-group", component: <ContactGroup />, perm: "all" },
+  { path: "/contacts", component: <Contacts />, perm: "all" },
 ];
 
 const publicRoutes = [

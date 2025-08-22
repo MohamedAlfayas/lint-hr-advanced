@@ -202,6 +202,7 @@ const AttendanceEmployeeTable = () => {
               className="link-opacity-75 ms-1"
               href="#"
               onClick={() => {
+                console.log("ROW DATA ENTRY LOG - ",rowData?.entry_log)
                 setTimelineList(rowData?.entry_log);
                 setTimeLineDate(
                   format(new Date(rowData?.date), "dd MMM, yyyy")
@@ -1327,13 +1328,13 @@ const AttendanceEmployeeTable = () => {
                               objectFit: "cover",
                             }}
                             data-bs-toggle="tooltip"
-                            title={emp_details.fname}
+                            title={emp_details.first_name}
                           >
                             <span
                               className="first_letter"
                               style={{ color: "white" }}
                             >
-                              {emp_details.fname.charAt(0)}
+                              {emp_details?.first_name?.charAt(0) || ""}
                             </span>
                           </div>
                         )}
@@ -1341,7 +1342,7 @@ const AttendanceEmployeeTable = () => {
 
                       <div className="flex-grow-1 ms-3">
                         <h5 className="fs-13">
-                          {emp_details.fname}{" "}
+                          {emp_details.first_name}{" "}
                           <small className="text-muted ms-2">
                             {/* 20 Dec 2021 - 05:47AM */}
                             {GetAmPmDateTime(d?.created_time)}

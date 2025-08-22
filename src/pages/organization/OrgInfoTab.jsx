@@ -120,11 +120,15 @@ const OrgInfoTab = () => {
       pincode: "",
       country: "",
       state: "",
+      show_attendance_timer: true,
       cf_values: CustomFieldsForThisForm || [],
     };
   }, []);
 
   const [profileData, setProfileData] = useState(initialData);
+
+  console.log("Profile Data = ", profileData);
+  
   const [showUpdateBtn, setShowUpdateBtn] = useState(false);
 
   useEffect(() => {
@@ -815,12 +819,38 @@ const OrgInfoTab = () => {
                           </div>
                         </div>
                       </Col>
+                      {/* <Col xxl={8} md={6}>
+                                          <div>
+                                            <Label htmlFor="show_attendance_timer" className="form-label">
+                                            Attendance Web Check In Enable
+                                            </Label>
+                                            <div className="mb-2">
+                                              <div
+                                                className="form-check form-switch form-switch-md form-switch-success"
+                                                dir="ltr"
+                                              >
+                                                <Input
+                                                  type="checkbox"
+                                                  className="form-check-input form-switch-md"
+                                                  id="show_attendance_timer"
+                                                  checked={profileData.show_attendance_timer}
+                                                  onChange={(e) => 
+                                                    setProfileData({
+                                                      ...profileData,
+                                                      show_attendance_timer: e.target.checked,
+                                                    })
+                                                  }
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </Col> */}
 
                       {profileData.cf_values && profileData.cf_values.length
                         ? profileData.cf_values.map((obj) => (
                             <Col xxl={8} md={6}>
                               <div>
-                                <Label htmlFor="lname" className="form-label">
+                                <Label htmlFor="last_name" className="form-label">
                                   {obj.name}
                                 </Label>
                                 {form_default_input_types.includes(

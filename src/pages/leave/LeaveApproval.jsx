@@ -106,7 +106,7 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
               />
             </div>
             <div className="flex-grow-1">
-              <div>{thisEmployee.fname}</div>
+              <div>{thisEmployee.first_name}</div>
               <div>{thisEmployee.email}</div>
             </div>
           </div>
@@ -122,15 +122,15 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
                   background: "#0ab39c",
                 }}
                 data-bs-toggle="tooltip"
-                title={thisEmployee.fname}
+                title={thisEmployee.first_name}
               >
                 <span className="first_letter" style={{ color: "white" }}>
-                  {thisEmployee.fname.charAt(0)}
+                  {thisEmployee.first_name.charAt(0)}
                 </span>
               </div>
             </div>
             <div className="flex-grow-1">
-              <div>{thisEmployee.fname}</div>
+              <div>{thisEmployee.first_name}</div>
               <div>{thisEmployee.email}</div>
             </div>
           </div>

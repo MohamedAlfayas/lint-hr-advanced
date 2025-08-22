@@ -30,6 +30,10 @@ import AccountSettingsReducer from "../ChildReducer/AccountSettingsReducer";
 import DashboardAttendanceStasticsReducer from "../ChildReducer/DashboardAttendanceStasticsReducer";
 import ApprovalFilterReducer from "../ChildReducer/AprrovalFilterReducer";
 import ApprovalComponentReducer from "../ChildReducer/ApprovalComponentReducer";
+import StatusReducer from "../ChildReducer/StatusReducer";
+import PirioritiesReducer from "../ChildReducer/PirioritiesReducer";
+import ContactGroupReducer from "../ChildReducer/ContactGroupReducer";
+import ContactsReducer from "../ChildReducer/ContactsReducer";
 
 export const MainReducer = combineReducers({
   MetaReducer: MetaReducer,
@@ -63,4 +67,8 @@ export const MainReducer = combineReducers({
   DashboardAttendanceStasticsReducer: DashboardAttendanceStasticsReducer,
   ApprovalFilterReducer: ApprovalFilterReducer,
   ApprovalComponentReducer: ApprovalComponentReducer,
+  StatusReducer: StatusReducer,
+  PirioritiesReducer: PirioritiesReducer,
+  ContactGroupReducer: ContactGroupReducer,
+  ContactsReducer: ContactsReducer,
 });

@@ -2,6 +2,11 @@
   text-align: left;
 }
 
+body .rs-table-row-header .rs-table-cell {
+  background-color: unset !important;
+}
+
+
 .label-lc {
   font-size: 14px;
   margin-bottom: 5px;
@@ -98,4 +103,48 @@
 .lc-color{
   background-color: yellowgreen;
 
+}
+.lc-icon-hover {
+  padding: 2px;
+  /* border-radius: 50%; */
+  transition: background-color 0.3s ease;
+}
+
+.lc-icon-hover:hover {
+  background-color: #0AB39C; 
+}
+.table-lc-import-xl {
+  width: auto; 
+  border-collapse: collapse;
+  margin-top: 10px;
+  background-color: white;
+  
+}
+
+.table-lc-import-xl th, 
+.table-lc-import-xl td {
+  border: 1px solid #ddd;
+  padding: 8px; 
+  text-align: left;
+  font-size: 14px;
+  white-space: nowrap; 
+}
+
+.table-lc-import-xl th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.table-lc-import-xl tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.table-lc-import-xl tbody tr:hover {
+  background-color: #f1f1f1;
+}
+
+.table-container {
+  max-width: 100%;
+  overflow-x: auto; 
 }

@@ -41,6 +41,7 @@ import AuthLoader from "../loader/AuthLoader";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
 import { generateToken, messaging } from "../../../firebase";
 import { deleteToken } from "firebase/messaging";
+import { setShowAttendanceTimer } from "../../../redux/reducers/ChildReducer/ClockReducer";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -98,14 +99,18 @@ const Login = () => {
             await deleteToken(messaging);
           } catch (deleteError) {}
 
+          let res_data = res?.data;
+          let profile_data = res_data?.profile_data;
+
           try {
+
             const newFCMToken = await generateToken();
 
             axios({
               method: "POST",
               url: subscribe_topic_url,
               headers: {
-                Authorization: `Bearer ${res?.data?.token?.access}`,
+                Authorization: `Bearer ${res_data?.token?.access}`,
               },
               data: {
                 fcm_token: newFCMToken,
@@ -120,15 +125,15 @@ const Login = () => {
 
           localStorage.setItem(
             "lint_hr_globaldata",
-            JSON.stringify(res?.data?.meta_data)
+            JSON.stringify(res_data?.meta_data)
           );
           localStorage.setItem(
             "lint_hr_token",
-            JSON.stringify(res?.data?.token)
+            JSON.stringify(res_data?.token)
           );
           localStorage.setItem(
             "lint_hr_profile_data",
-            JSON.stringify(res?.data?.profile_data)
+            JSON.stringify(profile_data)
           );
           localStorage.setItem(
             "user_perm_list",
@@ -139,7 +144,8 @@ const Login = () => {
               "custom_field",
             ])
           );
-          dispatch(setMyProfileDataReducer(res?.data?.profile_data));
+          dispatch(setMyProfileDataReducer(profile_data));
+          dispatch(setShowAttendanceTimer(profile_data?.can_web_checkin));
           // localStorage.setItem(
           //   "left_side_bar_type",
           //   leftsidbarSizeTypes.DEFAULT

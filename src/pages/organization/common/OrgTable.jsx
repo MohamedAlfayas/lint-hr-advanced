@@ -24,9 +24,9 @@ const OrgTable = ({ departmentId }) => {
   const columns = [
     {
       Header: "Name",
-      accessor: "fname",
+      accessor: "first_name",
       filterable: false,
-      id: "fname",
+      id: "first_name",
       accessor: (obj) => {
         return obj.profile_url ? (
           <div className="d-flex gap-2 align-items-center">
@@ -46,7 +46,7 @@ const OrgTable = ({ departmentId }) => {
                   className="link-body-emphasis mb-0"
                 >
                   {" "}
-                  <h5 className="fs-14 mb-1 text text-start">{obj.fname}</h5>
+                  <h5 className="fs-14 mb-1 text text-start">{obj.first_name}</h5>
                 </Link>
               </div>
               <div className="text-start">{obj.email}</div>
@@ -64,10 +64,10 @@ const OrgTable = ({ departmentId }) => {
                   background: "#0ab39c",
                 }}
                 data-bs-toggle="tooltip"
-                title={obj.fname}
+                title={obj.first_name}
               >
                 <span className="first_letter" style={{ color: "white" }}>
-                  {obj.fname.charAt(0)}
+                  {obj.first_name.charAt(0)}
                 </span>
               </div>
             </div>
@@ -79,7 +79,7 @@ const OrgTable = ({ departmentId }) => {
                   className="link-body-emphasis mb-0"
                 >
                   {" "}
-                  <h5 className="fs-14 mb-1 text text-start">{obj.fname}</h5>
+                  <h5 className="fs-14 mb-1 text text-start">{obj.first_name}</h5>
                 </Link>
               </div>
               <div className="text-start">{obj.email}</div>
@@ -219,7 +219,7 @@ const OrgTable = ({ departmentId }) => {
                 <div>
                   <Link to="#" className="link-body-emphasis mb-0">
                     {" "}
-                    <h5 className="fs-14 mb-1 text-start">{rm_obj.fname}</h5>
+                    <h5 className="fs-14 mb-1 text-start">{rm_obj.first_name}</h5>
                   </Link>
                 </div>
                 <div className="text-start">{rm_obj.email}</div>
@@ -237,10 +237,10 @@ const OrgTable = ({ departmentId }) => {
                     background: "#0ab39c",
                   }}
                   data-bs-toggle="tooltip"
-                  title={rm_obj.fname}
+                  title={rm_obj.first_name}
                 >
                   <span className="first_letter" style={{ color: "white" }}>
-                    {rm_obj.fname.charAt(0)}
+                    {rm_obj.first_name.charAt(0)}
                   </span>
                 </div>
               </div>
@@ -248,7 +248,7 @@ const OrgTable = ({ departmentId }) => {
                 <div>
                   <Link to="#" className="link-body-emphasis mb-0">
                     {" "}
-                    <h5 className="fs-14 mb-1 text-start">{rm_obj.fname}</h5>
+                    <h5 className="fs-14 mb-1 text-start">{rm_obj.first_name}</h5>
                   </Link>
                 </div>
                 <div className="text-start">{rm_obj.email}</div>

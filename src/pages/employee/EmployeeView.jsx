@@ -182,12 +182,12 @@ const EmployeeView = () => {
               <Col>
                 <div className="p-2">
                   <h3 className="text-white mb-1">
-                    {profileObj?.fname} {profileObj?.lname}
+                    {profileObj?.first_name} {profileObj?.last_name}
                   </h3>
                   <p className="text-white text-opacity-75">
-                    {profileObj?.role_id
+                    {profileObj?.role?.id
                       ? RoleData.length
-                        ? RoleData.find((d) => d.id === profileObj?.role_id)
+                        ? RoleData.find((d) => d.id === profileObj?.role?.id)
                             ?.name
                         : ""
                       : ""}{" "}

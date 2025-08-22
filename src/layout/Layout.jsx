@@ -178,7 +178,7 @@ const Layout = ({ children }) => {
 
   return (
     <React.Fragment>
-      <div id="layout-wrapper">
+      <div id="layout-wrapper" className={`rs-theme-${layoutModeType}`}>
         <Header
           headerClass={headerClass}
           layoutModeType={layoutModeType}

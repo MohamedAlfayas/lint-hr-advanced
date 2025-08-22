@@ -132,7 +132,7 @@ const DepartmentsTab = () => {
                                       className="avatar-xs rounded-circle acitivity-avatar"
                                       style={{ objectFit: "cover" }}
                                       data-bs-toggle="tooltip"
-                                      title={item.fname}
+                                      title={item.first_name}
                                     />
                                   </div>
                                 </div>
@@ -152,13 +152,13 @@ const DepartmentsTab = () => {
                                         background: "#0ab39c",
                                       }}
                                       data-bs-toggle="tooltip"
-                                      title={item.fname}
+                                      title={item.first_name}
                                     >
                                       <span
                                         className="first_letter"
                                         style={{ color: "white" }}
                                       >
-                                        {item.fname.charAt(0)}
+                                        {item?.first_name?.charAt(0) || "?"}
                                       </span>
                                     </div>
                                   </div>

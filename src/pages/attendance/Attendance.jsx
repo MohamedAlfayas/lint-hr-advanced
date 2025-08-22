@@ -42,6 +42,9 @@ const AttendanceDashboard = () => {
   const { showTeamTable } = useSelector(
     (state) => state.AttendanceReportReducer
   );
+  const { show_attendance_timer } = useSelector(
+    (state) => state.ClockReducer
+  );
 
   const department_data = GetLocalStorageData("department");
 
@@ -122,16 +125,16 @@ const AttendanceDashboard = () => {
           {/* Filter Card End */}
 
           <Row className="project-wrapper">
-            {!showTeamTable && (
+            {!showTeamTable &&  show_attendance_timer && (
               <Col xxl={3} xl={3} sm={3}>
                 <TimeTracking hideTimer={hideTimer} />
               </Col>
             )}
-            {!showTeamTable && (
-              <Col xxl={9} xl={9} sm={9}>
-                <AttendanceOverview />
-              </Col>
-            )}
+           {!showTeamTable && (
+  <Col xxl={show_attendance_timer ? 9 : 12} xl={show_attendance_timer ? 9 : 12} sm={show_attendance_timer ? 9 : 12}>
+    <AttendanceOverview />
+  </Col>
+)}
             {!showTeamTable && (
               <Col xxl={12}>
                 <AttendanceEmployeeTable />

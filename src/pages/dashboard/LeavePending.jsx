@@ -98,51 +98,79 @@ const LeaveApprovalPending = ({ onDataLengthChange }) => {
       filterable: false,
       id: "employee_id",
 
-      accessor: (obj) => {
-        const EmployeeData = GetLocalStorageData("employee") || [];
-        const thisEmployee = EmployeeData.find(
-          (data) => data.id === obj.employee_id
-        );
-        return thisEmployee.profile_url ? (
-          <div className="d-flex gap-2 align-items-center">
-            <div className="flex-shrink-0">
-              <img
-                src={thisEmployee.profile_url}
-                alt=""
-                className="avatar-xs rounded-circle"
-              />
-            </div>
-            <div className="flex-grow-1">
-              <div>{thisEmployee.fname}</div>
-              <div>{thisEmployee.email}</div>
-            </div>
+     accessor: (obj) => {
+  const EmployeeData = GetLocalStorageData("employee") || [];
+  const thisEmployee = EmployeeData.find(
+    (data) => data.id === obj.employee_id
+  );
+
+  if (!thisEmployee) {
+    return (
+      <div className="d-flex gap-2 align-items-center">
+        <div className="flex-shrink-0">
+          <div
+            className="avatar-xs rounded-circle"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              background: "#6c757d",
+            }}
+          >
+            <span className="first_letter" style={{ color: "white" }}>
+              ?
+            </span>
           </div>
-        ) : (
-          <div className="d-flex gap-2 align-items-center">
-            <div className="flex-shrink-0">
-              <div
-                className="avatar-xs rounded-circle"
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  background: "#0ab39c",
-                }}
-                data-bs-toggle="tooltip"
-                title={thisEmployee.fname}
-              >
-                <span className="first_letter" style={{ color: "white" }}>
-                  {thisEmployee.fname.charAt(0)}
-                </span>
-              </div>
-            </div>
-            <div className="flex-grow-1">
-              <div>{thisEmployee.fname}</div>
-              <div>{thisEmployee.email}</div>
-            </div>
-          </div>
-        );
-      },
+        </div>
+        <div className="flex-grow-1">
+          <div>Unknown</div>
+          <div>-</div>
+        </div>
+      </div>
+    );
+  }
+
+  return thisEmployee.profile_url ? (
+    <div className="d-flex gap-2 align-items-center">
+      <div className="flex-shrink-0">
+        <img
+          src={thisEmployee.profile_url}
+          alt=""
+          className="avatar-xs rounded-circle"
+        />
+      </div>
+      <div className="flex-grow-1">
+        <div>{thisEmployee.first_name}</div>
+        <div>{thisEmployee.email}</div>
+      </div>
+    </div>
+  ) : (
+    <div className="d-flex gap-2 align-items-center">
+      <div className="flex-shrink-0">
+        <div
+          className="avatar-xs rounded-circle"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            background: "#0ab39c",
+          }}
+          data-bs-toggle="tooltip"
+          title={thisEmployee.first_name}
+        >
+          <span className="first_letter" style={{ color: "white" }}>
+            {thisEmployee.first_name?.charAt(0) || ""}
+          </span>
+        </div>
+      </div>
+      <div className="flex-grow-1">
+        <div>{thisEmployee.first_name}</div>
+        <div>{thisEmployee.email}</div>
+      </div>
+    </div>
+  );
+}
+,
     },
 
     {

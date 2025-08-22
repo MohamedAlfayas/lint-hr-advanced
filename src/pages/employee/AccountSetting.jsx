@@ -363,8 +363,8 @@ const AccountSettings = () => {
     enableReinitialize: true,
     initialValues: employeeObj,
     validationSchema: Yup.object({
-      fname: Yup.string().trim().required("Please Enter First Name"),
-      lname: Yup.string().trim().required("Please Enter Last Name"),
+      first_name: Yup.string().trim().required("Please Enter First Name"),
+      last_name: Yup.string().trim().required("Please Enter Last Name"),
       gender: Yup.number()
         .required("Select Gender")
         .min(1, "Please Select Gender"),
@@ -519,12 +519,12 @@ const AccountSettings = () => {
                         </Label>
                       </div>
                     </div>
-                    <h5 className="fs-16 mb-1">{employeeObj.fname}</h5>
+                    <h5 className="fs-16 mb-1">{employeeObj.first_name}</h5>
                     <p className="text-muted mb-0">
-                      {employeeObj?.role_id
+                      {employeeObj?.role?.id
                         ? role_id_option.length
                           ? role_id_option.find(
-                              (d) => d.id === employeeObj?.role_id
+                              (d) => d.id === employeeObj?.role?.id
                             )?.name
                           : ""
                         : ""}
@@ -707,37 +707,37 @@ const AccountSettings = () => {
                         <Row>
                           <Col xxl={6} sm={6} lg={6}>
                             <div>
-                              <Label htmlFor="fname" className="form-label">
+                              <Label htmlFor="first_name" className="form-label">
                                 First Name
                               </Label>
                               <div className="form-icon right">
                                 <Input
                                   type="text"
-                                  name="fname"
-                                  id="fname"
+                                  name="first_name"
+                                  id="first_name"
                                   className="form-control"
                                   placeholder="Elon"
-                                  value={employeeObj.fname || ""}
+                                  value={employeeObj.first_name || ""}
                                   onChange={handleInputChange}
                                   invalid={
-                                    FormikForm.touched.fname &&
-                                    FormikForm.errors.fname
+                                    FormikForm.touched.first_name &&
+                                    FormikForm.errors.first_name
                                       ? true
                                       : false
                                   }
                                 />
-                                {!FormikForm.touched.fname &&
-                                  !FormikForm.errors.fname && (
+                                {!FormikForm.touched.first_name &&
+                                  !FormikForm.errors.first_name && (
                                     <i className="ri-user-line"></i>
                                   )}
-                                {FormikForm.touched.fname &&
-                                FormikForm.errors.fname ? (
+                                {FormikForm.touched.first_name &&
+                                FormikForm.errors.first_name ? (
                                   <FormFeedback type="invalid">
-                                    {FormikForm.errors.fname}
+                                    {FormikForm.errors.first_name}
                                   </FormFeedback>
                                 ) : null}
                               </div>
-                              {!FormikForm.errors.fname && (
+                              {!FormikForm.errors.first_name && (
                                 <div
                                   id="passwordHelpBlock"
                                   className="form-text mb-3"
@@ -749,37 +749,37 @@ const AccountSettings = () => {
                           </Col>
                           <Col xxl={6} sm={6} lg={6}>
                             <div>
-                              <Label htmlFor="lname" className="form-label">
+                              <Label htmlFor="last_name" className="form-label">
                                 Last Name
                               </Label>
                               <div className="form-icon right">
                                 <Input
                                   type="text"
-                                  name="lname"
-                                  id="lname"
+                                  name="last_name"
+                                  id="last_name"
                                   className="form-control"
                                   placeholder="Musk"
-                                  value={employeeObj.lname || ""}
+                                  value={employeeObj.last_name || ""}
                                   onChange={handleInputChange}
                                   invalid={
-                                    FormikForm.touched.lname &&
-                                    FormikForm.errors.lname
+                                    FormikForm.touched.last_name &&
+                                    FormikForm.errors.last_name
                                       ? true
                                       : false
                                   }
                                 />
-                                {!FormikForm.touched.lname &&
-                                  !FormikForm.errors.lname && (
+                                {!FormikForm.touched.last_name &&
+                                  !FormikForm.errors.last_name && (
                                     <i className="ri-user-2-line"></i>
                                   )}
-                                {FormikForm.touched.lname &&
-                                FormikForm.errors.lname ? (
+                                {FormikForm.touched.last_name &&
+                                FormikForm.errors.last_name ? (
                                   <FormFeedback type="invalid">
-                                    {FormikForm.errors.lname}
+                                    {FormikForm.errors.last_name}
                                   </FormFeedback>
                                 ) : null}
                               </div>
-                              {!FormikForm.errors.lname && (
+                              {!FormikForm.errors.last_name && (
                                 <div
                                   id="passwordHelpBlock"
                                   className="form-text mb-3"
@@ -839,7 +839,7 @@ const AccountSettings = () => {
                                 ) : null}
                                 <i className="ri-user-line"></i>
                               </div>
-                              {!FormikForm.errors.fname && (
+                              {!FormikForm.errors.first_name && (
                                 <div
                                   id="passwordHelpBlock"
                                   className="form-text mb-3"
@@ -1357,9 +1357,9 @@ const AccountSettings = () => {
                                   }),
                                 }}
                                 value={
-                                  (employeeObj.role_id &&
+                                  (employeeObj?.role?.id &&
                                     role_id_option.find(
-                                      (e) => e.id === employeeObj.role_id
+                                      (e) => e.id === employeeObj?.role?.id
                                     )) ||
                                   []
                                 }

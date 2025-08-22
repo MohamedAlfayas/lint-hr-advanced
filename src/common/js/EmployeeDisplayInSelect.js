@@ -75,13 +75,13 @@ export const EmployeeDisplayInSelect = ({ innerProps, label, data }) => (
               marginLeft: "5px",
             }}
             data-bs-toggle="tooltip"
-            title={data.fname}
+            title={data.first_name}
           >
             <span
               className="first_letter"
               style={{ color: "white", fontWeight: "bold" }}
             >
-              {data.fname.charAt(0)}
+              {data.first_name.charAt(0)}
             </span>
           </div>
         )}

@@ -40,6 +40,93 @@ const Employee = () => {
   const { version } = useSelector((state) => state.MetaReducer);
 
   const EmployeeData = GetLocalStorageData("employee") || [];
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [progressMap, setProgressMap] = useState({});
+  console.log(progressMap, "progressMap");
+  console.log(attendanceData, "attendanceData");
+  
+  const dummyDataArray = [
+    {
+      is_holiday: true,
+      is_present: true,
+      is_week_off: false,
+      is_leave_approved: false,
+      total_work_duration: 28800,
+      current_working_duration: 12000,
+    },
+    {
+      is_holiday: false,
+      is_present: true,
+      is_week_off: false,
+      is_leave_approved: false,
+      total_work_duration: 28800,
+      current_working_duration: 20000,
+    },
+    {
+      is_holiday: false,
+      is_present: false,
+      is_week_off: false,
+      is_leave_approved: false,
+      total_work_duration: 28800,
+      current_working_duration: 5000,
+    },
+  ];
+  const getProgressMap = (dataArray) => {
+    const map = {};
+    dataArray.forEach((entry) => {
+      const {
+        employee_id,
+        current_working_duration,
+        total_working_duration,
+        is_present,
+      } = entry;
+  
+      if (is_present) {
+        console.log(is_present, "is_present");
+        
+        const percentage = Math.round(
+          (current_working_duration / total_working_duration) * 100
+        );
+        map[employee_id] = Math.min(percentage, 100);
+      }
+      // If is_present is false, do not add to map at all
+    });
+    return map;
+  };
+  
+
+  const dummyData = {
+    is_holiday: true,
+    is_present: true,
+    is_week_off: false,
+    is_leave_approved: false,
+    total_work_duration: 28800,
+    current_working_duration: 12000,
+  };
+
+  const getProgressPercentage = () => {
+    const { current_working_duration, total_work_duration } = dummyData;
+    console.log(current_working_duration,"jhkjh");
+    
+
+    if (!dummyData.is_present) return 0;
+
+    const percentage = Math.round(
+      (current_working_duration / total_work_duration) * 100
+    );
+    return Math.min(percentage, 100); // cap at 100%
+  };
+
+  const formatSecondsToTime = (seconds) => {
+    const h = Math.floor(seconds / 3600)
+      .toString()
+      .padStart(2, "0");
+    const m = Math.floor((seconds % 3600) / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${h}:${m}:${s}`;
+  };
 
   useEffect(() => {
     dispatch(setEmployee(EmployeeData));
@@ -72,6 +159,26 @@ const Employee = () => {
     dispatch(resetEmployeeTableFilterKeys());
   }, []);
 
+  // useEffect(() => {
+  //   dispatch(setLoaderVisible(true));
+  //   Api({
+  //     method: "GET",
+  //     url: "attendance/get_employee_current_attendance_data/",
+  //   })
+  //     .then((res) => {
+  //       const employeeAttendanceData = res?.data?.data?.employee_durations;
+  //       setAttendanceData(employeeAttendanceData);
+  //       setProgressMap(getProgressMap(employeeAttendanceData));
+  //       dispatch(setLoaderVisible(false));
+  //     })
+  //     .catch((err) => {
+  //       dispatch(setLoaderVisible(false));
+  //     });
+  // }, []);
+  // useEffect(() => {
+  //   console.log("Updated attendanceData:", attendanceData);
+  // }, [attendanceData]);
+
   const CustomFieldsForThisForm = GetCustomField("employee") || [];
   const DepartmentData = GetLocalStorageData("department") || [];
 
@@ -87,10 +194,23 @@ const Employee = () => {
   const additionalColumn = [
     {
       Header: "Name",
-      accessor: "fname",
+      accessor: "first_name",
       filterable: false,
-      id: "fname",
+      id: "first_name",
       accessor: (obj) => {
+
+        const progress = progressMap[obj.emp_id] || 0;
+        console.log("progress", progress);
+        
+        const employeeAttendance = attendanceData.find(
+          (emp) => emp.employee_id === obj.emp_id
+        );
+        console.log("employeeAttendance", employeeAttendance);
+        
+
+        const progressBarColor = employeeAttendance?.is_present
+          ? "bg-success"
+          : "bg-danger progress-bar-striped";
         // console.log("EMP DAT", AllEmployeeData);
 
         // Declaring a variable outside of JSX
@@ -107,7 +227,7 @@ const Employee = () => {
                 src={obj.profile_url}
                 alt=""
                 className="avatar-xs rounded-circle"
-                style={{ objectFit: "cover", border: "2px solid #22bb33" }}
+                style={{ objectFit: "cover" }}
               />
             </div>
             <div className="flex-grow-1">
@@ -118,7 +238,7 @@ const Employee = () => {
                   className="link-body-emphasis mb-0"
                 >
                   <h5 className="fs-14 mb-1">
-                    <span>{obj.fname}</span>
+                    <span>{obj.first_name}</span>
                     <span style={{ color: "#a29797", fontSize: "smaller" }}>
                       {" "}
                       #{obj.emp_id}
@@ -156,13 +276,13 @@ const Employee = () => {
                   justifyContent: "center",
                   alignItems: "center",
                   background: "#0ab39c",
-                  border: "2px solid #22bb33",
+                  // border: "2px solid #22bb33",
                 }}
                 data-bs-toggle="tooltip"
-                title={obj.fname}
+                title={obj.first_name}
               >
                 <span className="first_letter" style={{ color: "white" }}>
-                  {obj.fname.charAt(0)}
+                  {obj?.first_name?.charAt(0) || ""}
                 </span>
               </div>
             </div>
@@ -174,7 +294,7 @@ const Employee = () => {
                   className="link-body-emphasis mb-0"
                 >
                   <h5 className="fs-14 mb-1">
-                    <span>{obj.fname}</span>
+                    <span>{obj.first_name}</span>
                     <span style={{ color: "#a29797", fontSize: "smaller" }}>
                       {" "}
                       #{obj.emp_id}
@@ -185,19 +305,12 @@ const Employee = () => {
               <div>{obj.email}</div>
               <div className="progress progress-sm animated-progess lc-color">
                 <div
-                  className="progress-bar bg-success"
+                  className={`progress-bar ${progressBarColor}`}
                   role="progressbar"
-                  aria-valuenow="0"
+                  aria-valuenow={progress}
                   aria-valuemin="0"
                   aria-valuemax="100"
-                  // style={{
-                  //   width: Math.round(
-                  //     (rowData.total_paid_hr_in_seconds /
-                  //       rowData.total_work_schedule_hr_without_break_in_seconds) *
-                  //       100 *
-                  //       2
-                  //   ),
-                  // }}
+                  style={{ width: `${progress}%` }}
                 ></div>
               </div>
             </div>
@@ -409,59 +522,70 @@ const Employee = () => {
         let rm_obj =
           EmployeeData.find((d) => d.id === obj.reporting_manager_id) || null;
 
-        return !!rm_obj ? (
-          rm_obj.profile_url ? (
-            <div className="d-flex gap-2 align-items-center">
-              <div className="flex-shrink-0">
-                <img
-                  src={rm_obj.profile_url}
-                  alt=""
-                  className="avatar-xs rounded-circle"
-                  style={{ objectFit: "cover" }}
-                />
+        if (!rm_obj) {
+          return (
+            <div className="d-flex gap-2 align-items-center text-muted">
+              <div
+                className="avatar-xs rounded-circle d-flex justify-content-center align-items-center"
+                style={{
+                  background: "#E9ECEF",
+                  width: "30px",
+                  height: "30px",
+                  color: "#6C757D",
+                }}
+              >
+                <i className="fas fa-user-slash"></i>{" "}
+                {/* Icon for no manager */}
               </div>
-              <div className="flex-grow-1">
-                <div>
-                  <Link to="#" className="link-body-emphasis mb-0">
-                    {" "}
-                    <h5 className="fs-14 mb-1">{rm_obj.fname}</h5>
-                  </Link>
-                </div>
-                <div>{rm_obj.email}</div>
+              <div>
+                <span className="fw-semibold">Not Assigned</span>
               </div>
             </div>
-          ) : (
-            <div className="d-flex gap-2 align-items-center">
-              <div className="flex-shrink-0">
-                <div
-                  className="avatar-xs rounded-circle"
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    background: "#0ab39c",
-                  }}
-                  data-bs-toggle="tooltip"
-                  title={rm_obj.fname}
-                >
-                  <span className="first_letter" style={{ color: "white" }}>
-                    {rm_obj.fname.charAt(0)}
-                  </span>
-                </div>
-              </div>
-              <div className="flex-grow-1">
-                <div>
-                  <Link to="#" className="link-body-emphasis mb-0">
-                    {" "}
-                    <h5 className="fs-14 mb-1">{rm_obj.fname}</h5>
-                  </Link>
-                </div>
-                <div>{rm_obj.email}</div>
-              </div>
+          );
+        }
+
+        return rm_obj.profile_url ? (
+          <div className="d-flex gap-2 align-items-center">
+            <div className="flex-shrink-0">
+              <img
+                src={rm_obj.profile_url}
+                alt="Profile"
+                className="avatar-xs rounded-circle"
+                style={{ objectFit: "cover" }}
+              />
             </div>
-          )
+            <div className="flex-grow-1">
+              <Link to="#" className="link-body-emphasis mb-0">
+                <h5 className="fs-14 mb-1">{rm_obj.first_name}</h5>
+              </Link>
+              <div>{rm_obj.email}</div>
+            </div>
+          </div>
         ) : (
-          "-----------------"
+          <div className="d-flex gap-2 align-items-center">
+            <div className="flex-shrink-0">
+              <div
+                className="avatar-xs rounded-circle d-flex justify-content-center align-items-center"
+                style={{
+                  background: "#0ab39c",
+                  width: "30px",
+                  height: "30px",
+                }}
+                data-bs-toggle="tooltip"
+                title={rm_obj.first_name}
+              >
+                <span className="text-white fw-bold">
+                  {rm_obj?.first_name?.charAt(0).toUpperCase() || ""}
+                </span>
+              </div>
+            </div>
+            <div className="flex-grow-1">
+              <Link to="#" className="link-body-emphasis mb-0">
+                <h5 className="fs-14 mb-1">{rm_obj.first_name}</h5>
+              </Link>
+              <div>{rm_obj.email}</div>
+            </div>
+          </div>
         );
       },
     },
@@ -488,8 +612,8 @@ const Employee = () => {
     return {
       id: 0,
       emp_id: "",
-      fname: "",
-      lname: "",
+      first_name: "",
+      last_name: "",
       email: "",
       dob: previousDateFormat(new Date()),
       joining_date: String(new Date()),
@@ -512,7 +636,8 @@ const Employee = () => {
       is_manager: false,
       profile_url: null,
       cf_values: CustomFieldsForThisForm || [],
-      outside_range_notes_required : true
+      outside_range_notes_required: true,
+      allow_attendance_outside_the_range: false,
     };
   }, [version]);
 

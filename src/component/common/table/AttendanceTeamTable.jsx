@@ -440,7 +440,7 @@ const AttendanceTeamTable = () => {
           <div>
             <Link to="#" className="link-body-emphasis mb-0">
               {" "}
-              <h5 className="fs-14 mb-1">{at_employee_data.fname}</h5>
+              <h5 className="fs-14 mb-1">{at_employee_data.first_name}</h5>
             </Link>
           </div>
           <div>{at_employee_data.email}</div>
@@ -458,10 +458,10 @@ const AttendanceTeamTable = () => {
               background: "#0ab39c",
             }}
             data-bs-toggle="tooltip"
-            title={at_employee_data.fname}
+            title={at_employee_data.first_name}
           >
             <span className="first_letter" style={{ color: "white" }}>
-              {at_employee_data.fname.charAt(0)}
+              {at_employee_data.first_name.charAt(0)}
             </span>
           </div>
         </div>
@@ -469,7 +469,7 @@ const AttendanceTeamTable = () => {
           <div>
             <Link to="#" className="link-body-emphasis mb-0">
               {" "}
-              <h5 className="fs-14 mb-1">{at_employee_data.fname}</h5>
+              <h5 className="fs-14 mb-1">{at_employee_data.first_name}</h5>
             </Link>
           </div>
           <div>{at_employee_data.email}</div>

@@ -4,8 +4,15 @@ import WebCheckInOut from "../../component/common/timer/WebCheckInOut";
 import { useSelector } from "react-redux";
 import { Api } from "../../common/api/Api";
 import { employee_total_work_duration } from "./../../redux/reducers/ChildReducer/TimeTrackingReducer";
+import axios from 'axios';
+
+
 const TimeTracking = ({hideTimer}) => {
   const [firstCheckInTime, setFirstCheckInTime] = useState(null);
+  const [location, setLocation] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [position, setPosition] = useState(null);
 
   const { total_seconds, currently_checked_in } = useSelector(
     (state) => state.ClockReducer
@@ -20,6 +27,7 @@ const TimeTracking = ({hideTimer}) => {
     const options = { year: "numeric", month: "short", day: "numeric" };
     return currentDate.toLocaleDateString(undefined, options);
   };
+
   const formatTime = (seconds) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -61,6 +69,39 @@ const TimeTracking = ({hideTimer}) => {
     fetchData();
   }, [employee_total_work_duration]);
 
+  const handleGetLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude, accuracy, speed, heading } = pos.coords;
+          const locationDetails = {
+            latitude,
+            longitude,
+            accuracy,
+            speed,
+            heading,
+          };
+  
+          console.log(' Location Details:', locationDetails);
+  
+          // Reverse Geocoding (get address)
+          const address = await getAddressFromCoordinates(latitude, longitude);
+          console.log('Address:', address);
+  
+          setPosition({ lat: latitude, lng: longitude });
+        },
+        (err) => {
+          console.error(' Error getting location:', err);
+        },
+        { enableHighAccuracy: true }
+      );
+    } else {
+      alert('Geolocation is not supported by your browser.');
+    }
+  };
+  
+ 
+
   return (
     <React.Fragment>
       <Card style={{ height: "332px" }}>
@@ -80,26 +121,14 @@ const TimeTracking = ({hideTimer}) => {
               style={{ width: "90px", height: "90px" }}
             ></lord-icon>
           </div>
+        
+
           <h3 className="mb-1">{formatTime(total_seconds)}</h3>
           <h5 className="fs-14 mb-4">
             First In : <b> {firstCheckInTime}</b>
           </h5>
           <div className="hstack gap-2 justify-content-center">
             <WebCheckInOut showTimer={false} hideTimer={hideTimer}/>
-            {/* <Button
-              outline
-              className="custom-toggle btn-outline-secondary"
-              onClick={(e) => checkInOutToggle(e.target)}
-            >
-              <span className="icon-on fs-5">
-                <i className="mdi mdi-account-arrow-right-outline align-bottom me-1"></i>{" "}
-                Check IN
-              </span>
-              <span className="icon-off fs-5">
-                <i className="mdi mdi-account-arrow-left-outline align-bottom me-1 "></i>{" "}
-                Check OUT
-              </span>
-            </Button> */}
           </div>
         </CardBody>
       </Card>

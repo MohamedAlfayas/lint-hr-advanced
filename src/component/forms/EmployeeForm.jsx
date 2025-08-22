@@ -72,6 +72,8 @@ const EmployeeForm = () => {
   const dep_options = GetLocalStorageData("department") || [];
   const ws_options = GetLocalStorageData("work_schedule") || [];
   const role_id_option = GetLocalStorageData("role") || [];
+  console.log("ROLE ID ", role_id_option);
+  
 
   const [reportingManagerOptions, setReportingManagerOptions] = useState([]);
 
@@ -353,8 +355,8 @@ const EmployeeForm = () => {
           "Please enter a valid Employee ID with no spaces and only uppercase letters, numbers, hyphens, and underscores."
         )
         .required("Please Enter Employee ID"),
-      fname: Yup.string().trim().required("Please Enter First Name"),
-      lname: Yup.string().trim().required("Please Enter Last Name"),
+      first_name: Yup.string().trim().required("Please Enter First Name"),
+      last_name: Yup.string().trim().required("Please Enter Last Name"),
       email: Yup.string()
         .email("Please Enter Valid Email")
         .required("Please Enter Email"),
@@ -641,7 +643,7 @@ const EmployeeForm = () => {
                     ) : null}
                     <i className="ri-user-line"></i>
                   </div>
-                  {!FormikForm.errors.fname && (
+                  {!FormikForm.errors.first_name && (
                     <div id="passwordHelpBlock" className="form-text mb-3">
                       Enter Employee ID.
                     </div>
@@ -650,34 +652,34 @@ const EmployeeForm = () => {
               </Col>
               <Col md={6} lg={6} xxl={6}>
                 <div>
-                  <Label htmlFor="fname" className="form-label">
+                  <Label htmlFor="first_name" className="form-label">
                     First Name
                   </Label>
                   <div className="form-icon right">
                     <Input
                       type="text"
-                      name="fname"
-                      id="fname"
+                      name="first_name"
+                      id="first_name"
                       className="form-control"
                       placeholder="Elon"
-                      value={employeeObj.fname || ""}
+                      value={employeeObj.first_name || ""}
                       onChange={handleInputChange}
                       invalid={
-                        FormikForm.touched.fname && FormikForm.errors.fname
+                        FormikForm.touched.first_name && FormikForm.errors.first_name
                           ? true
                           : false
                       }
                     />
-                    {!FormikForm.touched.fname && !FormikForm.errors.fname && (
+                    {!FormikForm.touched.first_name && !FormikForm.errors.first_name && (
                       <i className="ri-user-line"></i>
                     )}
-                    {FormikForm.touched.fname && FormikForm.errors.fname ? (
+                    {FormikForm.touched.first_name && FormikForm.errors.first_name ? (
                       <FormFeedback type="invalid">
-                        {FormikForm.errors.fname}
+                        {FormikForm.errors.first_name}
                       </FormFeedback>
                     ) : null}
                   </div>
-                  {!FormikForm.errors.fname && (
+                  {!FormikForm.errors.first_name && (
                     <div id="passwordHelpBlock" className="form-text mb-3">
                       Enter First Name.
                     </div>
@@ -686,34 +688,34 @@ const EmployeeForm = () => {
               </Col>
               <Col md={6} lg={6} xxl={6}>
                 <div>
-                  <Label htmlFor="lname" className="form-label">
+                  <Label htmlFor="last_name" className="form-label">
                     Last Name
                   </Label>
                   <div className="form-icon right">
                     <Input
                       type="text"
-                      name="lname"
-                      id="lname"
+                      name="last_name"
+                      id="last_name"
                       className="form-control"
                       placeholder="Musk"
-                      value={employeeObj.lname || ""}
+                      value={employeeObj.last_name || ""}
                       onChange={handleInputChange}
                       invalid={
-                        FormikForm.touched.lname && FormikForm.errors.lname
+                        FormikForm.touched.last_name && FormikForm.errors.last_name
                           ? true
                           : false
                       }
                     />
-                    {!FormikForm.touched.lname && !FormikForm.errors.lname && (
+                    {!FormikForm.touched.last_name && !FormikForm.errors.last_name && (
                       <i className="ri-user-2-line"></i>
                     )}
-                    {FormikForm.touched.lname && FormikForm.errors.lname ? (
+                    {FormikForm.touched.last_name && FormikForm.errors.last_name ? (
                       <FormFeedback type="invalid">
-                        {FormikForm.errors.lname}
+                        {FormikForm.errors.last_name}
                       </FormFeedback>
                     ) : null}
                   </div>
-                  {!FormikForm.errors.lname && (
+                  {!FormikForm.errors.last_name && (
                     <div id="passwordHelpBlock" className="form-text mb-3">
                       Enter last Name.
                     </div>
@@ -1095,7 +1097,7 @@ const EmployeeForm = () => {
                     <div id="passwordHelpBlock" className="form-text mb-3">
                       Check if{" "}
                       <b>
-                        <i>{employeeObj.fname}</i>
+                        <i>{employeeObj.first_name}</i>
                       </b>{" "}
                       is Manager of{" "}
                       <b>
@@ -1206,9 +1208,9 @@ const EmployeeForm = () => {
                       }),
                     }}
                     value={
-                      (employeeObj.role_id &&
+                      (employeeObj.role?.id &&
                         role_id_option.find(
-                          (e) => e.id === employeeObj.role_id
+                          (e) => e.id === employeeObj?.role?.id
                         )) ||
                       []
                     }
@@ -1680,6 +1682,42 @@ const EmployeeForm = () => {
               </Col>
               <Col md={12} lg={12} xxl={12}>
                 <div>
+                  <Label htmlFor="allow_attendance_outside_the_range" className="form-label">
+                    Allow Check In/Out Outside the Range
+                  </Label>
+
+                  <div className="mb-2">
+                    <div
+                      className="form-check form-switch form-switch-md form-switch-success"
+                      dir="ltr"
+                    >
+                      {" "}
+                      <Input
+                        id="allow_attendance_outside_the_range"
+                        name="is_active"
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={employeeObj.allow_attendance_outside_the_range}
+                        onChange={(e) =>
+                          setEmployeeObj({
+                            ...employeeObj,
+                            allow_attendance_outside_the_range: e.target.checked,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div id="passwordHelpBlock" className="form-text mb-3">
+                  Check if{" "}
+                  <b>
+                    <i>{employeeObj.first_name}</i>
+                  </b>{" "}
+                  is allowed to checkIn/CheckOut outside the branch range.
+                </div>
+              </Col>
+              <Col md={12} lg={12} xxl={12}>
+                <div>
                   <Label htmlFor="outside_range" className="form-label">
                     Outside Range Notes Required
                   </Label>
@@ -1709,7 +1747,7 @@ const EmployeeForm = () => {
                 <div id="passwordHelpBlock" className="form-text mb-3">
                   Check if{" "}
                   <b>
-                    <i>{employeeObj.fname}</i>
+                    <i>{employeeObj.first_name}</i>
                   </b>{" "}
                   is allowed to checkIn/CheckOut outside the branch range.
                 </div>
@@ -1746,7 +1784,7 @@ const EmployeeForm = () => {
                 <div id="passwordHelpBlock" className="form-text mb-3">
                   Check if{" "}
                   <b>
-                    <i>{employeeObj.fname}</i>
+                    <i>{employeeObj.first_name}</i>
                   </b>{" "}
                   is Active State.
                 </div>
@@ -1865,7 +1903,7 @@ const EmployeeForm = () => {
             </div>
             <div className="mt-3 pt-1">
               <p>
-                <b>{employeeObj?.fname} </b> is The Reporting Manager For The
+                <b>{employeeObj?.first_name} </b> is The Reporting Manager For The
                 Following Employees
               </p>
             </div>

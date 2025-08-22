@@ -655,7 +655,7 @@ const BranchForm = () => {
                     ? branchObj.cf_values.map((obj) => (
                         <Col lg={12}>
                           <div>
-                            <Label htmlFor="lname" className="form-label">
+                            <Label htmlFor="last_name" className="form-label">
                               {obj.name}
                             </Label>
                             {form_default_input_types.includes(obj.type) && (

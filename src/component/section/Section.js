@@ -8,9 +8,10 @@ import { useDispatch, useSelector } from "react-redux";
 const Section = (props) => {
 
   const { profile_data } = useSelector((state) => state.MyProfileReducer);
-  const capitalizeFirstLetter = (str) => {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  };
+const capitalizeFirstLetter = (str) => {
+  if (!str || typeof str !== "string") return "";
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
   const [greeting, setGreeting] = useState('');
   useEffect(() => {
     const date = new Date();
@@ -27,8 +28,9 @@ const Section = (props) => {
     }
   }, []);
 
-  const capitalizedFirstName = capitalizeFirstLetter(profile_data.fname);
-  return (
+const capitalizedFirstName = profile_data?.first_name
+  ? capitalizeFirstLetter(profile_data.first_name)
+  : "";  return (
     <React.Fragment>
       <Row className="mb-3 pb-1">
         <Col xs={12}>

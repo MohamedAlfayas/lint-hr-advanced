@@ -76,20 +76,20 @@ const EmployeeActivityTable = ({ team_data }) => {
                             background: "#0ab39c",
                           }}
                           data-bs-toggle="tooltip"
-                          title={emp_detail.fname}
+                          title={emp_detail.first_name}
                         >
                           <span
                             className="first_letter"
                             style={{ color: "white" }}
                           >
-                            {emp_detail.fname.charAt(0)}
+                            {emp_detail?.first_name?.charAt(0) || ""}
                           </span>
                         </div>
                       )}
                     </div>
                     <div className="flex-grow-1 ms-3 border-bottom border-bottom-dashed">
                       <h6 className="mb-0 lh-base">
-                        {emp_detail?.fname} {emp_detail?.lname}
+                        {emp_detail?.first_name} {emp_detail?.last_name}
                         <i
                           class={`mdi mdi-circle fs-10 align-middle text-${entry_status?.class} me-1 ms-2`}
                         ></i>

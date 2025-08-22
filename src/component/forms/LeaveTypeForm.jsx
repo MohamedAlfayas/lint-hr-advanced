@@ -211,14 +211,14 @@ const LeaveTypeForm = () => {
             <Row>
               <Col md={12} lg={12} xxl={12}>
                 <div className="mb-3">
-                  <Label htmlFor="lName" className="form-label">
+                  <Label htmlFor="last_namename" className="form-label">
                     Name *
                   </Label>
                   <div className="form-icon right">
                     <Input
                       type="text"
                       name="name"
-                      id="lName"
+                      id="last_namename"
                       className="form-control"
                       placeholder="Casual"
                       value={leaveTypeData.name || ""}

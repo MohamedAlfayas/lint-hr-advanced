@@ -214,8 +214,8 @@ const InfoTable = ({
   }
 
   const handleApproval = async (orderData) => {
-    let employee_fname =
-      EmployeeData.find((e) => e.id === orderData.employee_id)?.fname || "";
+    let employee_first_name =
+      EmployeeData.find((e) => e.id === orderData.employee_id)?.first_name || "";
 
     const totalSeconds =
       orderData.final_paid_hr_in_seconds === 0
@@ -230,9 +230,9 @@ const InfoTable = ({
     let content =
       formname === leave_approval_component_name ||
       formname === leave_pending_table
-        ? `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To <strong style='color:#7066e0'>  ${employee_fname}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `
+        ? `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To <strong style='color:#7066e0'>  ${employee_first_name}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `
         : orderData.is_present === false
-        ? `<span>Oops, <strong style='color:#7066e0'>${employee_fname}</strong> didn't show up on <strong style='color:grey'>${format(
+        ? `<span>Oops, <strong style='color:#7066e0'>${employee_first_name}</strong> didn't show up on <strong style='color:grey'>${format(
             new Date(orderData.date),
             "dd MMM, yyyy"
           )}</strong>, Ready to regularize and approve?</span>
@@ -254,7 +254,7 @@ const InfoTable = ({
                 : undefined
             }
           </div>`
-        : `<span><strong style='color:#7066e0'>${employee_fname}</strong> missed checkout on <strong style='color:grey'>${format(
+        : `<span><strong style='color:#7066e0'>${employee_first_name}</strong> missed checkout on <strong style='color:grey'>${format(
             new Date(orderData.date),
             "dd MMM, yyyy"
           )}, Would you like to regularize?</span>
@@ -379,15 +379,15 @@ const InfoTable = ({
   };
 
   const handleReject = async (orderData) => {
-    let employee_fname =
-      EmployeeData.find((e) => e.id === orderData.employee_id)?.fname || "";
+    let employee_first_name =
+      EmployeeData.find((e) => e.id === orderData.employee_id)?.first_name || "";
     // const unitLabel = orderData.unit === 1 ? 'day' : 'hour';
 
     let content =
       formname === leave_approval_component_name ||
       formname === leave_pending_table
-        ? `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To <strong style='color:#7066e0'> ${employee_fname} </strong> on ${orderData.start} to  ${orderData.end} </span>`
-        : `<span>Confirm Action : <strong style='color:red'>Reject</strong> pending status and mark <strong style='color:#7066e0'>  ${employee_fname}</strong>  as absent on   <strong style='color:grey'>${format(
+        ? `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To <strong style='color:#7066e0'> ${employee_first_name} </strong> on ${orderData.start} to  ${orderData.end} </span>`
+        : `<span>Confirm Action : <strong style='color:red'>Reject</strong> pending status and mark <strong style='color:#7066e0'>  ${employee_first_name}</strong>  as absent on   <strong style='color:grey'>${format(
             new Date(orderData.date),
             "dd MMM, yyyy"
           )}</strong></span> `;
@@ -632,7 +632,7 @@ const InfoTable = ({
 
     Swal.fire({
       title: orderInfo.text,
-      text: ` Are you sure to ${orderInfo?.text} Employee (${orderData.fname} ${orderData.lname})?`,
+      text: ` Are you sure to ${orderInfo?.text} Employee (${orderData.first_name} ${orderData.last_name})?`,
       icon: `${orderInfo?.icon}`,
       showCancelButton: true,
       confirmButtonColor: `${orderInfo?.confirmBtnColor}`,
@@ -662,7 +662,7 @@ const InfoTable = ({
       DeactivateEmployeeAPI(orderData, orderInfo);
     } else {
       setShowActivateEmpModal(true);
-      setActivateEmpName(orderData?.fname);
+      setActivateEmpName(orderData?.first_name);
       setActivateEmpObj({
         emp_uuid: orderData?.emp_uuid,
         primary_department_id_list: [],
@@ -728,7 +728,7 @@ const InfoTable = ({
           Api?.data?.team_employees_to_be_updated
         );
 
-        setRMEmpName(orderData?.fname);
+        setRMEmpName(orderData?.first_name);
 
         setTeamsToBeUpdated(Api?.data?.team_employees_to_be_updated);
 
@@ -746,26 +746,26 @@ const InfoTable = ({
       localStorage.getItem("lint_hr_profile_data")
     );
 
-    const fname =
-      Object.keys(profile_data).length > 0 ? profile_data.fname : "";
-    const lname =
-      Object.keys(profile_data).length > 0 ? profile_data.lname : "";
+    const first_name =
+      Object.keys(profile_data).length > 0 ? profile_data.first_name : "";
+    const last_name =
+      Object.keys(profile_data).length > 0 ? profile_data.last_name : "";
 
     Swal.fire({
       title: "Reset Password",
       html: `
         <form id="resetPasswordForm">
         <div class="position-relative">
-        <label for="adminPassword" class="label-lc">Admin Password (${fname} ${lname})</label>
+        <label for="adminPassword" class="label-lc">Admin Password (${first_name} ${last_name})</label>
         <div class="input-group">
           <input type="password" id="adminPassword" class="form-control swal2-input" placeholder="Enter Admin Password" required>
         </div>
       </div>
-      <label for="newPassword" class="label-lc">New Password (${orderData.fname} ${orderData.lname})</label>
+      <label for="newPassword" class="label-lc">New Password (${orderData.first_name} ${orderData.last_name})</label>
       <div class="input-group">
         <input type="password" id="newPassword" class="form-control swal2-input" placeholder="Enter New Password" required>
       </div>
-      <label for="confirmPassword" class="label-lc">Confirm Password (${orderData.fname} ${orderData.lname})</label>
+      <label for="confirmPassword" class="label-lc">Confirm Password (${orderData.first_name} ${orderData.last_name})</label>
       <div class="input-group">
         <input type="password" id="confirmPassword" class="form-control swal2-input" placeholder="Enter Confirm Password" required>    
 
@@ -1337,6 +1337,8 @@ const InfoTable = ({
   // CUSTOM FORM
 
   const handleCreateAndUpdate = ($id, table_obj) => {
+    console.log("table_obj === ", table_obj);
+    
     let FormObj = {};
 
     if ($id === 0) {

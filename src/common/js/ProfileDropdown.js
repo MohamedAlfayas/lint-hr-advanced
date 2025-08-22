@@ -23,8 +23,8 @@ const ProfileDropdown = () => {
   const { profile_data } = useSelector((state) => state.MyProfileReducer);
 
   useEffect(() => {
-    !!profile_data?.fname
-      ? setUserName(profile_data?.fname)
+    !!profile_data?.first_name
+      ? setUserName(profile_data?.first_name)
       : setUserName("Admin");
   }, [profile_data]);
 
@@ -92,7 +92,7 @@ const ProfileDropdown = () => {
                 className="rounded-circle header-profile-user"
                 style={{ objectFit: "cover" }}
                 src={profile_data?.profile_url}
-                alt={profile_data?.fname}
+                alt={profile_data?.first_name}
               />
             ) : (
               <div

@@ -650,7 +650,7 @@ const OrgInfoTab = () => {
                         ? profileData.cf_values.map((obj) => (
                             <Col xxl={8} md={6}>
                               <div>
-                                <Label htmlFor="lname" className="form-label">
+                                <Label htmlFor="last_name" className="form-label">
                                   {obj.name}
                                 </Label>
                                 {form_default_input_types.includes(

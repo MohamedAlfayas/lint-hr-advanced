@@ -178,7 +178,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
               />
             </div>
             <div className="flex-grow-1">
-              <div>{thisEmployee.fname}</div>
+              <div>{thisEmployee.first_name}</div>
               <div>{thisEmployee.email}</div>
             </div>
           </div>
@@ -194,15 +194,15 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
                   background: "#0ab39c",
                 }}
                 data-bs-toggle="tooltip"
-                title={thisEmployee.fname}
+                title={thisEmployee.first_name}
               >
                 <span className="first_letter" style={{ color: "white" }}>
-                  {thisEmployee.fname.charAt(0)}
+                  {thisEmployee.first_name.charAt(0)}
                 </span>
               </div>
             </div>
             <div className="flex-grow-1">
-              <div>{thisEmployee.fname}</div>
+              <div>{thisEmployee.first_name}</div>
               <div>{thisEmployee.email}</div>
             </div>
           </div>
@@ -681,13 +681,13 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
                               objectFit: "cover",
                             }}
                             data-bs-toggle="tooltip"
-                            title={emp_details.fname}
+                            title={emp_details.first_name}
                           >
                             <span
                               className="first_letter"
                               style={{ color: "white" }}
                             >
-                              {emp_details.fname.charAt(0)}
+                              {emp_details.first_name.charAt(0)}
                             </span>
                           </div>
                         )}
@@ -695,7 +695,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
 
                       <div className="flex-grow-1 ms-3">
                         <h5 className="fs-13">
-                          {emp_details.fname}{" "}
+                          {emp_details.first_name}{" "}
                           <small className="text-muted ms-2">
                             {/* 20 Dec 2021 - 05:47AM */}
                             {GetAmPmDateTime(d?.created_time)}
