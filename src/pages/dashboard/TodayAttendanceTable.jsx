@@ -178,7 +178,7 @@ const TodayaAttendanceTable = () => {
         <Col lg={12}>
           <Card id="attendanceList">
             <CardHeader className="border-0">
-              <h5 className="card-title mb-0">Today Entry Status</h5>
+              <h5 className="card-title mb-0">Today's Entry Status</h5>
             </CardHeader>
 
             <CardBody>
