@@ -101,6 +101,9 @@ const AttendanceEmployeeTable = () => {
   const [locationType, setLocationType] = useState("");
   const [allLocationData, setAllLocationData] = useState([]);
 
+  console.log("timelineList", timelineList);
+  
+
   const { individual_attendance_report_data } = useSelector(
     (state) => state.AttendanceReportReducer
   );
@@ -133,6 +136,9 @@ const AttendanceEmployeeTable = () => {
   }
 
   function open_location(rowData, dataKey) {
+    console.log("row",rowData);
+    console.log("dataKey",dataKey);
+    
     setLocationModal(!locationModal);
     setAllLocationData(rowData);
     setLocationType(dataKey);
@@ -655,7 +661,7 @@ const AttendanceEmployeeTable = () => {
   const applyLeave = (rowData) => {
     let intialObj = {
       id: 0,
-      leave_type: 0,
+      leave_type_id: 0,
       reason: "",
       start: rowData?.date,
       end: rowData?.date,
@@ -672,7 +678,7 @@ const AttendanceEmployeeTable = () => {
 
   const handleApplyLeave = async () => {
     dispatch(setLoaderVisible(true));
-    if (leaveApplyData.leave_type === 0) {
+    if (leaveApplyData.leave_type_id === 0) {
       toast.error("Please Select Leave Type");
     } else {
       const Api = await PostApi(
@@ -1471,13 +1477,13 @@ const AttendanceEmployeeTable = () => {
               </Col>
               <Col>
                 <Select
-                  name="leave_type"
+                  name="leave_type_id"
                   isMulti={false}
                   options={day_leave_types || []}
                   value={
-                    leaveApplyData?.leave_type
+                    leaveApplyData?.leave_type_id
                       ? day_leave_types.find(
-                          (d) => d.id === leaveApplyData?.leave_type
+                          (d) => d.id === leaveApplyData?.leave_type_id
                         )
                       : []
                   }
@@ -1488,12 +1494,12 @@ const AttendanceEmployeeTable = () => {
                     setLeaveApplyData((prevData) => {
                       const newData = {
                         ...prevData,
-                        leave_type: e.id,
+                        leave_type_id: e.id,
                       };
                       setLeaveCount(
-                        newData.leave_type
+                        newData.leave_type_id
                           ? employee_leave_data.find(
-                              (d) => d.id === newData.leave_type
+                              (d) => d.id === newData.leave_type_id
                             )?.balance_leave_count
                           : ""
                       );
@@ -1508,7 +1514,7 @@ const AttendanceEmployeeTable = () => {
             <Row className="mb-2">
               <Col></Col>
               <Col>
-                {leaveApplyData?.leave_type ? (
+                {leaveApplyData?.leave_type_id ? (
                   <Col>
                     {" "}
                     <div id="passwordHelpBlock" className="form-text">

@@ -8,12 +8,15 @@ import PayrollWidgets from "./PayrollWidgets";
 import AttendanceGraph from "./AttendanceGraph";
 import DeptWiseAttendanceWidgets from "./DeptWiseAttendanceWidgets";
 import AttendanceLeaveApprovalTable from "./AttendanceLeaveApprovalTable";
+import TodayAttendanceTable from "./TodayAttendanceTable";
 import {
   VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
+import LocationMap from "./LocationMap";
+import UsersClusterMap from "./UsersClusterMap";
 
 const Dashboard = () => {
   document.title = `Dashboard | ${MetaTitle || "Lint HR"}`;
@@ -53,17 +56,23 @@ const Dashboard = () => {
                 <Section rightClickBtn={toggleRightColumn} />
 
                 <Row>
-                  <Col xl={3}>
+                  {/* <Col xl={3}>
                     <AttendanceStatistics />
-                  </Col>
+                  </Col> */}
 
-                  <Col xl={9}>
-                    <Row>
+                  <Col xl={9} >
+                    {/* <Row>
                       <PayrollWidgets />
                     </Row>
                     <Row>
                       <AttendanceGraph />
-                    </Row>
+                    </Row> */}
+                    <TodayAttendanceTable />
+                  </Col>
+                  <Col xl={3}>
+                    <div >
+      <UsersClusterMap />
+    </div>
                   </Col>
 
                   {showApprovalTable && (

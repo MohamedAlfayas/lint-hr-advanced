@@ -351,9 +351,13 @@ const Employee = () => {
       id: "role_id",
       filterable: false,
       accessor: (obj) => {
+        console.log("obj", obj);
+        
         const RoleData = GetLocalStorageData("role");
+        console.log("RoleData", RoleData);
+        
         let thisRole = RoleData
-          ? RoleData.filter((data) => obj.role_id === data.id)
+          ? RoleData.filter((data) => obj.role?.id === data.id)
           : [];
         return (
           <>

@@ -151,11 +151,21 @@ const EmployeeForm = () => {
   };
 
   useEffect(() => {
+    console.clear()
+    console.log("EMP Form Obj - ",form_obj)
+    let this_role_id = 0;
+    if(form_obj?.role !== null && form_obj?.role !== undefined && form_obj?.role !== '') {
+      this_role_id = form_obj?.role?.id
+    }
     setEmployeeObj({
       ...form_obj,
       dob: ConvertISODateFormat(form_obj.dob),
       joining_date: ConvertISODateFormat(form_obj.joining_date),
+      role_id : this_role_id
     });
+
+    
+
     setDob(ConvertDateFormat(ConvertISODateFormat(form_obj.dob)));
     setJoinDate(ConvertDateFormat(ConvertISODateFormat(form_obj.joining_date)));
 
@@ -1208,9 +1218,9 @@ const EmployeeForm = () => {
                       }),
                     }}
                     value={
-                      (employeeObj.role?.id &&
+                      (employeeObj.role_id &&
                         role_id_option.find(
-                          (e) => e.id === employeeObj?.role?.id
+                          (e) => e.id === employeeObj?.role_id
                         )) ||
                       []
                     }

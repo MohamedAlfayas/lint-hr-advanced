@@ -218,7 +218,7 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
         const time = convertTime(new Date(obj.start).toTimeString());
         return (
           <b>{`${
-            getUnitId(obj.leave_type) === 1 ? date : `${date} - ${time}`
+            getUnitId(obj.leave_type_id) === 1 ? date : `${date} - ${time}`
           }`}</b>
         );
       },
@@ -233,7 +233,7 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
         const time = convertTime(new Date(obj.end).toTimeString());
         return (
           <b>{`${
-            getUnitId(obj.leave_type) === 1 ? date : `${date} - ${time}`
+            getUnitId(obj.leave_type_id) === 1 ? date : `${date} - ${time}`
           }`}</b>
         );
       },
@@ -247,19 +247,19 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
         let leave_count = obj.requested_leave_count;
         return (
           <b>{`${leave_count} ${
-            getUnitId(obj.leave_type) === 1 ? "Days" : "Hour"
+            getUnitId(obj.leave_type_id) === 1 ? "Days" : "Hour"
           }`}</b>
         );
       },
     },
     {
       Header: "Leave Type ",
-      accessor: "leave_type",
+      accessor: "leave_type_id",
       filterable: false,
-      id: "leave_type",
+      id: "leave_type_id",
       accessor: (obj) => {
         const thisLeaveType = LeaveTypeData.find(
-          (data) => data.id === obj.leave_type
+          (data) => data.id === obj.leave_type_id
         );
         return (
           <React.Fragment>{thisLeaveType && thisLeaveType.name}</React.Fragment>
@@ -314,7 +314,7 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
         start_date: "2023-05-30 ",
         end_date: "2023-05-30",
         total_days: "2 Hours",
-        leave_type: 3,
+        leave_type_id: 3,
         reason: "Traffic",
         status: 1,
       },
@@ -325,7 +325,7 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
         start_date: "2023-05-01",
         end_date: "2023-05-03",
         total_days: "3 Days",
-        leave_type: 1,
+        leave_type_id: 1,
         reason: "Family Function",
         status: 1,
       }

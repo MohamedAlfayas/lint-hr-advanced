@@ -35,7 +35,7 @@ import * as Yup from "yup";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
 import { toast } from "react-toastify";
-import { DatePicker, Space } from "antd";
+import { DatePicker, Space, TimePicker } from "antd";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { DateFormat, DateTimeFormat } from "../../common/constant/Constants";
@@ -64,6 +64,7 @@ const ApplyLeaveForm = () => {
   const [hourDiff, setHourDiff] = useState(null);
   const [inBetweenDays, setInBetweenDays] = useState([]);
   const [leaveBalanceCount, setLeaveBalanceCount] = useState(0);
+  const [timeError, setTimeError] = useState("");
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
   const profileData = GetLocalStorageData("my_profile") || [];
@@ -89,13 +90,13 @@ const ApplyLeaveForm = () => {
 
       setHolidayDays(holidayData.map((d) => d?.date));
 
-      if (form_obj?.leave_type !== 0) {
+      if (form_obj?.leave_type_id !== 0) {
         let leave_type_obj = leave_type_for_current_employee.find(
-          (d) => d.id === form_obj.leave_type
+          (d) => d.id === form_obj.leave_type_id
         );
         setLeaveBalanceCount(leave_type_obj.balance_leave_count);
         let thisLeaveTypeObj = leave_type_for_current_employee.find(
-          (d) => d.id === form_obj?.leave_type
+          (d) => d.id === form_obj?.leave_type_id
         );
         handleStartEndDatesChange(thisLeaveTypeObj);
       }
@@ -159,7 +160,7 @@ const ApplyLeaveForm = () => {
     setLeaveApplyObj((prev) => {
       return {
         ...prev,
-        leave_type: leave_type_obj?.id,
+        leave_type_id: leave_type_obj?.id,
         start: null,
         end: null,
         in_between_dates: [],
@@ -362,7 +363,7 @@ const ApplyLeaveForm = () => {
     enableReinitialize: true,
     initialValues: leaveapplyObj,
     validationSchema: Yup.object({
-      leave_type: Yup.number()
+      leave_type_id: Yup.number()
         .required("Select Leave Type")
         .min(1, "Please Select Leave Type"),
     }),
@@ -416,7 +417,7 @@ const ApplyLeaveForm = () => {
                 <div className="mb-3">
                   <Label>Type *</Label>
                   <Select
-                    name="leave_type"
+                    name="leave_type_id"
                     isMulti={false}
                     options={leave_type_for_current_employee || []}
                     isOptionDisabled={(option) =>
@@ -427,16 +428,16 @@ const ApplyLeaveForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.leave_type &&
-                          FormikForm.errors.leave_type
+                          FormikForm.touched.leave_type_id &&
+                          FormikForm.errors.leave_type_id
                             ? "red !important"
                             : provided.borderColor,
                       }),
                     }}
                     value={
-                      leaveapplyObj?.leave_type
+                      leaveapplyObj?.leave_type_id
                         ? leave_type_for_current_employee.find(
-                            (d) => d.id === leaveapplyObj?.leave_type
+                            (d) => d.id === leaveapplyObj?.leave_type_id
                           )
                         : []
                     }
@@ -444,21 +445,21 @@ const ApplyLeaveForm = () => {
                     placeholder="Select Leave Type"
                     className="basic-multi-select"
                     invalid={
-                      FormikForm.touched.leave_type &&
-                      FormikForm.errors.leave_type
+                      FormikForm.touched.leave_type_id &&
+                      FormikForm.errors.leave_type_id
                         ? true
                         : false
                     }
                   />
-                  {FormikForm.touched.leave_type &&
-                  FormikForm.errors.leave_type ? (
+                  {FormikForm.touched.leave_type_id &&
+                  FormikForm.errors.leave_type_id ? (
                     <div className="lc_form_error_text">
-                      {FormikForm.errors.leave_type}
+                      {FormikForm.errors.leave_type_id}
                     </div>
                   ) : null}
                 </div>
-                {!FormikForm.errors.leave_type &&
-                  FormikForm.errors.leave_type === "" && (
+                {!FormikForm.errors.leave_type_id &&
+                  FormikForm.errors.leave_type_id === "" && (
                     <div id="passwordHelpBlock" className="form-text">
                       Please select type of leave.
                     </div>
@@ -539,6 +540,122 @@ const ApplyLeaveForm = () => {
                     )}
                   </Col>
                 )}
+{leaveapplyObj?.day_type === 2 && (
+  <div className="row mt-3 align-items-end">
+    {/* Start Time */}
+    <Col md={3} lg={3} xxl={3}>
+      <Label className="form-label">Start Time</Label>
+<TimePicker
+  name="start"
+  className="form-control"
+  placeholder="Select Start Time"
+  minuteStep={30}
+  use12Hours={false}
+  format="HH:mm"
+  value={leaveapplyObj?.start ? dayjs(leaveapplyObj.start) : null}
+  onChange={(time) => {
+    if (time) {
+      // Use existing start date if available, otherwise today
+      const currentStart = leaveapplyObj?.start
+        ? dayjs(leaveapplyObj.start)
+        : dayjs();
+
+      const merged = currentStart
+        .hour(time.hour())
+        .minute(time.minute())
+        .second(0);
+
+      setTimeError("");
+
+      setLeaveApplyObj((prev) => ({
+        ...prev,
+        start: merged.format("YYYY-MM-DD HH:mm:ss"),
+        end:
+          prev.end && dayjs(prev.end).isBefore(merged) ? null : prev.end,
+      }));
+    }
+  }}
+  style={{ width: "100%" }}
+/>
+    </Col>
+
+    {/* End Time */}
+    <Col md={3} lg={3} xxl={3}>
+      <Label className="form-label">End Time</Label>
+     <TimePicker
+  name="end"
+  className="form-control"
+  placeholder="Select End Time"
+  minuteStep={30}
+  use12Hours={false}
+  format="HH:mm"
+  value={leaveapplyObj?.end ? dayjs(leaveapplyObj.end) : null}
+  disabled={!leaveapplyObj?.start}
+  onChange={(time) => {
+    if (time && leaveapplyObj?.start) {
+      // Use existing end date if available, otherwise same date as start
+      const currentEnd = leaveapplyObj?.end
+        ? dayjs(leaveapplyObj.end)
+        : dayjs(leaveapplyObj.start);
+
+      const merged = currentEnd
+        .hour(time.hour())
+        .minute(time.minute())
+        .second(0);
+
+      const startTime = dayjs(leaveapplyObj.start);
+
+      if (merged.isBefore(startTime)) {
+        setTimeError("End time cannot be before start time!");
+        return;
+      }
+
+      setTimeError("");
+
+      setLeaveApplyObj((prev) => ({
+        ...prev,
+        end: merged.format("YYYY-MM-DD HH:mm:ss"),
+      }));
+    }
+  }}
+  style={{ width: "100%" }}
+/>
+    </Col>
+
+    {/* Total Hours */}
+    <Col md={2} lg={2} xxl={2}>
+      <Label className="form-label">Total Hours</Label>
+      <span className="form-control text-center" style={{ fontSize: "12px" }}>
+        {leaveapplyObj?.start && leaveapplyObj?.end
+          ? dayjs(leaveapplyObj.end).diff(dayjs(leaveapplyObj.start), "hours", true).toFixed(2)
+          : "0.00"}{" "}
+        h
+      </span>
+    </Col>
+
+    {/* Error Message */}
+    {timeError && (
+      <Col md={12}>
+        <div className="text-danger" style={{ fontSize: "12px" }}>
+          {timeError}
+        </div>
+      </Col>
+    )}
+
+    {/* Help Text */}
+    <Col md={12}>
+      <div id="passwordHelpBlock" className="form-text">
+        Please select Date and Hour
+      </div>
+    </Col>
+  </div>
+)}
+
+
+
+
+
+
 
               {!!selectedLeaveTypeObj?.unit &&
                 selectedLeaveTypeObj?.unit === leave_type_hour_unit && (

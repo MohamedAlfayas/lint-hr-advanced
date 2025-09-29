@@ -60,11 +60,11 @@ const LeaveDashboard = () => {
     {
       Header: "Leave Type",
       filterable: false,
-      id: "leave_type",
+      id: "leave_type_id",
       accessor: (obj) => {
         const LeaveTypeData = GetLocalStorageData("leave_types");
         const thisLeaveType = LeaveTypeData.find(
-          (data) => data.id === obj.leave_type
+          (data) => data.id === obj.leave_type_id
         );
         return (
           <React.Fragment>
@@ -92,7 +92,7 @@ const LeaveDashboard = () => {
         const time = convertTime(new Date(obj.start).toTimeString());
         return (
           <b>{`${
-            getUnitId(obj.leave_type) === 1 ? date : `${date} - ${time}`
+            getUnitId(obj.leave_type_id) === 1 ? date : `${date} - ${time}`
           }`}</b>
         );
       },
@@ -107,7 +107,7 @@ const LeaveDashboard = () => {
         const time = convertTime(new Date(obj.end).toTimeString());
         return (
           <b>{`${
-            getUnitId(obj.leave_type) === 1 ? date : `${date} - ${time}`
+            getUnitId(obj.leave_type_id) === 1 ? date : `${date} - ${time}`
           }`}</b>
         );
       },
@@ -121,7 +121,7 @@ const LeaveDashboard = () => {
         let leave_count = obj.requested_leave_count;
         return (
           <b>{`${leave_count} ${
-            getUnitId(obj.leave_type) === 1 ? "Days" : "Hour"
+            getUnitId(obj.leave_type_id) === 1 ? "Days" : "Hour"
           }`}</b>
         );
       },
@@ -154,7 +154,7 @@ const LeaveDashboard = () => {
   const initialFormObj = useMemo(() => {
     return {
       id: 0,
-      leave_type: 0,
+      leave_type_id: 0,
       reason: "",
       start: null,
       end: null,

@@ -23,6 +23,10 @@ const AllDistanceCalculater = ({ allLocationData }) => {
   const employeeBracnchID = employeeData.find(
     (d) => allLocationData.employee_id === d.id
   );
+  console.log("employeeBracnchID", employeeBracnchID);
+  console.log("allLocationData", allLocationData);
+  
+  
 
   const branchObj = branchData.find((b) =>
     employeeBracnchID.branch_id_list.includes(b.id)

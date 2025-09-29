@@ -148,3 +148,16 @@ body .rs-table-row-header .rs-table-cell {
   max-width: 100%;
   overflow-x: auto; 
 }
+.map-container {
+  width: 100%;
+  height: 100vh;
+}
+
+.user-marker {
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+.bw-map {
+  filter: grayscale(100%) brightness(90%) contrast(100%);
+}

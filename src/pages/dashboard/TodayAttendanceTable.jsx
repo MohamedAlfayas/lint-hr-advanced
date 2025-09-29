@@ -1,0 +1,531 @@
+import React, { useState, useMemo, useEffect } from "react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Col,
+  Container,
+  Nav,
+  NavItem,
+  NavLink,
+  Row,
+  Input,
+  Button,
+} from "reactstrap";
+import classnames from "classnames";
+import moment from "moment";
+import { Api } from "../../common/api/Api";
+import { setTodayAttendance } from "../../redux/reducers/ChildReducer/TodayAttendanceReducer";
+import { useDispatch } from "react-redux";
+import { formatDate } from "@fullcalendar/core/index.js";
+import { Modal, ModalHeader, ModalBody } from "reactstrap";
+import UsersClusterMap from "./UsersClusterMap";
+import Lottie from "react-lottie";
+import noLocationFind from "../auth/loader/animation/no-location.json"
+
+const TodayaAttendanceTable = () => {
+  const dispatch = useDispatch();
+
+  const [activeTab, setActiveTab] = useState("1");
+  const [departmentFilter, setDepartmentFilter] = useState("All");
+  const [dateFilter, setDateFilter] = useState(moment().format("YYYY-MM-DD"));
+  const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4; // 5 rows visible by default
+  const [departments, setDepartments] = useState([]);
+  const [attendanceData, setAttendanceData] = useState([]);
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
+  const [selectedLocations, setSelectedLocations] = useState([]);
+  const [isMapOpen, setIsMapOpen] = useState(false);
+
+  // Load departments from localStorage
+  useEffect(() => {
+    const globalData = localStorage.getItem("lint_hr_globaldata");
+    if (globalData) {
+      try {
+        const parsedData = JSON.parse(globalData);
+        const departmentsArray = parsedData.department;
+        if (Array.isArray(departmentsArray)) {
+          setDepartments(departmentsArray);
+        }
+      } catch (error) {
+        console.error("Failed to parse global data", error);
+      }
+    }
+  }, []);
+
+ 
+  
+
+  // Fetch attendance data
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const response = await Api.get(
+          `/attendance/get-attendance-status?date=${dateFilter}`
+        );
+        const result = response.data;
+
+        
+
+        const formattedData = result.map((item) => ({
+          emp_id: item.employee.emp_id,
+          first_name: item.employee.first_name || "-",
+          profile_url: item.employee.profile_url || null,
+          email: item.employee.email || "-",
+          department:
+            Array.isArray(item.employee.primary_department_id_list) &&
+            item.employee.primary_department_id_list.length > 0
+              ? departments.find(
+                  (d) => d.id === item.employee.primary_department_id_list[0]
+                )?.name || ""
+              : "",
+          inTime: item.first_check_in_time || "-",
+          outTime: item.last_check_out_time || "-",
+         totalHours: (() => {
+  const totalSeconds = item.total_time_worked_till_last_checkout;
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  return `${hours}h ${minutes}m`;
+})(),
+           
+          status: item.is_present ? "On Time" : "Late",
+          date: item.date,
+          location_history: item.location_history,
+          progress:
+  item.total_work_duration && item.total_time_worked
+    ? Math.min(
+        100,
+        Math.round((item.total_time_worked / item.total_work_duration) * 100)
+      )
+    : 0,
+        }));
+        
+
+        setAttendanceData(formattedData);
+        dispatch(setTodayAttendance(result));
+        setCurrentPage(1);
+      } catch (error) {
+        console.error("Error fetching attendance data:", error);
+      }
+    };
+
+    fetchAttendance();
+  }, [dateFilter, departments, dispatch]);
+
+ 
+ const handleViewLocations = (row) => {
+  
+  
+  setSelectedEmployeeId(row.first_name); // store emp_id
+  setSelectedLocations(row.location_history || []); // store locations (empty array if null)
+  setIsMapOpen(true);
+};
+
+  // Filter data based on tab, department, and search
+  const filteredData = useMemo(() => {
+    return attendanceData.filter((item) => {
+      if (activeTab === "1" && item.status !== "On Time") return false;
+      if (activeTab === "2" && item.status !== "Late") return false;
+      if (activeTab === "3") return false; // Leave not implemented
+
+      if (departmentFilter !== "All" && item.department !== departmentFilter)
+        return false;
+
+      const lowerSearch = search.toLowerCase();
+
+      return (
+        (item.first_name || "").toLowerCase().includes(lowerSearch) ||
+        (item.department || "").toLowerCase().includes(lowerSearch) ||
+        (item.status || "").toLowerCase().includes(lowerSearch) ||
+        (item.inTime || "").toLowerCase().includes(lowerSearch) ||
+        (item.outTime || "").toLowerCase().includes(lowerSearch) ||
+        (item.totalHours || "").toLowerCase().includes(lowerSearch)
+      );
+    });
+  }, [attendanceData, activeTab, departmentFilter, search]);
+
+  // Pagination
+  const paginatedData = useMemo(() => {
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    return filteredData.slice(startIdx, startIdx + itemsPerPage);
+  }, [filteredData, currentPage]);
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+  const countIn = attendanceData.filter((item) => item.status === "On Time")
+    .length;
+  const countNotCheckIn = attendanceData.filter((item) => item.status === "Late")
+    .length;
+  const countLeave = 0;
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+  };
+   const defaultOptions = {
+      loop: true,
+      autoplay: true,
+      animationData: noLocationFind,
+      rendererSettings: {
+        preserveAspectRatio: "xMidYMid slice",
+      },
+    }
+
+  return (
+    <Container fluid>
+      <Row>
+        <Col lg={12}>
+          <Card id="attendanceList">
+            <CardHeader className="border-0">
+              <h5 className="card-title mb-0">Today Entry Status</h5>
+            </CardHeader>
+
+            <CardBody>
+              {/* Filters */}
+              <div className="filter-container p-3">
+                <Row className="mb-3 d-flex align-items-center gap-2">
+                  <Col md="4">
+                    <Input
+                      type="select"
+                      value={departmentFilter}
+                      onChange={(e) => {
+                        setDepartmentFilter(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <option value="All">All Departments</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.name}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </Input>
+                  </Col>
+
+                  <Col md="3">
+                    <Input
+                      type="date"
+                      max={moment().format("YYYY-MM-DD")}
+                      value={dateFilter}
+                      onChange={(e) => {
+                        setDateFilter(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </Col>
+
+                  <Col md="4" className="position-relative">
+                    <i
+                      className="bx bx-search-alt search-icon position-absolute"
+                      style={{
+                        top: "50%",
+                        left: "20px",
+                        transform: "translateY(-50%)",
+                      }}
+                    ></i>
+                    <Input
+                      type="text"
+                      placeholder="Search employee"
+                      value={search}
+                      onChange={(e) => {
+                        setSearch(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      style={{ paddingLeft: "25px" }}
+                    />
+                  </Col>
+                </Row>
+              </div>
+
+              {/* Tabs */}
+              <Nav className="nav-tabs nav-tabs-custom nav-success" role="tablist">
+                <NavItem>
+                  <NavLink
+                    className={classnames({ active: activeTab === "1" }, "fw-semibold")}
+                    onClick={() => handleTabChange("1")}
+                    href="#"
+                  >
+                    In <span className="badge bg-success ms-1">{countIn}</span>
+                  </NavLink>
+                </NavItem>
+                <NavItem>
+                  <NavLink
+                    className={classnames({ active: activeTab === "2" }, "fw-semibold")}
+                    onClick={() => handleTabChange("2")}
+                    href="#"
+                  >
+                    Not Check In{" "}
+                    <span className="badge bg-danger ms-1">{countNotCheckIn}</span>
+                  </NavLink>
+                </NavItem>
+                <NavItem>
+                  <NavLink
+                    className={classnames({ active: activeTab === "3" }, "fw-semibold")}
+                    onClick={() => handleTabChange("3")}
+                    href="#"
+                  >
+                    Leave <span className="badge bg-secondary ms-1">{countLeave}</span>
+                  </NavLink>
+                </NavItem>
+              </Nav>
+
+              {/* Table */}
+              <div
+                className="table-responsive table-card mb-1 mt-2"
+                style={{
+                  minHeight: "350px", // fixed space for 5 rows
+                }}
+              >
+                <table
+                  className="table align-middle table-nowrap"
+                  style={{ tableLayout: "fixed", width: "100%" }}
+                >
+                  <thead className="table-light text-muted">
+                    <tr>
+                      <th style={{ width: "30%" }}>Name</th>
+                      <th style={{ width: "20%" }}>Department</th>
+                      <th style={{ width: "10%" }}>In Time</th>
+                      <th style={{ width: "10%" }}>Out Time</th>
+                      <th style={{ width: "10%" }}>Total Hours</th>
+                      <th style={{ width: "10%" }}>Status</th>
+                       {/* Show Location header only in In tab */}
+    {activeTab === "1" && <th style={{ width: "10%" }}>Location</th>}
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {paginatedData.length > 0 ? (
+                      <>
+                        {paginatedData.map((row, idx) => (
+                          <tr key={idx}>
+                            <td>
+                              <div className="d-flex gap-2 align-items-center">
+                                <div className="flex-shrink-0">
+                                  {row.profile_url ? (
+                                    <img
+                                      src={row.profile_url}
+                                      alt=""
+                                      className="avatar-xs rounded-circle"
+                                      style={{ objectFit: "cover" }}
+                                    />
+                                  ) : (
+                                    <div
+                                      className="avatar-xs rounded-circle"
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        background: "#0ab39c",
+                                      }}
+                                      title={row.first_name}
+                                    >
+                                      <span style={{ color: "white" }}>
+                                        {row.first_name.charAt(0)}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex-grow-1">
+                                  <h5 className="fs-14 mb-1">
+                                    <span>{row.first_name}</span>
+                                    <span
+                                      style={{
+                                        color: "#a29797",
+                                        fontSize: "smaller",
+                                      }}
+                                    >
+                                      {" "}
+                                      #{row.emp_id}
+                                    </span>
+                                  </h5>
+                                  <div>{row.email}</div>
+
+                                  {activeTab === "1" && (
+                                    <div
+                                      className="progress progress-sm animated-progess lc-color"
+                                      style={{ backgroundColor: "#e0e0e0" }}
+                                    >
+                                      <div
+                                        className={`progress-bar ${
+                                          row.status === "On Time"
+                                            ? "bg-success"
+                                            : "bg-danger progress-bar-striped"
+                                        }`}
+                                        role="progressbar"
+                                        aria-valuenow={row.progress}
+                                        aria-valuemin="0"
+                                        aria-valuemax="100"
+                                        style={{ width: `${row.progress}%` }}
+                                      ></div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+
+                            <td>{row.department}</td>
+                            <td>{row.inTime}</td>
+                            <td>{row.outTime}</td>
+                            <td>{row.totalHours}</td>
+                            <td>
+                              <span
+                                className={`badge text-uppercase ${
+                                  row.status === "On Time"
+                                    ? "bg-success-subtle text-success"
+                                    : "bg-danger-subtle text-danger"
+                                }`}
+                              >
+                                {row.status}
+                              </span>
+                            </td>
+                            {activeTab === "1" && (
+            <td>
+              <Button onClick={() => handleViewLocations(row)}>View</Button>
+            </td>
+          )}
+                          </tr>
+                        ))}
+
+                        {/* Empty rows for spacing */}
+                        {paginatedData.length < itemsPerPage &&
+                          Array.from({
+                            length: itemsPerPage - paginatedData.length,
+                          }).map((_, idx) => (
+                            <tr key={`empty-${idx}`}>
+                              <td colSpan={6} style={{ border: "none" }}>
+                                &nbsp;
+                              </td>
+                            </tr>
+                          ))}
+                      </>
+                    ) : (
+                      <tr>
+                        <td colSpan={6} style={{ border: "none" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              height: "250px",
+                            }}
+                          >
+                            <lord-icon
+                              src="https://cdn.lordicon.com/msoeawqm.json"
+                              trigger="loop"
+                              colors="primary:#405189,secondary:#0ab39c"
+                              style={{
+                                marginTop: "20px",
+                                width: "150px",
+                                height: "80px",
+                                marginBottom: "20px",
+                              }}
+                            ></lord-icon>
+                            <p
+                              style={{
+                                width: "300px",
+                                color: "#405189",
+                                fontSize: "20px",
+                                textAlign: "center",
+                              }}
+                            >
+                              No Notes Found!
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  Page {currentPage} of {totalPages}
+                </div>
+
+                <div>
+                  <Button
+                    color="primary"
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((prev) => prev - 1)}
+                    className="me-2"
+                  >
+                    Previous
+                  </Button>
+
+                  <Button
+                    color="primary"
+                    size="sm"
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    onClick={() => setCurrentPage((prev) => prev + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        </Col>
+ <Modal size="lg" isOpen={isMapOpen} toggle={() => setIsMapOpen(!isMapOpen)}>
+  <ModalHeader toggle={() => setIsMapOpen(false)}>
+    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+      <span style={{ fontWeight: "600", fontSize: "18px" }}>
+        Employee Location History
+      </span>
+      <span
+        style={{
+          backgroundColor: "#e0f7fa", // light cyan
+          color: "#00796b", // teal text
+          padding: "4px 10px",
+          borderRadius: "12px",
+          fontSize: "14px",
+          fontWeight: "500",
+        }}
+      >
+        {selectedEmployeeId}
+      </span>
+    </div>
+  </ModalHeader>
+
+  <ModalBody
+    style={{
+      height: "75vh",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      flexDirection: "column",
+    }}
+  >
+    {selectedLocations && selectedLocations.length > 0 ? (
+      <UsersClusterMap locations={selectedLocations} />
+    ) : (
+      <>
+        <Lottie options={defaultOptions} height={250} width={250} />
+        <p
+          style={{
+            marginTop: "15px",
+            fontSize: "16px",
+            fontWeight: "500",
+            color: "#555",
+            textAlign: "center",
+          }}
+        >
+          No location history available
+        </p>
+      </>
+    )}
+  </ModalBody>
+</Modal>
+
+
+      </Row>
+    </Container>
+  );
+};
+
+export default TodayaAttendanceTable;
