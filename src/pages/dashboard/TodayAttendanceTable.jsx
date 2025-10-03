@@ -21,22 +21,35 @@ import { formatDate } from "@fullcalendar/core/index.js";
 import { Modal, ModalHeader, ModalBody } from "reactstrap";
 import UsersClusterMap from "./UsersClusterMap";
 import Lottie from "react-lottie";
-import noLocationFind from "../auth/loader/animation/no-location.json"
+import noLocationFind from "../auth/loader/animation/no-location.json";
+import { DatePicker } from "antd";
+import { DateFormat } from "../../common/constant/Constants";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import {
+  ConvertDateFormat,
+  ConvertISODateFormat,
+} from "../../common/js/ConvertDateFormat";
+dayjs.extend(customParseFormat);
 
 const TodayaAttendanceTable = () => {
   const dispatch = useDispatch();
 
   const [activeTab, setActiveTab] = useState("1");
   const [departmentFilter, setDepartmentFilter] = useState("All");
-  const [dateFilter, setDateFilter] = useState(moment().format("YYYY-MM-DD"));
+  const [dateFilter, setDateFilter] = useState(
+    new Date().toISOString().split("T")[0].split("-").reverse().join("-")
+  );
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4; // 5 rows visible by default
   const [departments, setDepartments] = useState([]);
   const [attendanceData, setAttendanceData] = useState([]);
-    const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const [selectedLocations, setSelectedLocations] = useState([]);
   const [isMapOpen, setIsMapOpen] = useState(false);
+
+  console.log("NEw Date = ", new Date().toISOString().split("T")[0]);
 
   // Load departments from localStorage
   useEffect(() => {
@@ -54,19 +67,16 @@ const TodayaAttendanceTable = () => {
     }
   }, []);
 
- 
-  
-
   // Fetch attendance data
   useEffect(() => {
     const fetchAttendance = async () => {
       try {
         const response = await Api.get(
-          `/attendance/get-attendance-status?date=${dateFilter}`
+          `/attendance/get-attendance-status?date=${ConvertISODateFormat(
+            ConvertDateFormat(dateFilter)
+          )}`
         );
         const result = response.data;
-
-        
 
         const formattedData = result.map((item) => ({
           emp_id: item.employee.emp_id,
@@ -82,25 +92,26 @@ const TodayaAttendanceTable = () => {
               : "",
           inTime: item.first_check_in_time || "-",
           outTime: item.last_check_out_time || "-",
-         totalHours: (() => {
-  const totalSeconds = item.total_time_worked_till_last_checkout;
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  return `${hours}h ${minutes}m`;
-})(),
-           
+          totalHours: (() => {
+            const totalSeconds = item.total_time_worked_till_last_checkout;
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            return `${hours}h ${minutes}m`;
+          })(),
+
           status: item.is_present ? "On Time" : "Late",
           date: item.date,
           location_history: item.location_history,
           progress:
-  item.total_work_duration && item.total_time_worked
-    ? Math.min(
-        100,
-        Math.round((item.total_time_worked / item.total_work_duration) * 100)
-      )
-    : 0,
+            item.total_work_duration && item.total_time_worked
+              ? Math.min(
+                  100,
+                  Math.round(
+                    (item.total_time_worked / item.total_work_duration) * 100
+                  )
+                )
+              : 0,
         }));
-        
 
         setAttendanceData(formattedData);
         dispatch(setTodayAttendance(result));
@@ -113,14 +124,11 @@ const TodayaAttendanceTable = () => {
     fetchAttendance();
   }, [dateFilter, departments, dispatch]);
 
- 
- const handleViewLocations = (row) => {
-  
-  
-  setSelectedEmployeeId(row.first_name); // store emp_id
-  setSelectedLocations(row.location_history || []); // store locations (empty array if null)
-  setIsMapOpen(true);
-};
+  const handleViewLocations = (row) => {
+    setSelectedEmployeeId(row.first_name); // store emp_id
+    setSelectedLocations(row.location_history || []); // store locations (empty array if null)
+    setIsMapOpen(true);
+  };
 
   // Filter data based on tab, department, and search
   const filteredData = useMemo(() => {
@@ -153,39 +161,43 @@ const TodayaAttendanceTable = () => {
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-  const countIn = attendanceData.filter((item) => item.status === "On Time")
-    .length;
-  const countNotCheckIn = attendanceData.filter((item) => item.status === "Late")
-    .length;
+  const countIn = attendanceData.filter(
+    (item) => item.status === "On Time"
+  ).length;
+  const countNotCheckIn = attendanceData.filter(
+    (item) => item.status === "Late"
+  ).length;
   const countLeave = 0;
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setCurrentPage(1);
   };
-   const defaultOptions = {
-      loop: true,
-      autoplay: true,
-      animationData: noLocationFind,
-      rendererSettings: {
-        preserveAspectRatio: "xMidYMid slice",
-      },
-    }
+  const defaultOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: noLocationFind,
+    rendererSettings: {
+      preserveAspectRatio: "xMidYMid slice",
+    },
+  };
 
   return (
     <Container fluid>
       <Row>
         <Col lg={12}>
           <Card id="attendanceList">
-            <CardHeader className="border-0">
-              <h5 className="card-title mb-0">Today's Entry Status</h5>
+            <CardHeader className="border-0 pb-0">
+              <h5 className="card-title mb-0">
+                <b>{dateFilter}</b> - Entry Status
+              </h5>
             </CardHeader>
 
             <CardBody>
               {/* Filters */}
-              <div className="filter-container p-3">
-                <Row className="mb-3 d-flex align-items-center gap-2">
-                  <Col md="4">
+              <div className="filter-container p-2 pt-2 pb-0">
+                <Row className="mb-3 d-flex align-items-center">
+                  <Col md="4" className="ps-1">
                     <Input
                       type="select"
                       value={departmentFilter}
@@ -203,13 +215,22 @@ const TodayaAttendanceTable = () => {
                     </Input>
                   </Col>
 
-                  <Col md="3">
-                    <Input
+                  <Col md="4">
+                    {/* <Input
                       type="date"
                       max={moment().format("YYYY-MM-DD")}
                       value={dateFilter}
                       onChange={(e) => {
                         setDateFilter(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                    /> */}
+                    <DatePicker
+                      value={dayjs(dateFilter, DateFormat)}
+                      format={DateFormat}
+                      allowClear={false}
+                      onChange={(e, f) => {
+                        setDateFilter(f);
                         setCurrentPage(1);
                       }}
                     />
@@ -239,10 +260,16 @@ const TodayaAttendanceTable = () => {
               </div>
 
               {/* Tabs */}
-              <Nav className="nav-tabs nav-tabs-custom nav-success" role="tablist">
+              <Nav
+                className="nav-tabs nav-tabs-custom nav-success pt-2"
+                role="tablist"
+              >
                 <NavItem>
                   <NavLink
-                    className={classnames({ active: activeTab === "1" }, "fw-semibold")}
+                    className={classnames(
+                      { active: activeTab === "1" },
+                      "fw-semibold"
+                    )}
                     onClick={() => handleTabChange("1")}
                     href="#"
                   >
@@ -251,21 +278,32 @@ const TodayaAttendanceTable = () => {
                 </NavItem>
                 <NavItem>
                   <NavLink
-                    className={classnames({ active: activeTab === "2" }, "fw-semibold")}
+                    className={classnames(
+                      { active: activeTab === "2" },
+                      "fw-semibold"
+                    )}
                     onClick={() => handleTabChange("2")}
                     href="#"
                   >
                     Not Check In{" "}
-                    <span className="badge bg-danger ms-1">{countNotCheckIn}</span>
+                    <span className="badge bg-danger ms-1">
+                      {countNotCheckIn}
+                    </span>
                   </NavLink>
                 </NavItem>
                 <NavItem>
                   <NavLink
-                    className={classnames({ active: activeTab === "3" }, "fw-semibold")}
+                    className={classnames(
+                      { active: activeTab === "3" },
+                      "fw-semibold"
+                    )}
                     onClick={() => handleTabChange("3")}
                     href="#"
                   >
-                    Leave <span className="badge bg-secondary ms-1">{countLeave}</span>
+                    Leave{" "}
+                    <span className="badge bg-secondary ms-1">
+                      {countLeave}
+                    </span>
                   </NavLink>
                 </NavItem>
               </Nav>
@@ -289,8 +327,10 @@ const TodayaAttendanceTable = () => {
                       <th style={{ width: "10%" }}>Out Time</th>
                       <th style={{ width: "10%" }}>Total Hours</th>
                       <th style={{ width: "10%" }}>Status</th>
-                       {/* Show Location header only in In tab */}
-    {activeTab === "1" && <th style={{ width: "10%" }}>Location</th>}
+                      {/* Show Location header only in In tab */}
+                      {activeTab === "1" && (
+                        <th style={{ width: "10%" }}>Location</th>
+                      )}
                     </tr>
                   </thead>
 
@@ -381,10 +421,14 @@ const TodayaAttendanceTable = () => {
                               </span>
                             </td>
                             {activeTab === "1" && (
-            <td>
-              <Button onClick={() => handleViewLocations(row)}>View</Button>
-            </td>
-          )}
+                              <td>
+                                <Button
+                                  onClick={() => handleViewLocations(row)}
+                                >
+                                  View
+                                </Button>
+                              </td>
+                            )}
                           </tr>
                         ))}
 
@@ -471,58 +515,60 @@ const TodayaAttendanceTable = () => {
             </CardBody>
           </Card>
         </Col>
- <Modal size="lg" isOpen={isMapOpen} toggle={() => setIsMapOpen(!isMapOpen)}>
-  <ModalHeader toggle={() => setIsMapOpen(false)}>
-    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-      <span style={{ fontWeight: "600", fontSize: "18px" }}>
-        Employee Location History
-      </span>
-      <span
-        style={{
-          backgroundColor: "#e0f7fa", // light cyan
-          color: "#00796b", // teal text
-          padding: "4px 10px",
-          borderRadius: "12px",
-          fontSize: "14px",
-          fontWeight: "500",
-        }}
-      >
-        {selectedEmployeeId}
-      </span>
-    </div>
-  </ModalHeader>
-
-  <ModalBody
-    style={{
-      height: "75vh",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      flexDirection: "column",
-    }}
-  >
-    {selectedLocations && selectedLocations.length > 0 ? (
-      <UsersClusterMap locations={selectedLocations} />
-    ) : (
-      <>
-        <Lottie options={defaultOptions} height={250} width={250} />
-        <p
-          style={{
-            marginTop: "15px",
-            fontSize: "16px",
-            fontWeight: "500",
-            color: "#555",
-            textAlign: "center",
-          }}
+        <Modal
+          size="lg"
+          isOpen={isMapOpen}
+          toggle={() => setIsMapOpen(!isMapOpen)}
         >
-          No location history available
-        </p>
-      </>
-    )}
-  </ModalBody>
-</Modal>
+          <ModalHeader toggle={() => setIsMapOpen(false)}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontWeight: "600", fontSize: "18px" }}>
+                Employee Location History
+              </span>
+              <span
+                style={{
+                  backgroundColor: "#e0f7fa", // light cyan
+                  color: "#00796b", // teal text
+                  padding: "4px 10px",
+                  borderRadius: "12px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                }}
+              >
+                {selectedEmployeeId}
+              </span>
+            </div>
+          </ModalHeader>
 
-
+          <ModalBody
+            style={{
+              height: "75vh",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              flexDirection: "column",
+            }}
+          >
+            {selectedLocations && selectedLocations.length > 0 ? (
+              <UsersClusterMap locations={selectedLocations} />
+            ) : (
+              <>
+                <Lottie options={defaultOptions} height={250} width={250} />
+                <p
+                  style={{
+                    marginTop: "15px",
+                    fontSize: "16px",
+                    fontWeight: "500",
+                    color: "#555",
+                    textAlign: "center",
+                  }}
+                >
+                  No location history available
+                </p>
+              </>
+            )}
+          </ModalBody>
+        </Modal>
       </Row>
     </Container>
   );
