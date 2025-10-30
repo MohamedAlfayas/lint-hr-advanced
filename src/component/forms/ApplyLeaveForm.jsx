@@ -65,20 +65,29 @@ const ApplyLeaveForm = () => {
   const [inBetweenDays, setInBetweenDays] = useState([]);
   const [leaveBalanceCount, setLeaveBalanceCount] = useState(0);
   const [timeError, setTimeError] = useState("");
+  const [fullDayStart, setFullDayStart] = useState(null);
+  const [fullDayEnd, setFullDayEnd] = useState(null);
+  const [halfDayStartTime, setHalfDayStartTime] = useState(null);
+  const [halfDayEndTime, setHalfDayEndTime] = useState(null);
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
+  console.log("workScheduleData", workScheduleData);
+  
   const profileData = GetLocalStorageData("my_profile") || [];
   const holidayData = GetLocalStorageData("holiday") || [];
 
   const { leave_type_for_current_employee } = useSelector(
     (state) => state.LeaveTypeReducer
   );
+
   useEffect(() => {
     if (!!form_obj) {
+      const thisEmpWS = workScheduleData?.find(
+        (val) => val.id === profileData.work_schedule_id
+      );
       !!thisEmpWS &&
         setWeekOffDays(
           thisEmpWS.workday
-
             .map((d) => {
               if (d.is_day_on === false) {
                 return d.day_id;
@@ -106,6 +115,21 @@ const ApplyLeaveForm = () => {
         start: form_obj?.start,
         end: form_obj?.end,
       });
+
+      // ================= FIX START =================
+      // When editing, if the leave is a half-day leave, populate the start and end time states.
+      if (
+        form_obj?.day_type === 2 && // 2 represents 'Half Day'
+        form_obj.unit === leave_type_day_unit // Ensure it's a day-based leave
+      ) {
+        if (form_obj.start) {
+          setHalfDayStartTime(form_obj.start); // The state will hold the ISO string from the API
+        }
+        if (form_obj.end) {
+          setHalfDayEndTime(form_obj.end);
+        }
+      }
+      // ================= FIX END =================
 
       setHourDiff(timeConvert(form_obj.requested_leave_count));
       setDaysCount(form_obj.requested_leave_count);
@@ -137,12 +161,15 @@ const ApplyLeaveForm = () => {
   );
 
   const handleStartEndDatesChange = (leave_type_obj) => {
+    const localThisEmpWS = workScheduleData?.find(
+        (val) => val.id === profileData.work_schedule_id
+      );
+
     leave_type_obj?.weekend_between_leave === true
       ? setWeekOffDays([])
-      : !!thisEmpWS &&
+      : !!localThisEmpWS &&
         setWeekOffDays(
-          thisEmpWS.workday
-
+          localThisEmpWS.workday
             .map((d) => {
               if (d.is_day_on === false) {
                 return d.day_id;
@@ -258,6 +285,9 @@ const ApplyLeaveForm = () => {
     } else {
       updatedDaysCount = 0;
     }
+    // Resetting times when day type changes
+    setHalfDayStartTime(null);
+    setHalfDayEndTime(null);
 
     setLeaveApplyObj({
       ...leaveapplyObj,
@@ -366,44 +396,63 @@ const ApplyLeaveForm = () => {
       leave_type_id: Yup.number()
         .required("Select Leave Type")
         .min(1, "Please Select Leave Type"),
+      reason: Yup.string().required("Reason is required"),
     }),
     onSubmit: async (values) => {
+      // Merge half-day start/end times before submission
+      const finalLeaveObj = {
+        ...values,
+        start: values.day_type === 2 ? halfDayStartTime : values.start,
+        end: values.day_type === 2 ? halfDayEndTime : values.end,
+      };
+
       dispatch(setLoaderVisible(true));
-      if (values.requested_leave_count === 0) {
+
+      if (
+        !finalLeaveObj.requested_leave_count ||
+        finalLeaveObj.requested_leave_count === 0
+      ) {
         toast.error("Total Hour Can't Be Zero");
-      } else if (values.requested_leave_count > leaveBalanceCount) {
+        dispatch(setLoaderVisible(false));
+        return;
+      }
+
+      if (finalLeaveObj.requested_leave_count > leaveBalanceCount) {
         toast.error("Selected Leave Exceeds Balance Leave");
-      } else {
+        dispatch(setLoaderVisible(false));
+        return;
+      }
+      
+      try {
         const Api = await PostApi(
           "leave/leave-application/create/",
-          values,
+          finalLeaveObj,
           false
         );
-        if (Api.status && Api.status === 200) {
+
+        if (Api.status === 200) {
           if (leaveapplyObj.id === 0) {
             dispatch(addLeaveApplication(Api?.data.data));
-            dispatch(
-              setLeaveTypeForCurrentEmployee(
-                Api?.data?.leave_type_for_employee || []
-              )
-            );
           } else {
             dispatch(editLeaveApplication(Api?.data?.data));
-            dispatch(
-              setLeaveTypeForCurrentEmployee(
-                Api?.data?.leave_type_for_employee || []
-              )
-            );
           }
+
+          // Update leave type for employee
+          dispatch(
+            setLeaveTypeForCurrentEmployee(Api?.data?.leave_type_for_employee || [])
+          );
 
           dispatch(toggleRSBView(false));
           toast.success(Api?.data?.message);
         } else {
           toast.error(Api?.data?.message || Api?.data?.detail);
         }
+      } catch (error) {
+        console.error(error);
+        toast.error("Something went wrong!");
+      } finally {
+        dispatch(setLoaderVisible(false));
       }
-
-      dispatch(setLoaderVisible(false));
     },
   });
 
@@ -478,7 +527,7 @@ const ApplyLeaveForm = () => {
 
               {!!selectedLeaveTypeObj?.unit &&
                 selectedLeaveTypeObj?.unit === leave_type_day_unit && (
-                  <Col lg={10}>
+                  <Col lg={12}>
                     <div className="input-group">
                       <div className="input-group">
                         <Label className="form-label">Select Date</Label>
@@ -515,7 +564,7 @@ const ApplyLeaveForm = () => {
                     </div>
 
                     {(daysCount === 1 || daysCount === 0.5) && (
-                      <div className="input-group">
+                      <div className="input-group mt-3">
                         <Col lg={12}>
                           <Label className="form-label">Select Day Type</Label>
                         </Col>
@@ -529,7 +578,7 @@ const ApplyLeaveForm = () => {
                             value={
                               leaveapplyObj?.day_type
                                 ? day_type.find(
-                                    (d) => d.id === leaveapplyObj?.day_type
+                                    (d) => d.value === leaveapplyObj?.day_type
                                   )
                                 : []
                             }
@@ -540,122 +589,73 @@ const ApplyLeaveForm = () => {
                     )}
                   </Col>
                 )}
-{leaveapplyObj?.day_type === 2 && (
-  <div className="row mt-3 align-items-end">
-    {/* Start Time */}
-    <Col md={3} lg={3} xxl={3}>
-      <Label className="form-label">Start Time</Label>
-<TimePicker
-  name="start"
-  className="form-control"
-  placeholder="Select Start Time"
-  minuteStep={30}
-  use12Hours={false}
-  format="HH:mm"
-  value={leaveapplyObj?.start ? dayjs(leaveapplyObj.start) : null}
-  onChange={(time) => {
-    if (time) {
-      // Use existing start date if available, otherwise today
-      const currentStart = leaveapplyObj?.start
-        ? dayjs(leaveapplyObj.start)
-        : dayjs();
+              {leaveapplyObj?.day_type === 2 && (
+                <div className="row mt-3 align-items-end">
+                  {/* Start Time */}
+                  <Col md={4}>
+                    <Label className="form-label">Start Time</Label>
+                    <TimePicker
+                      value={halfDayStartTime ? dayjs(halfDayStartTime) : null}
+                      format="HH:mm"
+                      minuteStep={30}
+                      onChange={(time) => {
+                        if (!time) return;
+                        const datePart = dayjs(leaveapplyObj.start).format("YYYY-MM-DD");
+                        const newDateTime = dayjs(`${datePart} ${time.format("HH:mm:ss")}`);
+                        setHalfDayStartTime(newDateTime.format("YYYY-MM-DD HH:mm:ss"));
+                      }}
+                      style={{ width: "100%" }}
+                    />
+                  </Col>
 
-      const merged = currentStart
-        .hour(time.hour())
-        .minute(time.minute())
-        .second(0);
+                  {/* End Time */}
+                  <Col md={4}>
+                    <Label className="form-label">End Time</Label>
+                    <TimePicker
+                      value={halfDayEndTime ? dayjs(halfDayEndTime) : null}
+                      format="HH:mm"
+                      minuteStep={30}
+                      disabled={!halfDayStartTime}
+                      onChange={(time) => {
+                        if (!time) return;
 
-      setTimeError("");
-
-      setLeaveApplyObj((prev) => ({
-        ...prev,
-        start: merged.format("YYYY-MM-DD HH:mm:ss"),
-        end:
-          prev.end && dayjs(prev.end).isBefore(merged) ? null : prev.end,
-      }));
-    }
-  }}
-  style={{ width: "100%" }}
-/>
-    </Col>
-
-    {/* End Time */}
-    <Col md={3} lg={3} xxl={3}>
-      <Label className="form-label">End Time</Label>
-     <TimePicker
-  name="end"
-  className="form-control"
-  placeholder="Select End Time"
-  minuteStep={30}
-  use12Hours={false}
-  format="HH:mm"
-  value={leaveapplyObj?.end ? dayjs(leaveapplyObj.end) : null}
-  disabled={!leaveapplyObj?.start}
-  onChange={(time) => {
-    if (time && leaveapplyObj?.start) {
-      // Use existing end date if available, otherwise same date as start
-      const currentEnd = leaveapplyObj?.end
-        ? dayjs(leaveapplyObj.end)
-        : dayjs(leaveapplyObj.start);
-
-      const merged = currentEnd
-        .hour(time.hour())
-        .minute(time.minute())
-        .second(0);
-
-      const startTime = dayjs(leaveapplyObj.start);
-
-      if (merged.isBefore(startTime)) {
-        setTimeError("End time cannot be before start time!");
-        return;
-      }
-
-      setTimeError("");
-
-      setLeaveApplyObj((prev) => ({
-        ...prev,
-        end: merged.format("YYYY-MM-DD HH:mm:ss"),
-      }));
-    }
-  }}
-  style={{ width: "100%" }}
-/>
-    </Col>
-
-    {/* Total Hours */}
-    <Col md={2} lg={2} xxl={2}>
-      <Label className="form-label">Total Hours</Label>
-      <span className="form-control text-center" style={{ fontSize: "12px" }}>
-        {leaveapplyObj?.start && leaveapplyObj?.end
-          ? dayjs(leaveapplyObj.end).diff(dayjs(leaveapplyObj.start), "hours", true).toFixed(2)
-          : "0.00"}{" "}
-        h
-      </span>
-    </Col>
-
-    {/* Error Message */}
-    {timeError && (
-      <Col md={12}>
-        <div className="text-danger" style={{ fontSize: "12px" }}>
-          {timeError}
-        </div>
-      </Col>
-    )}
-
-    {/* Help Text */}
-    <Col md={12}>
-      <div id="passwordHelpBlock" className="form-text">
-        Please select Date and Hour
-      </div>
-    </Col>
-  </div>
-)}
+                        const start = dayjs(halfDayStartTime);
+                        const datePart = dayjs(leaveapplyObj.start).format("YYYY-MM-DD");
+                        const end = dayjs(`${datePart} ${time.format("HH:mm:ss")}`);
 
 
+                        if (end.isBefore(start)) {
+                          setTimeError("End time cannot be before start time!");
+                          return;
+                        }
+                        setTimeError("");
+                        setHalfDayEndTime(end.format("YYYY-MM-DD HH:mm:ss"));
+                      }}
+                      style={{ width: "100%" }}
+                    />
+                  </Col>
 
+                  {/* Total Hours */}
+                  <Col md={3}>
+                    <Label className="form-label">Total Hours</Label>
+                    <span className="form-control text-center">
+                      {halfDayStartTime && halfDayEndTime
+                        ? dayjs(halfDayEndTime)
+                            .diff(dayjs(halfDayStartTime), "hours", true)
+                            .toFixed(2)
+                        : "0.00"}{" "}
+                      h
+                    </span>
+                  </Col>
 
-
-
+                  {/* Error */}
+                  {timeError && (
+                    <Col md={12}>
+                      <div className="text-danger mt-2">{timeError}</div>
+                    </Col>
+                  )}
+                </div>
+              )}
 
               {!!selectedLeaveTypeObj?.unit &&
                 selectedLeaveTypeObj?.unit === leave_type_hour_unit && (
@@ -730,72 +730,7 @@ const ApplyLeaveForm = () => {
                     </div>
                   </Col>
                 )}
-              {/* <Col md={6} lg={6} xxl={6}>
-                                <div>
-                                  <Label
-                                    htmlFor="location"
-                                    className="form-label"
-                                  >
-                                    Location
-                                  </Label>
-                                  <div>
-                                    <Select
-                                      id="location"
-                                      isMulti={false}
-                                      // options={location_option || []}
-                                      // value={
-                                      //   (payrollobj.general.location &&
-                                      //     location_option.find(
-                                      //       (e) =>
-                                      //         e.value ===
-                                      //         payrollobj.general.location
-                                      //     )) ||
-                                      //   []
-                                      // }
-                                      className="basic-multi-select "
-                                    />
-                                  </div>
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text mb-3"
-                                  >
-                                    Select Payroll Country.
-                                  </div>
-                                </div>
-                              </Col> */}
-              {/* <Col md={6} lg={6} xxl={6}>
-                                <div>
-                                  <Label
-                                    htmlFor="currency"
-                                    className="form-label"
-                                  >
-                                    Currency
-                                  </Label>
-                                  <div>
-                                    <Select
-                                      id="currency"
-                                      isMulti={false}
-                                      // options={currency_option || []}
-                                      // value={
-                                      //   (payrollobj.general.currency &&
-                                      //     currency_option.find(
-                                      //       (e) =>
-                                      //         e.value ===
-                                      //         payrollobj.general.currency
-                                      //     )) ||
-                                      //   []
-                                      // }
-                                      className="basic-multi-select "
-                                    />
-                                  </div>
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text mb-3"
-                                  >
-                                    Select Payroll Currency.
-                                  </div>
-                                </div>
-                              </Col> */}
+
               <Col lg={12}>
                 <label htmlFor="reason" className="form-label">
                   Reason *
@@ -808,6 +743,11 @@ const ApplyLeaveForm = () => {
                   value={leaveapplyObj?.reason || ""}
                   onChange={handleInputChange}
                 />
+                 {FormikForm.touched.reason && FormikForm.errors.reason ? (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.reason}
+                    </div>
+                  ) : null}
               </Col>
               <Col lg={12}>
                 <div className="text-end">

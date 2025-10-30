@@ -101,7 +101,7 @@ const AttendanceEmployeeTable = () => {
   const [locationType, setLocationType] = useState("");
   const [allLocationData, setAllLocationData] = useState([]);
 
-  console.log("timelineList", timelineList);
+
   
 
   const { individual_attendance_report_data } = useSelector(
@@ -168,23 +168,36 @@ const AttendanceEmployeeTable = () => {
     setEditModalOpen(false);
   };
 
-  const DateCell = ({ rowData, dataKey, ...props }) => {
-    let warning_icon =
-      rowData?.total_no_of_check_in !== rowData?.total_no_of_check_out ? (
-        <i class="ri-error-warning-line text-warning fs-5"></i>
-      ) : null;
+ const DateCell = ({ rowData, dataKey, ...props }) => {
+  const warning_icon =
+    rowData?.total_no_of_check_in !== rowData?.total_no_of_check_out ? (
+      <i className="ri-error-warning-line text-warning fs-5"></i>
+    ) : null;
 
-    return (
-      <Cell {...props} className="fw-bold">
+  return (
+    <Cell {...props} className="fw-bold">
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column", // Stack date and day vertically
+          alignItems: "center",     // Center horizontally
+          justifyContent: "center", // Center vertically if row height is bigger
+          height: "100%",            // Ensure full cell height for vertical centering
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center" }}>
           <div>{format(new Date(rowData.date), "dd MMM, yyyy")}</div>
           <span style={{ marginLeft: "5px" }}>{warning_icon}</span>
         </div>
-      </Cell>
-    );
-  };
+        <div style={{ fontSize: "12px", color: "#666", fontWeight:"normal" }}>{rowData.day}</div>
+      </div>
+    </Cell>
+  );
+};
 
   const InOutCell = ({ rowData, dataKey, ...props }) => {
+  
+    
     if (rowData.is_present === false) {
       return (
         <Cell {...props} className="link-group">
@@ -771,6 +784,7 @@ const AttendanceEmployeeTable = () => {
           loading={loading}
           bordered={true}
           className="mb-5"
+           rowHeight={60}
           affixHorizontalScrollbar
           affixHeader={{
             affix: true,
@@ -1144,6 +1158,8 @@ const AttendanceEmployeeTable = () => {
                 <tbody>
                   {timelineList.length > 0 &&
                     timelineList.map((data, idx) => {
+                      console.log(data,"dsd");
+                      
                       let checkInData = timelineList[idx];
                       let checkOutData = timelineList[idx + 1];
                       if (
@@ -1401,7 +1417,7 @@ const AttendanceEmployeeTable = () => {
                       htmlFor="exampleFormControlTextarea1"
                       className="form-label text-body"
                     >
-                      Leave a Notesssss
+                      Leave a Notes
                     </label>
                     <textarea
                       className="form-control bg-light border-light"

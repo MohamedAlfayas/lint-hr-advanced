@@ -35,6 +35,7 @@ import PirioritiesReducer from "../ChildReducer/PirioritiesReducer";
 import ContactGroupReducer from "../ChildReducer/ContactGroupReducer";
 import ContactsReducer from "../ChildReducer/ContactsReducer";
 import TodayAttendanceReducer from "../ChildReducer/TodayAttendanceReducer";
+import EmployeeProgressBarReducer from "../ChildReducer/EmployeeProgressBarReducer";
 
 export const MainReducer = combineReducers({
   MetaReducer: MetaReducer,
@@ -72,5 +73,6 @@ export const MainReducer = combineReducers({
   PirioritiesReducer: PirioritiesReducer,
   ContactGroupReducer: ContactGroupReducer,
   ContactsReducer: ContactsReducer,
-  TodayAttendanceReducer:TodayAttendanceReducer
+  TodayAttendanceReducer:TodayAttendanceReducer,
+  EmployeeProgressBarReducer : EmployeeProgressBarReducer
 });

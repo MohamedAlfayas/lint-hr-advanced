@@ -9,6 +9,7 @@ import AttendanceGraph from "./AttendanceGraph";
 import DeptWiseAttendanceWidgets from "./DeptWiseAttendanceWidgets";
 import AttendanceLeaveApprovalTable from "./AttendanceLeaveApprovalTable";
 import TodayAttendanceTable from "./TodayAttendanceTable";
+import '../../common/css/lc_style.css';
 import {
   VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
@@ -50,46 +51,28 @@ const Dashboard = () => {
     <React.Fragment>
       <div className="page-content">
         <Container fluid>
-          <Row>
-            <Col>
-              <div className="h-100">
-                <Section rightClickBtn={toggleRightColumn} />
+         <Row className="lc_dashboard_row">
+  {/* Attendance Table (takes 9 cols on XL, full width on smaller) */}
+ <Col xl={9} lg={8} md={12} sm={12} xs={12} className="lc_table_col">
+    <TodayAttendanceTable />
+  </Col>
 
-                <Row>
-                  {/* <Col xl={3}>
-                    <AttendanceStatistics />
-                  </Col> */}
-
-                  <Col xl={9} >
-                    {/* <Row>
-                      <PayrollWidgets />
-                    </Row>
-                    <Row>
-                      <AttendanceGraph />
-                    </Row> */}
-                    <TodayAttendanceTable />
-                  </Col>
-                  <Col xl={3}>
-                    <div >
-      <UsersClusterMap />
+  {/* Map */}
+  <Col xl={3} lg={4} md={12} sm={12} xs={12} className="lc_map_col">
+  <div className="lc_container">
+    <UsersClusterMap />
     </div>
-                  </Col>
+  </Col>
 
-                  {showApprovalTable && (
-                    <Col xl={12}>
-                      <AttendanceLeaveApprovalTable />
-                    </Col>
-                  )}
+  {showApprovalTable && (
+    <Col xl={12} className="mb-3">
+      <AttendanceLeaveApprovalTable />
+    </Col>
+  )}
 
-                  <Col xl={12}> {/* <DeptWiseAttendanceWidgets /> */}</Col>
-                </Row>
-              </div>
-            </Col>
-            <EmployeeActivity
-              rightColumn={rightColumn}
-              hideRightColumn={toggleRightColumn}
-            />
-          </Row>
+  <Col xl={12} className="mb-3">{/* <DeptWiseAttendanceWidgets /> */}</Col>
+</Row>
+
         </Container>
       </div>
     </React.Fragment>

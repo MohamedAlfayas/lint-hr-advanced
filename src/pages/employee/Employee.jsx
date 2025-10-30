@@ -32,122 +32,28 @@ import { previousDateFormat } from "../../common/js/ConvertDateFormat";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { Api } from "../../common/api/Api";
 import { SimpleRadialbar } from "./SimpleRadialbar";
+import { GetApi } from "../../common/api/GetApi";
+import { setTodayAttendanceProgressBar } from "../../redux/reducers/ChildReducer/EmployeeProgressBarReducer";
+
 
 const Employee = () => {
   const dispatch = useDispatch();
   const { employee_data } = useSelector((state) => state.EmployeeReducer);
+    const todayAttendance = useSelector(
+    (state) => state.EmployeeProgressBarReducer
+  );
+  console.log(todayAttendance,"TODAY");
+  
 
   const { version } = useSelector((state) => state.MetaReducer);
 
   const EmployeeData = GetLocalStorageData("employee") || [];
-  const [attendanceData, setAttendanceData] = useState([]);
-  const [progressMap, setProgressMap] = useState({});
-  console.log(progressMap, "progressMap");
-  console.log(attendanceData, "attendanceData");
-  
-  const dummyDataArray = [
-    {
-      is_holiday: true,
-      is_present: true,
-      is_week_off: false,
-      is_leave_approved: false,
-      total_work_duration: 28800,
-      current_working_duration: 12000,
-    },
-    {
-      is_holiday: false,
-      is_present: true,
-      is_week_off: false,
-      is_leave_approved: false,
-      total_work_duration: 28800,
-      current_working_duration: 20000,
-    },
-    {
-      is_holiday: false,
-      is_present: false,
-      is_week_off: false,
-      is_leave_approved: false,
-      total_work_duration: 28800,
-      current_working_duration: 5000,
-    },
-  ];
-  const getProgressMap = (dataArray) => {
-    const map = {};
-    dataArray.forEach((entry) => {
-      const {
-        employee_id,
-        current_working_duration,
-        total_working_duration,
-        is_present,
-      } = entry;
-  
-      if (is_present) {
-        console.log(is_present, "is_present");
-        
-        const percentage = Math.round(
-          (current_working_duration / total_working_duration) * 100
-        );
-        map[employee_id] = Math.min(percentage, 100);
-      }
-      // If is_present is false, do not add to map at all
-    });
-    return map;
-  };
-  
 
-  const dummyData = {
-    is_holiday: true,
-    is_present: true,
-    is_week_off: false,
-    is_leave_approved: false,
-    total_work_duration: 28800,
-    current_working_duration: 12000,
-  };
-
-  const getProgressPercentage = () => {
-    const { current_working_duration, total_work_duration } = dummyData;
-    console.log(current_working_duration,"jhkjh");
-    
-
-    if (!dummyData.is_present) return 0;
-
-    const percentage = Math.round(
-      (current_working_duration / total_work_duration) * 100
-    );
-    return Math.min(percentage, 100); // cap at 100%
-  };
-
-  const formatSecondsToTime = (seconds) => {
-    const h = Math.floor(seconds / 3600)
-      .toString()
-      .padStart(2, "0");
-    const m = Math.floor((seconds % 3600) / 60)
-      .toString()
-      .padStart(2, "0");
-    const s = (seconds % 60).toString().padStart(2, "0");
-    return `${h}:${m}:${s}`;
-  };
 
   useEffect(() => {
     dispatch(setEmployee(EmployeeData));
   }, [version]);
-  // let AllEmployeeData = []
-  // useEffect(() => {
-  //   dispatch(setLoaderVisible(true));
-  //   Api({
-  //     method: "GET",
-  //     url: "report/get-tm-todays-attendance-report/?employee_type=0",
-  //   })
-
-  //     .then((res) => {
-  //       dispatch(setLoaderVisible(false));
-  //       AllEmployeeData = res.data.all_team_members_todays_attendance_report
-
-  //     })
-  //     .catch((err) => {
-  //       dispatch(setLoaderVisible(false));
-  //     });
-  // }, []);
+  
   useEffect(() => {
     // dispatch(
     //   setEmployeeTableFilterKeys({
@@ -159,25 +65,24 @@ const Employee = () => {
     dispatch(resetEmployeeTableFilterKeys());
   }, []);
 
-  // useEffect(() => {
-  //   dispatch(setLoaderVisible(true));
-  //   Api({
-  //     method: "GET",
-  //     url: "attendance/get_employee_current_attendance_data/",
-  //   })
-  //     .then((res) => {
-  //       const employeeAttendanceData = res?.data?.data?.employee_durations;
-  //       setAttendanceData(employeeAttendanceData);
-  //       setProgressMap(getProgressMap(employeeAttendanceData));
-  //       dispatch(setLoaderVisible(false));
-  //     })
-  //     .catch((err) => {
-  //       dispatch(setLoaderVisible(false));
-  //     });
-  // }, []);
-  // useEffect(() => {
-  //   console.log("Updated attendanceData:", attendanceData);
-  // }, [attendanceData]);
+  useEffect(() => {
+    const fetchAttendanceStatus = async () => {
+      try {
+        const res = await GetApi("/attendance/get-attendance-status");
+        const result = res?.data;
+        console.log(result,"RESULT");
+        
+        dispatch(setTodayAttendanceProgressBar(result));
+        
+      } catch (err) {
+        console.error("Error fetching attendance status:", err);
+      }
+    };
+
+    fetchAttendanceStatus();
+  }, []);
+
+ 
 
   const CustomFieldsForThisForm = GetCustomField("employee") || [];
   const DepartmentData = GetLocalStorageData("department") || [];
@@ -192,134 +97,113 @@ const Employee = () => {
 
   // Column
   const additionalColumn = [
-    {
-      Header: "Name",
-      accessor: "first_name",
-      filterable: false,
-      id: "first_name",
-      accessor: (obj) => {
+{
+  Header: "Name",
+  accessor: "first_name",
+  filterable: false,
+  id: "first_name",
+  accessor: (obj) => {
+    // Find this employee's attendance data
+      const employeeAttendance = todayAttendance.today_attendance.find(
+      (emp) => emp.employee?.id === obj.id
+    );
 
-        const progress = progressMap[obj.emp_id] || 0;
-        console.log("progress", progress);
-        
-        const employeeAttendance = attendanceData.find(
-          (emp) => emp.employee_id === obj.emp_id
-        );
-        console.log("employeeAttendance", employeeAttendance);
-        
+    const totalWorkDuration = employeeAttendance?.total_work_duration ?? 0;
+    const totalTimeWorked = employeeAttendance?.total_time_worked ?? 0;
 
-        const progressBarColor = employeeAttendance?.is_present
-          ? "bg-success"
-          : "bg-danger progress-bar-striped";
-        // console.log("EMP DAT", AllEmployeeData);
+    const progress =
+      totalWorkDuration > 0
+        ? Math.min(100, Math.round((totalTimeWorked / totalWorkDuration) * 100))
+        : 0;
 
-        // Declaring a variable outside of JSX
-        let employee = null;
-        // if (AllEmployeeData) {
-        //   employee = !!AllEmployeeData.find(employee => employee.employee_id === obj.emp_id);
-        //   console.log("data", employee);
-        // }
 
-        return obj.profile_url ? (
-          <div className="d-flex gap-2 align-items-center">
-            <div className="flex-shrink-0">
-              <img
-                src={obj.profile_url}
-                alt=""
-                className="avatar-xs rounded-circle"
-                style={{ objectFit: "cover" }}
-              />
+   
+
+   
+
+    return (
+      <div className="d-flex gap-2 align-items-center">
+        {/* Profile Image / Initial */}
+        <div className="flex-shrink-0">
+          {obj.profile_url ? (
+            <img
+              src={obj.profile_url}
+              alt=""
+              className="avatar-xs rounded-circle"
+              style={{ objectFit: "cover" }}
+            />
+          ) : (
+            <div
+              className="avatar-xs rounded-circle"
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                background: "#0ab39c",
+              }}
+              data-bs-toggle="tooltip"
+              title={obj.first_name}
+            >
+              <span className="first_letter" style={{ color: "white" }}>
+                {obj?.first_name?.charAt(0) || ""}
+              </span>
             </div>
-            <div className="flex-grow-1">
-              <div>
-                <Link
-                  to="#"
-                  onClick={() => viewEmployee(obj)}
-                  className="link-body-emphasis mb-0"
-                >
-                  <h5 className="fs-14 mb-1">
-                    <span>{obj.first_name}</span>
-                    <span style={{ color: "#a29797", fontSize: "smaller" }}>
-                      {" "}
-                      #{obj.emp_id}
-                    </span>
-                  </h5>
-                </Link>
-              </div>
-              <div>{obj.email}</div>
-              <div className="progress progress-sm animated-progess lc-color">
-                <div
-                  className="progress-bar bg-success"
-                  role="progressbar"
-                  aria-valuenow="0"
-                  aria-valuemin="0"
-                  aria-valuemax="100"
-                  // style={{
-                  //   width: Math.round(
-                  //     (rowData.total_paid_hr_in_seconds /
-                  //       rowData.total_work_schedule_hr_without_break_in_seconds) *
-                  //       100 *
-                  //       2
-                  //   ),
-                  // }}
-                ></div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="d-flex gap-2 align-items-center">
-            <div className="flex-shrink-0">
-              <div
-                className="avatar-xs rounded-circle"
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  background: "#0ab39c",
-                  // border: "2px solid #22bb33",
-                }}
-                data-bs-toggle="tooltip"
-                title={obj.first_name}
-              >
-                <span className="first_letter" style={{ color: "white" }}>
-                  {obj?.first_name?.charAt(0) || ""}
+          )}
+        </div>
+
+        {/* Employee Info */}
+        <div className="flex-grow-1">
+          <div>
+            <Link
+              to="#"
+              onClick={() => viewEmployee(obj)}
+              className="link-body-emphasis mb-0"
+            >
+              <h5 className="fs-14 mb-1">
+                <span>{obj.first_name}</span>
+                <span style={{ color: "#a29797", fontSize: "smaller" }}>
+                  {" "}
+                  #{obj.emp_id}
                 </span>
-              </div>
-            </div>
-            <div className="flex-grow-1">
-              <div>
-                <Link
-                  to="#"
-                  onClick={() => viewEmployee(obj)}
-                  className="link-body-emphasis mb-0"
-                >
-                  <h5 className="fs-14 mb-1">
-                    <span>{obj.first_name}</span>
-                    <span style={{ color: "#a29797", fontSize: "smaller" }}>
-                      {" "}
-                      #{obj.emp_id}
-                    </span>
-                  </h5>
-                </Link>
-              </div>
-              <div>{obj.email}</div>
-              <div className="progress progress-sm animated-progess lc-color">
-                <div
-                  className={`progress-bar ${progressBarColor}`}
-                  role="progressbar"
-                  aria-valuenow={progress}
-                  aria-valuemin="0"
-                  aria-valuemax="100"
-                  style={{ width: `${progress}%` }}
-                ></div>
-              </div>
-            </div>
+              </h5>
+            </Link>
           </div>
-        );
-      },
-      // filterable: false,
-      // id: "nameAndEmail",
-    },
+          <div>{obj.email}</div>
+
+          {/* Show progress bar only if employee is active */}
+        {obj.is_active && (
+  <div
+    className="progress mt-1"
+    style={{
+      height: "4px",
+      backgroundColor: "#e9ecef", // gray background
+      borderRadius: "4px",
+    }}
+  >
+    <div
+      className="progress-bar"
+      role="progressbar"
+      style={{
+        width: `${progress}%`,
+        backgroundColor: progress >= 100 ? "#28a745" : "#28a745", // green if complete or on time
+        borderRadius: "4px",
+        transition: "width 0.5s ease",
+      }}
+      aria-valuenow={progress}
+      aria-valuemin="0"
+      aria-valuemax="100"
+    ></div>
+  </div>
+)}
+
+        </div>
+      </div>
+    );
+  },
+}
+
+
+,
 
     // {
     //   Header: " Employee ID",
@@ -351,10 +235,10 @@ const Employee = () => {
       id: "role_id",
       filterable: false,
       accessor: (obj) => {
-        console.log("obj", obj);
+        // console.log("obj", obj);
         
         const RoleData = GetLocalStorageData("role");
-        console.log("RoleData", RoleData);
+      
         
         let thisRole = RoleData
           ? RoleData.filter((data) => obj.role?.id === data.id)
@@ -642,6 +526,12 @@ const Employee = () => {
       cf_values: CustomFieldsForThisForm || [],
       outside_range_notes_required: true,
       allow_attendance_outside_the_range: false,
+      can_web_checkin:false,
+      allowed_attendance_methods:{
+        requires_face_verification: false,
+        requires_biometric_authentication: false,
+        allow_manual_checkin: false,
+      }
     };
   }, [version]);
 

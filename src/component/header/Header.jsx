@@ -43,14 +43,20 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
       type: "GET",
       url: "employee/get-my-team-members/",
     })
-      .then((res) => {
-        const response = res?.data?.data;
-        let emp_options = response.map((d) =>
-          employee_data.find((e) => e.id === d)
-        );
+       .then((res) => {
+      const response = res?.data?.data;
+      console.log("RES ==",response);
+      
 
-        setEmployeeOptions(emp_options);
-      })
+      // Map employee IDs to employee objects
+      let emp_options = response
+        .map((d) => employee_data.find((e) => e.id === d))
+        // Keep only active employees
+        .filter((emp) => emp?.is_active === true);
+
+      console.log("EMP-OPTIONS (Active Only)", emp_options);
+      setEmployeeOptions(emp_options);
+    })
       .catch((err) => {
         console.log("Something Went Wrong !!");
       });
@@ -59,6 +65,9 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const [showEmpAll, setShowEmpAll] = useState(false);
   const [hideTimer, setHideTimer] = useState(false);
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+
+  console.log("profile_data", profile_data);
+  
 
   const emp_department = profile_data.primary_department_id_list
                                           ? department_data.filter((d) =>
@@ -78,12 +87,10 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
       setShowEmpAll(true);
     }
 
-    if (emp_department.length > 0) {
-   
-      const isMobileCheckinAllowed = emp_department.every(
-        (d) => d.allow_only_mobile_checkin === true
-      );
-    
+    if (profile_data.length > 0) {
+ 
+      const isMobileCheckinAllowed = profile_data.can_web_checkin || false;
+
       setHideTimer(isMobileCheckinAllowed);
     }
     

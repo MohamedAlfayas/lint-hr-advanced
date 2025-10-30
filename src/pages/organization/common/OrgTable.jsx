@@ -20,6 +20,8 @@ const OrgTable = ({ departmentId }) => {
       d.primary_department_id_list.includes(departmentId) &&
       d.is_active === true
   );
+  console.log(TableData,"TABLE");
+  
 
   const columns = [
     {

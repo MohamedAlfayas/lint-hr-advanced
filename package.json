@@ -138,6 +138,7 @@
     "@types/lodash": "^4.14.195",
     "@types/react-bootstrap-table2-paginator": "^2.1.2",
     "@types/react-bootstrap-table2-toolkit": "^2.1.7",
-    "babel-eslint": "^10.1.0"
+    "babel-eslint": "^10.1.0",
+    "eslint-plugin-react-hooks": "^7.0.0"
   }
 }

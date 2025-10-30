@@ -96,6 +96,7 @@ const EmployeeForm = () => {
   const [selectedFileName3, setSelectedFileName3] = React.useState("");
   const [selectedFileName4, setSelectedFileName4] = React.useState("");
   const [selectedFileName5, setSelectedFileName5] = React.useState("");
+  const [errors, setErrors] = useState("");
   const inputRef = useRef();
 
   const showFileNameIfSelected = () => {
@@ -354,6 +355,10 @@ const EmployeeForm = () => {
     });
   };
 
+
+  
+
+
   const FormikForm = useFormik({
     enableReinitialize: true,
     initialValues: employeeObj,
@@ -387,12 +392,25 @@ const EmployeeForm = () => {
         .required("Select Work Schedule")
         .min(1, "Please Select Work Schedule"),
     }),
-    onSubmit: async (values) => {
-      HandleEmployeeSaveAPI(values);
+       onSubmit: async (values) => {
+        console.log("val",values);        
+      
+
+      const hasAtLeastOneTrue = Object.values(values.allowed_attendance_methods).some((v) => v === true);
+
+      if (!hasAtLeastOneTrue) {
+        setErrors("Please select at least one attendance method!");
+        return; // Stop submission
+      } else {
+        setErrors(""); // Clear error
+        await HandleEmployeeSaveAPI(values);
+      }
     },
-  });
+  })
 
   const HandleEmployeeSaveAPI = async (values) => {
+    console.log("Formik Values = ", values);
+    
     console.log("employee Save API");
     let root_department = dep_options.find((d) => d.is_root === true);
     let root_department_id = !!root_department && root_department.id;
@@ -409,7 +427,7 @@ const EmployeeForm = () => {
       employeeImage !== null &&
         form_data.append("profile", employeeImage, employeeImage.name);
       Object.entries(employeeObj).map((key, value) => {
-        if (key[0] === "cf_values") {
+        if (key[0] === "cf_values" || key[0] === "allowed_attendance_methods") {
           form_data.append(key[0], JSON.stringify(key[1]));
         } else {
           form_data.append(key[0], key[1]);
@@ -1762,6 +1780,130 @@ const EmployeeForm = () => {
                   is allowed to checkIn/CheckOut outside the branch range.
                 </div>
               </Col>
+              <Col md={12} lg={12} xxl={12}>
+                <div>
+                  <Label htmlFor="can_web_checkin" className="form-label">
+                    Allow Web Check In/Out
+                  </Label>
+
+                  <div className="mb-2">
+                    <div
+                      className="form-check form-switch form-switch-md form-switch-success"
+                      dir="ltr"
+                    >
+                      {" "}
+                      <Input
+                        id="can_web_checkin"
+                        name="is_active"
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={employeeObj.can_web_checkin}
+                        onChange={(e) =>
+                          setEmployeeObj({
+                            ...employeeObj,
+                            can_web_checkin: e.target.checked,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div id="passwordHelpBlock" className="form-text mb-3">
+                  Check if{" "}
+                  <b>
+                    <i>{employeeObj.first_name}</i>
+                  </b>{" "}
+                  is allowed to Web Check In/Out.
+                </div>
+              </Col>
+              <Col md={12} lg={12} xxl={12}>
+  <div>
+      <Label htmlFor="auth_types" className="form-label">
+        Allowed Attendance Methods
+      </Label>
+
+      <div className="d-flex gap-4 mb-2">
+        {/* Face Lock */}
+        <div className="form-check">
+          <Input
+            id="face_lock"
+            name="face_lock"
+            type="checkbox"
+            className="form-check-input"
+            checked={employeeObj.allowed_attendance_methods?.requires_face_verification || false}
+            onChange={(e) =>
+              setEmployeeObj({
+                ...employeeObj,
+                allowed_attendance_methods:{
+                  ...employeeObj?.allowed_attendance_methods,
+                  requires_face_verification: e.target.checked
+                },
+              })
+            }
+          />
+          <Label className="form-check-label" htmlFor="face_lock">
+            Face Recognition
+          </Label>
+        </div>
+
+        {/* Fingerprint */}
+        <div className="form-check">
+          <Input
+            id="fingerprint"
+            name="fingerprint"
+            type="checkbox"
+            className="form-check-input"
+            checked={employeeObj.allowed_attendance_methods?.requires_biometric_authentication || false}
+            onChange={(e) =>
+              setEmployeeObj({
+                ...employeeObj,
+                allowed_attendance_methods:{
+                  ...employeeObj?.allowed_attendance_methods,
+                  requires_biometric_authentication: e.target.checked
+                },
+              })
+            }
+          />
+          <Label className="form-check-label" htmlFor="fingerprint">
+            Fingerprint
+          </Label>
+        </div>
+
+        {/* Manual Check-In */}
+        <div className="form-check">
+          <Input
+            id="manual_checkin"
+            name="manual_checkin"
+            type="checkbox"
+            className="form-check-input"
+            checked={employeeObj.allowed_attendance_methods?.allow_manual_checkin || false}
+            onChange={(e) =>
+              setEmployeeObj({
+                ...employeeObj,
+                allowed_attendance_methods:{
+                  ...employeeObj?.allowed_attendance_methods,
+                  allow_manual_checkin: e.target.checked
+                },
+              })
+            }
+          />
+          <Label className="form-check-label" htmlFor="manual_checkin">
+            Manual Check-In
+          </Label>
+        </div>
+      </div>
+
+      {/* Error message */}
+      {errors && <div style={{ color: "red", marginTop: "4px" }}>{errors}</div>}
+
+     
+    </div>
+
+  
+</Col>
+
+
+          
 
               {/* <Col md={12} lg={12} xxl={12}>
                 <div>

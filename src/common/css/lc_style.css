@@ -101,7 +101,7 @@ body .rs-table-row-header .rs-table-cell {
   color: white !important;
 }
 .lc-color{
-  background-color: yellowgreen;
+  background-color: #e9ecef;
 
 }
 .lc-icon-hover {
@@ -148,16 +148,109 @@ body .rs-table-row-header .rs-table-cell {
   max-width: 100%;
   overflow-x: auto; 
 }
-.map-container {
-  width: 100%;
-  height: 100vh;
+
+
+/* Parent row alignment */
+.lc_dashboard_row {
+  align-items: stretch; /* Make table and map equal height */
+  gap: 0; /* remove extra space between cols */
 }
 
-.user-marker {
-  border-radius: 50%;
-  border: 2px solid white;
-  box-shadow: 0 0 5px rgba(0,0,0,0.3);
+/* Table column */
+.lc_table_col {
+  display: flex;
+  flex-direction: column;
 }
-.bw-map {
-  filter: grayscale(100%) brightness(90%) contrast(100%);
+
+/* Fix table header height */
+.lc_table_col table thead th {
+  padding: 12px 10px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* Map column */
+.lc_map_col {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Make map take full height of column */
+.lc_map_col > div {
+  flex: 1;
+  min-height: 400px; /* Laptop safe */
+  height: 100%;
+  border-radius: 12px;
+}
+
+/* Reduce gap between sections */
+.lc_table_col,
+.lc_map_col {
+  margin-bottom: 15px;
+  margin-left: -12px;
+}
+
+/* Laptop/Desktop optimization */
+@media (min-width: 992px) {
+  .lc_table_col,
+  .lc_map_col {
+    margin-bottom: 0; /* remove gap in row */
+  }
+  .lc_map_col > div {
+    min-height: 500px; /* taller map on larger screens */
+  }
+}
+/* InfoWindow box */
+.lc_infowindow {
+  text-align: center;
+  max-width: 180px;
+  font-family: "Inter", sans-serif;
+  color: #333;
+}
+
+/* Profile image */
+.lc_marker_img {
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* Fallback circle (when no profile img) */
+.lc_marker_fallback {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #4a90e2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 22px;
+  font-weight: bold;
+  margin: 0 auto 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* Name */
+.lc_marker_name {
+  margin: 5px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+}
+
+/* Address */
+.lc_marker_address {
+  font-size: 12px;
+  margin: 4px 0;
+  color: #666;
+}
+
+/* Timestamp */
+.lc_marker_time {
+  font-size: 11px;
+  color: #999;
 }

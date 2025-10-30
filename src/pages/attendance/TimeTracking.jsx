@@ -8,6 +8,8 @@ import axios from 'axios';
 
 
 const TimeTracking = ({hideTimer}) => {
+  console.log("hideTimer", hideTimer);
+  
   const [firstCheckInTime, setFirstCheckInTime] = useState(null);
   const [location, setLocation] = useState(null);
   const [error, setError] = useState(null);

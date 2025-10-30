@@ -7,15 +7,20 @@ import { toast } from "react-toastify";
 import { GetTotalWorkDuration } from "../../../common/js/GetTotalWorkDuration";
 import { setTimer } from "../../../redux/reducers/ChildReducer/ClockReducer";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
+import { h } from "@fullcalendar/core/preact.js";
 
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_MAP_API_KEY;
 
 const WebCheckInOut = ({ showTimer, hideTimer }) => {
+ 
+  
   const [loading, setLoading] = useState(false);
   const [currentlyCheckedIn, setCurrentlyCheckedIn] = useState(false);
   const { total_seconds, currently_checked_in, show_attendance_timer } = useSelector(
     (state) => state.ClockReducer
   );
+
+  
 
   const dispatch = useDispatch();
 
@@ -37,41 +42,70 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
     }
   }, [total_seconds, currently_checked_in, dispatch]);
 
-  const handleToggleClick = async () => {
-    setLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`;
+ const handleToggleClick = async () => {
+  setLoading(true);
 
-        let accurate_address = "Address not found";
-        let location_id = "";
-        let fullMapData = {};
+  // Step 1: Get Device Type
+  const getDeviceType = () => {
+    const ua = navigator.userAgent;
+    if (/mobile/i.test(ua)) return "Mobile";
+    if (/tablet/i.test(ua)) return "Tablet";
+    return "Desktop";
+  };
+  const device_type = getDeviceType();
 
-        try {
-          const res = await fetch(geocodeUrl);
-          const data = await res.json();
+  // Step 2: Get Public IP Address
+  const getUserIP = async () => {
+    try {
+      const response = await fetch("https://api.ipify.org?format=json");
+      const data = await response.json();
+      return data.ip;
+    } catch (error) {
+      console.error("Error fetching IP:", error);
+      return null;
+    }
+  };
 
-          if (data.status === "OK") {
-            const result = data.results[0];
-            accurate_address = result.formatted_address;
-            location_id = result.place_id;
-            fullMapData = result;
-          }
-        } catch (err) {
-          console.error("Geocoding error:", err);
+  const ip_address = await getUserIP();
+
+  // Step 3: Get Geolocation
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude } = position.coords;
+      const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`;
+
+      let accurate_address = "Address not found";
+      let location_id = "";
+      let fullMapData = {};
+
+      try {
+        const res = await fetch(geocodeUrl);
+        const data = await res.json();
+
+        if (data.status === "OK") {
+          const result = data.results[0];
+          accurate_address = result.formatted_address;
+          location_id = result.place_id;
+          fullMapData = result;
         }
+      } catch (err) {
+        console.error("Geocoding error:", err);
+      }
 
-        const payload = {
-          entry_type: currently_checked_in ? 2 : 1,
-          punched_by: 1,
-          accurate_address,
-          latitude,
-          longitude,
-          location_id,
-          map_data: fullMapData,
-        };
+      // ✅ Step 4: Build Payload
+      const payload = {
+        entry_type: currently_checked_in ? 2 : 1,
+        punched_by: 1,
+        accurate_address,
+        latitude,
+        longitude,
+        location_id,
+        map_data: fullMapData,
+        device_type,   // 👈 Added
+        ip_address,    // 👈 Added
+      };
 
+      try {
         const Api = await PostApi(
           "attendance/check-in-check-out-entry/",
           payload,
@@ -91,14 +125,20 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
             toast.error(Api?.data?.message);
           }
         }
-        setLoading(false);
-      },
-      (error) => {
-        toast.error("Location access is required for check-in/out");
-        setLoading(false);
+      } catch (err) {
+        console.error("Check-in API error:", err);
+        toast.error("Something went wrong during check-in/out");
       }
-    );
-  };
+
+      setLoading(false);
+    },
+    (error) => {
+      toast.error("Location access is required for check-in/out");
+      setLoading(false);
+    }
+  );
+};
+
 
   const FirstCheckinWithLateAttendanceNotesAPI = async () => {
     dispatch(setLoaderVisible(true));

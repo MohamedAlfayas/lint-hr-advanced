@@ -91,11 +91,14 @@ const DepartmentsTab = () => {
   const [departmentName, setDepartmentName] = useState(0);
 
   const nodeTemplate1 = (node) => {
+    
+    
     if (true) {
       let emp_list_for_this_department =
         EmployeeData.filter((d) =>
-          d.primary_department_id_list.includes(node.id)
+          d.primary_department_id_list.includes(node.id) && d.is_active === true
         ) || [];
+console.log("emp_list_for_this_department ",emp_list_for_this_department);
 
       return (
         <Col xxl={12} lg={12}>

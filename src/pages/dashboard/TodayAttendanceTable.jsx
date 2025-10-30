@@ -11,14 +11,15 @@ import {
   Row,
   Input,
   Button,
+  Modal,
+  ModalHeader,
+  ModalBody,
 } from "reactstrap";
 import classnames from "classnames";
 import moment from "moment";
 import { Api } from "../../common/api/Api";
 import { setTodayAttendance } from "../../redux/reducers/ChildReducer/TodayAttendanceReducer";
 import { useDispatch } from "react-redux";
-import { formatDate } from "@fullcalendar/core/index.js";
-import { Modal, ModalHeader, ModalBody } from "reactstrap";
 import UsersClusterMap from "./UsersClusterMap";
 import Lottie from "react-lottie";
 import noLocationFind from "../auth/loader/animation/no-location.json";
@@ -42,16 +43,17 @@ const TodayaAttendanceTable = () => {
   );
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 4; // 5 rows visible by default
+  const itemsPerPage = 4;
   const [departments, setDepartments] = useState([]);
   const [attendanceData, setAttendanceData] = useState([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const [selectedLocations, setSelectedLocations] = useState([]);
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [countIn, setCountIn] = useState(0);
+  const [countNotCheckIn, setCountNotCheckIn] = useState(0);
+  const [countLeave, setCountLeave] = useState(0);
 
-  console.log("NEw Date = ", new Date().toISOString().split("T")[0]);
-
-  // Load departments from localStorage
+  // ✅ Load departments from localStorage
   useEffect(() => {
     const globalData = localStorage.getItem("lint_hr_globaldata");
     if (globalData) {
@@ -67,16 +69,35 @@ const TodayaAttendanceTable = () => {
     }
   }, []);
 
-  // Fetch attendance data
+  // ✅ Fetch attendance data
   useEffect(() => {
     const fetchAttendance = async () => {
       try {
+        // Reset previous data and badge counts before loading
+        setAttendanceData([]);
+        setCountIn(0);
+        setCountNotCheckIn(0);
+        setCountLeave(0);
+        dispatch(setTodayAttendance([]));
+
         const response = await Api.get(
           `/attendance/get-attendance-status?date=${ConvertISODateFormat(
             ConvertDateFormat(dateFilter)
           )}`
         );
         const result = response.data;
+        console.log(result,"RES");
+        
+
+        // ✅ Handle empty response safely
+        if (!Array.isArray(result) || result.length === 0) {
+          setAttendanceData([]);
+          setCountIn(0);
+          setCountNotCheckIn(0);
+          setCountLeave(0);
+          dispatch(setTodayAttendance([]));
+          return;
+        }
 
         const formattedData = result.map((item) => ({
           emp_id: item.employee.emp_id,
@@ -93,12 +114,11 @@ const TodayaAttendanceTable = () => {
           inTime: item.first_check_in_time || "-",
           outTime: item.last_check_out_time || "-",
           totalHours: (() => {
-            const totalSeconds = item.total_time_worked_till_last_checkout;
+            const totalSeconds = item.total_time_worked_till_last_checkout || 0;
             const hours = Math.floor(totalSeconds / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             return `${hours}h ${minutes}m`;
           })(),
-
           status: item.is_present ? "On Time" : "Late",
           date: item.date,
           location_history: item.location_history,
@@ -115,9 +135,28 @@ const TodayaAttendanceTable = () => {
 
         setAttendanceData(formattedData);
         dispatch(setTodayAttendance(result));
+
+        // ✅ Calculate badge counts safely
+        const inCount = formattedData.filter(
+          (i) => i.status === "On Time"
+        ).length;
+        const notCheckInCount = formattedData.filter(
+          (i) => i.status === "Late"
+        ).length;
+        const leaveCount = 0;
+
+        setCountIn(inCount);
+        setCountNotCheckIn(notCheckInCount);
+        setCountLeave(leaveCount);
         setCurrentPage(1);
       } catch (error) {
         console.error("Error fetching attendance data:", error);
+        // Reset everything on error
+        setAttendanceData([]);
+        setCountIn(0);
+        setCountNotCheckIn(0);
+        setCountLeave(0);
+        dispatch(setTodayAttendance([]));
       }
     };
 
@@ -125,23 +164,24 @@ const TodayaAttendanceTable = () => {
   }, [dateFilter, departments, dispatch]);
 
   const handleViewLocations = (row) => {
-    setSelectedEmployeeId(row.first_name); // store emp_id
-    setSelectedLocations(row.location_history || []); // store locations (empty array if null)
+    setSelectedEmployeeId(row.first_name);
+    setSelectedLocations(row.location_history || []);
     setIsMapOpen(true);
   };
 
-  // Filter data based on tab, department, and search
+  // ✅ Filtered data
   const filteredData = useMemo(() => {
     return attendanceData.filter((item) => {
+      console.log(item,"item");
+      
       if (activeTab === "1" && item.status !== "On Time") return false;
       if (activeTab === "2" && item.status !== "Late") return false;
-      if (activeTab === "3") return false; // Leave not implemented
+      if (activeTab === "3") return false;
 
       if (departmentFilter !== "All" && item.department !== departmentFilter)
         return false;
 
       const lowerSearch = search.toLowerCase();
-
       return (
         (item.first_name || "").toLowerCase().includes(lowerSearch) ||
         (item.department || "").toLowerCase().includes(lowerSearch) ||
@@ -153,7 +193,7 @@ const TodayaAttendanceTable = () => {
     });
   }, [attendanceData, activeTab, departmentFilter, search]);
 
-  // Pagination
+  // ✅ Pagination
   const paginatedData = useMemo(() => {
     const startIdx = (currentPage - 1) * itemsPerPage;
     return filteredData.slice(startIdx, startIdx + itemsPerPage);
@@ -161,18 +201,11 @@ const TodayaAttendanceTable = () => {
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-  const countIn = attendanceData.filter(
-    (item) => item.status === "On Time"
-  ).length;
-  const countNotCheckIn = attendanceData.filter(
-    (item) => item.status === "Late"
-  ).length;
-  const countLeave = 0;
-
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setCurrentPage(1);
   };
+
   const defaultOptions = {
     loop: true,
     autoplay: true,
@@ -216,15 +249,6 @@ const TodayaAttendanceTable = () => {
                   </Col>
 
                   <Col md="4">
-                    {/* <Input
-                      type="date"
-                      max={moment().format("YYYY-MM-DD")}
-                      value={dateFilter}
-                      onChange={(e) => {
-                        setDateFilter(e.target.value);
-                        setCurrentPage(1);
-                      }}
-                    /> */}
                     <DatePicker
                       value={dayjs(dateFilter, DateFormat)}
                       format={DateFormat}
@@ -311,142 +335,117 @@ const TodayaAttendanceTable = () => {
               {/* Table */}
               <div
                 className="table-responsive table-card mb-1 mt-2"
-                style={{
-                  minHeight: "350px", // fixed space for 5 rows
-                }}
+                style={{ minHeight: "350px" }}
               >
                 <table
                   className="table align-middle table-nowrap"
-                  style={{ tableLayout: "fixed", width: "100%" }}
+                  style={{ width: "100%" }}
                 >
                   <thead className="table-light text-muted">
                     <tr>
-                      <th style={{ width: "30%" }}>Name</th>
-                      <th style={{ width: "20%" }}>Department</th>
-                      <th style={{ width: "10%" }}>In Time</th>
-                      <th style={{ width: "10%" }}>Out Time</th>
-                      <th style={{ width: "10%" }}>Total Hours</th>
-                      <th style={{ width: "10%" }}>Status</th>
-                      {/* Show Location header only in In tab */}
-                      {activeTab === "1" && (
-                        <th style={{ width: "10%" }}>Location</th>
-                      )}
+                      <th>Name</th>
+                      <th>Department</th>
+                      <th>In Time</th>
+                      <th>Out Time</th>
+                      <th>Total Hours</th>
+                      <th>Status</th>
+                      {activeTab === "1" && <th>Location</th>}
                     </tr>
                   </thead>
 
                   <tbody>
                     {paginatedData.length > 0 ? (
-                      <>
-                        {paginatedData.map((row, idx) => (
-                          <tr key={idx}>
-                            <td>
-                              <div className="d-flex gap-2 align-items-center">
-                                <div className="flex-shrink-0">
-                                  {row.profile_url ? (
-                                    <img
-                                      src={row.profile_url}
-                                      alt=""
-                                      className="avatar-xs rounded-circle"
-                                      style={{ objectFit: "cover" }}
-                                    />
-                                  ) : (
-                                    <div
-                                      className="avatar-xs rounded-circle"
-                                      style={{
-                                        display: "flex",
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                        background: "#0ab39c",
-                                      }}
-                                      title={row.first_name}
-                                    >
-                                      <span style={{ color: "white" }}>
-                                        {row.first_name.charAt(0)}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                <div className="flex-grow-1">
-                                  <h5 className="fs-14 mb-1">
-                                    <span>{row.first_name}</span>
-                                    <span
-                                      style={{
-                                        color: "#a29797",
-                                        fontSize: "smaller",
-                                      }}
-                                    >
-                                      {" "}
-                                      #{row.emp_id}
+                      paginatedData.map((row, idx) => (
+                        <tr key={idx}>
+                          <td>
+                            <div className="d-flex gap-2 align-items-center">
+                              <div className="flex-shrink-0">
+                                {row.profile_url ? (
+                                  <img
+                                    src={row.profile_url}
+                                    alt=""
+                                    className="avatar-xs rounded-circle"
+                                    style={{ objectFit: "cover" }}
+                                  />
+                                ) : (
+                                  <div
+                                    className="avatar-xs rounded-circle"
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "center",
+                                      alignItems: "center",
+                                      background: "#0ab39c",
+                                    }}
+                                  >
+                                    <span style={{ color: "white" }}>
+                                      {row.first_name.charAt(0)}
                                     </span>
-                                  </h5>
-                                  <div>{row.email}</div>
-
-                                  {activeTab === "1" && (
-                                    <div
-                                      className="progress progress-sm animated-progess lc-color"
-                                      style={{ backgroundColor: "#e0e0e0" }}
-                                    >
-                                      <div
-                                        className={`progress-bar ${
-                                          row.status === "On Time"
-                                            ? "bg-success"
-                                            : "bg-danger progress-bar-striped"
-                                        }`}
-                                        role="progressbar"
-                                        aria-valuenow={row.progress}
-                                        aria-valuemin="0"
-                                        aria-valuemax="100"
-                                        style={{ width: `${row.progress}%` }}
-                                      ></div>
-                                    </div>
-                                  )}
-                                </div>
+                                  </div>
+                                )}
                               </div>
-                            </td>
-
-                            <td>{row.department}</td>
-                            <td>{row.inTime}</td>
-                            <td>{row.outTime}</td>
-                            <td>{row.totalHours}</td>
+                              <div className="flex-grow-1">
+                                <h5 className="fs-14 mb-1">
+                                  {row.first_name}{" "}
+                                  <span
+                                    style={{
+                                      color: "#a29797",
+                                      fontSize: "smaller",
+                                    }}
+                                  >
+                                    #{row.emp_id}
+                                  </span>
+                                </h5>
+                                <div>{row.email}</div>
+                                {activeTab === "1" && (
+                                  <div className="progress progress-sm animated-progess lc-color">
+                                    <div
+                                      className={`progress-bar ${
+                                        row.status === "On Time"
+                                          ? "bg-success"
+                                          : "bg-danger progress-bar-striped"
+                                      }`}
+                                      role="progressbar"
+                                      aria-valuenow={row.progress}
+                                      aria-valuemin="0"
+                                      aria-valuemax="100"
+                                      style={{ width: `${row.progress}%` }}
+                                    ></div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td>{row.department}</td>
+                          <td>{row.inTime}</td>
+                          <td>{row.outTime}</td>
+                          <td>{row.totalHours}</td>
+                          <td>
+                            <span
+                              className={`badge text-uppercase ${
+                                row.status === "On Time"
+                                  ? "bg-success-subtle text-success"
+                                  : "bg-danger-subtle text-danger"
+                              }`}
+                            >
+                              {row.status}
+                            </span>
+                          </td>
+                          {activeTab === "1" && (
                             <td>
-                              <span
-                                className={`badge text-uppercase ${
-                                  row.status === "On Time"
-                                    ? "bg-success-subtle text-success"
-                                    : "bg-danger-subtle text-danger"
-                                }`}
+                              <Button
+                                color="info"
+                                size="sm"
+                                onClick={() => handleViewLocations(row)}
                               >
-                                {row.status}
-                              </span>
+                                View
+                              </Button>
                             </td>
-                            {activeTab === "1" && (
-                              <td>
-                                <Button
-                                  onClick={() => handleViewLocations(row)}
-                                >
-                                  View
-                                </Button>
-                              </td>
-                            )}
-                          </tr>
-                        ))}
-
-                        {/* Empty rows for spacing */}
-                        {paginatedData.length < itemsPerPage &&
-                          Array.from({
-                            length: itemsPerPage - paginatedData.length,
-                          }).map((_, idx) => (
-                            <tr key={`empty-${idx}`}>
-                              <td colSpan={6} style={{ border: "none" }}>
-                                &nbsp;
-                              </td>
-                            </tr>
-                          ))}
-                      </>
+                          )}
+                        </tr>
+                      ))
                     ) : (
                       <tr>
-                        <td colSpan={6} style={{ border: "none" }}>
+                        <td colSpan={7} style={{ border: "none" }}>
                           <div
                             style={{
                               display: "flex",
@@ -475,7 +474,7 @@ const TodayaAttendanceTable = () => {
                                 textAlign: "center",
                               }}
                             >
-                              No Notes Found!
+                              No Data Found!
                             </p>
                           </div>
                         </td>
@@ -488,9 +487,8 @@ const TodayaAttendanceTable = () => {
               {/* Pagination */}
               <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  Page {currentPage} of {totalPages}
+                  Page {currentPage} of {totalPages || 1}
                 </div>
-
                 <div>
                   <Button
                     color="primary"
@@ -501,11 +499,12 @@ const TodayaAttendanceTable = () => {
                   >
                     Previous
                   </Button>
-
                   <Button
                     color="primary"
                     size="sm"
-                    disabled={currentPage === totalPages || totalPages === 0}
+                    disabled={
+                      currentPage === totalPages || totalPages === 0
+                    }
                     onClick={() => setCurrentPage((prev) => prev + 1)}
                   >
                     Next
@@ -515,6 +514,8 @@ const TodayaAttendanceTable = () => {
             </CardBody>
           </Card>
         </Col>
+
+        {/* Map Modal */}
         <Modal
           size="lg"
           isOpen={isMapOpen}
@@ -527,8 +528,8 @@ const TodayaAttendanceTable = () => {
               </span>
               <span
                 style={{
-                  backgroundColor: "#e0f7fa", // light cyan
-                  color: "#00796b", // teal text
+                  backgroundColor: "#e0f7fa",
+                  color: "#00796b",
                   padding: "4px 10px",
                   borderRadius: "12px",
                   fontSize: "14px",

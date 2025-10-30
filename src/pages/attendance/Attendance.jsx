@@ -80,19 +80,12 @@ const AttendanceDashboard = () => {
         ResetLoaderVisible();
       });
 
-      if (emp_department.length > 0) {
+     if (profile_data.length > 0) {
+ 
+      const isMobileCheckinAllowed = profile_data.can_web_checkin || false;
 
-        console.log("emp_department", emp_department)
-     
-        const isMobileCheckinAllowed = emp_department.every(
-          (d) => d.allow_only_mobile_checkin === true
-        );
-      
-        console.log("isMobileCheckinAllowed", isMobileCheckinAllowed);
-      
-        // Set hideTimer to true only if all allow_only_mobile_checkin are true
-        setHideTimer(isMobileCheckinAllowed);
-      }
+      setHideTimer(isMobileCheckinAllowed);
+    }
   }, []);
 
   const ResetLoaderVisible = () => {
