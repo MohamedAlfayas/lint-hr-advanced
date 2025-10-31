@@ -107,6 +107,8 @@ const Employee = () => {
       const employeeAttendance = todayAttendance.today_attendance.find(
       (emp) => emp.employee?.id === obj.id
     );
+    console.log("EMP",employeeAttendance);
+    
 
     const totalWorkDuration = employeeAttendance?.total_work_duration ?? 0;
     const totalTimeWorked = employeeAttendance?.total_time_worked ?? 0;

@@ -16,9 +16,9 @@ const containerStyle = {
   boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
 };
 
-const center = {
-  lat: 20,
-  lng: 0,
+const indiaCenter = {
+  lat: 22.3511148, // Approximate center of India
+  lng: 78.6677428,
 };
 
 const UsersClusterMapGoogle = ({ locations }) => {
@@ -31,46 +31,50 @@ const UsersClusterMapGoogle = ({ locations }) => {
   );
 
   const [selectedMarker, setSelectedMarker] = useState(null);
+  const [markers, setMarkers] = useState([]);
   const mapRef = useRef(null);
 
-  // Convert data into markers
-  let markers = [];
-
-  if (locations && locations.length > 0) {
-    markers = locations
-      .map((loc, idx) => ({
-        id: idx,
-        name: `Point ${idx + 1}`,
-        lat: parseFloat(loc.latitude),
-        lng: parseFloat(loc.longitude),
-        address: loc.accurate_address,
-        timestamp: loc.timestamp,
-      }))
-      .filter((m) => !isNaN(m.lat) && !isNaN(m.lng)); // Filter out invalid coords
-  } else {
-    markers = attendanceData
-      .map((item) => {
-        if (!item.first_check_in) return null; // Ignore if no first_check_in
-
-        const lat = parseFloat(item.first_check_in.latitude);
-        const lng = parseFloat(item.first_check_in.longitude);
-
-        if (isNaN(lat) || isNaN(lng)) return null;
-
-        return {
-          id: item.employee.id,
-          name: item.employee.first_name,
-          profile_url: item.employee.profile_url,
-          lat,
-          lng,
-        };
-      })
-      .filter(Boolean); // Remove nulls
-  }
-
-  // Auto fit bounds when markers update
+  // ✅ Build markers based on source (locations or attendanceData)
   useEffect(() => {
-    if (mapRef.current && markers.length > 0) {
+    if (locations && locations.length > 0) {
+      const newMarkers = locations
+        .map((loc, idx) => ({
+          id: idx,
+          name: `Point ${idx + 1}`,
+          lat: parseFloat(loc.latitude),
+          lng: parseFloat(loc.longitude),
+          address: loc.accurate_address,
+          timestamp: loc.timestamp,
+        }))
+        .filter((m) => !isNaN(m.lat) && !isNaN(m.lng));
+      setMarkers(newMarkers);
+    } else if (attendanceData && attendanceData.length > 0) {
+      const newMarkers = attendanceData
+        .map((item) => {
+          if (!item.first_check_in) return null;
+
+          const lat = parseFloat(item.first_check_in.latitude);
+          const lng = parseFloat(item.first_check_in.longitude);
+          if (isNaN(lat) || isNaN(lng)) return null;
+
+          return {
+            id: item.employee.id,
+            name: item.employee.first_name,
+            profile_url: item.employee.profile_url,
+            lat,
+            lng,
+          };
+        })
+        .filter(Boolean);
+      setMarkers(newMarkers);
+    } else {
+      setMarkers([]);
+    }
+  }, [locations, attendanceData]);
+
+  // ✅ Auto-fit map bounds when markers update
+  useEffect(() => {
+    if (mapRef.current && markers.length > 0 && window.google) {
       const bounds = new window.google.maps.LatLngBounds();
       markers.forEach((m) => bounds.extend({ lat: m.lat, lng: m.lng }));
       mapRef.current.fitBounds(bounds, 50);
@@ -78,16 +82,12 @@ const UsersClusterMapGoogle = ({ locations }) => {
   }, [markers]);
 
   if (!isLoaded) return <p>Loading Map...</p>;
-  const indiaCenter = {
-  lat: 22.3511148, // Approximate center of India
-  lng: 78.6677428,
-};
 
   return (
     <GoogleMap
       mapContainerStyle={containerStyle}
-        center={markers.length > 0 ? undefined : indiaCenter} // Use India if no markers
-    zoom={markers.length > 0 ? 10 : 5} // Zoom in to India if no markers
+      center={markers.length > 0 ? undefined : indiaCenter}
+      zoom={markers.length > 0 ? 10 : 5}
       onLoad={(map) => (mapRef.current = map)}
       options={{
         streetViewControl: false,
@@ -95,6 +95,7 @@ const UsersClusterMapGoogle = ({ locations }) => {
         fullscreenControl: false,
       }}
     >
+      {/* ✅ Render clustered markers */}
       {markers.length > 0 && (
         <MarkerClusterer>
           {(clusterer) =>
@@ -110,6 +111,7 @@ const UsersClusterMapGoogle = ({ locations }) => {
         </MarkerClusterer>
       )}
 
+      {/* ✅ InfoWindow on marker click */}
       {selectedMarker && (
         <InfoWindow
           position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}

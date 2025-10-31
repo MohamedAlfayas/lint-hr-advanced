@@ -164,6 +164,8 @@ const TodayaAttendanceTable = () => {
   }, [dateFilter, departments, dispatch]);
 
   const handleViewLocations = (row) => {
+    console.log("ROW",row);
+    
     setSelectedEmployeeId(row.first_name);
     setSelectedLocations(row.location_history || []);
     setIsMapOpen(true);
