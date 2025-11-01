@@ -1,93 +1,159 @@
+// src/component/maps/UsersClusterMapGoogle.jsx
 import React, { useEffect, useRef, useState } from "react";
 import {
   GoogleMap,
   useJsApiLoader,
   Marker,
   InfoWindow,
-  MarkerClusterer,
 } from "@react-google-maps/api";
 import { useSelector } from "react-redux";
 import "../../common/css/lc_style.css";
 
+// ✅ Map Container Style
 const containerStyle = {
   width: "105%",
   height: "95%",
-  borderRadius: "2px",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+  borderRadius: "6px",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
 };
 
+// ✅ Default Center (India)
 const indiaCenter = {
-  lat: 22.3511148, // Approximate center of India
+  lat: 22.3511148,
   lng: 78.6677428,
 };
 
-const UsersClusterMapGoogle = ({ locations }) => {
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.REACT_APP_MAP_API_KEY,
-  });
+// ✅ Loader Config
+const GOOGLE_MAPS_CONFIG = {
+  id: "google-map-script",
+  googleMapsApiKey: process.env.REACT_APP_MAP_API_KEY,
+  libraries: ["places"],
+};
 
+const UsersClusterMapGoogle = ({ locations }) => {
+  const { isLoaded } = useJsApiLoader(GOOGLE_MAPS_CONFIG);
   const attendanceData = useSelector(
     (state) => state.TodayAttendanceReducer.today_attendance
   );
 
+  const [groupedMarkers, setGroupedMarkers] = useState([]);
   const [selectedMarker, setSelectedMarker] = useState(null);
-  const [markers, setMarkers] = useState([]);
   const mapRef = useRef(null);
 
-  // ✅ Build markers based on source (locations or attendanceData)
-  useEffect(() => {
-    if (locations && locations.length > 0) {
-      const newMarkers = locations
-        .map((loc, idx) => ({
-          id: idx,
-          name: `Point ${idx + 1}`,
-          lat: parseFloat(loc.latitude),
-          lng: parseFloat(loc.longitude),
-          address: loc.accurate_address,
-          timestamp: loc.timestamp,
-        }))
-        .filter((m) => !isNaN(m.lat) && !isNaN(m.lng));
-      setMarkers(newMarkers);
-    } else if (attendanceData && attendanceData.length > 0) {
-      const newMarkers = attendanceData
-        .map((item) => {
-          if (!item.first_check_in) return null;
+  console.log("atttt",attendanceData);
+  
 
-          const lat = parseFloat(item.first_check_in.latitude);
-          const lng = parseFloat(item.first_check_in.longitude);
-          if (isNaN(lat) || isNaN(lng)) return null;
+  // ✅ Build marker data and group by lat/lng
+  useEffect(() => {
+  
+  
+  const allData =
+
+  Array.isArray(locations) && locations.length > 0
+    ? locations.map((loc) => {
+        let indianTime = "";
+        if (loc?.timestamp) {
+          const date = new Date(loc.timestamp);
+          indianTime = date.toLocaleTimeString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            hour12: false,
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          });
+        }
+
+        // ✅ Clean address: remove the first comma part if it looks like a plus code
+        let cleanedAddress = "";
+        if (loc?.accurate_address) {
+          const parts = loc.accurate_address.split(",");
+          if (parts.length > 1 && parts[0].trim().match(/^[A-Z0-9+]+$/)) {
+            cleanedAddress = parts.slice(1).join(",").trim(); // remove the first part (e.g. "X7GW+6WM")
+          } else {
+            cleanedAddress = loc.accurate_address.trim();
+          }
+        }
+
+        return {
+          name: loc?.employee?.first_name || "",
+          lat: parseFloat(loc?.latitude) || 0,
+          lng: parseFloat(loc?.longitude) || 0,
+          address: cleanedAddress,
+          timestamp: indianTime,
+          profile_url: loc?.employee?.profile_url,
+        };
+      })
+    : attendanceData
+    ? attendanceData
+        .filter((item) => item.first_check_in)
+        .map((item) => {
+          let cleanedAddress = "";
+          if (item.first_check_in.location) {
+            const parts = item.first_check_in.location.split(",");
+            if (parts.length > 1 && parts[0].trim().match(/^[A-Z0-9+]+$/)) {
+              cleanedAddress = parts.slice(1).join(",").trim();
+            } else {
+              cleanedAddress = item.first_check_in.location.trim();
+            }
+          }
 
           return {
-            id: item.employee.id,
             name: item.employee.first_name,
+            department: item.employee.department_name,
+            lat: parseFloat(item.first_check_in.latitude),
+            lng: parseFloat(item.first_check_in.longitude),
             profile_url: item.employee.profile_url,
-            lat,
-            lng,
+            address: cleanedAddress,
+            timestamp: item.first_check_in_time,
           };
         })
-        .filter(Boolean);
-      setMarkers(newMarkers);
-    } else {
-      setMarkers([]);
-    }
-  }, [locations, attendanceData]);
+    : [];
+console.log(allData,"DATA");
+    const validMarkers = allData.filter(
+      (m) => !isNaN(m.lat) && !isNaN(m.lng)
+    );
 
-  // ✅ Auto-fit map bounds when markers update
+    // ✅ Group markers by coordinate (to show count)
+    const grouped = {};
+    validMarkers.forEach((m) => {
+      const key = `${m.lat.toFixed(6)}-${m.lng.toFixed(6)}`;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(m);
+    });
+
+    const groupedArray = Object.keys(grouped).map((key) => {
+      const [lat, lng] = key.split("-").map(Number);
+      return {
+        lat,
+        lng,
+        count: grouped[key].length,
+        users: grouped[key],
+      };
+    });
+
+    setGroupedMarkers(groupedArray);
+  },
+   [locations, attendanceData]);
+
+  // ✅ Fit map bounds automatically
   useEffect(() => {
-    if (mapRef.current && markers.length > 0 && window.google) {
+    if (mapRef.current && groupedMarkers.length > 0 && window.google) {
       const bounds = new window.google.maps.LatLngBounds();
-      markers.forEach((m) => bounds.extend({ lat: m.lat, lng: m.lng }));
-      mapRef.current.fitBounds(bounds, 50);
+      groupedMarkers.forEach((m) => bounds.extend({ lat: m.lat, lng: m.lng }));
+      mapRef.current.fitBounds(bounds, 80);
     }
-  }, [markers]);
+  }, [groupedMarkers]);
+
+  const handleMarkerClick = (marker) => setSelectedMarker(marker);
+  const handleCloseClick = () => setSelectedMarker(null);
 
   if (!isLoaded) return <p>Loading Map...</p>;
 
   return (
     <GoogleMap
       mapContainerStyle={containerStyle}
-      center={markers.length > 0 ? undefined : indiaCenter}
-      zoom={markers.length > 0 ? 10 : 5}
+      center={groupedMarkers.length ? undefined : indiaCenter}
+      zoom={groupedMarkers.length ? 10 : 5}
       onLoad={(map) => (mapRef.current = map)}
       options={{
         streetViewControl: false,
@@ -95,52 +161,72 @@ const UsersClusterMapGoogle = ({ locations }) => {
         fullscreenControl: false,
       }}
     >
-      {/* ✅ Render clustered markers */}
-      {markers.length > 0 && (
-        <MarkerClusterer>
-          {(clusterer) =>
-            markers.map((m) => (
-              <Marker
-                key={m.id}
-                position={{ lat: m.lat, lng: m.lng }}
-                clusterer={clusterer}
-                onClick={() => setSelectedMarker(m)}
-              />
-            ))
-          }
-        </MarkerClusterer>
-      )}
+      {/* ✅ Marker with count */}
+      {groupedMarkers.map((marker, index) => (
+        <Marker
+          key={index}
+          position={{ lat: marker.lat, lng: marker.lng }}
+          onClick={() => handleMarkerClick(marker)}
+          label={{
+            text: String(marker.count),
+            color: "#fff",
+            fontWeight: "bold",
+            fontSize: "14px",
+          }}
+          icon={{
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: "#007bff",
+            fillOpacity: 0.9,
+            strokeColor: "white",
+            strokeWeight: 2,
+            scale: 16,
+          }}
+        />
+      ))}
 
-      {/* ✅ InfoWindow on marker click */}
-      {selectedMarker && (
-        <InfoWindow
-          position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
-          onCloseClick={() => setSelectedMarker(null)}
-        >
-          <div className="lc_infowindow">
-            {selectedMarker.profile_url ? (
-              <img
-                src={selectedMarker.profile_url}
-                alt={selectedMarker.name}
-                className="lc_marker_img"
-              />
-            ) : (
-              <div className="lc_marker_fallback">
-                {selectedMarker.name?.charAt(0).toUpperCase()}
+      {/* ✅ InfoWindow - individual address & time for each record */}
+    {selectedMarker && (
+  <InfoWindow
+    position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
+    onCloseClick={handleCloseClick}
+  >
+    <div className="lc-infowindow-card lc-infowindow-compact">
+      <h6 className="lc-infowindow-title">
+        📍 {selectedMarker.count} Record{selectedMarker.count > 1 ? "s" : ""}
+      </h6>
+
+      <ul className="lc-infowindow-list">
+        {selectedMarker.users.map((user, i) => (
+          <li key={i} className="lc-infowindow-item">
+            <div className="lc-infowindow-user">
+              {user.profile_url ? (
+                <img
+                  src={user.profile_url}
+                  alt={user.name}
+                  className="lc-infowindow-avatar"
+                />
+              ) : (
+                <div className="lc-infowindow-avatar-placeholder">
+                  {user.name?.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="lc-infowindow-details">
+                <strong className="lc-infowindow-name">{user.name}</strong>
+                <div className="lc-infowindow-time">
+                  <i className="ri-time-line"></i> {user.timestamp}
+                </div>
+                <div className="lc-infowindow-address">
+                  <i className="ri-map-pin-2-fill"></i> {user.address}
+                </div>
               </div>
-            )}
-            <h4 className="lc_marker_name">{selectedMarker.name}</h4>
-            {selectedMarker.address && (
-              <p className="lc_marker_address">{selectedMarker.address}</p>
-            )}
-            {selectedMarker.timestamp && (
-              <small className="lc_marker_time">
-                {new Date(selectedMarker.timestamp).toLocaleString()}
-              </small>
-            )}
-          </div>
-        </InfoWindow>
-      )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </InfoWindow>
+)}
+
     </GoogleMap>
   );
 };

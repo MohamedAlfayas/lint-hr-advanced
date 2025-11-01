@@ -254,3 +254,119 @@ body .rs-table-row-header .rs-table-cell {
   font-size: 11px;
   color: #999;
 }
+
+/* === Main Card === */
+.lc-infowindow-card {
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  width: 260px;
+  font-family: "Inter", sans-serif;
+}
+
+/* === Header (Title + Close Button) === */
+.lc-infowindow-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fff;
+}
+
+.lc-infowindow-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #222;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* === Close Button === */
+.lc-infowindow-close {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: #777;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.lc-infowindow-close:hover {
+  color: #000;
+}
+
+/* === List === */
+.lc-infowindow-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 10px 10px 10px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+/* === Item === */
+.lc-infowindow-item {
+  margin-bottom: 8px;
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+/* === User Info === */
+.lc-infowindow-user {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.lc-infowindow-avatar,
+.lc-infowindow-avatar-placeholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #dbeafe;
+  color: #1d4ed8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* === Details === */
+.lc-infowindow-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: #333;
+}
+
+.lc-infowindow-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #111;
+}
+
+/* === Icons === */
+.lc-infowindow-time i,
+.lc-infowindow-address i {
+  color: #3b82f6;
+  font-size: 14px;
+  margin-right: 4px;
+}
+
+/* === Remove default Google padding === */
+.gm-style-iw,
+.gm-style-iw-d {
+  padding: 0 !important;
+  margin: 0 !important;
+}

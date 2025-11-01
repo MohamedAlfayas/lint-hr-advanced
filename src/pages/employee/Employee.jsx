@@ -104,9 +104,11 @@ const Employee = () => {
   id: "first_name",
   accessor: (obj) => {
     // Find this employee's attendance data
+
       const employeeAttendance = todayAttendance.today_attendance.find(
       (emp) => emp.employee?.id === obj.id
     );
+    
     console.log("EMP",employeeAttendance);
     
 
@@ -117,11 +119,6 @@ const Employee = () => {
       totalWorkDuration > 0
         ? Math.min(100, Math.round((totalTimeWorked / totalWorkDuration) * 100))
         : 0;
-
-
-   
-
-   
 
     return (
       <div className="d-flex gap-2 align-items-center">
@@ -411,6 +408,7 @@ const Employee = () => {
       accessor: (obj) => {
         let rm_obj =
           EmployeeData.find((d) => d.id === obj.reporting_manager_id) || null;
+          
 
         if (!rm_obj) {
           return (

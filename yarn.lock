@@ -3048,7 +3048,7 @@
     "@types/google.maps" "3.58.1"
     invariant "2.2.4"
 
-"@react-google-maps/infobox@2.20.0":
+"@react-google-maps/infobox@2.20.0", "@react-google-maps/infobox@^2.20.0":
   version "2.20.0"
   resolved "https://registry.yarnpkg.com/@react-google-maps/infobox/-/infobox-2.20.0.tgz#7c3dd1821c9f1e1e92570f37419b97f6f956c7ee"
   integrity sha512-03PJHjohhaVLkX6+NHhlr8CIlvUxWaXhryqDjyaZ8iIqqix/nV8GFdz9O3m5OsjtxtNho09F/15j14yV0nuyLQ==
