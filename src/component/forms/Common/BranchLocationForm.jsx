@@ -67,15 +67,14 @@ import { values } from "lodash";
 
 const BranchLocationForm = ({branchLocationObj}) => {
     const dispatch = useDispatch();
-console.log("OBJ",branchLocationObj);
+
     const [stateListOptions, setStateListOptions] = useState([]);
 
     const [CountryCodeListOptions, setCountryCodeListOptions] = useState([]);
     const [CountryListOptions, setCountryListOptions] = useState([]);
     const [formDataArray, setFormDataArray] = useState([]);
     const [showTable, setShowTable] = useState(false);
-    // const {branch_data} = useSelector(state => state.BranchReducer)
-    // console.log("jfi",branch_data);
+  
     useEffect(() => {
         let country_code_list = [];
         let country_list = [];
@@ -121,7 +120,7 @@ console.log("OBJ",branchLocationObj);
     const { form_obj } = useSelector((state) => state.RightSideBarReducer);
 
     useEffect(() => {
-        console.log("Form Obj = ", form_obj);
+        
         setBranchObj(form_obj);
         if (!!form_obj?.country && form_obj?.country !== "") {
             setStateListOptions(
@@ -145,7 +144,7 @@ console.log("OBJ",branchLocationObj);
 
 
     const handleCountryChange = (e) => {
-        console.log("Country Change = ", e);
+       
 
         setBranchObj({
             ...branchObj,
@@ -173,7 +172,7 @@ console.log("OBJ",branchLocationObj);
             accurate_address: Yup.string().required("Please Enter Accurate Address"),
         }),
         onSubmit: async (values) => {
-            console.log("SUCCESSSS !!!! Formik Values = ", values);
+            
             globalValues = values;
         //     dispatch(setLoaderVisible(true));
 

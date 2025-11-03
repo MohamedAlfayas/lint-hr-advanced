@@ -120,7 +120,7 @@ const EmployeeView = () => {
             })
             .catch((err) => {
               dispatch(setEmployeeLeaveType([]));
-              console.log("Something Went Wrong!!!");
+             
               dispatch(setLoaderVisible(false));
             });
         } else {

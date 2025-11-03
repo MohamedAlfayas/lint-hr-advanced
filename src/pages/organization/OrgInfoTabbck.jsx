@@ -241,7 +241,7 @@ const OrgInfoTab = () => {
         toast.success(res?.data?.message);
       })
       .catch((err) => {
-        console.log("ERRR === ", err);
+    
         toast.error(err?.response?.data?.message);
       });
   };

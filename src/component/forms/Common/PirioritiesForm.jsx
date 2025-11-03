@@ -56,7 +56,7 @@ const PirioritiesForm = () => {
 
   useEffect(() => {
     if (form_obj) {
-      console.log("form_obj", form_obj);
+      
 
       setPirioritiesData(form_obj);
     }
@@ -77,12 +77,12 @@ const PirioritiesForm = () => {
       name: Yup.string().required("Please Enter Status  Name"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
+     
 
       dispatch(setLoaderVisible(true));
 
       const Api = await PostApi("priority/save-priority/", values, false);
-      console.log("API RES = ", Api);
+    
 
       if (Api.status && Api.status === 200) {
         console.log("API Success === ", Api);

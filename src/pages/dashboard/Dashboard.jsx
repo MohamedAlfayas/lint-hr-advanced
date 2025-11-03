@@ -32,7 +32,7 @@ const Dashboard = () => {
   const [showApprovalTable, setShowApprovalTable] = useState(false);
 
   useEffect(() => {
-    console.log("Approval Table Comp");
+   
 
     let permission_list = profile_data?.permission_list || [];
 

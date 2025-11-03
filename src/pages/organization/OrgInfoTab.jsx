@@ -127,7 +127,7 @@ const OrgInfoTab = () => {
 
   const [profileData, setProfileData] = useState(initialData);
 
-  console.log("Profile Data = ", profileData);
+  
   
   const [showUpdateBtn, setShowUpdateBtn] = useState(false);
 

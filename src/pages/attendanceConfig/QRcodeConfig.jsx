@@ -77,7 +77,7 @@ const QrcodeConfig = () => {
         .min(1, "Please Select Security Type"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values");
+      
       dispatch(setLoaderVisible(true));
     },
   });

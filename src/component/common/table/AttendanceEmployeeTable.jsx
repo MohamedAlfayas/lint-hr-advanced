@@ -136,8 +136,7 @@ const AttendanceEmployeeTable = () => {
   }
 
   function open_location(rowData, dataKey) {
-    console.log("row",rowData);
-    console.log("dataKey",dataKey);
+    
     
     setLocationModal(!locationModal);
     setAllLocationData(rowData);
@@ -221,7 +220,6 @@ const AttendanceEmployeeTable = () => {
               className="link-opacity-75 ms-1"
               href="#"
               onClick={() => {
-                console.log("ROW DATA ENTRY LOG - ",rowData?.entry_log)
                 setTimelineList(rowData?.entry_log);
                 setTimeLineDate(
                   format(new Date(rowData?.date), "dd MMM, yyyy")
@@ -1158,7 +1156,7 @@ const AttendanceEmployeeTable = () => {
                 <tbody>
                   {timelineList.length > 0 &&
                     timelineList.map((data, idx) => {
-                      console.log(data,"dsd");
+                   
                       
                       let checkInData = timelineList[idx];
                       let checkOutData = timelineList[idx + 1];

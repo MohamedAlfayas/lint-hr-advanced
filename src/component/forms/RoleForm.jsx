@@ -50,7 +50,7 @@ const RoleForm = () => {
   const inputRef = useRef();
 
   useEffect(() => {
-    console.log("FormObj = ", form_obj);
+   
     setRoleObj(form_obj);
   }, [form_obj]);
 

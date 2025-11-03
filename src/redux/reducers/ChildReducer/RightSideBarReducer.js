@@ -35,7 +35,7 @@ const RightSideBarReducer = createSlice({
             }
         },
         setFormObj: (state, action) => {
-            console.log("action.payload", action.payload);
+           
             
             return {
                 ...state,

@@ -26,7 +26,7 @@ import * as Yup from "yup";
 const salaryCmpntForm = () => {
     const { form_obj } = useSelector((state) => state.RightSideBarReducer);
     const [customFieldObj, setCustomFieldObj] = useState(form_obj);
-    console.log("fghj", form_obj?.contribute);
+    
 
 
     // const contributionOptions = useMemo(
@@ -38,10 +38,10 @@ const salaryCmpntForm = () => {
     // );
 
     const contributionOptions = useMemo(() => {
-        console.log("lll", form_obj);
+       
         const options = [];
         if (form_obj?.contribute.length > 0) {
-            console.log('yes');
+           
             // Check if ESI is active and add it to options
             if (form_obj?.contribute[0].esi && form_obj?.contribute[0].esi.is_active) {
                 options.push({ id: '1', label: 'ESI', value: 'ESI' });
@@ -77,7 +77,7 @@ const salaryCmpntForm = () => {
                 .min(1, "Select Contribute"),
         }),
         onSubmit: async (values) => {
-            console.log("SUCCESSSS !!!! Formik Values = ", values);
+           
             dispatch(setLoaderVisible(true));
 
             //   const Api = await PostApi("holiday/create/", values, false);

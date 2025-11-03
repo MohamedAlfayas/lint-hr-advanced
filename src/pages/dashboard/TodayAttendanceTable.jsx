@@ -86,7 +86,7 @@ const TodayaAttendanceTable = () => {
           )}`
         );
         const result = response.data;
-        console.log(result,"RES");
+        
         
 
         // ✅ Handle empty response safely
@@ -164,7 +164,7 @@ const TodayaAttendanceTable = () => {
   }, [dateFilter, departments, dispatch]);
 
   const handleViewLocations = (row) => {
-    console.log("ROW",row);
+   
     
     setSelectedEmployeeId(row.first_name);
     setSelectedLocations(row.location_history || []);
@@ -174,7 +174,7 @@ const TodayaAttendanceTable = () => {
   // ✅ Filtered data
   const filteredData = useMemo(() => {
     return attendanceData.filter((item) => {
-      console.log(item,"item");
+      
       
       if (activeTab === "1" && item.status !== "On Time") return false;
       if (activeTab === "2" && item.status !== "Late") return false;
@@ -552,7 +552,7 @@ const TodayaAttendanceTable = () => {
               flexDirection: "column",
             }}
           >
-            {selectedLocations && selectedLocations.length > 0 ? (
+            {selectedLocations && selectedLocations.length > 1 ? (
               <UsersClusterMap locations={selectedLocations} />
             ) : (
               <>

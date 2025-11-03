@@ -67,20 +67,20 @@ const EmployeeActivity = (props) => {
       profile_data?.is_admin === true ||
       permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)
     ) {
-      console.log("HE MAY BE ADMIN OR HE HAS ALL ACCESS !!!!");
+      
       setShowAllAttendance(true);
       setShowTeamAttendance(true);
       onAttStasticsTypeChange(attendanceStasticsOptions[0]);
       GetTodaysAttReport(0);
       setFilterOptions(attendanceStasticsOptions);
     } else if (permission_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)) {
-      console.log("HE IS TEAM");
+     
       setShowTeamAttendance(true);
       onAttStasticsTypeChange(attendanceStasticsOptions[1]);
       GetTodaysAttReport(1);
       setFilterOptions(attendanceStasticsOptions.filter((d) => d.id === 1));
     } else {
-      console.log("HE IS NOTHING");
+    
       setShowAllAttendance(false);
       setShowTeamAttendance(false);
       setFilterOptions([]);

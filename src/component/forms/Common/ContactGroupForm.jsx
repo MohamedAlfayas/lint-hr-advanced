@@ -61,7 +61,7 @@ const ContactGroupForm = () => {
 
  useEffect(() => {
     if (form_obj) {
-        console.log("form_obj", form_obj);
+       
         
       setContactGroupData(form_obj);
     }
@@ -102,7 +102,7 @@ const ContactGroupForm = () => {
             dispatch(editContactGroup(values));
             // SetLocalStorage("leave_types", Api?.data.data, 3);
           }
-        console.log("Form data:", values); 
+       
       },
   });
 

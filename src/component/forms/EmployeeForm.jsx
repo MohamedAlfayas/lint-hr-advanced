@@ -72,7 +72,7 @@ const EmployeeForm = () => {
   const dep_options = GetLocalStorageData("department") || [];
   const ws_options = GetLocalStorageData("work_schedule") || [];
   const role_id_option = GetLocalStorageData("role") || [];
-  console.log("ROLE ID ", role_id_option);
+ 
   
 
   const [reportingManagerOptions, setReportingManagerOptions] = useState([]);
@@ -153,7 +153,7 @@ const EmployeeForm = () => {
 
   useEffect(() => {
     console.clear()
-    console.log("EMP Form Obj - ",form_obj)
+  
     let this_role_id = 0;
     if(form_obj?.role !== null && form_obj?.role !== undefined && form_obj?.role !== '') {
       this_role_id = form_obj?.role?.id
@@ -465,7 +465,7 @@ const EmployeeForm = () => {
 
           setShowRMModal(true);
 
-          console.log("HEHEHEHEEH");
+         
         } else {
           toast.error(Api?.data?.message || Api?.data?.detail);
         }
@@ -519,7 +519,7 @@ const EmployeeForm = () => {
   const handleNewReportingManager = (e, d_id) => {
     const { value } = e;
 
-    console.log("Handle New Rep Man = ", value);
+   
 
     const new_rm = [...TeamsToBeUpdated].map((d) => {
       if (d.id === d_id) {
@@ -543,7 +543,7 @@ const EmployeeForm = () => {
       toast.error("Please Select New Reporting Manager");
     } else {
       console.log("SUCCESSSSS !!!!!!!!!!!!!!!!!!");
-      console.log("TeamsToBeUpdated === ", TeamsToBeUpdated);
+      
 
       const Payload = TeamsToBeUpdated.map((d) => {
         return {
@@ -553,7 +553,7 @@ const EmployeeForm = () => {
         };
       });
 
-      console.log("API Payoa = ", Payload);
+  
 
       const Api = await PostApi(
         "employee/assign-new-reporting-manager/",
@@ -561,14 +561,14 @@ const EmployeeForm = () => {
         false
       );
 
-      console.log("API == ", Api);
+    
 
       if (Api.status && Api.status === 200) {
-        console.log("API Success === ", Api);
+        
         HandleEmployeeSaveAPI(employeeObj);
         setShowRMModal(false);
       } else {
-        console.log("API Exception === ", Api);
+     
         toast.error("Something Went Wrong");
       }
     }

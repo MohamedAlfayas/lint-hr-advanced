@@ -29,7 +29,7 @@ import SimpleBar from "simplebar-react";
 const EmployeeOverview = (props) => {
   SwiperCore.use([Autoplay]);
   const { profileObj } = props;
-  console.log("profileObj === ", profileObj);
+ 
   
 
   const DepartmentData = GetLocalStorageData("department") || [];

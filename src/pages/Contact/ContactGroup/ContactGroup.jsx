@@ -17,7 +17,7 @@ const ContactGroup = () => {
   const { contact_group_data } = useSelector(
     (state) => state.ContactGroupReducer
   );
-  console.log("contact_group_data", contact_group_data);
+ 
   
 
   // useEffect(() => {

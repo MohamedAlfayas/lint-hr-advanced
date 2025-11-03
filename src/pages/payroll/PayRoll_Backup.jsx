@@ -199,7 +199,7 @@ const PayRollBackup = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     toggleTab(activeTab + 1, 100);
-    console.log("PayRoll Form submit");
+    
   };
 
   document.title = `PayRoll | ${MetaTitle || "Lint HR"} `;
@@ -549,7 +549,7 @@ const PayRollBackup = () => {
                             height={400}
                             data={employee_details}
                             onRowClick={(rowData) => {
-                              console.log(rowData);
+                              
                             }}>
                             <Column width={60} align="center" fixed>
                               <HeaderCell style={{ padding: 0 }}>

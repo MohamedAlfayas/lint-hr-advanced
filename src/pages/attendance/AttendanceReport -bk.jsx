@@ -31,7 +31,7 @@ const AttendanceReport = () => {
     (state) => state.TeamDailyAttendanceReportReducer
   );
 
-  console.log("Team Daily Att Rep = ", team_daily_attendance_report);
+  
 
   useEffect(() => {
     const today = new Date();

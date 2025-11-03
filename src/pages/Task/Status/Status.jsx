@@ -19,7 +19,7 @@ const Status = () => {
   const { status_data } = useSelector(
     (state) => state.StatusReducer
   );
-  console.log("status_data", status_data);
+ 
   
 
   useEffect(() => {
@@ -60,7 +60,7 @@ const Status = () => {
     {
       Header: "Behavior",
       accessor: (obj) => {
-        console.log("obj", obj);      
+         
         const behavior = behaviorTypeOptions.find((e) => e.value === obj.behavior).label;   
         return <b>{behavior}</b>;
       },

@@ -27,7 +27,7 @@ const EmployeeReducer = createSlice({
             }
         },
         setEmployeeActiveStatus: (state, action) => {
-            console.log("PAYLOAD = ", action.payload);
+          
             return {
                 ...state,
                 employee_data: [...state.employee_data].map(obj => obj.id === action.payload.id ? { ...obj, is_active: action.payload.is_active } : obj)

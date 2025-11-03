@@ -40,7 +40,7 @@ const UsersClusterMapGoogle = ({ locations }) => {
   const [selectedMarker, setSelectedMarker] = useState(null);
   const mapRef = useRef(null);
 
-  console.log("atttt",attendanceData);
+ 
   
 
   // ✅ Build marker data and group by lat/lng
@@ -108,7 +108,7 @@ const UsersClusterMapGoogle = ({ locations }) => {
           };
         })
     : [];
-console.log(allData,"DATA");
+
     const validMarkers = allData.filter(
       (m) => !isNaN(m.lat) && !isNaN(m.lng)
     );

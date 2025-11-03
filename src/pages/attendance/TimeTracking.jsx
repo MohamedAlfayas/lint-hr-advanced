@@ -8,7 +8,7 @@ import axios from 'axios';
 
 
 const TimeTracking = ({hideTimer}) => {
-  console.log("hideTimer", hideTimer);
+
   
   const [firstCheckInTime, setFirstCheckInTime] = useState(null);
   const [location, setLocation] = useState(null);
@@ -84,11 +84,11 @@ const TimeTracking = ({hideTimer}) => {
             heading,
           };
   
-          console.log(' Location Details:', locationDetails);
+         
   
           // Reverse Geocoding (get address)
           const address = await getAddressFromCoordinates(latitude, longitude);
-          console.log('Address:', address);
+          
   
           setPosition({ lat: latitude, lng: longitude });
         },

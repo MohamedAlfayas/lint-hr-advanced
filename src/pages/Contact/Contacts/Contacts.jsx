@@ -29,7 +29,7 @@ const Contacts = () => {
   const toggleDropdown = () => {
     setIsDropdownOpen((prevState) => !prevState);
   };
-  console.log('isDropdownOpen', isDropdownOpen);
+  
 
 
 

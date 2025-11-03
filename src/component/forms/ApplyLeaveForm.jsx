@@ -71,8 +71,7 @@ const ApplyLeaveForm = () => {
   const [halfDayEndTime, setHalfDayEndTime] = useState(null);
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
-  console.log("workScheduleData", workScheduleData);
-  
+ 
   const profileData = GetLocalStorageData("my_profile") || [];
   const holidayData = GetLocalStorageData("holiday") || [];
 

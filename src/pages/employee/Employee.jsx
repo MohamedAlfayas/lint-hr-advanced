@@ -42,7 +42,7 @@ const Employee = () => {
     const todayAttendance = useSelector(
     (state) => state.EmployeeProgressBarReducer
   );
-  console.log(todayAttendance,"TODAY");
+ 
   
 
   const { version } = useSelector((state) => state.MetaReducer);
@@ -70,7 +70,7 @@ const Employee = () => {
       try {
         const res = await GetApi("/attendance/get-attendance-status");
         const result = res?.data;
-        console.log(result,"RESULT");
+       
         
         dispatch(setTodayAttendanceProgressBar(result));
         
@@ -109,7 +109,7 @@ const Employee = () => {
       (emp) => emp.employee?.id === obj.id
     );
     
-    console.log("EMP",employeeAttendance);
+   
     
 
     const totalWorkDuration = employeeAttendance?.total_work_duration ?? 0;

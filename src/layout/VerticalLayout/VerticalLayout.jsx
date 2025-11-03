@@ -163,7 +163,7 @@ const VerticalLayout = (props) => {
   };
 
   const user_perm_list = JSON.parse(localStorage.getItem("user_perm_list"));
-  // console.log("VERTICAL LAYOUT !!!!! user_perm_list = ", user_perm_list);
+  
 
   return (
     <React.Fragment>

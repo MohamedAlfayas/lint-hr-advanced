@@ -15,7 +15,7 @@ const Roles = () => {
   const dispatch = useDispatch();
 
   const { role_data } = useSelector((state) => state.RoleReducer);
-  // console.log("Role DAta = ",role_data);
+
 
   useEffect(() => {
     Api({

@@ -34,7 +34,7 @@ const BranchFormBck = () => {
   }, [form_obj]);
 
   const handleSubmit = () => {
-    console.log("branch data = ", branchData);
+    
   };
 
   const [rolelist, setListData] = useState([

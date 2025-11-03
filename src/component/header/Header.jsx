@@ -37,6 +37,10 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const employee_data = GetLocalStorageData("employee");
   const department_data = GetLocalStorageData("department");
   const { id } = useParams();
+   const { show_attendance_timer } = useSelector(
+      (state) => state.ClockReducer
+    );
+  
 
   useEffect(() => {
     Api({
@@ -45,7 +49,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
     })
        .then((res) => {
       const response = res?.data?.data;
-      console.log("RES ==",response);
+      
       
 
       // Map employee IDs to employee objects
@@ -54,7 +58,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
         // Keep only active employees
         .filter((emp) => emp?.is_active === true);
 
-      console.log("EMP-OPTIONS (Active Only)", emp_options);
+      
       setEmployeeOptions(emp_options);
     })
       .catch((err) => {
@@ -66,7 +70,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const [hideTimer, setHideTimer] = useState(false);
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
-  console.log("profile_data", profile_data);
+  
   
 
   const emp_department = profile_data.primary_department_id_list
@@ -231,7 +235,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
                 )}
             </div>
 
-            <div className="d-flex align-items-center">
+            <div className="d-flex align-items-center" style={{paddingRight: show_attendance_timer ? "0px" : "55px"}}>
               {path_list_for_timer_hide.includes(location.pathname) ? null : (
                 <WebCheckInOut showTimer={true} hideTimer={hideTimer} />
               )}

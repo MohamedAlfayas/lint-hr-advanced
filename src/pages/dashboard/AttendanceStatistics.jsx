@@ -72,16 +72,16 @@ const AttendanceStatistics = () => {
       profile_data?.is_admin === true ||
       permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)
     ) {
-      console.log("HE MAY BE ADMIN OR HE HAS ALL ACCESS !!!!");
+      
       setShowAllAttendance(true);
       setShowTeamAttendance(true);
       onAttStasticsTypeChange("All", 0);
     } else if (permission_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)) {
-      console.log("HE IS TEAM");
+      
       setShowTeamAttendance(true);
       onAttStasticsTypeChange("My Team", 1);
     } else {
-      console.log("HE IS NOTHING");
+      
       setShowAllAttendance(false);
       setShowTeamAttendance(false);
     }

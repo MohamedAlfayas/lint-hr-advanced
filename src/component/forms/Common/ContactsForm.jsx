@@ -64,7 +64,7 @@ const ContactsForm = () => {
 
   useEffect(() => {
     if (form_obj) {
-      console.log("form_obj", form_obj);
+    
 
       setContactsData(form_obj);
     }
@@ -160,7 +160,7 @@ const ContactsForm = () => {
         dispatch(editContacts(values));
         // SetLocalStorage("leave_types", Api?.data.data, 3);
       }
-      console.log("Form data:", values);
+     
     },
   });
 

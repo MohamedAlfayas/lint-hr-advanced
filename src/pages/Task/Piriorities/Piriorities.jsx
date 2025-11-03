@@ -18,7 +18,7 @@ const Piriorities = () => {
   const { Piriorities_data } = useSelector(
     (state) => state.PirioritiesReducer
   );
-  console.log("status_data", Piriorities_data);
+ 
   
 
   // useEffect(() => {

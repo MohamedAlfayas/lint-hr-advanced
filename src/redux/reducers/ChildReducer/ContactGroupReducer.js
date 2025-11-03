@@ -16,7 +16,7 @@ const ContactGroupReducer = createSlice({
             }
         },
         addContactGroup: (state, action) => {
-            console.log("daa", action.payload);
+
             return {
                 ...state,
                 contact_group_data: [...state.contact_group_data, action.payload]

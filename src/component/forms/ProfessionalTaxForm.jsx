@@ -50,7 +50,7 @@ const ProfessionalTaxForm = () => {
     }
   };
   const saveData = () => {
-    console.log("Saving data:");
+    
   };
   return (
     <React.Fragment>

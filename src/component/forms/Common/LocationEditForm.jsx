@@ -37,7 +37,7 @@ const locationEditForm = () => {
         setGeofencingEnabled(newValue);
     
         
-        console.log("GeoFencing",newValue);
+       
       };
     // Google Maps API Configuration
     const { isLoaded } = useJsApiLoader({

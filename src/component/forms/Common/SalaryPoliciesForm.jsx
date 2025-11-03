@@ -54,7 +54,6 @@ const salaryPloiciesForm = () => {
   const [AllowanceData, setAlowanceData] = useState([]);
   const [DeductionData, setDeductionData] = useState([]);
 
-  // console.log("kkk",deductions_data);selectedItems
   const [customFieldObj, setCustomFieldObj] = useState(form_obj);
   const [selectedItems, setSelectedItems] = useState([]);
   const [selectedAllowanceItems, setSelectedAlowanceItems] = useState([]);
@@ -81,10 +80,9 @@ const salaryPloiciesForm = () => {
   };
 
   const handleCalculationTypeChange = (e, id, module) => {
-    console.log("ID = ", id);
-    console.log("MODULE = ", module);
+ 
     let changed_data = GetModuleData(module);
-    console.log("Changed Data = ", changed_data);
+  
     let changed_obj = {
       ...changed_data.find((d) => d.id === id),
       calculation_type: e.value,
@@ -122,7 +120,7 @@ const salaryPloiciesForm = () => {
   const dispatch = useDispatch();
 
   const handleModuleCB = (id, checked, module) => {
-    console.log("Checked = ", checked);
+   
     let module_data =
       module === earnings_module_name
         ? EarningsData
@@ -178,7 +176,7 @@ const salaryPloiciesForm = () => {
       name: Yup.string().trim().required("Please Enter Name"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values = ", values);
+      
       dispatch(setLoaderVisible(true));
 
       // const Api = await PostApi("holiday/create/", values, false);

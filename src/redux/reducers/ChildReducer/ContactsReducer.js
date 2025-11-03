@@ -16,7 +16,7 @@ const Contacts = createSlice({
             }
         },
         addContacts: (state, action) => {
-            console.log("daa", action.payload);
+          
             return {
                 ...state,
                 contacts_data: [...state.contacts_data, action.payload]

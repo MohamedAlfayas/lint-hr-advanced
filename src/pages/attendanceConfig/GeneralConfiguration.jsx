@@ -160,7 +160,7 @@ const GeneralConfiguration = () => {
         .min(1, "Please Select Approval Cycle Type"),
     }),
     onSubmit: async (values) => {
-      console.log("SUCCESSSS !!!! Formik Values");
+      
       dispatch(setLoaderVisible(true));
     },
   });

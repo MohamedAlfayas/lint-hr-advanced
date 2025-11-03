@@ -31,7 +31,7 @@ const AllDistanceCalculater = ({ allLocationData }) => {
   const branchObj = branchData.find((b) =>
     employeeBracnchID.branch_id_list.includes(b.id)
   );
-  console.log("branchObj", branchObj);
+  
   
 
   const [mapZoom, setMapZoom] = useState(21);
@@ -147,9 +147,10 @@ const AllDistanceCalculater = ({ allLocationData }) => {
     },
   ];
 
-  const { isLoaded } = useJsApiLoader({
+ const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: process.env.REACT_APP_MAP_API_KEY,
+    libraries: ["places"], // ✅ ensures no loader mismatch
   });
 
   const [map, setMap] = React.useState(null);

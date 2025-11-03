@@ -16,7 +16,7 @@ const StatusReducer = createSlice({
             }
         },
         addStatus: (state, action) => {
-            console.log("daa", action.payload);
+           
             return {
                 ...state,
                 status_data: [...state.status_data, action.payload]
