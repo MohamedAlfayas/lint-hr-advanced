@@ -51,10 +51,12 @@ const HolidayForm = () => {
   const [date, setDate] = useState("");
   const [holidayObj, setHolidayObj] = useState({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+  console.log("form_obj Holiday FORM", form_obj);
   const ws_options = GetLocalStorageData("work_schedule") || [];
   const [selectedWS, setSelectedWS] = useState([]);
 
   useEffect(() => {
+    console.log("USEEFFECT CALLED HOLIDAY");
     setHolidayObj({
       ...form_obj,
       date: ConvertISODateFormat(form_obj.date),

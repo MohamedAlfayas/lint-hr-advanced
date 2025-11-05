@@ -87,6 +87,7 @@ const TodayaAttendanceTable = () => {
         );
         const result = response.data;
         
+       
         
 
         // ✅ Handle empty response safely
@@ -135,11 +136,15 @@ const TodayaAttendanceTable = () => {
 
         setAttendanceData(formattedData);
         dispatch(setTodayAttendance(result));
+       
+        
 
         // ✅ Calculate badge counts safely
         const inCount = formattedData.filter(
           (i) => i.status === "On Time"
         ).length;
+     
+        
         const notCheckInCount = formattedData.filter(
           (i) => i.status === "Late"
         ).length;
@@ -162,6 +167,28 @@ const TodayaAttendanceTable = () => {
 
     fetchAttendance();
   }, [dateFilter, departments, dispatch]);
+
+  useEffect(() => {
+  if (attendanceData.length === 0) {
+    setCountIn(0);
+    setCountNotCheckIn(0);
+    setCountLeave(0);
+    return;
+  }
+
+  const filtered = attendanceData.filter((item) => {
+    if (departmentFilter === "All") return true;
+    return item.department === departmentFilter;
+  });
+
+  const inCount = filtered.filter((i) => i.status === "On Time").length;
+  const notCheckInCount = filtered.filter((i) => i.status === "Late").length;
+  const leaveCount = filtered.filter((i) => i.status === "Leave").length || 0;
+
+  setCountIn(inCount);
+  setCountNotCheckIn(notCheckInCount);
+  setCountLeave(leaveCount);
+}, [attendanceData, departmentFilter]);
 
   const handleViewLocations = (row) => {
    
@@ -252,6 +279,7 @@ const TodayaAttendanceTable = () => {
 
                   <Col md="4">
                     <DatePicker
+                     className="form-control"
                       value={dayjs(dateFilter, DateFormat)}
                       format={DateFormat}
                       allowClear={false}
@@ -487,32 +515,32 @@ const TodayaAttendanceTable = () => {
               </div>
 
               {/* Pagination */}
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  Page {currentPage} of {totalPages || 1}
-                </div>
-                <div>
-                  <Button
-                    color="primary"
-                    size="sm"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((prev) => prev - 1)}
-                    className="me-2"
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    color="primary"
-                    size="sm"
-                    disabled={
-                      currentPage === totalPages || totalPages === 0
-                    }
-                    onClick={() => setCurrentPage((prev) => prev + 1)}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
+              <div className="d-flex justify-content-end align-items-center">
+  <div className="d-flex align-items-center gap-2">
+    <span className="text-muted">Page {currentPage} of {totalPages || 1}</span>
+
+    <Button
+      color="primary"
+      size="sm"
+      disabled={currentPage === 1}
+      onClick={() => setCurrentPage((prev) => prev - 1)}
+      className="ms-2"
+    >
+      Previous
+    </Button>
+
+    <Button
+      color="primary"
+      size="sm"
+      disabled={currentPage === totalPages || totalPages === 0}
+      onClick={() => setCurrentPage((prev) => prev + 1)}
+      className="ms-2"
+    >
+      Next
+    </Button>
+  </div>
+</div>
+
             </CardBody>
           </Card>
         </Col>

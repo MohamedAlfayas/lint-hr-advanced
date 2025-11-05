@@ -62,10 +62,13 @@ dayjs.extend(customParseFormat);
 // Register the plugins
 // registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
 const EmployeeForm = () => {
-  const dispatch = useDispatch();
 
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+  console.log("form_obj Open", form_obj);
   const [employeeObj, setEmployeeObj] = useState({});
+
+  
+  const dispatch = useDispatch();
 
   const employee_data = GetLocalStorageData("employee");
   const branch_options = GetLocalStorageData("branch") || [];
@@ -89,6 +92,7 @@ const EmployeeForm = () => {
   const toggle4 = () => setDropdownOpen4((prevState) => !prevState);
 
   const [dob, setDob] = useState([]);
+  console.log(dob)
   const [joining_date, setJoinDate] = useState([]);
   const [selectedFileName, setSelectedFileName] = React.useState("");
   const [selectedFileName1, setSelectedFileName1] = React.useState("");

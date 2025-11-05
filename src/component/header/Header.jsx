@@ -5,7 +5,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import logoSm from "../../assets/images/logo-sm.png";
 import logoDark from "../../assets/images/logo-dark.png";
 import logoLight from "../../assets/images/logo-light.png";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch, useSelector, shallowEqual } from "react-redux";
 import Select, { components } from "react-select";
 import { changeSidebarVisibilityAction } from "../../redux/reducers/ChildReducer/LayoutReducer";
 import { Col, Dropdown, DropdownMenu, DropdownToggle, Form } from "reactstrap";
@@ -37,30 +37,29 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const employee_data = GetLocalStorageData("employee");
   const department_data = GetLocalStorageData("department");
   const { id } = useParams();
-   const { show_attendance_timer } = useSelector(
-      (state) => state.ClockReducer
-    );
-  
+  const { show_attendance_timer } = useSelector(
+    (state) => ({
+      show_attendance_timer: state.ClockReducer.show_attendance_timer,
+    }),
+    shallowEqual
+  );
 
   useEffect(() => {
     Api({
       type: "GET",
       url: "employee/get-my-team-members/",
     })
-       .then((res) => {
-      const response = res?.data?.data;
-      
-      
+      .then((res) => {
+        const response = res?.data?.data;
 
-      // Map employee IDs to employee objects
-      let emp_options = response
-        .map((d) => employee_data.find((e) => e.id === d))
-        // Keep only active employees
-        .filter((emp) => emp?.is_active === true);
+        // Map employee IDs to employee objects
+        let emp_options = response
+          .map((d) => employee_data.find((e) => e.id === d))
+          // Keep only active employees
+          .filter((emp) => emp?.is_active === true);
 
-      
-      setEmployeeOptions(emp_options);
-    })
+        setEmployeeOptions(emp_options);
+      })
       .catch((err) => {
         console.log("Something Went Wrong !!");
       });
@@ -70,18 +69,11 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const [hideTimer, setHideTimer] = useState(false);
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
-  
-  
-
   const emp_department = profile_data.primary_department_id_list
-                                          ? department_data.filter((d) =>
-                                              (profile_data?.primary_department_id_list).includes(
-                                                d.id
-                                              )
-                                            )
-                                          : []
-
-  
+    ? department_data.filter((d) =>
+        (profile_data?.primary_department_id_list).includes(d.id)
+      )
+    : [];
 
   useEffect(() => {
     if (profile_data.permission_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)) {
@@ -92,12 +84,10 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
     }
 
     if (profile_data.length > 0) {
- 
       const isMobileCheckinAllowed = profile_data.can_web_checkin || false;
 
       setHideTimer(isMobileCheckinAllowed);
     }
-    
   }, []);
 
   const toogleMenuBtn = () => {
@@ -235,7 +225,10 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
                 )}
             </div>
 
-            <div className="d-flex align-items-center" style={{paddingRight: show_attendance_timer ? "0px" : "55px"}}>
+            <div
+              className="d-flex align-items-center"
+              style={{ paddingRight: show_attendance_timer ? "0px" : "55px" }}
+            >
               {path_list_for_timer_hide.includes(location.pathname) ? null : (
                 <WebCheckInOut showTimer={true} hideTimer={hideTimer} />
               )}

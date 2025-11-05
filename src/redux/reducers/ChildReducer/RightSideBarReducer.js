@@ -17,6 +17,7 @@ const RightSideBarReducer = createSlice({
     initialState,
     reducers: {
         toggleRSBView: (state, action) => {
+            console.log("REducer Called")
             return {
                 ...state,
                 showRSB: action.payload

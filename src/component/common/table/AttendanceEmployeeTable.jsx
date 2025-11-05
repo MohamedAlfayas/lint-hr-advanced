@@ -101,6 +101,7 @@ const AttendanceEmployeeTable = () => {
   const [locationType, setLocationType] = useState("");
   const [allLocationData, setAllLocationData] = useState([]);
 
+console.log("timeline",timelineList);
 
   
 
@@ -195,6 +196,7 @@ const AttendanceEmployeeTable = () => {
 };
 
   const InOutCell = ({ rowData, dataKey, ...props }) => {
+  console.log("ROWW DAAATAA",rowData);
   
     
     if (rowData.is_present === false) {

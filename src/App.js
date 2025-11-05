@@ -27,7 +27,7 @@ function App() {
 
   useEffect(() => {
     console.clear()
-    console.log("Api Called")
+ 
     // Api({
     //   method: "GET",
     //   url: "branch/get-attendence-timer-visibility/",
@@ -41,7 +41,7 @@ function App() {
     //     dispatch(setShowAttendanceTimer([]));
     //   });
    const lintHrProfile = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
-   console.log("CAn Web Checkin = ", lintHrProfile?.can_web_checkin);
+  
    if(lintHrProfile){
     dispatch(setShowAttendanceTimer(lintHrProfile?.can_web_checkin));
    }

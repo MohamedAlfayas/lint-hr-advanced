@@ -92,6 +92,11 @@ const TableContainer = ({
     useRowSelect
   );
 
+  useEffect(() => {
+  // Clear search when switching component/form
+  dispatch(setTableFilterSearchText(""));
+}, [formname, dispatch]);
+
   const generateSortingIndicator = (column) => {
     return column.isSorted ? (
       column.isSortedDesc ? (

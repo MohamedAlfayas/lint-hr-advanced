@@ -19,6 +19,8 @@ const Holiday = () => {
 
   const dispatch = useDispatch();
 
+  console.log("Holiday Component")
+
   const [showCalendar, setShowCalendar] = useState(false);
 
   const { holiday_data } = useSelector((state) => state.HolidayReducer);

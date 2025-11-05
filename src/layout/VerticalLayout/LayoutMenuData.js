@@ -175,7 +175,7 @@ const Navdata = () => {
       },
       {
         id: "attendance",
-        label: "Atttendance",
+        label: "Attendance",
         icon: " ri-user-follow-line",
         perm: "all",
         link: "/#",

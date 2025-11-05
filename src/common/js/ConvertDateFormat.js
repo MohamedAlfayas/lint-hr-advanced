@@ -77,6 +77,8 @@ export const previousDateFormat = (dateString) => {
   // Convert the new date to the desired format (assuming ISO format for now)
   const isoDate = newDate.toISOString().split('T')[0]; // Extracting date portion
 
+  console.log("isoDate",isoDate);
+
   return isoDate;
 };
 // export const convertDateTimeFormat = (originalDate) => {
