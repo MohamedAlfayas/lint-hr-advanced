@@ -31,6 +31,7 @@ import {
   ConvertDateFormat,
   ConvertISODateFormat,
 } from "../../common/js/ConvertDateFormat";
+import UsersClusterMapAll from "./useClusterMapAll";
 dayjs.extend(customParseFormat);
 
 const TodayaAttendanceTable = () => {
@@ -100,39 +101,49 @@ const TodayaAttendanceTable = () => {
           return;
         }
 
-        const formattedData = result.map((item) => ({
-          emp_id: item.employee.emp_id,
-          first_name: item.employee.first_name || "-",
-          profile_url: item.employee.profile_url || null,
-          email: item.employee.email || "-",
-          department:
-            Array.isArray(item.employee.primary_department_id_list) &&
-            item.employee.primary_department_id_list.length > 0
-              ? departments.find(
-                  (d) => d.id === item.employee.primary_department_id_list[0]
-                )?.name || ""
-              : "",
-          inTime: item.first_check_in_time || "-",
-          outTime: item.last_check_out_time || "-",
-          totalHours: (() => {
-            const totalSeconds = item.total_time_worked_till_last_checkout || 0;
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            return `${hours}h ${minutes}m`;
-          })(),
-          status: item.is_present ? "On Time" : "Late",
-          date: item.date,
-          location_history: item.location_history,
-          progress:
-            item.total_work_duration && item.total_time_worked
-              ? Math.min(
-                  100,
-                  Math.round(
-                    (item.total_time_worked / item.total_work_duration) * 100
-                  )
-                )
-              : 0,
-        }));
+       const formattedData = result.map((item) => ({
+  emp_id: item.employee.emp_id,
+  first_name: item.employee.first_name || "-",
+  profile_url: item.employee.profile_url || null,
+  email: item.employee.email || "-",
+  department:
+    Array.isArray(item.employee.primary_department_id_list) &&
+    item.employee.primary_department_id_list.length > 0
+      ? departments.find(
+          (d) => d.id === item.employee.primary_department_id_list[0]
+        )?.name || ""
+      : "",
+
+  inTime: item.first_check_in_time || "-",
+  outTime: item.last_check_out_time || "-",
+
+  totalHours: (() => {
+    const totalSeconds = item.total_time_worked_till_last_checkout || 0;
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  })(),
+
+  // ✅ FIXED STATUS LOGIC
+  status: item.is_leave_approved
+    ? "Leave"
+    : item.is_present
+    ? "On Time"
+    : "Late",
+
+  date: item.date,
+  location_history: item.location_history,
+  progress:
+    item.total_work_duration && item.total_time_worked
+      ? Math.min(
+          100,
+          Math.round(
+            (item.total_time_worked / item.total_work_duration) * 100
+          )
+        )
+      : 0,
+}));
+
 
         setAttendanceData(formattedData);
         dispatch(setTodayAttendance(result));
@@ -148,7 +159,10 @@ const TodayaAttendanceTable = () => {
         const notCheckInCount = formattedData.filter(
           (i) => i.status === "Late"
         ).length;
-        const leaveCount = 0;
+        const leaveCount = formattedData.filter(
+          (i) => i.status === "Leave"
+        ).length;
+
 
         setCountIn(inCount);
         setCountNotCheckIn(notCheckInCount);
@@ -185,6 +199,9 @@ const TodayaAttendanceTable = () => {
   const notCheckInCount = filtered.filter((i) => i.status === "Late").length;
   const leaveCount = filtered.filter((i) => i.status === "Leave").length || 0;
 
+  console.log("l-count",leaveCount);
+  
+
   setCountIn(inCount);
   setCountNotCheckIn(notCheckInCount);
   setCountLeave(leaveCount);
@@ -205,7 +222,7 @@ const TodayaAttendanceTable = () => {
       
       if (activeTab === "1" && item.status !== "On Time") return false;
       if (activeTab === "2" && item.status !== "Late") return false;
-      if (activeTab === "3") return false;
+      if (activeTab === "3" && item.status !== "Leave") return false;
 
       if (departmentFilter !== "All" && item.department !== departmentFilter)
         return false;
@@ -581,7 +598,7 @@ const TodayaAttendanceTable = () => {
             }}
           >
             {selectedLocations && selectedLocations.length > 1 ? (
-              <UsersClusterMap locations={selectedLocations} />
+              <UsersClusterMapAll locations={selectedLocations} />
             ) : (
               <>
                 <Lottie options={defaultOptions} height={250} width={250} />

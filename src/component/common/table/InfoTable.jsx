@@ -215,7 +215,8 @@ const InfoTable = ({
 
   const handleApproval = async (orderData) => {
     let employee_first_name =
-      EmployeeData.find((e) => e.id === orderData.employee_id)?.first_name || "";
+      EmployeeData.find((e) => e.id === orderData.employee_id)?.first_name ||
+      "";
 
     const totalSeconds =
       orderData.final_paid_hr_in_seconds === 0
@@ -380,7 +381,8 @@ const InfoTable = ({
 
   const handleReject = async (orderData) => {
     let employee_first_name =
-      EmployeeData.find((e) => e.id === orderData.employee_id)?.first_name || "";
+      EmployeeData.find((e) => e.id === orderData.employee_id)?.first_name ||
+      "";
     // const unitLabel = orderData.unit === 1 ? 'day' : 'hour';
 
     let content =
@@ -1338,7 +1340,7 @@ const InfoTable = ({
 
   const handleCreateAndUpdate = ($id, table_obj) => {
     console.log("table_obj === ", table_obj);
-    
+
     let FormObj = {};
 
     if ($id === 0) {
@@ -1998,18 +2000,31 @@ const InfoTable = ({
                             .filter((obj) => {
                               return Object.entries(table_filter_keys).every(
                                 ([key, value]) => {
-                                  // Exclude keys with value 0 from filtering
+                                  // Skip filtering for keys with value 0
                                   if (value === 0) {
-                                    return true; // Skip filtering for keys with value 0
+                                    return true;
                                   }
 
-                                  // Check if the key exists in the employee object and the values match
-                                  return (
-                                    obj[key] !== undefined &&
-                                    (Array.isArray(obj[key])
-                                      ? obj[key].includes(value)
-                                      : obj[key] === value)
-                                  );
+                                  // ✅ Handle array fields
+                                  if (Array.isArray(obj[key])) {
+                                    return obj[key].includes(value);
+                                  }
+
+                                  // ✅ Handle nested object fields (like role.id)
+                                  // If filter key ends with "_id" (e.g., role_id), we check obj.role.id
+                                  if (key.endsWith("_id")) {
+                                    const objectKey = key.replace("_id", ""); // role_id → role
+                                    if (
+                                      obj[objectKey] &&
+                                      typeof obj[objectKey] === "object" &&
+                                      "id" in obj[objectKey]
+                                    ) {
+                                      return obj[objectKey].id === value;
+                                    }
+                                  }
+
+                                  // ✅ Handle direct value comparison
+                                  return obj[key] === value;
                                 }
                               );
                             })
@@ -2022,24 +2037,48 @@ const InfoTable = ({
                                     .includes(search.toLowerCase())
                               )
                             )
-                        : dataList.filter((obj) => {
-                            return Object.entries(table_filter_keys).every(
-                              ([key, value]) => {
-                                // Exclude keys with value 0 from filtering
-                                if (value === 0) {
-                                  return true; // Skip filtering for keys with value 0
-                                }
+                        : dataList
+                            .filter((obj) => {
+                              console.clear();
+                              return Object.entries(table_filter_keys).every(
+                                ([key, value]) => {
+                                  // Skip filtering for keys with value 0
+                                  if (value === 0) {
+                                    return true;
+                                  }
 
-                                // Check if the key exists in the obj object and the values match
-                                return (
-                                  obj[key] !== undefined &&
-                                  (Array.isArray(obj[key])
-                                    ? obj[key].includes(value)
-                                    : obj[key] === value)
-                                );
-                              }
-                            );
-                          })) || []
+                                  // ✅ Handle array fields
+                                  if (Array.isArray(obj[key])) {
+                                    return obj[key].includes(value);
+                                  }
+
+                                  // ✅ Handle nested object fields (like role.id)
+                                  // If filter key ends with "_id" (e.g., role_id), we check obj.role.id
+                                  if (key.endsWith("_id")) {
+                                    const objectKey = key.replace("_id", ""); // role_id → role
+                                    if (
+                                      obj[objectKey] &&
+                                      typeof obj[objectKey] === "object" &&
+                                      "id" in obj[objectKey]
+                                    ) {
+                                      return obj[objectKey].id === value;
+                                    }
+                                  }
+
+                                  // ✅ Handle direct value comparison
+                                  return obj[key] === value;
+                                }
+                              );
+                            })
+                            .filter((d) =>
+                              Object.values(d).some(
+                                (value) =>
+                                  typeof value === "string" &&
+                                  value
+                                    .toLowerCase()
+                                    .includes(search.toLowerCase())
+                              )
+                            )) || []
                     }
                     isPagination={true}
                     isGlobalFilter={true}

@@ -16,11 +16,16 @@ const EmployeeTableFilter = () => {
   const manager_options = useMemo(() => GetLocalStorageData("employee") || []);
   const role_options = useMemo(() => GetLocalStorageData("role") || []);
 
+  console.log("Options",role_options);
+  
+
   const dispatch = useDispatch();
 
   const { employee_table_filter_keys } = useSelector(
     (state) => state.TableFilterReducer
   );
+  console.log("Filter",employee_table_filter_keys);
+  
 
   const handleFilterChange = (e, name) => {
     let val = !!e ? e.id : 0;
