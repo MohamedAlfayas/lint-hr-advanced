@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Card,
@@ -51,11 +51,118 @@ const WorkScheduleForm = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const [workScheduleData, setWorkScheduleData] = useState({});
   const [activeArrowTab, setactiveArrowTab] = useState(4);
+  const initialWorkday = useMemo(
+    () => [
+      {
+        id: 0,
+        s_day: "Monday",
+        weekday: "Monday",
+        e_day: "",
+        s_hr: "00",
+        s_min: "00",
+        e_hr: "00",
+        e_min: "00",
+        is_day_on: false,
+        total_work_duration: 0,
+        break_duration: 0,
+        total_work_duration_without_break: 0,
+      },
+      {
+        id: 0,
+        s_day: "Tuesday",
+        weekday: "Tuesday",
+        e_day: "",
+        s_hr: "00",
+        s_min: "00",
+        e_hr: "00",
+        e_min: "00",
+        is_day_on: false,
+        total_work_duration: 0,
+        break_duration: 0,
+        total_work_duration_without_break: 0,
+      },
+      {
+        id: 0,
+        s_day: "Wednesday",
+        weekday: "Wednesday",
+        e_day: "",
+        s_hr: "00",
+        s_min: "00",
+        e_hr: "00",
+        e_min: "00",
+        is_day_on: false,
+        total_work_duration: 0,
+        break_duration: 0,
+        total_work_duration_without_break: 0,
+      },
+      {
+        id: 0,
+        s_day: "Thursday",
+        weekday: "Thursday",
+        e_day: "",
+        s_hr: "00",
+        s_min: "00",
+        e_hr: "00",
+        e_min: "00",
+        is_day_on: false,
+        total_work_duration: 0,
+        break_duration: 0,
+        total_work_duration_without_break: 0,
+      },
+      {
+        id: 0,
+        s_day: "Friday",
+        weekday: "Friday",
+        e_day: "",
+        s_hr: "00",
+        s_min: "00",
+        e_hr: "00",
+        e_min: "00",
+        is_day_on: false,
+        total_work_duration: 0,
+        break_duration: 0,
+        total_work_duration_without_break: 0,
+      },
+      {
+        id: 0,
+        s_day: "Saturday",
+        weekday: "Saturday",
+        e_day: "",
+        s_hr: "00",
+        s_min: "00",
+        e_hr: "00",
+        e_min: "00",
+        is_day_on: false,
+        total_work_duration: 0,
+        break_duration: 0,
+        total_work_duration_without_break: 0,
+      },
+      {
+        id: 0,
+        s_day: "Sunday",
+        weekday: "Sunday",
+        e_day: "",
+        s_hr: "00",
+        s_min: "00",
+        e_hr: "00",
+        e_min: "00",
+        is_day_on: false,
+        total_work_duration: 0,
+        break_duration: 0,
+        total_work_duration_without_break: 0,
+      },
+    ],
+    []
+  );
+  console.log(initialWorkday, "fdf");
+
   useEffect(() => {
     setWorkScheduleData(form_obj);
   }, [form_obj]);
 
   const [passedarrowSteps, setPassedarrowSteps] = useState([1]);
+
+  console.log("DAAAAATA", workScheduleData);
 
   function toggleArrowTab(tab) {
     if (activeArrowTab !== tab) {
@@ -83,6 +190,8 @@ const WorkScheduleForm = () => {
   }, []);
 
   const handleDurationChange = (selectedHour, selectedMinute, name) => {
+    console.log("selectedHour ==== ", selectedHour + ":" + selectedMinute);
+
     const newDuration =
       parseInt(selectedHour) * 3600 + parseInt(selectedMinute) * 60;
 
@@ -91,6 +200,11 @@ const WorkScheduleForm = () => {
       [name]: newDuration,
     });
   };
+
+  const workScheduleOptions = [
+    { label: "Partial Hours", value: "1" },
+    { label: "24 Hours", value: "2" },
+  ];
 
   const handleDayCB = (e, wd_obj) => {
     const { checked } = e.target;
@@ -203,6 +317,7 @@ const WorkScheduleForm = () => {
       if (
         values.fullday_work_duration === 0 ||
         values.halfday_work_duration === 0 ||
+        values.twenty_four_hrs_duration === 0 ||
         filteredWorkdays.length > 0 ||
         filteredDayon.length === 0
       ) {
@@ -341,322 +456,454 @@ const WorkScheduleForm = () => {
                         />
                       </div>
                     </Col>
-                  </Row>
-
-                  <Row className="mb-2">
-                    <Col xxl={3} md={6}>
-                      <div>
-                        <Label htmlFor="ws_full_hr" className="form-label">
-                          Work Duration
+                    <Col md={3} lg={3} xxl={3}>
+                      <div className="mb-3">
+                        <Label className="form-label" htmlFor="ws_desc">
+                          Work Schedule Type
                         </Label>
-                        <br></br>
-                        <span class="form-text text-muted ms-3">Full Day</span>
-                        <div style={{ display: "flex" }}>
-                          <b className="mt-2 me-1">H</b>
 
-                          <Select
-                            id="ws_full_hr"
-                            name="wsFullDayHr"
-                            placeholder={"00"}
-                            options={hourOptions}
-                            value={hourOptions.find(
-                              (option) =>
-                                option.value ===
-                                String(
-                                  Math.floor(
-                                    workScheduleData.fullday_work_duration /
-                                      3600
-                                  )
-                                ).padStart(2, "0")
-                            )}
-                            onChange={(selectedOption) => {
-                              handleDurationChange(
-                                selectedOption.value,
-                                Math.floor(
-                                  (workScheduleData.fullday_work_duration %
-                                    3600) /
-                                    60
-                                ),
-                                "fullday_work_duration"
-                              );
-                            }}
-                          />
-                          <b className="mt-2 me-1 ms-2">M</b>
-                          <Select
-                            id="ws_full_mi"
-                            name="wsFullDayMin"
-                            placeholder={"00"}
-                            options={minuteOptions}
-                            value={minuteOptions.find(
-                              (option) =>
-                                option.value ===
-                                String(
-                                  Math.floor(
-                                    (workScheduleData.fullday_work_duration %
-                                      3600) /
-                                      60
-                                  )
-                                ).padStart(2, "0")
-                            )}
-                            onChange={(selectedOption) => {
-                              handleDurationChange(
-                                Math.floor(
-                                  workScheduleData.fullday_work_duration / 3600
-                                ),
-                                selectedOption.value,
-                                "fullday_work_duration"
-                              );
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </Col>
-
-                    <Col xxl={3} md={6}>
-                      <div>
-                        <Label
-                          htmlFor="basiInput"
-                          className="form-label mb-3"
-                        ></Label>
-                        <br></br>
-                        <span class="form-text text-muted ms-3">Half Day</span>
-                        <div style={{ display: "flex" }}>
-                          <b className="mt-2 me-1">H</b>
-                          <Select
-                            id="ws_half_hr"
-                            name="wsHalfDayHr"
-                            placeholder={"00"}
-                            options={hourOptions}
-                            value={hourOptions.find(
-                              (option) =>
-                                option.value ===
-                                String(
-                                  Math.floor(
-                                    workScheduleData.halfday_work_duration /
-                                      3600
-                                  )
-                                ).padStart(2, "0")
-                            )}
-                            onChange={(selectedOption) =>
-                              handleDurationChange(
-                                selectedOption.value,
-                                Math.floor(
-                                  (workScheduleData.halfday_work_duration %
-                                    3600) /
-                                    60
-                                ),
-                                "halfday_work_duration"
-                              )
-                            }
-                          />
-                          <b className="mt-2 me-1 ms-2">M</b>
-                          <Select
-                            id="ws_half_min"
-                            name="wsHalfDayMin"
-                            placeholder={"00"}
-                            options={minuteOptions}
-                            value={minuteOptions.find(
-                              (option) =>
-                                option.value ===
-                                String(
-                                  Math.floor(
-                                    (workScheduleData.halfday_work_duration %
-                                      3600) /
-                                      60
-                                  )
-                                ).padStart(2, "0")
-                            )}
-                            onChange={(selectedOption) =>
-                              handleDurationChange(
-                                Math.floor(
-                                  workScheduleData.halfday_work_duration / 3600
-                                ),
-                                selectedOption.value,
-                                "halfday_work_duration"
-                              )
-                            }
-                          />
-                        </div>
-                      </div>
-                    </Col>
-                  </Row>
-
-                  <Row>
-                    <Col xxl={3} md={6}>
-                      <div>
-                        <Label htmlFor="basiInput" className="form-label">
-                          Grace Period
-                        </Label>
-                        <br></br>
-                        <div style={{ display: "flex" }}>
-                          <b className="mt-2 me-1">H</b>
-
-                          <Select
-                            id="gracePeriodInHours"
-                            name="gracePeriodInHours"
-                            placeholder={"00"}
-                            options={hourOptions}
-                            value={hourOptions.find(
-                              (option) =>
-                                option.value ===
-                                String(
-                                  Math.floor(
-                                    workScheduleData.grace_time_duration / 3600
-                                  )
-                                ).padStart(2, "0")
-                            )}
-                            onChange={(selectedOption) =>
-                              handleDurationChange(
-                                selectedOption.value,
-                                Math.floor(
-                                  (workScheduleData.grace_time_duration %
-                                    3600) /
-                                    60
-                                ),
-                                "grace_time_duration"
-                              )
-                            }
-                          />
-                          <b className="mt-2 me-1 ms-2">M</b>
-                          <Select
-                            id="gracePeriodInMinutes"
-                            name="gracePeriodInMinutes"
-                            placeholder={"00"}
-                            options={minuteOptions}
-                            value={minuteOptions.find(
-                              (option) =>
-                                option.value ===
-                                String(
-                                  Math.floor(
-                                    (workScheduleData.grace_time_duration %
-                                      3600) /
-                                      60
-                                  )
-                                ).padStart(2, "0")
-                            )}
-                            onChange={(selectedOption) =>
-                              handleDurationChange(
-                                Math.floor(
-                                  workScheduleData.grace_time_duration / 3600
-                                ),
-                                selectedOption.value,
-                                "grace_time_duration"
-                              )
-                            }
-                          />
-                        </div>
-                      </div>
-                    </Col>
-
-                    <Col xxl={3} md={6}>
-                      <div>
-                        <Label htmlFor="basiInput" className="form-label">
-                          Maximum Total Break Duration
-                        </Label>
-                        <br></br>
-                        <div style={{ display: "flex" }}>
-                          <b className="mt-2 me-1">H</b>
-
-                          <Select
-                            id="maximum_break_hr"
-                            name="maximum_break_hr"
-                            placeholder={"00"}
-                            options={hourOptions}
-                            value={hourOptions.find(
-                              (option) =>
-                                option.value ===
-                                String(
-                                  Math.floor(
-                                    workScheduleData.maximum_break_duration /
-                                      3600
-                                  )
-                                ).padStart(2, "0")
-                            )}
-                            onChange={(selectedOption) =>
-                              handleDurationChange(
-                                selectedOption.value,
-                                Math.floor(
-                                  (workScheduleData.maximum_break_duration %
-                                    3600) /
-                                    60
-                                ),
-                                "maximum_break_duration"
-                              )
-                            }
-                          />
-                          <b className="mt-2 me-1 ms-2">M</b>
-                          <Select
-                            id="maximum_break_min"
-                            name="maximum_break_min"
-                            placeholder={"00"}
-                            options={minuteOptions}
-                            value={minuteOptions.find(
-                              (option) =>
-                                option.value ===
-                                String(
-                                  Math.floor(
-                                    (workScheduleData.maximum_break_duration %
-                                      3600) /
-                                      60
-                                  )
-                                ).padStart(2, "0")
-                            )}
-                            onChange={(selectedOption) =>
-                              handleDurationChange(
-                                Math.floor(
-                                  workScheduleData.maximum_break_duration / 3600
-                                ),
-                                selectedOption.value,
-                                "maximum_break_duration"
-                              )
-                            }
-                          />
-                        </div>
-                      </div>
-                    </Col>
-                  </Row>
-
-                  {/* <Col lg={12}>
-                    <div>
-                      <Label for="auto_clock_out_cb" className="form-label">
-                        Auto Clock Out
-                      </Label>
-                      <div
-                        className="form-check form-switch form-switch-md form-switch-success"
-                        dir="ltr"
-                      >
-                        <Input
-                          name="auto_clock_out"
-                          id="auto_clock_out_cb"
-                          type="checkbox"
-                          className="form-check-input"
-                          checked={workScheduleData.auto_clock_out}
-                          onChange={handleChange}
+                        <Select
+                          name="type"
+                          options={workScheduleOptions}
+                          isMulti={false}
+                          value={workScheduleOptions.find(
+                            (item) =>
+                              item.value === workScheduleData.workschedule_type
+                          )}
+                          onChange={(option) => {
+                            setWorkScheduleData({
+                              ...workScheduleData,
+                              workschedule_type: option.value,
+                              workday: initialWorkday,
+                              fullday_work_duration: 0,
+                              halfday_work_duration: 0,
+                              grace_time_duration: 0,
+                              maximum_break_duration: 0,
+                              twenty_four_hrs_duration: 0,
+                              has_ot: false
+                            });
+                          }}
+                          className="basic-single"
+                          classNamePrefix="select"
+                          styles={{
+                            control: (provided, state) => ({
+                              ...provided,
+                              borderColor:
+                                FormikForm.touched.type &&
+                                FormikForm.errors.type
+                                  ? "red"
+                                  : provided.borderColor,
+                            }),
+                          }}
                         />
-                      </div>
-                    </div>
-                  </Col> */}
 
-                  <Col lg={12}>
-                    <div>
-                      <Label for="has_ot" className="form-label">
-                        Enable OT
-                      </Label>
-                      <div
-                        className="form-check form-switch form-switch-md form-switch-success"
-                        dir="ltr"
-                      >
-                        <Input
-                          id="has_ot"
-                          name="has_ot"
-                          type="checkbox"
-                          className="form-check-input"
-                          checked={workScheduleData.has_ot}
-                          onChange={handleChange}
-                        />
+                        {FormikForm.touched.type && FormikForm.errors.type && (
+                          <div className="text-danger mt-1">
+                            {FormikForm.errors.type}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  </Col>
+                    </Col>
+                  </Row>
+
+                  {workScheduleData
+                    ? (workScheduleData?.workschedule_type === "1" && (
+                        <div>
+                          <Row className="mb-2">
+                            {/* FULL DAY DURATION */}
+                            <Col xxl={6} md={6}>
+                              <div>
+                                <Label
+                                  htmlFor="ws_full_hr"
+                                  className="form-label"
+                                >
+                                  Work Duration
+                                </Label>
+                                <span className="form-text text-muted ms-3">
+                                  Full Day
+                                </span>
+
+                                <div style={{ display: "flex" }}>
+                                  <b className="mt-2 me-1">H</b>
+
+                                  <Select
+                                    id="ws_full_hr"
+                                    name="wsFullDayHr"
+                                    placeholder="00"
+                                    options={hourOptions}
+                                    value={hourOptions.find(
+                                      (option) =>
+                                        option.value ===
+                                        String(
+                                          Math.floor(
+                                            workScheduleData.fullday_work_duration /
+                                              3600
+                                          )
+                                        ).padStart(2, "0")
+                                    )}
+                                    onChange={(selectedOption) => {
+                                      handleDurationChange(
+                                        selectedOption.value,
+                                        Math.floor(
+                                          (workScheduleData.fullday_work_duration %
+                                            3600) /
+                                            60
+                                        ),
+                                        "fullday_work_duration"
+                                      );
+                                    }}
+                                  />
+
+                                  <b className="mt-2 me-1 ms-2">M</b>
+                                  <Select
+                                    id="ws_full_mi"
+                                    name="wsFullDayMin"
+                                    placeholder="00"
+                                    options={minuteOptions}
+                                    value={minuteOptions.find(
+                                      (option) =>
+                                        option.value ===
+                                        String(
+                                          Math.floor(
+                                            (workScheduleData.fullday_work_duration %
+                                              3600) /
+                                              60
+                                          )
+                                        ).padStart(2, "0")
+                                    )}
+                                    onChange={(selectedOption) => {
+                                      handleDurationChange(
+                                        Math.floor(
+                                          workScheduleData.fullday_work_duration /
+                                            3600
+                                        ),
+                                        selectedOption.value,
+                                        "fullday_work_duration"
+                                      );
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </Col>
+
+                            {/* HALF DAY DURATION */}
+                            <Col xxl={6} md={6}>
+                              <div>
+                                <Label className="form-label mb-3"></Label>
+                                <span className="form-text text-muted ms-3">
+                                  Half Day
+                                </span>
+
+                                <div style={{ display: "flex" }}>
+                                  <b className="mt-2 me-1">H</b>
+
+                                  <Select
+                                    id="ws_half_hr"
+                                    name="wsHalfDayHr"
+                                    placeholder="00"
+                                    options={hourOptions}
+                                    value={hourOptions.find(
+                                      (option) =>
+                                        option.value ===
+                                        String(
+                                          Math.floor(
+                                            workScheduleData.halfday_work_duration /
+                                              3600
+                                          )
+                                        ).padStart(2, "0")
+                                    )}
+                                    onChange={(selectedOption) =>
+                                      handleDurationChange(
+                                        selectedOption.value,
+                                        Math.floor(
+                                          (workScheduleData.halfday_work_duration %
+                                            3600) /
+                                            60
+                                        ),
+                                        "halfday_work_duration"
+                                      )
+                                    }
+                                  />
+
+                                  <b className="mt-2 me-1 ms-2">M</b>
+
+                                  <Select
+                                    id="ws_half_min"
+                                    name="wsHalfDayMin"
+                                    placeholder="00"
+                                    options={minuteOptions}
+                                    value={minuteOptions.find(
+                                      (option) =>
+                                        option.value ===
+                                        String(
+                                          Math.floor(
+                                            (workScheduleData.halfday_work_duration %
+                                              3600) /
+                                              60
+                                          )
+                                        ).padStart(2, "0")
+                                    )}
+                                    onChange={(selectedOption) =>
+                                      handleDurationChange(
+                                        Math.floor(
+                                          workScheduleData.halfday_work_duration /
+                                            3600
+                                        ),
+                                        selectedOption.value,
+                                        "halfday_work_duration"
+                                      )
+                                    }
+                                  />
+                                </div>
+                              </div>
+                            </Col>
+                          </Row>
+
+                          {/* GRACE PERIOD + MAX BREAK */}
+                          <Row>
+                            {/* GRACE PERIOD */}
+                            <Col xxl={6} md={6}>
+                              <div>
+                                <Label
+                                  htmlFor="gracePeriodInHours"
+                                  className="form-label"
+                                >
+                                  Grace Period
+                                </Label>
+
+                                <div style={{ display: "flex" }}>
+                                  <b className="mt-2 me-1">H</b>
+
+                                  <Select
+                                    id="gracePeriodInHours"
+                                    name="gracePeriodInHours"
+                                    placeholder="00"
+                                    options={hourOptions}
+                                    value={hourOptions.find(
+                                      (option) =>
+                                        option.value ===
+                                        String(
+                                          Math.floor(
+                                            workScheduleData.grace_time_duration /
+                                              3600
+                                          )
+                                        ).padStart(2, "0")
+                                    )}
+                                    onChange={(selectedOption) =>
+                                      handleDurationChange(
+                                        selectedOption.value,
+                                        Math.floor(
+                                          (workScheduleData.grace_time_duration %
+                                            3600) /
+                                            60
+                                        ),
+                                        "grace_time_duration"
+                                      )
+                                    }
+                                  />
+
+                                  <b className="mt-2 me-1 ms-2">M</b>
+
+                                  <Select
+                                    id="gracePeriodInMinutes"
+                                    name="gracePeriodInMinutes"
+                                    placeholder="00"
+                                    options={minuteOptions}
+                                    value={minuteOptions.find(
+                                      (option) =>
+                                        option.value ===
+                                        String(
+                                          Math.floor(
+                                            (workScheduleData.grace_time_duration %
+                                              3600) /
+                                              60
+                                          )
+                                        ).padStart(2, "0")
+                                    )}
+                                    onChange={(selectedOption) =>
+                                      handleDurationChange(
+                                        Math.floor(
+                                          workScheduleData.grace_time_duration /
+                                            3600
+                                        ),
+                                        selectedOption.value,
+                                        "grace_time_duration"
+                                      )
+                                    }
+                                  />
+                                </div>
+                              </div>
+                            </Col>
+
+                            {/* MAXIMUM TOTAL BREAK */}
+                            <Col xxl={6} md={6}>
+                              <div>
+                                <Label
+                                  htmlFor="maximum_break_hr"
+                                  className="form-label"
+                                >
+                                  Maximum Total Break Duration
+                                </Label>
+
+                                <div style={{ display: "flex" }}>
+                                  <b className="mt-2 me-1">H</b>
+
+                                  <Select
+                                    id="maximum_break_hr"
+                                    name="maximum_break_hr"
+                                    placeholder="00"
+                                    options={hourOptions}
+                                    value={hourOptions.find(
+                                      (option) =>
+                                        option.value ===
+                                        String(
+                                          Math.floor(
+                                            workScheduleData.maximum_break_duration /
+                                              3600
+                                          )
+                                        ).padStart(2, "0")
+                                    )}
+                                    onChange={(selectedOption) =>
+                                      handleDurationChange(
+                                        selectedOption.value,
+                                        Math.floor(
+                                          (workScheduleData.maximum_break_duration %
+                                            3600) /
+                                            60
+                                        ),
+                                        "maximum_break_duration"
+                                      )
+                                    }
+                                  />
+
+                                  <b className="mt-2 me-1 ms-2">M</b>
+
+                                  <Select
+                                    id="maximum_break_min"
+                                    name="maximum_break_min"
+                                    placeholder="00"
+                                    options={minuteOptions}
+                                    value={minuteOptions.find(
+                                      (option) =>
+                                        option.value ===
+                                        String(
+                                          Math.floor(
+                                            (workScheduleData.maximum_break_duration %
+                                              3600) /
+                                              60
+                                          )
+                                        ).padStart(2, "0")
+                                    )}
+                                    onChange={(selectedOption) =>
+                                      handleDurationChange(
+                                        Math.floor(
+                                          workScheduleData.maximum_break_duration /
+                                            3600
+                                        ),
+                                        selectedOption.value,
+                                        "maximum_break_duration"
+                                      )
+                                    }
+                                  />
+                                </div>
+                              </div>
+                            </Col>
+                          </Row>
+
+                          {/* OT ENABLE SWITCH */}
+                          <Col lg={12} className="mt-3">
+                            <div>
+                              <Label htmlFor="has_ot" className="form-label">
+                                Enable OT
+                              </Label>
+
+                              <div
+                                className="form-check form-switch form-switch-md form-switch-success"
+                                dir="ltr"
+                              >
+                                <Input
+                                  id="has_ot"
+                                  name="has_ot"
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  checked={workScheduleData.has_ot}
+                                  onChange={handleChange}
+                                />
+                              </div>
+                            </div>
+                          </Col>
+                        </div>
+                      )) || (
+                        <Col xxl={6} md={6}>
+                          <div>
+                            <Label htmlFor="ws_full_hr" className="form-label">
+                              Maximum Working Hours
+                            </Label>
+
+                            <div style={{ display: "flex" }}>
+                              <b className="mt-2 me-1">H</b>
+
+                              <Select
+                                id="ws_full_hr"
+                                name="wsFullDayHr"
+                                placeholder="00"
+                                options={hourOptions}
+                                value={hourOptions.find(
+                                  (option) =>
+                                    option.value ===
+                                    String(
+                                      Math.floor(
+                                        workScheduleData.twenty_four_hrs_duration /
+                                          3600
+                                      )
+                                    ).padStart(2, "0")
+                                )}
+                                onChange={(selectedOption) => {
+                                  handleDurationChange(
+                                    selectedOption.value,
+                                    Math.floor(
+                                      (workScheduleData.twenty_four_hrs_duration %
+                                        3600) /
+                                        60
+                                    ),
+                                    "twenty_four_hrs_duration"
+                                  );
+                                }}
+                              />
+
+                              <b className="mt-2 me-1 ms-2">M</b>
+                              <Select
+                                id="ws_full_mi"
+                                name="wsFullDayMin"
+                                placeholder="00"
+                                options={minuteOptions}
+                                value={minuteOptions.find(
+                                  (option) =>
+                                    option.value ===
+                                    String(
+                                      Math.floor(
+                                        (workScheduleData.twenty_four_hrs_duration %
+                                          3600) /
+                                          60
+                                      )
+                                    ).padStart(2, "0")
+                                )}
+                                onChange={(selectedOption) => {
+                                  handleDurationChange(
+                                    Math.floor(
+                                      workScheduleData.twenty_four_hrs_duration /
+                                        3600
+                                    ),
+                                    selectedOption.value,
+                                    "twenty_four_hrs_duration"
+                                  );
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </Col>
+                      )
+                    : null}
                 </div>
                 <div className="d-flex align-items-start gap-3 mt-4">
                   <button
@@ -724,7 +971,10 @@ const WorkScheduleForm = () => {
                               name={`s_hr_${workday.s_day}`}
                               id={`s_hr_${workday.s_day}`}
                               className={`s_hr_${workday.s_day}`}
-                              isDisabled={!workday.is_day_on}
+                              isDisabled={
+                                workday.is_day_on === false ||
+                                workScheduleData?.workschedule_type === "2"
+                              }
                               placeholder={"00"}
                               options={hourOptions}
                               value={hourOptions.find(
@@ -746,7 +996,10 @@ const WorkScheduleForm = () => {
                               id={`s_min_${workday.s_day}`}
                               placeholder={"00"}
                               options={minuteOptions}
-                              isDisabled={!workday.is_day_on}
+                              isDisabled={
+                                workday.is_day_on === false ||
+                                workScheduleData?.workschedule_type === "2"
+                              }
                               value={minuteOptions.find(
                                 (option) => option.value === workday.s_min
                               )}
@@ -768,7 +1021,10 @@ const WorkScheduleForm = () => {
                               id={`e_hr_${workday.s_day}`}
                               placeholder={"00"}
                               options={hourOptions}
-                              isDisabled={!workday.is_day_on}
+                              isDisabled={
+                                workday.is_day_on === false ||
+                                workScheduleData?.workschedule_type === "2"
+                              }
                               value={hourOptions.find(
                                 (option) => option.value === workday.e_hr
                               )}
@@ -788,7 +1044,10 @@ const WorkScheduleForm = () => {
                               id={`e_min_${workday.s_day}`}
                               placeholder={"00"}
                               options={minuteOptions}
-                              isDisabled={!workday.is_day_on}
+                              isDisabled={
+                                workday.is_day_on === false ||
+                                workScheduleData?.workschedule_type === "2"
+                              }
                               value={minuteOptions.find(
                                 (option) => option.value === workday.e_min
                               )}
@@ -805,6 +1064,11 @@ const WorkScheduleForm = () => {
                             <span className="mb-2 text-info">
                               {workday.is_day_on === false ? (
                                 "W/O"
+                              ) : workScheduleData?.workschedule_type ===
+                                "2" ? (
+                                <span className="mb-2 text-success">
+                                  24:00 Hrs
+                                </span>
                               ) : (
                                 <span className="mb-2 text-success">
                                   {workScheduleData.fullday_work_duration >

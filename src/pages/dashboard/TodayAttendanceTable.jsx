@@ -88,6 +88,7 @@ const TodayaAttendanceTable = () => {
         );
         const result = response.data;
         
+       console.log("RES ===",result);
        
         
 
@@ -125,11 +126,17 @@ const TodayaAttendanceTable = () => {
   })(),
 
   // ✅ FIXED STATUS LOGIC
-  status: item.is_leave_approved
-    ? "Leave"
-    : item.is_present
-    ? "On Time"
-    : "Late",
+status: item.is_leave_approved
+  ? "Leave"
+  : item.is_present
+  ? item.is_late
+    ? "Late"
+    : "On Time"
+  : "Not Check In",
+
+
+
+
 
   date: item.date,
   location_history: item.location_history,
@@ -195,9 +202,11 @@ const TodayaAttendanceTable = () => {
     return item.department === departmentFilter;
   });
 
-  const inCount = filtered.filter((i) => i.status === "On Time").length;
-  const notCheckInCount = filtered.filter((i) => i.status === "Late").length;
-  const leaveCount = filtered.filter((i) => i.status === "Leave").length || 0;
+const inCount = filtered.filter((i) => i.status === "On Time" || i.status === "Late").length;
+
+
+const notCheckInCount = filtered.filter((i) => i.status === "Not Check In").length;
+const leaveCount = filtered.filter((i) => i.status === "Leave").length;
 
   console.log("l-count",leaveCount);
   
@@ -218,11 +227,17 @@ const TodayaAttendanceTable = () => {
   // ✅ Filtered data
   const filteredData = useMemo(() => {
     return attendanceData.filter((item) => {
+      console.log("dfdsf",item);
       
       
-      if (activeTab === "1" && item.status !== "On Time") return false;
-      if (activeTab === "2" && item.status !== "Late") return false;
-      if (activeTab === "3" && item.status !== "Leave") return false;
+      
+if (activeTab === "1" && !["On Time", "Late"].includes(item.status)) {
+  return false;
+}
+
+if (activeTab === "2" && item.status !== "Not Check In") return false;
+if (activeTab === "3" && item.status !== "Leave") return false;
+
 
       if (departmentFilter !== "All" && item.department !== departmentFilter)
         return false;
@@ -238,6 +253,8 @@ const TodayaAttendanceTable = () => {
       );
     });
   }, [attendanceData, activeTab, departmentFilter, search]);
+  console.log("DATA",filteredData);
+  
 
   // ✅ Pagination
   const paginatedData = useMemo(() => {

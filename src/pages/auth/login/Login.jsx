@@ -320,7 +320,7 @@ const Login = () => {
                             </div>
                           </div>
 
-                          <div className="form-check">
+                          {/* <div className="form-check">
                             <Input
                               className="form-check-input"
                               type="checkbox"
@@ -333,7 +333,7 @@ const Login = () => {
                             >
                               Remember me
                             </Label>
-                          </div>
+                          </div> */}
 
                           <div className="mt-4">
                             <Button
@@ -345,7 +345,7 @@ const Login = () => {
                             </Button>
                           </div>
 
-                          <div className="mt-4 text-center">
+                          {/* <div className="mt-4 text-center">
                             <div className="signin-other-title">
                               <h5 className="fs-13 mb-4 title">Sign In with</h5>
                             </div>
@@ -375,13 +375,13 @@ const Login = () => {
                                 <i className="ri-twitter-fill fs-16"></i>
                               </Button>
                             </div>
-                          </div>
+                          </div> */}
                         </Form>
                       </div>
                     </CardBody>
                   </Card>
 
-                  <div className="mt-4 text-center">
+                  {/* <div className="mt-4 text-center">
                     <p className="mb-0">
                       Don't have an account ?{" "}
                       <Link
@@ -392,7 +392,7 @@ const Login = () => {
                         Signup{" "}
                       </Link>{" "}
                     </p>
-                  </div>
+                  </div> */}
                 </Col>
               </Row>
             </Container>
