@@ -126,7 +126,7 @@ const TodayaAttendanceTable = () => {
   })(),
 
   // ✅ FIXED STATUS LOGIC
-status: item.is_leave_approved
+status: item.is_on_leave
   ? "Leave"
   : item.is_present
   ? item.is_late
