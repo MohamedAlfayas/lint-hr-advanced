@@ -315,11 +315,17 @@ const WorkScheduleForm = () => {
         return workday.is_day_on === true;
       });
       if (
-        values.fullday_work_duration === 0 ||
-        values.halfday_work_duration === 0 ||
-        values.twenty_four_hrs_duration === 0 ||
-        filteredWorkdays.length > 0 ||
-        filteredDayon.length === 0
+        values.workschedule_type == 1 &&
+        (values.fullday_work_duration === 0 ||
+          filteredWorkdays.length > 0 ||
+          filteredDayon.length === 0)
+      ) {
+        console.log("IFFFF")
+        toast.error("WorkSchedule Hour Can't Be Zero");
+      }
+      else if (
+        values.workschedule_type == 2 &&
+        (values.twenty_four_hrs_duration === 0)
       ) {
         toast.error("WorkSchedule Hour Can't Be Zero");
       } else {
@@ -480,7 +486,7 @@ const WorkScheduleForm = () => {
                               grace_time_duration: 0,
                               maximum_break_duration: 0,
                               twenty_four_hrs_duration: 0,
-                              has_ot: false
+                              has_ot: false,
                             });
                           }}
                           className="basic-single"
