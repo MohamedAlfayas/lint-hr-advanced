@@ -399,6 +399,16 @@ const ApplyLeaveForm = () => {
     }),
     onSubmit: async (values) => {
       // Merge half-day start/end times before submission
+      if (values.day_type === 2) {
+    if (!halfDayStartTime) {
+      toast.error("Please select Start Time");
+      return;
+    }
+    if (!halfDayEndTime) {
+      toast.error("Please select End Time");
+      return;
+    }
+  }
       const finalLeaveObj = {
         ...values,
         start: values.day_type === 2 ? halfDayStartTime : values.start,
@@ -411,7 +421,7 @@ const ApplyLeaveForm = () => {
         !finalLeaveObj.requested_leave_count ||
         finalLeaveObj.requested_leave_count === 0
       ) {
-        toast.error("Total Hour Can't Be Zero");
+        toast.error("Selected Hour Can't Be Zero");
         dispatch(setLoaderVisible(false));
         return;
       }
