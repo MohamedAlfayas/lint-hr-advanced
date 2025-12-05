@@ -467,7 +467,15 @@ const WorkScheduleForm = () => {
                         <Label className="form-label" htmlFor="ws_desc">
                           Work Schedule Type
                         </Label>
-
+{console.log("Edit Value:", workScheduleData.workschedule_type)}
+{console.log("Workschedule Value:", workScheduleData)}
+{console.log("Options:", workScheduleOptions)}
+{console.log(
+  "Matched Option:",
+  workScheduleOptions.find(
+    (item) => item.value === workScheduleData.workschedule_type
+  )
+)}
                         <Select
                           name="type"
                           options={workScheduleOptions}

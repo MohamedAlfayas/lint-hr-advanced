@@ -42,8 +42,8 @@ const AttendanceDashboard = () => {
   const { showTeamTable } = useSelector(
     (state) => state.AttendanceReportReducer
   );
-  const { show_attendance_timer } = useSelector(
-    (state) => state.ClockReducer
+  const show_attendance_timer = useSelector(
+    (state) => state.ClockReducer.show_attendance_timer
   );
 
   const department_data = GetLocalStorageData("department");
