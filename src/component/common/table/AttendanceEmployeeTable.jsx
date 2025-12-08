@@ -77,6 +77,8 @@ const AttendanceEmployeeTable = () => {
   const { Column, HeaderCell, Cell } = Table;
   const [loading, setLoading] = React.useState(false);
   const employee_data = GetLocalStorageData("employee") || [];
+  console.log("EMP DATA",employee_data);
+  
 
   const [timeline_modal, settimeline_modal] = useState(false);
   const [timelineList, setTimelineList] = useState([]);
@@ -313,7 +315,7 @@ console.log("timeline",timelineList);
     return (
       <Cell {...props} className="link-group">
         {rowData.is_leave_approved === true ? (
-          <span style={{ color: "orange" }}>Leave</span>
+          <span style={{ color: "red" }}>Leave</span>
         ) : rowData.is_holiday === true ? (
           <span style={{ color: "green" }}>Holiday</span>
         ) : rowData.is_week_off === true ? (
@@ -321,7 +323,7 @@ console.log("timeline",timelineList);
         ) : rowData.is_present === false ? (
           <span style={{ color: "red" }}>Absent</span>
         ) : (
-          ConvertSecondsToTime(rowData?.work_schedule_duration_without_break)
+          ConvertSecondsToTime(rowData?.maximum_full_day_work_duration)
         )}
       </Cell>
     );
@@ -1328,6 +1330,8 @@ console.log("timeline",timelineList);
                   let emp_details =
                     !!employee_data &&
                     employee_data.find((e) => e.id === d.employee_id);
+                    console.log("DETAILS",emp_details);
+                    
 
                   return (
                     <div className="d-flex mb-4">
@@ -1350,7 +1354,7 @@ console.log("timeline",timelineList);
                               objectFit: "cover",
                             }}
                             data-bs-toggle="tooltip"
-                            title={emp_details.first_name}
+                           title={emp_details?.first_name || ""}
                           >
                             <span
                               className="first_letter"
@@ -1364,7 +1368,7 @@ console.log("timeline",timelineList);
 
                       <div className="flex-grow-1 ms-3">
                         <h5 className="fs-13">
-                          {emp_details.first_name}{" "}
+                           {emp_details?.first_name || ""}{" "}
                           <small className="text-muted ms-2">
                             {/* 20 Dec 2021 - 05:47AM */}
                             {GetAmPmDateTime(d?.created_time)}

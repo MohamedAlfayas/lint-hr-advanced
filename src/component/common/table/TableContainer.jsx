@@ -194,7 +194,7 @@ const TableContainer = ({
         </Row>
       )}
 
-      <div className={`${divClass} custom-table-container`}>
+      <div className={`${divClass} custom-table-container table-wrapper`}>
         <Table
           hover
           {...getTableProps()}

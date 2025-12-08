@@ -370,3 +370,83 @@ body .rs-table-row-header .rs-table-cell {
   padding: 0 !important;
   margin: 0 !important;
 }
+/* COMMON sticky column style */
+.lc_sticky_col {
+  position: sticky;
+  background: #fff;
+  z-index: 50;               /* keeps above other columns */
+}
+
+/* First sticky column (checkbox) */
+.lc_sticky_col_1 {
+  left: 0;
+}
+
+/* Second sticky column (Action) */
+.lc_sticky_col_2 {
+  left: 60px;                /* adjust based on checkbox column width */
+}
+
+/* Optional shadow for better look */
+.lc_sticky_col {
+  box-shadow: 2px 0px 3px rgba(0, 0, 0, 0.12);
+}
+.custom-table-cell {
+  white-space: nowrap; /* optional: prevents text wrap */
+}
+
+/* Required for sticky to work correctly */
+.custom-table {
+  border-collapse: separate !important;
+  border-spacing: 0;
+}
+
+/* Default cell resets */
+.custom-table th,
+.custom-table td {
+  background: #fff !important;
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+/* ===========================================
+   STICKY COLUMN 1 — CHECKBOX
+=========================================== */
+.custom-table th:nth-child(1),
+.custom-table td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  z-index: 5 !important;
+  background: #fff;
+}
+
+/* ===========================================
+   STICKY COLUMN 2 — DATE
+=========================================== */
+.custom-table th:nth-child(2),
+.custom-table td:nth-child(2) {
+  position: sticky;
+  left: 40px; /* width of column 1 */
+  z-index: 5 !important;
+  background: #fff;
+}
+
+/* Optional shadow on last sticky column */
+.custom-table th:nth-child(2)::after,
+.custom-table td:nth-child(2)::after {
+  content: "";
+  position: absolute;
+  right: 0px;
+  width: 4px;
+  top: 0;
+  bottom: 0;
+  box-shadow: 3px 0 5px rgba(9, 9, 9, .08);
+}
+
+/* For responsive scroll container */
+.table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+

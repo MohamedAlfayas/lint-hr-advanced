@@ -159,6 +159,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
   const additionalColumn = [
     {
       Header: "Name",
+      className: "lc_sticky_first_additional_col",
       accessor: "employee_id",
       filterable: false,
       id: "employee_id",
@@ -168,7 +169,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
           (data) => data.id === obj.employee_id
         );
         return thisEmployee.profile_url ? (
-          <div className="d-flex gap-2 align-items-center">
+          <div className="d-flex gap-2 align-items-center lc_sticky_first_additional_col">
             <div className="flex-shrink-0">
               <img
                 src={thisEmployee.profile_url}
@@ -183,7 +184,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
             </div>
           </div>
         ) : (
-          <div className="d-flex gap-2 align-items-center">
+          <div className="d-flex gap-2 align-items-center lc_sticky_first_additional_col">
             <div className="flex-shrink-0">
               <div
                 className="avatar-xs rounded-circle"

@@ -113,7 +113,7 @@ const AttendanceLeaveApprovalTable = () => {
                       }}
                     >
                       <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
-                      Attendace Approval{" "}
+                      Attendance Approval{" "}
                       <Badge
                         color={activeTab === "1" ? "success" : "primary"}
                         style={{ marginLeft: "5px" }}
