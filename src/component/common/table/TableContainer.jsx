@@ -198,7 +198,7 @@ const TableContainer = ({
         <Table
           hover
           {...getTableProps()}
-          className={`${tableClass} custom-table`}
+          className={`${tableClass} ${window.location.pathname === "/approval" ? "custom-table" : ""}`}
         >
           <thead className={`${theadClass} custom-table-header`}>
             {headerGroups.map((headerGroup) => (
