@@ -260,7 +260,7 @@ const AttendanceOverview = () => {
               <div>
                 <div dir="ltr" className="apex-charts">
                   <AttendanceOverviewChart
-                    dataColors='["--vz-success", "--vz-primary", "--vz-info", "--vz-danger", "--vz-orange", "--vz-danger"]'
+                    dataColors='["--vz-success", "--vz-orange", "--vz-info", "--vz-danger", "--vz-primary", "--vz-danger","#00FFFF" ,"#8E44AD","#ADD8E6"]'
                     chartData={chartDataMemoized}
                   />
                 </div>

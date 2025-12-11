@@ -3,6 +3,8 @@ import ReactApexChart from "react-apexcharts";
 import getChartColorsArray from "../../component/common/dynamicColor/ChartsDynamicColor";
 
 const AttendanceOverviewChart = ({ dataColors, chartData }) => {
+  console.log("DATA",chartData);
+  
   const chartColumnStacked100Colors = useMemo(
     () => getChartColorsArray(dataColors),
     [dataColors]
@@ -59,8 +61,8 @@ const AttendanceOverviewChart = ({ dataColors, chartData }) => {
             let text =
               w.config.series[seriesIndex].name == "IN Hour"
                 ? "IN"
-                : w.config.series[seriesIndex].name == "Balance Hour"
-                ? "B"
+                : w.config.series[seriesIndex].name == "Pending"
+                ? "P"
                 : w.config.series[seriesIndex].name == "Holiday"
                 ? "H"
                 : w.config.series[seriesIndex].name == "Leave"
@@ -69,6 +71,12 @@ const AttendanceOverviewChart = ({ dataColors, chartData }) => {
                 ? "WO"
                 : w.config.series[seriesIndex].name == "Absent"
                 ? "A"
+                : w.config.series[seriesIndex].name == "Break"
+                ? "BR"
+                : w.config.series[seriesIndex].name == "Permission"
+                ? "PER"
+                : w.config.series[seriesIndex].name == "Half Day"
+                ? "HDL"
                 : "";
 
             return text;
