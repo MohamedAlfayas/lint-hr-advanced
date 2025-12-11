@@ -52,13 +52,13 @@ export const BuildAttendanceReportChart = (individual_attendance_report_data, di
                     weekend_hours_count = 0;
                     inactive_hours_count = 0;
                     break_hours_count = 0;
-                    leave_hours_count = d.maximum_full_day_work_duration;
+                    leave_hours_count = d.maximum_full_day_work_duration/3600;
                      permisson_hours_count = 0;
                      halfday_hours_count = 0;
                 } else if (d.is_holiday === true) {
                     final_paid_hr_count = 0;
                     balance_hr_count = 0;
-                    holiday_hours_count = d.maximum_full_day_work_duration;
+                    holiday_hours_count = d.maximum_full_day_work_duration/3600;
                     weekend_hours_count = 0;
                     leave_hours_count = 0;
                     inactive_hours_count = 0;
@@ -81,13 +81,13 @@ export const BuildAttendanceReportChart = (individual_attendance_report_data, di
                     holiday_hours_count = 0;
                     weekend_hours_count = 0;
                     leave_hours_count = 0;
-                    inactive_hours_count = d.maximum_full_day_work_duration;
+                    inactive_hours_count = d.maximum_full_day_work_duration/3600;
                     break_hours_count = 0;
                      permisson_hours_count = 0;
                      halfday_hours_count = 0;
                 } else if (d.is_present === true) {
                     final_paid_hr_count =
-                        parseInt(d.final_paid_hr_in_seconds);
+                        parseInt(d.final_paid_hr_in_seconds/3600);
 
                     let balance_hours_diff =
                         parseFloat(d.balance_hours) 
