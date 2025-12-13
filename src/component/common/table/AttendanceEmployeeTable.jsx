@@ -653,7 +653,7 @@ console.log("timeline",timelineList);
       id: rowData?.id,
       date: rowData?.date,
       work_schedule_duration_without_break:
-        rowData?.work_schedule_duration_without_break,
+        rowData?.maximum_full_day_work_duration,
       total_work_duration: rowData?.final_checked_in_hr_in_seconds,
       final_checked_in_hr_in_seconds: rowData?.final_checked_in_hr_in_seconds,
       final_ot_hr_in_seconds: rowData?.final_ot_hr_in_seconds,

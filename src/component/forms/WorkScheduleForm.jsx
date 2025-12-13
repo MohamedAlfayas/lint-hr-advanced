@@ -315,7 +315,7 @@ const WorkScheduleForm = () => {
         return workday.is_day_on === true;
       });
       if (
-        values.workschedule_type == 1 &&
+        values.type == 1 &&
         (values.fullday_work_duration === 0 ||
           filteredWorkdays.length > 0 ||
           filteredDayon.length === 0)
@@ -324,7 +324,7 @@ const WorkScheduleForm = () => {
         toast.error("WorkSchedule Hour Can't Be Zero");
       }
       else if (
-        values.workschedule_type == 2 &&
+        values.type == 2 &&
         (values.twenty_four_hrs_duration === 0)
       ) {
         toast.error("WorkSchedule Hour Can't Be Zero");
@@ -467,13 +467,13 @@ const WorkScheduleForm = () => {
                         <Label className="form-label" htmlFor="ws_desc">
                           Work Schedule Type
                         </Label>
-{console.log("Edit Value:", workScheduleData.workschedule_type)}
+{console.log("Edit Value:", workScheduleData.type)}
 {console.log("Workschedule Value:", workScheduleData)}
 {console.log("Options:", workScheduleOptions)}
 {console.log(
   "Matched Option:",
   workScheduleOptions.find(
-    (item) => item.value === workScheduleData.workschedule_type
+    (item) => item.value === workScheduleData.type
   )
 )}
                         <Select
@@ -482,12 +482,12 @@ const WorkScheduleForm = () => {
                           isMulti={false}
                           value={workScheduleOptions.find(
                             (item) =>
-                              item.value === workScheduleData.workschedule_type
+                              item.value === workScheduleData.type
                           )}
                           onChange={(option) => {
                             setWorkScheduleData({
                               ...workScheduleData,
-                              workschedule_type: option.value,
+                              type: option.value,
                               workday: initialWorkday,
                               fullday_work_duration: 0,
                               halfday_work_duration: 0,
@@ -521,7 +521,7 @@ const WorkScheduleForm = () => {
                   </Row>
 
                   {workScheduleData
-                    ? (workScheduleData?.workschedule_type === "1" && (
+                    ? (workScheduleData?.type === "1" && (
                         <div>
                           <Row className="mb-2">
                             {/* FULL DAY DURATION */}
@@ -987,7 +987,7 @@ const WorkScheduleForm = () => {
                               className={`s_hr_${workday.s_day}`}
                               isDisabled={
                                 workday.is_day_on === false ||
-                                workScheduleData?.workschedule_type === "2"
+                                workScheduleData?.type === "2"
                               }
                               placeholder={"00"}
                               options={hourOptions}
@@ -1012,7 +1012,7 @@ const WorkScheduleForm = () => {
                               options={minuteOptions}
                               isDisabled={
                                 workday.is_day_on === false ||
-                                workScheduleData?.workschedule_type === "2"
+                                workScheduleData?.type === "2"
                               }
                               value={minuteOptions.find(
                                 (option) => option.value === workday.s_min
@@ -1037,7 +1037,7 @@ const WorkScheduleForm = () => {
                               options={hourOptions}
                               isDisabled={
                                 workday.is_day_on === false ||
-                                workScheduleData?.workschedule_type === "2"
+                                workScheduleData?.type === "2"
                               }
                               value={hourOptions.find(
                                 (option) => option.value === workday.e_hr
@@ -1060,7 +1060,7 @@ const WorkScheduleForm = () => {
                               options={minuteOptions}
                               isDisabled={
                                 workday.is_day_on === false ||
-                                workScheduleData?.workschedule_type === "2"
+                                workScheduleData?.type === "2"
                               }
                               value={minuteOptions.find(
                                 (option) => option.value === workday.e_min
@@ -1078,7 +1078,7 @@ const WorkScheduleForm = () => {
                             <span className="mb-2 text-info">
                               {workday.is_day_on === false ? (
                                 "W/O"
-                              ) : workScheduleData?.workschedule_type ===
+                              ) : workScheduleData?.type ===
                                 "2" ? (
                                 <span className="mb-2 text-success">
                                   24:00 Hrs

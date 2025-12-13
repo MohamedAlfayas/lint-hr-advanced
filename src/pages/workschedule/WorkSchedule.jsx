@@ -159,7 +159,7 @@ const WorkSchedule = () => {
       grace_time_duration: 0,
       maximum_break_duration: 0,
       twenty_four_hrs_duration: 0,
-      workschedule_type: "1",
+      type: "1",
       workday: [
         {
           id: 0,
