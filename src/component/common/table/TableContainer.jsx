@@ -270,7 +270,7 @@ const TableContainer = ({
                 <React.Fragment key={key}>
                   <li className="page-item">
                     <Link
-                      to="#"
+                      to="javscript:;"
                       className={
                         pageIndex === item ? "page-link active" : "page-link"
                       }
