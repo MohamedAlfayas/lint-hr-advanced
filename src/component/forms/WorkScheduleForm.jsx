@@ -202,8 +202,8 @@ const WorkScheduleForm = () => {
   };
 
   const workScheduleOptions = [
-    { label: "Partial Hours", value: "1" },
-    { label: "24 Hours", value: "2" },
+    { label: "Partial Hours", value: 1 },
+    { label: "24 Hours", value: 2 },
   ];
 
   const handleDayCB = (e, wd_obj) => {
@@ -521,7 +521,7 @@ const WorkScheduleForm = () => {
                   </Row>
 
                   {workScheduleData
-                    ? (workScheduleData?.type === "1" && (
+                    ? (workScheduleData?.type === 1 && (
                         <div>
                           <Row className="mb-2">
                             {/* FULL DAY DURATION */}
@@ -987,7 +987,7 @@ const WorkScheduleForm = () => {
                               className={`s_hr_${workday.s_day}`}
                               isDisabled={
                                 workday.is_day_on === false ||
-                                workScheduleData?.type === "2"
+                                workScheduleData?.type === 2
                               }
                               placeholder={"00"}
                               options={hourOptions}
@@ -1012,7 +1012,7 @@ const WorkScheduleForm = () => {
                               options={minuteOptions}
                               isDisabled={
                                 workday.is_day_on === false ||
-                                workScheduleData?.type === "2"
+                                workScheduleData?.type === 2
                               }
                               value={minuteOptions.find(
                                 (option) => option.value === workday.s_min
@@ -1037,7 +1037,7 @@ const WorkScheduleForm = () => {
                               options={hourOptions}
                               isDisabled={
                                 workday.is_day_on === false ||
-                                workScheduleData?.type === "2"
+                                workScheduleData?.type === 2
                               }
                               value={hourOptions.find(
                                 (option) => option.value === workday.e_hr
@@ -1060,7 +1060,7 @@ const WorkScheduleForm = () => {
                               options={minuteOptions}
                               isDisabled={
                                 workday.is_day_on === false ||
-                                workScheduleData?.type === "2"
+                                workScheduleData?.type === 2
                               }
                               value={minuteOptions.find(
                                 (option) => option.value === workday.e_min
@@ -1079,7 +1079,7 @@ const WorkScheduleForm = () => {
                               {workday.is_day_on === false ? (
                                 "W/O"
                               ) : workScheduleData?.type ===
-                                "2" ? (
+                                2 ? (
                                 <span className="mb-2 text-success">
                                   24:00 Hrs
                                 </span>

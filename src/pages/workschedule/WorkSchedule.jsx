@@ -153,13 +153,13 @@ const WorkSchedule = () => {
       auto_clock_out: true,
       has_ot: false,
       is_default: false,
-      status: false,
+      status: true,
       fullday_work_duration: 0,
       halfday_work_duration: 0,
       grace_time_duration: 0,
       maximum_break_duration: 0,
       twenty_four_hrs_duration: 0,
-      type: "1",
+      type: 1,
       workday: [
         {
           id: 0,
