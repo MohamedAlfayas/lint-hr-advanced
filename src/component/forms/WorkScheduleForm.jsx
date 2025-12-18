@@ -325,7 +325,7 @@ const WorkScheduleForm = () => {
       }
       else if (
         values.type == 2 &&
-        (values.twenty_four_hrs_duration === 0)
+        (values.fullday_work_duration == 0)
       ) {
         toast.error("WorkSchedule Hour Can't Be Zero");
       } else {
@@ -493,7 +493,7 @@ const WorkScheduleForm = () => {
                               halfday_work_duration: 0,
                               grace_time_duration: 0,
                               maximum_break_duration: 0,
-                              twenty_four_hrs_duration: 0,
+                              // twenty_four_hrs_duration: 0,
                               has_ot: false,
                             });
                           }}
@@ -867,7 +867,7 @@ const WorkScheduleForm = () => {
                                     option.value ===
                                     String(
                                       Math.floor(
-                                        workScheduleData.twenty_four_hrs_duration /
+                                        workScheduleData.fullday_work_duration /
                                           3600
                                       )
                                     ).padStart(2, "0")
@@ -876,11 +876,11 @@ const WorkScheduleForm = () => {
                                   handleDurationChange(
                                     selectedOption.value,
                                     Math.floor(
-                                      (workScheduleData.twenty_four_hrs_duration %
+                                      (workScheduleData.fullday_work_duration %
                                         3600) /
                                         60
                                     ),
-                                    "twenty_four_hrs_duration"
+                                    "fullday_work_duration"
                                   );
                                 }}
                               />
@@ -896,7 +896,7 @@ const WorkScheduleForm = () => {
                                     option.value ===
                                     String(
                                       Math.floor(
-                                        (workScheduleData.twenty_four_hrs_duration %
+                                        (workScheduleData.fullday_work_duration %
                                           3600) /
                                           60
                                       )
@@ -905,11 +905,11 @@ const WorkScheduleForm = () => {
                                 onChange={(selectedOption) => {
                                   handleDurationChange(
                                     Math.floor(
-                                      workScheduleData.twenty_four_hrs_duration /
+                                      workScheduleData.fullday_work_duration /
                                         3600
                                     ),
                                     selectedOption.value,
-                                    "twenty_four_hrs_duration"
+                                    "fullday_work_duration"
                                   );
                                 }}
                               />
