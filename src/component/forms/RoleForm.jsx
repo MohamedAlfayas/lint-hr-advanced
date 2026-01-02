@@ -64,7 +64,7 @@ const RoleForm = () => {
       let total_roles_checked = roleObj.roles_list.length;
 
       if (total_roles_checked === 0) {
-        toast.error("Select Atleast One Permission");
+        toast.error("Select Atleast One Permissions");
       } else {
         dispatch(setLoaderVisible(true));
 
