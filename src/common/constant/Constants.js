@@ -2171,6 +2171,10 @@ export const not_applicable = {
   class: "black",
   text: "N/A",
 };
+export const test = {
+  class: "black",
+  text: "N/A",
+};
 
 export const employeeTypeOptions = [
   { id: "0", label: "All Employee", value: "0" },
