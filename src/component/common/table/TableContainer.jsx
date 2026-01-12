@@ -262,7 +262,7 @@ const TableContainer = ({
                   !canPreviousPage ? "page-item disabled" : "page-item"
                 }
               >
-                <Link to="#" className="page-link" onClick={previousPage}>
+                <Link to="javscript:;" className="page-link" onClick={previousPage}>
                   Previous
                 </Link>
               </li>
@@ -270,7 +270,7 @@ const TableContainer = ({
                 <React.Fragment key={key}>
                   <li className="page-item">
                     <Link
-                      to="#"
+                      to="javscript:;"
                       className={
                         pageIndex === item ? "page-link active" : "page-link"
                       }
@@ -282,7 +282,7 @@ const TableContainer = ({
                 </React.Fragment>
               ))}
               <li className={!canNextPage ? "page-item disabled" : "page-item"}>
-                <Link to="#" className="page-link" onClick={nextPage}>
+                <Link to="javscript:;" className="page-link" onClick={nextPage}>
                   Next
                 </Link>
               </li>

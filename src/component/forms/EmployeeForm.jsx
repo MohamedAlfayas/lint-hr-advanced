@@ -895,9 +895,10 @@ const EmployeeForm = () => {
                         {contactCountry.countryCode}
                       </span>
                     </DropdownToggle>
-                    <Input
+                   <Input
                       type="number"
                       name="contact_number"
+                      maxLength={10}
                       className="form-control rounded-end flag-input"
                       styles={{
                         control: (provided, state) => ({
@@ -912,9 +913,12 @@ const EmployeeForm = () => {
                       }}
                       placeholder="Enter number"
                       value={employeeObj.contact_number || ""}
-                      onChange={(e) =>
-                        updateProfileData("contact_number", e.target.value)
-                      }
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, "");
+                        if (value.length <= 10) {
+                          updateProfileData("contact_number", value);
+                        }
+                      }}
                       invalid={
                         FormikForm.touched.contact_number &&
                         FormikForm.errors.contact_number

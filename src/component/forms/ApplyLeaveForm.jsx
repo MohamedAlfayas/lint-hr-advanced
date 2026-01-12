@@ -326,6 +326,8 @@ const ApplyLeaveForm = () => {
   }, [toDate, fromDate]);
 
   const handleFromDateChange = (date, dateStr) => {
+    console.log("hand",dateStr);
+    
     setFromDate(dateStr);
     setLeaveApplyObj({
       ...leaveapplyObj,
@@ -611,7 +613,7 @@ const ApplyLeaveForm = () => {
                         if (!time) return;
                         const datePart = dayjs(leaveapplyObj.start).format("YYYY-MM-DD");
                         const newDateTime = dayjs(`${datePart} ${time.format("HH:mm:ss")}`);
-                        setHalfDayStartTime(newDateTime.format("YYYY-MM-DD HH:mm:ss"));
+                        setHalfDayStartTime(newDateTime.format("YYYY-MM-DD HH:mm:00"));
                       }}
                       style={{ width: "100%" }}
                     />
@@ -638,7 +640,7 @@ const ApplyLeaveForm = () => {
                           return;
                         }
                         setTimeError("");
-                        setHalfDayEndTime(end.format("YYYY-MM-DD HH:mm:ss"));
+                        setHalfDayEndTime(end.format("YYYY-MM-DD HH:mm:00"));
                       }}
                       style={{ width: "100%" }}
                     />
