@@ -2060,7 +2060,6 @@ const InfoTable = ({
                             )
                         : dataList
                             .filter((obj) => {
-                              console.clear();
                               return Object.entries(table_filter_keys).every(
                                 ([key, value]) => {
                                   // Skip filtering for keys with value 0
