@@ -91,7 +91,7 @@ const EmployeeTableFilter = () => {
           components={{ Option: EmployeeDisplayInSelect }}
           innerRef={inputRef}
           isMulti={false}
-          options={manager_options || []}
+          options={manager_options.filter((d) => d.is_active) || []}
           className="basic-multi-select"
           placeholder="Select Reporting Manager"
           onChange={(e) => handleFilterChange(e, "reporting_manager_id")}
