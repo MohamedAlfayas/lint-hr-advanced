@@ -93,16 +93,27 @@ const [rmSearch, setRmSearch] = useState("");
 const handleChangeReportingManager = async (newRM) => {
   if (!selectedEmployee || newRM.id === currentRM) return;
 
-  const result = await Swal.fire({
-    title: "Change Reporting Manager?",
-    text: `Assign ${newRM.first_name} as Reporting Manager?`,
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#0ab39c",
-    confirmButtonText: "Yes, Change",
-  });
+const result = await Swal.fire({
+  title: "Change Reporting Manager?",
+  html: `Assign <strong style="color:#7066e0">${newRM.first_name}</strong> as Reporting Manager?`,
+  icon: "warning",
+  showCancelButton: true,
+  confirmButtonColor: "#0ab39c",
+  confirmButtonText: "Yes, Change",
+});
 
-  if (!result.isConfirmed) return;
+
+ if (result.isConfirmed) {
+  // 👉 call API or update state here
+  // await updateReportingManager(...);
+
+  await Swal.fire({
+    icon: "success",
+    title: "Reporting Manager Updated!",
+    html: `<strong>${newRM.first_name}</strong> has been successfully assigned as the Reporting Manager.`,
+    confirmButtonColor: "#0ab39c",
+  });
+}
 
   // ✅ Update employee list (table data)
   const updatedEmployee = {
@@ -461,118 +472,89 @@ useEffect(() => {
         );
       },
     },
+{
+  Header: "Reporting Manager",
+  filterable: false,
+  id: "reporting_manager_id",
+  accessor: (obj) => {
+    const rm_obj =
+      EmployeeData.find((d) => d.id === obj.reporting_manager_id) || null;
 
-    {
-      Header: "Reporting Manager",
-      filterable: false,
-      id: "reporting_manager_id",
-      accessor: (obj) => {
-        let rm_obj =
-          EmployeeData.find((d) => d.id === obj.reporting_manager_id) || null;
-          
+    const handleRMClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation(); // prevents row click
 
-        if (!rm_obj) {
-          return (
-            <div className="d-flex gap-2 align-items-center text-muted">
-              <div
-                className="avatar-xs rounded-circle d-flex justify-content-center align-items-center"
-                style={{
-                  background: "#E9ECEF",
-                  width: "30px",
-                  height: "30px",
-                  color: "#6C757D",
-                }}
-              >
-                <i className="fas fa-user-slash"></i>{" "}
-                {/* Icon for no manager */}
-              </div>
-              <div>
-                <span className="fw-semibold">Not Assigned</span>
-              </div>
-            </div>
-          );
-        }
+      setSelectedEmployee(obj);
+      setCurrentRM(obj.reporting_manager_id || null);
+      setRmModalOpen(true);
+    };
 
-        return rm_obj.profile_url ? (
-          <div className="d-flex gap-2 align-items-center">
-            <div className="flex-shrink-0">
-              <img
-                src={rm_obj.profile_url}
-                alt="Profile"
-                className="avatar-xs rounded-circle"
-                style={{ objectFit: "cover" }}
-              />
-            </div>
-            <div className="flex-grow-1">
-   <span
-  role="button"
-  style={{ cursor: "pointer" }}
-  onClick={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    console.log("Clicked Employee:", obj);
-    console.log("Employee ID:", obj.id);
-    console.log("Current Reporting Manager ID:", obj.reporting_manager_id);
-
-    setSelectedEmployee(obj);
-    setCurrentRM(obj.reporting_manager_id || null);
-    setRmModalOpen(true);
-  }}
-  className="link-body-emphasis"
->
-  <h5 className="fs-14 mb-1">{rm_obj.first_name}</h5>
-</span>
-
-              <div>{rm_obj.email}</div>
-            </div>
+    // 🚫 Not Assigned
+    if (!rm_obj) {
+      return (
+        <div className="d-flex gap-2 align-items-center text-muted">
+          <div
+            className="avatar-xs rounded-circle d-flex justify-content-center align-items-center"
+            style={{
+              background: "#E9ECEF",
+              width: "30px",
+              height: "30px",
+              color: "#6C757D",
+            }}
+          >
+            <i className="fas fa-user-slash" />
           </div>
-          
-        ) : (
-          <div className="d-flex gap-2 align-items-center">
-            <div className="flex-shrink-0">
-              <div
-                className="avatar-xs rounded-circle d-flex justify-content-center align-items-center"
-                style={{
-                  background: "#0ab39c",
-                  width: "30px",
-                  height: "30px",
-                }}
-                data-bs-toggle="tooltip"
-                title={rm_obj.first_name}
-              >
-                <span className="text-white fw-bold">
-                  {rm_obj?.first_name?.charAt(0).toUpperCase() || ""}
-                </span>
-              </div>
+          <span className="fw-semibold">Not Assigned</span>
+        </div>
+      );
+    }
+
+    // ✅ Assigned RM — avatar + name + email ALL clickable
+    return (
+      <div
+        className="d-flex gap-2 align-items-center"
+        role="button"
+        style={{ cursor: "pointer" }}
+        onClick={handleRMClick}
+      >
+        {/* Avatar */}
+        <div className="flex-shrink-0">
+          {rm_obj.profile_url ? (
+            <img
+              src={rm_obj.profile_url}
+              alt="Profile"
+              className="avatar-xs rounded-circle"
+              style={{ objectFit: "cover" }}
+            />
+          ) : (
+            <div
+              className="avatar-xs rounded-circle d-flex justify-content-center align-items-center"
+              style={{
+                background: "#0ab39c",
+                width: "30px",
+                height: "30px",
+              }}
+              title={rm_obj.first_name}
+            >
+              <span className="text-white fw-bold">
+                {rm_obj.first_name?.charAt(0).toUpperCase()}
+              </span>
             </div>
-          <div className="flex-grow-1">
-   <span
-  role="button"
-  style={{ cursor: "pointer" }}
-  onClick={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
+          )}
+        </div>
 
-    console.log("Clicked Employee:", obj);
-    console.log("Employee ID:", obj.id);
-    console.log("Current Reporting Manager ID:", obj.reporting_manager_id);
-
-    setSelectedEmployee(obj);
-    setCurrentRM(obj.reporting_manager_id || null);
-    setRmModalOpen(true);
-  }}
-  className="link-body-emphasis"
->
-  <h5 className="fs-14 mb-1">{rm_obj.first_name}</h5>
-</span>
-
-              <div>{rm_obj.email}</div>
-            </div>
-          </div>
-        );
-      },
-    },
+        {/* Name + Email */}
+        <div className="flex-grow-1">
+          <h5 className="fs-14 mb-1 link-body-emphasis">
+            {rm_obj.first_name}
+          </h5>
+          <div className="text-muted">{rm_obj.email}</div>
+        </div>
+      </div>
+    );
+  },
+}
+,
     {
       Header: "Status",
       id: "status",
