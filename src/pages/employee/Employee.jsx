@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 import "react-toastify/dist/ReactToastify.css";
-import { Card, CardBody, CardHeader, Col, Container, Row } from "reactstrap";
+import { Card, CardBody, CardHeader, Col, Container, Input, Modal, ModalBody, ModalHeader, Row } from "reactstrap";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import InfoTable from "../../component/common/table/InfoTable";
 import { MetaTitle } from "../../common/data/MetaTitle";
@@ -12,6 +12,8 @@ import { setEmployee } from "../../redux/reducers/ChildReducer/EmployeeReducer";
 import { GetCustomField } from "../../common/js/GetCustomField";
 import { Badge, Button, UncontrolledTooltip } from "reactstrap";
 import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
+
 import {
   setComponentToShow,
   setFormObj,
@@ -38,6 +40,12 @@ import { setTodayAttendanceProgressBar } from "../../redux/reducers/ChildReducer
 
 const Employee = () => {
   const dispatch = useDispatch();
+  const [rmModalOpen, setRmModalOpen] = useState(false);
+const [selectedEmployee, setSelectedEmployee] = useState(null);
+const [currentRM, setCurrentRM] = useState(null);
+const [rmSearch, setRmSearch] = useState("");
+
+
   const { employee_data } = useSelector((state) => state.EmployeeReducer);
     const todayAttendance = useSelector(
     (state) => state.EmployeeProgressBarReducer
@@ -82,7 +90,60 @@ const Employee = () => {
     fetchAttendanceStatus();
   }, []);
 
- 
+const handleChangeReportingManager = async (newRM) => {
+  if (!selectedEmployee || newRM.id === currentRM) return;
+
+  const result = await Swal.fire({
+    title: "Change Reporting Manager?",
+    text: `Assign ${newRM.first_name} as Reporting Manager?`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#0ab39c",
+    confirmButtonText: "Yes, Change",
+  });
+
+  if (!result.isConfirmed) return;
+
+  // ✅ Update employee list (table data)
+  const updatedEmployee = {
+    ...selectedEmployee,
+    reporting_manager_id: newRM.id,
+  };
+
+  dispatch(
+    setEmployee(
+      employee_data.map((emp) =>
+        emp.id === selectedEmployee.id
+          ? updatedEmployee
+          : emp
+      )
+    )
+  );
+
+  // ✅ Update form data SILENTLY (no sidebar open)
+  dispatch(setFormObj(updatedEmployee));
+
+  // ✅ Local UI cleanup
+  setCurrentRM(newRM.id);
+  setRmModalOpen(false);
+
+  // ✅ Close SweetAlert
+  Swal.close();
+};
+
+
+
+const handleCloseRmModal = () => {
+  setRmModalOpen(false);
+  setRmSearch(""); // ✅ clear search
+};
+
+useEffect(() => {
+  if (!rmModalOpen) {
+    setRmSearch("");
+  }
+}, [rmModalOpen]);
+
 
   const CustomFieldsForThisForm = GetCustomField("employee") || [];
   const DepartmentData = GetLocalStorageData("department") || [];
@@ -443,12 +504,30 @@ const Employee = () => {
               />
             </div>
             <div className="flex-grow-1">
-              <Link to="#" className="link-body-emphasis mb-0">
-                <h5 className="fs-14 mb-1">{rm_obj.first_name}</h5>
-              </Link>
+   <span
+  role="button"
+  style={{ cursor: "pointer" }}
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    console.log("Clicked Employee:", obj);
+    console.log("Employee ID:", obj.id);
+    console.log("Current Reporting Manager ID:", obj.reporting_manager_id);
+
+    setSelectedEmployee(obj);
+    setCurrentRM(obj.reporting_manager_id || null);
+    setRmModalOpen(true);
+  }}
+  className="link-body-emphasis"
+>
+  <h5 className="fs-14 mb-1">{rm_obj.first_name}</h5>
+</span>
+
               <div>{rm_obj.email}</div>
             </div>
           </div>
+          
         ) : (
           <div className="d-flex gap-2 align-items-center">
             <div className="flex-shrink-0">
@@ -467,10 +546,27 @@ const Employee = () => {
                 </span>
               </div>
             </div>
-            <div className="flex-grow-1">
-              <Link to="#" className="link-body-emphasis mb-0">
-                <h5 className="fs-14 mb-1">{rm_obj.first_name}</h5>
-              </Link>
+          <div className="flex-grow-1">
+   <span
+  role="button"
+  style={{ cursor: "pointer" }}
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    console.log("Clicked Employee:", obj);
+    console.log("Employee ID:", obj.id);
+    console.log("Current Reporting Manager ID:", obj.reporting_manager_id);
+
+    setSelectedEmployee(obj);
+    setCurrentRM(obj.reporting_manager_id || null);
+    setRmModalOpen(true);
+  }}
+  className="link-body-emphasis"
+>
+  <h5 className="fs-14 mb-1">{rm_obj.first_name}</h5>
+</span>
+
               <div>{rm_obj.email}</div>
             </div>
           </div>
@@ -563,6 +659,100 @@ const Employee = () => {
         import_width_per={"50%"}
         initialActiveTab={"2"}
       />
+     <Modal isOpen={rmModalOpen} toggle={handleCloseRmModal} centered size="lg">
+    <ModalHeader toggle={handleCloseRmModal}>
+    Select Reporting Manager
+  </ModalHeader>
+
+  <ModalBody style={{ maxHeight: "400px", overflowY: "auto" }}>
+ <div className="input-group mb-3">
+  <span className="input-group-text bg-white">
+    <i className="bx bx-search-alt"></i>
+  </span>
+
+  <Input
+    type="text"
+    placeholder="Search employee name..."
+    value={rmSearch}
+    onChange={(e) => setRmSearch(e.target.value)}
+  />
+</div>
+ {employee_data &&
+employee_data
+  .filter((emp) => {
+    return (
+      emp.is_active === true && // ✅ hide inactive users
+      emp.id !== selectedEmployee?.id && // ❌ exclude self
+      emp.first_name
+        ?.toLowerCase()
+        .includes(rmSearch.toLowerCase()) // 🔍 search
+    );
+  }).length > 0 ? (
+    employee_data
+      .filter((emp) => {
+        return (
+          emp.is_active === true &&
+          emp.id !== selectedEmployee?.id &&
+          emp.first_name
+            ?.toLowerCase()
+            .includes(rmSearch.toLowerCase())
+        );
+      })
+      .map((emp) => {
+        const isSelected = emp.id === currentRM;
+
+        return (
+          <div
+            key={emp.id}
+            className={`d-flex align-items-center p-2 mb-2 rounded cursor-pointer ${
+              isSelected
+                ? "bg-success-subtle border border-success"
+                : "hover-bg"
+            }`}
+            onClick={() => handleChangeReportingManager(emp)}
+          >
+            {/* Avatar */}
+            <div className="avatar-xs me-2">
+              {emp.profile_url ? (
+                <img
+                  src={emp.profile_url}
+                  alt=""
+                  className="rounded-circle"
+                  style={{ width: 32, height: 32, objectFit: "cover" }}
+                />
+              ) : (
+                <div
+                  className="rounded-circle bg-success text-white d-flex justify-content-center align-items-center"
+                  style={{ width: 32, height: 32 }}
+                >
+                  {emp.first_name?.charAt(0)}
+                </div>
+              )}
+            </div>
+
+            {/* Info */}
+            <div>
+              <div className="fw-semibold">{emp.first_name}</div>
+              <small className="text-muted">{emp.email}</small>
+            </div>
+
+            {/* Selected Badge */}
+            {isSelected && (
+              <Badge color="success" className="ms-auto">
+                Selected
+              </Badge>
+            )}
+          </div>
+        );
+      })
+  ) : (
+    <div className="text-center text-muted py-3">
+      No Reporting Managers Available
+    </div>
+  )}
+</ModalBody>
+</Modal>
+
     </React.Fragment>
   );
 };
