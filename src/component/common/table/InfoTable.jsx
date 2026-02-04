@@ -105,6 +105,7 @@ import {
   setDashPendingApprovalCom,
 } from "../../../redux/reducers/ChildReducer/ApprovalComponentReducer";
 import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
+import TableSkeleton from "../skeleton/TableSkeloton";
 defineElement(loadAnimation);
 
 const InfoTable = ({
@@ -175,6 +176,25 @@ const InfoTable = ({
   const [typeFilter, setTypeFilter] = useState("all");
   const [showContainer, setShowContainer] = useState(false);
   const [selectedGroupIds, setSelectedGroupIds] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const res = await GetApi("/your-api");
+      setDataList(res?.data || []);
+    } catch (error) {
+      console.error(error);
+      setDataList([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  fetchData();
+}, []);
+
 
   const tog_list = () => {
     setmodal_list(!modal_list);
@@ -1990,8 +2010,9 @@ const InfoTable = ({
                         </NavLink>
                       </NavItem>
                     ))}
-                </Nav>
-                {dataList.length ? (
+                </Nav>{isLoading ? (
+  <TableSkeleton />
+) : dataList.length ? (
                   <TableContainer
                     columns={tableColumn}
                     data={

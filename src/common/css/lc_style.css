@@ -449,4 +449,72 @@ body .rs-table-row-header .rs-table-cell {
   overflow-x: auto;
   width: 100%;
 }
+/* Base skeleton animation */
+.lc-skelton-table{
+  padding-top: 40px;
+
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: #e5e7eb;
+  border-radius: 6px;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.6),
+    transparent
+  );
+  animation: skeleton-loading 1.3s infinite;
+}
+
+@keyframes skeleton-loading {
+  100% {
+    left: 100%;
+  }
+}
+
+/* Table row layout */
+.skeleton-row {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1.5fr 1fr 1fr 1fr;
+  gap: 16px;
+  padding: 14px 20px;
+  align-items: center;
+}
+
+/* Text skeleton */
+.skeleton-text {
+  height: 30px;
+  width: 100%;
+}
+
+/* Smaller text (status, numbers) */
+.skeleton-text.sm {
+  height: 12px;
+  width: 70%;
+}
+
+/* Avatar circle */
+.skeleton-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+/* Header skeleton */
+.skeleton-header {
+  height: 18px;
+  width: 120px;
+  margin-bottom: 12px;
+}
 
