@@ -519,5 +519,5 @@ body .rs-table-row-header .rs-table-cell {
 }
 
 .lc-select__multi-value__label {
-  color: white;
+  color: white !important;
 }
