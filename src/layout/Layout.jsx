@@ -48,50 +48,70 @@ const Layout = ({ children }) => {
     sidebarVisibilitytype,
   } = useSelector((state) => state.LayoutReducer);
 
-  useEffect(() => {
-    if (
-      layoutType ||
-      leftSidebarType ||
-      layoutModeType ||
-      layoutWidthType ||
-      layoutPositionType ||
-      topbarThemeType ||
-      leftsidbarSizeType ||
-      leftSidebarViewType ||
-      leftSidebarImageType ||
-      sidebarVisibilitytype
-    ) {
-      window.dispatchEvent(new Event("resize"));
-      dispatch(changeLeftsidebarViewType(leftSidebarViewType));
-      dispatch(changeLeftsidebarSizeType(leftsidbarSizeType));
-      dispatch(changeSidebarTheme(leftSidebarType));
-      dispatch(changeLayoutMode(layoutModeType));
-      dispatch(changeLayoutWidth(layoutWidthType));
-      dispatch(changeLayoutPosition(layoutPositionType));
-      dispatch(changeTopbarTheme(topbarThemeType));
-      dispatch(changeLayout(layoutType));
-      dispatch(changeSidebarImageType(leftSidebarImageType));
-      dispatch(changeSidebarVisibility(sidebarVisibilitytype));
-    }
-  }, [
-    layoutType,
-    leftSidebarType,
-    layoutModeType,
-    layoutWidthType,
-    layoutPositionType,
-    topbarThemeType,
-    leftsidbarSizeType,
-    leftSidebarViewType,
-    leftSidebarImageType,
-    sidebarVisibilitytype,
-    dispatch,
-  ]);
+ useEffect(() => {
+  if (
+    layoutType ||
+    leftSidebarType ||
+    layoutModeType ||
+    layoutWidthType ||
+    layoutPositionType ||
+    topbarThemeType ||
+    leftsidbarSizeType ||
+    leftSidebarViewType ||
+    leftSidebarImageType ||
+    sidebarVisibilitytype
+  ) {
+    window.dispatchEvent(new Event("resize"));
 
-  const onChangeLayoutMode = (value) => {
-    if (changeLayoutMode) {
-      dispatch(changeLayoutMode(value));
-    }
-  };
+    dispatch(changeLeftsidebarViewType(leftSidebarViewType));
+    dispatch(changeLeftsidebarSizeType(leftsidbarSizeType));
+    dispatch(changeSidebarTheme(leftSidebarType));
+    dispatch(changeLayoutMode(layoutModeType));
+    dispatch(changeLayoutWidth(layoutWidthType));
+    dispatch(changeLayoutPosition(layoutPositionType));
+    dispatch(changeTopbarTheme(topbarThemeType));
+    dispatch(changeLayout(layoutType));
+    dispatch(changeSidebarImageType(leftSidebarImageType));
+    dispatch(changeSidebarVisibility(sidebarVisibilitytype));
+  }
+}, [
+  layoutType,
+  leftSidebarType,
+  layoutModeType,
+  layoutWidthType,
+  layoutPositionType,
+  topbarThemeType,
+  leftsidbarSizeType,
+  leftSidebarViewType,
+  leftSidebarImageType,
+  sidebarVisibilitytype,
+  dispatch,
+]);
+
+
+useEffect(() => {
+  document.body.setAttribute(
+    "data-layout-mode",
+    layoutModeType === "dark" ? "dark" : "light"
+  );
+}, [layoutModeType]);
+
+useEffect(() => {
+  const savedMode = localStorage.getItem("layoutMode");
+
+  if (savedMode) {
+    dispatch(changeLayoutMode(savedMode));
+  }
+}, [dispatch]);
+
+
+ const onChangeLayoutMode = (value) => {
+  if (changeLayoutMode) {
+    localStorage.setItem("layoutMode", value); // ✅ persist
+    dispatch(changeLayoutMode(value));
+  }
+};
+
 
   // class add remove in header
   useEffect(() => {
