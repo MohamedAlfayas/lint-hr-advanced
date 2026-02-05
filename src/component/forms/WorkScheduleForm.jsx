@@ -498,7 +498,7 @@ const WorkScheduleForm = () => {
                             });
                           }}
                           className="basic-single"
-                          classNamePrefix="select"
+                         classNamePrefix="lc-select"
                           styles={{
                             control: (provided, state) => ({
                               ...provided,

@@ -256,6 +256,7 @@ const LeaveTypeForm = () => {
                     isMulti={false}
                     options={leave_types_options || []}
                     className="basic-multi-select"
+                    classNamePrefix="lc-select"
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
@@ -433,6 +434,7 @@ const LeaveTypeForm = () => {
                     options={leave_reset_options || []}
                     id="lt_reset"
                     className="basic-multi-select"
+                    classNamePrefix="lc-select"
                     value={
                       (leaveTypeData.reset_type &&
                         leave_reset_options.find(
@@ -461,9 +463,10 @@ const LeaveTypeForm = () => {
 
                   <Select
                     name="ws_id"
-                    isMulti={true}
+                    isMulti
                     options={ws_options || []}
                     className="basic-multi-select"
+                    classNamePrefix="lc-select"
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
@@ -504,9 +507,10 @@ const LeaveTypeForm = () => {
                   </Label>
                   <Select
                     name="genders"
-                    isMulti={true}
+                    isMulti
                     options={gender_options || []}
                     className="basic-multi-select"
+                    classNamePrefix="lc-select"
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
