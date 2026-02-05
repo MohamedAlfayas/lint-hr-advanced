@@ -997,10 +997,11 @@ const EmployeeForm = () => {
                     id="branch"
                     name="branch"
                     innerRef={inputRef}
-                    isMulti={true}
+                    isMulti
                     closeMenuOnSelect={false}
                     options={branch_options || []}
                     className="basic-multi-select lc_multi_select"
+                    classNamePrefix="lc-select"
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
