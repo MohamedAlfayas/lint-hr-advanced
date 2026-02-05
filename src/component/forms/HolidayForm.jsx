@@ -177,9 +177,10 @@ const HolidayForm = () => {
                   <Label>Work Schedule</Label>
                   <Select
                     name="work_schedule_id_list"
-                    isMulti={true}
+                    isMulti
                     options={ws_options || []}
                     className="basic-multi-select"
+                    classNamePrefix="lc-select"
                     styles={{
                       control: (provided, state) => ({
                         ...provided,

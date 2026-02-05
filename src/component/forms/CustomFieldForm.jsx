@@ -181,6 +181,7 @@ const CustomFieldForm = () => {
                     isMulti={false}
                     options={custom_field_input_types || []}
                     className="basic-multi-select"
+                    classNamePrefix="lc-select"
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
@@ -351,6 +352,7 @@ const CustomFieldForm = () => {
                     isMulti={true}
                     options={custom_field_module_lists || []}
                     className="basic-multi-select"
+                    classNamePrefix="lc-select"
                     styles={{
                       control: (provided, state) => ({
                         ...provided,

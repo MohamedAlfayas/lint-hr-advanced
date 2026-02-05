@@ -1055,9 +1055,10 @@ const EmployeeForm = () => {
                     id="primary_department_id_list"
                     name="primary_department_id_list"
                     innerRef={inputRef}
-                    isMulti={true}
+                    isMulti
                     options={dep_options || []}
                     className="basic-multi-select"
+                    classNamePrefix="lc-select"
                     closeMenuOnSelect={false}
                     styles={{
                       control: (provided, state) => ({
@@ -1167,6 +1168,7 @@ const EmployeeForm = () => {
                     options={reportingManagerOptions || []}
                     components={{ Option: EmployeeDisplayInSelect }}
                     className="basic-multi-select"
+                    classNamePrefix="lc-select"
                     styles={{
                       control: (provided, state) => ({
                         ...provided,

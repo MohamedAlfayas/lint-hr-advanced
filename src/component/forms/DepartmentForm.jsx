@@ -134,7 +134,7 @@ const DepartmentForm = () => {
                       ? "is-invalid"
                       : ""
                   }`}
-                  classNamePrefix="react-select"
+                 classNamePrefix="lc-select"
                   styles={{
                     control: (provided, state) => ({
                       ...provided,

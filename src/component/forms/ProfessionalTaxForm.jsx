@@ -92,6 +92,7 @@ const ProfessionalTaxForm = () => {
                   }
                   placeholder="Select Leave Type"
                   className="basic-multi-select"
+                  classNamePrefix="lc-select"
                 />
               </div>
               <div id="passwordHelpBlock" className="form-text">

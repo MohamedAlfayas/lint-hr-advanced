@@ -504,6 +504,7 @@ const ApplyLeaveForm = () => {
                     onChange={handleLeaveTypeChange}
                     placeholder="Select Leave Type"
                     className="basic-multi-select"
+                    classNamePrefix="lc-select"
                     invalid={
                       FormikForm.touched.leave_type_id &&
                       FormikForm.errors.leave_type_id
@@ -586,6 +587,7 @@ const ApplyLeaveForm = () => {
                             options={day_type || []}
                             placeholder="Select Day Type"
                             className="basic-multi-select"
+                            classNamePrefix="lc-select"
                             value={
                               leaveapplyObj?.day_type
                                 ? day_type.find(
