@@ -1895,6 +1895,7 @@ export const status_component_name = "Status";
 export const piriorities_component_name = "Piriority";
 export const contact_group_component_name = "Contact Group";
 export const contacts_component_name = "Contacts";
+export const custom_form_component_name = "custom_form";
 
 export const component_list_for_import_btn_access = [
   department_component_name,

@@ -40,10 +40,12 @@ import {
   piriorities_component_name,
   contact_group_component_name,
   contacts_component_name,
+  custom_form_component_name,
 } from "../../../common/constant/Constants";
 import BranchForm from "../../forms/BranchForm";
 import ContactGroupForm from "../../forms/Common/ContactGroupForm";
 import ContactsForm from "../../forms/Common/ContactsForm";
+import CustomForm from "../../forms/Common/CustomForm";
 
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
@@ -109,6 +111,8 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
                         <ContactGroupForm/>
                         ) : component_to_show === contacts_component_name ? (
                           <ContactsForm/>
+                          ) : component_to_show === custom_form_component_name ? (
+                          <CustomForm/>
                           ) : (
                 <></>
               )}

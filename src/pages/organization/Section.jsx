@@ -23,6 +23,7 @@ import AttendanceConfig from "./../attendanceConfig/AttendanceConfig";
 import CustomField from "../customField/CustomField";
 import Roles from "../roles/Roles";
 import { useSelector } from "react-redux";
+import CustomFormTable from "../CustomForms/CustomFormTable";
 
 const Section = () => {
   //Tab
@@ -189,6 +190,20 @@ const Section = () => {
                       Roles
                     </NavLink>
                   </NavItem>
+                  <NavItem>
+                    <NavLink
+                      className={classnames(
+                        { active: activeTab === "8" },
+                        "fw-semibold"
+                      )}
+                      onClick={() => {
+                        toggleTab("8");
+                      }}
+                      href="#"
+                    >
+                      Forms
+                    </NavLink>
+                  </NavItem>
                 </Nav>
               </CardBody>
             </div>
@@ -218,6 +233,9 @@ const Section = () => {
             </TabPane>
             <TabPane tabId="7">
               <Roles />
+            </TabPane>
+            <TabPane tabId="8">
+              <CustomFormTable />
             </TabPane>
           </TabContent>
         </Col>

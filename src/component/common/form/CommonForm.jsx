@@ -82,13 +82,13 @@ const CommonForm = (props) => {
 
   return (
     <React.Fragment>
-      <button
+      {/* <button
         // onClick={() => resetCommonForm()}
         type="button"
         className="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle light-dark-mode"
       >
         <i className="bx bx-plus fs-22"></i>
-      </button>
+      </button> */}
 
       <div>
         <DisplayForms open={showRSB} toggleLeftCanvas={toggleLeftCanvas} />

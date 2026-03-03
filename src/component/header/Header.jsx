@@ -29,6 +29,7 @@ import { Api } from "../../common/api/Api";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { employee_view_component_name } from "../../common/constant/Constants";
 import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
+import TimeLineList from "../common/timeLine/TimeLineList";
 
 const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const dispatch = useDispatch();
@@ -246,8 +247,10 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
               {/* <FullScreenDropdown /> */}
 
               {/* RightSideBar Form View */}
+               <CommonForm />
 
-              <CommonForm />
+              <TimeLineList />
+
 
               {/* Dark/Light Mode set */}
               <LightDark
