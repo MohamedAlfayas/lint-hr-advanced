@@ -105,7 +105,8 @@ export const BuildAttendanceReportChart = (individual_attendance_report_data, di
                     inactive_hours_count = 0;
                     break_hours_count = parseFloat(d.total_valid_break_duration/3600);
                      permisson_hours_count = parseFloat(d.permission_hours);
-                     halfday_hours_count = parseFloat(d.half_day_hours/3600);
+                    //  halfday_hours_count = parseFloat(d.half_day_hours/3600);
+                     halfday_hours_count = parseFloat(d.half_day_hours*8);
                 }  else {
                     final_paid_hr_count = 0;
                     balance_hr_count = 0;
@@ -115,7 +116,8 @@ export const BuildAttendanceReportChart = (individual_attendance_report_data, di
                     inactive_hours_count = d.maximum_full_day_work_duration;
                     break_hours_count = 0;
                      permisson_hours_count = parseFloat(d.permission_hours);
-                     halfday_hours_count = parseFloat(d.half_day_hours/3600);
+                    //  halfday_hours_count = parseFloat(d.half_day_hours/3600);
+                     halfday_hours_count = parseFloat(d.half_day_hours*8);
                 }
 
                 in_hours.push(final_paid_hr_count);
