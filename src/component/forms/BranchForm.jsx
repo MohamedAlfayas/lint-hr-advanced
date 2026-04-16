@@ -63,11 +63,13 @@ import LocationSearch from "../../pages/organization/LocationSearch";
 // import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 import BranchLocationForm from "./Common/BranchLocationForm";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { IndiaStates } from "../../common/constant/Constants";
 
 const BranchForm = () => {
   const dispatch = useDispatch();
   const initialBranchLocationObj = {
-    branch_id: 0,
+    type_id: 0,
+    type: "branch",
     id: 0,
     address: "",
     city: "",
@@ -87,18 +89,30 @@ const BranchForm = () => {
   };
 
   const [stateListOptions, setStateListOptions] = useState([]);
+  const [branchStateOptions, setBranchStateOptions] = useState([]);
+  const [locationStateOptions, setLocationStateOptions] = useState([]);
   const [CountryCodeListOptions, setCountryCodeListOptions] = useState([]);
   const [branchLocationObj, setBranchLocationObj] = useState(
-    initialBranchLocationObj
+    initialBranchLocationObj,
   );
+  const [branchObj, setBranchObj] = useState({});
   useEffect(() => {
-    if (!!branchLocationObj?.country && branchLocationObj?.country !== "") {
-      setStateListOptions(
-        CountryList.find((d) => d.countryName === branchLocationObj?.country)
-          .states || []
+    if (branchLocationObj?.country) {
+      const selectedCountry = CountryList.find(
+        (d) => d.countryName === branchLocationObj.country,
       );
+      setLocationStateOptions(selectedCountry?.states || []);
     }
-  }, [branchLocationObj]);
+  }, [branchLocationObj?.country]);
+
+  useEffect(() => {
+    if (branchObj?.country) {
+      const selectedCountry = CountryList.find(
+        (d) => d.countryName === branchObj.country,
+      );
+      setBranchStateOptions(selectedCountry?.states || []);
+    }
+  }, [branchObj?.country]);
 
   const [CountryListOptions, setCountryListOptions] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -110,7 +124,7 @@ const BranchForm = () => {
 
     setBranchLocationObj({
       ...initialBranchLocationObj,
-      branch_id: branchObj?.id,
+      type_id: branchObj?.id,
     });
   };
   const handleModalClose = () => {
@@ -146,12 +160,10 @@ const BranchForm = () => {
     if (!!form_obj?.country && form_obj?.country !== "") {
       setStateListOptions(
         CountryList.find((d) => d.countryName === form_obj?.country).states ||
-          []
+          [],
       );
     }
   }, [form_obj]);
-
-  const [branchObj, setBranchObj] = useState({});
 
   const updateBranchObj = (e) => {
     const { name, value } = e.target;
@@ -173,11 +185,13 @@ const BranchForm = () => {
     const newPD = {
       ...branchObj,
       cf_values: [...branchObj.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: e.target.value } : item
+        item.id === cf_id ? { ...item, value: e.target.value } : item,
       ),
     };
     setBranchObj(newPD);
   };
+
+  const stateListOptionsBranch = IndiaStates;
 
   const handleCFDateChange = (e, dateStr, cf_id) => {
     setBranchObj({
@@ -185,7 +199,7 @@ const BranchForm = () => {
       cf_values: [...branchObj.cf_values].map((item) =>
         item.id === cf_id
           ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
-          : item
+          : item,
       ),
     });
   };
@@ -197,15 +211,42 @@ const BranchForm = () => {
     });
   };
 
-  const handleCountryChange = (e) => {
-    setBranchObj({
-      ...branchObj,
-      country: e.value,
-    });
+  const handleBranchCountryChange = (e) => {
+    const selectedCountry = CountryList.find((d) => d.countryName === e?.value);
 
-    setStateListOptions(
-      CountryListOptions.find((d) => d.value === e.value).states || []
-    );
+    setBranchObj((prev) => ({
+      ...prev,
+      country: e?.value || "",
+      state: "",
+    }));
+
+    setBranchStateOptions(selectedCountry?.states || []);
+  };
+
+  const handleLocationCountryChange = (e) => {
+    const selectedCountry = CountryList.find((d) => d.countryName === e?.value);
+
+    setBranchLocationObj((prev) => ({
+      ...prev,
+      country: e?.value || "",
+      state: "",
+    }));
+
+    setLocationStateOptions(selectedCountry?.states || []);
+  };
+
+  const handleBranchStateChange = (e) => {
+    setBranchObj((prev) => ({
+      ...prev,
+      state: e?.value || "",
+    }));
+  };
+
+  const handleLocationStateChange = (e) => {
+    setBranchLocationObj((prev) => ({
+      ...prev,
+      state: e?.value || "",
+    }));
   };
 
   const LocationFormikForm = useFormik({
@@ -213,7 +254,6 @@ const BranchForm = () => {
     initialValues: branchLocationObj,
     validationSchema: Yup.object({
       name: Yup.string().required("Please Enter Location Name"),
-
       address: Yup.string().required("Please Enter Address"),
       country: Yup.string().required("Please Select Country"),
       state: Yup.string().required("Please Select State"),
@@ -255,7 +295,7 @@ const BranchForm = () => {
 
       let form_data = new FormData();
       Object.entries(values).forEach(([key, value]) => {
-        // Check if the value is an array and the key is "location_details"
+        // Check if the value is an array and the key is "entity_location_details"
         if (key === "map_data") {
           form_data.append(key, JSON.stringify(value));
         } else if (key === "image") {
@@ -269,8 +309,14 @@ const BranchForm = () => {
           form_data.append(key, value);
         }
       });
-      const existing_location_details = [...branchObj?.location_details];
-      const Api = await PostApi("location/add-location/", form_data, true);
+      const existing_entity_location_details = [
+        ...branchObj?.entity_location_details,
+      ];
+      const Api = await PostApi(
+        "location/add-entity-location/",
+        form_data,
+        true,
+      );
       if (!!Api.status && Api.status === 200) {
         const response = Api?.data.data;
         const localStorageBranchData = GetLocalStorageData("branch");
@@ -278,14 +324,20 @@ const BranchForm = () => {
         if (values.id === 0) {
           setBranchObj({
             ...branchObj,
-            location_details: [...branchObj.location_details, response],
+            entity_location_details: [
+              ...branchObj.entity_location_details,
+              response,
+            ],
           });
 
           let updatedBranch = localStorageBranchData.map((d) => {
-            if (d.id === values?.branch_id) {
+            if (d.id === values?.type_id) {
               return {
                 ...d,
-                location_details: [...d.location_details, response],
+                entity_location_details: [
+                  ...d.entity_location_details,
+                  response,
+                ],
               };
             } else {
               return d;
@@ -299,26 +351,27 @@ const BranchForm = () => {
           GlobalMetaData["branch"] = updatedBranch;
           localStorage.setItem(
             "lint_hr_globaldata",
-            JSON.stringify(GlobalMetaData)
+            JSON.stringify(GlobalMetaData),
           );
 
           dispatch(setBranch(updatedBranch));
         } else {
-          const new_location_details = existing_location_details.map((d) => {
-            if (d.id === response.id) {
-              return response;
-            } else {
-              return d;
-            }
-          });
+          const new_entity_location_details =
+            existing_entity_location_details.map((d) => {
+              if (d.id === response.id) {
+                return response;
+              } else {
+                return d;
+              }
+            });
           setBranchObj({
             ...branchObj,
-            location_details: new_location_details,
+            entity_location_details: new_entity_location_details,
           });
 
           let updatedBranch = localStorageBranchData.map((d) => {
-            if (d.id === values?.branch_id) {
-              let newLD = d.location_details.map((loc) => {
+            if (d.id === values?.type_id) {
+              let newLD = d.entity_location_details.map((loc) => {
                 if (loc.id === response.id) {
                   return response;
                 } else {
@@ -328,7 +381,7 @@ const BranchForm = () => {
 
               return {
                 ...d,
-                location_details: newLD,
+                entity_location_details: newLD,
               };
             } else {
               return d;
@@ -342,7 +395,7 @@ const BranchForm = () => {
           GlobalMetaData["branch"] = updatedBranch;
           localStorage.setItem(
             "lint_hr_globaldata",
-            JSON.stringify(GlobalMetaData)
+            JSON.stringify(GlobalMetaData),
           );
 
           dispatch(setBranch(updatedBranch));
@@ -388,6 +441,11 @@ const BranchForm = () => {
     initialValues: branchObj,
     validationSchema: Yup.object({
       name: Yup.string().required("Please Enter Branch Name"),
+      state: Yup.string().required("Please Select State"),
+      country: Yup.string().required("Please Select Country"),
+      city: Yup.string().required("Please Enter City"),
+      pincode: Yup.string().required("Please Enter Pincode"),
+      address: Yup.string().required("Please Enter Address"),
       country_code: Yup.string().required("Please Select Country Code"),
       contact_number: Yup.string().required("Please Enter Contact Number"),
       contact_email: Yup.string()
@@ -398,7 +456,9 @@ const BranchForm = () => {
       dispatch(setLoaderVisible(true));
 
       const updatedObject = Object.fromEntries(
-        Object.entries(values).filter(([key]) => key !== "location_details")
+        Object.entries(values).filter(
+          ([key]) => key !== "entity_location_details",
+        ),
       );
 
       const Api = await PostApi("branch/add-new/", updatedObject, false);
@@ -444,10 +504,11 @@ const BranchForm = () => {
     inputRef,
   ]);
 
-  const handleEditLocation = (location, index) => {
+  const handleEditLocation = (location, index, br_id) => {
     setModalOpen(true);
+    console.log("Location - ", location);
 
-    setBranchLocationObj({ ...location, branch_id: branchObj?.id });
+    setBranchLocationObj({ ...location, type_id: br_id, type: "branch" });
   };
 
   const handleLocationImageUpdate = (e) => {
@@ -511,6 +572,174 @@ const BranchForm = () => {
                       )}
                     </div>
                   </Col>
+                  <Col lg={12}>
+                    <div>
+                      <Label htmlFor="country" className="form-label">
+                        Country
+                      </Label>
+                      <Select
+                        options={CountryListOptions}
+                        value={
+                          CountryListOptions.find(
+                            (d) => d.value === branchObj?.country,
+                          ) || null
+                        }
+                        onChange={handleBranchCountryChange}
+                      />
+                      {LocationFormikForm.touched.country &&
+                      LocationFormikForm.errors.country ? (
+                        <div className="lc_form_error_text">
+                          {LocationFormikForm.errors.country}
+                        </div>
+                      ) : null}
+                      {!LocationFormikForm.errors.country && (
+                        <div id="passwordHelpBlock" className="form-text">
+                          Enter Country.
+                        </div>
+                      )}
+                    </div>
+                  </Col>
+                  <Col lg={12}>
+                    <div>
+                      <Label
+                        htmlFor="exampleFormControlTextarea5"
+                        className="form-label"
+                      >
+                        State
+                      </Label>
+                      <Select
+                        options={branchStateOptions}
+                        value={
+                          branchStateOptions.find(
+                            (d) => d.value === branchObj?.state,
+                          ) || null
+                        }
+                        onChange={handleBranchStateChange}
+                      />
+                      {LocationFormikForm.touched.state &&
+                      LocationFormikForm.errors.state ? (
+                        <div className="lc_form_error_text">
+                          {LocationFormikForm.errors.state}
+                        </div>
+                      ) : null}
+                      {!LocationFormikForm.errors.state && (
+                        <div id="passwordHelpBlock" className="form-text">
+                          Select State.
+                        </div>
+                      )}
+                    </div>
+                  </Col>
+                  <Col lg={12}>
+                    <div>
+                      <Label htmlFor="address" className="form-label">
+                        Address
+                      </Label>
+                      <Input
+                        type="textarea"
+                        className="form-control"
+                        id="address"
+                        name="address"
+                        rows="2"
+                        value={branchObj.address || ""}
+                        onChange={updateBranchObj}
+                        invalid={
+                          LocationFormikForm.touched.address &&
+                          LocationFormikForm.errors.address
+                            ? true
+                            : false
+                        }
+                      />
+                      {LocationFormikForm.touched.address &&
+                      LocationFormikForm.errors.address ? (
+                        <FormFeedback type="invalid">
+                          {LocationFormikForm.errors.address}
+                        </FormFeedback>
+                      ) : null}
+                      {!LocationFormikForm.errors.address && (
+                        <div id="passwordHelpBlock" className="form-text">
+                          Address.
+                        </div>
+                      )}
+                    </div>
+                  </Col>
+                  <Col lg={12}>
+                    <div>
+                      <Label htmlFor="city" className="form-label">
+                        City
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type="text"
+                          className="form-control form-control-icon"
+                          id="city"
+                          name="city"
+                          placeholder="City"
+                          value={branchObj.city || ""}
+                          onChange={updateBranchObj}
+                          invalid={
+                            LocationFormikForm.touched.city &&
+                            LocationFormikForm.errors.city
+                              ? true
+                              : false
+                          }
+                        />
+                        {!LocationFormikForm.touched.city &&
+                          !LocationFormikForm.errors.city && (
+                            <i className="ri-mail-line"></i>
+                          )}
+                        {LocationFormikForm.touched.city &&
+                        LocationFormikForm.errors.city ? (
+                          <FormFeedback type="invalid">
+                            {LocationFormikForm.errors.city}
+                          </FormFeedback>
+                        ) : null}
+                      </div>
+                      {!LocationFormikForm.errors.city && (
+                        <div id="passwordHelpBlock" className="form-text">
+                          Select City.
+                        </div>
+                      )}
+                    </div>
+                  </Col>
+                  <Col lg={12}>
+                    <div>
+                      <Label htmlFor="pincode" className="form-label">
+                        Pincode
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type="number"
+                          className="form-control form-control-icon"
+                          id="pincode"
+                          name="pincode"
+                          placeholder="666666"
+                          value={branchObj.pincode || ""}
+                          onChange={updateBranchObj}
+                          invalid={
+                            LocationFormikForm.touched.pincode &&
+                            LocationFormikForm.errors.pincode
+                              ? true
+                              : false
+                          }
+                        />
+                        {!LocationFormikForm.touched.pincode &&
+                          !LocationFormikForm.errors.pincode && (
+                            <i className="ri-mail-line"></i>
+                          )}
+                        {LocationFormikForm.touched.pincode &&
+                        LocationFormikForm.errors.pincode ? (
+                          <FormFeedback type="invalid">
+                            {LocationFormikForm.errors.pincode}
+                          </FormFeedback>
+                        ) : null}
+                      </div>
+                      {!LocationFormikForm.errors.pincode && (
+                        <div id="passwordHelpBlock" className="form-text">
+                          Pincode.
+                        </div>
+                      )}
+                    </div>
+                  </Col>
 
                   <Col lg={12}>
                     <div>
@@ -530,7 +759,7 @@ const BranchForm = () => {
                               branchObj?.country_code !== ""
                                 ? CountryCodeListOptions.find(
                                     (d) =>
-                                      d.countryCode === branchObj.country_code
+                                      d.countryCode === branchObj.country_code,
                                   )
                                 : []
                             }
@@ -685,7 +914,7 @@ const BranchForm = () => {
                                     ? null
                                     : dayjs(
                                         ConvertDateFormat(obj.value),
-                                        DateFormat
+                                        DateFormat,
                                       )
                                 }
                                 allowClear={false}
@@ -701,8 +930,8 @@ const BranchForm = () => {
                         </Col>
                       ))
                     : null}
-                  {branchObj?.location_details &&
-                  branchObj.location_details.length > 0 ? (
+                  {branchObj?.entity_location_details &&
+                  branchObj.entity_location_details.length > 0 ? (
                     <Col>
                       <table className="table">
                         <thead>
@@ -716,42 +945,44 @@ const BranchForm = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {branchObj.location_details.map((location, index) => (
-                            <tr key={index}>
-                              <td>{location.name}</td>
-                              <td>{location.accurate_address}</td>
-                              <td>{location.radius_range} m</td>
-                              <td>
-                                <img
-                                  src={
-                                    location.image_url
-                                      ? location.image_url
-                                      : no_image
-                                  }
-                                  style={{
-                                    height: "50px",
-                                    objectFit: "cover",
-                                  }}
-                                />
-                              </td>
+                          {branchObj.entity_location_details.map(
+                            (location, index) => (
+                              <tr key={index}>
+                                <td>{location.name}</td>
+                                <td>{location.accurate_address}</td>
+                                <td>{location.radius_range} m</td>
+                                <td>
+                                  <img
+                                    src={
+                                      location.image_url
+                                        ? location.image_url
+                                        : no_image
+                                    }
+                                    style={{
+                                      height: "50px",
+                                      objectFit: "cover",
+                                    }}
+                                  />
+                                </td>
 
-                              <td>
-                                <a
-                                  onClick={() =>
-                                    handleEditLocation(
-                                      location,
-                                      index,
-                                      branchObj?.id
-                                    )
-                                  }
-                                  className="text-primary d-inline-block edit-item-btn ms-2"
-                                  href="javascript:void(0)"
-                                >
-                                  <i class="ri-pencil-fill fs-16"></i>
-                                </a>
-                              </td>
-                            </tr>
-                          ))}
+                                <td>
+                                  <a
+                                    onClick={() =>
+                                      handleEditLocation(
+                                        location,
+                                        index,
+                                        branchObj?.id,
+                                      )
+                                    }
+                                    className="text-primary d-inline-block edit-item-btn ms-2"
+                                    href="javascript:void(0)"
+                                  >
+                                    <i class="ri-pencil-fill fs-16"></i>
+                                  </a>
+                                </td>
+                              </tr>
+                            ),
+                          )}
                         </tbody>
                       </table>
                     </Col>
@@ -845,8 +1076,8 @@ const BranchForm = () => {
                             </Col>
 
                             <LocationSearch
-                              branchLocationObj={branchLocationObj}
-                              setBranchLocationObj={setBranchLocationObj}
+                              locationObj={branchLocationObj}
+                              setLocationObj={setBranchLocationObj}
                               LocationFormikForm={LocationFormikForm}
                             />
 
@@ -893,38 +1124,14 @@ const BranchForm = () => {
                                   Country
                                 </Label>
                                 <Select
-                                  id="country"
-                                  name="country"
-                                  isMulti={false}
-                                  options={CountryListOptions || []}
-                                  className="basic-multi-select"
+                                  options={CountryListOptions}
                                   value={
-                                    branchLocationObj?.country !== ""
-                                      ? CountryListOptions.find(
-                                          (d) =>
-                                            d.value ===
-                                            branchLocationObj.country
-                                        )
-                                      : []
+                                    CountryListOptions.find(
+                                      (d) =>
+                                        d.value === branchLocationObj?.country,
+                                    ) || null
                                   }
-                                  styles={{
-                                    control: (provided, state) => ({
-                                      ...provided,
-                                      borderColor:
-                                        !state.isFocused &&
-                                        LocationFormikForm.touched.country &&
-                                        LocationFormikForm.errors.country
-                                          ? "red !important"
-                                          : provided.borderColor,
-                                    }),
-                                  }}
-                                  onChange={handleCountryChange}
-                                  invalid={
-                                    LocationFormikForm.touched.country &&
-                                    LocationFormikForm.errors.country
-                                      ? true
-                                      : false
-                                  }
+                                  onChange={handleLocationCountryChange}
                                 />
                                 {LocationFormikForm.touched.country &&
                                 LocationFormikForm.errors.country ? (
@@ -952,39 +1159,14 @@ const BranchForm = () => {
                                   State
                                 </Label>
                                 <Select
-                                  id="state"
-                                  name="state"
-                                  isMulti={false}
-                                  options={stateListOptions || []}
-                                  className="basic-multi-select"
-                                  styles={{
-                                    control: (provided, state) => ({
-                                      ...provided,
-                                      borderColor:
-                                        !state.isFocused &&
-                                        LocationFormikForm.touched.state &&
-                                        LocationFormikForm.errors.state
-                                          ? "red !important"
-                                          : provided.borderColor,
-                                    }),
-                                  }}
+                                  options={locationStateOptions}
                                   value={
-                                    stateListOptions.find(
-                                      (d) => d.value === branchLocationObj.state
-                                    ) || []
+                                    locationStateOptions.find(
+                                      (d) =>
+                                        d.value === branchLocationObj?.state,
+                                    ) || null
                                   }
-                                  onChange={(e) =>
-                                    setBranchLocationObj({
-                                      ...branchLocationObj,
-                                      state: e.value,
-                                    })
-                                  }
-                                  invalid={
-                                    LocationFormikForm.touched.state &&
-                                    LocationFormikForm.errors.state
-                                      ? true
-                                      : false
-                                  }
+                                  onChange={handleLocationStateChange}
                                 />
                                 {LocationFormikForm.touched.state &&
                                 LocationFormikForm.errors.state ? (
@@ -1131,7 +1313,8 @@ const BranchForm = () => {
                                       branchLocationObj.timezone &&
                                       timzone_options.find(
                                         (e) =>
-                                          e.value === branchLocationObj.timezone
+                                          e.value ===
+                                          branchLocationObj.timezone,
                                       )
                                     }
                                     styles={{

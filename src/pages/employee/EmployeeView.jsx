@@ -125,6 +125,7 @@ const EmployeeView = () => {
               dispatch(setLoaderVisible(false));
             });
         } else {
+          console.log("Att_Report_Api - ",Att_Report_Api?.data?.message)
           toast.error(
             Att_Report_Api?.data?.message || Att_Report_Api?.data?.detail
           );

@@ -36,7 +36,11 @@ import ContactGroupReducer from "../ChildReducer/ContactGroupReducer";
 import ContactsReducer from "../ChildReducer/ContactsReducer";
 import TodayAttendanceReducer from "../ChildReducer/TodayAttendanceReducer";
 import EmployeeProgressBarReducer from "../ChildReducer/EmployeeProgressBarReducer";
-
+import RecurringReducer from "../ChildReducer/RecurringReducer";
+import PayrollSettingsReducer from "../ChildReducer/PayrollSettingsReducer"
+import PTSettingsReducer from "../ChildReducer/PTSettingsReducer";
+import SalaryStructureReducer from "../ChildReducer/SalaryStructureReducer"
+import LocationGroupReducer from "../ChildReducer/LocationGroupReducer"
 export const MainReducer = combineReducers({
   MetaReducer: MetaReducer,
   EmployeeReducer: EmployeeReducer,
@@ -74,5 +78,10 @@ export const MainReducer = combineReducers({
   ContactGroupReducer: ContactGroupReducer,
   ContactsReducer: ContactsReducer,
   TodayAttendanceReducer:TodayAttendanceReducer,
-  EmployeeProgressBarReducer : EmployeeProgressBarReducer
+  EmployeeProgressBarReducer : EmployeeProgressBarReducer,
+  RecurringReducer : RecurringReducer,
+  PayrollSettingsReducer : PayrollSettingsReducer,
+  PTSettingsReducer : PTSettingsReducer,
+  SalaryStructureReducer : SalaryStructureReducer,
+  LocationGroupReducer : LocationGroupReducer
 });

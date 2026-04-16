@@ -17,7 +17,7 @@ import {
 import Select from "react-select";
 import { map_radius_options } from "../../common/constant/Constants";
 
-function LocationSearch({ branchLocationObj, setBranchLocationObj, LocationFormikForm }) {
+function LocationSearch({ locationObj, setLocationObj, LocationFormikForm }) {
   const [mapZoom, setMapZoom] = useState(21);
   const [mapCenter, setMapCenter] = useState({
     lat: 8.3865046,
@@ -54,39 +54,39 @@ function LocationSearch({ branchLocationObj, setBranchLocationObj, LocationFormi
 
   // ✅ Handle location data updates
   useEffect(() => {
-    if (branchLocationObj?.latitude && branchLocationObj?.longitude) {
-      const lat = parseFloat(branchLocationObj.latitude);
-      const lng = parseFloat(branchLocationObj.longitude);
+    if (locationObj?.latitude && locationObj?.longitude) {
+      const lat = parseFloat(locationObj.latitude);
+      const lng = parseFloat(locationObj.longitude);
       setTimeout(() => {
         setMapCenter({ lat, lng });
       }, 250);
     }
 
-    if (branchLocationObj?.radius_range) {
+    if (locationObj?.radius_range) {
       setMapCircleOptions((prev) => ({
         ...prev,
-        radius: branchLocationObj.radius_range,
+        radius: locationObj.radius_range,
       }));
 
       const radiusData = map_radius_options.find(
-        (d) => d.value === branchLocationObj.radius_range
+        (d) => d.value === locationObj.radius_range,
       );
       if (radiusData) {
         setTimeout(() => setMapZoom(radiusData.zoom), 250);
       }
     }
   }, [
-    branchLocationObj?.radius_range,
-    branchLocationObj?.latitude,
-    branchLocationObj?.longitude,
+    locationObj?.radius_range,
+    locationObj?.latitude,
+    locationObj?.longitude,
   ]);
 
   // ✅ Autocomplete search
   const handleLocationChange = (e) => {
     const { value } = e.target;
 
-    setBranchLocationObj({
-      ...branchLocationObj,
+    setLocationObj({
+      ...locationObj,
       accurate_address: value,
     });
 
@@ -101,25 +101,28 @@ function LocationSearch({ branchLocationObj, setBranchLocationObj, LocationFormi
     }
   };
 
-  const handleSelectPrediction = (placeId) => {
+  const handleSelectPrediction = (e, placeId) => {
+    e.preventDefault();
     const placesService = new window.google.maps.places.PlacesService(
-      document.createElement("div")
+      document.createElement("div"),
     );
 
     placesService.getDetails({ placeId }, (place, status) => {
       if (status === "OK") {
         let city, country, state, pincode;
         place.address_components.forEach((component) => {
-          if (component.types.includes("country")) country = component.long_name;
+          if (component.types.includes("country"))
+            country = component.long_name;
           else if (component.types.includes("administrative_area_level_1"))
             state = component.long_name;
-          else if (component.types.includes("locality")) city = component.long_name;
+          else if (component.types.includes("locality"))
+            city = component.long_name;
           else if (component.types.includes("postal_code"))
             pincode = component.long_name;
         });
 
-        setBranchLocationObj({
-          ...branchLocationObj,
+        setLocationObj({
+          ...locationObj,
           map_data: place,
           accurate_address: place.name,
           location_id: place.place_id,
@@ -141,16 +144,19 @@ function LocationSearch({ branchLocationObj, setBranchLocationObj, LocationFormi
     });
   };
 
-  const onLoad = useCallback((mapInstance) => {
-    const bounds = new window.google.maps.LatLngBounds(mapCenter);
-    mapInstance.fitBounds(bounds);
-    setMap(mapInstance);
-  }, [mapCenter]);
+  const onLoad = useCallback(
+    (mapInstance) => {
+      const bounds = new window.google.maps.LatLngBounds(mapCenter);
+      mapInstance.fitBounds(bounds);
+      setMap(mapInstance);
+    },
+    [mapCenter],
+  );
 
   const onUnmount = useCallback(() => setMap(null), []);
   const onMarkerDrag = (e) => {
-    setBranchLocationObj({
-      ...branchLocationObj,
+    setLocationObj({
+      ...locationObj,
       latitude: String(e.latLng.lat()),
       longitude: String(e.latLng.lng()),
     });
@@ -170,7 +176,7 @@ function LocationSearch({ branchLocationObj, setBranchLocationObj, LocationFormi
               id="branchLocation"
               placeholder="Search an address"
               onChange={handleLocationChange}
-              value={branchLocationObj?.accurate_address || ""}
+              value={locationObj?.accurate_address || ""}
               ref={autocompleteRef}
               autoComplete="off"
               invalid={
@@ -197,7 +203,9 @@ function LocationSearch({ branchLocationObj, setBranchLocationObj, LocationFormi
                 <ListGroupItem
                   tag="button"
                   key={prediction.place_id}
-                  onClick={() => handleSelectPrediction(prediction.place_id)}
+                  onClick={(e) =>
+                    handleSelectPrediction(e, prediction.place_id)
+                  }
                   className="list-group-item-action"
                 >
                   <i className="ri-map-pin-user-line align-middle me-2"></i>
@@ -217,17 +225,16 @@ function LocationSearch({ branchLocationObj, setBranchLocationObj, LocationFormi
             options={map_radius_options || []}
             className="basic-multi-select"
             value={
-              branchLocationObj?.radius_range
+              locationObj?.radius_range
                 ? map_radius_options.find(
                     (d) =>
-                      parseInt(d.value) ===
-                      parseInt(branchLocationObj.radius_range)
+                      parseInt(d.value) === parseInt(locationObj.radius_range),
                   )
                 : []
             }
             onChange={(e) => {
-              setBranchLocationObj({
-                ...branchLocationObj,
+              setLocationObj({
+                ...locationObj,
                 radius_range: e.value,
               });
             }}

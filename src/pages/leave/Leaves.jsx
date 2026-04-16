@@ -1,158 +1,209 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Badge, Col, Container, Row } from "reactstrap";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Col, Container, Row } from "reactstrap";
 import LeaveTypesWidgets from "./LeaveTypesWidgets";
 import HolidayCalenderAPi from "../holidays/HolidayCalenderAPi";
 import InfoTable from "../../component/common/table/InfoTable";
+import LeaveChangeModal from "./LeaveChangeModal";
 import { useDispatch, useSelector } from "react-redux";
 import { MetaTitle } from "../../common/data/MetaTitle";
 import { leave_application_component_name } from "../../common/constant/Constants";
 import { Api } from "../../common/api/Api";
-import { GetApi } from "../../common/api/GetApi";
 import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setLeaveApplication } from "../../redux/reducers/ChildReducer/LeaveApplyReducer";
 import { setLeaveTypeForCurrentEmployee } from "../../redux/reducers/ChildReducer/LeaveTypeReducer";
 
 const LeaveDashboard = () => {
+  const dispatch = useDispatch();
+
+  // ── modal state ──────────────────────────────
+  const [changeModalOpen, setChangeModalOpen] = useState(false);
+  const [selectedLeaveRecord, setSelectedLeaveRecord] = useState(null);
+
+  const openChangeModal = (record) => {
+    setSelectedLeaveRecord(record);
+    setChangeModalOpen(true);
+  };
+
+  const closeChangeModal = () => {
+    setChangeModalOpen(false);
+    setSelectedLeaveRecord(null);
+  };
+
+  // ── fetch leave applications ─────────────────
+  const fetchLeaveApplications = () => {
+    Api({ method: "GET", url: "leave/get-my-leave-application/" })
+      .then((res) => dispatch(setLeaveApplication(res?.data?.data || [])))
+      .catch(() => console.log("ERR – leave applications"));
+  };
+
+  // ── data fetch on mount ──────────────────────
   useEffect(() => {
-    Api({
-      method: "GET",
-      url: "leave/get-my-leave-application/",
-    })
-      .then((res) => {
-        dispatch(setLeaveApplication(res?.data?.data || []));
-      })
-      .catch((err) => {
-        console.log("ERR");
-      });
+    fetchLeaveApplications();
   }, []);
 
   useEffect(() => {
-    Api({
-      method: "GET",
-      url: "leave/get-leave-type-for-employee/",
-    })
-      .then((res) => {
-        dispatch(setLeaveTypeForCurrentEmployee(res?.data?.data || []));
-      })
-      .catch((err) => {
-        console.log("ERR");
-      });
+    Api({ method: "GET", url: "leave/get-leave-type-for-employee/" })
+      .then((res) =>
+        dispatch(setLeaveTypeForCurrentEmployee(res?.data?.data || [])),
+      )
+      .catch(() => console.log("ERR – leave types"));
   }, []);
 
   document.title = `Leave Application | ${MetaTitle}`;
 
   const LeaveTypeData = GetLocalStorageData("leave_types") || [];
 
-  const getUnitId = (id) => {
-    const day_type = LeaveTypeData?.find((val) => val?.value === id)?.unit;
-    return day_type;
-  };
+  const getUnitId = (id) =>
+    LeaveTypeData?.find((val) => val?.value === id)?.unit;
 
-  // const leaveId = leaveType.find((type) => type.id === getApiResult)
-  const dispatch = useDispatch();
   const { leave_application_data } = useSelector(
-    (state) => state.LeaveApplyReducer
+    (state) => state.LeaveApplyReducer,
+  );
+  const { leave_type_for_current_employee } = useSelector(
+    (state) => state.LeaveTypeReducer,
   );
 
-  // Column
+  // ── deleted row style helper ─────────────────
+  const deletedStyle = {
+    textDecoration: "line-through",
+    opacity: 0.55,
+    color: "inherit",
+  };
+
+  const getCellStyle = (obj) => (obj.is_deleted ? deletedStyle : {});
+
+  // ── status helpers ───────────────────────────
+  const getStatusLabel = (status, is_deleted) => {
+    if (is_deleted) return "Deleted";
+    switch (status) {
+      case 1:
+        return "Pending";
+      case 2:
+        return "Approved";
+      case 3:
+        return "Rejected";
+      default:
+        return "Unknown";
+    }
+  };
+
+  const getStatusColor = (status, is_deleted) => {
+    if (is_deleted) return "danger";
+    switch (status) {
+      case 1:
+        return "warning";
+      case 2:
+        return "success";
+      case 3:
+        return "danger";
+      case 4:
+        return "info";
+      default:
+        return "secondary";
+    }
+  };
+
+  // ── Approve handler ──────────────────────────
+  const handleApprove = (record) => {
+    const newStatus = record.status === 4 ? 5 : 2;
+    Api({
+      method: "PATCH",
+      url: `leave/update-leave-status/${record.id}/`,
+      data: { status: newStatus },
+    })
+      .then(() => fetchLeaveApplications())
+      .catch(() => console.log("ERR – approve leave"));
+  };
+
+  // ── Reject handler ───────────────────────────
+  const handleReject = (record) => {
+    const newStatus = record.status === 4 ? 6 : 3;
+    Api({
+      method: "PATCH",
+      url: `leave/update-leave-status/${record.id}/`,
+      data: { status: newStatus },
+    })
+      .then(() => fetchLeaveApplications())
+      .catch(() => console.log("ERR – reject leave"));
+  };
+
+  // ── table columns ────────────────────────────
   const additionalColumn = [
     {
       Header: "Leave Type",
       filterable: false,
       id: "leave_type_id",
       accessor: (obj) => {
-        const LeaveTypeData = GetLocalStorageData("leave_types");
-        const thisLeaveType = LeaveTypeData.find(
-          (data) => data.id === obj.leave_type_id
-        );
-        return (
-          <React.Fragment>
-            {" "}
-            <b>{thisLeaveType && thisLeaveType.name}</b>
-          </React.Fragment>
-        );
+        const data = GetLocalStorageData("leave_types");
+        const thisLeaveType = data.find((d) => d.id === obj.leave_type_id);
+        return <b style={getCellStyle(obj)}>{thisLeaveType?.name}</b>;
       },
     },
     {
       Header: "Reason",
       filterable: false,
       id: "reason",
-      accessor: (obj) => {
-        return <b>{obj.reason}</b>;
-      },
+      accessor: (obj) => <b style={getCellStyle(obj)}>{obj.reason}</b>,
     },
     {
       Header: "Start Date",
-      accessor: "start",
       filterable: false,
       id: "start",
       accessor: (obj) => {
         const date = convertDate(new Date(obj.start).toDateString());
         const time = convertTime(new Date(obj.start).toTimeString());
         return (
-          <b>{`${
-            getUnitId(obj.leave_type_id) === 1 ? date : `${date} - ${time}`
-          }`}</b>
+          <b style={getCellStyle(obj)}>
+            {getUnitId(obj.leave_type_id) === 1 ? date : `${date} - ${time}`}
+          </b>
         );
       },
     },
     {
       Header: "End Date",
-      accessor: "end",
       filterable: false,
       id: "end",
       accessor: (obj) => {
         const date = convertDate(new Date(obj.end).toDateString());
         const time = convertTime(new Date(obj.end).toTimeString());
         return (
-          <b>{`${
-            getUnitId(obj.leave_type_id) === 1 ? date : `${date} - ${time}`
-          }`}</b>
+          <b style={getCellStyle(obj)}>
+            {getUnitId(obj.leave_type_id) === 1 ? date : `${date} - ${time}`}
+          </b>
         );
       },
     },
-
     {
       Header: "Total",
       filterable: false,
       id: "Total",
-      accessor: (obj) => {
-        let leave_count = obj.requested_leave_count;
-        return (
-          <b>{`${leave_count} ${
-            getUnitId(obj.leave_type_id) === 1 ? "Days" : "Hour"
-          }`}</b>
-        );
-      },
+      accessor: (obj) => (
+        <b style={getCellStyle(obj)}>{`${obj.requested_leave_count} ${
+          getUnitId(obj.leave_type_id) === 1 ? "Days" : "Hour"
+        }`}</b>
+      ),
     },
     {
       Header: "Status",
       id: "status",
       filterable: false,
       accessor: (obj) => {
-        let status =
-          obj.status == 1
-            ? "Pending"
-            : obj.status == 2
-            ? "Approved"
-            : "Canceled";
-        let statusClass =
-          obj.status == 1 ? "warning" : obj.status == 2 ? "success" : "danger";
+        const label = getStatusLabel(obj.status, obj.is_deleted);
+        const color = getStatusColor(obj.status, obj.is_deleted);
         return (
           <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
+            className={`badge text-uppercase bg-${color}-subtle text-${color}`}
           >
-            {" "}
-            {status}{" "}
+            {label}
           </span>
         );
       },
     },
   ];
 
-  const initialFormObj = useMemo(() => {
-    return {
+  const initialFormObj = useMemo(
+    () => ({
       id: 0,
       leave_type_id: 0,
       reason: "",
@@ -162,8 +213,9 @@ const LeaveDashboard = () => {
       status: 1,
       day_type: 1,
       in_between_dates: [],
-    };
-  }, []);
+    }),
+    [],
+  );
 
   const filterKey = "status";
   const filterOptions = [
@@ -186,10 +238,6 @@ const LeaveDashboard = () => {
         leave_application_data.filter((e) => e[filterKey] === 3).length || 0,
     },
   ];
-
-  const { leave_type_for_current_employee } = useSelector(
-    (state) => state.LeaveTypeReducer
-  );
 
   return (
     <React.Fragment>
@@ -214,11 +262,19 @@ const LeaveDashboard = () => {
               width_per={"45%"}
               table_col={8}
               table_class={"Lc_leave_apply_table me-n3 ms-n3"}
+              onChangeLeave={(row) => openChangeModal(row)}
             />
             <HolidayCalenderAPi />
           </Row>
         </Container>
       </div>
+
+      {/* Change Leave Modal */}
+      <LeaveChangeModal
+        isOpen={changeModalOpen}
+        onClose={closeChangeModal}
+        leaveRecord={selectedLeaveRecord}
+      />
     </React.Fragment>
   );
 };

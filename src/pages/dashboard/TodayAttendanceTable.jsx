@@ -20,7 +20,7 @@ import moment from "moment";
 import { Api } from "../../common/api/Api";
 import { setTodayAttendance } from "../../redux/reducers/ChildReducer/TodayAttendanceReducer";
 import { useDispatch } from "react-redux";
-import UsersClusterMap from "./UsersClusterMap";
+import UsersClusterMapAll from "./useClusterMapAll";
 import Lottie from "react-lottie";
 import noLocationFind from "../auth/loader/animation/no-location.json";
 import { DatePicker } from "antd";
@@ -31,8 +31,20 @@ import {
   ConvertDateFormat,
   ConvertISODateFormat,
 } from "../../common/js/ConvertDateFormat";
-import UsersClusterMapAll from "./useClusterMapAll";
+import SkletonDashboard from "../../component/common/skeleton/SkletonDashboard";
+
 dayjs.extend(customParseFormat);
+
+/**
+ * Returns the exact number of <th> columns rendered per tab.
+ *
+ * Tab 1  → Name | Dept | In Time | Out Time | Total Hours | Status | Location = 7
+ * Tab 2  → Name | Dept | In Time | Out Time | Total Hours | Status            = 6
+ * Tab 3  → Name | Dept | In Time | Out Time | Total Hours | Status            = 6
+ * Tab 4  → Name | Dept | Start   | End      | Reason      | Status            = 6
+ * Tab 5  → Name | Dept | Start   | End      | Reason      | Status            = 6
+ */
+const getColumnCount = (activeTab) => (activeTab === "1" ? 7 : 6);
 
 const TodayaAttendanceTable = () => {
   const dispatch = useDispatch();
@@ -40,7 +52,7 @@ const TodayaAttendanceTable = () => {
   const [activeTab, setActiveTab] = useState("1");
   const [departmentFilter, setDepartmentFilter] = useState("All");
   const [dateFilter, setDateFilter] = useState(
-    new Date().toISOString().split("T")[0].split("-").reverse().join("-")
+    new Date().toISOString().split("T")[0].split("-").reverse().join("-"),
   );
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,16 +67,16 @@ const TodayaAttendanceTable = () => {
   const [countLeave, setCountLeave] = useState(0);
   const [countHalfday, setCountHalfday] = useState(0);
   const [countPermission, setCountPermission] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  // ✅ Load departments from localStorage
+  // ── Load departments from localStorage ──────────────────────────────────
   useEffect(() => {
     const globalData = localStorage.getItem("lint_hr_globaldata");
     if (globalData) {
       try {
         const parsedData = JSON.parse(globalData);
-        const departmentsArray = parsedData.department;
-        if (Array.isArray(departmentsArray)) {
-          setDepartments(departmentsArray);
+        if (Array.isArray(parsedData.department)) {
+          setDepartments(parsedData.department);
         }
       } catch (error) {
         console.error("Failed to parse global data", error);
@@ -72,11 +84,11 @@ const TodayaAttendanceTable = () => {
     }
   }, []);
 
-  // ✅ Fetch attendance data
+  // ── Fetch attendance data ────────────────────────────────────────────────
   useEffect(() => {
     const fetchAttendance = async () => {
       try {
-        // Reset previous data and badge counts before loading
+        setLoading(true);
         setAttendanceData([]);
         setCountIn(0);
         setCountNotCheckIn(0);
@@ -87,110 +99,35 @@ const TodayaAttendanceTable = () => {
 
         const response = await Api.get(
           `/attendance/get-attendance-status?date=${ConvertISODateFormat(
-            ConvertDateFormat(dateFilter)
-          )}`
+            ConvertDateFormat(dateFilter),
+          )}`,
         );
+
         const result = response.data;
-
-        console.log("RES ===", result);
-
-        // ✅ Handle empty response safely
         if (!Array.isArray(result) || result.length === 0) {
           setAttendanceData([]);
-          setCountIn(0);
-          setCountNotCheckIn(0);
-          setCountLeave(0);
-          setCountHalfday(0);
-          setCountPermission(0);
-          dispatch(setTodayAttendance([]));
           return;
         }
 
         const formattedData = result.map((item) => ({
-          emp_id: item.employee.emp_id,
-          first_name: item.employee.first_name || "-",
-          profile_url: item.employee.profile_url || null,
-          email: item.employee.email || "-",
-          department:
-            Array.isArray(item.employee.primary_department_id_list) &&
-            item.employee.primary_department_id_list.length > 0
-              ? departments.find(
-                  (d) => d.id === item.employee.primary_department_id_list[0]
-                )?.name || ""
-              : "",
-
-          inTime: item.first_check_in_time || "-",
-          outTime: item.last_check_out_time || "-",
-
-          totalHours: (() => {
-            const totalSeconds = item.total_time_worked_till_last_checkout || 0;
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            return `${hours}h ${minutes}m`;
-          })(),
-
-          // ✅ STATUS LOGIC
-          status: item.is_on_leave
-            ? "Leave"
-            : item.is_present
-            ? item.is_late
-              ? "Late"
-              : "On Time"
-            : "Not Check In",
-
-          date: item.date,
-          location_history: item.location_history,
-          progress:
-            item.total_work_duration && item.total_time_worked
-              ? Math.min(
-                  100,
-                  Math.round(
-                    (item.total_time_worked / item.total_work_duration) * 100
-                  )
-                )
-              : 0,
-
-          // ✅ Halfday data
-          halfday: item.half_day
-            ? {
-                start: item.half_day.start || null,
-                end: item.half_day.end || null,
-                reason: item.half_day.reason || "-",
-                status: item.half_day.status,
-              }
-            : null,
-
-          // ✅ Permission data
-          permission: item.permission
-            ? {
-                start: item.permission.start || null,
-                end: item.permission.end || null,
-                reason: item.permission.reason || "-",
-                status: item.permission.status,
-              }
-            : null,
+          // your mapping code...
         }));
 
         setAttendanceData(formattedData);
         dispatch(setTodayAttendance(result));
-
         setCurrentPage(1);
       } catch (error) {
         console.error("Error fetching attendance data:", error);
         setAttendanceData([]);
-        setCountIn(0);
-        setCountNotCheckIn(0);
-        setCountLeave(0);
-        setCountHalfday(0);
-        setCountPermission(0);
-        dispatch(setTodayAttendance([]));
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchAttendance();
   }, [dateFilter, departments, dispatch]);
 
-  // ✅ Recalculate badge counts when filter or data changes
+  // ── Recalculate badge counts ─────────────────────────────────────────────
   useEffect(() => {
     if (attendanceData.length === 0) {
       setCountIn(0);
@@ -201,28 +138,18 @@ const TodayaAttendanceTable = () => {
       return;
     }
 
-    const filtered = attendanceData.filter((item) => {
-      if (departmentFilter === "All") return true;
-      return item.department === departmentFilter;
-    });
+    const filtered =
+      departmentFilter === "All"
+        ? attendanceData
+        : attendanceData.filter((i) => i.department === departmentFilter);
 
-    const inCount = filtered.filter(
-      (i) => i.status === "On Time" || i.status === "Late"
-    ).length;
-    const notCheckInCount = filtered.filter(
-      (i) => i.status === "Not Check In"
-    ).length;
-    const leaveCount = filtered.filter((i) => i.status === "Leave").length;
-    const halfdayCount = filtered.filter((i) => i.halfday !== null).length;
-    const permissionCount = filtered.filter(
-      (i) => i.permission !== null
-    ).length;
-
-    setCountIn(inCount);
-    setCountNotCheckIn(notCheckInCount);
-    setCountLeave(leaveCount);
-    setCountHalfday(halfdayCount);
-    setCountPermission(permissionCount);
+    setCountIn(
+      filtered.filter((i) => i.status === "On Time" || i.status === "Late").length,
+    );
+    setCountNotCheckIn(filtered.filter((i) => i.status === "Not Check In").length);
+    setCountLeave(filtered.filter((i) => i.status === "Leave").length);
+    setCountHalfday(filtered.filter((i) => i.halfday !== null).length);
+    setCountPermission(filtered.filter((i) => i.permission !== null).length);
   }, [attendanceData, departmentFilter]);
 
   const handleViewLocations = (row) => {
@@ -231,52 +158,42 @@ const TodayaAttendanceTable = () => {
     setIsMapOpen(true);
   };
 
-  // ✅ Helper: format ISO datetime as-is (API returns local time, no UTC conversion needed)
+  // ── Format ISO time ──────────────────────────────────────────────────────
   const formatTime = (isoString) => {
     if (!isoString) return "-";
     try {
-      const parsed = moment.utc(isoString); // parse as UTC but don't convert
-      if (!parsed.isValid()) return "-";
-      return parsed.format("hh:mm A"); // display as-is → 05:00 PM, 06:00 PM
+      const parsed = moment.utc(isoString);
+      return parsed.isValid() ? parsed.format("hh:mm A") : "-";
     } catch {
       return "-";
     }
   };
 
-  // ✅ Filtered data based on active tab
+  // ── Filtered + paginated data ────────────────────────────────────────────
   const filteredData = useMemo(() => {
     return attendanceData.filter((item) => {
-      // Tab 1: In (On Time + Late)
-      if (activeTab === "1" && !["On Time", "Late"].includes(item.status))
-        return false;
-      // Tab 2: Not Check In
+      if (activeTab === "1" && !["On Time", "Late"].includes(item.status)) return false;
       if (activeTab === "2" && item.status !== "Not Check In") return false;
-      // Tab 3: Leave
       if (activeTab === "3" && item.status !== "Leave") return false;
-      // Tab 4: Halfday - show all employees who have halfday data
       if (activeTab === "4" && item.halfday === null) return false;
-      // Tab 5: Permission - show all employees who have permission data
       if (activeTab === "5" && item.permission === null) return false;
+      if (departmentFilter !== "All" && item.department !== departmentFilter) return false;
 
-      if (departmentFilter !== "All" && item.department !== departmentFilter)
-        return false;
-
-      const lowerSearch = search.toLowerCase();
+      const q = search.toLowerCase();
       return (
-        (item.first_name || "").toLowerCase().includes(lowerSearch) ||
-        (item.department || "").toLowerCase().includes(lowerSearch) ||
-        (item.status || "").toLowerCase().includes(lowerSearch) ||
-        (item.inTime || "").toLowerCase().includes(lowerSearch) ||
-        (item.outTime || "").toLowerCase().includes(lowerSearch) ||
-        (item.totalHours || "").toLowerCase().includes(lowerSearch)
+        (item.first_name || "").toLowerCase().includes(q) ||
+        (item.department || "").toLowerCase().includes(q) ||
+        (item.status || "").toLowerCase().includes(q) ||
+        (item.inTime || "").toLowerCase().includes(q) ||
+        (item.outTime || "").toLowerCase().includes(q) ||
+        (item.totalHours || "").toLowerCase().includes(q)
       );
     });
   }, [attendanceData, activeTab, departmentFilter, search]);
 
-  // ✅ Pagination
   const paginatedData = useMemo(() => {
-    const startIdx = (currentPage - 1) * itemsPerPage;
-    return filteredData.slice(startIdx, startIdx + itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredData.slice(start, start + itemsPerPage);
   }, [filteredData, currentPage]);
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -290,26 +207,81 @@ const TodayaAttendanceTable = () => {
     loop: true,
     autoplay: true,
     animationData: noLocationFind,
-    rendererSettings: {
-      preserveAspectRatio: "xMidYMid slice",
-    },
+    rendererSettings: { preserveAspectRatio: "xMidYMid slice" },
   };
 
-  // ✅ Render table headers based on active tab
-  const renderTableHeaders = () => {
-    if (activeTab === "4") {
-      return (
-        <tr>
-          <th>Name</th>
-          <th>Department</th>
-          <th>Start Time</th>
-          <th>End Time</th>
-          <th>Reason</th>
-          <th>Status</th>
-        </tr>
-      );
+  // ── Reusable avatar <td> ─────────────────────────────────────────────────
+  const renderAvatarCell = (row, bgColor = "#0ab39c") => (
+    <td>
+      <div className="d-flex gap-2 align-items-center">
+        <div className="flex-shrink-0">
+          {row.profile_url ? (
+            <img
+              src={row.profile_url}
+              alt=""
+              className="avatar-xs rounded-circle"
+              style={{ objectFit: "cover" }}
+            />
+          ) : (
+            <div
+              className="avatar-xs rounded-circle"
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                background: bgColor,
+              }}
+            >
+              <span style={{ color: "white" }}>{row.first_name?.charAt(0)}</span>
+            </div>
+          )}
+        </div>
+        <div className="flex-grow-1">
+          <h5 className="fs-14 mb-1">
+            {row.first_name}{" "}
+            <span style={{ color: "#a29797", fontSize: "smaller" }}>
+              #{row.emp_id}
+            </span>
+          </h5>
+          <div>{row.email}</div>
+          {activeTab === "1" && (
+            <div className="progress progress-sm animated-progess lc-color">
+              <div
+                className={`progress-bar ${
+                  row.status === "On Time"
+                    ? "bg-success"
+                    : "bg-danger progress-bar-striped"
+                }`}
+                role="progressbar"
+                aria-valuenow={row.progress}
+                aria-valuemin="0"
+                aria-valuemax="100"
+                style={{ width: `${row.progress}%` }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </td>
+  );
+
+  // ── Halfday / permission status badge ───────────────────────────────────
+  const getHalfdayStatusBadge = (status) => {
+    switch (status) {
+      case 1:
+        return <span className="badge bg-warning-subtle text-warning">Pending</span>;
+      case 2:
+        return <span className="badge bg-success-subtle text-success">Approved</span>;
+      case 3:
+        return <span className="badge bg-danger-subtle text-danger">Rejected</span>;
+      default:
+        return <span className="badge bg-secondary-subtle text-secondary">Unknown</span>;
     }
-    if (activeTab === "5") {
+  };
+
+  // ── Table headers ────────────────────────────────────────────────────────
+  const renderTableHeaders = () => {
+    if (activeTab === "4" || activeTab === "5") {
       return (
         <tr>
           <th>Name</th>
@@ -334,26 +306,12 @@ const TodayaAttendanceTable = () => {
     );
   };
 
-  // ✅ Halfday status label helper
-  const getHalfdayStatusBadge = (status) => {
-    switch (status) {
-      case 1:
-        return <span className="badge bg-warning-subtle text-warning">Pending</span>;
-      case 2:
-        return <span className="badge bg-success-subtle text-success">Approved</span>;
-      case 3:
-        return <span className="badge bg-danger-subtle text-danger">Rejected</span>;
-      default:
-        return <span className="badge bg-secondary-subtle text-secondary">Unknown</span>;
-    }
-  };
-
-  // ✅ Render table rows based on active tab
+  // ── Table rows ───────────────────────────────────────────────────────────
   const renderTableRows = () => {
     if (paginatedData.length === 0) {
       return (
         <tr>
-          <td colSpan={7} style={{ border: "none" }}>
+          <td colSpan={getColumnCount(activeTab)} style={{ border: "none" }}>
             <div
               style={{
                 display: "flex",
@@ -373,7 +331,7 @@ const TodayaAttendanceTable = () => {
                   height: "80px",
                   marginBottom: "20px",
                 }}
-              ></lord-icon>
+              />
               <p
                 style={{
                   width: "300px",
@@ -391,48 +349,12 @@ const TodayaAttendanceTable = () => {
     }
 
     return paginatedData.map((row, idx) => {
-      // ✅ Halfday Tab Rows
+      // ── Halfday Tab ──────────────────────────────────────────────────────
       if (activeTab === "4") {
         const hd = row.halfday;
         return (
           <tr key={idx}>
-            <td>
-              <div className="d-flex gap-2 align-items-center">
-                <div className="flex-shrink-0">
-                  {row.profile_url ? (
-                    <img
-                      src={row.profile_url}
-                      alt=""
-                      className="avatar-xs rounded-circle"
-                      style={{ objectFit: "cover" }}
-                    />
-                  ) : (
-                    <div
-                      className="avatar-xs rounded-circle"
-                      style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        background: "#0ab39c",
-                      }}
-                    >
-                      <span style={{ color: "white" }}>
-                        {row.first_name.charAt(0)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-grow-1">
-                  <h5 className="fs-14 mb-1">
-                    {row.first_name}{" "}
-                    <span style={{ color: "#a29797", fontSize: "smaller" }}>
-                      #{row.emp_id}
-                    </span>
-                  </h5>
-                  <div>{row.email}</div>
-                </div>
-              </div>
-            </td>
+            {renderAvatarCell(row, "#0ab39c")}
             <td>{row.department}</td>
             <td>{hd ? formatTime(hd.start) : "-"}</td>
             <td>{hd ? formatTime(hd.end) : "-"}</td>
@@ -442,48 +364,12 @@ const TodayaAttendanceTable = () => {
         );
       }
 
-      // ✅ Permission Tab Rows
+      // ── Permission Tab ───────────────────────────────────────────────────
       if (activeTab === "5") {
         const pm = row.permission;
         return (
           <tr key={idx}>
-            <td>
-              <div className="d-flex gap-2 align-items-center">
-                <div className="flex-shrink-0">
-                  {row.profile_url ? (
-                    <img
-                      src={row.profile_url}
-                      alt=""
-                      className="avatar-xs rounded-circle"
-                      style={{ objectFit: "cover" }}
-                    />
-                  ) : (
-                    <div
-                      className="avatar-xs rounded-circle"
-                      style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        background: "#f06548",
-                      }}
-                    >
-                      <span style={{ color: "white" }}>
-                        {row.first_name.charAt(0)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-grow-1">
-                  <h5 className="fs-14 mb-1">
-                    {row.first_name}{" "}
-                    <span style={{ color: "#a29797", fontSize: "smaller" }}>
-                      #{row.emp_id}
-                    </span>
-                  </h5>
-                  <div>{row.email}</div>
-                </div>
-              </div>
-            </td>
+            {renderAvatarCell(row, "#f06548")}
             <td>{row.department}</td>
             <td>{pm ? formatTime(pm.start) : "-"}</td>
             <td>{pm ? formatTime(pm.end) : "-"}</td>
@@ -493,62 +379,10 @@ const TodayaAttendanceTable = () => {
         );
       }
 
-      // ✅ Default Rows (Tab 1, 2, 3)
+      // ── Default Rows (Tabs 1 / 2 / 3) ───────────────────────────────────
       return (
         <tr key={idx}>
-          <td>
-            <div className="d-flex gap-2 align-items-center">
-              <div className="flex-shrink-0">
-                {row.profile_url ? (
-                  <img
-                    src={row.profile_url}
-                    alt=""
-                    className="avatar-xs rounded-circle"
-                    style={{ objectFit: "cover" }}
-                  />
-                ) : (
-                  <div
-                    className="avatar-xs rounded-circle"
-                    style={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      background: "#0ab39c",
-                    }}
-                  >
-                    <span style={{ color: "white" }}>
-                      {row.first_name.charAt(0)}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="flex-grow-1">
-                <h5 className="fs-14 mb-1">
-                  {row.first_name}{" "}
-                  <span style={{ color: "#a29797", fontSize: "smaller" }}>
-                    #{row.emp_id}
-                  </span>
-                </h5>
-                <div>{row.email}</div>
-                {activeTab === "1" && (
-                  <div className="progress progress-sm animated-progess lc-color">
-                    <div
-                      className={`progress-bar ${
-                        row.status === "On Time"
-                          ? "bg-success"
-                          : "bg-danger progress-bar-striped"
-                      }`}
-                      role="progressbar"
-                      aria-valuenow={row.progress}
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                      style={{ width: `${row.progress}%` }}
-                    ></div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </td>
+          {renderAvatarCell(row, "#0ab39c")}
           <td>{row.department}</td>
           <td>{row.inTime}</td>
           <td>{row.outTime}</td>
@@ -570,11 +404,7 @@ const TodayaAttendanceTable = () => {
           </td>
           {activeTab === "1" && (
             <td>
-              <Button
-                color="info"
-                size="sm"
-                onClick={() => handleViewLocations(row)}
-              >
+              <Button color="info" size="sm" onClick={() => handleViewLocations(row)}>
                 View
               </Button>
             </td>
@@ -584,6 +414,7 @@ const TodayaAttendanceTable = () => {
     });
   };
 
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <Container fluid>
       <Row>
@@ -596,7 +427,7 @@ const TodayaAttendanceTable = () => {
             </CardHeader>
 
             <CardBody>
-              {/* Filters */}
+              {/* ── Filters ── */}
               <div className="filter-container p-2 pt-2 pb-0">
                 <Row className="mb-3 d-flex align-items-center">
                   <Col md="4" className="ps-1">
@@ -623,7 +454,7 @@ const TodayaAttendanceTable = () => {
                       value={dayjs(dateFilter, DateFormat)}
                       format={DateFormat}
                       allowClear={false}
-                      onChange={(e, f) => {
+                      onChange={(_, f) => {
                         setDateFilter(f);
                         setCurrentPage(1);
                       }}
@@ -638,7 +469,7 @@ const TodayaAttendanceTable = () => {
                         left: "20px",
                         transform: "translateY(-50%)",
                       }}
-                    ></i>
+                    />
                     <Input
                       type="text"
                       placeholder="Search employee"
@@ -653,93 +484,59 @@ const TodayaAttendanceTable = () => {
                 </Row>
               </div>
 
-              {/* Tabs */}
-              <Nav
-                className="nav-tabs nav-tabs-custom nav-success pt-2"
-                role="tablist"
-              >
+              {/* ── Tabs ── */}
+              <Nav className="nav-tabs nav-tabs-custom nav-success pt-2" role="tablist">
                 <NavItem>
                   <NavLink
-                    className={classnames(
-                      { active: activeTab === "1" },
-                      "fw-semibold"
-                    )}
+                    className={classnames({ active: activeTab === "1" }, "fw-semibold")}
                     onClick={() => handleTabChange("1")}
                     href="#"
                   >
-                    In{" "}
-                    <span className="badge bg-success ms-1">{countIn}</span>
+                    In <span className="badge bg-success ms-1">{countIn}</span>
                   </NavLink>
                 </NavItem>
-
                 <NavItem>
                   <NavLink
-                    className={classnames(
-                      { active: activeTab === "2" },
-                      "fw-semibold"
-                    )}
+                    className={classnames({ active: activeTab === "2" }, "fw-semibold")}
                     onClick={() => handleTabChange("2")}
                     href="#"
                   >
                     Not Check In{" "}
-                    <span className="badge bg-danger ms-1">
-                      {countNotCheckIn}
-                    </span>
+                    <span className="badge bg-danger ms-1">{countNotCheckIn}</span>
                   </NavLink>
                 </NavItem>
-
                 <NavItem>
                   <NavLink
-                    className={classnames(
-                      { active: activeTab === "3" },
-                      "fw-semibold"
-                    )}
+                    className={classnames({ active: activeTab === "3" }, "fw-semibold")}
                     onClick={() => handleTabChange("3")}
                     href="#"
                   >
-                    Leave{" "}
-                    <span className="badge bg-secondary ms-1">
-                      {countLeave}
-                    </span>
+                    Leave <span className="badge bg-secondary ms-1">{countLeave}</span>
                   </NavLink>
                 </NavItem>
-
-                {/* ✅ NEW: Halfday Tab */}
                 <NavItem>
                   <NavLink
-                    className={classnames(
-                      { active: activeTab === "4" },
-                      "fw-semibold"
-                    )}
+                    className={classnames({ active: activeTab === "4" }, "fw-semibold")}
                     onClick={() => handleTabChange("4")}
                     href="#"
                   >
                     Halfday{" "}
-                    <span className="badge bg-warning ms-1">
-                      {countHalfday}
-                    </span>
+                    <span className="badge bg-warning ms-1">{countHalfday}</span>
                   </NavLink>
                 </NavItem>
-
-                {/* ✅ NEW: Permission Tab */}
                 <NavItem>
                   <NavLink
-                    className={classnames(
-                      { active: activeTab === "5" },
-                      "fw-semibold"
-                    )}
+                    className={classnames({ active: activeTab === "5" }, "fw-semibold")}
                     onClick={() => handleTabChange("5")}
                     href="#"
                   >
                     Permission{" "}
-                    <span className="badge bg-info ms-1">
-                      {countPermission}
-                    </span>
+                    <span className="badge bg-info ms-1">{countPermission}</span>
                   </NavLink>
                 </NavItem>
               </Nav>
 
-              {/* Table */}
+              {/* ── Table ── */}
               <div
                 className="table-responsive table-card mb-1 mt-2"
                 style={{ minHeight: "350px" }}
@@ -751,32 +548,46 @@ const TodayaAttendanceTable = () => {
                   <thead className="table-light text-muted">
                     {renderTableHeaders()}
                   </thead>
-                  <tbody>{renderTableRows()}</tbody>
+                  <tbody>
+                    {loading ? (
+                      /*
+                       * ✅ KEY FIX:
+                       *   columns  = exact <th> count for the active tab (7 for tab-1, 6 for rest)
+                       *   hasAvatar= true → first <td> renders avatar circle + 2 shimmer lines
+                       *   rows     = itemsPerPage so skeleton height matches real data height
+                       */
+                      <SkletonDashboard
+                        rows={itemsPerPage}
+                        columns={getColumnCount(activeTab)}
+                        hasAvatar={true}
+                      />
+                    ) : (
+                      renderTableRows()
+                    )}
+                  </tbody>
                 </table>
               </div>
 
-              {/* Pagination */}
+              {/* ── Pagination ── */}
               <div className="d-flex justify-content-end align-items-center">
                 <div className="d-flex align-items-center gap-2">
                   <span className="text-muted">
                     Page {currentPage} of {totalPages || 1}
                   </span>
-
                   <Button
                     color="primary"
                     size="sm"
                     disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((prev) => prev - 1)}
+                    onClick={() => setCurrentPage((p) => p - 1)}
                     className="ms-2"
                   >
                     Previous
                   </Button>
-
                   <Button
                     color="primary"
                     size="sm"
                     disabled={currentPage === totalPages || totalPages === 0}
-                    onClick={() => setCurrentPage((prev) => prev + 1)}
+                    onClick={() => setCurrentPage((p) => p + 1)}
                     className="ms-2"
                   >
                     Next
@@ -787,12 +598,8 @@ const TodayaAttendanceTable = () => {
           </Card>
         </Col>
 
-        {/* Map Modal */}
-        <Modal
-          size="lg"
-          isOpen={isMapOpen}
-          toggle={() => setIsMapOpen(!isMapOpen)}
-        >
+        {/* ── Map Modal ── */}
+        <Modal size="lg" isOpen={isMapOpen} toggle={() => setIsMapOpen(!isMapOpen)}>
           <ModalHeader toggle={() => setIsMapOpen(false)}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <span style={{ fontWeight: "600", fontSize: "18px" }}>

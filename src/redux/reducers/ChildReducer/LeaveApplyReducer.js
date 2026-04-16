@@ -1,34 +1,41 @@
 import { createSlice } from "@reduxjs/toolkit"
 
 const initialState = {
-    leave_application_data : []
+    leave_application_data: []
 }
 
 const LeaveApplyReducer = createSlice({
-    name : 'LeaveApplyReducer',
+    name: 'LeaveApplyReducer',
     initialState,
-    reducers : {
-        setLeaveApplication : (state , { type , payload }) =>{
+    reducers: {
+        setLeaveApplication: (state, { type, payload }) => {
             return {
                 ...state,
-                leave_application_data : payload
+                leave_application_data: payload
             }
         },
-        addLeaveApplication : (state, action) =>{
+        addLeaveApplication: (state, action) => {
             return {
                 ...state,
-                leave_application_data : [...state.leave_application_data, action.payload]
+                leave_application_data: [...state.leave_application_data, action.payload]
             }
         },
-        editLeaveApplication : (state, action) =>{
+        editLeaveApplication: (state, action) => {
             return {
                 ...state,
-                leave_application_data : [...state.leave_application_data].map(obj => obj.id === action.payload.id ? action.payload : obj)
+                leave_application_data: [...state.leave_application_data].map(obj =>
+                    obj.id === action.payload.id ? action.payload : obj
+                )
             }
-        }
+        },
+     
     }
 });
 
-export const { setLeaveApplication, addLeaveApplication, editLeaveApplication } = LeaveApplyReducer.actions;
+export const {
+    setLeaveApplication,
+    addLeaveApplication,
+    editLeaveApplication,
+} = LeaveApplyReducer.actions;
 
 export default LeaveApplyReducer.reducer

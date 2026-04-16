@@ -87,7 +87,7 @@ const LeaveType = () => {
       filterable: false,
       accessor: (obj) => {
         let htmltag = types.map((type, i) =>
-          obj.type == type.id ? type.label : ""
+          obj.type == type.id ? type.label : "",
         );
 
         return <>{htmltag}</>;
@@ -137,9 +137,14 @@ const LeaveType = () => {
       hour_allowed_in_day: 0,
       reset_type: 1,
       ws_id: [],
+      role_id: [],
       genders: [],
       weekend_between_leave: false,
       holiday_between_leave: false,
+      is_config_exempt: false,
+      allow_employee_to_exceed_limit: true,
+      allowed_to_carry_forward: false,
+      carry_forward_limit: 0,
       description: "",
       status: true,
     };

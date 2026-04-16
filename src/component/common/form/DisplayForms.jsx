@@ -31,7 +31,7 @@ import {
   professional_tax_form_component_name,
   profile_view_component_name,
   role_component_name,
-  salary_form_component_name,
+  salary_form_component_name_earnings,
   salary_policy_form_component_name,
   work_schedule_component_name,
   location_edit_form_component_name,
@@ -41,11 +41,21 @@ import {
   contact_group_component_name,
   contacts_component_name,
   custom_form_component_name,
+  salary_form_component_name_deduction,
+  salary_form_component_name_benefits,
+  salary_form_component_name_reimbursements,
+  pt_settings_form_component_name,
+  location_group_component_name
 } from "../../../common/constant/Constants";
 import BranchForm from "../../forms/BranchForm";
 import ContactGroupForm from "../../forms/Common/ContactGroupForm";
 import ContactsForm from "../../forms/Common/ContactsForm";
 import CustomForm from "../../forms/Common/CustomForm";
+import DeductionForm from "../../forms/Common/DeductionForm";
+import BenfitsForm from "../../forms/Common/BenfitsForm";
+import ReimbursementsForm from "../../forms/Common/ReimbursementsForm";
+import PTSettingsForm from "../../../pages/payroll/AdvancedSettings/PTSettingsForm";
+import LocationGroupForm from "../../forms/LocationGroupForm";
 
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
@@ -94,14 +104,25 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
                 <EPFWageForm />
               ) : component_to_show === professional_tax_form_component_name ? (
                 <ProfessionalTaxForm />
-              ) : component_to_show === salary_form_component_name ? (
+              ) : component_to_show === salary_form_component_name_earnings ? (
                 <SalaryCmpntForm />
-              ) : component_to_show === salary_policy_form_component_name ? (
+              ) : component_to_show === salary_form_component_name_deduction ? (
+                <DeductionForm />
+              ) : component_to_show === salary_form_component_name_benefits ? (
+                <BenfitsForm />
+              ) :component_to_show === salary_form_component_name_reimbursements ? (
+                <ReimbursementsForm />
+              ) :component_to_show === salary_policy_form_component_name ? (
                 <SalaryPloiciesForm />
               ) : component_to_show === location_edit_form_component_name ? (
                 <LocationEditForm />
+              ) : component_to_show === pt_settings_form_component_name ? (
+                <PTSettingsForm />
               ) :  component_to_show === branch_location_form ? (
                 <BranchLocationForm />
+                ) :
+              component_to_show === location_group_component_name ? (
+                <LocationGroupForm/>
                 ) :
                     component_to_show === status_component_name ? (
                     <StatusForm/>

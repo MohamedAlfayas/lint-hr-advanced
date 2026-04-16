@@ -89,13 +89,13 @@ const TableContainer = ({
     useSortBy,
     useExpanded,
     usePagination,
-    useRowSelect
+    useRowSelect,
   );
 
   useEffect(() => {
-  // Clear search when switching component/form
-  dispatch(setTableFilterSearchText(""));
-}, [formname, dispatch]);
+    // Clear search when switching component/form
+    dispatch(setTableFilterSearchText(""));
+  }, [formname, dispatch]);
 
   const generateSortingIndicator = (column) => {
     return column.isSorted ? (
@@ -160,19 +160,18 @@ const TableContainer = ({
                 leave_pending_table ? null : (
                 <Col md={4}>
                   <div className="search-box me-2 mb-2 d-inline-block col-12">
-  <input
-    id="search-bar-0"
-    type="text"
-    className="form-control search"
-    placeholder={`Search ${(formname || "Table").split("_").join(" ")}`}
-    value={search || ""}
-    onChange={(e) =>
-      dispatch(setTableFilterSearchText(e.target.value))
-    }
-  />
-  <i className="bx bx-search-alt search-icon"></i>
-</div>
-
+                    <input
+                      id="search-bar-0"
+                      type="text"
+                      className="form-control search"
+                      placeholder={`Search ${(formname || "Table").split("_").join(" ")}`}
+                      value={search || ""}
+                      onChange={(e) =>
+                        dispatch(setTableFilterSearchText(e.target.value))
+                      }
+                    />
+                    <i className="bx bx-search-alt search-icon"></i>
+                  </div>
                 </Col>
               )}
 
@@ -262,7 +261,11 @@ const TableContainer = ({
                   !canPreviousPage ? "page-item disabled" : "page-item"
                 }
               >
-                <Link to="javscript:;" className="page-link" onClick={previousPage}>
+                <Link
+                  to="javscript:;"
+                  className="page-link"
+                  onClick={previousPage}
+                >
                   Previous
                 </Link>
               </li>

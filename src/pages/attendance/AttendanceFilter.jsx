@@ -16,7 +16,7 @@ import Select from "react-select";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import {
   setIndividualAttendanceReportData,
   setShowTeamTable,
@@ -27,11 +27,13 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 import { toast } from "react-toastify";
 import { EmployeeDisplayInSelect } from "../../common/js/EmployeeDisplayInSelect";
 import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
-import { profile_data } from "../../redux/reducers/ChildReducer/MyProfileReducer";
 import { BuildAttendanceReportChart } from "../../common/js/BuildAttendanceReportChart";
+
 dayjs.extend(customParseFormat);
 
 const AttendanceFilter = () => {
+  const dispatch = useDispatch();
+
   const [filterKeys, setFilterKeys] = useState({
     thisMonth: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
       .toString()
@@ -42,16 +44,15 @@ const AttendanceFilter = () => {
     employee: "0",
   });
 
-  const dispatch = useDispatch();
-
   const [employeeOptions, setEmployeeOptions] = useState([]);
   const [showEmployeeSelect, setShowEmployeeSelect] = useState(false);
+  const [attendanceViewFilter, setAttendanceViewFilter] = useState([]);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const employee_data = GetLocalStorageData("employee");
-
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
-  const [attendanceViewFilter, setAttendanceViewFilter] = useState([]);
+  // 🔹 Permission-based filter
   useEffect(() => {
     if (profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY)) {
       setAttendanceViewFilter(attendance_type_options);
@@ -68,6 +69,7 @@ const AttendanceFilter = () => {
     }
   }, []);
 
+  // 🔹 Load employees
   useEffect(() => {
     Api({
       type: "GET",
@@ -75,6 +77,7 @@ const AttendanceFilter = () => {
     })
       .then((res) => {
         const response = res?.data?.data;
+
         let emp_options = response.map((d) =>
           employee_data.find((e) => e.id === d)
         );
@@ -84,59 +87,39 @@ const AttendanceFilter = () => {
           ...emp_options,
         ]);
       })
-      .catch((err) => {
+      .catch(() => {
         console.log("Something Went Wrong !!");
       });
   }, []);
 
-  const ResetLoaderVisible = () => {
-    setTimeout(() => {
-      dispatch(setLoaderVisible(false));
-    }, 1000);
-  };
-
+  // 🔹 Handlers
   const handleDateRangeChange = (e, monthStr) => {
-    setFilterKeys({
-      ...filterKeys,
-      thisMonth: monthStr,
-    });
+    setFilterKeys((prev) => ({ ...prev, thisMonth: monthStr }));
   };
 
   const handleHRStatusChange = (e) => {
-    setFilterKeys({
-      ...filterKeys,
-      hr_status: e.value,
-    });
+    setFilterKeys((prev) => ({ ...prev, hr_status: e.value }));
   };
 
   const handleRecordChange = (e) => {
-    setFilterKeys({
-      ...filterKeys,
-      record: e.value,
-    });
+    setFilterKeys((prev) => ({ ...prev, record: e.value }));
   };
 
   const handleTypeChange = (e) => {
-    setFilterKeys({
-      ...filterKeys,
+    setFilterKeys((prev) => ({
+      ...prev,
       type: e.value,
       employee: "0",
-    });
+    }));
 
-    if (e.value === "2") {
-      setShowEmployeeSelect(true);
-    } else {
-      setShowEmployeeSelect(false);
-    }
+    setShowEmployeeSelect(e.value === "2");
   };
 
   const handleEmployeeChange = (e) => {
-    setFilterKeys({
-      ...filterKeys,
-      employee: e.value,
-    });
+    setFilterKeys((prev) => ({ ...prev, employee: e.value }));
   };
 
+  // 🔹 API Call
   const handleFilter = async () => {
     dispatch(setLoaderVisible(true));
 
@@ -146,165 +129,130 @@ const AttendanceFilter = () => {
       false
     );
 
-    if (attendanceApi.status && attendanceApi.status === 200) {
-      dispatch(
-        setIndividualAttendanceReportData(
-          attendanceApi?.data?.data?.individual_attendance_report
-        )
-      );
+    if (attendanceApi?.status === 200) {
+      const data = attendanceApi?.data?.data;
+
+      dispatch(setIndividualAttendanceReportData(data?.individual_attendance_report));
+
       BuildAttendanceReportChart(
-        attendanceApi?.data?.data?.individual_attendance_report,
+        data?.individual_attendance_report,
         dispatch
       );
+
+      // Leave API
       if (filterKeys?.type === "1") {
         Api({
           type: "GET",
           url: `leave/get-leave-type-details-for-employee/?employee_id=${profile_data.id}`,
-        })
-          .then((res) => {
-            dispatch(setEmployeeLeaveType(res?.data?.data));
-          })
-          .catch((err) => {
-            console.log("Something Went Worng");
-          });
+        }).then((res) => {
+          dispatch(setEmployeeLeaveType(res?.data?.data));
+        });
       }
+
       if (filterKeys?.type === "2" && filterKeys?.employee !== "0") {
         Api({
           type: "GET",
-          url: `leave/get-leave-type-details-for-employee/?employee_id=${filterKeys?.employee}`,
-        })
-          .then((res) => {
-            dispatch(setEmployeeLeaveType(res?.data?.data));
-          })
-          .catch((err) => {
-            console.log("Something Went Worng");
-          });
+          url: `leave/get-leave-type-details-for-employee/?employee_id=${filterKeys.employee}`,
+        }).then((res) => {
+          dispatch(setEmployeeLeaveType(res?.data?.data));
+        });
       }
+
+      dispatch(setTeamAttendanceReportData(data?.team_attendance_report));
+
       dispatch(
-        setTeamAttendanceReportData(
-          attendanceApi?.data?.data?.team_attendance_report
+        setShowTeamTable(
+          filterKeys?.type === "2" && filterKeys?.employee === "0"
         )
       );
-      if (filterKeys?.type === "2" && filterKeys?.employee === "0") {
-        dispatch(setShowTeamTable(true));
-      } else {
-        dispatch(setShowTeamTable(false));
-      }
-      ResetLoaderVisible();
+
+      setTimeout(() => dispatch(setLoaderVisible(false)), 500);
     } else {
-      toast.error(attendanceApi?.data?.message || attendanceApi?.data?.detail);
-      ResetLoaderVisible();
+      toast.error(
+        attendanceApi?.data?.message || attendanceApi?.data?.detail
+      );
+      setTimeout(() => dispatch(setLoaderVisible(false)), 500);
     }
   };
 
-  return (
-    <React.Fragment>
-      <Card>
-        <CardHeader className="border-0 rounded">
-          <Row className="g-2">
-            <Col xl={2}>
-              <div className="form-icon right">
-                <DatePicker
-                  value={dayjs(filterKeys?.thisMonth, MonthFormat)}
-                  format={MonthFormat}
-                  picker="month"
-                  allowClear={false}
-                  className="form-control"
-                  placeholder="Select Month"
-                  onChange={handleDateRangeChange}
-                />
-              </div>
-            </Col>
-            <Col xl={2}>
-              <div className="form-icon right">
-                <Select
-                  name="status_attendance"
-                  id="status_attendance"
-                  options={hr_status_options || []}
-                  placeholder="Select a Status"
-                  value={
-                    !!filterKeys?.hr_status
-                      ? hr_status_options.find(
-                          (d) => d.id === filterKeys?.hr_status
-                        )
-                      : []
-                  }
-                  onChange={handleHRStatusChange}
-                />
-              </div>
-            </Col>
-            <Col xl={2}>
-              <div className="form-icon right">
-                <Select
-                  name="record_attendance"
-                  id="record_attendance"
-                  options={record_options || []}
-                  placeholder="Select a Record"
-                  value={
-                    !!filterKeys?.record
-                      ? record_options.find((d) => d.id === filterKeys?.record)
-                      : []
-                  }
-                  onChange={handleRecordChange}
-                />
-              </div>
-            </Col>
-            <Col xl={2}>
-              <div className="form-icon right">
-                <Select
-                  name="type_attendance"
-                  id="type_attendance"
-                  options={attendanceViewFilter || []}
-                  placeholder="Select a Type"
-                  value={
-                    !!filterKeys?.type
-                      ? attendanceViewFilter.find(
-                          (d) => d.id === filterKeys?.type
-                        )
-                      : []
-                  }
-                  onChange={handleTypeChange}
-                />
-              </div>
-            </Col>
-            {showEmployeeSelect && (
-              <Col xl={2}>
-                <div className="form-icon right">
-                  <Select
-                    name="employee_attendance"
-                    id="employee_attendance"
-                    options={employeeOptions || []}
-                    components={{ Option: EmployeeDisplayInSelect }}
-                    placeholder="Select a Employee"
-                    value={
-                      !!filterKeys?.employee
-                        ? employeeOptions.find(
-                            (d) => d.id === filterKeys?.employee
-                          )
-                        : []
-                    }
-                    onChange={handleEmployeeChange}
-                  />
-                </div>
-              </Col>
-            )}
+  // 🔹 Auto filter with debounce
+  useEffect(() => {
+    if (isFirstLoad) {
+      setIsFirstLoad(false);
+      return;
+    }
 
-            <div className="col-lg-auto">
-              <div className="hstack gap-2">
-                <button
-                  type="button"
-                  onClick={handleFilter}
-                  className="btn btn-danger"
-                >
-                  <i className="ri-equalizer-fill me-1 align-bottom"></i>{" "}
-                  Filters
-                </button>
-              </div>
-            </div>
-          </Row>
-        </CardHeader>
-      </Card>
-    </React.Fragment>
+    const delay = setTimeout(() => {
+      handleFilter();
+    }, 500);
+
+    return () => clearTimeout(delay);
+  }, [filterKeys]);
+
+  return (
+    <Card>
+      <CardHeader className="border-0 rounded">
+        <Row className="g-2">
+          <Col xl={2}>
+            <DatePicker
+              value={dayjs(filterKeys.thisMonth, MonthFormat)}
+              format={MonthFormat}
+              picker="month"
+              allowClear={false}
+              className="form-control"
+              onChange={handleDateRangeChange}
+            />
+          </Col>
+
+          <Col xl={2}>
+            <Select
+              options={hr_status_options}
+              placeholder="Select Status"
+              value={hr_status_options.find(
+                (d) => d.id === filterKeys.hr_status
+              )}
+              onChange={handleHRStatusChange}
+            />
+          </Col>
+
+          <Col xl={2}>
+            <Select
+              options={record_options}
+              placeholder="Select Record"
+              value={record_options.find(
+                (d) => d.id === filterKeys.record
+              )}
+              onChange={handleRecordChange}
+            />
+          </Col>
+
+          <Col xl={2}>
+            <Select
+              options={attendanceViewFilter}
+              placeholder="Select Type"
+              value={attendanceViewFilter.find(
+                (d) => d.id === filterKeys.type
+              )}
+              onChange={handleTypeChange}
+            />
+          </Col>
+
+          {showEmployeeSelect && (
+            <Col xl={2}>
+              <Select
+                options={employeeOptions}
+                components={{ Option: EmployeeDisplayInSelect }}
+                placeholder="Select Employee"
+                value={employeeOptions.find(
+                  (d) => d.id === filterKeys.employee
+                )}
+                onChange={handleEmployeeChange}
+              />
+            </Col>
+          )}
+        </Row>
+      </CardHeader>
+    </Card>
   );
 };
 

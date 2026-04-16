@@ -106,6 +106,8 @@ import {
 } from "../../../redux/reducers/ChildReducer/ApprovalComponentReducer";
 import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
 import TableSkeleton from "../skeleton/TableSkeloton";
+import { DeleteApi } from "../../../common/api/DeleteApi";
+import { editLeaveApplication } from "../../../redux/reducers/ChildReducer/LeaveApplyReducer";
 defineElement(loadAnimation);
 
 const InfoTable = ({
@@ -120,6 +122,8 @@ const InfoTable = ({
   table_col,
   table_class,
   initialActiveTab,
+  onChangeLeave, // ✅ ADD THIS
+  ...props
 }) => {
   const dispatch = useDispatch();
 
@@ -147,10 +151,10 @@ const InfoTable = ({
     formname === employee_component_name
       ? employee_table_filter_keys
       : formname === leave_type_component_name
-      ? leave_type_table_filter_keys
-      : formname === attendance_approval_component_name
-      ? attendance_approval_table_filter_keys
-      : {};
+        ? leave_type_table_filter_keys
+        : formname === attendance_approval_component_name
+          ? attendance_approval_table_filter_keys
+          : {};
 
   const tabOptions = filterOptions
     ? filterOptions.map((obj, idx) => {
@@ -162,7 +166,7 @@ const InfoTable = ({
     : [];
 
   const [activeTab, setActiveTab] = useState(
-    !!initialActiveTab ? initialActiveTab : 1
+    !!initialActiveTab ? initialActiveTab : 1,
   );
 
   const [dataList, setDataList] = useState([]);
@@ -179,22 +183,21 @@ const InfoTable = ({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      const res = await GetApi("/your-api");
-      setDataList(res?.data || []);
-    } catch (error) {
-      console.error(error);
-      setDataList([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const res = await GetApi("/your-api");
+        setDataList(res?.data || []);
+      } catch (error) {
+        console.error(error);
+        setDataList([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  fetchData();
-}, []);
-
+    fetchData();
+  }, []);
 
   const tog_list = () => {
     setmodal_list(!modal_list);
@@ -253,10 +256,10 @@ const InfoTable = ({
       formname === leave_pending_table
         ? `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To <strong style='color:#7066e0'>  ${employee_first_name}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `
         : orderData.is_present === false
-        ? `<span>Oops, <strong style='color:#7066e0'>${employee_first_name}</strong> didn't show up on <strong style='color:grey'>${format(
-            new Date(orderData.date),
-            "dd MMM, yyyy"
-          )}</strong>, Ready to regularize and approve?</span>
+          ? `<span>Oops, <strong style='color:#7066e0'>${employee_first_name}</strong> didn't show up on <strong style='color:grey'>${format(
+              new Date(orderData.date),
+              "dd MMM, yyyy",
+            )}</strong>, Ready to regularize and approve?</span>
           <div>
             ${
               formname === attendance_approval_component_name ||
@@ -275,10 +278,10 @@ const InfoTable = ({
                 : undefined
             }
           </div>`
-        : `<span><strong style='color:#7066e0'>${employee_first_name}</strong> missed checkout on <strong style='color:grey'>${format(
-            new Date(orderData.date),
-            "dd MMM, yyyy"
-          )}, Would you like to regularize?</span>
+          : `<span><strong style='color:#7066e0'>${employee_first_name}</strong> missed checkout on <strong style='color:grey'>${format(
+              new Date(orderData.date),
+              "dd MMM, yyyy",
+            )}, Would you like to regularize?</span>
           <div>
             ${
               formname === attendance_approval_component_name ||
@@ -383,7 +386,7 @@ const InfoTable = ({
             const Api = await PostApi(
               "attendance/approve-or-reject/",
               data,
-              false
+              false,
             );
             if (Api.status && Api.status === 200) {
               dispatch(updateAttendanceApprovalData(data));
@@ -411,7 +414,7 @@ const InfoTable = ({
         ? `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To <strong style='color:#7066e0'> ${employee_first_name} </strong> on ${orderData.start} to  ${orderData.end} </span>`
         : `<span>Confirm Action : <strong style='color:red'>Reject</strong> pending status and mark <strong style='color:#7066e0'>  ${employee_first_name}</strong>  as absent on   <strong style='color:grey'>${format(
             new Date(orderData.date),
-            "dd MMM, yyyy"
+            "dd MMM, yyyy",
           )}</strong></span> `;
     let btnText = "Yes, Reject";
 
@@ -470,7 +473,7 @@ const InfoTable = ({
           const Api = await PostApi(
             "attendance/approve-or-reject/",
             data,
-            false
+            false,
           );
           if (Api.status && Api.status === 200) {
             dispatch(updateAttendanceApprovalData(data));
@@ -551,7 +554,7 @@ const InfoTable = ({
           const Api = await PostApi(
             "attendance/approve-or-reject/",
             data,
-            false
+            false,
           );
           if (Api.status && Api.status === 200) {
             dispatch(updateAttendanceApprovalData(data));
@@ -621,7 +624,7 @@ const InfoTable = ({
           const Api = await PostApi(
             "attendance/approve-or-reject/",
             data,
-            false
+            false,
           );
           if (Api.status && Api.status === 200) {
             dispatch(updateAttendanceApprovalData(data));
@@ -638,6 +641,101 @@ const InfoTable = ({
 
   const handleStatusFilterChange = (event) => {
     setStatusFilter(event.target.value);
+  };
+
+  const handleActionClick = async (orderData) => {
+    const result = await Swal.fire({
+      title: "Cancel Leave Request",
+      html: "Are you sure you want to <b>raise a cancel leave request?</b>",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, raise request!",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const Api = await PostApi(
+        `leave/raise-cancel-request/`,
+        { id: orderData.id },
+        false,
+      );
+
+      console.log("CANCEL REQUEST RESPONSE:", Api);
+
+      // ✅ Check success
+      if (
+        Api?.status === 200 &&
+        Api?.data?.data?.leave_cancellation_details?.status === 1
+      ) {
+        // ✅ Update Redux (same pattern as edit)
+        dispatch(editLeaveApplication(Api?.data?.data));
+
+        // ✅ Toast
+        toast.success(Api?.data?.message || "Cancel request raised");
+
+        // ✅ SweetAlert
+        await Swal.fire(
+          "Request Sent!",
+          Api?.data?.message || "Cancel request raised successfully",
+          "success",
+        );
+      } else {
+        toast.error(
+          Api?.data?.message || Api?.data?.detail || "Request failed",
+        );
+      }
+    } catch (error) {
+      console.error("CANCEL REQUEST ERROR:", error);
+      toast.error("Something went wrong");
+    }
+  };
+
+  const handleDelete = async (orderData) => {
+    const result = await Swal.fire({
+      title: "Delete Leave Application",
+      text: "Are you sure you want to delete this leave application?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const Api = await DeleteApi(
+        `leave/leave-application/delete/${orderData.id}`,
+        false,
+      );
+
+      console.log("DELETE RESPONSE:", Api);
+
+      // ✅ API returns { message, data, leave_type_for_employee }
+      // ✅ success is determined by status 200 + data.is_deleted === true
+      if (Api?.status === 200 && Api?.data?.data?.is_deleted === true) {
+        // ✅ Redux: remove deleted item from list
+        dispatch(editLeaveApplication(Api?.data?.data));
+
+        // ✅ Toast
+        toast.success(Api?.data?.message || "Deleted successfully");
+
+        // ✅ SweetAlert success
+        await Swal.fire(
+          "Deleted!",
+          Api?.data?.message || "Leave Application Deleted Successfully",
+          "success",
+        );
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail || "Delete failed");
+      }
+    } catch (error) {
+      console.error("DELETE ERROR:", error);
+      toast.error("Something went wrong");
+    }
   };
 
   const handleTypeFilterChange = (event) => {
@@ -704,7 +802,7 @@ const InfoTable = ({
     const Api = await PostApi(
       "employee/activate-or-deactivate-employee/",
       payload,
-      false
+      false,
     );
 
     if (!!Api.status && Api.status === 200) {
@@ -712,7 +810,7 @@ const InfoTable = ({
         setEmployeeActiveStatus({
           id: orderData.id,
           is_active: orderInfo?.statusToChange,
-        })
+        }),
       );
 
       const thisMetaData = GetLocalStorageData("employee");
@@ -734,7 +832,7 @@ const InfoTable = ({
       GlobalMetaData["employee"] = updated_md;
       localStorage.setItem(
         "lint_hr_globaldata",
-        JSON.stringify(GlobalMetaData)
+        JSON.stringify(GlobalMetaData),
       );
 
       dispatch(setLoaderVisible(false));
@@ -747,7 +845,7 @@ const InfoTable = ({
       ) {
         console.log(
           "team_employees_to_be_updated = ",
-          Api?.data?.team_employees_to_be_updated
+          Api?.data?.team_employees_to_be_updated,
         );
 
         setRMEmpName(orderData?.first_name);
@@ -765,7 +863,7 @@ const InfoTable = ({
 
   const handleResetPassword = (orderData) => {
     const profile_data = JSON.parse(
-      localStorage.getItem("lint_hr_profile_data")
+      localStorage.getItem("lint_hr_profile_data"),
     );
 
     const first_name =
@@ -824,7 +922,7 @@ const InfoTable = ({
         }
         if (!pattern.test(newPasswordValue)) {
           Swal.showValidationMessage(
-            "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character."
+            "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
           );
           return false;
         }
@@ -871,7 +969,7 @@ const InfoTable = ({
           Swal.fire(
             "Password Reset!",
             "Password has been reset successfully.",
-            "success"
+            "success",
           );
         } else {
           toast.error(Api?.data?.message);
@@ -922,7 +1020,7 @@ const InfoTable = ({
                 ]);
               } else {
                 setSelectedGroupIds((prevIds) =>
-                  prevIds.filter((id) => id !== orderDataChecked)
+                  prevIds.filter((id) => id !== orderDataChecked),
                 );
               }
 
@@ -943,7 +1041,10 @@ const InfoTable = ({
           formname &&
           (formname === leave_approval_component_name ||
             formname === leave_pending_table) &&
-          orderData.status === 1
+          (orderData.status === 1 ||
+            (orderData.status === 2 &&
+              orderData?.leave_cancellation_details &&
+              orderData?.leave_cancellation_details.status === 1))
         ) {
           return (
             <ul className="list-inline hstack gap-2 mb-0">
@@ -997,6 +1098,54 @@ const InfoTable = ({
                   <i className="ri-close-line fs-16"></i>
                 </Link>
               </li>
+            </ul>
+          );
+        } else if (formname === leave_application_component_name) {
+          return (
+            <ul className="list-inline hstack gap-2 mb-0">
+              {/* ✏️ EDIT + DELETE ONLY WHEN status === 1 AND NOT DELETED */}
+              {orderData.status === 1 && orderData.is_deleted === false && (
+                <>
+                  {/* EDIT */}
+                  <li className="list-inline-item edit">
+                    <Link
+                      to="javascript:void(0)"
+                      className="text-primary d-inline-block edit-item-btn"
+                      onClick={() => {
+                        handleCreateAndUpdate(orderData.id, orderData);
+                      }}
+                    >
+                      <i className="ri-pencil-fill fs-16"></i>
+                    </Link>
+                  </li>
+
+                  {/* DELETE */}
+                  <li className="list-inline-item delete">
+                    <Link
+                      to="javascript:void(0)"
+                      className="text-danger d-inline-block delete-item-btn"
+                      onClick={() => {
+                        handleDelete(orderData);
+                      }}
+                    >
+                      <i className="ri-delete-bin-5-fill fs-16"></i>
+                    </Link>
+                  </li>
+                </>
+              )}
+
+              {/* ⋮ THREE DOT MENU */}
+              {orderData.allowed_to_cancel_request && (
+                <li className="list-inline-item">
+                  <button
+                    type="button"
+                    className="btn btn-warning btn-border"
+                    onClick={() => handleActionClick(orderData)}
+                  >
+                    Raise Cancel Leave Request
+                  </button>
+                </li>
+              )}
             </ul>
           );
         } else if (formname && formname === employee_component_name) {
@@ -1118,7 +1267,7 @@ const InfoTable = ({
   const firstEffectExecutedRef = useRef(false);
   useEffect(() => {
     const profile_data = JSON.parse(
-      localStorage.getItem("lint_hr_profile_data")
+      localStorage.getItem("lint_hr_profile_data"),
     );
     if (
       formname === leave_approval_component_name ||
@@ -1126,24 +1275,24 @@ const InfoTable = ({
     ) {
       setShowAllLeaveApprovalBtn(
         profile_data.permission_list.includes(
-          APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY
-        )
+          APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY,
+        ),
       );
       setShowTeamLeaveApprovalBtn(
         profile_data.permission_list.includes(
-          APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY
-        )
+          APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
+        ),
       );
 
       setShowAllAttendanceApprovalBtn(
         profile_data.permission_list.includes(
-          APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY
-        )
+          APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY,
+        ),
       );
       setShowTeamAttendanceApprovalBtn(
         profile_data.permission_list.includes(
-          APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY
-        )
+          APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
+        ),
       );
     }
     firstEffectExecutedRef.current = true;
@@ -1161,15 +1310,15 @@ const InfoTable = ({
           approvalEmployeeTypeFilter === 0 && showAllAttendanceApprovalBtn
             ? setShowEditBtn(true)
             : approvalEmployeeTypeFilter === 1 && showTeamAttendanceApprovalBtn
-            ? setShowEditBtn(true)
-            : setShowEditBtn(false);
+              ? setShowEditBtn(true)
+              : setShowEditBtn(false);
         }
         if (currentApprovalComponent === "leave_approval_component_name") {
           approvalEmployeeTypeFilter === 0 && showAllLeaveApprovalBtn
             ? setShowEditBtn(true)
             : approvalEmployeeTypeFilter === 1 && showTeamLeaveApprovalBtn
-            ? setShowEditBtn(true)
-            : setShowEditBtn(false);
+              ? setShowEditBtn(true)
+              : setShowEditBtn(false);
         }
       }
     }
@@ -1213,11 +1362,11 @@ const InfoTable = ({
         if (
           (thisFormName === employee_component_name &&
             profile_data.permission_list.includes(
-              CREATE_EMPLOYEE_ACCESS_KEY
+              CREATE_EMPLOYEE_ACCESS_KEY,
             )) ||
           (thisFormName === custom_field_component_name &&
             profile_data.permission_list.includes(
-              CREATE_CUSTOM_FIELD_ACCESS_KEY
+              CREATE_CUSTOM_FIELD_ACCESS_KEY,
             ))
         ) {
           setShowCreateBtn(true);
@@ -1269,14 +1418,14 @@ const InfoTable = ({
     }
   }, [showEditBtn]);
 
-  const toggleTab = (tab, type) => {
+  const toggleTab = (tab, type, condition) => {
     console.log("TOGGLE TAB === ", tab, " Active TAB = ", activeTab);
     if (activeTab !== tab) {
       setActiveTab(tab);
       let filteredDatas = [...tabledata];
       if (type !== "all") {
         filteredDatas = [...tabledata].filter(
-          (data) => data[filterKey] == type
+          (data) => data[filterKey] == type,
         );
       }
       setDataList(filteredDatas);
@@ -1437,7 +1586,7 @@ const InfoTable = ({
 
   const assignNewReportingManager = async () => {
     const f = TeamsToBeUpdated.filter(
-      (d) => parseInt(d.new_reporting_manager_id) === 0
+      (d) => parseInt(d.new_reporting_manager_id) === 0,
     );
     if (f.length > 0) {
       toast.error("Please Select New Reporting Manager");
@@ -1456,14 +1605,14 @@ const InfoTable = ({
       const Api = await PostApi(
         "employee/assign-new-reporting-manager/",
         Payload,
-        false
+        false,
       );
 
       if (Api.status && Api.status === 200) {
         dispatch(setLoaderVisible(false));
         DeactivateEmployeeAPI(
           activeInactiveAPIOrderData,
-          activeInactiveAPIOrderInfo
+          activeInactiveAPIOrderInfo,
         );
         setShowRMModal(false);
       } else {
@@ -1530,14 +1679,14 @@ const InfoTable = ({
     const Api = await PostApi(
       "employee/get-employee-list-for-reporting-manager/",
       { dep_id: valid_dep_ids },
-      false
+      false,
     );
     if (Api.status && Api.status === 200) {
       const response = Api?.data?.data;
       setReportingManagerOptions(
         EmployeeData.filter(
-          (d) => d.id !== activateEmpObj.id && response.includes(d.id)
-        )
+          (d) => d.id !== activateEmpObj.id && response.includes(d.id),
+        ),
       );
     } else {
       console.log("ERRR");
@@ -1557,7 +1706,7 @@ const InfoTable = ({
       const Api = await PostApi(
         "employee/activate-or-deactivate-employee/",
         activateEmpObj,
-        false
+        false,
       );
       if (!!Api.status && Api.status === 200) {
         dispatch(setLoaderVisible(false));
@@ -1671,11 +1820,11 @@ const InfoTable = ({
                         <div className="d-flex gap-1 flex-wrap">
                           {formname &&
                             component_list_for_import_btn_access.includes(
-                              formname
+                              formname,
                             ) && (
                               <button
                                 type="button"
-                                className="btn btn-primary add-btn"
+                                className="btn btn-primary align-bottom me-1"
                                 id="create-btn"
                                 style={{ textTransform: "capitalize" }}
                                 onClick={() => {
@@ -1873,20 +2022,20 @@ const InfoTable = ({
                                     <>
                                       <button
                                         type="button"
-                                        className="btn btn-success add-btn"
+                                        className="btn btn-success custom-toggle active"
                                         id="bulk-approve-btn"
                                         onClick={() => handleBulkApproval()}
                                       >
-                                        <i className="ri-check-line fs-16"></i>{" "}
+                                        <i class="ri-check-fill align-bottom me-1"></i>{" "}
                                         Bulk Approve
                                       </button>{" "}
                                       <button
                                         type="button"
-                                        className="btn btn-danger add-btn"
+                                        className="btn btn-danger custom-toggle active"
                                         id="bulk-reject-btn"
                                         onClick={() => handleBulkReject()}
                                       >
-                                        <i className="ri-close-line fs-16"></i>{" "}
+                                        <i className="ri-close-line align-bottom me-1"></i>{" "}
                                         Bulk Reject
                                       </button>{" "}
                                     </>
@@ -1959,7 +2108,7 @@ const InfoTable = ({
                       <NavLink
                         className={classnames(
                           { active: activeTab === 1 },
-                          "fw-semibold"
+                          "fw-semibold",
                         )}
                         onClick={() => {
                           toggleTab(1, "all");
@@ -1986,7 +2135,7 @@ const InfoTable = ({
                         <NavLink
                           className={classnames(
                             { active: activeTab === String(idx + 2) },
-                            "fw-semibold"
+                            "fw-semibold",
                           )}
                           onClick={() => {
                             toggleTab(String(idx + 2), obj.option);
@@ -2010,9 +2159,10 @@ const InfoTable = ({
                         </NavLink>
                       </NavItem>
                     ))}
-                </Nav>{isLoading ? (
-  <TableSkeleton />
-) : dataList.length ? (
+                </Nav>
+                {isLoading ? (
+                  <TableSkeleton />
+                ) : dataList.length ? (
                   <TableContainer
                     columns={tableColumn}
                     data={
@@ -2046,7 +2196,7 @@ const InfoTable = ({
 
                                   // ✅ Handle direct value comparison
                                   return obj[key] === value;
-                                }
+                                },
                               );
                             })
                             .filter((d) =>
@@ -2055,8 +2205,8 @@ const InfoTable = ({
                                   typeof value === "string" &&
                                   value
                                     .toLowerCase()
-                                    .includes(search.toLowerCase())
-                              )
+                                    .includes(search.toLowerCase()),
+                              ),
                             )
                         : dataList
                             .filter((obj) => {
@@ -2087,7 +2237,7 @@ const InfoTable = ({
 
                                   // ✅ Handle direct value comparison
                                   return obj[key] === value;
-                                }
+                                },
                               );
                             })
                             .filter((d) =>
@@ -2096,8 +2246,8 @@ const InfoTable = ({
                                   typeof value === "string" &&
                                   value
                                     .toLowerCase()
-                                    .includes(search.toLowerCase())
-                              )
+                                    .includes(search.toLowerCase()),
+                              ),
                             )) || []
                     }
                     isPagination={true}
@@ -2414,7 +2564,7 @@ const InfoTable = ({
                                       d.rep_man_options.find(
                                         (e) =>
                                           e.id ===
-                                          parseInt(d.new_reporting_manager_id)
+                                          parseInt(d.new_reporting_manager_id),
                                       ) || []
                                     }
                                     onChange={(e) =>
@@ -2496,8 +2646,8 @@ const InfoTable = ({
                                 activateEmpObj?.primary_department_id_list
                                   ? dep_options.filter((d) =>
                                       (activateEmpObj?.primary_department_id_list).includes(
-                                        d.id
-                                      )
+                                        d.id,
+                                      ),
                                     )
                                   : []
                               }
@@ -2524,7 +2674,7 @@ const InfoTable = ({
                                   reportingManagerOptions.find(
                                     (e) =>
                                       e.id ===
-                                      activateEmpObj.reporting_manager_id
+                                      activateEmpObj.reporting_manager_id,
                                   )) ||
                                 null // Set value to null initially
                               }

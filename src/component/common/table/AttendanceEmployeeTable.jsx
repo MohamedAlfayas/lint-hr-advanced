@@ -74,6 +74,22 @@ import WebCheckInOut from "./../timer/WebCheckInOut";
 const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
 
+  const allColumns = [
+  { key: "date", label: "Date" },
+  { key: "in", label: "IN" },
+  { key: "inLocation", label: "IN Location" },
+  { key: "out", label: "OUT" },
+  { key: "outLocation", label: "OUT Location" },
+  { key: "workSchedule", label: "Work Schedule" },
+  { key: "break", label: "Break" },
+  { key: "totalIn", label: "Total IN" },
+  { key: "paidHr", label: "Paid Hr" },
+  { key: "status", label: "Status" },
+  { key: "activity", label: "Activity" },
+  { key: "notes", label: "Notes" },
+  { key: "action", label: "Action" },
+];
+
   const { Column, HeaderCell, Cell } = Table;
   const [loading, setLoading] = React.useState(false);
   const employee_data = GetLocalStorageData("employee") || [];
@@ -102,10 +118,56 @@ const AttendanceEmployeeTable = () => {
   const [locationData, setLocationData] = useState([]);
   const [locationType, setLocationType] = useState("");
   const [allLocationData, setAllLocationData] = useState([]);
+// REPLACE your existing selectedColumns useState:
+const [selectedColumns, setSelectedColumns] = useState(() => {
+  try {
+    const saved = localStorage.getItem("attendance_selected_columns");
+    return saved ? JSON.parse(saved) : [
+      "date",
+      "in",
+      "inLocation",
+      "out",
+      "outLocation",
+      "workSchedule",
+      "break",
+      "totalIn",
+      "paidHr",
+      "status",
+      "activity",
+      "notes",
+      "action",
+    ];
+  } catch {
+    return [
+      "date",
+      "in",
+      "inLocation",
+      "out",
+      "outLocation",
+      "workSchedule",
+      "break",
+      "totalIn",
+      "paidHr",
+      "status",
+      "activity",
+      "notes",
+      "action",
+    ];
+  }
+});
+
+// ADD this useEffect after all your useState declarations:
+useEffect(() => {
+  try {
+    localStorage.setItem("attendance_selected_columns", JSON.stringify(selectedColumns));
+  } catch {
+    // fail silently
+  }
+}, [selectedColumns]);
 
 console.log("timeline",timelineList);
 
-  
+  const whisperRef = React.useRef();
 
   const { individual_attendance_report_data } = useSelector(
     (state) => state.AttendanceReportReducer
@@ -312,20 +374,30 @@ console.log("timeline",timelineList);
   };
 
   const WorkScheduleCell = ({ rowData, dataKey, ...props }) => {
+     const employeeLeaveData = useSelector(
+    (state) => state.EmployeeLeaveReducer.employee_leave_data
+  );
+
+  // Find matching leave type
+  const leaveType = employeeLeaveData.find(
+    (item) => item.id === rowData?.leave_type_id
+  );
     return (
-      <Cell {...props} className="link-group">
-        {rowData.is_leave_approved === true ? (
-          <span style={{ color: "red" }}>Leave</span>
-        ) : rowData.is_holiday === true ? (
-          <span style={{ color: "green" }}>Holiday</span>
-        ) : rowData.is_week_off === true ? (
-          <span style={{ color: "blue" }}>Week Off</span>
-        ) : rowData.is_present === false ? (
-          <span style={{ color: "red" }}>Absent</span>
-        ) : (
-          ConvertSecondsToTime(rowData?.maximum_full_day_work_duration)
-        )}
-      </Cell>
+       <Cell {...props} className="link-group">
+      {rowData.is_leave_approved === true ? (
+        <span style={{ color: "red" }}>
+          {leaveType ? leaveType.name : "Leave"}
+        </span>
+      ) : rowData.is_holiday === true ? (
+        <span style={{ color: "green" }}>Holiday</span>
+      ) : rowData.is_week_off === true ? (
+        <span style={{ color: "blue" }}>Week Off</span>
+      ) : rowData.is_present === false ? (
+        <span style={{ color: "red" }}>Absent</span>
+      ) : (
+        ConvertSecondsToTime(rowData?.maximum_full_day_work_duration)
+      )}
+    </Cell>
     );
   };
 
@@ -778,87 +850,276 @@ console.log("timeline",timelineList);
 
   return (
     <Fragment>
-      <div style={{ position: "relative" }}>
-        <Table
-          height={400}
-          data={individual_attendance_report_data || []}
-          autoHeight={true}
-          loading={loading}
-          bordered={true}
-          className="mb-5"
-           rowHeight={60}
-          affixHorizontalScrollbar
-          affixHeader={{
-            affix: true,
-            offsetTop: 0,
-            position: "sticky",
-            top: 0,
-            zIndex: 1,
-          }}
-        >
+     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+  <Whisper
+    ref={whisperRef}
+    placement="bottomEnd"
+    trigger="click"
+    speaker={
+      <Popover style={{ padding: "0px", width: "230px", boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}>
+        
+        {/* Header */}
+        <div style={{
+          background: "#405189",
+          padding: "10px 14px",
+          borderRadius: "4px 4px 0 0",
+        }}>
+          <p style={{ fontWeight: "bold", margin: 0, color: "#fff", fontSize: "13px" }}>
+            <i className="mdi mdi-table-column" style={{ marginRight: 6 }}></i>
+            Show / Hide Columns
+          </p>
+        </div>
+
+        <div style={{ padding: "10px 12px" }}>
+
+          {/* Select All / Clear All */}
+          <div style={{ display: "flex", gap: "6px", marginBottom: "10px" }}>
+            <button
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setSelectedColumns(allColumns.map(c => c.key));
+              }}
+              style={{
+                flex: 1,
+                padding: "5px 8px",
+                fontSize: "12px",
+                background: "#405189",
+                color: "#fff",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontWeight: "600"
+              }}
+            >
+              ✓ Select All
+            </button>
+            <button
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setSelectedColumns(["date", "action"]);
+              }}
+              style={{
+                flex: 1,
+                padding: "5px 8px",
+                fontSize: "12px",
+                background: "#fff",
+                color: "#f5222d",
+                border: "1px solid #f5222d",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontWeight: "600"
+              }}
+            >
+              ✕ Clear All
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div style={{ borderTop: "1px solid #f0f0f0", marginBottom: "8px" }} />
+
+          {/* Scrollable Column List */}
+          <div style={{
+            maxHeight: "260px",
+            overflowY: "auto",
+            paddingRight: "2px"
+          }}>
+            {allColumns.map(col => {
+              const isLocked = ["date", "action"].includes(col.key);
+              const isChecked = selectedColumns.includes(col.key);
+              return (
+                <div
+                  key={col.key}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (isLocked) return;
+                    if (isChecked) {
+                      setSelectedColumns(selectedColumns.filter(k => k !== col.key));
+                    } else {
+                      setSelectedColumns([...selectedColumns, col.key]);
+                    }
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "7px 8px",
+                    borderRadius: "5px",
+                    marginBottom: "3px",
+                    cursor: isLocked ? "not-allowed" : "pointer",
+                    background: isChecked ? "#e6f4ff" : "#fafafa",
+                    border: `1px solid ${isChecked ? "#405189" : "#f0f0f0"}`,
+                    transition: "all 0.15s"
+                  }}
+                >
+                  {/* Custom Checkbox */}
+                  <div style={{
+                    width: "16px",
+                    height: "16px",
+                    borderRadius: "3px",
+                    border: `2px solid ${isChecked ? "#405189" : "#d9d9d9"}`,
+                    background: isChecked ? "#405189" : "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: "10px",
+                    flexShrink: 0,
+                    transition: "all 0.15s"
+                  }}>
+                    {isChecked && (
+                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                        <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </div>
+
+                  <span style={{
+                    fontSize: "13px",
+                    color: isLocked ? "#bbb" : "#333",
+                    userSelect: "none",
+                    flex: 1
+                  }}>
+                    {col.label}
+                  </span>
+
+                  {isLocked && (
+                    <span style={{
+                      fontSize: "10px",
+                      color: "#bbb",
+                      background: "#f5f5f5",
+                      border: "1px solid #e8e8e8",
+                      padding: "1px 5px",
+                      borderRadius: "3px"
+                    }}>
+                      locked
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      </Popover>
+    }
+  >
+    <button type="button" class="btn btn-primary mt-4 mt-md-0">
+  <i class="ri-align-left me-1"></i> Columns
+</button>
+  </Whisper>
+</div>
+
+      {/* Table */}
+      <Table
+        height={400}
+        data={individual_attendance_report_data || []}
+        autoHeight
+        loading={loading}
+        bordered
+        rowHeight={60}
+        affixHeader
+        affixHorizontalScrollbar
+        className="mb-5"
+      >
+        {selectedColumns.includes("date") && (
           <Column width={175} align="center" fixed="left">
-            <HeaderCell style={{ offsetTop: 0 }}>Date</HeaderCell>
+            <HeaderCell>Date</HeaderCell>
             <DateCell />
           </Column>
+        )}
+
+        {selectedColumns.includes("in") && (
           <Column width={130}>
-            <HeaderCell style={{ offsetTop: 0 }}>IN</HeaderCell>
+            <HeaderCell>IN</HeaderCell>
             <InOutCell dataKey="in" />
           </Column>
+        )}
+
+        {selectedColumns.includes("inLocation") && (
           <Column width={150}>
             <HeaderCell>IN Location</HeaderCell>
-            <LocationCell dataKey="in" fullText />
+            <LocationCell dataKey="in" />
           </Column>
+        )}
+
+        {selectedColumns.includes("out") && (
           <Column width={130}>
-            <HeaderCell style={{ offsetTop: 0 }}>OUT</HeaderCell>
+            <HeaderCell>OUT</HeaderCell>
             <InOutCell dataKey="out" />
           </Column>
+        )}
+
+        {selectedColumns.includes("outLocation") && (
           <Column width={150}>
-            <HeaderCell style={{ offsetTop: 0 }}>OUT Location</HeaderCell>
-            <LocationCell dataKey="out" fullText />
+            <HeaderCell>OUT Location</HeaderCell>
+            <LocationCell dataKey="out" />
           </Column>
-          <Column width={100}>
-            <HeaderCell style={{ offsetTop: 0 }}>Work Schedule</HeaderCell>
+        )}
+
+        {selectedColumns.includes("workSchedule") && (
+          <Column width={120}>
+            <HeaderCell>Work Schedule</HeaderCell>
             <WorkScheduleCell dataKey="ws" />
           </Column>
+        )}
+
+        {selectedColumns.includes("break") && (
           <Column width={100}>
-            <HeaderCell style={{ offsetTop: 0 }}>Break</HeaderCell>
+            <HeaderCell>Break</HeaderCell>
             <BreakHourCell dataKey="total_break_duration" />
           </Column>
+        )}
+
+        {selectedColumns.includes("totalIn") && (
           <Column width={100}>
-            <HeaderCell style={{ offsetTop: 0 }}>Total IN</HeaderCell>
+            <HeaderCell>Total IN</HeaderCell>
             <SecondsToTimeCell dataKey="final_checked_in_hr_in_seconds" />
           </Column>
-          {employeeWorkSchedule.has_ot === true && (
-            <Column width={100}>
-              <HeaderCell style={{ offsetTop: 0 }}>OT</HeaderCell>
-              <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
-            </Column>
-          )}
+        )}
+
+        {employeeWorkSchedule?.has_ot && selectedColumns.includes("totalIn") && (
           <Column width={100}>
-            <HeaderCell style={{ offsetTop: 0 }}>Paid Hr</HeaderCell>
+            <HeaderCell>OT</HeaderCell>
+            <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
+          </Column>
+        )}
+
+        {selectedColumns.includes("paidHr") && (
+          <Column width={100}>
+            <HeaderCell>Paid Hr</HeaderCell>
             <SecondsToTimeCell dataKey="final_paid_hr_in_seconds" />
           </Column>
+        )}
+
+        {selectedColumns.includes("status") && (
           <Column width={100}>
-            <HeaderCell style={{ offsetTop: 0 }}>Status</HeaderCell>
+            <HeaderCell>Status</HeaderCell>
             <HrStatusCell dataKey="hr_status" />
           </Column>
+        )}
+
+        {selectedColumns.includes("activity") && (
           <Column width={100}>
-            <HeaderCell style={{ offsetTop: 0 }}>Activity</HeaderCell>
+            <HeaderCell>Activity</HeaderCell>
             <ActivityCell />
           </Column>
-          <Column width={100}>
-            <HeaderCell style={{ offsetTop: 0 }}>Notes</HeaderCell>
+        )}
+
+        {selectedColumns.includes("notes") && (
+          <Column width={120}>
+            <HeaderCell>Notes</HeaderCell>
             <NotesCell dataKey="notes" />
           </Column>
+        )}
 
+        {selectedColumns.includes("action") && (
           <Column width={80} fixed="right">
-            <HeaderCell style={{ offsetTop: 0 }} fixed="center">
-              Action
-            </HeaderCell>
+            <HeaderCell>Action</HeaderCell>
             <EditableCell />
           </Column>
-        </Table>
-      </div>
+        )}
+      </Table>
 
       {/* Edit Modal */}
       <Modal isOpen={editModalOpen} toggle={closeEditModal} centered>

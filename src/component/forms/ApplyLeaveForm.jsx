@@ -20,7 +20,6 @@ import {
   convertDate,
   timeConvert,
   DateFormated,
-  // ConvertDateFormat,
 } from "../../common/js/ConvertDateFormat";
 import Flatpickr from "react-flatpickr";
 import {
@@ -57,7 +56,6 @@ const ApplyLeaveForm = () => {
   const [selectedLeaveTypeObj, setSelectedLeaveTypeObj] = useState({});
 
   const [WeekOffDays, setWeekOffDays] = useState([]);
-
   const [HolidayDays, setHolidayDays] = useState([]);
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
@@ -71,18 +69,26 @@ const ApplyLeaveForm = () => {
   const [halfDayEndTime, setHalfDayEndTime] = useState(null);
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
- 
   const profileData = GetLocalStorageData("my_profile") || [];
   const holidayData = GetLocalStorageData("holiday") || [];
 
   const { leave_type_for_current_employee } = useSelector(
-    (state) => state.LeaveTypeReducer
+    (state) => state.LeaveTypeReducer,
   );
+
+  // Build select options — value is the leave_type.id, full_obj is the full leave_type_for_employee record
+  const leaveTypeOptions = leave_type_for_current_employee.map((item) => ({
+    value: item.leave_type.id,
+    label: item.leave_type.name,
+    balance_leave_count: item.available_count,
+    unit: item.leave_type.unit,
+    full_obj: item,
+  }));
 
   useEffect(() => {
     if (!!form_obj) {
       const thisEmpWS = workScheduleData?.find(
-        (val) => val.id === profileData.work_schedule_id
+        (val) => val.id === profileData.work_schedule_id,
       );
       !!thisEmpWS &&
         setWeekOffDays(
@@ -93,20 +99,23 @@ const ApplyLeaveForm = () => {
               }
               return null;
             })
-            .filter((day_id) => day_id !== null)
+            .filter((day_id) => day_id !== null),
         );
 
       setHolidayDays(holidayData.map((d) => d?.date));
 
       if (form_obj?.leave_type_id !== 0) {
-        let leave_type_obj = leave_type_for_current_employee.find(
-          (d) => d.id === form_obj.leave_type_id
+        // Find the full leave_type_for_employee record by leave_type.id
+        let leave_type_record = leave_type_for_current_employee.find(
+          (d) => d.leave_type?.id === form_obj.leave_type_id,
         );
-        setLeaveBalanceCount(leave_type_obj.balance_leave_count);
-        let thisLeaveTypeObj = leave_type_for_current_employee.find(
-          (d) => d.id === form_obj?.leave_type_id
-        );
-        handleStartEndDatesChange(thisLeaveTypeObj);
+        if (leave_type_record) {
+          setLeaveBalanceCount(leave_type_record.available_count);
+          // Pass the full record to handleStartEndDatesChange
+          handleStartEndDatesChange(leave_type_record, true);
+          // Restore the selectedLeaveTypeObj so date pickers show on edit
+          setSelectedLeaveTypeObj(leave_type_record);
+        }
       }
 
       setLeaveApplyObj({
@@ -115,20 +124,14 @@ const ApplyLeaveForm = () => {
         end: form_obj?.end,
       });
 
-      // ================= FIX START =================
-      // When editing, if the leave is a half-day leave, populate the start and end time states.
+      // When editing a half-day leave, restore the start/end times
       if (
-        form_obj?.day_type === 2 && // 2 represents 'Half Day'
-        form_obj.unit === leave_type_day_unit // Ensure it's a day-based leave
+        form_obj?.day_type === 2 &&
+        form_obj.unit === leave_type_day_unit
       ) {
-        if (form_obj.start) {
-          setHalfDayStartTime(form_obj.start); // The state will hold the ISO string from the API
-        }
-        if (form_obj.end) {
-          setHalfDayEndTime(form_obj.end);
-        }
+        if (form_obj.start) setHalfDayStartTime(form_obj.start);
+        if (form_obj.end) setHalfDayEndTime(form_obj.end);
       }
-      // ================= FIX END =================
 
       setHourDiff(timeConvert(form_obj.requested_leave_count));
       setDaysCount(form_obj.requested_leave_count);
@@ -136,35 +139,46 @@ const ApplyLeaveForm = () => {
 
       if (form_obj?.unit === 2 && form_obj?.start !== null) {
         setFromDate(
-          ConvertToDateTimeFormat(ConvertToISODateTimeFormat(form_obj.start))
+          ConvertToDateTimeFormat(ConvertToISODateTimeFormat(form_obj.start)),
         );
       }
       if (form_obj?.unit === 2 && form_obj?.end !== null) {
         setToDate(
-          ConvertToDateTimeFormat(ConvertToISODateTimeFormat(form_obj.end))
+          ConvertToDateTimeFormat(ConvertToISODateTimeFormat(form_obj.end)),
         );
       }
     }
   }, [form_obj]);
 
-  const handleLeaveTypeChange = (e) => {
-    let leave_type_obj = leave_type_for_current_employee.find(
-      (d) => d.id === e.id
-    );
-    setLeaveBalanceCount(leave_type_obj.balance_leave_count);
-    handleStartEndDatesChange(leave_type_obj);
+  // Called when user picks a leave type from the Select dropdown
+  const handleLeaveTypeChange = (selectedOption) => {
+    if (!selectedOption) return;
+
+    // selectedOption.full_obj is the full leave_type_for_employee record
+    const fullRecord = selectedOption.full_obj;
+
+    // Update the balance display
+    setLeaveBalanceCount(selectedOption.balance_leave_count);
+
+    // Pass the full record so weekend/holiday flags are read correctly
+    handleStartEndDatesChange(fullRecord, false);
   };
 
   const thisEmpWS = workScheduleData?.find(
-    (val) => val.id === profileData.work_schedule_id
+    (val) => val.id === profileData.work_schedule_id,
   );
 
-  const handleStartEndDatesChange = (leave_type_obj) => {
+  // skipReset=true when called from useEffect (editing) so we don't clear start/end
+  const handleStartEndDatesChange = (leave_type_record, skipReset = false) => {
     const localThisEmpWS = workScheduleData?.find(
-        (val) => val.id === profileData.work_schedule_id
-      );
+      (val) => val.id === profileData.work_schedule_id,
+    );
 
-    leave_type_obj?.weekend_between_leave === true
+    // leave_type_record may be the full employee-leave record or the leave_type sub-object
+    // Support both shapes: record.leave_type.weekend_between_leave OR record.weekend_between_leave
+    const leaveTypeData = leave_type_record?.leave_type || leave_type_record;
+
+    leaveTypeData?.weekend_between_leave === true
       ? setWeekOffDays([])
       : !!localThisEmpWS &&
         setWeekOffDays(
@@ -175,39 +189,45 @@ const ApplyLeaveForm = () => {
               }
               return null;
             })
-            .filter((day_id) => day_id !== null)
+            .filter((day_id) => day_id !== null),
         );
 
-    leave_type_obj?.holiday_between_leave === true
+    leaveTypeData?.holiday_between_leave === true
       ? setHolidayDays([])
       : setHolidayDays(holidayData.map((d) => d?.date));
 
-    setSelectedLeaveTypeObj(leave_type_obj);
-    setLeaveApplyObj((prev) => {
-      return {
+    // Store the full record (or sub-object) so unit/flags are accessible in the UI
+    setSelectedLeaveTypeObj(leave_type_record);
+
+    if (!skipReset) {
+      // New selection — clear dates, counts, times
+      setLeaveApplyObj((prev) => ({
         ...prev,
-        leave_type_id: leave_type_obj?.id,
+        leave_type_id: leaveTypeData?.id,
+        unit: leaveTypeData?.unit,
         start: null,
         end: null,
         in_between_dates: [],
-      };
-    });
-    setHourDiff("");
-    setDaysCount("");
-    setInBetweenDays([]);
+        day_type: null,
+        requested_leave_count: 0,
+      }));
+      setHourDiff("");
+      setDaysCount("");
+      setInBetweenDays([]);
+      setHalfDayStartTime(null);
+      setHalfDayEndTime(null);
+      setFromDate(null);
+      setToDate(null);
+    }
   };
 
   const handleMultiDayChange = (dates, dateStrings, daysCount) => {
     let startDate =
-      dateStrings[0] === "" ||
-      dateStrings[0] === null ||
-      dateStrings[0] === undefined
+      dateStrings[0] === "" || dateStrings[0] === null || dateStrings[0] === undefined
         ? null
         : dateStrings[0];
     let endDate =
-      dateStrings[1] === "" ||
-      dateStrings[1] === null ||
-      dateStrings[1] === undefined
+      dateStrings[1] === "" || dateStrings[1] === null || dateStrings[1] === undefined
         ? null
         : dateStrings[1];
 
@@ -244,9 +264,7 @@ const ApplyLeaveForm = () => {
     setDaysCount(ValidDaysCount);
     setLeaveApplyObj({
       ...leaveapplyObj,
-      start: !!startDate
-        ? ConvertISODateFormat(ConvertDateFormat(startDate))
-        : null,
+      start: !!startDate ? ConvertISODateFormat(ConvertDateFormat(startDate)) : null,
       end: !!endDate ? ConvertISODateFormat(ConvertDateFormat(endDate)) : null,
       requested_leave_count: ValidDaysCount,
       day_type: 1,
@@ -261,7 +279,7 @@ const ApplyLeaveForm = () => {
     return (
       WeekOffDays.includes(dayOfWeek) ||
       HolidayDays.map((d) => ConvertDateFormat(d)).includes(
-        current.format("DD-MM-YYYY")
+        current.format("DD-MM-YYYY"),
       )
     );
   };
@@ -284,7 +302,7 @@ const ApplyLeaveForm = () => {
     } else {
       updatedDaysCount = 0;
     }
-    // Resetting times when day type changes
+    // Reset half-day times when day type changes
     setHalfDayStartTime(null);
     setHalfDayEndTime(null);
 
@@ -309,13 +327,13 @@ const ApplyLeaveForm = () => {
         fromDateYear,
         fromDateMonth - 1,
         fromDateDay,
-        fromDateTime
+        fromDateTime,
       );
       const toDateObj = new Date(
         toDateYear,
         toDateMonth - 1,
         toDateDay,
-        toDateTime
+        toDateTime,
       );
       if (toDateObj < fromDateObj) {
         toast.error("Selected end date cannot be less than the start date");
@@ -326,8 +344,6 @@ const ApplyLeaveForm = () => {
   }, [toDate, fromDate]);
 
   const handleFromDateChange = (date, dateStr) => {
-    console.log("hand",dateStr);
-    
     setFromDate(dateStr);
     setLeaveApplyObj({
       ...leaveapplyObj,
@@ -374,10 +390,9 @@ const ApplyLeaveForm = () => {
       const roundedHours = Math.floor(roundedMinutes / 60);
       const remainingMinutes = roundedMinutes % 60;
 
-      const formattedResult = `${String(roundedHours).padStart(
-        2,
-        "0"
-      )}:${String(remainingMinutes).padStart(2, "0")}`;
+      const formattedResult = `${String(roundedHours).padStart(2, "0")}:${String(
+        remainingMinutes,
+      ).padStart(2, "0")}`;
 
       const formattedResultForSetting = roundedHours + remainingMinutes / 60;
 
@@ -400,17 +415,16 @@ const ApplyLeaveForm = () => {
       reason: Yup.string().required("Reason is required"),
     }),
     onSubmit: async (values) => {
-      // Merge half-day start/end times before submission
       if (values.day_type === 2) {
-    if (!halfDayStartTime) {
-      toast.error("Please select Start Time");
-      return;
-    }
-    if (!halfDayEndTime) {
-      toast.error("Please select End Time");
-      return;
-    }
-  }
+        if (!halfDayStartTime) {
+          toast.error("Please select Start Time");
+          return;
+        }
+        if (!halfDayEndTime) {
+          toast.error("Please select End Time");
+          return;
+        }
+      }
       const finalLeaveObj = {
         ...values,
         start: values.day_type === 2 ? halfDayStartTime : values.start,
@@ -433,12 +447,12 @@ const ApplyLeaveForm = () => {
         dispatch(setLoaderVisible(false));
         return;
       }
-      
+
       try {
         const Api = await PostApi(
           "leave/leave-application/create/",
           finalLeaveObj,
-          false
+          false,
         );
 
         if (Api.status === 200) {
@@ -448,9 +462,10 @@ const ApplyLeaveForm = () => {
             dispatch(editLeaveApplication(Api?.data?.data));
           }
 
-          // Update leave type for employee
           dispatch(
-            setLeaveTypeForCurrentEmployee(Api?.data?.leave_type_for_employee || [])
+            setLeaveTypeForCurrentEmployee(
+              Api?.data?.leave_type_for_employee || [],
+            ),
           );
 
           dispatch(toggleRSBView(false));
@@ -467,6 +482,10 @@ const ApplyLeaveForm = () => {
     },
   });
 
+  // Derive unit from selectedLeaveTypeObj (supports both shapes)
+  const currentUnit =
+    selectedLeaveTypeObj?.leave_type?.unit || selectedLeaveTypeObj?.unit;
+
   return (
     <React.Fragment>
       <Row>
@@ -479,10 +498,7 @@ const ApplyLeaveForm = () => {
                   <Select
                     name="leave_type_id"
                     isMulti={false}
-                    options={leave_type_for_current_employee || []}
-                    isOptionDisabled={(option) =>
-                      option.balance_leave_count === 0
-                    }
+                    options={leaveTypeOptions}
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
@@ -496,21 +512,15 @@ const ApplyLeaveForm = () => {
                     }}
                     value={
                       leaveapplyObj?.leave_type_id
-                        ? leave_type_for_current_employee.find(
-                            (d) => d.id === leaveapplyObj?.leave_type_id
-                          )
-                        : []
+                        ? leaveTypeOptions.find(
+                            (d) => d.value === leaveapplyObj.leave_type_id,
+                          ) || null
+                        : null
                     }
                     onChange={handleLeaveTypeChange}
                     placeholder="Select Leave Type"
                     className="basic-multi-select"
                     classNamePrefix="lc-select"
-                    invalid={
-                      FormikForm.touched.leave_type_id &&
-                      FormikForm.errors.leave_type_id
-                        ? true
-                        : false
-                    }
                   />
                   {FormikForm.touched.leave_type_id &&
                   FormikForm.errors.leave_type_id ? (
@@ -519,89 +529,73 @@ const ApplyLeaveForm = () => {
                     </div>
                   ) : null}
                 </div>
-                {!FormikForm.errors.leave_type_id &&
-                  FormikForm.errors.leave_type_id === "" && (
-                    <div id="passwordHelpBlock" className="form-text">
-                      Please select type of leave.
-                    </div>
-                  )}
-
-                {!!selectedLeaveTypeObj?.balance_leave_count && (
-                  <>
-                    {selectedLeaveTypeObj?.balance_leave_count}{" "}
-                    {selectedLeaveTypeObj?.unit === leave_type_day_unit
-                      ? "Days"
-                      : "Hours"}{" "}
-                    Remaining
-                  </>
-                )}
               </Col>
 
-              {!!selectedLeaveTypeObj?.unit &&
-                selectedLeaveTypeObj?.unit === leave_type_day_unit && (
-                  <Col lg={12}>
+              {!!currentUnit && currentUnit === leave_type_day_unit && (
+                <Col lg={12}>
+                  <div className="input-group">
                     <div className="input-group">
-                      <div className="input-group">
-                        <Label className="form-label">Select Date</Label>
-                      </div>
-                      <RangePicker
-                        name="multiple_date"
-                        format={DateFormat}
-                        placeholder={["Start Date", "End Date"]}
-                        disabledDate={disabledDate}
-                        onChange={handleMultiDayChange}
-                        value={
-                          !!leaveapplyObj?.start && !!leaveapplyObj?.end
-                            ? [
-                                dayjs(
-                                  ConvertDateFormat(
-                                    ConvertISODateFormat(leaveapplyObj?.start)
-                                  ),
-                                  DateFormat
-                                ),
-                                dayjs(
-                                  ConvertDateFormat(
-                                    ConvertISODateFormat(leaveapplyObj?.end)
-                                  ),
-                                  DateFormat
-                                ),
-                              ]
-                            : null
-                        }
-                      />
-                      <span className="input-group-text">{daysCount} Days</span>
+                      <Label className="form-label">Select Date</Label>
                     </div>
-                    <div id="passwordHelpBlock" className="form-text">
-                      Please select Start & End Date
-                    </div>
+                    <RangePicker
+                      name="multiple_date"
+                      format={DateFormat}
+                      placeholder={["Start Date", "End Date"]}
+                      disabledDate={disabledDate}
+                      onChange={handleMultiDayChange}
+                      value={
+                        !!leaveapplyObj?.start && !!leaveapplyObj?.end
+                          ? [
+                              dayjs(
+                                ConvertDateFormat(
+                                  ConvertISODateFormat(leaveapplyObj?.start),
+                                ),
+                                DateFormat,
+                              ),
+                              dayjs(
+                                ConvertDateFormat(
+                                  ConvertISODateFormat(leaveapplyObj?.end),
+                                ),
+                                DateFormat,
+                              ),
+                            ]
+                          : null
+                      }
+                    />
+                    <span className="input-group-text">{daysCount} Days</span>
+                  </div>
+                  <div id="passwordHelpBlock" className="form-text">
+                    Please select Start & End Date
+                  </div>
 
-                    {(daysCount === 1 || daysCount === 0.5) && (
-                      <div className="input-group mt-3">
-                        <Col lg={12}>
-                          <Label className="form-label">Select Day Type</Label>
-                        </Col>
-                        <Col lg={6}>
-                          <Select
-                            name="day_type"
-                            isMulti={false}
-                            options={day_type || []}
-                            placeholder="Select Day Type"
-                            className="basic-multi-select"
-                            classNamePrefix="lc-select"
-                            value={
-                              leaveapplyObj?.day_type
-                                ? day_type.find(
-                                    (d) => d.value === leaveapplyObj?.day_type
-                                  )
-                                : []
-                            }
-                            onChange={handleDayType}
-                          />
-                        </Col>
-                      </div>
-                    )}
-                  </Col>
-                )}
+                  {(daysCount === 1 || daysCount === 0.5) && (
+                    <div className="input-group mt-3">
+                      <Col lg={12}>
+                        <Label className="form-label">Select Day Type</Label>
+                      </Col>
+                      <Col lg={6}>
+                        <Select
+                          name="day_type"
+                          isMulti={false}
+                          options={day_type || []}
+                          placeholder="Select Day Type"
+                          className="basic-multi-select"
+                          classNamePrefix="lc-select"
+                          value={
+                            leaveapplyObj?.day_type
+                              ? day_type.find(
+                                  (d) => d.value === leaveapplyObj?.day_type,
+                                )
+                              : null
+                          }
+                          onChange={handleDayType}
+                        />
+                      </Col>
+                    </div>
+                  )}
+                </Col>
+              )}
+
               {leaveapplyObj?.day_type === 2 && (
                 <div className="row mt-3 align-items-end">
                   {/* Start Time */}
@@ -613,9 +607,15 @@ const ApplyLeaveForm = () => {
                       minuteStep={30}
                       onChange={(time) => {
                         if (!time) return;
-                        const datePart = dayjs(leaveapplyObj.start).format("YYYY-MM-DD");
-                        const newDateTime = dayjs(`${datePart} ${time.format("HH:mm:ss")}`);
-                        setHalfDayStartTime(newDateTime.format("YYYY-MM-DD HH:mm:00"));
+                        const datePart = dayjs(leaveapplyObj.start).format(
+                          "YYYY-MM-DD",
+                        );
+                        const newDateTime = dayjs(
+                          `${datePart} ${time.format("HH:mm:ss")}`,
+                        );
+                        setHalfDayStartTime(
+                          newDateTime.format("YYYY-MM-DD HH:mm:00"),
+                        );
                       }}
                       style={{ width: "100%" }}
                     />
@@ -631,12 +631,13 @@ const ApplyLeaveForm = () => {
                       disabled={!halfDayStartTime}
                       onChange={(time) => {
                         if (!time) return;
-
                         const start = dayjs(halfDayStartTime);
-                        const datePart = dayjs(leaveapplyObj.start).format("YYYY-MM-DD");
-                        const end = dayjs(`${datePart} ${time.format("HH:mm:ss")}`);
-
-
+                        const datePart = dayjs(leaveapplyObj.start).format(
+                          "YYYY-MM-DD",
+                        );
+                        const end = dayjs(
+                          `${datePart} ${time.format("HH:mm:ss")}`,
+                        );
                         if (end.isBefore(start)) {
                           setTimeError("End time cannot be before start time!");
                           return;
@@ -661,7 +662,6 @@ const ApplyLeaveForm = () => {
                     </span>
                   </Col>
 
-                  {/* Error */}
                   {timeError && (
                     <Col md={12}>
                       <div className="text-danger mt-2">{timeError}</div>
@@ -670,79 +670,74 @@ const ApplyLeaveForm = () => {
                 </div>
               )}
 
-              {!!selectedLeaveTypeObj?.unit &&
-                selectedLeaveTypeObj?.unit === leave_type_hour_unit && (
-                  <Col lg={12}>
-                    <div className="row">
-                      <Col md={4} lg={4} xxl={4}>
-                        <DatePicker
-                          name="start"
-                          placeholder="Select Start Time"
-                          showTime={{
-                            minuteStep: 30,
-                            defaultValue: initialTime,
-                            format: "HH:mm",
-                          }}
-                          format={DateTimeFormat}
-                          // disabledDate={disabledDate}
-                          onChange={handleFromDateChange}
-                          value={
-                            !!leaveapplyObj?.start
-                              ? dayjs(
-                                  ConvertToDateTimeFormat(
-                                    ConvertToISODateTimeFormat(
-                                      leaveapplyObj?.start
-                                    )
+              {!!currentUnit && currentUnit === leave_type_hour_unit && (
+                <Col lg={12}>
+                  <div className="row">
+                    <Col md={4} lg={4} xxl={4}>
+                      <DatePicker
+                        name="start"
+                        placeholder="Select Start Time"
+                        showTime={{
+                          minuteStep: 30,
+                          defaultValue: initialTime,
+                          format: "HH:mm",
+                        }}
+                        format={DateTimeFormat}
+                        onChange={handleFromDateChange}
+                        value={
+                          !!leaveapplyObj?.start
+                            ? dayjs(
+                                ConvertToDateTimeFormat(
+                                  ConvertToISODateTimeFormat(
+                                    leaveapplyObj?.start,
                                   ),
-                                  DateTimeFormat
-                                )
-                              : null
-                          }
-                          showNow={false}
-                        />
-                      </Col>
+                                ),
+                                DateTimeFormat,
+                              )
+                            : null
+                        }
+                        showNow={false}
+                      />
+                    </Col>
 
-                      <Col md={4} lg={4} xxl={4}>
-                        <DatePicker
-                          name="end"
-                          placeholder="Select End Time"
-                          showTime={{
-                            minuteStep: 30,
-                            defaultValue: initialTime,
-                            format: "HH:mm",
-                          }}
-                          format={DateTimeFormat}
-                          // disabledDate={disabledDate}
-                          onChange={handleToDateChange}
-                          value={
-                            !!leaveapplyObj?.end
-                              ? dayjs(
-                                  ConvertToDateTimeFormat(
-                                    ConvertToISODateTimeFormat(
-                                      leaveapplyObj?.end
-                                    )
-                                  ),
-                                  DateTimeFormat
-                                )
-                              : null
-                          }
-                          showNow={false}
-                        />
-                      </Col>
-                      <Col md={2} lg={2} xxl={2}>
-                        <span
-                          className="input-group-text"
-                          style={{ fontSize: "12px" }}
-                        >
-                          {hourDiff} h
-                        </span>
-                      </Col>
-                      <div id="passwordHelpBlock" className="form-text">
-                        Please select Date and Hour
-                      </div>
+                    <Col md={4} lg={4} xxl={4}>
+                      <DatePicker
+                        name="end"
+                        placeholder="Select End Time"
+                        showTime={{
+                          minuteStep: 30,
+                          defaultValue: initialTime,
+                          format: "HH:mm",
+                        }}
+                        format={DateTimeFormat}
+                        onChange={handleToDateChange}
+                        value={
+                          !!leaveapplyObj?.end
+                            ? dayjs(
+                                ConvertToDateTimeFormat(
+                                  ConvertToISODateTimeFormat(leaveapplyObj?.end),
+                                ),
+                                DateTimeFormat,
+                              )
+                            : null
+                        }
+                        showNow={false}
+                      />
+                    </Col>
+                    <Col md={2} lg={2} xxl={2}>
+                      <span
+                        className="input-group-text"
+                        style={{ fontSize: "12px" }}
+                      >
+                        {hourDiff} h
+                      </span>
+                    </Col>
+                    <div id="passwordHelpBlock" className="form-text">
+                      Please select Date and Hour
                     </div>
-                  </Col>
-                )}
+                  </div>
+                </Col>
+              )}
 
               <Col lg={12}>
                 <label htmlFor="reason" className="form-label">
@@ -756,11 +751,11 @@ const ApplyLeaveForm = () => {
                   value={leaveapplyObj?.reason || ""}
                   onChange={handleInputChange}
                 />
-                 {FormikForm.touched.reason && FormikForm.errors.reason ? (
-                    <div className="lc_form_error_text">
-                      {FormikForm.errors.reason}
-                    </div>
-                  ) : null}
+                {FormikForm.touched.reason && FormikForm.errors.reason ? (
+                  <div className="lc_form_error_text">
+                    {FormikForm.errors.reason}
+                  </div>
+                ) : null}
               </Col>
               <Col lg={12}>
                 <div className="text-end">

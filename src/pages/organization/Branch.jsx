@@ -62,6 +62,11 @@ const Branch = () => {
       location_details: [],
       id: 0,
       name: "",
+      country: "",
+      state:"",
+      address:"",
+      city:"",
+      pincode:"",
       contact_number: "",
       country_code: "+91",
       contact_email: "",
@@ -72,6 +77,8 @@ const Branch = () => {
   }, []);
 
   const handleBranchCreateOrEdit = (id, obj) => {
+    console.log(obj,"obbbjjj");
+    
     let FormObj = {};
 
     if (parseInt(id) === 0) {
@@ -92,7 +99,7 @@ const Branch = () => {
         cf = CustomFieldsForThisForm;
       }
 
-      FormObj = { ...obj, cf_values: cf };
+      FormObj = { ...obj,state: obj?.state || "", cf_values: cf };
     }
 
     dispatch(setFormTitle("Branch Form"));
@@ -129,7 +136,7 @@ const Branch = () => {
             {!!branch_data &&
               branch_data.length &&
               branch_data.map((bd) => (
-                <Col xxl={6}>
+                <Col xxl={12}>
                   <Card key={1} className="border card-border-success">
                     <CardBody>
                       <div
@@ -199,11 +206,19 @@ const Branch = () => {
                               </h5>
                             </div>
                           </Col>
-                          <Col xs={4}>
+                          <Col xs={2}>
                             <div>
                               <p className="text-muted mb-1">Locations</p>
                               <h5 className="fs-14">
                                 {bd?.location_details.length}
+                              </h5>
+                            </div>
+                          </Col>
+                          <Col xs={2}>
+                            <div>
+                              <p className="text-muted mb-1">City</p>
+                              <h5 className="fs-14">
+                                 {bd?.city}{" "}
                               </h5>
                             </div>
                           </Col>

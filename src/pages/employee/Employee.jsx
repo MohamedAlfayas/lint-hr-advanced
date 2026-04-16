@@ -167,6 +167,24 @@ useEffect(() => {
     dispatch(toggleRSBView(true));
   };
 
+
+  const filteredEmployees = employee_data
+  ?.filter((emp) => {
+    return (
+      emp.is_active === true &&
+      emp.id !== selectedEmployee?.id &&
+      emp.first_name
+        ?.toLowerCase()
+        .includes(rmSearch.toLowerCase())
+    );
+  })
+  .sort((a, b) => {
+    // ✅ Bring selected RM to top
+    if (a.id === currentRM) return -1;
+    if (b.id === currentRM) return 1;
+    return 0;
+  });
+
   // Column
   const additionalColumn = [
 {
@@ -641,98 +659,101 @@ useEffect(() => {
         import_width_per={"50%"}
         initialActiveTab={"2"}
       />
-     <Modal isOpen={rmModalOpen} toggle={handleCloseRmModal} centered size="lg">
-    <ModalHeader toggle={handleCloseRmModal}>
+ <Modal isOpen={rmModalOpen} toggle={handleCloseRmModal} centered size="lg">
+  <ModalHeader toggle={handleCloseRmModal}>
     Select Reporting Manager
   </ModalHeader>
 
   <ModalBody style={{ maxHeight: "400px", overflowY: "auto" }}>
- <div className="input-group mb-3">
-  <span className="input-group-text bg-white">
-    <i className="bx bx-search-alt"></i>
-  </span>
+    
+    {/* 🔍 Search */}
+    <div className="input-group mb-3">
+      <span className="input-group-text bg-white">
+        <i className="bx bx-search-alt"></i>
+      </span>
 
-  <Input
-    type="text"
-    placeholder="Search employee name..."
-    value={rmSearch}
-    onChange={(e) => setRmSearch(e.target.value)}
-  />
-</div>
- {employee_data &&
-employee_data
-  .filter((emp) => {
-    return (
-      emp.is_active === true && // ✅ hide inactive users
-      emp.id !== selectedEmployee?.id && // ❌ exclude self
-      emp.first_name
-        ?.toLowerCase()
-        .includes(rmSearch.toLowerCase()) // 🔍 search
-    );
-  }).length > 0 ? (
-    employee_data
-      .filter((emp) => {
-        return (
-          emp.is_active === true &&
-          emp.id !== selectedEmployee?.id &&
-          emp.first_name
-            ?.toLowerCase()
-            .includes(rmSearch.toLowerCase())
-        );
-      })
-      .map((emp) => {
-        const isSelected = emp.id === currentRM;
+      <Input
+        type="text"
+        placeholder="Search employee name..."
+        value={rmSearch}
+        onChange={(e) => setRmSearch(e.target.value)}
+      />
+    </div>
 
-        return (
-          <div
-            key={emp.id}
-            className={`d-flex align-items-center p-2 mb-2 rounded cursor-pointer ${
-              isSelected
-                ? "bg-success-subtle border border-success"
-                : "hover-bg"
-            }`}
-            onClick={() => handleChangeReportingManager(emp)}
-          >
-            {/* Avatar */}
-            <div className="avatar-xs me-2">
-              {emp.profile_url ? (
-                <img
-                  src={emp.profile_url}
-                  alt=""
-                  className="rounded-circle"
-                  style={{ width: 32, height: 32, objectFit: "cover" }}
-                />
-              ) : (
-                <div
-                  className="rounded-circle bg-success text-white d-flex justify-content-center align-items-center"
-                  style={{ width: 32, height: 32 }}
-                >
-                  {emp.first_name?.charAt(0)}
-                </div>
+    {/* ✅ Filter + Sort */}
+    {(() => {
+      const filteredEmployees = employee_data
+        ?.filter((emp) => {
+          return (
+            emp.is_active === true &&
+            emp.id !== selectedEmployee?.id &&
+            emp.first_name
+              ?.toLowerCase()
+              .includes(rmSearch.toLowerCase())
+          );
+        })
+        .sort((a, b) => {
+          // ✅ Selected RM on top
+          if (a.id === currentRM) return -1;
+          if (b.id === currentRM) return 1;
+          return 0;
+        });
+
+      return filteredEmployees && filteredEmployees.length > 0 ? (
+        filteredEmployees.map((emp) => {
+          const isSelected = emp.id === currentRM;
+
+          return (
+            <div
+              key={emp.id}
+              className={`d-flex align-items-center p-2 mb-2 rounded cursor-pointer ${
+                isSelected
+                  ? "bg-success-subtle border border-success"
+                  : "hover-bg"
+              }`}
+              onClick={() => handleChangeReportingManager(emp)}
+            >
+              {/* Avatar */}
+              <div className="avatar-xs me-2">
+                {emp.profile_url ? (
+                  <img
+                    src={emp.profile_url}
+                    alt=""
+                    className="rounded-circle"
+                    style={{ width: 32, height: 32, objectFit: "cover" }}
+                  />
+                ) : (
+                  <div
+                    className="rounded-circle bg-success text-white d-flex justify-content-center align-items-center"
+                    style={{ width: 32, height: 32 }}
+                  >
+                    {emp.first_name?.charAt(0)}
+                  </div>
+                )}
+              </div>
+
+              {/* Info */}
+              <div>
+                <div className="fw-semibold">{emp.first_name}</div>
+                <small className="text-muted">{emp.email}</small>
+              </div>
+
+              {/* Selected Badge */}
+              {isSelected && (
+                <Badge color="success" className="ms-auto">
+                  Selected
+                </Badge>
               )}
             </div>
-
-            {/* Info */}
-            <div>
-              <div className="fw-semibold">{emp.first_name}</div>
-              <small className="text-muted">{emp.email}</small>
-            </div>
-
-            {/* Selected Badge */}
-            {isSelected && (
-              <Badge color="success" className="ms-auto">
-                Selected
-              </Badge>
-            )}
-          </div>
-        );
-      })
-  ) : (
-    <div className="text-center text-muted py-3">
-      No Reporting Managers Available
-    </div>
-  )}
-</ModalBody>
+          );
+        })
+      ) : (
+        <div className="text-center text-muted py-3">
+          No Reporting Managers Available
+        </div>
+      );
+    })()}
+  </ModalBody>
 </Modal>
 
     </React.Fragment>

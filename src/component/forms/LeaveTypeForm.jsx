@@ -56,38 +56,38 @@ const LeaveTypeForm = () => {
   const [leaveTypeData, setLeaveTypeData] = useState({});
   const [currentUnit, setCurrentUnit] = useState(null);
   const ws_options = GetLocalStorageData("work_schedule") || [];
+  const role_options = GetLocalStorageData("role") || [];
+  console.log(role_options, "option");
+
+  const [selectedRoles, setSelectedRoles] = useState([]);
   const [selectedWS, setSelectedWS] = useState([]);
   const [selectedGenders, setSelectedGenders] = useState([]);
 
   useEffect(() => {
     setLeaveTypeData(form_obj);
     setCurrentUnit(form_obj.unit);
+
     setSelectedWS(
-      ws_options.filter((data) => form_obj.ws_id.includes(data.id))
+      ws_options.filter((data) => form_obj.ws_id?.includes(data.id)),
     );
+
     setSelectedGenders(
-      gender_options.filter((data) => form_obj.genders.includes(data.id))
+      gender_options.filter((data) => form_obj.genders?.includes(data.id)),
+    );
+
+    // ✅ NEW
+    setSelectedRoles(
+      role_options.filter((data) => form_obj.role_id?.includes(data.id)),
     );
   }, [form_obj]);
 
-  // useEffect(() =>{
-  //   if(unit){
-  //     if(unit === 1){
-  //       setLeaveTypeData({
-  //         ...leaveTypeData,
-  //         unit : unit,
-  //         hour_value : ""
-  //       })
-  //     }
-  //     else{
-  //       setLeaveTypeData({
-  //         ...leaveTypeData,
-  //         unit : unit,
-  //         day_value : ""
-  //       })
-  //     }
-  //   }
-  // },[unit])
+  const handleRoleChange = (obj) => {
+    setSelectedRoles(obj);
+    setLeaveTypeData({
+      ...leaveTypeData,
+      role_id: obj.map((d) => d.id),
+    });
+  };
 
   const handleWSChange = (obj) => {
     setSelectedWS(obj);
@@ -107,7 +107,6 @@ const LeaveTypeForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    // const numericText = value.replace(/[^0-9]/g, "");
     setLeaveTypeData({
       ...leaveTypeData,
       [name]: value,
@@ -165,13 +164,9 @@ const LeaveTypeForm = () => {
         const Api = await PostApi(
           "/leave/leave_type/create/",
           leaveTypeData,
-          false
+          false,
         );
         if (Api.status && Api.status === 200) {
-          // leaveTypeData.id === 0
-          //   ? dispatch(addLeaveType(Api?.data.data))
-          //   : dispatch(editLeaveType(Api?.data?.data));
-
           if (leaveTypeData.id === 0) {
             dispatch(addLeaveType(Api?.data.data));
             SetLocalStorage("leave_types", Api?.data.data, 2);
@@ -271,7 +266,7 @@ const LeaveTypeForm = () => {
                     value={
                       (leaveTypeData.type &&
                         leave_types_options.find(
-                          (e) => e.value === leaveTypeData.type
+                          (e) => e.value === leaveTypeData.type,
                         )) ||
                       []
                     }
@@ -438,7 +433,7 @@ const LeaveTypeForm = () => {
                     value={
                       (leaveTypeData.reset_type &&
                         leave_reset_options.find(
-                          (e) => e.value === leaveTypeData.reset_type
+                          (e) => e.value === leaveTypeData.reset_type,
                         )) ||
                       []
                     }
@@ -458,7 +453,7 @@ const LeaveTypeForm = () => {
               <Col md={12} lg={12} xxl={12}>
                 <div>
                   <Label htmlFor="lt_ws" className="form-label">
-                    Applicable For *
+                    Applicable For Workschedule*
                   </Label>
 
                   <Select
@@ -498,6 +493,22 @@ const LeaveTypeForm = () => {
                     Please select associate work schedule.
                   </div>
                 )}
+              </Col>
+              <Col md={12}>
+                <div>
+                  <Label className="form-label">Applicable For Role*</Label>
+
+                  <Select
+                    isMulti
+                    options={role_options || []}
+                    className="basic-multi-select"
+                    classNamePrefix="lc-select"
+                    value={selectedRoles || []}
+                    onChange={handleRoleChange}
+                    closeMenuOnSelect={false}
+                  />
+                </div>
+                <div className="form-text mb-3">Select applicable roles.</div>
               </Col>
 
               <Col md={12} lg={12} xxl={12}>
@@ -547,7 +558,7 @@ const LeaveTypeForm = () => {
                 <>
                   <Col md={12} lg={12} xxl={12}>
                     <div>
-                      <Label htmlFor="lt_weekend" className="form-label">
+                      <Label htmlFor="lt_weekend_between_leave" className="form-label">
                         Weekend Between Leave
                       </Label>
                       <div className="mb-2">
@@ -558,8 +569,8 @@ const LeaveTypeForm = () => {
                           <Input
                             type="checkbox"
                             className="form-check-input form-switch-md"
-                            id="lt_weekend"
-                            checked={leaveTypeData.weekend_between_leave}
+                            id="lt_weekend_between_leave"
+                            checked={leaveTypeData.weekend_between_leave || false}
                             onChange={(e) =>
                               setLeaveTypeData({
                                 ...leaveTypeData,
@@ -573,7 +584,7 @@ const LeaveTypeForm = () => {
                   </Col>
                   <Col md={12} lg={12} xxl={12}>
                     <div>
-                      <Label htmlFor="lt_holiday" className="form-label">
+                      <Label htmlFor="lt_holiday_between_leave" className="form-label">
                         Holiday Between Leave
                       </Label>
                       <div className="mb-2">
@@ -584,8 +595,8 @@ const LeaveTypeForm = () => {
                           <Input
                             type="checkbox"
                             className="form-check-input form-switch-md"
-                            id="lt_holiday"
-                            checked={leaveTypeData.holiday_between_leave}
+                            id="lt_holiday_between_leave"
+                            checked={leaveTypeData.holiday_between_leave || false}
                             onChange={(e) =>
                               setLeaveTypeData({
                                 ...leaveTypeData,
@@ -597,6 +608,122 @@ const LeaveTypeForm = () => {
                       </div>
                     </div>
                   </Col>
+                  {/* ✅ Config Exempt */}
+                  <Col md={12}>
+                    <Label htmlFor="lt_config_exempt" className="form-label">Config Exempt</Label>
+                     <div className="mb-2">
+                    <div className="form-check form-switch form-switch-md form-switch-success">
+                      <Input
+                        type="checkbox"
+                        className="form-check-input form-switch-md"
+                        id="lt_config_exempt"
+                        checked={leaveTypeData.is_config_exempt || false}
+                        onChange={(e) =>
+                          setLeaveTypeData({
+                            ...leaveTypeData,
+                            is_config_exempt: e.target.checked,
+                          })
+                        }
+                      />
+                    </div>
+                    </div>
+                  </Col>
+
+                  {/* ✅ Allow Employee to Exceed */}
+                  <Col md={12}>
+                    <Label htmlFor="lt_exceed_limit" className="form-label">
+                      Allow Employee to Exceed Limit
+                    </Label>
+                    <div className="mb-2">
+                    <div className="form-check form-switch form-switch-md form-switch-success">
+                      <Input
+                        type="checkbox"
+                        className="form-check-input form-switch-md"
+                        id="lt_exceed_limit"
+                        checked={
+                          leaveTypeData.allow_employee_to_exceed_limit || false
+                        }
+                        onChange={(e) =>
+                          setLeaveTypeData({
+                            ...leaveTypeData,
+                            allow_employee_to_exceed_limit: e.target.checked,
+                          })
+                        }
+                      />
+                    </div>
+                    </div>
+                  </Col>
+
+                  {/* ✅ Carry Forward Toggle */}
+                  <Col md={12}>
+                    <Label htmlFor="lt_carry_forward" className="form-label">Allow Carry Forward</Label>
+                    <div className="mb-2">
+                    <div className="form-check form-switch form-switch-md form-switch-success">
+                      <Input
+                        type="checkbox"
+                        className="form-check-input form-switch-md"
+                        id="lt_carry_forward"
+                        checked={
+                          leaveTypeData.allowed_to_carry_forward || false
+                        }
+                        onChange={(e) =>
+                          setLeaveTypeData({
+                            ...leaveTypeData,
+                            allowed_to_carry_forward: e.target.checked,
+                            carry_forward_limit: e.target.checked
+                              ? leaveTypeData.carry_forward_limit
+                              : 0,
+                          })
+                        }
+                      />
+                    </div>
+                    </div>
+                  </Col>
+                  {leaveTypeData.allowed_to_carry_forward && (
+                    <Col md={12}>
+                      <div className="mb-3">
+                        <Label className="form-label">
+                          Carry Forward Limit
+                        </Label>
+                        <Input
+                          type="number"
+                          name="carry_forward_limit"
+                          className="form-control"
+                          min={0}
+                          value={leaveTypeData.carry_forward_limit ?? 0}
+                          onFocus={(e) => {
+                            if (leaveTypeData.carry_forward_limit === 0 || leaveTypeData.carry_forward_limit === "0") {
+                              setLeaveTypeData({ ...leaveTypeData, carry_forward_limit: "" });
+                            }
+                          }}
+                          onBlur={(e) => {
+                            if (e.target.value === "" || e.target.value === null) {
+                              setLeaveTypeData({ ...leaveTypeData, carry_forward_limit: 0 });
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "-" || e.key === "e" || e.key === "E" || e.key === "+") {
+                              e.preventDefault();
+                            }
+                          }}
+                          onChange={(e) => {
+                            if (e.target.value === "") {
+                              setLeaveTypeData({ ...leaveTypeData, carry_forward_limit: "" });
+                            } else {
+                              const val = parseInt(e.target.value);
+                              setLeaveTypeData({
+                                ...leaveTypeData,
+                                carry_forward_limit: isNaN(val) || val < 0 ? 0 : val,
+                              });
+                            }
+                          }}
+                        />
+                        <div className="form-text">
+                          Enter maximum carry forward limit.
+                        </div>
+                      </div>
+                    </Col>
+                  )}
                 </>
               )}
               <Col md={12} lg={12} xxl={12}>

@@ -48,7 +48,7 @@ const AttendanceLeaveApprovalTable = () => {
   const firstEffectExecutedRef = useRef(false);
   useEffect(() => {
     const profile_data = JSON.parse(
-      localStorage.getItem("lint_hr_profile_data")
+      localStorage.getItem("lint_hr_profile_data"),
     );
 
     let permission_list = profile_data?.permission_list || [];
@@ -106,7 +106,7 @@ const AttendanceLeaveApprovalTable = () => {
                         { active: activeTab === "1" },
                         `fw-semibold ${
                           activeTab === "1" ? "text-success" : "text-primary"
-                        }`
+                        }`,
                       )}
                       onClick={() => {
                         toggleTab("1");
@@ -130,7 +130,7 @@ const AttendanceLeaveApprovalTable = () => {
                         href="#"
                         className={classnames(
                           { active: activeTab === "1" },
-                          `fw-semibold ${"text-success"}`
+                          `fw-semibold ${"text-success"}`,
                         )}
                         color={"success"}
                       >
@@ -147,7 +147,7 @@ const AttendanceLeaveApprovalTable = () => {
                           { active: activeTab === "2" },
                           `fw-semibold ${
                             activeTab === "2" ? "text-success" : "text-primary"
-                          }`
+                          }`,
                         )}
                         color={activeTab === "2" ? "success" : "primary"}
                         onClick={() => {

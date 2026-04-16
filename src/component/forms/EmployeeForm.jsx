@@ -57,17 +57,16 @@ import { DatePicker } from "antd";
 import { Api } from "../../common/api/Api";
 import { EmployeeDisplayInSelect } from "../../common/js/EmployeeDisplayInSelect";
 import { SetLocalStorage } from "../../meta/SetLocalStorageData";
+import LocationModal from "../../pages/employee/LocationModal";
 dayjs.extend(customParseFormat);
 
-// Register the plugins
-// registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
-const EmployeeForm = () => {
+import no_image from "../../assets/images/users/no_img.jpg";
 
+const EmployeeForm = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   console.log("form_obj Open", form_obj);
   const [employeeObj, setEmployeeObj] = useState({});
 
-  
   const dispatch = useDispatch();
 
   const employee_data = GetLocalStorageData("employee");
@@ -75,8 +74,6 @@ const EmployeeForm = () => {
   const dep_options = GetLocalStorageData("department") || [];
   const ws_options = GetLocalStorageData("work_schedule") || [];
   const role_id_option = GetLocalStorageData("role") || [];
- 
-  
 
   const [reportingManagerOptions, setReportingManagerOptions] = useState([]);
 
@@ -92,7 +89,6 @@ const EmployeeForm = () => {
   const toggle4 = () => setDropdownOpen4((prevState) => !prevState);
 
   const [dob, setDob] = useState([]);
-  console.log(dob)
   const [joining_date, setJoinDate] = useState([]);
   const [selectedFileName, setSelectedFileName] = React.useState("");
   const [selectedFileName1, setSelectedFileName1] = React.useState("");
@@ -102,6 +98,23 @@ const EmployeeForm = () => {
   const [selectedFileName5, setSelectedFileName5] = React.useState("");
   const [errors, setErrors] = useState("");
   const inputRef = useRef();
+
+  // ── Location Modal State ──────────────────────────────────────────────
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [locationToEdit, setLocationToEdit] = useState(null);
+
+  // Only available for existing employees (id !== 0)
+  const isExistingEmployee = form_obj?.id && form_obj.id !== 0;
+
+  const handleAddLocationClick = () => {
+    setLocationToEdit(null); // Add mode
+    setLocationModalOpen(true);
+  };
+
+  const handleEditLocation = (location) => {
+    setLocationToEdit(location); // Edit mode
+    setLocationModalOpen(true);
+  };
 
   const showFileNameIfSelected = () => {
     const idProofUrl = form_obj.id_proof_url;
@@ -156,20 +169,22 @@ const EmployeeForm = () => {
   };
 
   useEffect(() => {
-    console.clear()
-  
+    console.clear();
+
     let this_role_id = 0;
-    if(form_obj?.role !== null && form_obj?.role !== undefined && form_obj?.role !== '') {
-      this_role_id = form_obj?.role?.id
+    if (
+      form_obj?.role !== null &&
+      form_obj?.role !== undefined &&
+      form_obj?.role !== ""
+    ) {
+      this_role_id = form_obj?.role?.id;
     }
     setEmployeeObj({
       ...form_obj,
       dob: ConvertISODateFormat(form_obj.dob),
       joining_date: ConvertISODateFormat(form_obj.joining_date),
-      role_id : this_role_id
+      role_id: this_role_id,
     });
-
-    
 
     setDob(ConvertDateFormat(ConvertISODateFormat(form_obj.dob)));
     setJoinDate(ConvertDateFormat(ConvertISODateFormat(form_obj.joining_date)));
@@ -184,7 +199,7 @@ const EmployeeForm = () => {
       form_obj.country_code !== undefined
     ) {
       setContactCountry(
-        CountryList.find((d) => d.countryCode === form_obj.country_code)
+        CountryList.find((d) => d.countryCode === form_obj.country_code),
       );
     }
 
@@ -221,7 +236,6 @@ const EmployeeForm = () => {
 
   const handleBranchChange = (e) => {
     let branch_id_list = e.map((d) => d.value);
-
     setEmployeeObj({
       ...employeeObj,
       branch_id_list: branch_id_list,
@@ -232,14 +246,14 @@ const EmployeeForm = () => {
     const Api = await PostApi(
       "employee/get-employee-list-for-reporting-manager/",
       { dep_id: valid_dep_ids },
-      false
+      false,
     );
     if (Api.status && Api.status === 200) {
       const response = Api?.data?.data;
       setReportingManagerOptions(
         employee_data.filter(
-          (d) => d.id !== form_obj.id && response.includes(d.id)
-        )
+          (d) => d.id !== form_obj.id && response.includes(d.id),
+        ),
       );
     } else {
       console.log("ERRR");
@@ -307,17 +321,17 @@ const EmployeeForm = () => {
 
   const handleFileUpload = (e, name) => {
     const file = e.target.files[0];
-
     setEmployeeObj((oldObj) => ({
       ...oldObj,
       [name]: file,
     }));
   };
+
   const handleCFInputChange = (e, cf_id) => {
     setEmployeeObj({
       ...employeeObj,
       cf_values: [...employeeObj.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: e.target.value } : { ...item }
+        item.id === cf_id ? { ...item, value: e.target.value } : { ...item },
       ),
     });
   };
@@ -326,23 +340,21 @@ const EmployeeForm = () => {
     setEmployeeObj({
       ...employeeObj,
       cf_values: [...employeeObj.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: e.value } : item
+        item.id === cf_id ? { ...item, value: e.value } : item,
       ),
     });
   };
 
   const handleCFFileChange = async (e, cf_id) => {
     const file = e.target.files[0];
-
     let img_url = "";
-
     let cf_form_data = new FormData();
     cf_form_data.append("cf_file", file);
 
     const Api = await PostApi(
       "fields/upload-custom-field-file/",
       cf_form_data,
-      true
+      true,
     );
     if (Api.status && Api.status === 200) {
       img_url = String(Api?.data?.data);
@@ -354,14 +366,10 @@ const EmployeeForm = () => {
     setEmployeeObj({
       ...employeeObj,
       cf_values: [...employeeObj.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: img_url } : item
+        item.id === cf_id ? { ...item, value: img_url } : item,
       ),
     });
   };
-
-
-  
-
 
   const FormikForm = useFormik({
     enableReinitialize: true,
@@ -371,7 +379,7 @@ const EmployeeForm = () => {
         .trim()
         .matches(
           /^[A-Z0-9_-]+$/,
-          "Please enter a valid Employee ID with no spaces and only uppercase letters, numbers, hyphens, and underscores."
+          "Please enter a valid Employee ID with no spaces and only uppercase letters, numbers, hyphens, and underscores.",
         )
         .required("Please Enter Employee ID"),
       first_name: Yup.string().trim().required("Please Enter First Name"),
@@ -390,31 +398,31 @@ const EmployeeForm = () => {
       branch_id_list: Yup.array().min(1, "Please Select Branch"),
       primary_department_id_list: Yup.array().min(
         1,
-        "Please Select Department"
+        "Please Select Department",
       ),
       work_schedule_id: Yup.number()
         .required("Select Work Schedule")
         .min(1, "Please Select Work Schedule"),
     }),
-       onSubmit: async (values) => {
-        console.log("val",values);        
-      
+    onSubmit: async (values) => {
+      console.log("val", values);
 
-      const hasAtLeastOneTrue = Object.values(values.allowed_attendance_methods).some((v) => v === true);
+      const hasAtLeastOneTrue = Object.values(
+        values.allowed_attendance_methods,
+      ).some((v) => v === true);
 
       if (!hasAtLeastOneTrue) {
         setErrors("Please select at least one attendance method!");
-        return; // Stop submission
+        return;
       } else {
-        setErrors(""); // Clear error
+        setErrors("");
         await HandleEmployeeSaveAPI(values);
       }
     },
-  })
+  });
 
   const HandleEmployeeSaveAPI = async (values) => {
     console.log("Formik Values = ", values);
-    
     console.log("employee Save API");
     let root_department = dep_options.find((d) => d.is_root === true);
     let root_department_id = !!root_department && root_department.id;
@@ -440,10 +448,6 @@ const EmployeeForm = () => {
 
       const Api = await PostApi("employee/add-new/", form_data, true);
       if (Api.status && Api.status === 200) {
-        // employeeObj.id === 0
-        //   ? dispatch(addEmployee(Api?.data.data))
-        //   : dispatch(editEmployee(Api?.data?.data));
-
         if (employeeObj.id === 0) {
           dispatch(addEmployee(Api?.data.data));
           SetLocalStorage("employee", Api?.data.data, 2);
@@ -460,16 +464,8 @@ const EmployeeForm = () => {
           !!Api?.data?.is_rep_man_error &&
           Api?.data?.is_rep_man_error === true
         ) {
-          console.log(
-            "team_employees_to_be_updated = ",
-            Api?.data?.team_employees_to_be_updated
-          );
-
           setTeamsToBeUpdated(Api?.data?.team_employees_to_be_updated);
-
           setShowRMModal(true);
-
-         
         } else {
           toast.error(Api?.data?.message || Api?.data?.detail);
         }
@@ -489,7 +485,6 @@ const EmployeeForm = () => {
       const errorField = document.querySelector(`[name=${firstErrorField}]`);
       if (errorField) {
         errorField.focus();
-
         if (inputRef.current) {
           inputRef.current.focus();
         }
@@ -508,7 +503,7 @@ const EmployeeForm = () => {
       cf_values: [...employeeObj.cf_values].map((item) =>
         item.id === cf_id
           ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
-          : item
+          : item,
       ),
     });
   };
@@ -522,9 +517,6 @@ const EmployeeForm = () => {
 
   const handleNewReportingManager = (e, d_id) => {
     const { value } = e;
-
-   
-
     const new_rm = [...TeamsToBeUpdated].map((d) => {
       if (d.id === d_id) {
         return {
@@ -535,20 +527,16 @@ const EmployeeForm = () => {
         return d;
       }
     });
-
     setTeamsToBeUpdated(new_rm);
   };
 
   const assignNewReportingManager = async () => {
     const f = TeamsToBeUpdated.filter(
-      (d) => parseInt(d.new_reporting_manager_id) === 0
+      (d) => parseInt(d.new_reporting_manager_id) === 0,
     );
     if (f.length > 0) {
       toast.error("Please Select New Reporting Manager");
     } else {
-      console.log("SUCCESSSSS !!!!!!!!!!!!!!!!!!");
-      
-
       const Payload = TeamsToBeUpdated.map((d) => {
         return {
           employee_id: d?.employee_id,
@@ -557,22 +545,16 @@ const EmployeeForm = () => {
         };
       });
 
-  
-
       const Api = await PostApi(
         "employee/assign-new-reporting-manager/",
         Payload,
-        false
+        false,
       );
 
-    
-
       if (Api.status && Api.status === 200) {
-        
         HandleEmployeeSaveAPI(employeeObj);
         setShowRMModal(false);
       } else {
-     
         toast.error("Something Went Wrong");
       }
     }
@@ -697,15 +679,18 @@ const EmployeeForm = () => {
                       value={employeeObj.first_name || ""}
                       onChange={handleInputChange}
                       invalid={
-                        FormikForm.touched.first_name && FormikForm.errors.first_name
+                        FormikForm.touched.first_name &&
+                        FormikForm.errors.first_name
                           ? true
                           : false
                       }
                     />
-                    {!FormikForm.touched.first_name && !FormikForm.errors.first_name && (
-                      <i className="ri-user-line"></i>
-                    )}
-                    {FormikForm.touched.first_name && FormikForm.errors.first_name ? (
+                    {!FormikForm.touched.first_name &&
+                      !FormikForm.errors.first_name && (
+                        <i className="ri-user-line"></i>
+                      )}
+                    {FormikForm.touched.first_name &&
+                    FormikForm.errors.first_name ? (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.first_name}
                       </FormFeedback>
@@ -733,15 +718,18 @@ const EmployeeForm = () => {
                       value={employeeObj.last_name || ""}
                       onChange={handleInputChange}
                       invalid={
-                        FormikForm.touched.last_name && FormikForm.errors.last_name
+                        FormikForm.touched.last_name &&
+                        FormikForm.errors.last_name
                           ? true
                           : false
                       }
                     />
-                    {!FormikForm.touched.last_name && !FormikForm.errors.last_name && (
-                      <i className="ri-user-2-line"></i>
-                    )}
-                    {FormikForm.touched.last_name && FormikForm.errors.last_name ? (
+                    {!FormikForm.touched.last_name &&
+                      !FormikForm.errors.last_name && (
+                        <i className="ri-user-2-line"></i>
+                      )}
+                    {FormikForm.touched.last_name &&
+                    FormikForm.errors.last_name ? (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.last_name}
                       </FormFeedback>
@@ -764,17 +752,6 @@ const EmployeeForm = () => {
                       name="email"
                       id="emailid"
                       className="form-control"
-                      styles={{
-                        control: (provided, state) => ({
-                          ...provided,
-                          borderColor:
-                            !state.isFocused &&
-                            FormikForm.touched.email &&
-                            FormikForm.errors.email
-                              ? "red !important"
-                              : provided.borderColor,
-                        }),
-                      }}
                       placeholder="name@company.com"
                       value={employeeObj.email || ""}
                       onChange={handleInputChange}
@@ -805,7 +782,6 @@ const EmployeeForm = () => {
                   <Label htmlFor="emp_gender" className="form-label">
                     Gender
                   </Label>
-
                   <Select
                     id="gender"
                     name="gender"
@@ -827,7 +803,7 @@ const EmployeeForm = () => {
                     value={
                       (employeeObj.gender &&
                         gender_options.find(
-                          (e) => e.value === employeeObj.gender
+                          (e) => e.value === employeeObj.gender,
                         )) ||
                       []
                     }
@@ -895,22 +871,11 @@ const EmployeeForm = () => {
                         {contactCountry.countryCode}
                       </span>
                     </DropdownToggle>
-                   <Input
+                    <Input
                       type="number"
                       name="contact_number"
                       maxLength={10}
                       className="form-control rounded-end flag-input"
-                      styles={{
-                        control: (provided, state) => ({
-                          ...provided,
-                          borderColor:
-                            !state.isFocused &&
-                            FormikForm.touched.contact_number &&
-                            FormikForm.errors.contact_number
-                              ? "red !important"
-                              : provided.borderColor,
-                        }),
-                      }}
                       placeholder="Enter number"
                       value={employeeObj.contact_number || ""}
                       onChange={(e) => {
@@ -942,7 +907,7 @@ const EmployeeForm = () => {
                       >
                         {(
                           CountryList.filter((obj) => obj.show).sort((a, b) =>
-                            a.countryName.localeCompare(b.countryName)
+                            a.countryName.localeCompare(b.countryName),
                           ) || []
                         ).map((item, key) => (
                           <DropdownItem
@@ -950,7 +915,7 @@ const EmployeeForm = () => {
                             onClick={() => {
                               updateProfileData(
                                 "country_code",
-                                item.countryCode
+                                item.countryCode,
                               );
                               setContactCountry(item);
                             }}
@@ -1017,7 +982,7 @@ const EmployeeForm = () => {
                     value={
                       employeeObj?.branch_id_list
                         ? branch_options.filter((d) =>
-                            (employeeObj?.branch_id_list).includes(d.id)
+                            (employeeObj?.branch_id_list).includes(d.id),
                           )
                         : []
                     }
@@ -1076,8 +1041,8 @@ const EmployeeForm = () => {
                       employeeObj?.primary_department_id_list
                         ? dep_options.filter((d) =>
                             (employeeObj?.primary_department_id_list).includes(
-                              d.id
-                            )
+                              d.id,
+                            ),
                           )
                         : []
                     }
@@ -1103,57 +1068,6 @@ const EmployeeForm = () => {
                 </div>
               </Col>
 
-              {/* {employeeObj.primary_department_id !== 0 ? (
-                <Col md={12} lg={12} xxl={12}>
-                  <div>
-                    <Label htmlFor="isManager" className="form-label">
-                      Is Manager
-                    </Label>
-                    <div className="mb-2">
-                      <div
-                        className="form-check form-switch form-switch-md form-switch-success"
-                        dir="ltr"
-                      >
-                        {" "}
-                        <Input
-                          id="isManager"
-                          name="is_manager"
-                          type="checkbox"
-                          className="form-check-input"
-                          checked={employeeObj.is_manager}
-                          onChange={(e) =>
-                            setEmployeeObj({
-                              ...employeeObj,
-                              is_manager: e.target.checked,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  {dep_options.length && (
-                    <div id="passwordHelpBlock" className="form-text mb-3">
-                      Check if{" "}
-                      <b>
-                        <i>{employeeObj.first_name}</i>
-                      </b>{" "}
-                      is Manager of{" "}
-                      <b>
-                        <i>
-                          {dep_options.find(
-                            (obj) =>
-                              obj.id === employeeObj.primary_department_id
-                          )?.name || ""}
-                        </i>
-                      </b>{" "}
-                      Department ?
-                    </div>
-                  )}
-                </Col>
-              ) : (
-                ""
-              )}               */}
-
               <Col lg={12}>
                 <div>
                   <Label htmlFor="reporting_manager_id">
@@ -1164,7 +1078,7 @@ const EmployeeForm = () => {
                     name="reporting_manager_id"
                     innerRef={inputRef}
                     isMulti={false}
-                    isClearable={true} // Enable clearable feature
+                    isClearable={true}
                     options={reportingManagerOptions || []}
                     components={{ Option: EmployeeDisplayInSelect }}
                     className="basic-multi-select"
@@ -1183,19 +1097,17 @@ const EmployeeForm = () => {
                     value={
                       (employeeObj.reporting_manager_id &&
                         reportingManagerOptions.find(
-                          (e) => e.id === employeeObj.reporting_manager_id
+                          (e) => e.id === employeeObj.reporting_manager_id,
                         )) ||
-                      null // Set value to null initially
+                      null
                     }
                     onChange={(selectedOption) => {
                       if (selectedOption) {
-                        // Check if an option is selected
                         setEmployeeObj({
                           ...employeeObj,
                           reporting_manager_id: selectedOption.id,
                         });
                       } else {
-                        // Clear selection if null (clear button clicked)
                         setEmployeeObj({
                           ...employeeObj,
                           reporting_manager_id: null,
@@ -1249,7 +1161,7 @@ const EmployeeForm = () => {
                     value={
                       (employeeObj.role_id &&
                         role_id_option.find(
-                          (e) => e.id === employeeObj?.role_id
+                          (e) => e.id === employeeObj?.role_id,
                         )) ||
                       []
                     }
@@ -1299,7 +1211,7 @@ const EmployeeForm = () => {
                     value={
                       (employeeObj.work_schedule_id &&
                         ws_options.find(
-                          (e) => e.id === employeeObj.work_schedule_id
+                          (e) => e.id === employeeObj.work_schedule_id,
                         )) ||
                       []
                     }
@@ -1326,6 +1238,7 @@ const EmployeeForm = () => {
                   </div>
                 )}
               </Col>
+
               <Col lg={12}>
                 <div>
                   <Label htmlFor="joindate" className="form-label">
@@ -1344,22 +1257,6 @@ const EmployeeForm = () => {
                   Select Your Joining Date.
                 </div>
               </Col>
-              {/* <Col>
-                <div>
-                  <Label htmlFor="formFile" className="form-label">
-                    ID Proof
-                  </Label>
-                  <Input
-                    className="form-control"
-                    type="file"
-                    accept=".doc, .docx,.xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
-                    id="formFile"
-                    onChange={(e) => handleFileUpload(e, "id_proof")}
-                  />
-                </div>
-              </Col> */}
-
-              {/* <div>{selectedFileName && `Selected File Name: ${selectedFileName}`}</div> */}
 
               {selectedFileName ? (
                 <table>
@@ -1380,7 +1277,6 @@ const EmployeeForm = () => {
                         </button>
                       </td>
                     </tr>
-                    {/* You can add more rows for other files if needed */}
                   </tbody>
                 </table>
               ) : (
@@ -1403,297 +1299,6 @@ const EmployeeForm = () => {
                 {!selectedFileName && <p>Select ID Proof.</p>}
               </div>
 
-              {/* <Col>
-                <div>
-                  <Label htmlFor="formFile" className="form-label">
-                    File 1
-                  </Label>
-                  <Input
-                    className="form-control"
-                    type="file"
-                    accept=".doc, .docx,.xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
-                    id="formFile"
-                    onChange={(e) => handleFileUpload(e, "file_1")}
-                  />
-                </div>
-              </Col> */}
-
-              {/* {selectedFileName1 ? ( */}
-              {/* <table>
-                <thead>
-                  <tr>
-                    <th>File</th>
-                    <th>Selected File Name</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>File 1</td>
-                    <td>{selectedFileName1}</td>
-                    <td>
-                      <button onClick={handleClearFile1}>
-                        <i className="ri-close-line fs-16"></i>
-                      </button>
-                    </td>
-                  </tr> */}
-              {/* You can add more rows for other files if needed */}
-              {/* </tbody>
-              </table> */}
-              {/* ) : (
-                <Col>
-                  <div>
-                    <Label htmlFor="formFile" className="form-label">
-                      File 1
-                    </Label>
-                    <Input
-                      className="form-control"
-                      type="file"
-                      accept=".doc, .docx,.xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
-                      id="formFile"
-                      onChange={(e) => handleFileUpload(e, "file_1")}
-                    />
-                  </div>
-                </Col>
-              )} */}
-              {/* <div id="passwordHelpBlock" className="form-text mb-3">
-                {!selectedFileName1 && <p>Select File 1.</p>}
-              </div> */}
-              {/* <Col>
-                <div>
-                  <Label htmlFor="formFile" className="form-label">
-                    File 2
-                  </Label>
-                  <Input
-                    className="form-control"
-                    type="file"
-                    accept=".doc, .docx,.xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
-                    id="formFile"
-                    onChange={(e) => handleFileUpload(e, "file_2")}
-                  />
-                </div>
-              </Col> */}
-
-              {/* {selectedFileName2 ? ( */}
-              {/* <table>
-                <thead>
-                  <tr>
-                    <th>File</th>
-                    <th>Selected File Name</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>File 2</td>
-                    <td>{selectedFileName2}</td>
-                    <td>
-                      <button onClick={handleClearFile2}>
-                        <i className="ri-close-line fs-16"></i>
-                      </button>
-                    </td>
-                  </tr> */}
-              {/* You can add more rows for other files if needed */}
-              {/* </tbody>
-              </table> */}
-              {/* ) : (
-                <Col>
-                  <div>
-                    <Label htmlFor="formFile" className="form-label">
-                      File 2
-                    </Label>
-                    <Input
-                      className="form-control"
-                      type="file"
-                      accept=".doc, .docx, .xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
-                      id="formFile"
-                      onChange={(e) => handleFileUpload(e, "file_2")}
-                    />
-                  </div>
-                </Col>
-              )} */}
-              {/* <div id="passwordHelpBlock" className="form-text mb-3">
-                {!selectedFileName2 && <p>Select File 2.</p>}
-              </div> */}
-              {/* <Col>
-                <div>
-                  <Label htmlFor="formFile" className="form-label">
-                    File 3
-                  </Label>
-                  <Input
-                    className="form-control"
-                    type="file"
-                    accept=".doc, .docx,.xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
-                    id="formFile"
-                    onChange={(e) => handleFileUpload(e, "file_3")}
-                  />
-                </div>
-              </Col> */}
-              {/* {selectedFileName3 ? ( */}
-              {/* <table>
-                <thead>
-                  <tr>
-                    <th>File</th>
-                    <th>Selected File Name</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>File 3</td>
-                    <td>{selectedFileName3}</td>
-                    <td>
-                      <button onClick={handleClearFile3}>
-                        <i className="ri-close-line fs-16"></i>
-                      </button>
-                    </td>
-                  </tr> */}
-              {/* You can add more rows for other files if needed */}
-              {/* </tbody>
-              </table> */}
-              {/* ) : (
-                <Col>
-                  <div>
-                    <Label htmlFor="formFile" className="form-label">
-                      File 3
-                    </Label>
-                    <Input
-                      className="form-control"
-                      type="file"
-                      accept=".doc, .docx, .xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
-                      id="formFile"
-                      onChange={(e) => handleFileUpload(e, "file_3")}
-                    />
-                  </div>
-                </Col>
-              )} */}
-              {/* <div id="passwordHelpBlock" className="form-text mb-3">
-                {!selectedFileName3 && <p>Select File 3.</p>}
-              </div> */}
-              {/* <Col>
-                <div>
-                  <Label htmlFor="formFile" className="form-label">
-                    File 4
-                  </Label>
-                  <Input
-                    className="form-control"
-                    type="file"
-                    accept=".doc, .docx,.xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
-                    id="formFile"
-                    onChange={(e) => handleFileUpload(e, "file_4")}
-                  />
-                </div>
-              </Col> */}
-              {/* {selectedFileName4 ? ( */}
-              {/* <table>
-                <thead>
-                  <tr>
-                    <th>File</th>
-                    <th>Selected File Name</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>File 4</td>
-                    <td>{selectedFileName4}</td>
-                    <td>
-                      <button onClick={handleClearFile4}>
-                        <i className="ri-close-line fs-16"></i>
-                      </button>
-                    </td>
-                  </tr>
-                  {/* You can add more rows for other files if needed */}
-              {/* </tbody>
-              </table> */}
-              {/* ) : (
-                <Col>
-                  <div>
-                    <Label htmlFor="formFile" className="form-label">
-                      File 4
-                    </Label>
-                    <Input
-                      className="form-control"
-                      type="file"
-                      accept=".doc, .docx, .xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
-                      id="formFile"
-                      onChange={(e) => handleFileUpload(e, "file_4")}
-                    />
-                  </div>
-                </Col>
-              )}
-              <div id="passwordHelpBlock" className="form-text mb-3">
-                {!selectedFileName4 && <p>Select File 4.</p>}
-              </div> */}
-              {/* <Col>
-                <div>
-                  <Label htmlFor="formFile" className="form-label">
-                    File 5
-                  </Label>
-                  <Input
-                    className="form-control"
-                    type="file"
-                    accept=".doc, .docx,.xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
-                    id="formFile"
-                    onChange={(e) => handleFileUpload(e, "file_5")}
-                  />
-                </div>
-              </Col> */}
-              {/* {selectedFileName5 ? ( */}
-              {/* <table>
-                <thead>
-                  <tr>
-                    <th>File</th>
-                    <th>Selected File Name</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>File 5</td>
-                    <td>{selectedFileName5}</td>
-                    <td>
-                      <button onClick={handleClearFile5}>
-                        <i className="ri-close-line fs-16"></i>
-                      </button>
-                    </td>
-                  </tr> */}
-              {/* You can add more rows for other files if needed */}
-              {/* </tbody>
-              </table> */}
-              {/* ) : (
-                <Col>
-                  <div>
-                    <Label htmlFor="formFile" className="form-label">
-                      File 5
-                    </Label>
-                    <Input
-                      className="form-control"
-                      type="file"
-                      accept=".doc, .docx, .xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
-                      id="formFile"
-                      onChange={(e) => handleFileUpload(e, "file_5")}
-                    />
-                  </div>
-                </Col>
-              )}
-              <div id="passwordHelpBlock" className="form-text mb-3">
-                {!selectedFileName5 && <p>Select File 5.</p>}
-              </div> */}
-              {/* <Col lg={12}>
-              <Label htmlFor="formFile" className="form-label"> Other Documents</Label>
-                <FilePond
-                  files={files}
-                  onupdatefiles={handleFileUpdate}
-                  allowMultiple={true}
-                  maxFiles={3}
-                  name="filepond"
-                  className="filepond filepond-input-multiple mb-0"
-                />
-              </Col>
-              <div id="passwordHelpBlock" className="form-text mb-3">
-                Select Other Documents.
-              </div> */}
               <Col lg={12}>
                 <div>
                   <Label htmlFor="profile_timezone" className="form-label">
@@ -1706,7 +1311,7 @@ const EmployeeForm = () => {
                       value={
                         employeeObj.profile_timezone &&
                         timzone_options.find(
-                          (e) => e.value === employeeObj.profile_timezone
+                          (e) => e.value === employeeObj.profile_timezone,
                         )
                       }
                       onChange={handleTimeZoneChange}
@@ -1719,18 +1324,20 @@ const EmployeeForm = () => {
                   Select Time Zone
                 </div>
               </Col>
+
               <Col md={12} lg={12} xxl={12}>
                 <div>
-                  <Label htmlFor="allow_attendance_outside_the_range" className="form-label">
+                  <Label
+                    htmlFor="allow_attendance_outside_the_range"
+                    className="form-label"
+                  >
                     Allow Check In/Out Outside the Range
                   </Label>
-
                   <div className="mb-2">
                     <div
                       className="form-check form-switch form-switch-md form-switch-success"
                       dir="ltr"
                     >
-                      {" "}
                       <Input
                         id="allow_attendance_outside_the_range"
                         name="is_active"
@@ -1740,7 +1347,8 @@ const EmployeeForm = () => {
                         onChange={(e) =>
                           setEmployeeObj({
                             ...employeeObj,
-                            allow_attendance_outside_the_range: e.target.checked,
+                            allow_attendance_outside_the_range:
+                              e.target.checked,
                           })
                         }
                       />
@@ -1755,18 +1363,17 @@ const EmployeeForm = () => {
                   is allowed to checkIn/CheckOut outside the branch range.
                 </div>
               </Col>
+
               <Col md={12} lg={12} xxl={12}>
                 <div>
                   <Label htmlFor="outside_range" className="form-label">
                     Outside Range Notes Required
                   </Label>
-
                   <div className="mb-2">
                     <div
                       className="form-check form-switch form-switch-md form-switch-success"
                       dir="ltr"
                     >
-                      {" "}
                       <Input
                         id="outside_range"
                         name="is_active"
@@ -1791,18 +1398,17 @@ const EmployeeForm = () => {
                   is allowed to checkIn/CheckOut outside the branch range.
                 </div>
               </Col>
+
               <Col md={12} lg={12} xxl={12}>
                 <div>
                   <Label htmlFor="can_web_checkin" className="form-label">
                     Allow Web Check In/Out
                   </Label>
-
                   <div className="mb-2">
                     <div
                       className="form-check form-switch form-switch-md form-switch-success"
                       dir="ltr"
                     >
-                      {" "}
                       <Input
                         id="can_web_checkin"
                         name="is_active"
@@ -1827,136 +1433,104 @@ const EmployeeForm = () => {
                   is allowed to Web Check In/Out.
                 </div>
               </Col>
+
               <Col md={12} lg={12} xxl={12}>
-  <div>
-      <Label htmlFor="auth_types" className="form-label">
-        Allowed Attendance Methods
-      </Label>
-
-      <div className="d-flex gap-4 mb-2">
-        {/* Face Lock */}
-        <div className="form-check">
-          <Input
-            id="face_lock"
-            name="face_lock"
-            type="checkbox"
-            className="form-check-input"
-            checked={employeeObj.allowed_attendance_methods?.requires_face_verification || false}
-            onChange={(e) =>
-              setEmployeeObj({
-                ...employeeObj,
-                allowed_attendance_methods:{
-                  ...employeeObj?.allowed_attendance_methods,
-                  requires_face_verification: e.target.checked
-                },
-              })
-            }
-          />
-          <Label className="form-check-label" htmlFor="face_lock">
-            Face Recognition
-          </Label>
-        </div>
-
-        {/* Fingerprint */}
-        <div className="form-check">
-          <Input
-            id="fingerprint"
-            name="fingerprint"
-            type="checkbox"
-            className="form-check-input"
-            checked={employeeObj.allowed_attendance_methods?.requires_biometric_authentication || false}
-            onChange={(e) =>
-              setEmployeeObj({
-                ...employeeObj,
-                allowed_attendance_methods:{
-                  ...employeeObj?.allowed_attendance_methods,
-                  requires_biometric_authentication: e.target.checked
-                },
-              })
-            }
-          />
-          <Label className="form-check-label" htmlFor="fingerprint">
-            Fingerprint
-          </Label>
-        </div>
-
-        {/* Manual Check-In */}
-        <div className="form-check">
-          <Input
-            id="manual_checkin"
-            name="manual_checkin"
-            type="checkbox"
-            className="form-check-input"
-            checked={employeeObj.allowed_attendance_methods?.allow_manual_checkin || false}
-            onChange={(e) =>
-              setEmployeeObj({
-                ...employeeObj,
-                allowed_attendance_methods:{
-                  ...employeeObj?.allowed_attendance_methods,
-                  allow_manual_checkin: e.target.checked
-                },
-              })
-            }
-          />
-          <Label className="form-check-label" htmlFor="manual_checkin">
-            Manual Check-In
-          </Label>
-        </div>
-      </div>
-
-      {/* Error message */}
-      {errors && <div style={{ color: "red", marginTop: "4px" }}>{errors}</div>}
-
-     
-    </div>
-
-  
-</Col>
-
-
-          
-
-              {/* <Col md={12} lg={12} xxl={12}>
                 <div>
-                  <Label htmlFor="isActive" className="form-label">
-                    Is Active
+                  <Label htmlFor="auth_types" className="form-label">
+                    Allowed Attendance Methods
                   </Label>
-
-                  <div className="mb-2">
-                    <div
-                      className="form-check form-switch form-switch-md form-switch-success"
-                      dir="ltr"
-                    >
-                      {" "}
+                  <div className="d-flex gap-4 mb-2">
+                    <div className="form-check">
                       <Input
-                        id="isActive"
-                        name="is_active"
+                        id="face_lock"
+                        name="face_lock"
                         type="checkbox"
                         className="form-check-input"
-                        checked={employeeObj.is_active}
+                        checked={
+                          employeeObj.allowed_attendance_methods
+                            ?.requires_face_verification || false
+                        }
                         onChange={(e) =>
                           setEmployeeObj({
                             ...employeeObj,
-                            is_active: e.target.checked,
+                            allowed_attendance_methods: {
+                              ...employeeObj?.allowed_attendance_methods,
+                              requires_face_verification: e.target.checked,
+                            },
                           })
                         }
                       />
+                      <Label className="form-check-label" htmlFor="face_lock">
+                        Face Recognition
+                      </Label>
+                    </div>
+                    <div className="form-check">
+                      <Input
+                        id="fingerprint"
+                        name="fingerprint"
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={
+                          employeeObj.allowed_attendance_methods
+                            ?.requires_biometric_authentication || false
+                        }
+                        onChange={(e) =>
+                          setEmployeeObj({
+                            ...employeeObj,
+                            allowed_attendance_methods: {
+                              ...employeeObj?.allowed_attendance_methods,
+                              requires_biometric_authentication:
+                                e.target.checked,
+                            },
+                          })
+                        }
+                      />
+                      <Label className="form-check-label" htmlFor="fingerprint">
+                        Fingerprint
+                      </Label>
+                    </div>
+                    <div className="form-check">
+                      <Input
+                        id="manual_checkin"
+                        name="manual_checkin"
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={
+                          employeeObj.allowed_attendance_methods
+                            ?.allow_manual_checkin || false
+                        }
+                        onChange={(e) =>
+                          setEmployeeObj({
+                            ...employeeObj,
+                            allowed_attendance_methods: {
+                              ...employeeObj?.allowed_attendance_methods,
+                              allow_manual_checkin: e.target.checked,
+                            },
+                          })
+                        }
+                      />
+                      <Label
+                        className="form-check-label"
+                        htmlFor="manual_checkin"
+                      >
+                        Manual Check-In
+                      </Label>
                     </div>
                   </div>
+                  {errors && (
+                    <div style={{ color: "red", marginTop: "4px" }}>
+                      {errors}
+                    </div>
+                  )}
                 </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Check if{" "}
-                  <b>
-                    <i>{employeeObj.first_name}</i>
-                  </b>{" "}
-                  is Active State.
-                </div>
-              </Col> */}
+              </Col>
 
               <hr></hr>
+
+              {/* ── Custom Fields ──────────────────────────────────────────────── */}
               {employeeObj.cf_values && employeeObj.cf_values.length
                 ? employeeObj.cf_values.map((obj) => (
-                    <Col lg={12}>
+                    <Col lg={12} key={obj.id}>
                       <div className="mb-3">
                         <Label htmlFor="obj.input_name" className="form-label">
                           {obj.name}
@@ -2012,7 +1586,7 @@ const EmployeeForm = () => {
                                 ? null
                                 : dayjs(
                                     ConvertDateFormat(obj.value),
-                                    DateFormat
+                                    DateFormat,
                                   )
                             }
                             allowClear={false}
@@ -2039,13 +1613,82 @@ const EmployeeForm = () => {
                   ))
                 : null}
 
+              {/* ── Add Location Button — only shown for existing employees ──── */}
+              {(isExistingEmployee && (
+                <Col lg={12} className="mb-3">
+                  <div className="d-flex align-items-center justify-content-between">
+                    <Label className="form-label mb-0">Custom Locations</Label>
+                    <Button
+                      color="btn btn-primary"
+                      type="button"
+                      onClick={handleAddLocationClick}
+                    >
+                      Add Location <i className="ri-map-pin-line"></i>
+                    </Button>
+                  </div>
+                  <div id="passwordHelpBlock" className="form-text mt-1">
+                    Add or manage employee locations.
+                  </div>
+                </Col>
+              )) ||
+                null}
+
+              {(isExistingEmployee &&
+                employeeObj?.entity_location_details &&
+                employeeObj?.entity_location_details.length > 0 && (
+                  <Col lg={12}>
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Address</th>
+                          <th>Radius</th>
+                          <th>Image</th>
+                          <th>Edit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {employeeObj?.entity_location_details.map(
+                          (location, index) => (
+                            <tr key={index}>
+                              <td>{location.name}</td>
+                              <td>{location.accurate_address}</td>
+                              <td>{location.radius_range} m</td>
+                              <td>
+                                <img
+                                  src={
+                                    location.image_url
+                                      ? location.image_url
+                                      : no_image
+                                  }
+                                  alt="location"
+                                  style={{ height: "50px", objectFit: "cover" }}
+                                />
+                              </td>
+                              <td>
+                                <a
+                                  onClick={() => handleEditLocation(location)}
+                                  className="text-primary d-inline-block edit-item-btn ms-2"
+                                  href="javascript:void(0)"
+                                >
+                                  <i className="ri-pencil-fill fs-16"></i>
+                                </a>
+                              </td>
+                            </tr>
+                          ),
+                        )}
+                      </tbody>
+                    </table>
+                  </Col>
+                )) ||
+                null}
+
               <Col lg={12}>
                 <div className="text-end">
                   <Button type="submit" color="success" className="btn-label">
-                    {" "}
-                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                    Save{" "}
-                  </Button>{" "}
+                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
+                    Save
+                  </Button>
                 </div>
               </Col>
             </Row>
@@ -2053,6 +1696,16 @@ const EmployeeForm = () => {
         </Col>
       </Row>
 
+      {/* ── Location Modal ──────────────────────────────────────────────────── */}
+      <LocationModal
+        isOpen={locationModalOpen}
+        onClose={() => setLocationModalOpen(false)}
+        employeeObj={employeeObj}
+        setEmployeeObj={setEmployeeObj}
+        locationToEdit={locationToEdit}
+      />
+
+      {/* ── Reporting Manager Reassignment Modal ────────────────────────────── */}
       <Modal
         fade={true}
         isOpen={showRMModal}
@@ -2066,15 +1719,15 @@ const EmployeeForm = () => {
             </div>
             <div className="mt-3 pt-1">
               <p>
-                <b>{employeeObj?.first_name} </b> is The Reporting Manager For The
-                Following Employees
+                <b>{employeeObj?.first_name} </b> is The Reporting Manager For
+                The Following Employees
               </p>
             </div>
             <div className="mt-3 pt-1">
               {TeamsToBeUpdated &&
                 TeamsToBeUpdated.map((d) => {
                   return (
-                    <React.Fragment>
+                    <React.Fragment key={d.id}>
                       <Row className="mt-2">
                         <Col lg={12} style={{ textAlign: "left" }}>
                           <h5>{d?.name}</h5>
@@ -2090,7 +1743,7 @@ const EmployeeForm = () => {
                             value={
                               d.rep_man_options.find(
                                 (e) =>
-                                  e.id === parseInt(d.new_reporting_manager_id)
+                                  e.id === parseInt(d.new_reporting_manager_id),
                               ) || []
                             }
                             onChange={(e) =>
@@ -2102,9 +1755,7 @@ const EmployeeForm = () => {
                         <Col lg={6}>
                           <h5>Employees</h5>
                           {(d?.employee_details).map((m) => (
-                            <>
-                              <h6>{m?.name}</h6>
-                            </>
+                            <h6 key={m?.id}>{m?.name}</h6>
                           ))}
                         </Col>
                       </Row>

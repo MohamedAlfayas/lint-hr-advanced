@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardBody,
@@ -24,16 +24,24 @@ import CustomField from "../customField/CustomField";
 import Roles from "../roles/Roles";
 import { useSelector } from "react-redux";
 import CustomFormTable from "../CustomForms/CustomFormTable";
+import LocationGroup from "./LocationGroup";
 
 const Section = () => {
   //Tab
-  const [activeTab, setActiveTab] = useState("1");
-  const toggleTab = (tab) => {
-    if (activeTab !== tab) {
-      setActiveTab(tab);
-    }
+  const [activeTab, setActiveTab] = useState(() => {
+  return localStorage.getItem("activeTab") || "1";
+});
+ const toggleTab = (tab) => {
+  if (activeTab !== tab) {
+    setActiveTab(tab);
+    localStorage.setItem("activeTab", tab); // ✅ save tab
+  }
+};
+useEffect(() => {
+  return () => {
+    localStorage.removeItem("activeTab");
   };
-
+}, []);
   const { company_detail } = useSelector((state) => state.CompanyReducer);
 
   return (
@@ -204,6 +212,20 @@ const Section = () => {
                       Forms
                     </NavLink>
                   </NavItem>
+                  <NavItem>
+                    <NavLink
+                      className={classnames(
+                        { active: activeTab === "9" },
+                        "fw-semibold"
+                      )}
+                      onClick={() => {
+                        toggleTab("9");
+                      }}
+                      href="#"
+                    >
+                      Location Group
+                    </NavLink>
+                  </NavItem>
                 </Nav>
               </CardBody>
             </div>
@@ -236,6 +258,9 @@ const Section = () => {
             </TabPane>
             <TabPane tabId="8">
               <CustomFormTable />
+            </TabPane>
+            <TabPane tabId="9">
+              <LocationGroup />
             </TabPane>
           </TabContent>
         </Col>

@@ -11,7 +11,7 @@ import {
   Coffee,
   MoreVertical,
   Edit2,
-  Trash2
+  Trash2,
 } from "react-feather";
 
 import CustomStatusModal from "./CustomStatusModal";
@@ -33,12 +33,13 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
   const [clearAfterValue, setClearAfterValue] = useState(null);
 
   const [customStatuses, setCustomStatuses] = useState([]);
+  const [imgError, setImgError] = useState(false);
 
   const [defaultStatuses, setDefaultStatuses] = useState([
     { id: 1, icon: Users, label: "Meeting . 1 hour", enabled: false },
     { id: 2, icon: Coffee, label: "Break . 1 hour", enabled: false },
     { id: 3, icon: Moon, label: "DND . 45 minutes", enabled: false },
-    { id: 4, icon: Heart, label: "Sick", enabled: false }
+    { id: 4, icon: Heart, label: "Sick", enabled: false },
   ]);
 
   useEffect(() => {
@@ -51,14 +52,14 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
     if (editingStatus) {
       setCustomStatuses((prev) =>
         prev.map((item) =>
-          item.id === editingStatus.id ? { ...item, ...data } : item
-        )
+          item.id === editingStatus.id ? { ...item, ...data } : item,
+        ),
       );
       setEditingStatus(null);
     } else {
       setCustomStatuses((prev) => [
         ...prev,
-        { ...data, id: Date.now(), enabled: false }
+        { ...data, id: Date.now(), enabled: false },
       ]);
     }
     setShowCustomModal(false);
@@ -84,12 +85,12 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
       prev.map((item) =>
         item.id === id
           ? { ...item, enabled: !item.enabled }
-          : { ...item, enabled: false }
-      )
+          : { ...item, enabled: false },
+      ),
     );
 
     setDefaultStatuses((prev) =>
-      prev.map((item) => ({ ...item, enabled: false }))
+      prev.map((item) => ({ ...item, enabled: false })),
     );
   };
 
@@ -100,12 +101,12 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
       prev.map((item) =>
         item.id === id
           ? { ...item, enabled: !item.enabled }
-          : { ...item, enabled: false }
-      )
+          : { ...item, enabled: false },
+      ),
     );
 
     setCustomStatuses((prev) =>
-      prev.map((item) => ({ ...item, enabled: false }))
+      prev.map((item) => ({ ...item, enabled: false })),
     );
   };
 
@@ -123,7 +124,7 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
 
     const payload = {
       status: selectedStatus,
-      clearAfter: clearAfterValue
+      clearAfter: clearAfterValue,
     };
 
     console.log("CONFIRM DATA →", payload);
@@ -148,17 +149,35 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
       >
         <ModalBody className="p-0">
           <ListGroup flush>
-
             {/* PROFILE */}
             <ListGroupItem className="d-flex align-items-center gap-3 py-3">
-              <img
-                src={profile_data?.profile_url || ""}
-                alt="profile"
-                className="rounded-circle"
-                width="40"
-                height="40"
-                style={{ objectFit: "cover" }}
-              />
+              {profile_data?.profile_url && !imgError ? (
+                <img
+                  src={profile_data.profile_url}
+                  alt="profile"
+                  className="rounded-circle"
+                  width="40"
+                  height="40"
+                  style={{ objectFit: "cover" }}
+                  onError={() => setImgError(true)}
+                />
+              ) : (
+                <div
+                  className="rounded-circle text-white"
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    background: "#0ab39c",
+                    fontWeight: "600",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {userName?.charAt(0) || "U"}
+                </div>
+              )}
 
               <div>
                 <strong>{userName}</strong>
@@ -170,9 +189,7 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
                 )}
 
                 {!activeCustom && activeDefault && (
-                  <div className="text-muted small">
-                    {activeDefault.label}
-                  </div>
+                  <div className="text-muted small">{activeDefault.label}</div>
                 )}
               </div>
             </ListGroupItem>
@@ -205,8 +222,7 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
 
             {/* CUSTOM STATUSES */}
             {customStatuses.map((item) => {
-              const showDots =
-                hoveredId === item.id || openMenuId === item.id;
+              const showDots = hoveredId === item.id || openMenuId === item.id;
 
               return (
                 <ListGroupItem
@@ -221,7 +237,6 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
                   </div>
 
                   <div className="d-flex align-items-center gap-2">
-
                     {/* MENU */}
                     <div style={{ position: "relative" }}>
                       <div
@@ -230,7 +245,7 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
                           transform: showDots
                             ? "translateX(0)"
                             : "translateX(6px)",
-                          transition: "0.18s"
+                          transition: "0.18s",
                         }}
                       >
                         <MoreVertical
@@ -238,7 +253,7 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
                           style={{ cursor: "pointer" }}
                           onClick={() =>
                             setOpenMenuId(
-                              openMenuId === item.id ? null : item.id
+                              openMenuId === item.id ? null : item.id,
                             )
                           }
                         />
@@ -278,7 +293,6 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
                         onChange={() => toggleCustomStatus(item.id)}
                       />
                     </div>
-
                   </div>
                 </ListGroupItem>
               );
@@ -308,13 +322,11 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
                 </ListGroupItem>
               );
             })}
-
           </ListGroup>
 
           {/* CLEAR AFTER + CONFIRM */}
           {isStatusSelected && (
             <div className="p-3 border-top">
-
               <div
                 className="d-flex justify-content-between align-items-center mb-3"
                 style={clearBox}
@@ -331,10 +343,8 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
               >
                 Confirm
               </button>
-
             </div>
           )}
-
         </ModalBody>
       </Modal>
 
@@ -370,7 +380,7 @@ const menuBox = {
   border: "1px solid #eee",
   zIndex: 100,
   minWidth: 130,
-  boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
+  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
 };
 
 const menuItem = {
@@ -379,7 +389,7 @@ const menuItem = {
   gap: 8,
   alignItems: "center",
   cursor: "pointer",
-  fontSize: 14
+  fontSize: 14,
 };
 
 const clearBox = {
@@ -387,13 +397,13 @@ const clearBox = {
   padding: "12px",
   borderRadius: 8,
   cursor: "pointer",
-  color: "#fff"
+  color: "#fff",
 };
 
 const confirmBtn = {
   background: "#0ab39c",
- 
-  color:"#fff"
+
+  color: "#fff",
 };
 
 export default StatusBottomSheet;

@@ -120,21 +120,22 @@ const ApprovalFilter = ({ formname }) => {
     }
   }, []);
 
-  const handleEmployeeTypeChange = (e, name) => {
-    setEmployeeType(e.value);
-    setFilteredValue({
-      ...filteredValue,
-      employeeType: e.value,
-    });
-  };
+ const handleEmployeeTypeChange = (e) => {
+  setEmployeeType(e.value);
+  setFilteredValue((prev) => ({
+    ...prev,
+    employeeType: e.value,
+  }));
+};
 
-  const handleDateRangeChange = (e, monthStr) => {
-    setFilteredMonth(monthStr);
-    setFilteredValue({
-      ...filteredValue,
-      filteredMonth: monthStr,
-    });
-  };
+
+ const handleDateRangeChange = (e, monthStr) => {
+  setFilteredMonth(monthStr);
+  setFilteredValue((prev) => ({
+    ...prev,
+    filteredMonth: monthStr,
+  }));
+};
   const firstEffectExecutedRef = useRef(false);
   useEffect(() => {
     const permissions = {
@@ -151,6 +152,36 @@ const ApprovalFilter = ({ formname }) => {
     });
     firstEffectExecutedRef.current = true;
   }, []);
+
+useEffect(() => {
+  if (!firstEffectExecutedRef.current) return;
+
+  // ✅ NEW: wait until permissions are ready
+  if (
+    !showAllAttendanceApproval &&
+    !showTeamAttendanceApproval &&
+    !showAllLeaveApproval &&
+    !showTeamLeaveApproval
+  ) {
+    return;
+  }
+
+  const timer = setTimeout(() => {
+    dispatch(setFilteredCurrentValue(filteredValue));
+    dispatch(setFilteredLatestValue(filteredValue));
+    FilterData(activeTab);
+  }, 300);
+
+  return () => clearTimeout(timer);
+}, [
+  employeeType,
+  filteredMonth,
+  activeTab,
+  showAllAttendanceApproval,
+  showTeamAttendanceApproval,
+  showAllLeaveApproval,
+  showTeamLeaveApproval,
+]);
 
   useEffect(() => {
     if (firstEffectExecutedRef.current) {
@@ -301,7 +332,7 @@ const ApprovalFilter = ({ formname }) => {
                     />
                   </div>
                 </Col>
-                <Col md={2}>
+                {/* <Col md={2}>
                   <div className="col-lg-auto">
                     <div className="hstack gap-2">
                       <button
@@ -314,7 +345,7 @@ const ApprovalFilter = ({ formname }) => {
                       </button>
                     </div>
                   </div>
-                </Col>
+                </Col> */}
                 <div
                   className="col-md-auto ms-auto"
                   style={{ marginLeft: "10px" }}
@@ -341,16 +372,16 @@ const ApprovalFilter = ({ formname }) => {
                                 onClick={() => {
                                   toggleTab("1");
 
-                                  if (
-                                    filteredcurrentvalue !== filteredlatestvalue
-                                  ) {
-                                    FilterData("1");
-                                    dispatch(
-                                      setFilteredLatestValue(
-                                        filteredcurrentvalue
-                                      )
-                                    );
-                                  }
+                                  // if (
+                                  //   filteredcurrentvalue !== filteredlatestvalue
+                                  // ) {
+                                  //   FilterData("1");
+                                  //   dispatch(
+                                  //     setFilteredLatestValue(
+                                  //       filteredcurrentvalue
+                                  //     )
+                                  //   );
+                                  // }
                                 }}
                                 href="#"
                               >
