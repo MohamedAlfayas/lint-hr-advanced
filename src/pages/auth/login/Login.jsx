@@ -103,7 +103,6 @@ const Login = () => {
           let profile_data = res_data?.profile_data;
 
           try {
-
             const newFCMToken = await generateToken();
 
             axios({
@@ -125,15 +124,15 @@ const Login = () => {
 
           localStorage.setItem(
             "lint_hr_globaldata",
-            JSON.stringify(res_data?.meta_data)
+            JSON.stringify(res_data?.meta_data),
           );
           localStorage.setItem(
             "lint_hr_token",
-            JSON.stringify(res_data?.token)
+            JSON.stringify(res_data?.token),
           );
           localStorage.setItem(
             "lint_hr_profile_data",
-            JSON.stringify(profile_data)
+            JSON.stringify(profile_data),
           );
           localStorage.setItem(
             "user_perm_list",
@@ -142,7 +141,7 @@ const Login = () => {
               "employee",
               "leave_type",
               "custom_field",
-            ])
+            ]),
           );
           dispatch(setMyProfileDataReducer(profile_data));
           dispatch(setShowAttendanceTimer(profile_data?.can_web_checkin));
@@ -151,7 +150,7 @@ const Login = () => {
           //   leftsidbarSizeTypes.DEFAULT
           // );
           dispatch(
-            changeLeftsidebarSizeTypeAction(leftsidbarSizeTypes.DEFAULT)
+            changeLeftsidebarSizeTypeAction(leftsidbarSizeTypes.DEFAULT),
           );
 
           setTimeout(() => {
@@ -178,9 +177,9 @@ const Login = () => {
         !!process.env.REACT_APP_LC_PLATFORM &&
         process.env.REACT_APP_LC_PLATFORM === "local"
       ) {
-        validate_domain_url = `${BaseURL}api/validate-domain/`;
+        validate_domain_url = `${BaseURL}api/auth/validate-domain/`;
       } else {
-        validate_domain_url = `https://${domain}.${process.env.REACT_APP_BASE_URL}/api/validate-domain/`;
+        validate_domain_url = `https://${domain}.${process.env.REACT_APP_BASE_URL}/api/auth/validate-domain/`;
       }
 
       axios({

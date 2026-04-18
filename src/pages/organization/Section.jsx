@@ -25,23 +25,24 @@ import Roles from "../roles/Roles";
 import { useSelector } from "react-redux";
 import CustomFormTable from "../CustomForms/CustomFormTable";
 import LocationGroup from "./LocationGroup";
+import CustomStatus from "./CustomStatus";
 
 const Section = () => {
   //Tab
   const [activeTab, setActiveTab] = useState(() => {
-  return localStorage.getItem("activeTab") || "1";
-});
- const toggleTab = (tab) => {
-  if (activeTab !== tab) {
-    setActiveTab(tab);
-    localStorage.setItem("activeTab", tab); // ✅ save tab
-  }
-};
-useEffect(() => {
-  return () => {
-    localStorage.removeItem("activeTab");
+    return localStorage.getItem("activeTab") || "1";
+  });
+  const toggleTab = (tab) => {
+    if (activeTab !== tab) {
+      setActiveTab(tab);
+      localStorage.setItem("activeTab", tab); // ✅ save tab
+    }
   };
-}, []);
+  useEffect(() => {
+    return () => {
+      localStorage.removeItem("activeTab");
+    };
+  }, []);
   const { company_detail } = useSelector((state) => state.CompanyReducer);
 
   return (
@@ -104,7 +105,7 @@ useEffect(() => {
                     <NavLink
                       className={classnames(
                         { active: activeTab === "1" },
-                        "fw-semibold"
+                        "fw-semibold",
                       )}
                       onClick={() => {
                         toggleTab("1");
@@ -118,7 +119,7 @@ useEffect(() => {
                     <NavLink
                       className={classnames(
                         { active: activeTab === "2" },
-                        "fw-semibold"
+                        "fw-semibold",
                       )}
                       onClick={() => {
                         toggleTab("2");
@@ -132,7 +133,7 @@ useEffect(() => {
                     <NavLink
                       className={classnames(
                         { active: activeTab === "3" },
-                        "fw-semibold"
+                        "fw-semibold",
                       )}
                       onClick={() => {
                         toggleTab("3");
@@ -146,7 +147,7 @@ useEffect(() => {
                     <NavLink
                       className={classnames(
                         { active: activeTab === "4" },
-                        "fw-semibold"
+                        "fw-semibold",
                       )}
                       onClick={() => {
                         toggleTab("4");
@@ -160,7 +161,7 @@ useEffect(() => {
                     <NavLink
                       className={classnames(
                         { active: activeTab === "5" },
-                        "fw-semibold"
+                        "fw-semibold",
                       )}
                       onClick={() => {
                         toggleTab("5");
@@ -174,7 +175,7 @@ useEffect(() => {
                     <NavLink
                       className={classnames(
                         { active: activeTab === "6" },
-                        "fw-semibold"
+                        "fw-semibold",
                       )}
                       onClick={() => {
                         toggleTab("6");
@@ -188,7 +189,7 @@ useEffect(() => {
                     <NavLink
                       className={classnames(
                         { active: activeTab === "7" },
-                        "fw-semibold"
+                        "fw-semibold",
                       )}
                       onClick={() => {
                         toggleTab("7");
@@ -202,7 +203,7 @@ useEffect(() => {
                     <NavLink
                       className={classnames(
                         { active: activeTab === "8" },
-                        "fw-semibold"
+                        "fw-semibold",
                       )}
                       onClick={() => {
                         toggleTab("8");
@@ -216,7 +217,7 @@ useEffect(() => {
                     <NavLink
                       className={classnames(
                         { active: activeTab === "9" },
-                        "fw-semibold"
+                        "fw-semibold",
                       )}
                       onClick={() => {
                         toggleTab("9");
@@ -224,6 +225,20 @@ useEffect(() => {
                       href="#"
                     >
                       Location Group
+                    </NavLink>
+                  </NavItem>
+                  <NavItem>
+                    <NavLink
+                      className={classnames(
+                        { active: activeTab === "10" },
+                        "fw-semibold",
+                      )}
+                      onClick={() => {
+                        toggleTab("10");
+                      }}
+                      href="#"
+                    >
+                      Custom Status
                     </NavLink>
                   </NavItem>
                 </Nav>
@@ -261,6 +276,9 @@ useEffect(() => {
             </TabPane>
             <TabPane tabId="9">
               <LocationGroup />
+            </TabPane>
+            <TabPane tabId="10">
+              <CustomStatus />
             </TabPane>
           </TabContent>
         </Col>

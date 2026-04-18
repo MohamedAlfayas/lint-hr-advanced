@@ -186,8 +186,7 @@ const InfoTable = ({
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const res = await GetApi("/your-api");
-        setDataList(res?.data || []);
+        setDataList([]);
       } catch (error) {
         console.error(error);
         setDataList([]);
@@ -206,13 +205,13 @@ const InfoTable = ({
   const [selectedYear, setSelectedYear] = useState(new Date(currentYear, 0, 1));
 
   // Checked All
-  const checkedAll = useCallback(() => {
+  const checkedAll = useCallback((e) => {
     const checkall = document.getElementById("checkBoxAll");
     const ele = document.querySelectorAll(".dataCheckBox:not(:disabled)");
     const checkboxesArray = Array.from(ele);
 
     checkboxesArray.forEach((checkbox) => {
-      if (checkall.checked) {
+      if (e.target.checked) {
         checkbox.checked = true;
         setSelectedGroupIds((prevIds) => [
           ...prevIds,
@@ -508,7 +507,7 @@ const InfoTable = ({
         formname === attendance_approval_component_name ? "text" : undefined,
       inputPlaceholder:
         formname === attendance_approval_component_name
-          ? "Enter reason for rejection"
+          ? "Enter reason for Bulk Approve"
           : undefined,
       inputAttributes:
         formname === attendance_approval_component_name
@@ -992,7 +991,9 @@ const InfoTable = ({
           type="checkbox"
           id="checkBoxAll"
           className="form-check-input"
-          onClick={() => checkedAll()}
+          onClick={(e) => {
+            checkedAll(e);
+          }}
         />
       ),
       Cell: (cellProps) => {
@@ -1042,7 +1043,7 @@ const InfoTable = ({
           (formname === leave_approval_component_name ||
             formname === leave_pending_table) &&
           (orderData.status === 1 ||
-            (orderData.status === 2 &&
+            (orderData.status === 4 &&
               orderData?.leave_cancellation_details &&
               orderData?.leave_cancellation_details.status === 1))
         ) {
@@ -1070,6 +1071,19 @@ const InfoTable = ({
               </li>
             </ul>
           );
+        } else if (
+          formname &&
+          (formname === leave_approval_component_name ||
+            formname === leave_pending_table) &&
+          orderData.status === 4 &&
+          orderData?.leave_cancellation_details &&
+          orderData?.leave_cancellation_details.status != 1
+        ) {
+          <li className="list-inline-item">
+            <Link to="#" className="text-primary d-inline-block">
+              <i className="ri-eye-fill fs-16"></i>
+            </Link>
+          </li>;
         } else if (
           formname &&
           (formname === attendance_approval_component_name ||
@@ -1215,14 +1229,9 @@ const InfoTable = ({
               {orderData.status === 2 ||
               orderData.status === 3 ||
               orderData.hr_status === 2 ||
-              orderData.hr_status === 4 ? (
-                <li className="list-inline-item">
-                  <Link to="#" className="text-primary d-inline-block">
-                    <i className="ri-eye-fill fs-16"></i>
-                  </Link>
-                </li>
-              ) : (
+              orderData.hr_status === 4 ? null : ( // ✅ IMPORTANT FIX
                 <>
+                  {/* EDIT */}
                   <li className="list-inline-item edit">
                     <Link
                       to="javascript:void(0)"
@@ -1234,12 +1243,15 @@ const InfoTable = ({
                       <i className="ri-pencil-fill fs-16"></i>
                     </Link>
                   </li>
+
+                  {/* DELETE */}
                   <li className="list-inline-item">
                     <Link
                       to="#"
                       className="text-danger d-inline-block remove-item-btn"
                       onClick={() => {
-                        const orderData = cellProps.row.original;
+                        const rowData = cellProps.row.original;
+                        // 👉 your delete logic here
                       }}
                     >
                       <i className="ri-delete-bin-5-fill fs-16"></i>

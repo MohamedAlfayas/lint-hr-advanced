@@ -28,7 +28,8 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
   // ── Status helpers ──────────────────────────────────────────
-  const getStatusLabel = (status) => {
+  const getStatusLabel = (status, is_deleted) => {
+    if (is_deleted) return "Cancelled";
     switch (status) {
       case 1:
         return "Pending";
@@ -36,12 +37,15 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
         return "Approved";
       case 3:
         return "Rejected";
+      case 4:
+        return "Cancel Request";
       default:
         return "Unknown";
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status, is_deleted) => {
+    if (is_deleted) return "danger";
     switch (status) {
       case 1:
         return "warning";
@@ -49,6 +53,8 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
         return "success";
       case 3:
         return "danger";
+      case 4:
+        return "info";
       default:
         return "secondary";
     }
@@ -258,18 +264,87 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
       accessor: (obj) => <b>{obj.reason}</b>,
     },
     {
-      Header: "Status",
+      Header: () => (
+        <div style={{ textAlign: "center", width: "100%" }}>Status</div>
+      ),
       id: "status",
       filterable: false,
-      accessor: (obj) => {
-        const label = getStatusLabel(obj.status);
-        const color = getStatusColor(obj.status);
+
+      Cell: ({ row }) => {
+        const obj = row.original;
+
+        const label = getStatusLabel(obj.status, obj.is_deleted);
+        const color = getStatusColor(obj.status, obj.is_deleted);
+
+        let cancelBadge = null;
+
+        if (obj.leave_cancellation_details) {
+          const cancelStatus = obj.leave_cancellation_details.status;
+
+          let cancelLabel = "";
+          let cancelColor = "";
+
+          if (cancelStatus === 1) {
+            cancelLabel = "Pending";
+            cancelColor = "warning";
+          } else if (cancelStatus === 2) {
+            cancelLabel = "Cancelled Leave Req Approved";
+            cancelColor = "success";
+          } else {
+            cancelLabel = "Cancelled Leave Req Rejected";
+            cancelColor = "danger";
+          }
+
+          cancelBadge = (
+            <span
+              className={`badge text-uppercase bg-${cancelColor}-subtle text-${cancelColor}`}
+            >
+              {cancelLabel}
+            </span>
+          );
+        }
+
         return (
-          <span
-            className={`badge text-uppercase bg-${color}-subtle text-${color}`}
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+            }}
           >
-            {label}
-          </span>
+            <div
+              style={{
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "18px",
+              }}
+            >
+              {/* DOTTED LINE */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "10px",
+                  bottom: "10px",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  borderLeft: "2px dotted #ccc",
+                }}
+              />
+
+              {/* MAIN STATUS */}
+              <span
+                className={`badge text-uppercase bg-${color}-subtle text-${color}`}
+                style={{ zIndex: 1 }}
+              >
+                {label}
+              </span>
+
+              {/* CANCEL STATUS */}
+              {cancelBadge && <div style={{ zIndex: 1 }}>{cancelBadge}</div>}
+            </div>
+          </div>
         );
       },
     },
@@ -310,6 +385,11 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
       option: 3,
       label: "Rejected",
       count: leave_approval_data.filter((e) => e[filterKey] === 3).length || 0,
+    },
+    {
+      option: 4,
+      label: "Cancel Request",
+      count: leave_approval_data.filter((e) => e[filterKey] === 4).length || 0,
     },
   ];
 

@@ -1871,6 +1871,7 @@ export const organization_component_name = "organization";
 export const department_component_name = "department";
 export const branch_component_name = "BranchForm";
 export const location_group_component_name = "LocationGroupForm";
+export const custom_status_form_component_name = "CustomStatusForm";
 export const employee_component_name = "employee";
 export const role_component_name = "role";
 export const work_schedule_component_name = "work_schedule";
@@ -1890,7 +1891,8 @@ export const pt_settings_form_component_name = "pt_settings_form";
 export const salary_form_component_name_earnings = "salary_form_earnings";
 export const salary_form_component_name_deduction = "salary_form_deduction";
 export const salary_form_component_name_benefits = "salary_form_benefits";
-export const salary_form_component_name_reimbursements = "salary_form_reimbursements";
+export const salary_form_component_name_reimbursements =
+  "salary_form_reimbursements";
 export const salary_policy_form_component_name = "salary_policy_form";
 export const location_edit_form_component_name = "location_edit_form";
 export const attendance_pending_table = "attendance_pending_table";
@@ -2087,7 +2089,6 @@ export const SriLankaStates = [
   },
 ];
 
-
 export const leave_approval_status_options = [
   { id: "0", label: "All Status", value: "0" },
   { id: "1", label: "Pending", value: "1" },
@@ -2199,9 +2200,9 @@ export const behaviorTypeOptions = [
 ];
 
 export const phoneTypes = [
-  {id:"0", value: 1, label: "Work" },
-  {id:"1,",value: 2, label: "Mobile" },
-  {id:"2", value: 3, label: "Home" },
-  {id:"3", value: 4, label: "Whatsapp" },
-  {id:"4", value: 5, label: "Others" },
+  { id: "0", value: 1, label: "Work" },
+  { id: "1,", value: 2, label: "Mobile" },
+  { id: "2", value: 3, label: "Home" },
+  { id: "3", value: 4, label: "Whatsapp" },
+  { id: "4", value: 5, label: "Others" },
 ];

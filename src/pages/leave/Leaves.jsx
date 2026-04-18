@@ -75,7 +75,7 @@ const LeaveDashboard = () => {
 
   // ── status helpers ───────────────────────────
   const getStatusLabel = (status, is_deleted) => {
-    if (is_deleted) return "Deleted";
+    if (is_deleted) return "Cancelled";
     switch (status) {
       case 1:
         return "Pending";
@@ -83,6 +83,8 @@ const LeaveDashboard = () => {
         return "Approved";
       case 3:
         return "Rejected";
+      case 4:
+        return "Cancel Request";
       default:
         return "Unknown";
     }
@@ -185,18 +187,88 @@ const LeaveDashboard = () => {
       ),
     },
     {
-      Header: "Status",
+      Header: () => (
+        <div style={{ textAlign: "center", width: "100%" }}>Status</div>
+      ),
       id: "status",
       filterable: false,
-      accessor: (obj) => {
+
+      // ✅ force cell center also
+      Cell: ({ row }) => {
+        const obj = row.original;
+
         const label = getStatusLabel(obj.status, obj.is_deleted);
         const color = getStatusColor(obj.status, obj.is_deleted);
+
+        let cancelBadge = null;
+
+        if (obj.leave_cancellation_details) {
+          const cancelStatus = obj.leave_cancellation_details.status;
+
+          let cancelLabel = "";
+          let cancelColor = "";
+
+          if (cancelStatus === 1) {
+            cancelLabel = "Pending";
+            cancelColor = "warning";
+          } else if (cancelStatus === 2) {
+            cancelLabel = "Cancelled Leave Req Approved";
+            cancelColor = "success";
+          } else {
+            cancelLabel = "Cancelled Leave Req Rejected";
+            cancelColor = "danger";
+          }
+
+          cancelBadge = (
+            <span
+              className={`badge text-uppercase bg-${cancelColor}-subtle text-${cancelColor}`}
+            >
+              {cancelLabel}
+            </span>
+          );
+        }
+
         return (
-          <span
-            className={`badge text-uppercase bg-${color}-subtle text-${color}`}
+          <div
+            style={{
+              width: "100%", // 🔥 important
+              display: "flex",
+              justifyContent: "center", // 🔥 force center
+            }}
           >
-            {label}
-          </span>
+            <div
+              style={{
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "25px",
+              }}
+            >
+              {/* DOTTED LINE */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "8px",
+                  bottom: "8px",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  borderLeft: "2px dotted #ccc",
+                }}
+              />
+
+              {/* LABEL */}
+              <span
+                className={`badge text-uppercase bg-${color}-subtle text-${color}`}
+                style={{ zIndex: 1 }}
+              >
+                {label}
+              </span>
+
+              {/* CANCEL */}
+              {cancelBadge && <div style={{ zIndex: 1 }}>{cancelBadge}</div>}
+            </div>
+          </div>
         );
       },
     },
@@ -236,6 +308,12 @@ const LeaveDashboard = () => {
       label: "Rejected",
       count:
         leave_application_data.filter((e) => e[filterKey] === 3).length || 0,
+    },
+    {
+      option: 4,
+      label: "Cancel Request",
+      count:
+        leave_application_data.filter((e) => e[filterKey] === 4).length || 0,
     },
   ];
 

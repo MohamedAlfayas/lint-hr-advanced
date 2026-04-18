@@ -125,10 +125,7 @@ const ApplyLeaveForm = () => {
       });
 
       // When editing a half-day leave, restore the start/end times
-      if (
-        form_obj?.day_type === 2 &&
-        form_obj.unit === leave_type_day_unit
-      ) {
+      if (form_obj?.day_type === 2 && form_obj.unit === leave_type_day_unit) {
         if (form_obj.start) setHalfDayStartTime(form_obj.start);
         if (form_obj.end) setHalfDayEndTime(form_obj.end);
       }
@@ -223,11 +220,15 @@ const ApplyLeaveForm = () => {
 
   const handleMultiDayChange = (dates, dateStrings, daysCount) => {
     let startDate =
-      dateStrings[0] === "" || dateStrings[0] === null || dateStrings[0] === undefined
+      dateStrings[0] === "" ||
+      dateStrings[0] === null ||
+      dateStrings[0] === undefined
         ? null
         : dateStrings[0];
     let endDate =
-      dateStrings[1] === "" || dateStrings[1] === null || dateStrings[1] === undefined
+      dateStrings[1] === "" ||
+      dateStrings[1] === null ||
+      dateStrings[1] === undefined
         ? null
         : dateStrings[1];
 
@@ -264,7 +265,9 @@ const ApplyLeaveForm = () => {
     setDaysCount(ValidDaysCount);
     setLeaveApplyObj({
       ...leaveapplyObj,
-      start: !!startDate ? ConvertISODateFormat(ConvertDateFormat(startDate)) : null,
+      start: !!startDate
+        ? ConvertISODateFormat(ConvertDateFormat(startDate))
+        : null,
       end: !!endDate ? ConvertISODateFormat(ConvertDateFormat(endDate)) : null,
       requested_leave_count: ValidDaysCount,
       day_type: 1,
@@ -715,7 +718,9 @@ const ApplyLeaveForm = () => {
                           !!leaveapplyObj?.end
                             ? dayjs(
                                 ConvertToDateTimeFormat(
-                                  ConvertToISODateTimeFormat(leaveapplyObj?.end),
+                                  ConvertToISODateTimeFormat(
+                                    leaveapplyObj?.end,
+                                  ),
                                 ),
                                 DateTimeFormat,
                               )

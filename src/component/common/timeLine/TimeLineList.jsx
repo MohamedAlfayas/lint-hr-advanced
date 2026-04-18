@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "reactstrap";
 import StatusBottomSheet from "./StatusBottomSheet";
-import CustomStatusModal from "./CustomStatusModal";
 import TimelineModal from "./TimelineModal";
 
 const TimeLineList = () => {
@@ -14,8 +13,8 @@ const TimeLineList = () => {
       {/* <Button color="primary" onClick={() => setShowSheet(true)}>
         Status
       </Button> */}
-        <button
-      onClick={() => setShowSheet(true)}
+      <button
+        onClick={() => setShowSheet(true)}
         type="button"
         className="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle light-dark-mode"
       >
@@ -33,11 +32,6 @@ const TimeLineList = () => {
           setShowSheet(false);
           setShowTimeline(true);
         }}
-      />
-
-      <CustomStatusModal
-        show={showCustom}
-        onClose={() => setShowCustom(false)}
       />
 
       <TimelineModal

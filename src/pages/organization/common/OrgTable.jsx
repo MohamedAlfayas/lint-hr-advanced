@@ -18,10 +18,8 @@ const OrgTable = ({ departmentId }) => {
   const TableData = EmployeeData.filter(
     (d) =>
       d.primary_department_id_list.includes(departmentId) &&
-      d.is_active === true
+      d.is_active === true,
   );
-  
-  
 
   const columns = [
     {
@@ -48,7 +46,9 @@ const OrgTable = ({ departmentId }) => {
                   className="link-body-emphasis mb-0"
                 >
                   {" "}
-                  <h5 className="fs-14 mb-1 text text-start">{obj.first_name}</h5>
+                  <h5 className="fs-14 mb-1 text text-start">
+                    {obj.first_name}
+                  </h5>
                 </Link>
               </div>
               <div className="text-start">{obj.email}</div>
@@ -81,7 +81,9 @@ const OrgTable = ({ departmentId }) => {
                   className="link-body-emphasis mb-0"
                 >
                   {" "}
-                  <h5 className="fs-14 mb-1 text text-start">{obj.first_name}</h5>
+                  <h5 className="fs-14 mb-1 text text-start">
+                    {obj.first_name}
+                  </h5>
                 </Link>
               </div>
               <div className="text-start">{obj.email}</div>
@@ -221,7 +223,9 @@ const OrgTable = ({ departmentId }) => {
                 <div>
                   <Link to="#" className="link-body-emphasis mb-0">
                     {" "}
-                    <h5 className="fs-14 mb-1 text-start">{rm_obj.first_name}</h5>
+                    <h5 className="fs-14 mb-1 text-start">
+                      {rm_obj.first_name}
+                    </h5>
                   </Link>
                 </div>
                 <div className="text-start">{rm_obj.email}</div>
@@ -250,7 +254,9 @@ const OrgTable = ({ departmentId }) => {
                 <div>
                   <Link to="#" className="link-body-emphasis mb-0">
                     {" "}
-                    <h5 className="fs-14 mb-1 text-start">{rm_obj.first_name}</h5>
+                    <h5 className="fs-14 mb-1 text-start">
+                      {rm_obj.first_name}
+                    </h5>
                   </Link>
                 </div>
                 <div className="text-start">{rm_obj.email}</div>

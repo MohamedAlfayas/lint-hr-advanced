@@ -12,6 +12,7 @@ const OrgModal = ({
   return (
     <Modal
       className="modal-dialog"
+      size="lg"
       style={{ margin: "auto" }}
       scrollable={true}
       isOpen={showOrgModal}

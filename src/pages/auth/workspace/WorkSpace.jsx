@@ -18,9 +18,10 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { BaseURL } from "../../../common/api/BaseURL";
 
 const WorkSpace = () => {
-  const [domain, setDomain] = useState("");
+  const [company_name, setDomain] = useState("");
   const [errorMessage, setErrorMessage] = useState(null);
 
   const navigate = useNavigate();
@@ -28,33 +29,46 @@ const WorkSpace = () => {
   const validation = useFormik({
     enableReinitialize: true,
     initialValues: {
-      domain: domain || "",
+      company_name: company_name || "",
     },
     validationSchema: Yup.object({
-      domain: Yup.string()
+      company_name: Yup.string()
         .trim()
-        .matches(/^[a-zA-Z0-9.-]+$/, "Invalid domain URL")
+        .matches(/^[a-zA-Z0-9.-]+$/, "Invalid company_name URL")
         .required("Domain URL is required"),
     }),
     onSubmit: (values) => {
-      const domain = values?.domain;
+      const company_name = values?.company_name;
 
-      if (!!domain) {
+      if (!!company_name) {
+        let url = "";
+        const domain = window.location.hostname.split(".")[0];
+        if (
+          !!process.env.REACT_APP_LC_PLATFORM &&
+          process.env.REACT_APP_LC_PLATFORM === "local"
+        ) {
+          url = `${BaseURL}api/auth/validate-domain/`;
+        } else {
+          url = `https://${process.env.REACT_APP_BASE_URL}/api/auth/validate-domain/`;
+        }
+
         axios({
           method: "POST",
-          url: `https://${domain}.${process.env.REACT_APP_BASE_URL}/api/validate-domain/`,
+          url: url,
           data: {
-            domain: domain,
+            company_name: company_name,
           },
         })
           .then((res) => {
             setErrorMessage(null);
-            const dashboardUrl = `https://${domain}.linthr.com/dashboard/`;
-            window.location.href = dashboardUrl;
+            console.log("REs - ", res);
+            if (res?.data && res?.data?.redirect_url) {
+              window.location.href = res?.data?.redirect_url;
+            }
           })
           .catch((err) => {
             setErrorMessage(
-              "We couldn’t find your workspace. Please Try Again."
+              "We couldn’t find your workspace. Please Try Again.",
             );
             toast.error(err.message);
           });
@@ -118,38 +132,36 @@ const WorkSpace = () => {
                             action="#"
                           >
                             <div className="mb-3">
-                              <Label htmlFor="domain" className="form-label">
-                                Please enter your domain name
+                              <Label
+                                htmlFor="company_name"
+                                className="form-label"
+                              >
+                                Please enter your company name
                               </Label>
                               <Col lg={12}>
                                 <div className="mb-6">
                                   <div className="input-group">
                                     <Input
-                                      name="domain"
+                                      name="company_name"
                                       className="form-control"
-                                      placeholder="Enter Domain"
+                                      placeholder="Enter Company"
                                       type="text"
                                       onChange={(e) => {
                                         setDomain(e.target.value);
                                       }}
-                                      value={domain || ""}
+                                      value={company_name || ""}
                                       invalid={
-                                        validation.touched.domain &&
-                                        validation.errors.domain
+                                        validation.touched.company_name &&
+                                        validation.errors.company_name
                                           ? true
                                           : false
                                       }
                                     />
-                                    <span
-                                      className="input-group-text"
-                                      id="basic-addon2"
-                                    >
-                                      .linthr.com
-                                    </span>
-                                    {validation.touched.domain &&
-                                    validation.errors.domain ? (
+
+                                    {validation.touched.company_name &&
+                                    validation.errors.company_name ? (
                                       <FormFeedback type="invalid">
-                                        {validation.errors.domain}
+                                        {validation.errors.company_name}
                                       </FormFeedback>
                                     ) : null}
                                   </div>
@@ -157,7 +169,7 @@ const WorkSpace = () => {
                                     id="passwordHelpBlock"
                                     className="form-text"
                                   ></div>
-                                  {!validation.errors.domain && (
+                                  {!validation.errors.company_name && (
                                     <div
                                       id="passwordHelpBlock"
                                       className="form-text mb-3"

@@ -37,10 +37,11 @@ import ContactsReducer from "../ChildReducer/ContactsReducer";
 import TodayAttendanceReducer from "../ChildReducer/TodayAttendanceReducer";
 import EmployeeProgressBarReducer from "../ChildReducer/EmployeeProgressBarReducer";
 import RecurringReducer from "../ChildReducer/RecurringReducer";
-import PayrollSettingsReducer from "../ChildReducer/PayrollSettingsReducer"
+import PayrollSettingsReducer from "../ChildReducer/PayrollSettingsReducer";
 import PTSettingsReducer from "../ChildReducer/PTSettingsReducer";
-import SalaryStructureReducer from "../ChildReducer/SalaryStructureReducer"
-import LocationGroupReducer from "../ChildReducer/LocationGroupReducer"
+import SalaryStructureReducer from "../ChildReducer/SalaryStructureReducer";
+import LocationGroupReducer from "../ChildReducer/LocationGroupReducer";
+import CustomStatusReducer from "../ChildReducer/CustomStatusReducer";
 export const MainReducer = combineReducers({
   MetaReducer: MetaReducer,
   EmployeeReducer: EmployeeReducer,
@@ -77,11 +78,12 @@ export const MainReducer = combineReducers({
   PirioritiesReducer: PirioritiesReducer,
   ContactGroupReducer: ContactGroupReducer,
   ContactsReducer: ContactsReducer,
-  TodayAttendanceReducer:TodayAttendanceReducer,
-  EmployeeProgressBarReducer : EmployeeProgressBarReducer,
-  RecurringReducer : RecurringReducer,
-  PayrollSettingsReducer : PayrollSettingsReducer,
-  PTSettingsReducer : PTSettingsReducer,
-  SalaryStructureReducer : SalaryStructureReducer,
-  LocationGroupReducer : LocationGroupReducer
+  TodayAttendanceReducer: TodayAttendanceReducer,
+  EmployeeProgressBarReducer: EmployeeProgressBarReducer,
+  RecurringReducer: RecurringReducer,
+  PayrollSettingsReducer: PayrollSettingsReducer,
+  PTSettingsReducer: PTSettingsReducer,
+  SalaryStructureReducer: SalaryStructureReducer,
+  LocationGroupReducer: LocationGroupReducer,
+  CustomStatusReducer: CustomStatusReducer,
 });

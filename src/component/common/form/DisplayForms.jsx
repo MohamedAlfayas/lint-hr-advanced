@@ -45,7 +45,8 @@ import {
   salary_form_component_name_benefits,
   salary_form_component_name_reimbursements,
   pt_settings_form_component_name,
-  location_group_component_name
+  location_group_component_name,
+  custom_status_form_component_name,
 } from "../../../common/constant/Constants";
 import BranchForm from "../../forms/BranchForm";
 import ContactGroupForm from "../../forms/Common/ContactGroupForm";
@@ -56,11 +57,11 @@ import BenfitsForm from "../../forms/Common/BenfitsForm";
 import ReimbursementsForm from "../../forms/Common/ReimbursementsForm";
 import PTSettingsForm from "../../../pages/payroll/AdvancedSettings/PTSettingsForm";
 import LocationGroupForm from "../../forms/LocationGroupForm";
-
+import CustomStatusForm from "../../forms/Common/CustomStatusForm";
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
   const { form_title, form_width_percentage, component_to_show } = useSelector(
-    (state) => state.RightSideBarReducer
+    (state) => state.RightSideBarReducer,
   );
 
   return (
@@ -110,31 +111,32 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
                 <DeductionForm />
               ) : component_to_show === salary_form_component_name_benefits ? (
                 <BenfitsForm />
-              ) :component_to_show === salary_form_component_name_reimbursements ? (
+              ) : component_to_show ===
+                salary_form_component_name_reimbursements ? (
                 <ReimbursementsForm />
-              ) :component_to_show === salary_policy_form_component_name ? (
+              ) : component_to_show === salary_policy_form_component_name ? (
                 <SalaryPloiciesForm />
               ) : component_to_show === location_edit_form_component_name ? (
                 <LocationEditForm />
               ) : component_to_show === pt_settings_form_component_name ? (
                 <PTSettingsForm />
-              ) :  component_to_show === branch_location_form ? (
+              ) : component_to_show === branch_location_form ? (
                 <BranchLocationForm />
-                ) :
-              component_to_show === location_group_component_name ? (
-                <LocationGroupForm/>
-                ) :
-                    component_to_show === status_component_name ? (
-                    <StatusForm/>
-                    ) : component_to_show === piriorities_component_name ? (
-                      <PirioritiesForm/>
-                      ) :  component_to_show === contact_group_component_name ? (
-                        <ContactGroupForm/>
-                        ) : component_to_show === contacts_component_name ? (
-                          <ContactsForm/>
-                          ) : component_to_show === custom_form_component_name ? (
-                          <CustomForm/>
-                          ) : (
+              ) : component_to_show === location_group_component_name ? (
+                <LocationGroupForm />
+              ) : component_to_show === custom_status_form_component_name ? (
+                <CustomStatusForm />
+              ) : component_to_show === status_component_name ? (
+                <StatusForm />
+              ) : component_to_show === piriorities_component_name ? (
+                <PirioritiesForm />
+              ) : component_to_show === contact_group_component_name ? (
+                <ContactGroupForm />
+              ) : component_to_show === contacts_component_name ? (
+                <ContactsForm />
+              ) : component_to_show === custom_form_component_name ? (
+                <CustomForm />
+              ) : (
                 <></>
               )}
             </div>

@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { VIEW_ALL_EMPLOYEE_ACCESS_KEY, VIEW_TEAM_EMPLOYEE_ACCESS_KEY } from "../../common/constant/RoleConstants";
+import {
+  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
+  VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
+} from "../../common/constant/RoleConstants";
 
 const Navdata = () => {
   const history = useNavigate();
@@ -144,8 +147,9 @@ const Navdata = () => {
   ]);
 
   const menuItems = () => {
-
-    const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+    const profile_data = JSON.parse(
+      localStorage.getItem("lint_hr_profile_data"),
+    );
 
     let menuList = [
       {
@@ -217,7 +221,7 @@ const Navdata = () => {
               "8d33a155-2d7e-4a5d-8608-35431a44662c",
               "2ebd3c5d-dca8-45cc-8334-5a32f2451893",
               "1b5d106f-f3e8-41f3-8041-d3f71a19d27d",
-              "08cd201a-d20d-45d3-8b60-3a6fb7e4acc0"
+              "08cd201a-d20d-45d3-8b60-3a6fb7e4acc0",
             ],
           },
           // {
@@ -296,89 +300,88 @@ const Navdata = () => {
           updateIconSidebar(e);
         },
       },
-      {
-        label: "Task",
-        isHeader: true,
-      },
-      {
-        id: "control-panel",
-        label: "Control Panel",
-        icon: " ri-list-settings-line",
-        perm: "all",
-        link: "/#",
-        click: function (e) {
-          e.preventDefault();
-          setIsControlPanel(!isControlPanel);
-          setIscurrentState("Control Panel");
-          updateIconSidebar(e);
-        },
-        stateVariables: isControlPanel,
-        subItems: [
-          {
-            id: "status",
-            label: "Status",
-            link: "/status",
-            parentId: "baseUi",
-            perm: "all",
-          },
-          {
-            id: "piriorities",
-            label: "Piriorities",
-            link: "/piriorities",
-            parentId: "baseUi",
-            perm: "all",
-          },
-        ],
-      },
-      {
-        id: "contact",
-        label: "Contact",
-        icon: "  ri-contacts-book-line",
-        perm: "all",
-        link: "/#",
-        click: function (e) {
-          e.preventDefault();
-          setIsContact(!isContact);
-          setIscurrentState("Contact");
-          updateIconSidebar(e);
-        },
-        stateVariables: isContact,
-        subItems: [
-          {
-            id: "contact-group",
-            label: "Contact Group",
-            link: "/contact-group",
-            parentId: "baseUi",
-            perm: "all",
-          },
-          {
-            id: "contacts",
-            label: "Contacts",
-            link: "/contacts",
-            parentId: "baseUi",
-            perm: "all",
-          },
-        ],
-      },
-      
-      
-    ]
-    
+      // {
+      //   label: "Task",
+      //   isHeader: false,
+      // },
+      // {
+      //   id: "control-panel",
+      //   label: "Control Panel",
+      //   icon: " ri-list-settings-line",
+      //   perm: "all",
+      //   link: "/#",
+      //   click: function (e) {
+      //     e.preventDefault();
+      //     setIsControlPanel(!isControlPanel);
+      //     setIscurrentState("Control Panel");
+      //     updateIconSidebar(e);
+      //   },
+      //   stateVariables: isControlPanel,
+      //   subItems: [
+      //     {
+      //       id: "status",
+      //       label: "Status",
+      //       link: "/status",
+      //       parentId: "baseUi",
+      //       perm: "all",
+      //     },
+      //     {
+      //       id: "piriorities",
+      //       label: "Piriorities",
+      //       link: "/piriorities",
+      //       parentId: "baseUi",
+      //       perm: "all",
+      //     },
+      //   ],
+      // },
+      // {
+      //   id: "contact",
+      //   label: "Contact",
+      //   icon: "  ri-contacts-book-line",
+      //   perm: "all",
+      //   link: "/#",
+      //   click: function (e) {
+      //     e.preventDefault();
+      //     setIsContact(!isContact);
+      //     setIscurrentState("Contact");
+      //     updateIconSidebar(e);
+      //   },
+      //   stateVariables: isContact,
+      //   subItems: [
+      //     {
+      //       id: "contact-group",
+      //       label: "Contact Group",
+      //       link: "/contact-group",
+      //       parentId: "baseUi",
+      //       perm: "all",
+      //     },
+      //     {
+      //       id: "contacts",
+      //       label: "Contacts",
+      //       link: "/contacts",
+      //       parentId: "baseUi",
+      //       perm: "all",
+      //     },
+      //   ],
+      // },
+    ];
 
-
-    if (!!profile_data && !!profile_data.is_admin && profile_data?.is_admin === true) {
-      return menuList
-    }
-    else if (!!profile_data && !!profile_data.permission_list) {
+    if (
+      !!profile_data &&
+      !!profile_data.is_admin &&
+      profile_data?.is_admin === true
+    ) {
+      return menuList;
+    } else if (!!profile_data && !!profile_data.permission_list) {
       let updated_menu = [];
       menuList.map((route) => {
         if (
           (Array.isArray(route?.perm) &&
             (route?.perm).some((d) =>
-              profile_data?.permission_list.includes(d)
+              profile_data?.permission_list.includes(d),
             )) ||
           (typeof route?.perm === "string" && route?.perm === "all") ||
-          (route.isHeader === true)
+          route.isHeader === true
         ) {
           let thisSubMenu = route.subItems;
           let updatedSubMenu = [];
@@ -388,7 +391,7 @@ const Navdata = () => {
               if (
                 (Array.isArray(ts?.perm) &&
                   (ts?.perm).some((d) =>
-                    profile_data?.permission_list.includes(d)
+                    profile_data?.permission_list.includes(d),
                   )) ||
                 (typeof ts?.perm === "string" && ts?.perm === "all")
               ) {
@@ -403,13 +406,11 @@ const Navdata = () => {
         }
       });
 
-      return updated_menu
+      return updated_menu;
+    } else {
+      return menuList;
     }
-    else {
-      return menuList
-    }
-  }
-
+  };
 
   return <React.Fragment>{menuItems()}</React.Fragment>;
 };
