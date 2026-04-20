@@ -26,7 +26,6 @@ function App() {
     const location = useLocation();
 
   useEffect(() => {
-    console.clear()
  
     // Api({
     //   method: "GET",

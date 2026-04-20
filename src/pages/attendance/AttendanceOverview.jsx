@@ -11,8 +11,6 @@ const AttendanceOverview = () => {
     (state) => state.AttendanceReportReducer
   );
 
-  console.clear()
-
   console.log("Chart Data - ",chartData)
 
   const chartDataMemoized = useMemo(() => chartData, [chartData]);

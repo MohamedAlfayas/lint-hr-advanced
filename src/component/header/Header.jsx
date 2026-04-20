@@ -42,7 +42,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
     (state) => ({
       show_attendance_timer: state.ClockReducer.show_attendance_timer,
     }),
-    shallowEqual
+    shallowEqual,
   );
 
   useEffect(() => {
@@ -72,16 +72,22 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
 
   const emp_department = profile_data.primary_department_id_list
     ? department_data.filter((d) =>
-        (profile_data?.primary_department_id_list).includes(d.id)
+        (profile_data?.primary_department_id_list).includes(d.id),
       )
     : [];
 
   useEffect(() => {
-    if (profile_data.permission_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)) {
-      setShowEmpTeam(true);
-    }
-    if (profile_data.permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)) {
-      setShowEmpAll(true);
+    let perm_list = profile_data.permission_list;
+
+    if (perm_list != null && perm_list != undefined) {
+      if (
+        perm_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)
+      ) {
+        setShowEmpTeam(true);
+      }
+      if (perm_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)) {
+        setShowEmpAll(true);
+      }
     }
 
     if (profile_data.length > 0) {
@@ -104,7 +110,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
         localStorage.setItem("is_menu_open", "open");
         localStorage.setItem(
           "left_side_bar_type",
-          leftsidbarSizeTypes.SMALLICON
+          leftsidbarSizeTypes.SMALLICON,
         );
       }
       document.querySelector(".hamburger-icon").classList.toggle("open");
@@ -247,10 +253,9 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
               {/* <FullScreenDropdown /> */}
 
               {/* RightSideBar Form View */}
-               <CommonForm />
+              <CommonForm />
 
               <TimeLineList />
-
 
               {/* Dark/Light Mode set */}
               <LightDark

@@ -18,7 +18,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { BaseURL } from "../../../common/api/BaseURL";
+import { BaseURL, getBaseUrlFromDomain } from "../../../common/api/BaseURL";
 
 const WorkSpace = () => {
   const [company_name, setDomain] = useState("");
@@ -32,24 +32,22 @@ const WorkSpace = () => {
       company_name: company_name || "",
     },
     validationSchema: Yup.object({
-      company_name: Yup.string()
-        .trim()
-        .matches(/^[a-zA-Z0-9.-]+$/, "Invalid company_name URL")
-        .required("Domain URL is required"),
+      company_name: Yup.string().trim().required("Domain URL is required"),
     }),
     onSubmit: (values) => {
       const company_name = values?.company_name;
 
       if (!!company_name) {
         let url = "";
-        const domain = window.location.hostname.split(".")[0];
+
         if (
           !!process.env.REACT_APP_LC_PLATFORM &&
           process.env.REACT_APP_LC_PLATFORM === "local"
         ) {
-          url = `${BaseURL}api/auth/validate-domain/`;
+          url = `${getBaseUrlFromDomain()}api/auth/validate-company/`;
         } else {
-          url = `https://${process.env.REACT_APP_BASE_URL}/api/auth/validate-domain/`;
+          const domain = window.location.hostname.split(".")[0];
+          url = `https://${domain}.${process.env.REACT_APP_BASE_URL}/api/auth/validate-company/`;
         }
 
         axios({
@@ -67,10 +65,13 @@ const WorkSpace = () => {
             }
           })
           .catch((err) => {
+            console.error("Err - ", err);
             setErrorMessage(
               "We couldn’t find your workspace. Please Try Again.",
             );
-            toast.error(err.message);
+            toast?.error(
+              err?.response?.data?.message || "Something Went Wrong",
+            );
           });
       }
     },

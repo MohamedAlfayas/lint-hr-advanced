@@ -64,7 +64,6 @@ import no_image from "../../assets/images/users/no_img.jpg";
 
 const EmployeeForm = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-  console.log("form_obj Open", form_obj);
   const [employeeObj, setEmployeeObj] = useState({});
 
   const dispatch = useDispatch();

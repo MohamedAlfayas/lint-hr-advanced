@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BaseURL } from "./BaseURL";
+import { BaseURL, getBaseUrlFromDomain } from "./BaseURL";
 
 export const Api = axios.create({
   baseURL: "",
@@ -20,7 +20,7 @@ const getRefreshToken = async () => {
       !!process.env.REACT_APP_LC_PLATFORM &&
       process.env.REACT_APP_LC_PLATFORM === "local"
     ) {
-      refresh_token_url = BaseURL;
+      refresh_token_url = getBaseUrlFromDomain();
     } else {
       // Construct the base URL dynamically
       if (!!domain) {
@@ -140,7 +140,7 @@ const getBaseURL = () => {
     !!process.env.REACT_APP_LC_PLATFORM &&
     process.env.REACT_APP_LC_PLATFORM === "local"
   ) {
-    return BaseURL;
+    return getBaseUrlFromDomain();
   } else {
     // Construct the base URL dynamically
     if (!!domain) {
