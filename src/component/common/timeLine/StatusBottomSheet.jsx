@@ -61,7 +61,7 @@ const StatusBottomSheet = ({ show, onClose, onOpenTimeline }) => {
 
     try {
       const response = await PostApi(
-        "attendance/toggle-custom-status/",
+        "attendance/custom-statuses/toggle/",
         { custom_status_id: statusId },
         false,
       );
