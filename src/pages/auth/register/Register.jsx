@@ -63,6 +63,7 @@ const Register = () => {
   const [canResend, setCanResend] = useState(false);
   const otpRefs = useRef([]);
   const timerRef = useRef(null);
+  const [otpLoading, setOtpLoading] = useState(false);
 
   // ── Progress values: tab1=0, tab2=33, tab3=66, tab4=100
   function toggleTab(tab, value) {
@@ -89,6 +90,8 @@ const Register = () => {
       toast.error("Please Fill Your Details");
     } else {
       let url = "";
+
+      setOtpLoading(true);
 
       if (
         !!process.env.REACT_APP_LC_PLATFORM &&
@@ -117,6 +120,9 @@ const Register = () => {
         })
         .catch((err) => {
           toast?.error(err?.response?.data?.message || "Something Went Wrong");
+        })
+        .finally(() => {
+          setOtpLoading(false);
         });
     }
   };
@@ -612,9 +618,22 @@ const Register = () => {
                                 type="button"
                                 className="btn btn-success btn-label right ms-auto nexttab"
                                 onClick={(e) => GetOtp(e)}
+                                disabled={otpLoading}
                               >
-                                <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
-                                Get OTP
+                                {otpLoading ? (
+                                  <>
+                                    <span
+                                      className="spinner-border spinner-border-sm me-2"
+                                      role="status"
+                                    ></span>
+                                    Sending...
+                                  </>
+                                ) : (
+                                  <>
+                                    <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
+                                    Get OTP
+                                  </>
+                                )}
                               </Button>
                             </div>
                           </TabPane>
