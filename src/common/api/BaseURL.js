@@ -2,26 +2,25 @@
 
 
 export const getBaseUrlFromDomain = () => {
-    const REACT_APP_MULTIDB_ENABLED = process.env.REACT_APP_MULTIDB_ENABLED
-
+    const REACT_APP_MULTIDB_ENABLED = process.env.REACT_APP_MULTIDB_ENABLED || "0"
 
     let base_url = "http://192.168.0.28:8000/"
 
-    if (REACT_APP_MULTIDB_ENABLED != null && REACT_APP_MULTIDB_ENABLED != undefined && parseInt(REACT_APP_MULTIDB_ENABLED) != 0) {
-        const domain = window.location.hostname.split(".")[0];
+    if (MULTIDB_ENABLED !== 0) {
+        const hostname = window.location.hostname;
 
-        if (domain) {
-            let allowed_domain = ['localhost', '127']
+        const isLocal =
+            hostname === "localhost" ||
+            hostname === "127.0.0.1" ||
+            hostname.startsWith("192.168");
 
-            if (allowed_domain.includes(domain)) {
-                base_url = "http://192.168.0.28:8000/"
-            }
-            else {
-                base_url = `http://${domain}.localhost:8000/`;
+        if (!isLocal) {
+            const subdomain = hostname.split(".")[0];
+
+            if (subdomain) {
+                base_url = `http://${subdomain}.localhost:8000/`;
             }
         }
-
-
     }
 
     return base_url
