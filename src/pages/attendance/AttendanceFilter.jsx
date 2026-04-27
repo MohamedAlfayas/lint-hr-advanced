@@ -60,11 +60,11 @@ const AttendanceFilter = () => {
       profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)
     ) {
       setAttendanceViewFilter(
-        attendance_type_options.filter((d) => d.id !== "3")
+        attendance_type_options.filter((d) => d.id !== "3"),
       );
     } else {
       setAttendanceViewFilter(
-        attendance_type_options.filter((d) => d.id === "1")
+        attendance_type_options.filter((d) => d.id === "1"),
       );
     }
   }, []);
@@ -79,7 +79,7 @@ const AttendanceFilter = () => {
         const response = res?.data?.data;
 
         let emp_options = response.map((d) =>
-          employee_data.find((e) => e.id === d)
+          employee_data.find((e) => e.id === d),
         );
 
         setEmployeeOptions([
@@ -126,18 +126,17 @@ const AttendanceFilter = () => {
     const attendanceApi = await PostApi(
       "report/get-attendance-report/",
       filterKeys,
-      false
+      false,
     );
 
     if (attendanceApi?.status === 200) {
       const data = attendanceApi?.data?.data;
 
-      dispatch(setIndividualAttendanceReportData(data?.individual_attendance_report));
-
-      BuildAttendanceReportChart(
-        data?.individual_attendance_report,
-        dispatch
+      dispatch(
+        setIndividualAttendanceReportData(data?.individual_attendance_report),
       );
+
+      BuildAttendanceReportChart(data?.individual_attendance_report, dispatch);
 
       // Leave API
       if (filterKeys?.type === "1") {
@@ -162,15 +161,14 @@ const AttendanceFilter = () => {
 
       dispatch(
         setShowTeamTable(
-          filterKeys?.type === "2" && filterKeys?.employee === "0"
-        )
+          (filterKeys?.type === "2" && filterKeys?.employee === "0") ||
+            filterKeys?.type === "3",
+        ),
       );
 
       setTimeout(() => dispatch(setLoaderVisible(false)), 500);
     } else {
-      toast.error(
-        attendanceApi?.data?.message || attendanceApi?.data?.detail
-      );
+      toast.error(attendanceApi?.data?.message || attendanceApi?.data?.detail);
       setTimeout(() => dispatch(setLoaderVisible(false)), 500);
     }
   };
@@ -209,30 +207,26 @@ const AttendanceFilter = () => {
               options={hr_status_options}
               placeholder="Select Status"
               value={hr_status_options.find(
-                (d) => d.id === filterKeys.hr_status
+                (d) => d.id === filterKeys.hr_status,
               )}
               onChange={handleHRStatusChange}
             />
           </Col>
 
-          <Col xl={2}>
+          {/* <Col xl={2}>
             <Select
               options={record_options}
               placeholder="Select Record"
-              value={record_options.find(
-                (d) => d.id === filterKeys.record
-              )}
+              value={record_options.find((d) => d.id === filterKeys.record)}
               onChange={handleRecordChange}
             />
-          </Col>
+          </Col> */}
 
           <Col xl={2}>
             <Select
               options={attendanceViewFilter}
               placeholder="Select Type"
-              value={attendanceViewFilter.find(
-                (d) => d.id === filterKeys.type
-              )}
+              value={attendanceViewFilter.find((d) => d.id === filterKeys.type)}
               onChange={handleTypeChange}
             />
           </Col>
@@ -244,7 +238,7 @@ const AttendanceFilter = () => {
                 components={{ Option: EmployeeDisplayInSelect }}
                 placeholder="Select Employee"
                 value={employeeOptions.find(
-                  (d) => d.id === filterKeys.employee
+                  (d) => d.id === filterKeys.employee,
                 )}
                 onChange={handleEmployeeChange}
               />

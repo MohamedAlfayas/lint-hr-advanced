@@ -40,10 +40,10 @@ const AttendanceDashboard = () => {
   const { profile_data } = useSelector((state) => state.MyProfileReducer);
 
   const { showTeamTable } = useSelector(
-    (state) => state.AttendanceReportReducer
+    (state) => state.AttendanceReportReducer,
   );
   const show_attendance_timer = useSelector(
-    (state) => state.ClockReducer.show_attendance_timer
+    (state) => state.ClockReducer.show_attendance_timer,
   );
 
   const department_data = GetLocalStorageData("department");
@@ -51,12 +51,10 @@ const AttendanceDashboard = () => {
   const [hideTimer, setHideTimer] = useState(false);
 
   const emp_department = profile_data.primary_department_id_list
-                                          ? department_data.filter((d) =>
-                                              (profile_data?.primary_department_id_list).includes(
-                                                d.id
-                                              )
-                                            )
-                                          : []
+    ? department_data.filter((d) =>
+        (profile_data?.primary_department_id_list).includes(d.id),
+      )
+    : [];
 
   useEffect(() => {
     dispatch(setLoaderVisible(true));
@@ -80,8 +78,7 @@ const AttendanceDashboard = () => {
         ResetLoaderVisible();
       });
 
-     if (profile_data.length > 0) {
- 
+    if (profile_data.length > 0) {
       const isMobileCheckinAllowed = profile_data.can_web_checkin || false;
 
       setHideTimer(isMobileCheckinAllowed);
@@ -118,16 +115,20 @@ const AttendanceDashboard = () => {
           {/* Filter Card End */}
 
           <Row className="project-wrapper">
-            {!showTeamTable &&  show_attendance_timer && (
+            {!showTeamTable && show_attendance_timer && (
               <Col xxl={3} xl={3} sm={3}>
                 <TimeTracking hideTimer={hideTimer} />
               </Col>
             )}
-           {!showTeamTable && (
-  <Col xxl={show_attendance_timer ? 9 : 12} xl={show_attendance_timer ? 9 : 12} sm={show_attendance_timer ? 9 : 12}>
-    <AttendanceOverview />
-  </Col>
-)}
+            {!showTeamTable && (
+              <Col
+                xxl={show_attendance_timer ? 9 : 12}
+                xl={show_attendance_timer ? 9 : 12}
+                sm={show_attendance_timer ? 9 : 12}
+              >
+                <AttendanceOverview />
+              </Col>
+            )}
             {!showTeamTable && (
               <Col xxl={12}>
                 <AttendanceEmployeeTable />

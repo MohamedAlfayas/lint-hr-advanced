@@ -52,7 +52,7 @@ const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [comapnyName, setCompanyName] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [domain, setDomain] = useState("");
   const [domainChangeAccess, setDomainChangeAccess] = useState(true);
 
@@ -83,7 +83,7 @@ const Register = () => {
       name.trim().length === 0 ||
       email.trim().length === 0 ||
       password.trim().length === 0 ||
-      comapnyName.trim().length === 0 ||
+      companyName.trim().length === 0 ||
       domain.trim().length === 0
     ) {
       toast.error("Please Fill Your Details");
@@ -105,7 +105,7 @@ const Register = () => {
         url: url,
         data: {
           email: email,
-          comapnyName: comapnyName,
+          companyName: companyName,
           domain: domain,
         },
       })
@@ -290,9 +290,9 @@ const Register = () => {
 
   useEffect(() => {
     if (domainChangeAccess === true) {
-      setDomain(setDomainFormat(comapnyName));
+      setDomain(setDomainFormat(companyName));
     }
-  }, [comapnyName]);
+  }, [companyName]);
 
   const handleDomainChange = (e) => {
     setDomainChangeAccess(false);
@@ -541,25 +541,25 @@ const Register = () => {
                                     Company Name
                                   </Label>
                                   <Input
-                                    name="comapnyName"
+                                    name="companyName"
                                     placeholder="Enter Company Name"
                                     type="text"
                                     onChange={(e) =>
                                       setCompanyName(e.target.value)
                                     }
                                     onBlur={validation.handleBlur}
-                                    value={comapnyName || ""}
+                                    value={companyName || ""}
                                     invalid={
                                       !!(
-                                        validation.touched.comapnyName &&
-                                        validation.errors.comapnyName
+                                        validation.touched.companyName &&
+                                        validation.errors.companyName
                                       )
                                     }
                                   />
-                                  {validation.touched.comapnyName &&
-                                    validation.errors.comapnyName && (
+                                  {validation.touched.companyName &&
+                                    validation.errors.companyName && (
                                       <FormFeedback>
-                                        {validation.errors.comapnyName}
+                                        {validation.errors.companyName}
                                       </FormFeedback>
                                     )}
                                 </div>
@@ -592,7 +592,7 @@ const Register = () => {
                                       )}
                                   </div>
                                   <div className="form-text">
-                                    {comapnyName
+                                    {companyName
                                       ? `Your company domain will be: https://${domain}.linthr.com`
                                       : "(*) We will create a unique company URL for you to log into Lint HR"}
                                   </div>

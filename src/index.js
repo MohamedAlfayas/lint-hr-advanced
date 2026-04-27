@@ -8,6 +8,16 @@ import appstore from './redux/store/appstore';
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
+const platform = process.env.REACT_APP_LC_PLATFORM;
+
+console.log("platform = ", platform);
+
+if (platform == "local") {
+  console.log = () => { };
+  console.debug = () => { };
+  console.info = () => { };
+}
+
 root.render(
   <Provider store={appstore}>
     <React.Fragment>

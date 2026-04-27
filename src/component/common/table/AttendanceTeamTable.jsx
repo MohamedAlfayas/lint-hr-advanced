@@ -35,7 +35,7 @@ const AttendanceTeamTable = () => {
   const [notes_modal, setNotes_modal] = useState(false);
 
   const { team_attendance_report_data } = useSelector(
-    (state) => state.AttendanceReportReducer
+    (state) => state.AttendanceReportReducer,
   );
 
   function open_timeline(rowData) {
@@ -45,381 +45,6 @@ const AttendanceTeamTable = () => {
   function open_notes_modal(rowData) {
     setNotes_modal(!notes_modal);
   }
-
-  const Attendance_data1 = [
-    {
-      id: 31,
-      employee_id: 40,
-      work_schedule_id: 8,
-      is_present: true,
-      date: "2023-12-14",
-      total_work_duration: 4042,
-      total_break_duration: 102219,
-      currently_checked_in: true,
-      total_no_of_check_in: 13,
-      total_no_of_check_out: 12,
-      first_check_in: "14-12-2023 10:34:57",
-      last_check_out: "15-12-2023 16:05:50",
-      first_check_in_location: "Lintcloud",
-      last_check_out_location: "Lintcloud",
-      status: true,
-      is_properly_closed: true,
-      is_holiday: false,
-      holiday_id: 0,
-      is_leave_approved: false,
-      leave_approval_id: 0,
-      is_week_off: false,
-      week_off_day: null,
-      leave_taken_without_approval: false,
-      paid_hr: 0,
-      ot_hr: 0,
-      is_paid_hr_edit: false,
-      is_ot_hr_edit: false,
-      notes: [],
-      hr_status: 1,
-      workday_data: [
-        {
-          id: 348,
-          entry_time: "14-12-2023 10:34:57",
-          entry_type: 1,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 349,
-          entry_time: "14-12-2023 10:35:05",
-          entry_type: 2,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 350,
-          entry_time: "14-12-2023 10:35:53",
-          entry_type: 1,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 351,
-          entry_time: "14-12-2023 10:36:06",
-          entry_type: 2,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 352,
-          entry_time: "15-12-2023 14:47:27",
-          entry_type: 1,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 353,
-          entry_time: "15-12-2023 14:52:08",
-          entry_type: 2,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 354,
-          entry_time: "15-12-2023 14:55:33",
-          entry_type: 1,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 355,
-          entry_time: "15-12-2023 14:57:06",
-          entry_type: 2,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 356,
-          entry_time: "15-12-2023 14:58:57",
-          entry_type: 1,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 357,
-          entry_time: "15-12-2023 14:59:31",
-          entry_type: 2,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 358,
-          entry_time: "15-12-2023 14:59:37",
-          entry_type: 1,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 359,
-          entry_time: "15-12-2023 14:59:42",
-          entry_type: 2,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 360,
-          entry_time: "15-12-2023 14:59:47",
-          entry_type: 1,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 361,
-          entry_time: "15-12-2023 15:00:19",
-          entry_type: 2,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 362,
-          entry_time: "15-12-2023 15:00:31",
-          entry_type: 1,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 363,
-          entry_time: "15-12-2023 15:05:08",
-          entry_type: 2,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 364,
-          entry_time: "15-12-2023 15:08:35",
-          entry_type: 1,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 365,
-          entry_time: "15-12-2023 15:14:31",
-          entry_type: 2,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 366,
-          entry_time: "15-12-2023 15:16:36",
-          entry_type: 1,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 367,
-          entry_time: "15-12-2023 15:16:46",
-          entry_type: 2,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 368,
-          entry_time: "15-12-2023 15:16:50",
-          entry_type: 1,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 369,
-          entry_time: "15-12-2023 15:22:03",
-          entry_type: 2,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 370,
-          entry_time: "15-12-2023 15:22:10",
-          entry_type: 1,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 371,
-          entry_time: "15-12-2023 16:05:50",
-          entry_type: 2,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 372,
-          entry_time: "15-12-2023 16:05:59",
-          entry_type: 1,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-      ],
-    },
-    {
-      id: 30,
-      employee_id: 40,
-      work_schedule_id: 8,
-      is_present: true,
-      date: "2023-12-13",
-      total_work_duration: 161,
-      total_break_duration: 693,
-      currently_checked_in: false,
-      total_no_of_check_in: 2,
-      total_no_of_check_out: 2,
-      first_check_in: "13-12-2023 15:45:56",
-      last_check_out: "13-12-2023 16:00:10",
-      first_check_in_location: "Lintcloud",
-      last_check_out_location: "Lintcloud",
-      status: false,
-      is_properly_closed: true,
-      is_holiday: false,
-      holiday_id: 0,
-      is_leave_approved: false,
-      leave_approval_id: 0,
-      is_week_off: false,
-      week_off_day: null,
-      leave_taken_without_approval: false,
-      paid_hr: 0,
-      ot_hr: 0,
-      is_paid_hr_edit: false,
-      is_ot_hr_edit: false,
-      notes: [],
-      hr_status: 1,
-      workday_data: [
-        {
-          id: 344,
-          entry_time: "13-12-2023 15:45:56",
-          entry_type: 1,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 345,
-          entry_time: "13-12-2023 15:47:01",
-          entry_type: 2,
-          punched_by: 1,
-          location: "Lintcloud",
-        },
-        {
-          id: 346,
-          entry_time: "13-12-2023 15:58:34",
-          entry_type: 1,
-          punched_by: 2,
-          location: "Lintcloud",
-        },
-        {
-          id: 347,
-          entry_time: "13-12-2023 16:00:10",
-          entry_type: 2,
-          punched_by: 2,
-          location: "Lintcloud",
-        },
-      ],
-    },
-  ];
-
-  const TeamAttendance = [
-    {
-      employee_id: 40,
-      department_id: 9,
-      ws_total_hr: "180",
-      paied_hr: "170",
-      ot_hr: "5h",
-      hr_status: 1,
-      workday_data: [
-        {
-          date: "01-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "02-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "03-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "04-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "05-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "06-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "07-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "08-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "09-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "10-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-      ],
-    },
-    {
-      employee_id: 42,
-      department_id: 10,
-      ws_total_hr: "180",
-      paied_hr: "170",
-      ot_hr: "5h",
-      hr_status: 1,
-      workday_data: [
-        {
-          date: "01-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "02-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "03-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "04-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "05-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "06-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "07-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "08-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "09-12-2023 15:45:56",
-          paid_hr: 28800,
-        },
-        {
-          date: "10-12-2023 15:45:56",
-          paid_hr: 0,
-        },
-      ],
-    },
-  ];
 
   const EmployeeCell = ({ rowData, dataKey, ...props }) => {
     let at_employee_data = employee_data.find(function (i) {
@@ -487,7 +112,7 @@ const AttendanceTeamTable = () => {
   const DepartmentCell = ({ rowData, dataKey, ...props }) => {
     let thisDepartment = DepartmentData
       ? DepartmentData.filter((data) =>
-          rowData.primary_department_id_list.includes(data.id)
+          rowData.primary_department_id_list.includes(data.id),
         )
       : [];
 
@@ -555,7 +180,7 @@ const AttendanceTeamTable = () => {
               <div>
                 {` ${ConvertSecondsToTime(rowData.total_paid_hr_in_seconds)}`}/
                 {` ${ConvertSecondsToTime(
-                  rowData.total_work_schedule_hr_without_break_in_seconds
+                  rowData.total_work_schedule_hr_without_break_in_seconds,
                 )}`}
               </div>
             </div>
@@ -572,7 +197,7 @@ const AttendanceTeamTable = () => {
                   (rowData.total_paid_hr_in_seconds /
                     rowData.total_work_schedule_hr_without_break_in_seconds) *
                     100 *
-                    2
+                    2,
                 ),
               }}
             ></div>
@@ -629,7 +254,13 @@ const AttendanceTeamTable = () => {
               {format(new Date(day.date), "dd MMM, yyyy")}
             </HeaderCell>
             {/* <Cell dataKey={`workday_data[${index}].final_paid_hr_in_seconds`} /> */}
-            <Cell>
+            <Cell
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
               {(rowData) => {
                 let result_text = "";
                 let result_text_color = "black";
@@ -637,7 +268,7 @@ const AttendanceTeamTable = () => {
                 if (rowData.workday_data[index].is_holiday === true) {
                   let holiday_name =
                     holiday_data.find(
-                      (d) => d.id === rowData.workday_data[index].holiday_id
+                      (d) => d.id === rowData.workday_data[index].holiday_id,
                     ).name || "";
                   result_text = holiday_name;
                   result_text_color = "green";
@@ -664,10 +295,10 @@ const AttendanceTeamTable = () => {
                 } else {
                   result_text =
                     parseInt(
-                      rowData.workday_data[index].final_paid_hr_in_seconds
+                      rowData.workday_data[index].final_paid_hr_in_seconds,
                     ) > 0
                       ? ConvertSecondsToTime(
-                          rowData.workday_data[index].final_paid_hr_in_seconds
+                          rowData.workday_data[index].final_paid_hr_in_seconds,
                         )
                       : "00:00Hr";
                   result_text_color = "black";

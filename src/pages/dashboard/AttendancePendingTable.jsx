@@ -36,7 +36,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
   const dispatch = useDispatch();
 
   const { attendance_approval_data } = useSelector(
-    (state) => state.AttendanceApprovalReducer
+    (state) => state.AttendanceApprovalReducer,
   );
 
   const DepartmentData = GetLocalStorageData("department") || [];
@@ -44,7 +44,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
 
   useEffect(() => {
     dispatch(
-      setAttendanceApprovalTableFilterKeys({ primary_department_id_list: 0 })
+      setAttendanceApprovalTableFilterKeys({ primary_department_id_list: 0 }),
     );
   }, []);
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
@@ -56,7 +56,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
       .padStart(2, "0")}`;
     if (
       profile_data.permission_list.includes(
-        VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
+        VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
       )
     ) {
       Api({
@@ -91,7 +91,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
   }
 
   const AttendancependingData = attendance_approval_data.filter(
-    (item) => item.hr_status === 3
+    (item) => item.hr_status === 3,
   );
   const DataLength = AttendancependingData.length;
 
@@ -120,7 +120,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
     const Api = await PostApi(
       "/attendance/update-notes/",
       notesUpdateObj,
-      false
+      false,
     );
     if (Api.status && Api.status === 200) {
       setNotes_modal(false);
@@ -139,84 +139,88 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
       filterable: false,
       id: "employee_id",
 
-     accessor: (obj) => {
-  const EmployeeData = GetLocalStorageData("employee") || [];
-  const thisEmployee = EmployeeData.find(
-    (data) => data.id === obj.employee_id
-  );
+      accessor: (obj) => {
+        const EmployeeData = GetLocalStorageData("employee") || [];
+        const thisEmployee = EmployeeData.find(
+          (data) => data.id === obj.employee_id,
+        );
 
-  // If no match, return fallback UI
-  if (!thisEmployee) {
-    return (
-      <div className="d-flex gap-2 align-items-center">
-        <div className="flex-shrink-0">
-          <div
-            className="avatar-xs rounded-circle"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              background: "#6c757d",
-            }}
-          >
-            <span className="first_letter" style={{ color: "white" }}>?</span>
+        // If no match, return fallback UI
+        if (!thisEmployee) {
+          return (
+            <div className="d-flex gap-2 align-items-center">
+              <div className="flex-shrink-0">
+                <div
+                  className="avatar-xs rounded-circle"
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    background: "#6c757d",
+                  }}
+                >
+                  <span className="first_letter" style={{ color: "white" }}>
+                    ?
+                  </span>
+                </div>
+              </div>
+              <div className="flex-grow-1">
+                <div>Unknown</div>
+                <div>-</div>
+              </div>
+            </div>
+          );
+        }
+
+        // If profile URL exists
+        if (thisEmployee.profile_url) {
+          return (
+            <div className="d-flex gap-2 align-items-center">
+              <div className="flex-shrink-0">
+                <img
+                  src={thisEmployee.profile_url}
+                  alt=""
+                  className="avatar-xs rounded-circle"
+                  style={{
+                    objectFit: "cover",
+                  }}
+                />
+              </div>
+              <div className="flex-grow-1">
+                <div>{thisEmployee.first_name}</div>
+                <div>{thisEmployee.email}</div>
+              </div>
+            </div>
+          );
+        }
+
+        // If no profile image, show initial
+        return (
+          <div className="d-flex gap-2 align-items-center">
+            <div className="flex-shrink-0">
+              <div
+                className="avatar-xs rounded-circle"
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  background: "#0ab39c",
+                }}
+                data-bs-toggle="tooltip"
+                title={thisEmployee.first_name || ""}
+              >
+                <span className="first_letter" style={{ color: "white" }}>
+                  {thisEmployee.first_name?.charAt(0) || "?"}
+                </span>
+              </div>
+            </div>
+            <div className="flex-grow-1">
+              <div>{thisEmployee.first_name || "Unknown"}</div>
+              <div>{thisEmployee.email || "-"}</div>
+            </div>
           </div>
-        </div>
-        <div className="flex-grow-1">
-          <div>Unknown</div>
-          <div>-</div>
-        </div>
-      </div>
-    );
-  }
-
-  // If profile URL exists
-  if (thisEmployee.profile_url) {
-    return (
-      <div className="d-flex gap-2 align-items-center">
-        <div className="flex-shrink-0">
-          <img
-            src={thisEmployee.profile_url}
-            alt=""
-            className="avatar-xs rounded-circle"
-          />
-        </div>
-        <div className="flex-grow-1">
-          <div>{thisEmployee.first_name}</div>
-          <div>{thisEmployee.email}</div>
-        </div>
-      </div>
-    );
-  }
-
-  // If no profile image, show initial
-  return (
-    <div className="d-flex gap-2 align-items-center">
-      <div className="flex-shrink-0">
-        <div
-          className="avatar-xs rounded-circle"
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            background: "#0ab39c",
-          }}
-          data-bs-toggle="tooltip"
-          title={thisEmployee.first_name || ""}
-        >
-          <span className="first_letter" style={{ color: "white" }}>
-            {thisEmployee.first_name?.charAt(0) || "?"}
-          </span>
-        </div>
-      </div>
-      <div className="flex-grow-1">
-        <div>{thisEmployee.first_name || "Unknown"}</div>
-        <div>{thisEmployee.email || "-"}</div>
-      </div>
-    </div>
-  );
-}
-,
+        );
+      },
     },
 
     {
@@ -268,7 +272,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
       id: "work_schedule",
       accessor: (obj) => {
         let workSchedule = ConvertSecondsToTime(
-          obj.work_schedule_duration_without_break
+          obj.work_schedule_duration_without_break,
         );
         return <React.Fragment> {workSchedule} </React.Fragment>;
       },
@@ -290,7 +294,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
       id: "edited_hours",
       accessor: (obj) => {
         let edited_hours = ConvertSecondsToTime(
-          obj.edited_checked_in_hr_in_seconds
+          obj.edited_checked_in_hr_in_seconds,
         );
 
         return <b>{edited_hours}</b>;
@@ -417,7 +421,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
                       ) {
                         let checkInTime = format(
                           ParseTime(checkInData.entry_time),
-                          "h:mm a"
+                          "h:mm a",
                         );
                         let checkOutTime = checkOutData
                           ? format(ParseTime(checkOutData.entry_time), "h:mm a")
@@ -425,7 +429,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
                         let totalDifference = checkOutData
                           ? differenceInMinutes(
                               ParseTime(checkOutData.entry_time),
-                              ParseTime(checkInData.entry_time)
+                              ParseTime(checkInData.entry_time),
                             )
                           : 0;
                         let totalHours = Math.floor(totalDifference / 60);

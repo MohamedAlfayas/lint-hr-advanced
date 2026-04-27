@@ -14,10 +14,13 @@ import { generateToken } from "../../firebase";
 
 // Default avatar image (optional)
 import avatar1 from "../../assets/images/users/avatar-1.jpg";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 
 const ProfileDropdown = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const { showLoader } = useSelector((state) => state.LoaderReducer);
 
   const [userName, setUserName] = useState("Admin");
   const [isProfileDropdown, setIsProfileDropdown] = useState(false);
@@ -37,6 +40,7 @@ const ProfileDropdown = () => {
   };
 
   const logout = async () => {
+    dispatch(setLoaderVisible(true))
     try {
       const newFCMToken = await generateToken();
 
@@ -74,13 +78,26 @@ const ProfileDropdown = () => {
         toast.success("Logged Out Successfully");
         navigate("/auth/login");
       } else {
+        dispatch(setLoaderVisible(false))
         toast.error(Api?.data?.message || Api?.data?.detail || "Logout failed");
       }
     } catch (error) {
+      dispatch(setLoaderVisible(false))
       console.error("Logout Error:", error);
       toast.error("An unexpected error occurred during logout.");
     }
   };
+
+
+  const goToProfile = () => {
+    let emp_uuid = profile_data?.emp_uuid
+    if (emp_uuid != null && emp_uuid != undefined && emp_uuid != "") {
+      navigate(`/employee/view/${emp_uuid}`)
+    }
+    else {
+      toast.error("Something Went Wrong !!")
+    }
+  }
 
   return (
     <Dropdown
@@ -128,46 +145,9 @@ const ProfileDropdown = () => {
       <DropdownMenu className="dropdown-menu-end">
         <h6 className="dropdown-header">Welcome {userName}!</h6>
 
-        <DropdownItem tag={Link} to="/profile">
+        <DropdownItem onClick={goToProfile}>
           <i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
           <span className="align-middle">Profile</span>
-        </DropdownItem>
-
-        <DropdownItem>
-          <i className="mdi mdi-message-text-outline text-muted fs-16 align-middle me-1"></i>
-          <span className="align-middle">Messages</span>
-        </DropdownItem>
-
-        <DropdownItem>
-          <i className="mdi mdi-calendar-check-outline text-muted fs-16 align-middle me-1"></i>
-          <span className="align-middle">Taskboard</span>
-        </DropdownItem>
-
-        <DropdownItem>
-          <i className="mdi mdi-lifebuoy text-muted fs-16 align-middle me-1"></i>
-          <span className="align-middle">Help</span>
-        </DropdownItem>
-
-        <div className="dropdown-divider" />
-
-        <DropdownItem>
-          <i className="mdi mdi-wallet text-muted fs-16 align-middle me-1"></i>
-          <span className="align-middle">
-            Balance: <b>$0.00</b>
-          </span>
-        </DropdownItem>
-
-        <DropdownItem>
-          <span className="badge bg-success-subtle text-success mt-1 float-end">
-            New
-          </span>
-          <i className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i>
-          <span className="align-middle">Settings</span>
-        </DropdownItem>
-
-        <DropdownItem>
-          <i className="mdi mdi-lock text-muted fs-16 align-middle me-1"></i>
-          <span className="align-middle">Lock screen</span>
         </DropdownItem>
 
         <DropdownItem onClick={logout}>

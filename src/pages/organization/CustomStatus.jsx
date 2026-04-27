@@ -14,10 +14,6 @@ const CustomStatus = () => {
   );
 
   useEffect(() => {
-    document.title = `Custom Status | ${MetaTitle}`;
-  }, []);
-
-  useEffect(() => {
     let sourceData = [];
 
     if (Array.isArray(reduxData) && reduxData.length > 0) {

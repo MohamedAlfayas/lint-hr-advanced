@@ -558,7 +558,10 @@ const LeaveTypeForm = () => {
                 <>
                   <Col md={12} lg={12} xxl={12}>
                     <div>
-                      <Label htmlFor="lt_weekend_between_leave" className="form-label">
+                      <Label
+                        htmlFor="lt_weekend_between_leave"
+                        className="form-label"
+                      >
                         Weekend Between Leave
                       </Label>
                       <div className="mb-2">
@@ -570,7 +573,9 @@ const LeaveTypeForm = () => {
                             type="checkbox"
                             className="form-check-input form-switch-md"
                             id="lt_weekend_between_leave"
-                            checked={leaveTypeData.weekend_between_leave || false}
+                            checked={
+                              leaveTypeData.weekend_between_leave || false
+                            }
                             onChange={(e) =>
                               setLeaveTypeData({
                                 ...leaveTypeData,
@@ -584,7 +589,10 @@ const LeaveTypeForm = () => {
                   </Col>
                   <Col md={12} lg={12} xxl={12}>
                     <div>
-                      <Label htmlFor="lt_holiday_between_leave" className="form-label">
+                      <Label
+                        htmlFor="lt_holiday_between_leave"
+                        className="form-label"
+                      >
                         Holiday Between Leave
                       </Label>
                       <div className="mb-2">
@@ -596,7 +604,9 @@ const LeaveTypeForm = () => {
                             type="checkbox"
                             className="form-check-input form-switch-md"
                             id="lt_holiday_between_leave"
-                            checked={leaveTypeData.holiday_between_leave || false}
+                            checked={
+                              leaveTypeData.holiday_between_leave || false
+                            }
                             onChange={(e) =>
                               setLeaveTypeData({
                                 ...leaveTypeData,
@@ -610,27 +620,29 @@ const LeaveTypeForm = () => {
                   </Col>
                   {/* ✅ Config Exempt */}
                   <Col md={12}>
-                    <Label htmlFor="lt_config_exempt" className="form-label">Config Exempt</Label>
-                     <div className="mb-2">
-                    <div className="form-check form-switch form-switch-md form-switch-success">
-                      <Input
-                        type="checkbox"
-                        className="form-check-input form-switch-md"
-                        id="lt_config_exempt"
-                        checked={leaveTypeData.is_config_exempt || false}
-                        onChange={(e) =>
-                          setLeaveTypeData({
-                            ...leaveTypeData,
-                            is_config_exempt: e.target.checked,
-                          })
-                        }
-                      />
-                    </div>
+                    <Label htmlFor="lt_config_exempt" className="form-label">
+                      Config Exempt
+                    </Label>
+                    <div className="mb-2">
+                      <div className="form-check form-switch form-switch-md form-switch-success">
+                        <Input
+                          type="checkbox"
+                          className="form-check-input form-switch-md"
+                          id="lt_config_exempt"
+                          checked={leaveTypeData.is_config_exempt || false}
+                          onChange={(e) =>
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              is_config_exempt: e.target.checked,
+                            })
+                          }
+                        />
+                      </div>
                     </div>
                   </Col>
 
                   {/* ✅ Allow Employee to Exceed */}
-                  <Col md={12}>
+                  {/* <Col md={12}>
                     <Label htmlFor="lt_exceed_limit" className="form-label">
                       Allow Employee to Exceed Limit
                     </Label>
@@ -652,31 +664,33 @@ const LeaveTypeForm = () => {
                       />
                     </div>
                     </div>
-                  </Col>
+                  </Col> */}
 
                   {/* ✅ Carry Forward Toggle */}
                   <Col md={12}>
-                    <Label htmlFor="lt_carry_forward" className="form-label">Allow Carry Forward</Label>
+                    <Label htmlFor="lt_carry_forward" className="form-label">
+                      Allow Carry Forward
+                    </Label>
                     <div className="mb-2">
-                    <div className="form-check form-switch form-switch-md form-switch-success">
-                      <Input
-                        type="checkbox"
-                        className="form-check-input form-switch-md"
-                        id="lt_carry_forward"
-                        checked={
-                          leaveTypeData.allowed_to_carry_forward || false
-                        }
-                        onChange={(e) =>
-                          setLeaveTypeData({
-                            ...leaveTypeData,
-                            allowed_to_carry_forward: e.target.checked,
-                            carry_forward_limit: e.target.checked
-                              ? leaveTypeData.carry_forward_limit
-                              : 0,
-                          })
-                        }
-                      />
-                    </div>
+                      <div className="form-check form-switch form-switch-md form-switch-success">
+                        <Input
+                          type="checkbox"
+                          className="form-check-input form-switch-md"
+                          id="lt_carry_forward"
+                          checked={
+                            leaveTypeData.allowed_to_carry_forward || false
+                          }
+                          onChange={(e) =>
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              allowed_to_carry_forward: e.target.checked,
+                              carry_forward_limit: e.target.checked
+                                ? leaveTypeData.carry_forward_limit
+                                : 0,
+                            })
+                          }
+                        />
+                      </div>
                     </div>
                   </Col>
                   {leaveTypeData.allowed_to_carry_forward && (
@@ -692,28 +706,49 @@ const LeaveTypeForm = () => {
                           min={0}
                           value={leaveTypeData.carry_forward_limit ?? 0}
                           onFocus={(e) => {
-                            if (leaveTypeData.carry_forward_limit === 0 || leaveTypeData.carry_forward_limit === "0") {
-                              setLeaveTypeData({ ...leaveTypeData, carry_forward_limit: "" });
+                            if (
+                              leaveTypeData.carry_forward_limit === 0 ||
+                              leaveTypeData.carry_forward_limit === "0"
+                            ) {
+                              setLeaveTypeData({
+                                ...leaveTypeData,
+                                carry_forward_limit: "",
+                              });
                             }
                           }}
                           onBlur={(e) => {
-                            if (e.target.value === "" || e.target.value === null) {
-                              setLeaveTypeData({ ...leaveTypeData, carry_forward_limit: 0 });
+                            if (
+                              e.target.value === "" ||
+                              e.target.value === null
+                            ) {
+                              setLeaveTypeData({
+                                ...leaveTypeData,
+                                carry_forward_limit: 0,
+                              });
                             }
                           }}
                           onKeyDown={(e) => {
-                            if (e.key === "-" || e.key === "e" || e.key === "E" || e.key === "+") {
+                            if (
+                              e.key === "-" ||
+                              e.key === "e" ||
+                              e.key === "E" ||
+                              e.key === "+"
+                            ) {
                               e.preventDefault();
                             }
                           }}
                           onChange={(e) => {
                             if (e.target.value === "") {
-                              setLeaveTypeData({ ...leaveTypeData, carry_forward_limit: "" });
+                              setLeaveTypeData({
+                                ...leaveTypeData,
+                                carry_forward_limit: "",
+                              });
                             } else {
                               const val = parseInt(e.target.value);
                               setLeaveTypeData({
                                 ...leaveTypeData,
-                                carry_forward_limit: isNaN(val) || val < 0 ? 0 : val,
+                                carry_forward_limit:
+                                  isNaN(val) || val < 0 ? 0 : val,
                               });
                             }
                           }}

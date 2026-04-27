@@ -76,7 +76,7 @@ const AccountSettings = () => {
   const dispatch = useDispatch();
 
   const { account_settings_data } = useSelector(
-    (state) => state.AccountSettingsReducer
+    (state) => state.AccountSettingsReducer,
   );
 
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
@@ -135,12 +135,12 @@ const AccountSettings = () => {
     setDob(ConvertDateFormat(ConvertISODateFormat(account_settings_data.dob)));
     setJoinDate(
       ConvertDateFormat(
-        ConvertISODateFormat(account_settings_data.joining_date)
-      )
+        ConvertISODateFormat(account_settings_data.joining_date),
+      ),
     );
 
-    (form_obj?.primary_department_id_list).length
-      ? GetReportingManager(form_obj?.primary_department_id_list)
+    (account_settings_data?.primary_department_id_list).length
+      ? GetReportingManager(account_settings_data?.primary_department_id_list)
       : setReportingManagerOptions([]);
 
     if (
@@ -150,8 +150,8 @@ const AccountSettings = () => {
     ) {
       setContactCountry(
         CountryList.find(
-          (d) => d.countryCode === account_settings_data.country_code
-        )
+          (d) => d.countryCode === account_settings_data.country_code,
+        ),
       );
     }
   }, [account_settings_data]);
@@ -191,7 +191,7 @@ const AccountSettings = () => {
     const Api = await PostApi(
       "employee/get-employee-list-for-reporting-manager/",
       { dep_id: valid_dep_ids },
-      false
+      false,
     );
 
     if (Api.status && Api.status === 200) {
@@ -199,8 +199,8 @@ const AccountSettings = () => {
 
       setReportingManagerOptions(
         employee_data.filter(
-          (d) => d.id !== account_settings_data.id && response.includes(d.id)
-        )
+          (d) => d.id !== account_settings_data.id && response.includes(d.id),
+        ),
       );
     } else {
       console.log("ERRR = ", Api?.data?.message);
@@ -278,7 +278,7 @@ const AccountSettings = () => {
     setEmployeeObj({
       ...employeeObj,
       cf_values: [...employeeObj.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: e.target.value } : { ...item }
+        item.id === cf_id ? { ...item, value: e.target.value } : { ...item },
       ),
     });
   };
@@ -287,7 +287,7 @@ const AccountSettings = () => {
     setEmployeeObj({
       ...employeeObj,
       cf_values: [...employeeObj.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: e.value } : item
+        item.id === cf_id ? { ...item, value: e.value } : item,
       ),
     });
   };
@@ -303,7 +303,7 @@ const AccountSettings = () => {
     const Api = await PostApi(
       "fields/upload-custom-field-file/",
       cf_form_data,
-      true
+      true,
     );
 
     if (Api.status && Api.status === 200) {
@@ -316,7 +316,7 @@ const AccountSettings = () => {
     setEmployeeObj({
       ...employeeObj,
       cf_values: [...employeeObj.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: img_url } : item
+        item.id === cf_id ? { ...item, value: img_url } : item,
       ),
     });
   };
@@ -331,11 +331,11 @@ const AccountSettings = () => {
       new_password: Yup.string()
         .matches(
           /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/,
-          "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character."
+          "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
         )
         .notOneOf(
           [Yup.ref("old_password"), null],
-          "New Password must be different from Old Password"
+          "New Password must be different from Old Password",
         )
         .required("New Password is required"),
       confirm_password: Yup.string()
@@ -446,7 +446,7 @@ const AccountSettings = () => {
       cf_values: [...employeeObj.cf_values].map((item) =>
         item.id === cf_id
           ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
-          : item
+          : item,
       ),
     });
   };
@@ -524,7 +524,7 @@ const AccountSettings = () => {
                       {employeeObj?.role?.id
                         ? role_id_option.length
                           ? role_id_option.find(
-                              (d) => d.id === employeeObj?.role?.id
+                              (d) => d.id === employeeObj?.role?.id,
                             )?.name
                           : ""
                         : ""}
@@ -651,6 +651,7 @@ const AccountSettings = () => {
                         onClick={() => {
                           tabChange("1");
                         }}
+                        type="button"
                       >
                         <i className="fas fa-home"></i>
                         Personal Details
@@ -707,7 +708,10 @@ const AccountSettings = () => {
                         <Row>
                           <Col xxl={6} sm={6} lg={6}>
                             <div>
-                              <Label htmlFor="first_name" className="form-label">
+                              <Label
+                                htmlFor="first_name"
+                                className="form-label"
+                              >
                                 First Name
                               </Label>
                               <div className="form-icon right">
@@ -879,7 +883,7 @@ const AccountSettings = () => {
                                 value={
                                   (employeeObj.gender &&
                                     gender_options.find(
-                                      (e) => e.value === employeeObj.gender
+                                      (e) => e.value === employeeObj.gender,
                                     )) ||
                                   []
                                 }
@@ -957,7 +961,7 @@ const AccountSettings = () => {
                                   onChange={(e) =>
                                     updateProfileData(
                                       "contact_number",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   invalid={
@@ -983,11 +987,11 @@ const AccountSettings = () => {
                                   >
                                     {(
                                       CountryList.filter(
-                                        (obj) => obj.show
+                                        (obj) => obj.show,
                                       ).sort((a, b) =>
                                         a.countryName.localeCompare(
-                                          b.countryName
-                                        )
+                                          b.countryName,
+                                        ),
                                       ) || []
                                     ).map((item, key) => (
                                       <DropdownItem
@@ -995,7 +999,7 @@ const AccountSettings = () => {
                                         onClick={() => {
                                           updateProfileData(
                                             "country_code",
-                                            item.countryCode
+                                            item.countryCode,
                                           );
                                           setContactCountry(item);
                                         }}
@@ -1164,8 +1168,8 @@ const AccountSettings = () => {
                                   employeeObj?.branch_id_list
                                     ? branch_options.filter((d) =>
                                         (employeeObj?.branch_id_list).includes(
-                                          d.id
-                                        )
+                                          d.id,
+                                        ),
                                       )
                                     : []
                                 }
@@ -1228,8 +1232,8 @@ const AccountSettings = () => {
                                   employeeObj?.primary_department_id_list
                                     ? dep_options.filter((d) =>
                                         (employeeObj?.primary_department_id_list).includes(
-                                          d.id
-                                        )
+                                          d.id,
+                                        ),
                                       )
                                     : []
                                 }
@@ -1290,7 +1294,7 @@ const AccountSettings = () => {
                                     reportingManagerOptions.find(
                                       (e) =>
                                         e.id ===
-                                        employeeObj.reporting_manager_id
+                                        employeeObj.reporting_manager_id,
                                     )) ||
                                   null // Set value to null initially
                                 }
@@ -1359,7 +1363,7 @@ const AccountSettings = () => {
                                 value={
                                   (employeeObj?.role?.id &&
                                     role_id_option.find(
-                                      (e) => e.id === employeeObj?.role?.id
+                                      (e) => e.id === employeeObj?.role?.id,
                                     )) ||
                                   []
                                 }
@@ -1418,7 +1422,7 @@ const AccountSettings = () => {
                                   (employeeObj.work_schedule_id &&
                                     ws_options.find(
                                       (e) =>
-                                        e.id === employeeObj.work_schedule_id
+                                        e.id === employeeObj.work_schedule_id,
                                     )) ||
                                   []
                                 }

@@ -23,6 +23,8 @@ import { toast } from "react-toastify";
 const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
   const dispatch = useDispatch();
 
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+
   const BuildTable = async (payload) => {
     dispatch(setLoaderVisible(true));
 
@@ -30,12 +32,12 @@ const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
     if (Api.status && Api.status === 200) {
       dispatch(
         setIndividualAttendanceReportData(
-          Api?.data?.data?.individual_attendance_report
-        )
+          Api?.data?.data?.individual_attendance_report,
+        ),
       );
       BuildAttendanceReportChart(
         Api?.data?.data?.individual_attendance_report,
-        dispatch
+        dispatch,
       );
     } else {
       toast.error(Api?.data?.message || Api?.data?.detail);
@@ -64,6 +66,19 @@ const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
       record: e.value,
     });
   };
+
+  useEffect(() => {
+    if (isFirstLoad) {
+      setIsFirstLoad(false);
+      return;
+    }
+
+    const delay = setTimeout(() => {
+      handleFilter();
+    }, 500);
+
+    return () => clearTimeout(delay);
+  }, [filterKeys]);
 
   const handleFilter = async () => {
     const final_filter_keys = { ...filterKeys, employee: profileObj?.id };
@@ -100,7 +115,7 @@ const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
                       value={
                         !!filterKeys?.hr_status
                           ? hr_status_options.find(
-                              (d) => d.id === filterKeys?.hr_status
+                              (d) => d.id === filterKeys?.hr_status,
                             )
                           : []
                       }
@@ -110,7 +125,7 @@ const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
                     />
                   </div>
                 </Col>
-                <Col xl={2}>
+                {/* <Col xl={2}>
                   <div className="form-icon right">
                     <Select
                       name="record_attendance"
@@ -128,9 +143,9 @@ const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
                       style={{ width: "150px", height: "40px" }}
                     />
                   </div>
-                </Col>
+                </Col> */}
 
-                <div className="col-lg-auto">
+                {/* <div className="col-lg-auto">
                   <div className="hstack gap-2">
                     <button
                       type="button"
@@ -141,7 +156,7 @@ const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
                       Filters
                     </button>
                   </div>
-                </div>
+                </div> */}
               </Row>
             </CardBody>
           </CardHeader>

@@ -29,8 +29,6 @@ import SimpleBar from "simplebar-react";
 const EmployeeOverview = (props) => {
   SwiperCore.use([Autoplay]);
   const { profileObj } = props;
- 
-  
 
   const DepartmentData = GetLocalStorageData("department") || [];
   const RoleData = GetLocalStorageData("role") || [];
@@ -108,7 +106,7 @@ const EmployeeOverview = (props) => {
                           {profileObj?.gender
                             ? gender_options.length
                               ? gender_options.find(
-                                  (d) => d.id === profileObj?.gender
+                                  (d) => d.id === profileObj?.gender,
                                 )?.label
                               : ""
                             : ""}
@@ -136,8 +134,8 @@ const EmployeeOverview = (props) => {
                                 .map(
                                   (deptId) =>
                                     DepartmentData.find(
-                                      (dept) => dept.id === deptId
-                                    )?.name
+                                      (dept) => dept.id === deptId,
+                                    )?.name,
                                 )
                                 .join(" / ")
                             : ""}
@@ -151,7 +149,7 @@ const EmployeeOverview = (props) => {
                           {profileObj?.role?.id
                             ? RoleData.length
                               ? RoleData.find(
-                                  (d) => d.id === profileObj?.role?.id
+                                  (d) => d.id === profileObj?.role?.id,
                                 )?.name
                               : ""
                             : ""}
@@ -166,7 +164,7 @@ const EmployeeOverview = (props) => {
                           {profileObj?.work_schedule_id
                             ? WorkScheduleData.length
                               ? WorkScheduleData.find(
-                                  (d) => d.id === profileObj?.work_schedule_id
+                                  (d) => d.id === profileObj?.work_schedule_id,
                                 )?.name
                               : ""
                             : ""}
@@ -186,42 +184,6 @@ const EmployeeOverview = (props) => {
               </CardBody>
             </SimpleBar>
           </Card>
-
-          {/* <Card>
-            <CardBody>
-              <h5 className="card-title mb-4">Portfolio</h5>
-              <div className="d-flex flex-wrap gap-2">
-                <div>
-                  <Link to="#" className="avatar-xs d-block">
-                    <span className="avatar-title rounded-circle fs-16 bg-body text-body">
-                      <i className="ri-github-fill"></i>
-                    </span>
-                  </Link>
-                </div>
-                <div>
-                  <Link to="#" className="avatar-xs d-block">
-                    <span className="avatar-title rounded-circle fs-16 bg-primary-subtle text-primary">
-                      <i className="ri-global-fill"></i>
-                    </span>
-                  </Link>
-                </div>
-                <div>
-                  <Link to="#" className="avatar-xs d-block">
-                    <span className="avatar-title rounded-circle fs-16 bg-danger-subtle text-danger">
-                      <i className="ri-dribbble-fill"></i>
-                    </span>
-                  </Link>
-                </div>
-                <div>
-                  <Link to="#" className="avatar-xs d-block">
-                    <span className="avatar-title rounded-circle fs-16 bg-success-subtle text-success">
-                      <i className="ri-pinterest-fill"></i>
-                    </span>
-                  </Link>
-                </div>
-              </div>
-            </CardBody>
-          </Card> */}
 
           <Card>
             <CardBody>
@@ -272,179 +234,35 @@ const EmployeeOverview = (props) => {
               </div>
             </CardBody>
           </Card>
-
-          <Card>
-            <CardBody>
-              <div className="d-flex align-items-center mb-3">
-                <div className="flex-grow-1">
-                  <h5 className="card-title mb-0">Suggestions</h5>
-                </div>
-                <div className="flex-shrink-0">
-                  <UncontrolledDropdown direction="start">
-                    <DropdownToggle
-                      tag="a"
-                      id="dropdownMenuLink2"
-                      role="button"
-                    >
-                      <i className="ri-more-2-fill fs-14"></i>
-                    </DropdownToggle>
-                    <DropdownMenu>
-                      <DropdownItem>View</DropdownItem>
-                      <DropdownItem>Edit</DropdownItem>
-                      <DropdownItem>Delete</DropdownItem>
-                    </DropdownMenu>
-                  </UncontrolledDropdown>
-                </div>
-              </div>
-              <div>
-                <div className="d-flex align-items-center py-3">
-                  <div className="avatar-xs flex-shrink-0 me-3">
-                    <img src={""} alt="" className="img-fluid rounded-circle" />
-                  </div>
-                  <div className="flex-grow-1">
-                    <div>
-                      <h5 className="fs-14 mb-1">Esther James</h5>
-                      <p className="fs-13 text-muted mb-0">
-                        Frontend Developer
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex-shrink-0 ms-2">
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary"
-                    >
-                      <i className="ri-user-add-line align-middle"></i>
-                    </button>
-                  </div>
-                </div>
-                <div className="d-flex align-items-center py-3">
-                  <div className="avatar-xs flex-shrink-0 me-3">
-                    <img src={""} alt="" className="img-fluid rounded-circle" />
-                  </div>
-                  <div className="flex-grow-1">
-                    <div>
-                      <h5 className="fs-14 mb-1">Jacqueline Steve</h5>
-                      <p className="fs-13 text-muted mb-0">UI/UX Designer</p>
-                    </div>
-                  </div>
-                  <div className="flex-shrink-0 ms-2">
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary"
-                    >
-                      <i className="ri-user-add-line align-middle"></i>
-                    </button>
-                  </div>
-                </div>
-                <div className="d-flex align-items-center py-3">
-                  <div className="avatar-xs flex-shrink-0 me-3">
-                    <img src={""} alt="" className="img-fluid rounded-circle" />
-                  </div>
-                  <div className="flex-grow-1">
-                    <div>
-                      <h5 className="fs-14 mb-1">George Whalen</h5>
-                      <p className="fs-13 text-muted mb-0">Backend Developer</p>
-                    </div>
-                  </div>
-                  <div className="flex-shrink-0 ms-2">
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary"
-                    >
-                      <i className="ri-user-add-line align-middle"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
-          {/* <Card>
-            <CardBody>
-              <div className="d-flex align-items-center mb-4">
-                <div className="flex-grow-1">
-                  <h5 className="card-title mb-0">Popular Posts</h5>
-                </div>
-                <div className="flex-shrink-0">
-                  <UncontrolledDropdown direction="start">
-                    <DropdownToggle
-                      tag="a"
-                      id="dropdownMenuLink1"
-                      role="button"
-                    >
-                      <i className="ri-more-2-fill fs-14"></i>
-                    </DropdownToggle>
-                    <DropdownMenu>
-                      <DropdownItem>View</DropdownItem>
-                      <DropdownItem>Edit</DropdownItem>
-                      <DropdownItem>Delete</DropdownItem>
-                    </DropdownMenu>
-                  </UncontrolledDropdown>
-                </div>
-              </div>
-              <div className="d-flex mb-4">
-                <div className="flex-shrink-0">
-                  <img src={""} alt="" height="50" className="rounded" />
-                </div>
-                <div className="flex-grow-1 ms-3 overflow-hidden">
-                  <Link to="#">
-                    <h6 className="text-truncate fs-14">
-                      Design your apps in your own way
-                    </h6>
-                  </Link>
-                  <p className="text-muted mb-0">15 Dec 2021</p>
-                </div>
-              </div>
-              <div className="d-flex mb-4">
-                <div className="flex-shrink-0">
-                  <img src={""} alt="" height="50" className="rounded" />
-                </div>
-                <div className="flex-grow-1 ms-3 overflow-hidden">
-                  <Link to="#">
-                    <h6 className="text-truncate fs-14">
-                      Smartest Applications for Business
-                    </h6>
-                  </Link>
-                  <p className="text-muted mb-0">28 Nov 2021</p>
-                </div>
-              </div>
-              <div className="d-flex">
-                <div className="flex-shrink-0">
-                  <img src={""} alt="" height="50" className="rounded" />
-                </div>
-                <div className="flex-grow-1 ms-3 overflow-hidden">
-                  <Link to="#">
-                    <h6 className="text-truncate fs-14">
-                      How to get creative in your work
-                    </h6>
-                  </Link>
-                  <p className="text-muted mb-0">21 Nov 2021</p>
-                </div>
-              </div>
-            </CardBody>
-          </Card> */}
         </Col>
         <Col xxl={9} sm={9} md={9} lg={9} style={{ marginBottom: "20px" }}>
           <Card>
             <CardBody>
               <h5 className="card-title mb-3">About</h5>
               <p>
-                Hi I'm Anna Adame, It will be as simple as Occidental; in fact,
-                it will be Occidental. To an English person, it will seem like
-                simplified English, as a skeptical Cambridge friend of mine told
-                me what Occidental is European languages are members of the same
-                family.
+                Hi I'm{" "}
+                <b>
+                  {profileObj?.first_name} {profileObj?.last_name}
+                </b>
+                , I bring a thoughtful and adaptable approach to my work,
+                focusing on clarity, consistency, and meaningful contribution in
+                everything I do. I value collaboration and believe that strong
+                communication helps teams perform at their best. In any role, I
+                aim to understand both the bigger picture and the finer details,
+                ensuring that my efforts align with organizational goals while
+                maintaining a high standard of quality and professionalism
+                across all responsibilities.
               </p>
               <p>
-                You always want to make sure that your fonts work well together
-                and try to limit the number of fonts you use to three or less.
-                Experiment and play around with the fonts that you already have
-                in the software you’re working with reputable font websites.
-                This may be the most commonly encountered tip I received from
-                the designers I spoke with. They highly encourage that you use
-                different fonts in one design, but do not over-exaggerate and go
-                overboard.
+                I am committed to continuous learning and improvement, always
+                exploring better ways to enhance efficiency and deliver
+                impactful results. Whether working independently or as part of a
+                team, I strive to remain reliable, proactive, and
+                solution-oriented. I take pride in maintaining a positive work
+                ethic and adapting to evolving challenges, ensuring that I
+                contribute effectively to the growth and success of the
+                organization while fostering a supportive and productive
+                environment.
               </p>
               <Row>
                 <Col xs={6} md={6}>
@@ -459,8 +277,9 @@ const EmployeeOverview = (props) => {
                       <h6 className="text-truncate mb-0">
                         {profileObj?.role?.id
                           ? RoleData.length
-                            ? RoleData.find((d) => d.id === profileObj?.role?.id)
-                                ?.name
+                            ? RoleData.find(
+                                (d) => d.id === profileObj?.role?.id,
+                              )?.name
                             : ""
                           : ""}{" "}
                         /{" "}
@@ -469,8 +288,8 @@ const EmployeeOverview = (props) => {
                               .map(
                                 (deptId) =>
                                   DepartmentData.find(
-                                    (dept) => dept.id === deptId
-                                  )?.name
+                                    (dept) => dept.id === deptId,
+                                  )?.name,
                               )
                               .join(" / ")
                           : ""}
@@ -1430,338 +1249,6 @@ const EmployeeOverview = (props) => {
               </Card>
             </Col>
           </Row>
-
-          <Card>
-            <CardBody>
-              <h5 className="card-title">Projects</h5>
-              <div className="d-flex justify-content-end gap-2 mb-5">
-                <div className="slider-button-prev">
-                  <div className="avatar-title fs-18 rounded px-1">
-                    <i className="ri-arrow-left-s-line"></i>
-                  </div>
-                </div>
-                <div className="slider-button-next">
-                  <div className="avatar-title fs-18 rounded px-1">
-                    <i className="ri-arrow-right-s-line"></i>
-                  </div>
-                </div>
-              </div>
-              <Swiper
-                className="project-swiper"
-                slidesPerView={3}
-                spaceBetween={20}
-                autoplay={{
-                  delay: 3000,
-                  disableOnInteraction: false,
-                }}
-                pagination={{ clickable: true }}
-              >
-                <div className="swiper-wrapper">
-                  <SwiperSlide>
-                    <Card className="profile-project-card shadow-none profile-project-primary mb-0">
-                      <CardBody className="p-4">
-                        <div className="d-flex">
-                          <div className="flex-grow-1 text-muted overflow-hidden">
-                            <h5 className="fs-14 text-truncate mb-1">
-                              <Link to="#" className="text-dark">
-                                ABC Project Customization
-                              </Link>
-                            </h5>
-                            <p className="text-muted text-truncate mb-0">
-                              Last Update :{" "}
-                              <span className="fw-semibold text-dark">
-                                4 hr Ago
-                              </span>
-                            </p>
-                          </div>
-                          <div className="flex-shrink-0 ms-2">
-                            <div className="badge bg-warning-subtle text-warning fs-10">
-                              Inprogress
-                            </div>
-                          </div>
-                        </div>
-                        <div className="d-flex mt-4">
-                          <div className="flex-grow-1">
-                            <div className="d-flex align-items-center gap-2">
-                              <div>
-                                <h5 className="fs-12 text-muted mb-0">
-                                  Members :
-                                </h5>
-                              </div>
-                              <div className="avatar-group">
-                                <div className="avatar-group-item">
-                                  <div className="avatar-xs">
-                                    <img
-                                      src={""}
-                                      alt=""
-                                      className="rounded-circle img-fluid"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="avatar-group-item">
-                                  <div className="avatar-xs">
-                                    <img
-                                      src={""}
-                                      alt=""
-                                      className="rounded-circle img-fluid"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="avatar-group-item">
-                                  <div className="avatar-xs">
-                                    <div className="avatar-title rounded-circle bg-light text-primary">
-                                      A
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="avatar-group-item">
-                                  <div className="avatar-xs">
-                                    <img
-                                      src={""}
-                                      alt=""
-                                      className="rounded-circle img-fluid"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  </SwiperSlide>
-
-                  <SwiperSlide>
-                    <Card className="profile-project-card shadow-none profile-project-success mb-0">
-                      <CardBody className="p-4">
-                        <div className="d-flex">
-                          <div className="flex-grow-1 text-muted overflow-hidden">
-                            <h5 className="fs-14 text-truncate mb-1">
-                              <Link to="#" className="text-dark">
-                                Client - John
-                              </Link>
-                            </h5>
-                            <p className="text-muted text-truncate mb-0">
-                              Last Update :{" "}
-                              <span className="fw-semibold text-dark">
-                                1 hr Ago
-                              </span>
-                            </p>
-                          </div>
-                          <div className="flex-shrink-0 ms-2">
-                            <div className="badge bg-success-subtle text-success fs-10">
-                              Completed
-                            </div>
-                          </div>
-                        </div>
-                        <div className="d-flex mt-4">
-                          <div className="flex-grow-1">
-                            <div className="d-flex align-items-center gap-2">
-                              <div>
-                                <h5 className="fs-12 text-muted mb-0">
-                                  Members :
-                                </h5>
-                              </div>
-                              <div className="avatar-group">
-                                <div className="avatar-group-item">
-                                  <div className="avatar-xs">
-                                    <img
-                                      src={""}
-                                      alt=""
-                                      className="rounded-circle img-fluid"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="avatar-group-item">
-                                  <div className="avatar-xs">
-                                    <div className="avatar-title rounded-circle bg-light text-primary">
-                                      C
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  </SwiperSlide>
-                  <SwiperSlide>
-                    <Card className="profile-project-card shadow-none profile-project-primary mb-0">
-                      <CardBody className="p-4">
-                        <div className="d-flex">
-                          <div className="flex-grow-1 text-muted overflow-hidden">
-                            <h5 className="fs-14 text-truncate mb-1">
-                              <Link to="#" className="text-dark">
-                                Brand logo Design
-                              </Link>
-                            </h5>
-                            <p className="text-muted text-truncate mb-0">
-                              Last Update :{" "}
-                              <span className="fw-semibold text-dark">
-                                2 hr Ago
-                              </span>
-                            </p>
-                          </div>
-                          <div className="flex-shrink-0 ms-2">
-                            <div className="badge bg-warning-subtle text-warning fs-10">
-                              Inprogress
-                            </div>
-                          </div>
-                        </div>
-                        <div className="d-flex mt-4">
-                          <div className="flex-grow-1">
-                            <div className="d-flex align-items-center gap-2">
-                              <div>
-                                <h5 className="fs-12 text-muted mb-0">
-                                  Members :
-                                </h5>
-                              </div>
-                              <div className="avatar-group">
-                                <div className="avatar-group-item">
-                                  <div className="avatar-xs">
-                                    <img
-                                      src={""}
-                                      alt=""
-                                      className="rounded-circle img-fluid"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  </SwiperSlide>
-                  <SwiperSlide>
-                    <Card className="profile-project-card shadow-none profile-project-success mb-0">
-                      <CardBody className="p-4">
-                        <div className="d-flex">
-                          <div className="flex-grow-1 text-muted overflow-hidden">
-                            <h5 className="fs-14 text-truncate mb-1">
-                              <Link to="#" className="text-dark">
-                                Project update
-                              </Link>
-                            </h5>
-                            <p className="text-muted text-truncate mb-0">
-                              Last Update :{" "}
-                              <span className="fw-semibold text-dark">
-                                4 hr Ago
-                              </span>
-                            </p>
-                          </div>
-                          <div className="flex-shrink-0 ms-2">
-                            <div className="badge bg-success-subtle text-success fs-10">
-                              Completed
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="d-flex mt-4">
-                          <div className="flex-grow-1">
-                            <div className="d-flex align-items-center gap-2">
-                              <div>
-                                <h5 className="fs-12 text-muted mb-0">
-                                  Members :
-                                </h5>
-                              </div>
-                              <div className="avatar-group">
-                                <div className="avatar-group-item">
-                                  <div className="avatar-xs">
-                                    <img
-                                      src={""}
-                                      alt=""
-                                      className="rounded-circle img-fluid"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="avatar-group-item">
-                                  <div className="avatar-xs">
-                                    <img
-                                      src={""}
-                                      alt=""
-                                      className="rounded-circle img-fluid"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  </SwiperSlide>
-
-                  <SwiperSlide>
-                    <Card className="profile-project-card shadow-none profile-project-primary mb-0">
-                      <CardBody className="p-4">
-                        <div className="d-flex">
-                          <div className="flex-grow-1 text-muted overflow-hidden">
-                            <h5 className="fs-14 text-truncate mb-1">
-                              <Link to="#" className="text-dark">
-                                Chat App
-                              </Link>
-                            </h5>
-                            <p className="text-muted text-truncate mb-0">
-                              Last Update :{" "}
-                              <span className="fw-semibold text-dark">
-                                1 hr Ago
-                              </span>
-                            </p>
-                          </div>
-                          <div className="flex-shrink-0 ms-2">
-                            <div className="badge bg-warning-subtle text-warning fs-10">
-                              Inprogress
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="d-flex mt-4">
-                          <div className="flex-grow-1">
-                            <div className="d-flex align-items-center gap-2">
-                              <div>
-                                <h5 className="fs-12 text-muted mb-0">
-                                  Members :
-                                </h5>
-                              </div>
-                              <div className="avatar-group">
-                                <div className="avatar-group-item">
-                                  <div className="avatar-xs">
-                                    <img
-                                      src={""}
-                                      alt=""
-                                      className="rounded-circle img-fluid"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="avatar-group-item">
-                                  <div className="avatar-xs">
-                                    <img
-                                      src={""}
-                                      alt=""
-                                      className="rounded-circle img-fluid"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="avatar-group-item">
-                                  <div className="avatar-xs">
-                                    <div className="avatar-title rounded-circle bg-light text-primary">
-                                      A
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  </SwiperSlide>
-                </div>
-              </Swiper>
-            </CardBody>
-          </Card>
         </Col>
       </Row>
     </div>

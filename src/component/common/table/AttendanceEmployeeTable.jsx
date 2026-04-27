@@ -75,26 +75,25 @@ const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
 
   const allColumns = [
-  { key: "date", label: "Date" },
-  { key: "in", label: "IN" },
-  { key: "inLocation", label: "IN Location" },
-  { key: "out", label: "OUT" },
-  { key: "outLocation", label: "OUT Location" },
-  { key: "workSchedule", label: "Work Schedule" },
-  { key: "break", label: "Break" },
-  { key: "totalIn", label: "Total IN" },
-  { key: "paidHr", label: "Paid Hr" },
-  { key: "status", label: "Status" },
-  { key: "activity", label: "Activity" },
-  { key: "notes", label: "Notes" },
-  { key: "action", label: "Action" },
-];
+    { key: "date", label: "Date" },
+    { key: "in", label: "IN" },
+    { key: "inLocation", label: "IN Location" },
+    { key: "out", label: "OUT" },
+    { key: "outLocation", label: "OUT Location" },
+    { key: "workSchedule", label: "Work Schedule" },
+    { key: "break", label: "Break" },
+    { key: "totalIn", label: "Total IN" },
+    { key: "paidHr", label: "Paid Hr" },
+    { key: "status", label: "Status" },
+    { key: "activity", label: "Activity" },
+    { key: "notes", label: "Notes" },
+    { key: "action", label: "Action" },
+  ];
 
   const { Column, HeaderCell, Cell } = Table;
   const [loading, setLoading] = React.useState(false);
   const employee_data = GetLocalStorageData("employee") || [];
-  console.log("EMP DATA",employee_data);
-  
+  console.log("EMP DATA", employee_data);
 
   const [timeline_modal, settimeline_modal] = useState(false);
   const [timelineList, setTimelineList] = useState([]);
@@ -118,63 +117,68 @@ const AttendanceEmployeeTable = () => {
   const [locationData, setLocationData] = useState([]);
   const [locationType, setLocationType] = useState("");
   const [allLocationData, setAllLocationData] = useState([]);
-// REPLACE your existing selectedColumns useState:
-const [selectedColumns, setSelectedColumns] = useState(() => {
-  try {
-    const saved = localStorage.getItem("attendance_selected_columns");
-    return saved ? JSON.parse(saved) : [
-      "date",
-      "in",
-      "inLocation",
-      "out",
-      "outLocation",
-      "workSchedule",
-      "break",
-      "totalIn",
-      "paidHr",
-      "status",
-      "activity",
-      "notes",
-      "action",
-    ];
-  } catch {
-    return [
-      "date",
-      "in",
-      "inLocation",
-      "out",
-      "outLocation",
-      "workSchedule",
-      "break",
-      "totalIn",
-      "paidHr",
-      "status",
-      "activity",
-      "notes",
-      "action",
-    ];
-  }
-});
+  // REPLACE your existing selectedColumns useState:
+  const [selectedColumns, setSelectedColumns] = useState(() => {
+    try {
+      const saved = localStorage.getItem("attendance_selected_columns");
+      return saved
+        ? JSON.parse(saved)
+        : [
+            "date",
+            "in",
+            "inLocation",
+            "out",
+            "outLocation",
+            "workSchedule",
+            "break",
+            "totalIn",
+            "paidHr",
+            "status",
+            "activity",
+            "notes",
+            "action",
+          ];
+    } catch {
+      return [
+        "date",
+        "in",
+        "inLocation",
+        "out",
+        "outLocation",
+        "workSchedule",
+        "break",
+        "totalIn",
+        "paidHr",
+        "status",
+        "activity",
+        "notes",
+        "action",
+      ];
+    }
+  });
 
-// ADD this useEffect after all your useState declarations:
-useEffect(() => {
-  try {
-    localStorage.setItem("attendance_selected_columns", JSON.stringify(selectedColumns));
-  } catch {
-    // fail silently
-  }
-}, [selectedColumns]);
+  // ADD this useEffect after all your useState declarations:
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "attendance_selected_columns",
+        JSON.stringify(selectedColumns),
+      );
+    } catch {
+      // fail silently
+    }
+  }, [selectedColumns]);
 
-console.log("timeline",timelineList);
+  console.log("timeline", timelineList);
 
   const whisperRef = React.useRef();
 
   const { individual_attendance_report_data } = useSelector(
-    (state) => state.AttendanceReportReducer
+    (state) => state.AttendanceReportReducer,
   );
 
   const { employee_leave_data } = useSelector(
-    (state) => state.EmployeeLeaveReducer
+    (state) => state.EmployeeLeaveReducer,
   );
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
@@ -184,12 +188,12 @@ console.log("timeline",timelineList);
     Array.isArray(individual_attendance_report_data) &&
     individual_attendance_report_data.length > 0
       ? employeeData.find(
-          (e) => e.id === individual_attendance_report_data[0].employee_id
+          (e) => e.id === individual_attendance_report_data[0].employee_id,
         )
       : [];
   const employeeWorkSchedule =
     workScheduleData.find(
-      (w) => w.id === employeeInformation.work_schedule_id
+      (w) => w.id === employeeInformation.work_schedule_id,
     ) || [];
 
   const day_leave_types = employee_leave_data.filter((d) => d.unit === 1);
@@ -201,8 +205,6 @@ console.log("timeline",timelineList);
   }
 
   function open_location(rowData, dataKey) {
-    
-    
     setLocationModal(!locationModal);
     setAllLocationData(rowData);
     setLocationType(dataKey);
@@ -232,37 +234,38 @@ console.log("timeline",timelineList);
     setEditModalOpen(false);
   };
 
- const DateCell = ({ rowData, dataKey, ...props }) => {
-  const warning_icon =
-    rowData?.total_no_of_check_in !== rowData?.total_no_of_check_out ? (
-      <i className="ri-error-warning-line text-warning fs-5"></i>
-    ) : null;
+  const DateCell = ({ rowData, dataKey, ...props }) => {
+    const warning_icon =
+      rowData?.total_no_of_check_in !== rowData?.total_no_of_check_out ? (
+        <i className="ri-error-warning-line text-warning fs-5"></i>
+      ) : null;
 
-  return (
-    <Cell {...props} className="fw-bold">
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column", // Stack date and day vertically
-          alignItems: "center",     // Center horizontally
-          justifyContent: "center", // Center vertically if row height is bigger
-          height: "100%",            // Ensure full cell height for vertical centering
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <div>{format(new Date(rowData.date), "dd MMM, yyyy")}</div>
-          <span style={{ marginLeft: "5px" }}>{warning_icon}</span>
+    return (
+      <Cell {...props} className="fw-bold">
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column", // Stack date and day vertically
+            alignItems: "center", // Center horizontally
+            justifyContent: "center", // Center vertically if row height is bigger
+            height: "100%", // Ensure full cell height for vertical centering
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div>{format(new Date(rowData.date), "dd MMM, yyyy")}</div>
+            <span style={{ marginLeft: "5px" }}>{warning_icon}</span>
+          </div>
+          <div
+            style={{ fontSize: "12px", color: "#666", fontWeight: "normal" }}
+          >
+            {rowData.day}
+          </div>
         </div>
-        <div style={{ fontSize: "12px", color: "#666", fontWeight:"normal" }}>{rowData.day}</div>
-      </div>
-    </Cell>
-  );
-};
+      </Cell>
+    );
+  };
 
   const InOutCell = ({ rowData, dataKey, ...props }) => {
-  console.log("ROWW DAAATAA",rowData);
-  
-    
     if (rowData.is_present === false) {
       return (
         <Cell {...props} className="link-group">
@@ -288,7 +291,7 @@ console.log("timeline",timelineList);
               onClick={() => {
                 setTimelineList(rowData?.entry_log);
                 setTimeLineDate(
-                  format(new Date(rowData?.date), "dd MMM, yyyy")
+                  format(new Date(rowData?.date), "dd MMM, yyyy"),
                 );
                 open_timeline(rowData);
               }}
@@ -334,13 +337,13 @@ console.log("timeline",timelineList);
             ? CheckInOutType === 1
               ? "Web Check In"
               : CheckInOutType === 2
-              ? "Mobile Check In"
-              : ""
+                ? "Mobile Check In"
+                : ""
             : CheckInOutType === 1
-            ? "Web Check Out"
-            : CheckInOutType === 2
-            ? "Mobile Check Out"
-            : ""
+              ? "Web Check Out"
+              : CheckInOutType === 2
+                ? "Mobile Check Out"
+                : ""
           : "";
 
       return (
@@ -374,30 +377,30 @@ console.log("timeline",timelineList);
   };
 
   const WorkScheduleCell = ({ rowData, dataKey, ...props }) => {
-     const employeeLeaveData = useSelector(
-    (state) => state.EmployeeLeaveReducer.employee_leave_data
-  );
+    const employeeLeaveData = useSelector(
+      (state) => state.EmployeeLeaveReducer.employee_leave_data,
+    );
 
-  // Find matching leave type
-  const leaveType = employeeLeaveData.find(
-    (item) => item.id === rowData?.leave_type_id
-  );
+    // Find matching leave type
+    const leaveType = employeeLeaveData.find(
+      (item) => item.id === rowData?.leave_type_id,
+    );
     return (
-       <Cell {...props} className="link-group">
-      {rowData.is_leave_approved === true ? (
-        <span style={{ color: "red" }}>
-          {leaveType ? leaveType.name : "Leave"}
-        </span>
-      ) : rowData.is_holiday === true ? (
-        <span style={{ color: "green" }}>Holiday</span>
-      ) : rowData.is_week_off === true ? (
-        <span style={{ color: "blue" }}>Week Off</span>
-      ) : rowData.is_present === false ? (
-        <span style={{ color: "red" }}>Absent</span>
-      ) : (
-        ConvertSecondsToTime(rowData?.maximum_full_day_work_duration)
-      )}
-    </Cell>
+      <Cell {...props} className="link-group">
+        {rowData.is_leave_approved === true ? (
+          <span style={{ color: "red" }}>
+            {leaveType ? leaveType.name : "Leave"}
+          </span>
+        ) : rowData.is_holiday === true ? (
+          <span style={{ color: "green" }}>Holiday</span>
+        ) : rowData.is_week_off === true ? (
+          <span style={{ color: "blue" }}>Week Off</span>
+        ) : rowData.is_present === false ? (
+          <span style={{ color: "red" }}>Absent</span>
+        ) : (
+          ConvertSecondsToTime(rowData?.maximum_full_day_work_duration)
+        )}
+      </Cell>
     );
   };
 
@@ -410,7 +413,7 @@ console.log("timeline",timelineList);
       );
     } else {
       let break_schedule_hr = ConvertSecondsToTime(
-        rowData.total_break_duration
+        rowData.total_break_duration,
       );
 
       return (
@@ -492,12 +495,12 @@ console.log("timeline",timelineList);
           rowData.day_status.early_in === true
             ? earlyin_display
             : rowData.day_status.ontime === true
-            ? on_time_entry_display
-            : rowData.day_status?.late === true
-            ? late_entry_display
-            : rowData.day_status?.early_out === true
-            ? earlyout_display
-            : not_applicable;
+              ? on_time_entry_display
+              : rowData.day_status?.late === true
+                ? late_entry_display
+                : rowData.day_status?.early_out === true
+                  ? earlyout_display
+                  : not_applicable;
         return (
           <Cell {...props} className="link-group">
             <i
@@ -771,15 +774,15 @@ console.log("timeline",timelineList);
       const Api = await PostApi(
         "leave/leave-application/create/",
         leaveApplyData,
-        false
+        false,
       );
       if (Api.status && Api.status === 200) {
         if (leaveApplyData.id === 0) {
           dispatch(addLeaveApplication(Api?.data.data));
           dispatch(
             setLeaveTypeForCurrentEmployee(
-              Api?.data?.leave_type_for_employee || []
-            )
+              Api?.data?.leave_type_for_employee || [],
+            ),
           );
         }
         dispatch(toggleRSBView(false));
@@ -834,7 +837,7 @@ console.log("timeline",timelineList);
     const Api = await PostApi(
       "/attendance/update-notes/",
       notesUpdateObj,
-      false
+      false,
     );
 
     if (Api.status && Api.status === 200) {
@@ -850,165 +853,214 @@ console.log("timeline",timelineList);
 
   return (
     <Fragment>
-     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-  <Whisper
-    ref={whisperRef}
-    placement="bottomEnd"
-    trigger="click"
-    speaker={
-      <Popover style={{ padding: "0px", width: "230px", boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}>
-        
-        {/* Header */}
-        <div style={{
-          background: "#405189",
-          padding: "10px 14px",
-          borderRadius: "4px 4px 0 0",
-        }}>
-          <p style={{ fontWeight: "bold", margin: 0, color: "#fff", fontSize: "13px" }}>
-            <i className="mdi mdi-table-column" style={{ marginRight: 6 }}></i>
-            Show / Hide Columns
-          </p>
-        </div>
-
-        <div style={{ padding: "10px 12px" }}>
-
-          {/* Select All / Clear All */}
-          <div style={{ display: "flex", gap: "6px", marginBottom: "10px" }}>
-            <button
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setSelectedColumns(allColumns.map(c => c.key));
-              }}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: 10,
+        }}
+      >
+        <Whisper
+          ref={whisperRef}
+          placement="bottomEnd"
+          trigger="click"
+          speaker={
+            <Popover
               style={{
-                flex: 1,
-                padding: "5px 8px",
-                fontSize: "12px",
-                background: "#405189",
-                color: "#fff",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontWeight: "600"
+                padding: "0px",
+                width: "230px",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
               }}
             >
-              ✓ Select All
-            </button>
-            <button
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setSelectedColumns(["date", "action"]);
-              }}
-              style={{
-                flex: 1,
-                padding: "5px 8px",
-                fontSize: "12px",
-                background: "#fff",
-                color: "#f5222d",
-                border: "1px solid #f5222d",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontWeight: "600"
-              }}
-            >
-              ✕ Clear All
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div style={{ borderTop: "1px solid #f0f0f0", marginBottom: "8px" }} />
-
-          {/* Scrollable Column List */}
-          <div style={{
-            maxHeight: "260px",
-            overflowY: "auto",
-            paddingRight: "2px"
-          }}>
-            {allColumns.map(col => {
-              const isLocked = ["date", "action"].includes(col.key);
-              const isChecked = selectedColumns.includes(col.key);
-              return (
-                <div
-                  key={col.key}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (isLocked) return;
-                    if (isChecked) {
-                      setSelectedColumns(selectedColumns.filter(k => k !== col.key));
-                    } else {
-                      setSelectedColumns([...selectedColumns, col.key]);
-                    }
-                  }}
+              {/* Header */}
+              <div
+                style={{
+                  background: "#405189",
+                  padding: "10px 14px",
+                  borderRadius: "4px 4px 0 0",
+                }}
+              >
+                <p
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "7px 8px",
-                    borderRadius: "5px",
-                    marginBottom: "3px",
-                    cursor: isLocked ? "not-allowed" : "pointer",
-                    background: isChecked ? "#e6f4ff" : "#fafafa",
-                    border: `1px solid ${isChecked ? "#405189" : "#f0f0f0"}`,
-                    transition: "all 0.15s"
+                    fontWeight: "bold",
+                    margin: 0,
+                    color: "#fff",
+                    fontSize: "13px",
                   }}
                 >
-                  {/* Custom Checkbox */}
-                  <div style={{
-                    width: "16px",
-                    height: "16px",
-                    borderRadius: "3px",
-                    border: `2px solid ${isChecked ? "#405189" : "#d9d9d9"}`,
-                    background: isChecked ? "#405189" : "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: "10px",
-                    flexShrink: 0,
-                    transition: "all 0.15s"
-                  }}>
-                    {isChecked && (
-                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                        <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
-                  </div>
+                  <i
+                    className="mdi mdi-table-column"
+                    style={{ marginRight: 6 }}
+                  ></i>
+                  Show / Hide Columns
+                </p>
+              </div>
 
-                  <span style={{
-                    fontSize: "13px",
-                    color: isLocked ? "#bbb" : "#333",
-                    userSelect: "none",
-                    flex: 1
-                  }}>
-                    {col.label}
-                  </span>
-
-                  {isLocked && (
-                    <span style={{
-                      fontSize: "10px",
-                      color: "#bbb",
-                      background: "#f5f5f5",
-                      border: "1px solid #e8e8e8",
-                      padding: "1px 5px",
-                      borderRadius: "3px"
-                    }}>
-                      locked
-                    </span>
-                  )}
+              <div style={{ padding: "10px 12px" }}>
+                {/* Select All / Clear All */}
+                <div
+                  style={{ display: "flex", gap: "6px", marginBottom: "10px" }}
+                >
+                  <button
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSelectedColumns(allColumns.map((c) => c.key));
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "5px 8px",
+                      fontSize: "12px",
+                      background: "#405189",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontWeight: "600",
+                    }}
+                  >
+                    ✓ Select All
+                  </button>
+                  <button
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSelectedColumns(["date", "action"]);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "5px 8px",
+                      fontSize: "12px",
+                      background: "#fff",
+                      color: "#f5222d",
+                      border: "1px solid #f5222d",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontWeight: "600",
+                    }}
+                  >
+                    ✕ Clear All
+                  </button>
                 </div>
-              );
-            })}
-          </div>
 
-        </div>
-      </Popover>
-    }
-  >
-    <button type="button" class="btn btn-primary mt-4 mt-md-0">
-  <i class="ri-align-left me-1"></i> Columns
-</button>
-  </Whisper>
-</div>
+                {/* Divider */}
+                <div
+                  style={{
+                    borderTop: "1px solid #f0f0f0",
+                    marginBottom: "8px",
+                  }}
+                />
+
+                {/* Scrollable Column List */}
+                <div
+                  style={{
+                    maxHeight: "260px",
+                    overflowY: "auto",
+                    paddingRight: "2px",
+                  }}
+                >
+                  {allColumns.map((col) => {
+                    const isLocked = ["date", "action"].includes(col.key);
+                    const isChecked = selectedColumns.includes(col.key);
+                    return (
+                      <div
+                        key={col.key}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (isLocked) return;
+                          if (isChecked) {
+                            setSelectedColumns(
+                              selectedColumns.filter((k) => k !== col.key),
+                            );
+                          } else {
+                            setSelectedColumns([...selectedColumns, col.key]);
+                          }
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          padding: "7px 8px",
+                          borderRadius: "5px",
+                          marginBottom: "3px",
+                          cursor: isLocked ? "not-allowed" : "pointer",
+                          background: isChecked ? "#e6f4ff" : "#fafafa",
+                          border: `1px solid ${isChecked ? "#405189" : "#f0f0f0"}`,
+                          transition: "all 0.15s",
+                        }}
+                      >
+                        {/* Custom Checkbox */}
+                        <div
+                          style={{
+                            width: "16px",
+                            height: "16px",
+                            borderRadius: "3px",
+                            border: `2px solid ${isChecked ? "#405189" : "#d9d9d9"}`,
+                            background: isChecked ? "#405189" : "#fff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            marginRight: "10px",
+                            flexShrink: 0,
+                            transition: "all 0.15s",
+                          }}
+                        >
+                          {isChecked && (
+                            <svg
+                              width="10"
+                              height="8"
+                              viewBox="0 0 10 8"
+                              fill="none"
+                            >
+                              <path
+                                d="M1 4L3.5 6.5L9 1"
+                                stroke="white"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          )}
+                        </div>
+
+                        <span
+                          style={{
+                            fontSize: "13px",
+                            color: isLocked ? "#bbb" : "#333",
+                            userSelect: "none",
+                            flex: 1,
+                          }}
+                        >
+                          {col.label}
+                        </span>
+
+                        {isLocked && (
+                          <span
+                            style={{
+                              fontSize: "10px",
+                              color: "#bbb",
+                              background: "#f5f5f5",
+                              border: "1px solid #e8e8e8",
+                              padding: "1px 5px",
+                              borderRadius: "3px",
+                            }}
+                          >
+                            locked
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </Popover>
+          }
+        >
+          <button type="button" class="btn btn-primary mt-4 mt-md-0">
+            <i class="ri-align-left me-1"></i> Columns
+          </button>
+        </Whisper>
+      </div>
 
       {/* Table */}
       <Table
@@ -1078,12 +1130,13 @@ console.log("timeline",timelineList);
           </Column>
         )}
 
-        {employeeWorkSchedule?.has_ot && selectedColumns.includes("totalIn") && (
-          <Column width={100}>
-            <HeaderCell>OT</HeaderCell>
-            <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
-          </Column>
-        )}
+        {employeeWorkSchedule?.has_ot &&
+          selectedColumns.includes("totalIn") && (
+            <Column width={100}>
+              <HeaderCell>OT</HeaderCell>
+              <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
+            </Column>
+          )}
 
         {selectedColumns.includes("paidHr") && (
           <Column width={100}>
@@ -1135,7 +1188,7 @@ console.log("timeline",timelineList);
                       <Label>
                         {format(
                           new Date(attendanceEditData.date),
-                          "dd MMM, yyyy"
+                          "dd MMM, yyyy",
                         )}
                       </Label>
                     </Col>
@@ -1152,7 +1205,7 @@ console.log("timeline",timelineList);
                   <Col>
                     <Label>
                       {ConvertSecondsToTime(
-                        attendanceEditData?.work_schedule_duration_without_break
+                        attendanceEditData?.work_schedule_duration_without_break,
                       )}
                     </Label>
                   </Col>
@@ -1169,7 +1222,7 @@ console.log("timeline",timelineList);
                     <Label>
                       {" "}
                       {ConvertSecondsToTime(
-                        attendanceEditData.total_work_duration
+                        attendanceEditData.total_work_duration,
                       )}
                     </Label>
                   </Col>
@@ -1196,9 +1249,9 @@ console.log("timeline",timelineList);
                             String(
                               Math.floor(
                                 attendanceEditData.final_checked_in_hr_in_seconds /
-                                  3600
-                              )
-                            ).padStart(2, "0")
+                                  3600,
+                              ),
+                            ).padStart(2, "0"),
                         )}
                         onChange={(selectedOption) => {
                           EditHourChange(
@@ -1206,9 +1259,9 @@ console.log("timeline",timelineList);
                             Math.floor(
                               (attendanceEditData.final_checked_in_hr_in_seconds %
                                 3600) /
-                                60
+                                60,
                             ),
-                            "final_checked_in_hr_in_seconds"
+                            "final_checked_in_hr_in_seconds",
                           );
                         }}
                       />
@@ -1225,18 +1278,18 @@ console.log("timeline",timelineList);
                               Math.floor(
                                 (attendanceEditData.final_checked_in_hr_in_seconds %
                                   3600) /
-                                  60
-                              )
-                            ).padStart(2, "0")
+                                  60,
+                              ),
+                            ).padStart(2, "0"),
                         )}
                         onChange={(selectedOption) => {
                           EditHourChange(
                             Math.floor(
                               attendanceEditData.final_checked_in_hr_in_seconds /
-                                3600
+                                3600,
                             ),
                             selectedOption.value,
-                            "final_checked_in_hr_in_seconds"
+                            "final_checked_in_hr_in_seconds",
                           );
                         }}
                       />
@@ -1266,9 +1319,9 @@ console.log("timeline",timelineList);
                               String(
                                 Math.floor(
                                   attendanceEditData.final_ot_hr_in_seconds /
-                                    3600
-                                )
-                              ).padStart(2, "0")
+                                    3600,
+                                ),
+                              ).padStart(2, "0"),
                           )}
                           onChange={(selectedOption) =>
                             EditHourChange(
@@ -1276,9 +1329,9 @@ console.log("timeline",timelineList);
                               Math.floor(
                                 (attendanceEditData.final_ot_hr_in_seconds %
                                   3600) /
-                                  60
+                                  60,
                               ),
-                              "final_ot_hr_in_seconds"
+                              "final_ot_hr_in_seconds",
                             )
                           }
                         />
@@ -1295,17 +1348,18 @@ console.log("timeline",timelineList);
                                 Math.floor(
                                   (attendanceEditData.final_ot_hr_in_seconds %
                                     3600) /
-                                    60
-                                )
-                              ).padStart(2, "0")
+                                    60,
+                                ),
+                              ).padStart(2, "0"),
                           )}
                           onChange={(selectedOption) =>
                             EditHourChange(
                               Math.floor(
-                                attendanceEditData.final_ot_hr_in_seconds / 3600
+                                attendanceEditData.final_ot_hr_in_seconds /
+                                  3600,
                               ),
                               selectedOption.value,
-                              "final_ot_hr_in_seconds"
+                              "final_ot_hr_in_seconds",
                             )
                           }
                         />
@@ -1325,7 +1379,7 @@ console.log("timeline",timelineList);
                   <Col>
                     <span>
                       {ConvertSecondsToTime(
-                        attendanceEditData?.final_paid_hr_in_seconds
+                        attendanceEditData?.final_paid_hr_in_seconds,
                       )}{" "}
                     </span>
                   </Col>
@@ -1421,8 +1475,6 @@ console.log("timeline",timelineList);
                 <tbody>
                   {timelineList.length > 0 &&
                     timelineList.map((data, idx) => {
-                   
-                      
                       let checkInData = timelineList[idx];
                       let checkOutData = timelineList[idx + 1];
                       if (
@@ -1431,7 +1483,7 @@ console.log("timeline",timelineList);
                       ) {
                         let checkInTime = format(
                           ParseTime(checkInData.entry_time),
-                          "h:mm a"
+                          "h:mm a",
                         );
                         let checkOutTime = checkOutData
                           ? format(ParseTime(checkOutData.entry_time), "h:mm a")
@@ -1439,7 +1491,7 @@ console.log("timeline",timelineList);
                         let totalDifference = checkOutData
                           ? differenceInMinutes(
                               ParseTime(checkOutData.entry_time),
-                              ParseTime(checkInData.entry_time)
+                              ParseTime(checkInData.entry_time),
                             )
                           : 0;
                         let totalHours = Math.floor(totalDifference / 60);
@@ -1591,8 +1643,7 @@ console.log("timeline",timelineList);
                   let emp_details =
                     !!employee_data &&
                     employee_data.find((e) => e.id === d.employee_id);
-                    console.log("DETAILS",emp_details);
-                    
+                  console.log("DETAILS", emp_details);
 
                   return (
                     <div className="d-flex mb-4">
@@ -1615,7 +1666,7 @@ console.log("timeline",timelineList);
                               objectFit: "cover",
                             }}
                             data-bs-toggle="tooltip"
-                           title={emp_details?.first_name || ""}
+                            title={emp_details?.first_name || ""}
                           >
                             <span
                               className="first_letter"
@@ -1629,7 +1680,7 @@ console.log("timeline",timelineList);
 
                       <div className="flex-grow-1 ms-3">
                         <h5 className="fs-13">
-                           {emp_details?.first_name || ""}{" "}
+                          {emp_details?.first_name || ""}{" "}
                           <small className="text-muted ms-2">
                             {/* 20 Dec 2021 - 05:47AM */}
                             {GetAmPmDateTime(d?.created_time)}
@@ -1764,7 +1815,7 @@ console.log("timeline",timelineList);
                   value={
                     leaveApplyData?.leave_type_id
                       ? day_leave_types.find(
-                          (d) => d.id === leaveApplyData?.leave_type_id
+                          (d) => d.id === leaveApplyData?.leave_type_id,
                         )
                       : []
                   }
@@ -1780,9 +1831,9 @@ console.log("timeline",timelineList);
                       setLeaveCount(
                         newData.leave_type_id
                           ? employee_leave_data.find(
-                              (d) => d.id === newData.leave_type_id
+                              (d) => d.id === newData.leave_type_id,
                             )?.balance_leave_count
-                          : ""
+                          : "",
                       );
                       return newData;
                     });

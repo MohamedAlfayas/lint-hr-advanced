@@ -31,7 +31,7 @@ import EmployeeOverview from "./EmployeeOverview";
 import EmployeeAttendance from "./EmployeeAttendance";
 import AccountSettings from "./AccountSetting";
 import { setEmployeeAccountSettingsData } from "../../redux/reducers/ChildReducer/AccountSettingsReducer";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Api } from "../../common/api/Api";
 import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
 import { setIndividualAttendanceReportData } from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
@@ -40,14 +40,50 @@ import { PostApi } from "../../common/api/PostApi";
 import { toast } from "react-toastify";
 import { BuildAttendanceReportChart } from "../../common/js/BuildAttendanceReportChart";
 import EmployeeDocument from "./EmployeeDocument";
+import {
+  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
+  VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
+} from "../../common/constant/RoleConstants";
+import { useTable } from "react-table";
 
 const EmployeeView = () => {
   const { id } = useParams();
   const DepartmentData = GetLocalStorageData("department") || [];
   const RoleData = GetLocalStorageData("role") || [];
   const EmployeeData = GetLocalStorageData("employee") || [];
+  const [otherEmpViewAccess, setOtherEmpViewAccess] = useState(false);
+
+  const [accSettingsAccess, setAccSettingsAccess] = useState(false);
+
+  const { profile_data } = useSelector((state) => state.MyProfileReducer);
+
+  useEffect(() => {
+    let perm_list = profile_data.permission_list;
+
+    if (perm_list != null && perm_list != undefined) {
+      if (
+        perm_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY) ||
+        perm_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)
+      ) {
+        setOtherEmpViewAccess(true);
+      }
+    }
+  }, []);
 
   const employeeAccountData = EmployeeData.find((d) => d.emp_uuid === id);
+
+  useEffect(() => {
+    if (profile_data && employeeAccountData) {
+      console.log("profile_data = ", profile_data);
+      console.log("employeeAccountData = ", employeeAccountData);
+
+      if (profile_data?.id === employeeAccountData?.id) {
+        setAccSettingsAccess(true);
+      } else {
+        setAccSettingsAccess(false);
+      }
+    }
+  }, [profile_data, employeeAccountData]);
 
   const dispatch = useDispatch();
 
@@ -97,18 +133,18 @@ const EmployeeView = () => {
         const Att_Report_Api = await PostApi(
           "report/get-attendance-report/",
           att_api_payload,
-          false
+          false,
         );
         if (Att_Report_Api.status && Att_Report_Api.status === 200) {
           dispatch(
             setIndividualAttendanceReportData(
-              Att_Report_Api?.data?.data?.individual_attendance_report
-            )
+              Att_Report_Api?.data?.data?.individual_attendance_report,
+            ),
           );
 
           BuildAttendanceReportChart(
             Att_Report_Api?.data?.data?.individual_attendance_report,
-            dispatch
+            dispatch,
           );
 
           Api({
@@ -121,13 +157,13 @@ const EmployeeView = () => {
             })
             .catch((err) => {
               dispatch(setEmployeeLeaveType([]));
-             
+
               dispatch(setLoaderVisible(false));
             });
         } else {
-          console.log("Att_Report_Api - ",Att_Report_Api?.data?.message)
+          console.log("Att_Report_Api - ", Att_Report_Api?.data?.message);
           toast.error(
-            Att_Report_Api?.data?.message || Att_Report_Api?.data?.detail
+            Att_Report_Api?.data?.message || Att_Report_Api?.data?.detail,
           );
           dispatch(setLoaderVisible(false));
         }
@@ -199,7 +235,7 @@ const EmployeeView = () => {
                           .map(
                             (deptId) =>
                               DepartmentData.find((dept) => dept.id === deptId)
-                                ?.name
+                                ?.name,
                           )
                           .join(" / ")
                       : ""}
@@ -299,27 +335,33 @@ const EmployeeView = () => {
                       </Button>
                     </NavItem>
                   </Nav>
-                  <div className="flex-shrink-0">
-                    <Link to="/employee" className="btn w-sm btn-warning">
-                      <i className="ri-arrow-left-line align-bottom"></i> Back
-                      to Employee
-                    </Link>
-                  </div>
-
-                  <div className="flex-shrink-0" style={{ marginLeft: "10px" }}>
-                    <Button
-                      className="btn btn-success"
-                      onClick={() => {
-                        dispatch(
-                          setEmployeeAccountSettingsData(employeeAccountData)
-                        );
-                        navigate(`/account-settings/`);
-                      }}
+                  {otherEmpViewAccess === true && (
+                    <div className="flex-shrink-0">
+                      <Link to="/employee" className="btn w-sm btn-warning">
+                        <i className="ri-arrow-left-line align-bottom"></i> Back
+                        to Employee
+                      </Link>
+                    </div>
+                  )}
+                  {accSettingsAccess && (
+                    <div
+                      className="flex-shrink-0"
+                      style={{ marginLeft: "10px" }}
                     >
-                      <i className="ri-edit-box-line align-bottom"></i> Account
-                      Settings
-                    </Button>
-                  </div>
+                      <Button
+                        className="btn btn-success"
+                        onClick={() => {
+                          dispatch(
+                            setEmployeeAccountSettingsData(employeeAccountData),
+                          );
+                          navigate(`/account-settings/`);
+                        }}
+                      >
+                        <i className="ri-edit-box-line align-bottom"></i>{" "}
+                        Account Settings
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <TabContent activeTab={activeTab} className="pt-4">
@@ -438,7 +480,7 @@ const EmployeeView = () => {
                   )}
                   {!!activeTab && activeTab === "4" && (
                     <TabPane tabId="4">
-                     <EmployeeDocument  profileObj={profileObj} />
+                      <EmployeeDocument profileObj={profileObj} />
                     </TabPane>
                   )}
                 </TabContent>
