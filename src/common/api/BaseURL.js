@@ -2,9 +2,9 @@
 
 
 export const getBaseUrlFromDomain = () => {
-    const REACT_APP_MULTIDB_ENABLED = process.env.REACT_APP_MULTIDB_ENABLED || "0"
+    const MULTIDB_ENABLED = parseInt(process.env.REACT_APP_MULTIDB_ENABLED || "0");
 
-    let base_url = "http://192.168.0.28:8000/"
+    let base_url = "http://localhost:8000/"
 
     if (MULTIDB_ENABLED !== 0) {
         const hostname = window.location.hostname;
