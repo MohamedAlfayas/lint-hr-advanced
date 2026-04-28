@@ -47,7 +47,7 @@ const WorkSpace = () => {
           url = `${getBaseUrlFromDomain()}api/auth/validate-company/`;
         } else {
           const domain = window.location.hostname.split(".")[0];
-          url = `https://${domain}.${process.env.REACT_APP_BASE_URL}/api/auth/validate-company/`;
+          url = `https://apps.${process.env.REACT_APP_BASE_URL}/api/auth/validate-company/`;
         }
 
         axios({

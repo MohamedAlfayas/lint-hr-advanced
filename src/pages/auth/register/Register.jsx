@@ -99,7 +99,7 @@ const Register = () => {
       ) {
         url = `${getBaseUrlFromDomain()}company/auth/register/`;
       } else {
-        url = `https://${process.env.REACT_APP_BASE_URL}/company/auth/register/`;
+        url = `https://apps.${process.env.REACT_APP_BASE_URL}/company/auth/register/`;
       }
 
       axios({
@@ -157,7 +157,7 @@ const Register = () => {
       ) {
         url = `${getBaseUrlFromDomain()}company/auth/resend-signup-otp/`;
       } else {
-        url = `https://${process.env.REACT_APP_BASE_URL}/company/auth/resend-signup-otp/`;
+        url = `https://apps.${process.env.REACT_APP_BASE_URL}/company/auth/resend-signup-otp/`;
       }
 
       axios({
@@ -254,7 +254,7 @@ const Register = () => {
         ) {
           url = `${getBaseUrlFromDomain()}company/auth/verify-signup-otp/`;
         } else {
-          url = `https://${process.env.REACT_APP_BASE_URL}/company/auth/verify-signup-otp/`;
+          url = `https://apps.${process.env.REACT_APP_BASE_URL}/company/auth/verify-signup-otp/`;
         }
 
         axios({
