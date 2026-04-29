@@ -80,9 +80,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
     let perm_list = profile_data.permission_list;
 
     if (perm_list != null && perm_list != undefined) {
-      if (
-        perm_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)
-      ) {
+      if (perm_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)) {
         setShowEmpTeam(true);
       }
       if (perm_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)) {
@@ -258,10 +256,10 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
               <TimeLineList />
 
               {/* Dark/Light Mode set */}
-              <LightDark
+              {/* <LightDark
                 layoutMode={layoutModeType}
                 onChangeLayoutMode={onChangeLayoutMode}
-              />
+              /> */}
 
               {/* NotificationDropdown */}
               <NotificationDropdown />
