@@ -1,31 +1,29 @@
-
-
-
 export const getBaseUrlFromDomain = () => {
-    const MULTIDB_ENABLED = parseInt(process.env.REACT_APP_MULTIDB_ENABLED || "0");
+  const MULTIDB_ENABLED = parseInt(
+    process.env.REACT_APP_MULTIDB_ENABLED || "0",
+  );
 
-    let base_url = "http://localhost:8000/"
+  let base_url = "http://192.168.0.52:8000/";
 
-    if (MULTIDB_ENABLED !== 0) {
-        const hostname = window.location.hostname;
+  if (MULTIDB_ENABLED !== 0) {
+    const hostname = window.location.hostname;
 
-        const isLocal =
-            hostname === "localhost" ||
-            hostname === "127.0.0.1" ||
-            hostname.startsWith("192.168");
+    const isLocal =
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname.startsWith("192.168");
 
-        if (!isLocal) {
-            const subdomain = hostname.split(".")[0];
+    if (!isLocal) {
+      const subdomain = hostname.split(".")[0];
 
-            if (subdomain) {
-                base_url = `http://${subdomain}.localhost:8000/`;
-            }
-        }
+      if (subdomain) {
+        base_url = `http://${subdomain}.localhost:8000/`;
+      }
     }
+  }
 
-    return base_url
-}
-
+  return base_url;
+};
 
 export const BaseURL = getBaseUrlFromDomain();
 // export const BaseURL = "https://dev.linthr.com/";

@@ -11,7 +11,7 @@ import {
 
 import { MetaTitle } from "../../common/data/MetaTitle";
 import PayRollFilter from "./PayRollFilter";
-import loader from "../auth/loader/animation/comingsoon.json"
+import loader from "../auth/loader/animation/comingsoon.json";
 import Lottie from "react-lottie";
 const PayRollDashboard = () => {
   document.title = `Payroll Overview | ${MetaTitle}`;
@@ -22,7 +22,7 @@ const PayRollDashboard = () => {
     rendererSettings: {
       preserveAspectRatio: "xMidYMid slice",
     },
-  }
+  };
   // const dispatch = useDispatch();
 
   // const { showTeamTable } = useSelector(
@@ -51,7 +51,7 @@ const PayRollDashboard = () => {
     <React.Fragment>
       <div className="page-content">
         <Container fluid>
-        <Lottie options={defaultOptions} height={400} width={600} />
+          <Lottie options={defaultOptions} height={400} width={600} />
           {/* Filter Card Start */}
 
           {/* <PayRollFilter /> */}

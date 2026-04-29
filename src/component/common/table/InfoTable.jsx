@@ -1153,7 +1153,7 @@ const InfoTable = ({
                 <li className="list-inline-item">
                   <button
                     type="button"
-                    className="btn btn-warning btn-border"
+                    className="btn btn-soft-warning btn-border btn-sm"
                     onClick={() => handleActionClick(orderData)}
                   >
                     Raise Cancel Leave Request
