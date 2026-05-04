@@ -219,6 +219,7 @@ const InfoTable = ({
         ]);
       } else {
         checkbox.checked = false;
+        setSelectedGroupIds([]);
       }
     });
 
@@ -234,6 +235,18 @@ const InfoTable = ({
     }
     return options;
   }
+
+  const resetCheckBox = () => {
+    const checkall = document.getElementById("checkBoxAll");
+    const ele = document.querySelectorAll(".dataCheckBox:not(:disabled)");
+    const checkboxesArray = Array.from(ele);
+    checkboxesArray.forEach((checkbox) => {
+      checkbox.checked = false;
+      setSelectedGroupIds([]);
+    });
+    deleteCheckbox();
+    approveRejectCheckbox();
+  };
 
   const handleApproval = async (orderData) => {
     let employee_first_name =
@@ -354,6 +367,7 @@ const InfoTable = ({
 
           const Api = await PostApi("leave/approve-or-reject/", data, false);
           if (Api.status && Api.status === 200) {
+            resetCheckBox();
             dispatch(editLeaveApproval(data));
             toast.success(Api?.data?.message);
           } else {
@@ -388,6 +402,7 @@ const InfoTable = ({
               false,
             );
             if (Api.status && Api.status === 200) {
+              resetCheckBox();
               dispatch(updateAttendanceApprovalData(data));
               toast.success(Api?.data?.message);
             } else {
@@ -451,6 +466,7 @@ const InfoTable = ({
 
           const Api = await PostApi("leave/approve-or-reject/", data, false);
           if (Api.status && Api.status === 200) {
+            resetCheckBox();
             dispatch(editLeaveApproval(data));
             toast.success(Api?.data?.message);
           } else {
@@ -475,6 +491,7 @@ const InfoTable = ({
             false,
           );
           if (Api.status && Api.status === 200) {
+            resetCheckBox();
             dispatch(updateAttendanceApprovalData(data));
             toast.success(Api?.data?.message);
           } else {
@@ -535,6 +552,7 @@ const InfoTable = ({
 
           const Api = await PostApi("leave/approve-or-reject/", data, false);
           if (Api.status && Api.status === 200) {
+            resetCheckBox();
             dispatch(editLeaveApproval(data));
             toast.success(Api?.data?.message);
           } else {
@@ -556,6 +574,7 @@ const InfoTable = ({
             false,
           );
           if (Api.status && Api.status === 200) {
+            resetCheckBox();
             dispatch(updateAttendanceApprovalData(data));
             toast.success(Api?.data?.message);
           } else {
@@ -605,6 +624,7 @@ const InfoTable = ({
 
           const Api = await PostApi("leave/approve-or-reject/", data, false);
           if (Api.status && Api.status === 200) {
+            resetCheckBox();
             dispatch(editLeaveApproval(data));
             toast.success(Api?.data?.message);
           } else {
@@ -626,6 +646,7 @@ const InfoTable = ({
             false,
           );
           if (Api.status && Api.status === 200) {
+            resetCheckBox();
             dispatch(updateAttendanceApprovalData(data));
             toast.success(Api?.data?.message);
           } else {
@@ -1499,7 +1520,7 @@ const InfoTable = ({
     setSelectApproveReject(false);
   };
 
-  const deleteCheckbox = (id) => {
+  const deleteCheckbox = () => {
     const ele = document.querySelectorAll(".dataCheckBox:checked");
     ele.length > 0
       ? setIsMultiDeleteButton(true)
@@ -1507,7 +1528,7 @@ const InfoTable = ({
     setSelectedCheckBoxDelete(ele);
   };
 
-  const approveRejectCheckbox = (id) => {
+  const approveRejectCheckbox = () => {
     const ele = document.querySelectorAll(".dataCheckBox:checked");
     ele.length > 0
       ? setSelectApproveReject(true)

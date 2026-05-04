@@ -8,23 +8,24 @@ import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import appstore from "./redux/store/appstore";
 
-// ✅ Init Sentry (latest API)
-Sentry.init({
-  dsn: process.env.REACT_APP_SENTRY_DSN,
+const platform = process.env.REACT_APP_LC_PLATFORM || "local";
 
-  integrations: [
-    Sentry.browserTracingIntegration(), // ✅ modern replacement
-  ],
+if (platform != "local") {
 
-  tracesSampleRate: 1.0, // 👉 change to 0.2 in production
-});
+  // ✅ Init Sentry (latest API)
+  Sentry.init({
+    dsn: process.env.REACT_APP_SENTRY_DSN,
 
-const platform = process.env.REACT_APP_LC_PLATFORM;
+    integrations: [
+      Sentry.browserTracingIntegration(), // ✅ modern replacement
+    ],
 
-if (platform === "local") {
-  console.log = () => {};
-  console.debug = () => {};
-  console.info = () => {};
+    tracesSampleRate: 1.0, // 👉 change to 0.2 in production
+  });
+
+  console.log = () => { };
+  console.debug = () => { };
+  console.info = () => { };
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root"));

@@ -92,16 +92,18 @@ const AttendanceDashboard = () => {
   };
 
   useEffect(() => {
-    Api({
-      type: "GET",
-      url: `leave/get-leave-type-details-for-employee/?employee_id=${profile_data.id}`,
-    })
-      .then((res) => {
-        dispatch(setEmployeeLeaveType(res?.data?.data));
+    if (profile_data && profile_data?.id) {
+      Api({
+        type: "GET",
+        url: `leave/get-leave-type-details-for-employee/?employee_id=${profile_data.id}`,
       })
-      .catch((err) => {
-        console.log("Something Went Wrong!!!");
-      });
+        .then((res) => {
+          dispatch(setEmployeeLeaveType(res?.data?.data));
+        })
+        .catch((err) => {
+          console.log("Something Went Wrong!!!");
+        });
+    }
   }, []);
 
   return (
