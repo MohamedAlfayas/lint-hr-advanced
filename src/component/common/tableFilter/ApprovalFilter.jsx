@@ -362,7 +362,7 @@ const ApprovalFilter = ({ formname }) => {
                     />
                   </Col>
                 ) : null}
-                <Col md={3}>
+                {/* <Col md={3}>
                   <Select
                     id="department_filter"
                     name="department_filter"
@@ -385,7 +385,7 @@ const ApprovalFilter = ({ formname }) => {
                       handleFilterChange(e, "primary_department_id_list")
                     }
                   />
-                </Col>
+                </Col> */}
                 <Col md={3}>
                   <div className="form-icon right">
                     <DatePicker
