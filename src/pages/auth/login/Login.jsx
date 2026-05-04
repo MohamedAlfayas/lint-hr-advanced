@@ -34,7 +34,10 @@ import { BaseURL, getBaseUrlFromDomain } from "../../../common/api/BaseURL";
 import axios from "axios";
 import { GetGlobalVersion } from "../../../meta/GetGlobalVersion";
 import { toast } from "react-toastify";
-import { leftsidbarSizeTypes } from "../../../layout/Constants";
+import {
+  layoutModeTypes,
+  leftsidbarSizeTypes,
+} from "../../../layout/Constants";
 import { changeLeftsidebarSizeTypeAction } from "../../../redux/reducers/ChildReducer/LayoutReducer";
 import { setMyProfileDataReducer } from "../../../redux/reducers/ChildReducer/MyProfileReducer";
 import AuthLoader from "../loader/AuthLoader";
@@ -42,6 +45,7 @@ import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderRed
 import { generateToken, messaging } from "../../../firebase";
 import { deleteToken } from "firebase/messaging";
 import { setShowAttendanceTimer } from "../../../redux/reducers/ChildReducer/ClockReducer";
+import { changeLayoutMode } from "../../../layout/HtmlLayoutHelpers";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -153,6 +157,9 @@ const Login = () => {
             changeLeftsidebarSizeTypeAction(leftsidbarSizeTypes.DEFAULT),
           );
 
+          localStorage.setItem("layoutMode", layoutModeTypes?.LIGHTMODE);
+          dispatch(changeLayoutMode(layoutModeTypes?.LIGHTMODE));
+
           setTimeout(() => {
             toast.success(res?.data?.message);
             navigate("/dashboard");
@@ -193,11 +200,8 @@ const Login = () => {
           // window.location.href = "/dashboard";
         })
         .catch((error) => {
-          console.log("Validate Domain Error - ",error)
-          if (
-            !!error?.response &&
-            error.response.status === 404
-          ) {
+          console.log("Validate Domain Error - ", error);
+          if (!!error?.response && error.response.status === 404) {
             window.location.href = "/auth/workspace";
           } else {
             toast?.error(error?.response?.data?.message);

@@ -51,7 +51,7 @@ const Dashboard = () => {
     <React.Fragment>
       <div className="page-content">
         <Container fluid>
-          <Row>
+          {/* <Row>
             <Col xs={12}>
               <div className="page-title-box d-sm-flex align-items-center justify-content-between">
                 <h4 className="mb-sm-0">Dashboard</h4>
@@ -65,7 +65,7 @@ const Dashboard = () => {
                 </div>
               </div>
             </Col>
-          </Row>
+          </Row> */}
           <Row className="lc_dashboard_row">
             {/* Attendance Table (takes 9 cols on XL, full width on smaller) */}
             <Col xl={9} lg={8} md={12} sm={12} xs={12} className="lc_table_col">
