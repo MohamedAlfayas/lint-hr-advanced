@@ -445,10 +445,10 @@ body .rs-table-row-header .rs-table-cell {
 }
 
 /* For responsive scroll container */
-.table-wrapper {
+/* .table-wrapper {
   overflow-x: auto;
   width: 100%;
-}
+} */
 /* Base skeleton animation */
 .lc-skelton-table{
   padding-top: 40px;

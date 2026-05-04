@@ -42,7 +42,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
   const dispatch = useDispatch();
 
   const { attendance_approval_data } = useSelector(
-    (state) => state.AttendanceApprovalReducer
+    (state) => state.AttendanceApprovalReducer,
   );
 
   // useEffect(() => {
@@ -54,7 +54,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
 
   useEffect(() => {
     dispatch(
-      setAttendanceApprovalTableFilterKeys({ primary_department_id_list: 0 })
+      setAttendanceApprovalTableFilterKeys({ primary_department_id_list: 0 }),
     );
   }, []);
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
@@ -63,19 +63,19 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
 
   if (
     profile_data.permission_list.includes(
-      VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY
+      VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
     ) &&
     profile_data.permission_list.includes(
-      VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
+      VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
     )
   ) {
     employee_type = 1;
   } else if (
     profile_data.permission_list.includes(
-      VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY
+      VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
     ) &&
     !profile_data.permission_list.includes(
-      VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
+      VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
     )
   ) {
     dispatch(setApprovalEmployeeTypeFilter(0));
@@ -92,10 +92,10 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
     dispatch(setLoaderVisible(true));
     if (
       profile_data.permission_list.includes(
-        VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY
+        VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
       ) ||
       profile_data.permission_list.includes(
-        VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
+        VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
       )
     ) {
       Api({
@@ -166,7 +166,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
 
       accessor: (obj) => {
         const thisEmployee = EmployeeData.find(
-          (data) => data.id === obj.employee_id
+          (data) => data.id === obj.employee_id,
         );
         return thisEmployee.profile_url ? (
           <div className="d-flex gap-2 align-items-center lc_sticky_first_additional_col">
@@ -219,7 +219,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
 
         let thisDepartment = thisEmp
           ? thisEmp.primary_department_id_list.map((deptId) =>
-              DepartmentData.find((dept) => dept.id === deptId)
+              DepartmentData.find((dept) => dept.id === deptId),
             )
           : [];
 
@@ -324,7 +324,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
       id: "work_schedule",
       accessor: (obj) => {
         let workSchedule = ConvertSecondsToTime(
-          obj.work_schedule_duration_without_break
+          obj.work_schedule_duration_without_break,
         );
         return <React.Fragment> {workSchedule} </React.Fragment>;
       },
@@ -346,7 +346,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
       id: "edited_hours",
       accessor: (obj) => {
         let edited_hours = ConvertSecondsToTime(
-          obj.edited_checked_in_hr_in_seconds
+          obj.edited_checked_in_hr_in_seconds,
         );
 
         return <b>{edited_hours}</b>;
@@ -393,9 +393,12 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
           <React.Fragment>
             {" "}
             <Link
-              className="link-opacity-75 ms-1"
-              href="#"
-              onClick={() => viewNotes(obj)}
+              to="#"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                viewNotes(obj);
+              }}
             >
               {obj.notes.length} Notes
             </Link>
@@ -413,14 +416,14 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
           obj.hr_status === 2
             ? "Approved"
             : obj.hr_status === 3
-            ? "Pending"
-            : "Rejected";
+              ? "Pending"
+              : "Rejected";
         let statusClass =
           obj.hr_status === 2
             ? "success"
             : obj.hr_status === 3
-            ? "primary"
-            : "danger";
+              ? "primary"
+              : "danger";
         return (
           <span
             className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
@@ -512,7 +515,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
                       ) {
                         let checkInTime = format(
                           ParseTime(checkInData.entry_time),
-                          "h:mm a"
+                          "h:mm a",
                         );
                         let checkOutTime = checkOutData
                           ? format(ParseTime(checkOutData.entry_time), "h:mm a")
@@ -520,7 +523,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
                         let totalDifference = checkOutData
                           ? differenceInMinutes(
                               ParseTime(checkOutData.entry_time),
-                              ParseTime(checkInData.entry_time)
+                              ParseTime(checkInData.entry_time),
                             )
                           : 0;
                         let totalHours = Math.floor(totalDifference / 60);

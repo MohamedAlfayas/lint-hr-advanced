@@ -13,6 +13,8 @@ import { MetaTitle } from "../../common/data/MetaTitle";
 import PayRollFilter from "./PayRollFilter";
 import loader from "../auth/loader/animation/comingsoon.json";
 import Lottie from "react-lottie";
+import ClientDashboard from "../dashboard/AdminDashboard";
+import AdminDashboard from "../dashboard/AdminDashboard";
 const PayRollDashboard = () => {
   document.title = `Payroll Overview | ${MetaTitle}`;
   const defaultOptions = {
@@ -51,6 +53,7 @@ const PayRollDashboard = () => {
     <React.Fragment>
       <div className="page-content">
         <Container fluid>
+          <AdminDashboard />
           <Lottie options={defaultOptions} height={400} width={600} />
           {/* Filter Card Start */}
 

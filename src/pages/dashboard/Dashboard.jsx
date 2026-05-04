@@ -9,7 +9,7 @@ import AttendanceGraph from "./AttendanceGraph";
 import DeptWiseAttendanceWidgets from "./DeptWiseAttendanceWidgets";
 import AttendanceLeaveApprovalTable from "./AttendanceLeaveApprovalTable";
 import TodayAttendanceTable from "./TodayAttendanceTable";
-import '../../common/css/lc_style.css';
+import "../../common/css/lc_style.css";
 import {
   VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
@@ -18,6 +18,8 @@ import {
 } from "../../common/constant/RoleConstants";
 import LocationMap from "./LocationMap";
 import UsersClusterMap from "./UsersClusterMap";
+import AdminDashboard from "./AdminDashboard";
+import { Link } from "react-router-dom";
 
 const Dashboard = () => {
   document.title = `Dashboard | ${MetaTitle || "Lint HR"}`;
@@ -32,8 +34,6 @@ const Dashboard = () => {
   const [showApprovalTable, setShowApprovalTable] = useState(false);
 
   useEffect(() => {
-   
-
     let permission_list = profile_data?.permission_list || [];
 
     if (
@@ -51,28 +51,45 @@ const Dashboard = () => {
     <React.Fragment>
       <div className="page-content">
         <Container fluid>
-         <Row className="lc_dashboard_row">
-  {/* Attendance Table (takes 9 cols on XL, full width on smaller) */}
- <Col xl={9} lg={8} md={12} sm={12} xs={12} className="lc_table_col">
-    <TodayAttendanceTable />
-  </Col>
+          <Row>
+            <Col xs={12}>
+              <div className="page-title-box d-sm-flex align-items-center justify-content-between">
+                <h4 className="mb-sm-0">Dashboard</h4>
+                <div className="page-title-right">
+                  <ol className="breadcrumb m-0">
+                    <li className="breadcrumb-item">
+                      <Link to="#">Dashboard</Link>
+                    </li>
+                    <li className="breadcrumb-item active">Admin Dashboard</li>
+                  </ol>
+                </div>
+              </div>
+            </Col>
+          </Row>
+          <Row className="lc_dashboard_row">
+            {/* Attendance Table (takes 9 cols on XL, full width on smaller) */}
+            <Col xl={9} lg={8} md={12} sm={12} xs={12} className="lc_table_col">
+              <TodayAttendanceTable />
+            </Col>
 
-  {/* Map */}
-  <Col xl={3} lg={4} md={12} sm={12} xs={12} className="lc_map_col">
-  <div className="lc_container">
-    <UsersClusterMap />
-    </div>
-  </Col>
+            {/* Map */}
+            <Col xl={3} lg={4} md={12} sm={12} xs={12} className="lc_map_col">
+              <div className="lc_container">
+                <UsersClusterMap />
+              </div>
+            </Col>
+            {/* <AdminDashboard /> */}
 
-  {showApprovalTable && (
-    <Col xl={12} className="mb-3">
-      <AttendanceLeaveApprovalTable />
-    </Col>
-  )}
+            {showApprovalTable && (
+              <Col xl={12} className="mb-3">
+                <AttendanceLeaveApprovalTable />
+              </Col>
+            )}
 
-  <Col xl={12} className="mb-3">{/* <DeptWiseAttendanceWidgets /> */}</Col>
-</Row>
-
+            <Col xl={12} className="mb-3">
+              {/* <DeptWiseAttendanceWidgets /> */}
+            </Col>
+          </Row>
         </Container>
       </div>
     </React.Fragment>

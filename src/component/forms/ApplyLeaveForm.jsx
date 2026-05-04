@@ -43,8 +43,102 @@ import {
   ConvertToISODateTimeFormat,
 } from "../../common/js/ConvertDateTimeFormat";
 import { setLeaveTypeForCurrentEmployee } from "../../redux/reducers/ChildReducer/LeaveTypeReducer";
+
 dayjs.extend(customParseFormat);
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper: derive shift start/end from work-schedule workday array
+// Returns { shiftStart: "HH:mm", shiftEnd: "HH:mm", crossesMidnight: bool }
+// ─────────────────────────────────────────────────────────────────────────────
+const getShiftTimings = (workScheduleData, profileData) => {
+  const thisEmpWS = workScheduleData?.find(
+    (val) => val.id === profileData?.work_schedule_id,
+  );
+  if (!thisEmpWS) return null;
+
+  // Try common field names – adjust to your actual API shape
+  const shiftStart =
+    thisEmpWS.shift_start_time ||
+    thisEmpWS.start_time ||
+    thisEmpWS.from_time ||
+    null;
+  const shiftEnd =
+    thisEmpWS.shift_end_time || thisEmpWS.end_time || thisEmpWS.to_time || null;
+
+  if (!shiftStart || !shiftEnd) return null;
+
+  const startH = parseInt(shiftStart.split(":")[0], 10);
+  const endH = parseInt(shiftEnd.split(":")[0], 10);
+
+  // Night shift: end hour is numerically less than start hour → crosses midnight
+  const crossesMidnight = endH < startH || endH === startH;
+
+  return {
+    shiftStart, // "HH:mm"
+    shiftEnd, // "HH:mm"
+    crossesMidnight,
+  };
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper: given a date string (YYYY-MM-DD) + shift info,
+// compute half-day boundaries that respect night-shift crossing midnight.
+//
+//   First half  → shiftStart … midpoint
+//   Second half → midpoint   … shiftEnd (possibly next day)
+//
+// Returns { firstHalfStart, firstHalfEnd, secondHalfStart, secondHalfEnd }
+// all as dayjs objects so callers can format freely.
+// ─────────────────────────────────────────────────────────────────────────────
+const computeHalfDayBoundaries = (dateStr, shiftInfo) => {
+  if (!shiftInfo || !dateStr) return null;
+  const { shiftStart, shiftEnd, crossesMidnight } = shiftInfo;
+
+  const baseDate = dayjs(dateStr, "YYYY-MM-DD");
+  const startDT = baseDate
+    .hour(parseInt(shiftStart.split(":")[0], 10))
+    .minute(parseInt(shiftStart.split(":")[1], 10))
+    .second(0);
+
+  let endDT = baseDate
+    .hour(parseInt(shiftEnd.split(":")[0], 10))
+    .minute(parseInt(shiftEnd.split(":")[1], 10))
+    .second(0);
+
+  // If night shift, end is on the NEXT calendar day
+  if (crossesMidnight) {
+    endDT = endDT.add(1, "day");
+  }
+
+  const totalMinutes = endDT.diff(startDT, "minute");
+  const halfMinutes = Math.floor(totalMinutes / 2);
+  const midpointDT = startDT.add(halfMinutes, "minute");
+
+  return {
+    firstHalfStart: startDT, // shift start
+    firstHalfEnd: midpointDT, // midpoint
+    secondHalfStart: midpointDT, // midpoint
+    secondHalfEnd: endDT, // shift end (possibly next day)
+  };
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper: check whether a permission/time-off request is allowed
+// (plug your real permission rules here)
+// ─────────────────────────────────────────────────────────────────────────────
+const checkPermissionAllowed = (leaveTypeObj, requestedStart, requestedEnd) => {
+  // Example rule: permission unit leaves must be within shift hours
+  // Return { allowed: bool, reason: string }
+  if (!requestedStart || !requestedEnd) return { allowed: true };
+  if (dayjs(requestedEnd).isBefore(dayjs(requestedStart))) {
+    return { allowed: false, reason: "End time cannot be before start time." };
+  }
+  return { allowed: true };
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────────────────────────────────────
 const ApplyLeaveForm = () => {
   const dispatch = useDispatch();
   const [leaveapplyObj, setLeaveApplyObj] = useState({});
@@ -63,10 +157,13 @@ const ApplyLeaveForm = () => {
   const [inBetweenDays, setInBetweenDays] = useState([]);
   const [leaveBalanceCount, setLeaveBalanceCount] = useState(0);
   const [timeError, setTimeError] = useState("");
-  const [fullDayStart, setFullDayStart] = useState(null);
-  const [fullDayEnd, setFullDayEnd] = useState(null);
+
+  // Half-day & permission times stored as dayjs objects (null when unset)
   const [halfDayStartTime, setHalfDayStartTime] = useState(null);
   const [halfDayEndTime, setHalfDayEndTime] = useState(null);
+
+  // Computed half-day boundaries for the selected date
+  const [halfDayBoundaries, setHalfDayBoundaries] = useState(null);
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
   const profileData = GetLocalStorageData("my_profile") || [];
@@ -76,7 +173,7 @@ const ApplyLeaveForm = () => {
     (state) => state.LeaveTypeReducer,
   );
 
-  // Build select options — value is the leave_type.id, full_obj is the full leave_type_for_employee record
+  // Build select options
   const leaveTypeOptions = leave_type_for_current_employee.map((item) => ({
     value: item.leave_type.id,
     label: item.leave_type.name,
@@ -85,6 +182,25 @@ const ApplyLeaveForm = () => {
     full_obj: item,
   }));
 
+  // ── Shift info derived once ──────────────────────────────────────────────
+  const shiftInfo = useMemo(
+    () => getShiftTimings(workScheduleData, profileData),
+    [], // eslint-disable-line
+  );
+
+  // ── Recompute half-day boundaries whenever the selected date changes ─────
+  useEffect(() => {
+    const dateStr = leaveapplyObj?.start
+      ? dayjs(leaveapplyObj.start).format("YYYY-MM-DD")
+      : null;
+    if (dateStr && shiftInfo) {
+      setHalfDayBoundaries(computeHalfDayBoundaries(dateStr, shiftInfo));
+    } else {
+      setHalfDayBoundaries(null);
+    }
+  }, [leaveapplyObj?.start, shiftInfo]);
+
+  // ── Populate form when editing ───────────────────────────────────────────
   useEffect(() => {
     if (!!form_obj) {
       const thisEmpWS = workScheduleData?.find(
@@ -93,27 +209,19 @@ const ApplyLeaveForm = () => {
       !!thisEmpWS &&
         setWeekOffDays(
           thisEmpWS.workday
-            .map((d) => {
-              if (d.is_day_on === false) {
-                return d.day_id;
-              }
-              return null;
-            })
-            .filter((day_id) => day_id !== null),
+            .map((d) => (d.is_day_on === false ? d.day_id : null))
+            .filter(Boolean),
         );
 
       setHolidayDays(holidayData.map((d) => d?.date));
 
       if (form_obj?.leave_type_id !== 0) {
-        // Find the full leave_type_for_employee record by leave_type.id
         let leave_type_record = leave_type_for_current_employee.find(
           (d) => d.leave_type?.id === form_obj.leave_type_id,
         );
         if (leave_type_record) {
           setLeaveBalanceCount(leave_type_record.available_count);
-          // Pass the full record to handleStartEndDatesChange
           handleStartEndDatesChange(leave_type_record, true);
-          // Restore the selectedLeaveTypeObj so date pickers show on edit
           setSelectedLeaveTypeObj(leave_type_record);
         }
       }
@@ -124,10 +232,10 @@ const ApplyLeaveForm = () => {
         end: form_obj?.end,
       });
 
-      // When editing a half-day leave, restore the start/end times
+      // Restore half-day times on edit — stored as dayjs objects
       if (form_obj?.day_type === 2 && form_obj.unit === leave_type_day_unit) {
-        if (form_obj.start) setHalfDayStartTime(form_obj.start);
-        if (form_obj.end) setHalfDayEndTime(form_obj.end);
+        if (form_obj.start) setHalfDayStartTime(dayjs(form_obj.start));
+        if (form_obj.end) setHalfDayEndTime(dayjs(form_obj.end));
       }
 
       setHourDiff(timeConvert(form_obj.requested_leave_count));
@@ -145,34 +253,20 @@ const ApplyLeaveForm = () => {
         );
       }
     }
-  }, [form_obj]);
+  }, [form_obj]); // eslint-disable-line
 
-  // Called when user picks a leave type from the Select dropdown
+  // ── Leave type change ────────────────────────────────────────────────────
   const handleLeaveTypeChange = (selectedOption) => {
     if (!selectedOption) return;
-
-    // selectedOption.full_obj is the full leave_type_for_employee record
     const fullRecord = selectedOption.full_obj;
-
-    // Update the balance display
     setLeaveBalanceCount(selectedOption.balance_leave_count);
-
-    // Pass the full record so weekend/holiday flags are read correctly
     handleStartEndDatesChange(fullRecord, false);
   };
 
-  const thisEmpWS = workScheduleData?.find(
-    (val) => val.id === profileData.work_schedule_id,
-  );
-
-  // skipReset=true when called from useEffect (editing) so we don't clear start/end
   const handleStartEndDatesChange = (leave_type_record, skipReset = false) => {
     const localThisEmpWS = workScheduleData?.find(
       (val) => val.id === profileData.work_schedule_id,
     );
-
-    // leave_type_record may be the full employee-leave record or the leave_type sub-object
-    // Support both shapes: record.leave_type.weekend_between_leave OR record.weekend_between_leave
     const leaveTypeData = leave_type_record?.leave_type || leave_type_record;
 
     leaveTypeData?.weekend_between_leave === true
@@ -180,24 +274,17 @@ const ApplyLeaveForm = () => {
       : !!localThisEmpWS &&
         setWeekOffDays(
           localThisEmpWS.workday
-            .map((d) => {
-              if (d.is_day_on === false) {
-                return d.day_id;
-              }
-              return null;
-            })
-            .filter((day_id) => day_id !== null),
+            .map((d) => (d.is_day_on === false ? d.day_id : null))
+            .filter(Boolean),
         );
 
     leaveTypeData?.holiday_between_leave === true
       ? setHolidayDays([])
       : setHolidayDays(holidayData.map((d) => d?.date));
 
-    // Store the full record (or sub-object) so unit/flags are accessible in the UI
     setSelectedLeaveTypeObj(leave_type_record);
 
     if (!skipReset) {
-      // New selection — clear dates, counts, times
       setLeaveApplyObj((prev) => ({
         ...prev,
         leave_type_id: leaveTypeData?.id,
@@ -215,22 +302,16 @@ const ApplyLeaveForm = () => {
       setHalfDayEndTime(null);
       setFromDate(null);
       setToDate(null);
+      setHalfDayBoundaries(null);
     }
   };
 
+  // ── Multi-day range picker ───────────────────────────────────────────────
   const handleMultiDayChange = (dates, dateStrings, daysCount) => {
     let startDate =
-      dateStrings[0] === "" ||
-      dateStrings[0] === null ||
-      dateStrings[0] === undefined
-        ? null
-        : dateStrings[0];
+      !dateStrings[0] || dateStrings[0] === "" ? null : dateStrings[0];
     let endDate =
-      dateStrings[1] === "" ||
-      dateStrings[1] === null ||
-      dateStrings[1] === undefined
-        ? null
-        : dateStrings[1];
+      !dateStrings[1] || dateStrings[1] === "" ? null : dateStrings[1];
 
     const generateIntermediaryDates = () => {
       const start = !!startDate
@@ -250,18 +331,13 @@ const ApplyLeaveForm = () => {
     };
 
     const intermediateDates = generateIntermediaryDates() || [];
-    const ValidDays = intermediateDates.filter((d) => {
-      if (
-        !WeekOffDays.includes(new Date(d).getDay()) &&
-        !HolidayDays.includes(d)
-      ) {
-        return d;
-      }
-    });
+    const ValidDays = intermediateDates.filter(
+      (d) =>
+        !WeekOffDays.includes(new Date(d).getDay()) && !HolidayDays.includes(d),
+    );
 
     setInBetweenDays(ValidDays);
     const ValidDaysCount = ValidDays.length;
-
     setDaysCount(ValidDaysCount);
     setLeaveApplyObj({
       ...leaveapplyObj,
@@ -275,8 +351,6 @@ const ApplyLeaveForm = () => {
     });
   };
 
-  const initialTime = dayjs("00:00", "HH:mm");
-
   const disabledDate = (current) => {
     const dayOfWeek = current.day();
     return (
@@ -289,36 +363,30 @@ const ApplyLeaveForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setLeaveApplyObj({
-      ...leaveapplyObj,
-      [name]: value,
-    });
+    setLeaveApplyObj({ ...leaveapplyObj, [name]: value });
   };
 
+  // ── Day-type change (Full / Half) ────────────────────────────────────────
   const handleDayType = (e) => {
     const value = e?.value || null;
-    let updatedDaysCount;
-    if (value === 1) {
-      updatedDaysCount = 1;
-    } else if (value === 2) {
-      updatedDaysCount = 0.5;
-    } else {
-      updatedDaysCount = 0;
-    }
-    // Reset half-day times when day type changes
+    const updatedDaysCount = value === 1 ? 1 : value === 2 ? 0.5 : 0;
+
+    // Reset half-day times and auto-populate from shift if switching to half-day
     setHalfDayStartTime(null);
     setHalfDayEndTime(null);
+    setTimeError("");
 
     setLeaveApplyObj({
       ...leaveapplyObj,
       day_type: value,
-      requested_leave_count: value === 1 ? 1 : value === 2 ? 0.5 : 0,
+      requested_leave_count: updatedDaysCount,
       in_between_dates:
         value === 1 ? [leaveapplyObj.start] : value === 2 ? [] : [],
     });
     setDaysCount(updatedDaysCount);
   };
 
+  // ── Hour-unit DatePicker (with datetime) ─────────────────────────────────
   useEffect(() => {
     if (toDate && fromDate) {
       const [fromDateDay, fromDateMonth, fromDateYear, fromDateTime] =
@@ -350,10 +418,9 @@ const ApplyLeaveForm = () => {
     setFromDate(dateStr);
     setLeaveApplyObj({
       ...leaveapplyObj,
-      start:
-        dateStr === "" || dateStr === null || dateStr === undefined
-          ? null
-          : ConvertToISODateTimeFormat(ConvertToDateTimeFormat(dateStr)),
+      start: !dateStr
+        ? null
+        : ConvertToISODateTimeFormat(ConvertToDateTimeFormat(dateStr)),
     });
   };
 
@@ -361,53 +428,136 @@ const ApplyLeaveForm = () => {
     setToDate(dateStr);
     setLeaveApplyObj({
       ...leaveapplyObj,
-      end:
-        dateStr === "" || dateStr === null || dateStr === undefined
-          ? null
-          : ConvertToISODateTimeFormat(ConvertToDateTimeFormat(dateStr)),
+      end: !dateStr
+        ? null
+        : ConvertToISODateTimeFormat(ConvertToDateTimeFormat(dateStr)),
     });
   };
 
   const calculateHourDiff = (start, end) => {
-    if (start && end) {
-      const parseDateString = (dateString) => {
-        const [day, month, year, hours, minutes] = dateString.split(/\D+/);
-        return new Date(year, month - 1, day, hours, minutes);
-      };
+    if (!start || !end) return;
+    const parseDateString = (dateString) => {
+      const [day, month, year, hours, minutes] = dateString.split(/\D+/);
+      return new Date(year, month - 1, day, hours, minutes);
+    };
+    const startDate = parseDateString(start);
+    const endDate = parseDateString(end);
+    let diffInMilliseconds =
+      startDate > endDate
+        ? (() => {
+            const midnight = new Date(startDate);
+            midnight.setHours(24, 0, 0, 0);
+            return midnight - startDate + (endDate - new Date(0));
+          })()
+        : endDate - startDate;
 
-      const startDate = parseDateString(start);
-      const endDate = parseDateString(end);
+    const hours = diffInMilliseconds / (1000 * 60 * 60);
+    // Round to nearest minute (no 30-min snapping here)
+    const totalMinutes = Math.round(hours * 60);
+    const roundedHours = Math.floor(totalMinutes / 60);
+    const remainingMinutes = totalMinutes % 60;
+    const formattedResult = `${String(roundedHours).padStart(2, "0")}:${String(
+      remainingMinutes,
+    ).padStart(2, "0")}`;
+    const formattedResultForSetting = roundedHours + remainingMinutes / 60;
 
-      let diffInMilliseconds;
-
-      if (startDate > endDate) {
-        const midnight = new Date(startDate);
-        midnight.setHours(24, 0, 0, 0);
-        diffInMilliseconds = midnight - startDate + +(endDate - new Date(0));
-      } else {
-        diffInMilliseconds = endDate - startDate;
-      }
-
-      const hours = diffInMilliseconds / (1000 * 60 * 60);
-      const roundedMinutes = Math.round((hours * 60) / 30) * 30;
-      const roundedHours = Math.floor(roundedMinutes / 60);
-      const remainingMinutes = roundedMinutes % 60;
-
-      const formattedResult = `${String(roundedHours).padStart(2, "0")}:${String(
-        remainingMinutes,
-      ).padStart(2, "0")}`;
-
-      const formattedResultForSetting = roundedHours + remainingMinutes / 60;
-
-      setHourDiff(formattedResult);
-      setLeaveApplyObj({
-        ...leaveapplyObj,
-        requested_leave_count: formattedResultForSetting,
-        day_type: 1,
-      });
-    }
+    setHourDiff(formattedResult);
+    setLeaveApplyObj((prev) => ({
+      ...prev,
+      requested_leave_count: formattedResultForSetting,
+      day_type: 1,
+    }));
   };
 
+  // ── Half-day time change handlers ────────────────────────────────────────
+  // FIX: minuteStep removed (set to 1) → any time is selectable.
+  // FIX: night-shift aware — end time may be on the next calendar day.
+
+  const handleHalfDayStartTimeChange = (time) => {
+    if (!time) {
+      setHalfDayStartTime(null);
+      setHalfDayEndTime(null);
+      return;
+    }
+    // Combine with the leave date to get a full datetime
+    const datePart = leaveapplyObj?.start
+      ? dayjs(leaveapplyObj.start).format("YYYY-MM-DD")
+      : dayjs().format("YYYY-MM-DD");
+
+    let startDT = dayjs(
+      `${datePart} ${time.format("HH:mm")}`,
+      "YYYY-MM-DD HH:mm",
+    );
+
+    // Night shift: if the chosen start hour is >= shift start on the same day but
+    // we're in night shift, keep same day. If chosen hour is early morning (after
+    // midnight) it could be the next day — the user sees the calendar date they
+    // picked so we always anchor to datePart for start.
+    setHalfDayStartTime(startDT);
+    setHalfDayEndTime(null); // reset end whenever start changes
+    setTimeError("");
+  };
+
+  const handleHalfDayEndTimeChange = (time) => {
+    if (!time || !halfDayStartTime) return;
+
+    const datePart = halfDayStartTime.format("YYYY-MM-DD");
+    let endDT = dayjs(
+      `${datePart} ${time.format("HH:mm")}`,
+      "YYYY-MM-DD HH:mm",
+    );
+
+    // Night-shift fix: if end time is numerically before start time on the
+    // SAME calendar day, the shift crosses midnight → end is on the next day.
+    if (endDT.isBefore(halfDayStartTime) || endDT.isSame(halfDayStartTime)) {
+      if (shiftInfo?.crossesMidnight) {
+        // Advance to next calendar day
+        endDT = endDT.add(1, "day");
+      } else {
+        setTimeError("End time cannot be before or equal to start time.");
+        return;
+      }
+    }
+
+    // Permission check
+    const permCheck = checkPermissionAllowed(
+      selectedLeaveTypeObj,
+      halfDayStartTime,
+      endDT,
+    );
+    if (!permCheck.allowed) {
+      setTimeError(permCheck.reason);
+      return;
+    }
+
+    setTimeError("");
+    setHalfDayEndTime(endDT);
+  };
+
+  // ── Compute total half-day hours (handles cross-midnight) ────────────────
+  const computedHalfDayHours = useMemo(() => {
+    if (!halfDayStartTime || !halfDayEndTime) return "0.00";
+    const diffMinutes = halfDayEndTime.diff(halfDayStartTime, "minute");
+    if (diffMinutes <= 0) return "0.00";
+    const h = Math.floor(diffMinutes / 60);
+    const m = diffMinutes % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }, [halfDayStartTime, halfDayEndTime]);
+
+  // ── Shift boundary display helpers ───────────────────────────────────────
+  const shiftBoundaryHint = useMemo(() => {
+    if (!shiftInfo) return null;
+    const label = shiftInfo.crossesMidnight
+      ? `Night shift: ${shiftInfo.shiftStart} → next day ${shiftInfo.shiftEnd}`
+      : `Shift: ${shiftInfo.shiftStart} – ${shiftInfo.shiftEnd}`;
+    return label;
+  }, [shiftInfo]);
+
+  // ── Derive unit ──────────────────────────────────────────────────────────
+  const currentUnit =
+    selectedLeaveTypeObj?.leave_type?.unit || selectedLeaveTypeObj?.unit;
+
+  // ── Formik ───────────────────────────────────────────────────────────────
   const FormikForm = useFormik({
     enableReinitialize: true,
     initialValues: leaveapplyObj,
@@ -418,6 +568,7 @@ const ApplyLeaveForm = () => {
       reason: Yup.string().required("Reason is required"),
     }),
     onSubmit: async (values) => {
+      // ── Half-day validation ──
       if (values.day_type === 2) {
         if (!halfDayStartTime) {
           toast.error("Please select Start Time");
@@ -427,11 +578,23 @@ const ApplyLeaveForm = () => {
           toast.error("Please select End Time");
           return;
         }
+        if (timeError) {
+          toast.error(timeError);
+          return;
+        }
       }
+
+      // Build final object — store times in ISO format (YYYY-MM-DD HH:mm:00)
       const finalLeaveObj = {
         ...values,
-        start: values.day_type === 2 ? halfDayStartTime : values.start,
-        end: values.day_type === 2 ? halfDayEndTime : values.end,
+        start:
+          values.day_type === 2
+            ? halfDayStartTime.format("YYYY-MM-DD HH:mm:00")
+            : values.start,
+        end:
+          values.day_type === 2
+            ? halfDayEndTime.format("YYYY-MM-DD HH:mm:00")
+            : values.end,
       };
 
       dispatch(setLoaderVisible(true));
@@ -452,29 +615,27 @@ const ApplyLeaveForm = () => {
       }
 
       try {
-        const Api = await PostApi(
+        const ApiRes = await PostApi(
           "leave/leave-application/create/",
           finalLeaveObj,
           false,
         );
 
-        if (Api.status === 200) {
+        if (ApiRes.status === 200) {
           if (leaveapplyObj.id === 0) {
-            dispatch(addLeaveApplication(Api?.data.data));
+            dispatch(addLeaveApplication(ApiRes?.data.data));
           } else {
-            dispatch(editLeaveApplication(Api?.data?.data));
+            dispatch(editLeaveApplication(ApiRes?.data?.data));
           }
-
           dispatch(
             setLeaveTypeForCurrentEmployee(
-              Api?.data?.leave_type_for_employee || [],
+              ApiRes?.data?.leave_type_for_employee || [],
             ),
           );
-
           dispatch(toggleRSBView(false));
-          toast.success(Api?.data?.message);
+          toast.success(ApiRes?.data?.message);
         } else {
-          toast.error(Api?.data?.message || Api?.data?.detail);
+          toast.error(ApiRes?.data?.message || ApiRes?.data?.detail);
         }
       } catch (error) {
         console.error(error);
@@ -485,16 +646,14 @@ const ApplyLeaveForm = () => {
     },
   });
 
-  // Derive unit from selectedLeaveTypeObj (supports both shapes)
-  const currentUnit =
-    selectedLeaveTypeObj?.leave_type?.unit || selectedLeaveTypeObj?.unit;
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <React.Fragment>
       <Row>
         <Col>
           <Form onSubmit={FormikForm.handleSubmit} action="javascript:void(0)">
             <Row className="g-3">
+              {/* ── Leave Type ── */}
               <Col lg={12}>
                 <div className="mb-3">
                   <Label>Type *</Label>
@@ -534,6 +693,7 @@ const ApplyLeaveForm = () => {
                 </div>
               </Col>
 
+              {/* ── Day-unit: date range picker ── */}
               {!!currentUnit && currentUnit === leave_type_day_unit && (
                 <Col lg={12}>
                   <div className="input-group">
@@ -568,9 +728,10 @@ const ApplyLeaveForm = () => {
                     <span className="input-group-text">{daysCount} Days</span>
                   </div>
                   <div id="passwordHelpBlock" className="form-text">
-                    Please select Start & End Date
+                    Please select Start &amp; End Date
                   </div>
 
+                  {/* ── Day type (Full / Half) ── */}
                   {(daysCount === 1 || daysCount === 0.5) && (
                     <div className="input-group mt-3">
                       <Col lg={12}>
@@ -599,80 +760,153 @@ const ApplyLeaveForm = () => {
                 </Col>
               )}
 
+              {/* ── Half-day time pickers (day_type === 2) ── */}
               {leaveapplyObj?.day_type === 2 && (
-                <div className="row mt-3 align-items-end">
-                  {/* Start Time */}
-                  <Col md={4}>
-                    <Label className="form-label">Start Time</Label>
-                    <TimePicker
-                      value={halfDayStartTime ? dayjs(halfDayStartTime) : null}
-                      format="HH:mm"
-                      minuteStep={30}
-                      onChange={(time) => {
-                        if (!time) return;
-                        const datePart = dayjs(leaveapplyObj.start).format(
-                          "YYYY-MM-DD",
-                        );
-                        const newDateTime = dayjs(
-                          `${datePart} ${time.format("HH:mm:ss")}`,
-                        );
-                        setHalfDayStartTime(
-                          newDateTime.format("YYYY-MM-DD HH:mm:00"),
-                        );
-                      }}
-                      style={{ width: "100%" }}
-                    />
-                  </Col>
+                <Col lg={12}>
+                  <div className="row mt-3 align-items-end">
+                    {/* Shift hint */}
+                    {shiftBoundaryHint && (
+                      <Col md={12} className="mb-2">
+                        <small className="text-muted">
+                          <i className="ri-time-line me-1" />
+                          {shiftBoundaryHint}
+                        </small>
+                      </Col>
+                    )}
 
-                  {/* End Time */}
-                  <Col md={4}>
-                    <Label className="form-label">End Time</Label>
-                    <TimePicker
-                      value={halfDayEndTime ? dayjs(halfDayEndTime) : null}
-                      format="HH:mm"
-                      minuteStep={30}
-                      disabled={!halfDayStartTime}
-                      onChange={(time) => {
-                        if (!time) return;
-                        const start = dayjs(halfDayStartTime);
-                        const datePart = dayjs(leaveapplyObj.start).format(
-                          "YYYY-MM-DD",
-                        );
-                        const end = dayjs(
-                          `${datePart} ${time.format("HH:mm:ss")}`,
-                        );
-                        if (end.isBefore(start)) {
-                          setTimeError("End time cannot be before start time!");
-                          return;
-                        }
-                        setTimeError("");
-                        setHalfDayEndTime(end.format("YYYY-MM-DD HH:mm:00"));
-                      }}
-                      style={{ width: "100%" }}
-                    />
-                  </Col>
+                    {/* Half-day boundary quick-select buttons */}
+                    {halfDayBoundaries && (
+                      <Col md={12} className="mb-3">
+                        <Label className="form-label d-block">
+                          Quick Select Half
+                        </Label>
+                        <div className="d-flex gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            className="btn btn-outline-primary btn-sm"
+                            onClick={() => {
+                              setHalfDayStartTime(
+                                halfDayBoundaries.firstHalfStart,
+                              );
+                              setHalfDayEndTime(halfDayBoundaries.firstHalfEnd);
+                              setTimeError("");
+                            }}
+                          >
+                            First Half (
+                            {halfDayBoundaries.firstHalfStart.format("HH:mm")}
+                            &nbsp;–&nbsp;
+                            {halfDayBoundaries.firstHalfEnd.format("HH:mm")})
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => {
+                              setHalfDayStartTime(
+                                halfDayBoundaries.secondHalfStart,
+                              );
+                              setHalfDayEndTime(
+                                halfDayBoundaries.secondHalfEnd,
+                              );
+                              setTimeError("");
+                            }}
+                          >
+                            Second Half (
+                            {halfDayBoundaries.secondHalfStart.format("HH:mm")}
+                            &nbsp;–&nbsp;
+                            {halfDayBoundaries.secondHalfEnd.format("HH:mm")}
+                            {shiftInfo?.crossesMidnight ? " +1d" : ""})
+                          </button>
+                        </div>
+                      </Col>
+                    )}
 
-                  {/* Total Hours */}
-                  <Col md={3}>
-                    <Label className="form-label">Total Hours</Label>
-                    <span className="form-control text-center">
-                      {halfDayStartTime && halfDayEndTime
-                        ? dayjs(halfDayEndTime)
-                            .diff(dayjs(halfDayStartTime), "hours", true)
-                            .toFixed(2)
-                        : "0.00"}{" "}
-                      h
-                    </span>
-                  </Col>
-
-                  {timeError && (
-                    <Col md={12}>
-                      <div className="text-danger mt-2">{timeError}</div>
+                    {/* Start Time — ANY time (minuteStep={1}, no restriction) */}
+                    <Col md={4}>
+                      <Label className="form-label">Start Time</Label>
+                      <TimePicker
+                        value={halfDayStartTime || null}
+                        format="HH:mm"
+                        minuteStep={1}
+                        showSecond={false}
+                        onChange={handleHalfDayStartTimeChange}
+                        style={{ width: "100%" }}
+                        placeholder="Select start time"
+                        needConfirm={false}
+                      />
                     </Col>
-                  )}
-                </div>
+
+                    {/* End Time — ANY time, night-shift aware */}
+                    <Col md={4}>
+                      <Label className="form-label">
+                        End Time
+                        {shiftInfo?.crossesMidnight && (
+                          <small className="text-muted ms-1">
+                            (may be next day)
+                          </small>
+                        )}
+                      </Label>
+                      <TimePicker
+                        value={
+                          halfDayEndTime
+                            ? // Show only the time portion even if day rolled over
+                              dayjs(halfDayEndTime.format("HH:mm"), "HH:mm")
+                            : null
+                        }
+                        format="HH:mm"
+                        minuteStep={1}
+                        showSecond={false}
+                        disabled={!halfDayStartTime}
+                        onChange={handleHalfDayEndTimeChange}
+                        style={{ width: "100%" }}
+                        placeholder="Select end time"
+                        needConfirm={false}
+                      />
+                    </Col>
+
+                    {/* Total Hours */}
+                    <Col md={3}>
+                      <Label className="form-label">Total Hours</Label>
+                      <span className="form-control text-center">
+                        {computedHalfDayHours} h
+                        {shiftInfo?.crossesMidnight &&
+                          halfDayStartTime &&
+                          halfDayEndTime &&
+                          halfDayEndTime.date() !== halfDayStartTime.date() && (
+                            <small className="text-info ms-1">(next day)</small>
+                          )}
+                      </span>
+                    </Col>
+
+                    {/* Time error */}
+                    {timeError && (
+                      <Col md={12}>
+                        <div className="text-danger mt-2">{timeError}</div>
+                      </Col>
+                    )}
+
+                    {/* Shift boundary info (detailed) */}
+                    {halfDayBoundaries && (
+                      <Col md={12} className="mt-2">
+                        <small className="text-muted">
+                          Shift total:{" "}
+                          {halfDayBoundaries.secondHalfEnd.diff(
+                            halfDayBoundaries.firstHalfStart,
+                            "minute",
+                          )}{" "}
+                          mins &nbsp;|&nbsp; Each half ≈{" "}
+                          {halfDayBoundaries.firstHalfEnd.diff(
+                            halfDayBoundaries.firstHalfStart,
+                            "minute",
+                          )}{" "}
+                          mins
+                        </small>
+                      </Col>
+                    )}
+                  </div>
+                </Col>
               )}
 
+              {/* ── Hour-unit: datetime pickers ── */}
               {!!currentUnit && currentUnit === leave_type_hour_unit && (
                 <Col lg={12}>
                   <div className="row">
@@ -681,8 +915,7 @@ const ApplyLeaveForm = () => {
                         name="start"
                         placeholder="Select Start Time"
                         showTime={{
-                          minuteStep: 30,
-                          defaultValue: initialTime,
+                          minuteStep: 1,
                           format: "HH:mm",
                         }}
                         format={DateTimeFormat}
@@ -708,8 +941,7 @@ const ApplyLeaveForm = () => {
                         name="end"
                         placeholder="Select End Time"
                         showTime={{
-                          minuteStep: 30,
-                          defaultValue: initialTime,
+                          minuteStep: 1,
                           format: "HH:mm",
                         }}
                         format={DateTimeFormat}
@@ -744,6 +976,7 @@ const ApplyLeaveForm = () => {
                 </Col>
               )}
 
+              {/* ── Reason ── */}
               <Col lg={12}>
                 <label htmlFor="reason" className="form-label">
                   Reason *
@@ -762,13 +995,14 @@ const ApplyLeaveForm = () => {
                   </div>
                 ) : null}
               </Col>
+
+              {/* ── Submit ── */}
               <Col lg={12}>
                 <div className="text-end">
                   <Button color="success" className="btn-label" type="submit">
-                    {" "}
-                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                    Apply{" "}
-                  </Button>{" "}
+                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2" />
+                    Apply
+                  </Button>
                 </div>
               </Col>
             </Row>

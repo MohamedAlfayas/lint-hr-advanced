@@ -32,7 +32,7 @@ const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <Provider store={appstore}>
     <BrowserRouter>
-      <Sentry.ErrorBoundary fallback={<h2>Something went wrong.</h2>}>
+      <Sentry.ErrorBoundary fallback={<h2></h2>}>
         <App />
       </Sentry.ErrorBoundary>
     </BrowserRouter>

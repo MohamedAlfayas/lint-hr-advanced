@@ -11,21 +11,19 @@ const EmployeeTableFilter = () => {
 
   const dep_options = useMemo(
     () => GetLocalStorageData("department") || [],
-    []
+    [],
   );
   const manager_options = useMemo(() => GetLocalStorageData("employee") || []);
   const role_options = useMemo(() => GetLocalStorageData("role") || []);
 
-  console.log("Options",role_options);
-  
+  console.log("Options", role_options);
 
   const dispatch = useDispatch();
 
   const { employee_table_filter_keys } = useSelector(
-    (state) => state.TableFilterReducer
+    (state) => state.TableFilterReducer,
   );
-  console.log("Filter",employee_table_filter_keys);
-  
+  console.log("Filter", employee_table_filter_keys);
 
   const handleFilterChange = (e, name) => {
     let val = !!e ? e.id : 0;
@@ -33,7 +31,7 @@ const EmployeeTableFilter = () => {
       setEmployeeTableFilterKeys({
         ...employee_table_filter_keys,
         [name]: val,
-      })
+      }),
     );
   };
 
@@ -54,7 +52,7 @@ const EmployeeTableFilter = () => {
               ? dep_options.find(
                   (d) =>
                     d.id ===
-                    employee_table_filter_keys?.primary_department_id_list
+                    employee_table_filter_keys?.primary_department_id_list,
                 )
               : []
           }
@@ -76,7 +74,7 @@ const EmployeeTableFilter = () => {
           value={
             !!employee_table_filter_keys?.role_id
               ? role_options.find(
-                  (d) => d.id === employee_table_filter_keys?.role_id
+                  (d) => d.id === employee_table_filter_keys?.role_id,
                 )
               : []
           }
@@ -99,7 +97,7 @@ const EmployeeTableFilter = () => {
             !!employee_table_filter_keys?.reporting_manager_id
               ? manager_options.find(
                   (d) =>
-                    d.id === employee_table_filter_keys?.reporting_manager_id
+                    d.id === employee_table_filter_keys?.reporting_manager_id,
                 )
               : []
           }

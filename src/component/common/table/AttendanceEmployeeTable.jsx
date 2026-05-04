@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useRef, useState } from "react";
 import {
   Table,
   IconButton,
@@ -156,6 +156,25 @@ const AttendanceEmployeeTable = () => {
       ];
     }
   });
+  const containerRef = useRef(null);
+  const [tableWidth, setTableWidth] = useState(0);
+
+  // Watch container width and re-set so RSuite recalculates flexGrow
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setTableWidth(entry.contentRect.width);
+      }
+    });
+
+    ro.observe(containerRef.current);
+    // Set initial width
+    setTableWidth(containerRef.current.offsetWidth);
+
+    return () => ro.disconnect();
+  }, []);
 
   // ADD this useEffect after all your useState declarations:
   useEffect(() => {
@@ -1063,116 +1082,137 @@ const AttendanceEmployeeTable = () => {
       </div>
 
       {/* Table */}
-      <Table
-        height={400}
-        data={individual_attendance_report_data || []}
-        autoHeight
-        loading={loading}
-        bordered
-        rowHeight={60}
-        affixHeader
-        affixHorizontalScrollbar
-        className="mb-5"
-      >
-        {selectedColumns.includes("date") && (
-          <Column width={175} align="center" fixed="left">
-            <HeaderCell>Date</HeaderCell>
-            <DateCell />
-          </Column>
-        )}
-
-        {selectedColumns.includes("in") && (
-          <Column width={130}>
-            <HeaderCell>IN</HeaderCell>
-            <InOutCell dataKey="in" />
-          </Column>
-        )}
-
-        {selectedColumns.includes("inLocation") && (
-          <Column width={150}>
-            <HeaderCell>IN Location</HeaderCell>
-            <LocationCell dataKey="in" />
-          </Column>
-        )}
-
-        {selectedColumns.includes("out") && (
-          <Column width={130}>
-            <HeaderCell>OUT</HeaderCell>
-            <InOutCell dataKey="out" />
-          </Column>
-        )}
-
-        {selectedColumns.includes("outLocation") && (
-          <Column width={150}>
-            <HeaderCell>OUT Location</HeaderCell>
-            <LocationCell dataKey="out" />
-          </Column>
-        )}
-
-        {selectedColumns.includes("workSchedule") && (
-          <Column width={120}>
-            <HeaderCell>Work Schedule</HeaderCell>
-            <WorkScheduleCell dataKey="ws" />
-          </Column>
-        )}
-
-        {selectedColumns.includes("break") && (
-          <Column width={100}>
-            <HeaderCell>Break</HeaderCell>
-            <BreakHourCell dataKey="total_break_duration" />
-          </Column>
-        )}
-
-        {selectedColumns.includes("totalIn") && (
-          <Column width={100}>
-            <HeaderCell>Total IN</HeaderCell>
-            <SecondsToTimeCell dataKey="final_checked_in_hr_in_seconds" />
-          </Column>
-        )}
-
-        {employeeWorkSchedule?.has_ot &&
-          selectedColumns.includes("totalIn") && (
-            <Column width={100}>
-              <HeaderCell>OT</HeaderCell>
-              <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
+      <div ref={containerRef} style={{ width: "100%", overflowX: "auto" }}>
+        <Table
+          // Use measured width so RSuite knows how much space to distribute
+          width={tableWidth || undefined}
+          height={400}
+          data={individual_attendance_report_data || []}
+          autoHeight
+          loading={loading}
+          bordered
+          rowHeight={60}
+          // affixHeader keeps the header visible while scrolling vertically
+          affixHeader
+          affixHorizontalScrollbar
+          className="mb-5"
+          // Tell RSuite to honour flexGrow
+          fillHeight={false}
+        >
+          {/* ── DATE (fixed left, never flex) ─────────────────────────── */}
+          {selectedColumns.includes("date") && (
+            <Column width={140} fixed="left" align="center">
+              <HeaderCell>Date</HeaderCell>
+              <DateCell />
             </Column>
           )}
 
-        {selectedColumns.includes("paidHr") && (
-          <Column width={100}>
-            <HeaderCell>Paid Hr</HeaderCell>
-            <SecondsToTimeCell dataKey="final_paid_hr_in_seconds" />
-          </Column>
-        )}
+          {/* ── IN ───────────────────────────────────────────────────── */}
+          {selectedColumns.includes("in") && (
+            <Column flexGrow={1} minWidth={110}>
+              <HeaderCell>IN</HeaderCell>
+              <InOutCell dataKey="in" />
+            </Column>
+          )}
 
-        {selectedColumns.includes("status") && (
-          <Column width={100}>
-            <HeaderCell>Status</HeaderCell>
-            <HrStatusCell dataKey="hr_status" />
-          </Column>
-        )}
+          {/* ── IN LOCATION ──────────────────────────────────────────── */}
+          {selectedColumns.includes("inLocation") && (
+            <Column flexGrow={1.5} minWidth={140}>
+              <HeaderCell>IN Location</HeaderCell>
+              <LocationCell dataKey="in" />
+            </Column>
+          )}
 
-        {selectedColumns.includes("activity") && (
-          <Column width={100}>
-            <HeaderCell>Activity</HeaderCell>
-            <ActivityCell />
-          </Column>
-        )}
+          {/* ── OUT ──────────────────────────────────────────────────── */}
+          {selectedColumns.includes("out") && (
+            <Column flexGrow={1} minWidth={110}>
+              <HeaderCell>OUT</HeaderCell>
+              <InOutCell dataKey="out" />
+            </Column>
+          )}
 
-        {selectedColumns.includes("notes") && (
-          <Column width={120}>
-            <HeaderCell>Notes</HeaderCell>
-            <NotesCell dataKey="notes" />
-          </Column>
-        )}
+          {/* ── OUT LOCATION ─────────────────────────────────────────── */}
+          {selectedColumns.includes("outLocation") && (
+            <Column flexGrow={1.5} minWidth={140}>
+              <HeaderCell>OUT Location</HeaderCell>
+              <LocationCell dataKey="out" />
+            </Column>
+          )}
 
-        {selectedColumns.includes("action") && (
-          <Column width={80} fixed="right">
-            <HeaderCell>Action</HeaderCell>
-            <EditableCell />
-          </Column>
-        )}
-      </Table>
+          {/* ── WORK SCHEDULE ────────────────────────────────────────── */}
+          {selectedColumns.includes("workSchedule") && (
+            <Column flexGrow={1} minWidth={110}>
+              <HeaderCell>Work Schedule</HeaderCell>
+              <WorkScheduleCell dataKey="ws" />
+            </Column>
+          )}
+
+          {/* ── BREAK ────────────────────────────────────────────────── */}
+          {selectedColumns.includes("break") && (
+            <Column flexGrow={1} minWidth={90}>
+              <HeaderCell>Break</HeaderCell>
+              <BreakHourCell dataKey="total_break_duration" />
+            </Column>
+          )}
+
+          {/* ── TOTAL IN ─────────────────────────────────────────────── */}
+          {selectedColumns.includes("totalIn") && (
+            <Column flexGrow={1} minWidth={90}>
+              <HeaderCell>Total IN</HeaderCell>
+              <SecondsToTimeCell dataKey="final_checked_in_hr_in_seconds" />
+            </Column>
+          )}
+
+          {/* ── OT (conditional) ─────────────────────────────────────── */}
+          {employeeWorkSchedule?.has_ot &&
+            selectedColumns.includes("totalIn") && (
+              <Column flexGrow={1} minWidth={90}>
+                <HeaderCell>OT</HeaderCell>
+                <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
+              </Column>
+            )}
+
+          {/* ── PAID HR ──────────────────────────────────────────────── */}
+          {selectedColumns.includes("paidHr") && (
+            <Column flexGrow={1} minWidth={90}>
+              <HeaderCell>Paid Hr</HeaderCell>
+              <SecondsToTimeCell dataKey="final_paid_hr_in_seconds" />
+            </Column>
+          )}
+
+          {/* ── STATUS ───────────────────────────────────────────────── */}
+          {selectedColumns.includes("status") && (
+            <Column flexGrow={1} minWidth={100}>
+              <HeaderCell>Status</HeaderCell>
+              <HrStatusCell dataKey="hr_status" />
+            </Column>
+          )}
+
+          {/* ── ACTIVITY ─────────────────────────────────────────────── */}
+          {selectedColumns.includes("activity") && (
+            <Column flexGrow={1} minWidth={100}>
+              <HeaderCell>Activity</HeaderCell>
+              <ActivityCell />
+            </Column>
+          )}
+
+          {/* ── NOTES ────────────────────────────────────────────────── */}
+          {selectedColumns.includes("notes") && (
+            <Column flexGrow={1} minWidth={110}>
+              <HeaderCell>Notes</HeaderCell>
+              <NotesCell dataKey="notes" />
+            </Column>
+          )}
+
+          {/* ── ACTION (fixed right, never flex) ─────────────────────── */}
+          {selectedColumns.includes("action") && (
+            <Column width={80} fixed="right">
+              <HeaderCell>Action</HeaderCell>
+              <EditableCell />
+            </Column>
+          )}
+        </Table>
+      </div>
 
       {/* Edit Modal */}
       <Modal isOpen={editModalOpen} toggle={closeEditModal} centered>

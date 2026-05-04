@@ -354,6 +354,10 @@ const TodayaAttendanceTable = () => {
         return (
           <span className="badge bg-danger-subtle text-danger">Rejected</span>
         );
+      case 4:
+        return (
+          <span className="badge bg-danger-subtle text-danger">Cancelled</span>
+        );
       default:
         return (
           <span className="badge bg-secondary-subtle text-secondary">

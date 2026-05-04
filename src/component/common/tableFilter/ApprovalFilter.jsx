@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
   Card,
@@ -41,24 +41,25 @@ import {
   setFilteredCurrentValue,
   setFilteredLatestValue,
 } from "../../../redux/reducers/ChildReducer/AprrovalFilterReducer";
-import { set } from "lodash";
 import {
   setApprovalEmployeeTypeFilter,
   setCurrentApprovalComponent,
 } from "../../../redux/reducers/ChildReducer/ApprovalComponentReducer";
+import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
+import { setEmployeeTableFilterKeys } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
 
 dayjs.extend(customParseFormat);
 
 const ApprovalFilter = ({ formname }) => {
   const { leave_approval_data } = useSelector(
-    (data) => data.LeaveApprovalReducer
+    (data) => data.LeaveApprovalReducer,
   );
 
   const { filteredcurrentvalue } = useSelector(
-    (data) => data.ApprovalFilterReducer
+    (data) => data.ApprovalFilterReducer,
   );
   const { filteredlatestvalue } = useSelector(
-    (data) => data.ApprovalFilterReducer
+    (data) => data.ApprovalFilterReducer,
   );
 
   const PendingLeave = leave_approval_data.filter((d) => d.status === 1).length;
@@ -68,10 +69,10 @@ const ApprovalFilter = ({ formname }) => {
     setActiveTab(tab);
   };
   const { attendance_approval_data } = useSelector(
-    (state) => state.AttendanceApprovalReducer
+    (state) => state.AttendanceApprovalReducer,
   );
   const AttendancePending = attendance_approval_data.filter(
-    (d) => d.hr_status === 3
+    (d) => d.hr_status === 3,
   ).length;
 
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
@@ -92,7 +93,7 @@ const ApprovalFilter = ({ formname }) => {
   const [filteredMonth, setFilteredMonth] = useState(
     `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
       .toString()
-      .padStart(2, "0")}`
+      .padStart(2, "0")}`,
   );
   const [filteredValue, setFilteredValue] = useState({
     filteredMonth: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
@@ -101,42 +102,52 @@ const ApprovalFilter = ({ formname }) => {
     employeeType: 1,
   });
 
+  const { employee_table_filter_keys } = useSelector(
+    (state) => state.TableFilterReducer,
+  );
+
+  const dep_options = useMemo(
+    () => GetLocalStorageData("department") || [],
+    [],
+  );
+
   useEffect(() => {
     if (
       (profile_data.permission_list.includes(
-        VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY
+        VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
       ) &&
         !profile_data.permission_list.includes(
-          VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY
+          VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
         )) ||
       (profile_data.permission_list.includes(
-        VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY
+        VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
       ) &&
         !profile_data.permission_list.includes(
-          VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY
+          VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
         ))
     ) {
       setEmployeeType(0);
     }
   }, []);
 
- const handleEmployeeTypeChange = (e) => {
-  setEmployeeType(e.value);
-  setFilteredValue((prev) => ({
-    ...prev,
-    employeeType: e.value,
-  }));
-};
+  const handleEmployeeTypeChange = (e) => {
+    setEmployeeType(e.value);
+    setFilteredValue((prev) => ({
+      ...prev,
+      employeeType: e.value,
+    }));
+  };
 
+  const handleDateRangeChange = (e, monthStr) => {
+    setFilteredMonth(monthStr);
+    setFilteredValue((prev) => ({
+      ...prev,
+      filteredMonth: monthStr,
+    }));
+  };
 
- const handleDateRangeChange = (e, monthStr) => {
-  setFilteredMonth(monthStr);
-  setFilteredValue((prev) => ({
-    ...prev,
-    filteredMonth: monthStr,
-  }));
-};
   const firstEffectExecutedRef = useRef(false);
+
   useEffect(() => {
     const permissions = {
       [VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY]: setShowAllAttendanceApproval,
@@ -153,35 +164,49 @@ const ApprovalFilter = ({ formname }) => {
     firstEffectExecutedRef.current = true;
   }, []);
 
-useEffect(() => {
-  if (!firstEffectExecutedRef.current) return;
-
-  // ✅ NEW: wait until permissions are ready
-  if (
-    !showAllAttendanceApproval &&
-    !showTeamAttendanceApproval &&
-    !showAllLeaveApproval &&
-    !showTeamLeaveApproval
-  ) {
-    return;
-  }
-
-  const timer = setTimeout(() => {
+  // ✅ Department filter change triggers API call
+  useEffect(() => {
+    if (!firstEffectExecutedRef.current) return;
+    if (
+      !showAllAttendanceApproval &&
+      !showTeamAttendanceApproval &&
+      !showAllLeaveApproval &&
+      !showTeamLeaveApproval
+    ) {
+      return;
+    }
     dispatch(setFilteredCurrentValue(filteredValue));
     dispatch(setFilteredLatestValue(filteredValue));
     FilterData(activeTab);
-  }, 300);
+  }, [employee_table_filter_keys?.primary_department_id_list]); // ✅ Triggers on department change
 
-  return () => clearTimeout(timer);
-}, [
-  employeeType,
-  filteredMonth,
-  activeTab,
-  showAllAttendanceApproval,
-  showTeamAttendanceApproval,
-  showAllLeaveApproval,
-  showTeamLeaveApproval,
-]);
+  useEffect(() => {
+    if (!firstEffectExecutedRef.current) return;
+    if (
+      !showAllAttendanceApproval &&
+      !showTeamAttendanceApproval &&
+      !showAllLeaveApproval &&
+      !showTeamLeaveApproval
+    ) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      dispatch(setFilteredCurrentValue(filteredValue));
+      dispatch(setFilteredLatestValue(filteredValue));
+      FilterData(activeTab);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [
+    employeeType,
+    filteredMonth,
+    activeTab,
+    showAllAttendanceApproval,
+    showTeamAttendanceApproval,
+    showAllLeaveApproval,
+    showTeamLeaveApproval,
+  ]);
 
   useEffect(() => {
     if (firstEffectExecutedRef.current) {
@@ -194,7 +219,7 @@ useEffect(() => {
         dispatch(setCurrentApprovalComponent("leave_approval_component_name"));
       } else if (activeTab === "1") {
         dispatch(
-          setCurrentApprovalComponent("attendance_approval_component_name")
+          setCurrentApprovalComponent("attendance_approval_component_name"),
         );
       } else {
         setCurrentApprovalComponent("");
@@ -208,18 +233,26 @@ useEffect(() => {
   ]);
 
   let integerEmployeeType;
+
+  // ✅ Department param helper
+  const getDepartmentParam = () => {
+    const deptId = employee_table_filter_keys?.primary_department_id_list;
+    return deptId ? `&primary_department_id_list=${deptId}` : "";
+  };
+
   const handleLeaveFilter = async (type) => {
     integerEmployeeType = parseInt(type, 10);
+    const deptParam = getDepartmentParam(); // ✅ append department
     const baseUrl =
       "leave/get-leave-application-for-approval/?thisMonth=" +
       filteredMonth +
       "&employee_type=";
     const url =
       !showAllLeaveApproval && showTeamLeaveApproval
-        ? baseUrl + "1"
+        ? baseUrl + "1" + deptParam
         : showAllLeaveApproval && !showTeamLeaveApproval
-        ? baseUrl + "0"
-        : baseUrl + type;
+          ? baseUrl + "0" + deptParam
+          : baseUrl + type + deptParam;
     try {
       const response = await Api({
         type: "GET",
@@ -235,6 +268,7 @@ useEffect(() => {
 
   const handleAttendanceFilter = async (type) => {
     const integerEmployeeType = parseInt(type, 10);
+    const deptParam = getDepartmentParam(); // ✅ append department
     const baseUrl =
       "attendance/get-attendance-data-for-approval/?thisMonth=" +
       filteredMonth +
@@ -242,10 +276,10 @@ useEffect(() => {
 
     const url =
       !showAllAttendanceApproval && showTeamAttendanceApproval
-        ? baseUrl + "1"
+        ? baseUrl + "1" + deptParam
         : showAllAttendanceApproval && !showTeamAttendanceApproval
-        ? baseUrl + "0"
-        : baseUrl + type;
+          ? baseUrl + "0" + deptParam
+          : baseUrl + type + deptParam;
 
     try {
       const response = await Api({
@@ -257,7 +291,6 @@ useEffect(() => {
       dispatch(setLoaderVisible(false));
     } catch (error) {
       dispatch(setLoaderVisible(false));
-      // Handle error
     }
   };
 
@@ -291,6 +324,16 @@ useEffect(() => {
     FilterData(activeTab);
   };
 
+  const handleFilterChange = (e, name) => {
+    let val = !!e ? e.id : 0;
+    dispatch(
+      setEmployeeTableFilterKeys({
+        ...employee_table_filter_keys,
+        [name]: val,
+      }),
+    );
+  };
+
   return (
     <React.Fragment>
       <div className="page-content" style={{ marginBottom: "-135px" }}>
@@ -313,12 +356,36 @@ useEffect(() => {
                       onChange={handleEmployeeTypeChange}
                       value={
                         employeeTypeOptions.find(
-                          (d) => d.id === employeeType
+                          (d) => d.id === employeeType,
                         ) || employeeTypeOptions[1]
                       }
                     />
                   </Col>
                 ) : null}
+                <Col md={3}>
+                  <Select
+                    id="department_filter"
+                    name="department_filter"
+                    isClearable
+                    innerRef={inputRef}
+                    isMulti={false}
+                    options={dep_options || []}
+                    className="basic-multi-select"
+                    placeholder="Select Department"
+                    getOptionLabel={(e) => e.name}
+                    getOptionValue={(e) => e.id}
+                    value={
+                      dep_options?.find(
+                        (d) =>
+                          d.id ===
+                          employee_table_filter_keys?.primary_department_id_list,
+                      ) || null
+                    }
+                    onChange={(e) =>
+                      handleFilterChange(e, "primary_department_id_list")
+                    }
+                  />
+                </Col>
                 <Col md={3}>
                   <div className="form-icon right">
                     <DatePicker
@@ -332,20 +399,6 @@ useEffect(() => {
                     />
                   </div>
                 </Col>
-                {/* <Col md={2}>
-                  <div className="col-lg-auto">
-                    <div className="hstack gap-2">
-                      <button
-                        type="button"
-                        onClick={handleFilter}
-                        className="btn btn-danger"
-                      >
-                        <i className="ri-equalizer-fill me-1 align-bottom"></i>{" "}
-                        Filter
-                      </button>
-                    </div>
-                  </div>
-                </Col> */}
                 <div
                   className="col-md-auto ms-auto"
                   style={{ marginLeft: "10px" }}
@@ -367,21 +420,10 @@ useEffect(() => {
                                     activeTab === "1"
                                       ? "text-success"
                                       : "text-primary"
-                                  }`
+                                  }`,
                                 )}
                                 onClick={() => {
                                   toggleTab("1");
-
-                                  // if (
-                                  //   filteredcurrentvalue !== filteredlatestvalue
-                                  // ) {
-                                  //   FilterData("1");
-                                  //   dispatch(
-                                  //     setFilteredLatestValue(
-                                  //       filteredcurrentvalue
-                                  //     )
-                                  //   );
-                                  // }
                                 }}
                                 href="#"
                               >
@@ -405,7 +447,7 @@ useEffect(() => {
                                 <NavLink
                                   className={classnames(
                                     { active: activeTab === "1" },
-                                    `fw-semibold ${"text-success"}`
+                                    `fw-semibold ${"text-success"}`,
                                   )}
                                   href="#"
                                 >
@@ -425,11 +467,10 @@ useEffect(() => {
                                       activeTab === "2"
                                         ? "text-success"
                                         : "text-primary"
-                                    }`
+                                    }`,
                                   )}
                                   onClick={() => {
                                     toggleTab("2");
-
                                     if (
                                       filteredcurrentvalue !==
                                       filteredlatestvalue
@@ -437,8 +478,8 @@ useEffect(() => {
                                       FilterData("2");
                                       dispatch(
                                         setFilteredLatestValue(
-                                          filteredcurrentvalue
-                                        )
+                                          filteredcurrentvalue,
+                                        ),
                                       );
                                     }
                                   }}

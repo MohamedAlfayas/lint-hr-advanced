@@ -24,7 +24,7 @@ const LeaveApprovalFilter = ({ formname }) => {
   const [filteredMonth, setFilteredMonth] = useState(
     `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
       .toString()
-      .padStart(2, "0")}`
+      .padStart(2, "0")}`,
   );
 
   const employeeTypeOptions = [
