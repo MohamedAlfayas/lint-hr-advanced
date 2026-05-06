@@ -53,7 +53,7 @@ const PayRollDashboard = () => {
     <React.Fragment>
       <div className="page-content">
         <Container fluid>
-          <AdminDashboard />
+          {/* <AdminDashboard /> */}
           <Lottie options={defaultOptions} height={400} width={600} />
           {/* Filter Card Start */}
 

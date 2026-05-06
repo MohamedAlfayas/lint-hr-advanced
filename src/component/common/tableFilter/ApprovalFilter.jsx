@@ -107,7 +107,11 @@ const ApprovalFilter = ({ formname }) => {
   );
 
   const dep_options = useMemo(
-    () => GetLocalStorageData("department") || [],
+    () =>
+      (GetLocalStorageData("department") || []).map((d) => ({
+        ...d,
+        id: Number(d.id), // ✅ normalize
+      })),
     [],
   );
 
@@ -167,6 +171,7 @@ const ApprovalFilter = ({ formname }) => {
   // ✅ Department filter change triggers API call
   useEffect(() => {
     if (!firstEffectExecutedRef.current) return;
+
     if (
       !showAllAttendanceApproval &&
       !showTeamAttendanceApproval &&
@@ -175,10 +180,21 @@ const ApprovalFilter = ({ formname }) => {
     ) {
       return;
     }
-    dispatch(setFilteredCurrentValue(filteredValue));
-    dispatch(setFilteredLatestValue(filteredValue));
-    FilterData(activeTab);
-  }, [employee_table_filter_keys?.primary_department_id_list]); // ✅ Triggers on department change
+
+    const timer = setTimeout(() => {
+      dispatch(setFilteredCurrentValue(filteredValue));
+      dispatch(setFilteredLatestValue(filteredValue));
+
+      FilterData(activeTab);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [
+    employeeType,
+    filteredMonth,
+    activeTab,
+    employee_table_filter_keys?.primary_department_id_list, // ✅ include here
+  ]);
 
   useEffect(() => {
     if (!firstEffectExecutedRef.current) return;
@@ -237,38 +253,62 @@ const ApprovalFilter = ({ formname }) => {
   // ✅ Department param helper
   const getDepartmentParam = () => {
     const deptId = employee_table_filter_keys?.primary_department_id_list;
-    return deptId ? `&primary_department_id_list=${deptId}` : "";
+
+    if (deptId === null || deptId === undefined) return "";
+
+    return `&primary_department_id_list=${Number(deptId)}`;
+  };
+
+  const applyDepartmentFilter = (data) => {
+    const deptId = employee_table_filter_keys?.primary_department_id_list;
+
+    if (!deptId) return data;
+
+    return data.filter(
+      (item) =>
+        Number(item.primary_department_id_list || item.department_id) ===
+        Number(deptId),
+    );
   };
 
   const handleLeaveFilter = async (type) => {
-    integerEmployeeType = parseInt(type, 10);
-    const deptParam = getDepartmentParam(); // ✅ append department
+    const integerEmployeeType = parseInt(type, 10);
+    const deptParam = getDepartmentParam();
+
     const baseUrl =
       "leave/get-leave-application-for-approval/?thisMonth=" +
       filteredMonth +
       "&employee_type=";
+
     const url =
       !showAllLeaveApproval && showTeamLeaveApproval
         ? baseUrl + "1" + deptParam
         : showAllLeaveApproval && !showTeamLeaveApproval
           ? baseUrl + "0" + deptParam
           : baseUrl + type + deptParam;
+
     try {
-      const response = await Api({
-        type: "GET",
-        url: url,
-      });
+      console.log("Leave API URL:", url);
+
+      const response = await Api({ type: "GET", url });
+
+      let data = response?.data?.data || [];
+
+      // ✅ enforce department filter
+      data = applyDepartmentFilter(data);
+
       dispatch(setApprovalEmployeeTypeFilter(integerEmployeeType));
-      dispatch(setLeaveApproval(response?.data?.data));
-      dispatch(setLoaderVisible(false));
+      dispatch(setLeaveApproval(data));
     } catch (error) {
+      console.error(error);
+    } finally {
       dispatch(setLoaderVisible(false));
     }
   };
-
   const handleAttendanceFilter = async (type) => {
     const integerEmployeeType = parseInt(type, 10);
-    const deptParam = getDepartmentParam(); // ✅ append department
+    const deptParam = getDepartmentParam();
+
     const baseUrl =
       "attendance/get-attendance-data-for-approval/?thisMonth=" +
       filteredMonth +
@@ -282,14 +322,20 @@ const ApprovalFilter = ({ formname }) => {
           : baseUrl + type + deptParam;
 
     try {
-      const response = await Api({
-        type: "GET",
-        url: url,
-      });
+      console.log("Attendance API URL:", url);
+
+      const response = await Api({ type: "GET", url });
+
+      let data = response?.data?.data || [];
+
+      // ✅ enforce department filter
+      data = applyDepartmentFilter(data);
+
       dispatch(setApprovalEmployeeTypeFilter(integerEmployeeType));
-      dispatch(setAttendanceApprovalData(response?.data?.data));
-      dispatch(setLoaderVisible(false));
+      dispatch(setAttendanceApprovalData(data));
     } catch (error) {
+      console.error(error);
+    } finally {
       dispatch(setLoaderVisible(false));
     }
   };
@@ -325,7 +371,8 @@ const ApprovalFilter = ({ formname }) => {
   };
 
   const handleFilterChange = (e, name) => {
-    let val = !!e ? e.id : 0;
+    const val = e ? Number(e.id) : null;
+
     dispatch(
       setEmployeeTableFilterKeys({
         ...employee_table_filter_keys,
@@ -362,7 +409,7 @@ const ApprovalFilter = ({ formname }) => {
                     />
                   </Col>
                 ) : null}
-                {/* <Col md={3}>
+                <Col md={3}>
                   <Select
                     id="department_filter"
                     name="department_filter"
@@ -377,15 +424,17 @@ const ApprovalFilter = ({ formname }) => {
                     value={
                       dep_options?.find(
                         (d) =>
-                          d.id ===
-                          employee_table_filter_keys?.primary_department_id_list,
+                          Number(d.id) ===
+                          Number(
+                            employee_table_filter_keys?.primary_department_id_list,
+                          ),
                       ) || null
                     }
                     onChange={(e) =>
                       handleFilterChange(e, "primary_department_id_list")
                     }
                   />
-                </Col> */}
+                </Col>
                 <Col md={3}>
                   <div className="form-icon right">
                     <DatePicker
