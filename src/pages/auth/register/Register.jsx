@@ -33,6 +33,7 @@ import axios from "axios";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
 import { getBaseUrlFromDomain } from "../../../common/api/BaseURL";
 import AuthLoader from "../loader/AuthLoader";
+import { buildRedirectUrl } from "../../../common/api/BuildRedirectURL";
 
 defineElement(loadAnimation);
 
@@ -269,9 +270,9 @@ const Register = () => {
         })
           .then((res) => {
             console.log("REs - ", res);
-            if (res?.data && res?.data?.redirect_url) {
+            if (res?.data && res?.data?.domain) {
               dispatch(setLoaderVisible(false));
-              window.location.href = res?.data?.redirect_url;
+              window.location.href = buildRedirectUrl(res?.data?.domain);
             }
           })
           .catch((err) => {

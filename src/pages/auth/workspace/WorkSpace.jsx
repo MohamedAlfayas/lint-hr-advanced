@@ -19,6 +19,7 @@ import * as Yup from "yup";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { BaseURL, getBaseUrlFromDomain } from "../../../common/api/BaseURL";
+import { buildRedirectUrl } from "../../../common/api/BuildRedirectURL";
 
 const WorkSpace = () => {
   const [company_name, setDomain] = useState("");
@@ -60,8 +61,8 @@ const WorkSpace = () => {
           .then((res) => {
             setErrorMessage(null);
             console.log("REs - ", res);
-            if (res?.data && res?.data?.redirect_url) {
-              window.location.href = res?.data?.redirect_url;
+            if (res?.data && res?.data?.domain) {
+              window.location.href = buildRedirectUrl(res?.data?.domain);
             }
           })
           .catch((err) => {

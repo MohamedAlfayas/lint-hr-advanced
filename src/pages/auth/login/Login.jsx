@@ -348,6 +348,18 @@ const Login = () => {
                             </Button>
                           </div>
 
+                          <div className="mt-3 text-center">
+                            <p className="mb-0">
+                              Need to Find Workspace?{" "}
+                              <Link
+                                to="/auth/workspace/"
+                                className="fw-semibold text-primary text-decoration-underline"
+                              >
+                                Find Workspace
+                              </Link>
+                            </p>
+                          </div>
+
                           {/* <div className="mt-4 text-center">
                             <div className="signin-other-title">
                               <h5 className="fs-13 mb-4 title">Sign In with</h5>
