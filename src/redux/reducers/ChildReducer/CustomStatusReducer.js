@@ -13,16 +13,15 @@ const CustomStatusReducer = createSlice({
     },
 
     addCustomStatus: (state, action) => {
-      state.custom_status_data.push(action.payload); // ✅ direct mutation
+      state.custom_status_data.push(action.payload);
     },
 
     editCustomStatus: (state, action) => {
       const index = state.custom_status_data.findIndex(
         (obj) => obj.id === action.payload.id,
       );
-
       if (index !== -1) {
-        state.custom_status_data[index] = action.payload; // ✅ replace item
+        state.custom_status_data[index] = action.payload;
       }
     },
 

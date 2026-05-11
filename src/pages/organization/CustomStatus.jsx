@@ -1,38 +1,30 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useSelector } from "react-redux";
 import InfoTable from "../../component/common/table/InfoTable";
-import { MetaTitle } from "../../common/data/MetaTitle";
 import { custom_status_form_component_name } from "../../common/constant/Constants";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
 const CustomStatus = () => {
-  const [custom_status_data, setCustomStatusData] = useState([]);
-
-  // ✅ FIXED: matches reducer key custom_statuses
+  // ✅ FIXED: was reading "custom_statuses" — correct key is "custom_status_data"
   const reduxData = useSelector(
-    (state) => state.CustomStatusReducer?.custom_statuses,
+    (state) => state.CustomStatusReducer?.custom_status_data,
   );
 
-  useEffect(() => {
-    let sourceData = [];
+  // ✅ useMemo: table updates in the same render cycle as dispatch (no delay)
+  const custom_status_data = useMemo(() => {
+    const sourceData =
+      Array.isArray(reduxData) && reduxData.length > 0
+        ? reduxData
+        : GetLocalStorageData("custom_statuses") || [];
 
-    if (Array.isArray(reduxData) && reduxData.length > 0) {
-      sourceData = reduxData;
-    } else {
-      sourceData = GetLocalStorageData("custom_statuses") || [];
-    }
-
-    // ✅ FIXED: normalize icon→emoji, is_active→active consistently
-    const formattedData = sourceData
+    return sourceData
       .filter((item) => item && typeof item === "object")
       .map((item) => ({
         id: item.id,
         name: item.name,
-        emoji: item.emoji ?? item.icon ?? "", // handle both field names
-        is_active: item.is_active ?? item.active ?? true, // ✅ keep as is_active
+        emoji: item.emoji ?? item.icon ?? "",
+        is_active: item.is_active ?? item.active ?? true,
       }));
-
-    setCustomStatusData(formattedData);
   }, [reduxData]);
 
   const additionalColumn = [
@@ -60,7 +52,6 @@ const CustomStatus = () => {
     },
   ];
 
-  // ✅ FIXED: initialFormObj uses is_active (matches form)
   const initialFormObj = useMemo(
     () => ({
       id: null,

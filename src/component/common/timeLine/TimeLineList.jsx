@@ -1,20 +1,17 @@
 import React, { useState } from "react";
-import { Button } from "reactstrap";
 import StatusBottomSheet from "./StatusBottomSheet";
 import TimelineModal from "./TimelineModal";
+import { stubFalse } from "lodash";
 
 const TimeLineList = () => {
   const [showSheet, setShowSheet] = useState(false);
-  const [showCustom, setShowCustom] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
+  // ✅ FIX: removed showCustom — StatusBottomSheet has no onOpenCustom handler
 
   return (
     <>
-      {/* <Button color="primary" onClick={() => setShowSheet(true)}>
-        Status
-      </Button> */}
       <button
-        onClick={() => setShowSheet(true)}
+        onClick={() => setShowSheet(false)}
         type="button"
         className="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle light-dark-mode"
       >
@@ -24,14 +21,12 @@ const TimeLineList = () => {
       <StatusBottomSheet
         show={showSheet}
         onClose={() => setShowSheet(false)}
-        onOpenCustom={() => {
-          setShowSheet(false);
-          setShowCustom(true);
-        }}
+        // ✅ FIX: removed onOpenCustom (unused prop)
         onOpenTimeline={() => {
           setShowSheet(false);
           setShowTimeline(true);
         }}
+        // onCheckInOut not passed here — button hidden automatically
       />
 
       <TimelineModal

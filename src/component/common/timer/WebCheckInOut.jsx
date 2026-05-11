@@ -1,19 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { Button, Col, Modal, ModalBody, Spinner } from "reactstrap";
-import { Api } from "../../../common/api/Api";
 import { useDispatch, useSelector } from "react-redux";
 import { PostApi } from "../../../common/api/PostApi";
 import { toast } from "react-toastify";
 import { GetTotalWorkDuration } from "../../../common/js/GetTotalWorkDuration";
 import { setTimer } from "../../../redux/reducers/ChildReducer/ClockReducer";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
-import { h } from "@fullcalendar/core/preact.js";
+import StatusBottomSheet from "../timeLine/StatusBottomSheet";
+import TimelineModal from "../timeLine/TimelineModal"; // ✅ FIX: was missing
 
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_MAP_API_KEY;
 
 const WebCheckInOut = ({ showTimer, hideTimer }) => {
   const [loading, setLoading] = useState(false);
-  const [currentlyCheckedIn, setCurrentlyCheckedIn] = useState(false);
+  // ✅ FIX: removed local currentlyCheckedIn — use Redux source of truth only
+  const [showStatusSheet, setShowStatusSheet] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(false);
+
   const { total_seconds, currently_checked_in, show_attendance_timer } =
     useSelector((state) => state.ClockReducer);
 
@@ -37,10 +40,10 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
     }
   }, [total_seconds, currently_checked_in, dispatch]);
 
-  const handleToggleClick = async () => {
+  const handleCheckInOut = async () => {
+    setShowStatusSheet(false);
     setLoading(true);
 
-    // Step 1: Get Device Type
     const getDeviceType = () => {
       const ua = navigator.userAgent;
       if (/mobile/i.test(ua)) return "Mobile";
@@ -49,7 +52,6 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
     };
     const device_type = getDeviceType();
 
-    // Step 2: Get Public IP Address
     const getUserIP = async () => {
       try {
         const response = await fetch("https://api.ipify.org?format=json");
@@ -63,7 +65,6 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
 
     const ip_address = await getUserIP();
 
-    // Step 3: Get Geolocation
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
@@ -76,7 +77,6 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
         try {
           const res = await fetch(geocodeUrl);
           const data = await res.json();
-
           if (data.status === "OK") {
             const result = data.results[0];
             accurate_address = result.formatted_address;
@@ -87,37 +87,36 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
           console.error("Geocoding error:", err);
         }
 
-        // ✅ Step 4: Build Payload
         const payload = {
-          entry_type: currently_checked_in ? 2 : 1,
+          entry_type: currently_checked_in ? 2 : 1, // ✅ FIX: uses Redux value
           punched_by: 1,
           accurate_address,
           latitude,
           longitude,
           location_id,
           map_data: fullMapData,
-          device_type, // 👈 Added
-          ip_address, // 👈 Added
+          device_type,
+          ip_address,
         };
 
         try {
-          const Api = await PostApi(
+          const ApiRes = await PostApi(
             "attendance/check-in-check-out-entry/",
             payload,
             false,
           );
 
-          if (!!Api && Api.status === 200) {
-            toast.success(Api?.data?.message);
-            setCurrentlyCheckedIn(!currently_checked_in);
+          if (!!ApiRes && ApiRes.status === 200) {
+            toast.success(ApiRes?.data?.message);
+            // ✅ FIX: no local state to flip — Redux handles truth via GetTotalWorkDuration
             GetTotalWorkDuration(dispatch);
           } else {
-            if (Api?.data?.is_late) {
+            if (ApiRes?.data?.is_late) {
               SetCICOPayload(payload);
               setLateReason("");
               setShowLateModal(true);
             } else {
-              toast.error(Api?.data?.message);
+              toast.error(ApiRes?.data?.message);
             }
           }
         } catch (err) {
@@ -141,23 +140,19 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
       dispatch(setLoaderVisible(false));
       return;
     }
-    const payload = {
-      ...CICOPayload,
-      notes: lateReason,
-    };
-    const Api = await PostApi(
+    const payload = { ...CICOPayload, notes: lateReason };
+    const ApiRes = await PostApi(
       "attendance/first-checkin-with-late-attendance-notes/",
       payload,
       false,
     );
 
-    if (!!Api && Api.status === 200) {
-      toast.success(Api?.data?.message);
-      setCurrentlyCheckedIn(!currently_checked_in);
+    if (!!ApiRes && ApiRes.status === 200) {
+      toast.success(ApiRes?.data?.message);
       GetTotalWorkDuration(dispatch);
       setShowLateModal(false);
     } else {
-      toast.error(Api?.data?.message);
+      toast.error(ApiRes?.data?.message);
     }
     dispatch(setLoaderVisible(false));
   };
@@ -166,116 +161,124 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor((seconds % 3600) % 60);
-    const hDisplay = h < 10 ? `0${h}` : h;
-    const mDisplay = m < 10 ? `0${m}` : m;
-    const sDisplay = s < 10 ? `0${s}` : s;
-    return `${hDisplay} : ${mDisplay} : ${sDisplay}`;
+    return [h, m, s].map((v) => String(v).padStart(2, "0")).join(" : ");
   };
 
   return (
     <React.Fragment>
-      <>
-        <Col
-          xxl={hideTimer ? 3 : 6}
-          md={hideTimer ? 3 : 6}
-          style={{
-            flex: hideTimer ? "0 0 25%" : "0 0 53%",
-            maxWidth: hideTimer ? "25%" : "53%",
-          }}
-        >
-          {show_attendance_timer && (
-            <>
-              {hideTimer ? null : loading ? (
-                <Button color="primary" className="btn-load" outline>
-                  <span className="d-flex align-items-center">
-                    <Spinner size="sm" className="flex-shrink-0">
-                      {" "}
-                      Loading...{" "}
-                    </Spinner>
-                    <span className="flex-grow-1 ms-2">Loading...</span>
-                  </span>
-                </Button>
-              ) : (
-                <Button
-                  color={currently_checked_in ? "warning" : "secondary"}
-                  className="custom-toggle"
-                  onClick={handleToggleClick}
-                  outline
-                >
-                  <span className="d-flex align-items-center">
-                    {currently_checked_in ? (
-                      <>
-                        <i className="ri-time-line align-bottom me-1" />
-                        <span className="flex-grow-1 ms-2">Check Out</span>
-                      </>
-                    ) : (
-                      <span className="icon-on">
-                        <i className="ri-time-line align-bottom me-1" /> Check
-                        IN
-                      </span>
-                    )}
-                  </span>
-                </Button>
-              )}
-            </>
-          )}
+      <Col
+        xxl={hideTimer ? 3 : 6}
+        md={hideTimer ? 3 : 6}
+        style={{
+          flex: hideTimer ? "0 0 25%" : "0 0 53%",
+          maxWidth: hideTimer ? "25%" : "53%",
+        }}
+      >
+        {show_attendance_timer && (
+          <>
+            {hideTimer ? null : loading ? (
+              <Button color="primary" className="btn-load" outline>
+                <span className="d-flex align-items-center">
+                  <Spinner size="sm" className="flex-shrink-0">
+                    Loading...
+                  </Spinner>
+                  <span className="flex-grow-1 ms-2">Loading...</span>
+                </span>
+              </Button>
+            ) : (
+              <Button
+                color={currently_checked_in ? "warning" : "secondary"}
+                className="custom-toggle"
+                onClick={() => setShowStatusSheet(true)}
+                outline
+              >
+                <span className="d-flex align-items-center">
+                  {currently_checked_in ? (
+                    <>
+                      <i className="ri-time-line align-bottom me-1" />
+                      <span className="flex-grow-1 ms-2">Check Out</span>
+                    </>
+                  ) : (
+                    <span className="icon-on">
+                      <i className="ri-time-line align-bottom me-1" /> Check IN
+                    </span>
+                  )}
+                </span>
+              </Button>
+            )}
+          </>
+        )}
 
-          {showTimer && (
-            <span
-              className="ms-1 mt-1"
-              style={{
-                display: "inline-block",
-                width: "90px",
-                fontSize: "initial",
-                fontWeight: 700,
-              }}
+        {showTimer && (
+          <span
+            className="ms-1 mt-1"
+            style={{
+              display: "inline-block",
+              width: "90px",
+              fontSize: "initial",
+              fontWeight: 700,
+            }}
+          >
+            &nbsp;<span className="timer">{formatTime(total_seconds)}</span>
+          </span>
+        )}
+      </Col>
+
+      <StatusBottomSheet
+        show={showStatusSheet}
+        onClose={() => setShowStatusSheet(false)}
+        onOpenTimeline={() => {
+          setShowStatusSheet(false);
+          setShowTimeline(true);
+        }}
+        onCheckInOut={handleCheckInOut}
+        currentlyCheckedIn={currently_checked_in} // ✅ FIX: Redux value only
+        checkInLoading={loading}
+      />
+
+      {/* ✅ FIX: TimelineModal was missing from this component */}
+      <TimelineModal
+        show={showTimeline}
+        onClose={() => setShowTimeline(false)}
+      />
+
+      {/* Late Attendance Modal */}
+      <Modal
+        fade
+        isOpen={showLateModal}
+        toggle={() => setShowLateModal(false)}
+        centered
+      >
+        <ModalBody className="py-2 px-3">
+          <div className="mt-2 text-center">
+            <div className="mt-4 pt-2 fs-15 mx-4">
+              <h4>Please Enter the Reason for Late Attendance</h4>
+            </div>
+            <textarea
+              className="form-control"
+              placeholder="Enter Reason"
+              value={lateReason}
+              onChange={(e) => setLateReason(e.target.value)}
+            />
+          </div>
+          <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
+            <button
+              type="button"
+              className="btn w-sm btn-light"
+              onClick={() => setShowLateModal(false)}
             >
-              &nbsp;<span className="timer">{formatTime(total_seconds)}</span>
-            </span>
-          )}
-        </Col>
-
-        <Modal
-          fade
-          isOpen={showLateModal}
-          toggle={() => setShowLateModal(false)}
-          centered
-        >
-          <ModalBody className="py-2 px-3">
-            <div className="mt-2 text-center">
-              <div className="mt-4 pt-2 fs-15 mx-4">
-                <h4>Please Enter the Reason for Late Attendance</h4>
-              </div>
-              <textarea
-                id="reason"
-                name="reason"
-                className="form-control"
-                placeholder="Enter Reason"
-                value={lateReason}
-                onChange={(e) => setLateReason(e.target.value)}
-              ></textarea>
-            </div>
-            <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
-              <button
-                type="button"
-                className="btn w-sm btn-light"
-                data-bs-dismiss="modal"
-                onClick={() => setShowLateModal(false)}
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                className="btn w-sm btn-danger"
-                id="assign-record"
-                onClick={FirstCheckinWithLateAttendanceNotesAPI}
-              >
-                Submit
-              </button>
-            </div>
-          </ModalBody>
-        </Modal>
-      </>
+              Close
+            </button>
+            <button
+              type="button"
+              className="btn w-sm btn-danger"
+              onClick={FirstCheckinWithLateAttendanceNotesAPI}
+            >
+              Submit
+            </button>
+          </div>
+        </ModalBody>
+      </Modal>
     </React.Fragment>
   );
 };

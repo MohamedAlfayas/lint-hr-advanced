@@ -61,6 +61,7 @@ import { location_edit_form_component_name } from "../../common/constant/Constan
 import GeneralConfiguration from "./GeneralConfiguration";
 import LocationsAndPoliciesConfig from "./LocationsAndPoliciesConfig";
 import QrcodeConfig from "./QRcodeConfig";
+import CustomStatus from "../organization/CustomStatus";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
@@ -136,6 +137,21 @@ const AttendanceConfig = () => {
                     QR Code
                   </NavLink>
                 </NavItem>
+                <NavItem>
+                  <NavLink
+                    style={{ cursor: "pointer" }}
+                    className={classnames({
+                      "mb-2": true,
+                      active: verticalTab === "4",
+                    })}
+                    onClick={() => {
+                      toggleVertical("4");
+                    }}
+                    id="v-pills-messages-tab"
+                  >
+                    Custom Status
+                  </NavLink>
+                </NavItem>
               </Nav>
             </Col>
             <Col md={10}>
@@ -159,6 +175,9 @@ const AttendanceConfig = () => {
                 {/* QR Code Tab Start */}
                 <TabPane TabPane tabId="3" id="v-pills-messages">
                   <QrcodeConfig />
+                </TabPane>
+                <TabPane TabPane tabId="4" id="v-pills-messages">
+                  <CustomStatus />
                 </TabPane>
               </TabContent>
             </Col>

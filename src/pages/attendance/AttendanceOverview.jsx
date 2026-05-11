@@ -8,10 +8,10 @@ const AttendanceOverview = () => {
   // Inside your component
 
   const { chartData, chartInfo } = useSelector(
-    (state) => state.AttendanceReportReducer
+    (state) => state.AttendanceReportReducer,
   );
 
-  console.log("Chart Data - ",chartData)
+  console.log("Chart Data - ", chartInfo);
 
   const chartDataMemoized = useMemo(() => chartData, [chartData]);
 
@@ -30,7 +30,7 @@ const AttendanceOverview = () => {
                           <CountUp
                             start={0}
                             end={String(
-                              Math.floor(chartInfo?.wsHours / 3600)
+                              Math.floor(chartInfo?.wsHours / 3600),
                             ).padStart(2, "0")}
                             suffix=" Hr"
                             separator={""}
@@ -45,7 +45,7 @@ const AttendanceOverview = () => {
                               <CountUp
                                 start={0}
                                 end={String(
-                                  Math.floor((chartInfo?.wsHours % 3600) / 60)
+                                  Math.floor((chartInfo?.wsHours % 3600) / 60),
                                 ).padStart(2, "0")}
                                 suffix=" Min"
                                 separator={""}
@@ -67,7 +67,7 @@ const AttendanceOverview = () => {
                           <CountUp
                             start={0}
                             end={String(
-                              Math.floor(chartInfo?.checkInHours / 3600)
+                              Math.floor(chartInfo?.checkInHours / 3600),
                             ).padStart(2, "0")}
                             suffix=" Hr"
                             separator={""}
@@ -84,8 +84,8 @@ const AttendanceOverview = () => {
                                 start={0}
                                 end={String(
                                   Math.floor(
-                                    (chartInfo?.checkInHours % 3600) / 60
-                                  )
+                                    (chartInfo?.checkInHours % 3600) / 60,
+                                  ),
                                 ).padStart(2, "0")}
                                 suffix=" Min"
                                 separator={""}
@@ -107,7 +107,7 @@ const AttendanceOverview = () => {
                           <CountUp
                             start={0}
                             end={String(
-                              Math.floor(chartInfo?.otHours / 3600)
+                              Math.floor(chartInfo?.otHours / 3600),
                             ).padStart(2, "0")}
                             suffix=" Hr"
                             separator={""}
@@ -122,7 +122,7 @@ const AttendanceOverview = () => {
                               <CountUp
                                 start={0}
                                 end={String(
-                                  Math.floor((chartInfo?.otHours % 3600) / 60)
+                                  Math.floor((chartInfo?.otHours % 3600) / 60),
                                 ).padStart(2, "0")}
                                 suffix=" Min"
                                 separator={""}
@@ -145,7 +145,7 @@ const AttendanceOverview = () => {
                           <CountUp
                             start={0}
                             end={String(
-                              Math.floor(chartInfo?.paidHours / 3600)
+                              Math.floor(chartInfo?.paidHours / 3600),
                             ).padStart(2, "0")}
                             suffix=" Hr"
                             separator={""}
@@ -160,7 +160,9 @@ const AttendanceOverview = () => {
                               <CountUp
                                 start={0}
                                 end={String(
-                                  Math.floor((chartInfo?.paidHours % 3600) / 60)
+                                  Math.floor(
+                                    (chartInfo?.paidHours % 3600) / 60,
+                                  ),
                                 ).padStart(2, "0")}
                                 suffix=" Min"
                                 separator={""}
@@ -183,7 +185,7 @@ const AttendanceOverview = () => {
                           <CountUp
                             start={0}
                             end={String(
-                              Math.floor(chartInfo?.leaveHours / 3600)
+                              Math.floor(chartInfo?.leaveHours / 3600),
                             ).padStart(2, "0")}
                             suffix=" Hr"
                             separator={""}
@@ -200,8 +202,8 @@ const AttendanceOverview = () => {
                                 start={0}
                                 end={String(
                                   Math.floor(
-                                    (chartInfo?.leaveHours % 3600) / 60
-                                  )
+                                    (chartInfo?.leaveHours % 3600) / 60,
+                                  ),
                                 ).padStart(2, "0")}
                                 suffix=" Min"
                                 separator={""}
@@ -224,7 +226,7 @@ const AttendanceOverview = () => {
                           <CountUp
                             start={0}
                             end={String(
-                              Math.floor(chartInfo?.balanceHours / 3600)
+                              Math.floor(chartInfo?.balanceHours / 3600),
                             ).padStart(2, "0")}
                             suffix=" Hr"
                             separator={""}
@@ -241,8 +243,8 @@ const AttendanceOverview = () => {
                                 start={0}
                                 end={String(
                                   Math.floor(
-                                    (chartInfo?.balanceHours % 3600) / 60
-                                  )
+                                    (chartInfo?.balanceHours % 3600) / 60,
+                                  ),
                                 ).padStart(2, "0")}
                                 suffix=" Min"
                                 separator={""}

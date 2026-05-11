@@ -67,18 +67,21 @@ const CustomStatusForm = () => {
       const savedData = response?.data?.data || response?.data || null;
 
       if ([200, 201].includes(response?.status) && savedData) {
-        // ✅ Normalize saved data to always have emoji + is_active
+        // ✅ Normalize: always store as { emoji, is_active } so the table
+        //    reads consistent field names from Redux
         const normalizedData = {
           ...savedData,
           emoji: savedData.emoji ?? savedData.icon ?? values.emoji,
           is_active: savedData.is_active ?? values.is_active,
         };
 
+        // ✅ Dispatch updates CustomStatusReducer.custom_status_data,
+        //    which CustomStatus.jsx now reads correctly via useSelector
         isNew
           ? dispatch(addCustomStatus(normalizedData))
           : dispatch(editCustomStatus(normalizedData));
 
-        // ✅ LocalStorage sync
+        // Sync localStorage
         let existingData = GetLocalStorageData("custom_statuses") || [];
         existingData = existingData.filter((i) => i && typeof i === "object");
 
@@ -124,9 +127,7 @@ const CustomStatusForm = () => {
     initialValues: {
       id: form_obj?.id || null,
       name: form_obj?.name || "",
-      // ✅ FIXED: form_obj may have emoji or icon from table row
       emoji: form_obj?.emoji ?? form_obj?.icon ?? "",
-      // ✅ FIXED: form_obj may have is_active or active from table row
       is_active: form_obj?.is_active ?? form_obj?.active ?? true,
     },
     validationSchema: Yup.object({
@@ -195,14 +196,13 @@ const CustomStatusForm = () => {
               </FormGroup>
             </Col>
 
-            {/* ✅ Toggle only in Edit — disabled when is_active is false */}
+            {/* Toggle only in Edit mode */}
             {isEdit && (
               <Col md={12} lg={12} xxl={12}>
                 <div>
                   <Label htmlFor="is_active" className="form-label">
                     Status
                   </Label>
-
                   <div className="mb-2">
                     <div
                       className="form-check form-switch form-switch-md form-switch-success"
@@ -221,7 +221,6 @@ const CustomStatusForm = () => {
                     </div>
                   </div>
                 </div>
-
                 <div className="form-text mb-3">
                   Status is currently{" "}
                   <b>

@@ -70,6 +70,7 @@ import {
 import DistanceCalculaterInMap from "../../../pages/attendance/DistanceCalculaterInMap";
 import AllDistanceCalculater from "../../../pages/attendance/AllDistanceCalculater";
 import WebCheckInOut from "./../timer/WebCheckInOut";
+import CustomStatusTimeline from "./CustomStatusTimeLine";
 
 const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
@@ -86,6 +87,7 @@ const AttendanceEmployeeTable = () => {
     { key: "paidHr", label: "Paid Hr" },
     { key: "status", label: "Status" },
     { key: "activity", label: "Activity" },
+    { key: "customStatus", label: "Activity Status" },
     { key: "notes", label: "Notes" },
     { key: "action", label: "Action" },
   ];
@@ -135,6 +137,7 @@ const AttendanceEmployeeTable = () => {
             "paidHr",
             "status",
             "activity",
+            "customStatus",
             "notes",
             "action",
           ];
@@ -151,6 +154,7 @@ const AttendanceEmployeeTable = () => {
         "paidHr",
         "status",
         "activity",
+        "customStatus",
         "notes",
         "action",
       ];
@@ -254,6 +258,8 @@ const AttendanceEmployeeTable = () => {
   };
 
   const DateCell = ({ rowData, dataKey, ...props }) => {
+    console.log("data", rowData);
+
     const warning_icon =
       rowData?.total_no_of_check_in !== rowData?.total_no_of_check_out ? (
         <i className="ri-error-warning-line text-warning fs-5"></i>
@@ -1193,6 +1199,13 @@ const AttendanceEmployeeTable = () => {
             <Column flexGrow={1} minWidth={100}>
               <HeaderCell>Activity</HeaderCell>
               <ActivityCell />
+            </Column>
+          )}
+
+          {selectedColumns.includes("customStatus") && (
+            <Column flexGrow={1.2} minWidth={140} align="center">
+              <HeaderCell>Activity Status</HeaderCell>
+              <CustomStatusTimeline dataKey="custom_status_timeline" />
             </Column>
           )}
 

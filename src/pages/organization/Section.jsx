@@ -227,7 +227,7 @@ const Section = () => {
                       Location Group
                     </NavLink>
                   </NavItem>
-                  <NavItem>
+                  {/* <NavItem>
                     <NavLink
                       className={classnames(
                         { active: activeTab === "10" },
@@ -240,7 +240,7 @@ const Section = () => {
                     >
                       Custom Status
                     </NavLink>
-                  </NavItem>
+                  </NavItem> */}
                 </Nav>
               </CardBody>
             </div>
