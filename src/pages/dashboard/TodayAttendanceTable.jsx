@@ -211,14 +211,16 @@ const TodayAttendanceTable = () => {
             return `${hours}h ${minutes}m`;
           })(),
 
-          // Attendance status for tab filtering
-          status: item.is_on_leave
-            ? "Leave"
-            : item.is_present
-              ? item.is_late
-                ? "Late"
-                : "On Time"
-              : "Not Check In",
+          // ✅ Fixed status logic:
+          // Priority: Leave (is_on_leave OR has half_day OR has permission) > Present > Not Check In
+          status: (() => {
+            if (item.is_on_leave || item.half_day || item.permission)
+              return "Leave";
+            if (item.is_present) return item.is_late ? "Late" : "On Time";
+            return "Not Check In";
+          })(),
+
+          isOnLeave: item.is_on_leave || false,
 
           // Raw check-in/out status from API (for badge display)
           checkInStatus: item.status || null,
@@ -551,72 +553,83 @@ const TodayAttendanceTable = () => {
           <>
             <td style={tdCenter}>{row.department || "-"}</td>
 
-            {/* Leave Type pill */}
+            {/* Leave Type pill — shows all applicable types */}
             <td style={tdCenter}>
-              {row.halfday ? (
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "5px",
-                    background: "#fffbeb",
-                    border: "1px solid #fde68a",
-                    color: "#92400e",
-                    borderRadius: "20px",
-                    padding: "3px 10px",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <i
-                    className="bx bx-time-five"
-                    style={{ color: "#d97706" }}
-                  ></i>
-                  Half Day Leave
-                </span>
-              ) : row.permission ? (
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "5px",
-                    background: "#f5f3ff",
-                    border: "1px solid #c4b5fd",
-                    color: "#4c1d95",
-                    borderRadius: "20px",
-                    padding: "3px 10px",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <i className="bx bx-exit" style={{ color: "#7c3aed" }}></i>
-                  Permission
-                </span>
-              ) : (
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "5px",
-                    background: "#fef2f2",
-                    border: "1px solid #fecaca",
-                    color: "#991b1b",
-                    borderRadius: "20px",
-                    padding: "3px 10px",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <i
-                    className="bx bx-calendar-x"
-                    style={{ color: "#ef4444" }}
-                  ></i>
-                  Full Day Leave
-                </span>
-              )}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                {row.halfday && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      background: "#fffbeb",
+                      border: "1px solid #fde68a",
+                      color: "#92400e",
+                      borderRadius: "20px",
+                      padding: "3px 10px",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <i
+                      className="bx bx-time-five"
+                      style={{ color: "#d97706" }}
+                    ></i>
+                    Half Day Leave
+                  </span>
+                )}
+                {row.permission && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      background: "#f5f3ff",
+                      border: "1px solid #c4b5fd",
+                      color: "#4c1d95",
+                      borderRadius: "20px",
+                      padding: "3px 10px",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <i className="bx bx-exit" style={{ color: "#7c3aed" }}></i>
+                    Permission
+                  </span>
+                )}
+                {!row.halfday && !row.permission && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      background: "#fef2f2",
+                      border: "1px solid #fecaca",
+                      color: "#991b1b",
+                      borderRadius: "20px",
+                      padding: "3px 10px",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <i
+                      className="bx bx-calendar-x"
+                      style={{ color: "#ef4444" }}
+                    ></i>
+                    Full Day Leave
+                  </span>
+                )}
+              </div>
             </td>
 
             {/* Half Day details */}
