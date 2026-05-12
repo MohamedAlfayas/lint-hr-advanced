@@ -18,18 +18,15 @@ const reverseGeocode = async (latitude, longitude) => {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`;
     const res = await fetch(url, {
       headers: {
-        // Nominatim requires a descriptive User-Agent
         "Accept-Language": "en",
         "User-Agent": "AttendanceApp/1.0",
       },
     });
     if (!res.ok) throw new Error(`Nominatim HTTP ${res.status}`);
     const data = await res.json();
-    // data.display_name is the full human-readable address
     return data?.display_name || `${latitude}, ${longitude}`;
   } catch (err) {
     console.error("Reverse geocoding error:", err);
-    // non-fatal fallback
     return `${latitude}, ${longitude}`;
   }
 };
@@ -119,7 +116,7 @@ const StatusBottomSheet = ({
     const isCurrentlyActive = activeStatus === statusId;
 
     if (isCurrentlyActive) {
-      // Turning OFF → no notes needed, just confirm + call API
+      // Turning OFF → confirm + send location payload
       handleToggleOff(statusId);
     } else {
       // Turning ON → open notes input sheet
@@ -127,7 +124,7 @@ const StatusBottomSheet = ({
     }
   };
 
-  /** Toggle OFF — confirmed via SweetAlert, no notes or location needed */
+  /** Toggle OFF — confirmed via SweetAlert, fetches location and sends full payload */
   const handleToggleOff = async (statusId) => {
     const result = await Swal.fire({
       title: "Stop this status?",
@@ -144,10 +141,26 @@ const StatusBottomSheet = ({
 
     setLoadingId(statusId);
 
+    // ✅ FIX: Fetch location for toggle-off just like toggle-on
+    let location;
+    try {
+      location = await getLocationPayload();
+    } catch (err) {
+      toast.error(err.message || "Could not get location.");
+      setLoadingId(null);
+      return;
+    }
+
+    // ✅ FIX: Include location in the toggle-off payload
+    const payload = {
+      custom_status_id: statusId,
+      location,
+    };
+
     try {
       const response = await PostApi(
         "attendance/custom-statuses/toggle/",
-        { custom_status_id: statusId },
+        payload,
         false,
       );
 

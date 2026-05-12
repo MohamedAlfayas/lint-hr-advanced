@@ -20,7 +20,6 @@ import moment from "moment";
 import { Api } from "../../common/api/Api";
 import { setTodayAttendance } from "../../redux/reducers/ChildReducer/TodayAttendanceReducer";
 import { useDispatch } from "react-redux";
-import UsersClusterMap from "./UsersClusterMap";
 import Lottie from "react-lottie";
 import noLocationFind from "../auth/loader/animation/no-location.json";
 import { DatePicker } from "antd";
@@ -38,9 +37,94 @@ import "simplebar-react/dist/simplebar.min.css";
 
 dayjs.extend(customParseFormat);
 
-// ─── Status badge for check-in status (shown right of name) ───────────────
-const getCheckInStatusBadge = (status) => {
-  switch (status) {
+// ─── Responsive styles injected once ─────────────────────────────────────
+const RESPONSIVE_STYLES = `
+  .attendance-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .attendance-table {
+    width: 100%;
+    min-width: 700px;
+    table-layout: fixed;
+    border-collapse: collapse;
+  }
+  .attendance-table.leave-tab {
+    min-width: 560px;
+  }
+  /* Tighten columns on medium screens */
+  @media (max-width: 991px) {
+    .attendance-table {
+      min-width: 620px;
+    }
+    .attendance-table.leave-tab {
+      min-width: 480px;
+    }
+  }
+  /* Mobile card-style rows */
+  @media (max-width: 575px) {
+    .attendance-table,
+    .attendance-table.leave-tab {
+      min-width: 520px;
+    }
+    .filter-container .row > [class*="col-"] {
+      flex: 0 0 100%;
+      max-width: 100%;
+    }
+  }
+  /* Sticky header stays visible while scrolling */
+  .attendance-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8f9fa;
+  }
+  /* Compact cells on smaller screens */
+  @media (max-width: 767px) {
+    .attendance-table td,
+    .attendance-table th {
+      padding: 8px 6px !important;
+      font-size: 12px;
+    }
+  }
+`;
+
+// ─── Custom status badge ──────────────────────────────────────────────────
+const getCheckInStatusBadge = (statusName, customStatuses = []) => {
+  const matched = customStatuses.find(
+    (cs) =>
+      cs.is_active &&
+      cs.name.toLowerCase() === (statusName || "").toLowerCase(),
+  );
+
+  if (matched) {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "4px",
+          backgroundColor: "#f0f4ff",
+          border: "1px solid #c7d2fe",
+          color: "#3730a3",
+          fontSize: "10px",
+          padding: "2px 8px",
+          borderRadius: "20px",
+          fontWeight: 600,
+          whiteSpace: "nowrap",
+          letterSpacing: "0.2px",
+        }}
+      >
+        <span style={{ fontSize: "12px", lineHeight: 1 }}>
+          {matched.icon || matched.emoji || ""}
+        </span>
+        {matched.name}
+      </span>
+    );
+  }
+
+  switch ((statusName || "").toLowerCase()) {
     case "checked-in":
       return (
         <span
@@ -52,7 +136,6 @@ const getCheckInStatusBadge = (status) => {
             padding: "3px 7px",
             borderRadius: "6px",
             fontWeight: 600,
-            letterSpacing: "0.3px",
           }}
         >
           ● Checked In
@@ -69,7 +152,6 @@ const getCheckInStatusBadge = (status) => {
             padding: "3px 7px",
             borderRadius: "6px",
             fontWeight: 600,
-            letterSpacing: "0.3px",
           }}
         >
           ● Checked Out
@@ -86,36 +168,31 @@ const getCheckInStatusBadge = (status) => {
             padding: "3px 7px",
             borderRadius: "6px",
             fontWeight: 600,
-            letterSpacing: "0.3px",
           }}
         >
           ● Not Checked In
         </span>
       );
-    // ✅ NEW: Break status from API
-    case "Break":
-      return (
+    default:
+      return statusName ? (
         <span
           className="badge"
           style={{
-            backgroundColor: "#ede9fe",
-            color: "#4c1d95",
+            backgroundColor: "#f1f5f9",
+            color: "#475569",
             fontSize: "10px",
             padding: "3px 7px",
             borderRadius: "6px",
             fontWeight: 600,
-            letterSpacing: "0.3px",
           }}
         >
-          ● On Break
+          ● {statusName}
         </span>
-      );
-    default:
-      return null;
+      ) : null;
   }
 };
 
-// ─── Status badge for half_day / permission approval ──────────────────────
+// ─── Approval badge ───────────────────────────────────────────────────────
 const getApprovalBadge = (status) => {
   switch (status) {
     case 1:
@@ -143,16 +220,37 @@ const getApprovalBadge = (status) => {
   }
 };
 
+// ─── Leave type label ─────────────────────────────────────────────────────
+const getLeaveTypeLabel = (row) => {
+  if (row.halfday) return "Half Day Leave";
+  if (row.permission) return "Permission";
+  return "Full Day Leave";
+};
+
+// ─── Filter field style ───────────────────────────────────────────────────
+const FILTER_HEIGHT = "38px";
+const filterInputStyle = {
+  height: FILTER_HEIGHT,
+  borderRadius: "6px",
+  border: "1px solid #ced4da",
+  fontSize: "13px",
+  width: "100%",
+  boxSizing: "border-box",
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────
 const TodayAttendanceTable = () => {
   const dispatch = useDispatch();
 
   const [activeTab, setActiveTab] = useState("1");
   const [departmentFilter, setDepartmentFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [dateFilter, setDateFilter] = useState(
     new Date().toISOString().split("T")[0].split("-").reverse().join("-"),
   );
   const [search, setSearch] = useState("");
   const [departments, setDepartments] = useState([]);
+  const [customStatuses, setCustomStatuses] = useState([]);
   const [attendanceData, setAttendanceData] = useState([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const [selectedLocations, setSelectedLocations] = useState([]);
@@ -162,19 +260,31 @@ const TodayAttendanceTable = () => {
   const [countLeave, setCountLeave] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // shared styles
   const thCenter = { textAlign: "center", verticalAlign: "middle" };
   const tdCenter = { textAlign: "center", verticalAlign: "middle" };
 
-  // ✅ Load departments from localStorage
+  // Inject responsive CSS once
+  useEffect(() => {
+    const styleId = "attendance-table-responsive-styles";
+    if (!document.getElementById(styleId)) {
+      const tag = document.createElement("style");
+      tag.id = styleId;
+      tag.textContent = RESPONSIVE_STYLES;
+      document.head.appendChild(tag);
+    }
+  }, []);
+
+  // ✅ Load departments + custom_statuses from localStorage
   useEffect(() => {
     const globalData = localStorage.getItem("lint_hr_globaldata");
     if (globalData) {
       try {
         const parsedData = JSON.parse(globalData);
-        const departmentsArray = parsedData.department;
-        if (Array.isArray(departmentsArray)) {
-          setDepartments(departmentsArray);
+        if (Array.isArray(parsedData.department)) {
+          setDepartments(parsedData.department);
+        }
+        if (Array.isArray(parsedData.custom_statuses)) {
+          setCustomStatuses(parsedData.custom_statuses);
         }
       } catch (error) {
         console.error("Failed to parse global data", error);
@@ -206,73 +316,97 @@ const TodayAttendanceTable = () => {
           return;
         }
 
-        const formattedData = result.map((item) => ({
-          emp_id: item.employee.emp_id,
-          first_name: item.employee.first_name || "-",
-          profile_url: item.employee.profile_url || null,
-          email: item.employee.email || "-",
-          department:
-            Array.isArray(item.employee.primary_department_id_list) &&
-            item.employee.primary_department_id_list.length > 0
-              ? departments.find(
-                  (d) => d.id === item.employee.primary_department_id_list[0],
-                )?.name || ""
-              : "",
+        const formattedData = result.map((item) => {
+          // ─── FIX: Determine status correctly ────────────────────────────
+          // An employee can be BOTH present AND have half_day / permission.
+          // Previously such employees were bucketed only into "Leave" and
+          // disappeared from the "In" tab. Now we track both flags separately:
+          //   • attendanceStatus  → used to decide which tab(s) show this row
+          //   • hasLeaveInfo      → true when half_day or permission exists
+          //     (used by the Leave tab to include the row regardless of is_present)
 
-          inTime: item.first_check_in_time || null,
-          outTime: item.last_check_out_time || null,
+          const hasLeaveRecord =
+            item.is_on_leave || item.half_day || item.permission;
 
-          totalHours: (() => {
-            const totalSeconds = item.total_time_worked_till_last_checkout || 0;
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            return `${hours}h ${minutes}m`;
-          })(),
+          // Primary attendance status for Tab 1 / Tab 2
+          let attendanceStatus;
+          if (item.is_present) {
+            attendanceStatus = item.is_late ? "Late" : "On Time";
+          } else if (hasLeaveRecord) {
+            attendanceStatus = "Leave";
+          } else {
+            attendanceStatus = "Not Check In";
+          }
 
-          // ✅ Status logic:
-          // Priority: Leave (is_on_leave OR has half_day OR has permission) > Present > Not Check In
-          status: (() => {
-            if (item.is_on_leave || item.half_day || item.permission)
-              return "Leave";
-            if (item.is_present) return item.is_late ? "Late" : "On Time";
-            return "Not Check In";
-          })(),
+          return {
+            emp_id: item.employee.emp_id,
+            first_name: item.employee.first_name || "-",
+            profile_url: item.employee.profile_url || null,
+            email: item.employee.email || "-",
+            department:
+              Array.isArray(item.employee.primary_department_id_list) &&
+              item.employee.primary_department_id_list.length > 0
+                ? departments.find(
+                    (d) => d.id === item.employee.primary_department_id_list[0],
+                  )?.name || ""
+                : "",
 
-          isOnLeave: item.is_on_leave || false,
+            inTime: item.first_check_in_time || null,
+            outTime: item.last_check_out_time || null,
 
-          // ✅ Raw check-in/out status from API (e.g. "checked-in", "checked-out", "not-checked-in", "Break")
-          checkInStatus: item.status || null,
+            totalHours: (() => {
+              const totalSeconds =
+                item.total_time_worked_till_last_checkout || 0;
+              const hours = Math.floor(totalSeconds / 3600);
+              const minutes = Math.floor((totalSeconds % 3600) / 60);
+              return `${hours}h ${minutes}m`;
+            })(),
 
-          date: item.date,
-          location_history: item.location_history,
-          progress:
-            item.total_work_duration && item.total_time_worked
-              ? Math.min(
-                  100,
-                  Math.round(
-                    (item.total_time_worked / item.total_work_duration) * 100,
-                  ),
-                )
-              : 0,
+            // ✅ attendanceStatus drives Tab 1 / Tab 2 membership
+            status: attendanceStatus,
 
-          halfday: item.half_day
-            ? {
-                start: item.half_day.start || null,
-                end: item.half_day.end || null,
-                reason: item.half_day.reason || "-",
-                status: item.half_day.status,
-              }
-            : null,
+            // ✅ showInLeaveTab: true when employee has any leave/half-day/permission
+            //    regardless of whether they also checked in
+            showInLeaveTab: !!(
+              item.half_day ||
+              item.permission ||
+              item.is_on_leave
+            ),
 
-          permission: item.permission
-            ? {
-                start: item.permission.start || null,
-                end: item.permission.end || null,
-                reason: item.permission.reason || "-",
-                status: item.permission.status,
-              }
-            : null,
-        }));
+            isOnLeave: item.is_on_leave || false,
+            checkInStatus: item.status || null,
+            date: item.date,
+            location_history: item.location_history,
+
+            progress:
+              item.total_work_duration && item.total_time_worked
+                ? Math.min(
+                    100,
+                    Math.round(
+                      (item.total_time_worked / item.total_work_duration) * 100,
+                    ),
+                  )
+                : 0,
+
+            halfday: item.half_day
+              ? {
+                  start: item.half_day.start || null,
+                  end: item.half_day.end || null,
+                  reason: item.half_day.reason || "-",
+                  status: item.half_day.status,
+                }
+              : null,
+
+            permission: item.permission
+              ? {
+                  start: item.permission.start || null,
+                  end: item.permission.end || null,
+                  reason: item.permission.reason || "-",
+                  status: item.permission.status,
+                }
+              : null,
+          };
+        });
 
         setAttendanceData(formattedData);
         dispatch(setTodayAttendance(result));
@@ -288,7 +422,7 @@ const TodayAttendanceTable = () => {
     fetchAttendance();
   }, [dateFilter, departments, dispatch]);
 
-  // ✅ Recalculate badge counts
+  // ✅ Recalculate tab badge counts
   useEffect(() => {
     if (attendanceData.length === 0) {
       setCountIn(0);
@@ -301,15 +435,43 @@ const TodayAttendanceTable = () => {
       departmentFilter === "All" ? true : item.department === departmentFilter,
     );
 
+    // Tab 1: On Time + Late (includes those who also have half_day/permission)
     setCountIn(
       filtered.filter((i) => i.status === "On Time" || i.status === "Late")
         .length,
     );
+
     setCountNotCheckIn(
       filtered.filter((i) => i.status === "Not Check In").length,
     );
-    setCountLeave(filtered.filter((i) => i.status === "Leave").length);
+
+    // ✅ Leave count: everyone with showInLeaveTab flag
+    setCountLeave(filtered.filter((i) => i.showInLeaveTab).length);
   }, [attendanceData, departmentFilter]);
+
+  // ─── Status filter options ────────────────────────────────────────────────
+  const statusFilterOptions = useMemo(() => {
+    if (activeTab === "1") {
+      const customOptions = customStatuses
+        .filter((cs) => cs.is_active)
+        .map((cs) => ({
+          value: cs.name,
+          label: `${cs.icon || cs.emoji || ""} ${cs.name}`.trim(),
+        }));
+      return [{ value: "All", label: "All Status" }, ...customOptions];
+    }
+    if (activeTab === "3") {
+      return [
+        { value: "All", label: "All Leave Types" },
+        { value: "Full Day Leave", label: "Full Day Leave" },
+        { value: "Half Day Leave", label: "Half Day Leave" },
+        { value: "Permission", label: "Permission" },
+      ];
+    }
+    return [];
+  }, [activeTab, customStatuses]);
+
+  const showStatusFilter = activeTab === "1" || activeTab === "3";
 
   const handleViewLocations = (row) => {
     setSelectedEmployeeId(row.first_name);
@@ -319,11 +481,9 @@ const TodayAttendanceTable = () => {
 
   const formatTime = (timeString) => {
     if (!timeString) return "-";
-    // If already formatted like "10:37 AM", return as-is
     if (typeof timeString === "string" && timeString.includes(" ")) {
       return timeString;
     }
-    // Try parsing as ISO
     try {
       const parsed = moment.utc(timeString);
       if (!parsed.isValid()) return "-";
@@ -336,14 +496,31 @@ const TodayAttendanceTable = () => {
   // ✅ Filtered data
   const filteredData = useMemo(() => {
     return attendanceData.filter((item) => {
+      // ─── Tab gate ─────────────────────────────────────────────────────
+      // Tab 1: present employees (On Time / Late)
+      // Tab 2: not checked in
+      // Tab 3: anyone with a leave / half_day / permission record
+      //         — this now INCLUDES employees who are also present (is_present true)
       if (activeTab === "1" && !["On Time", "Late"].includes(item.status))
         return false;
       if (activeTab === "2" && item.status !== "Not Check In") return false;
-      if (activeTab === "3" && item.status !== "Leave") return false;
+      if (activeTab === "3" && !item.showInLeaveTab) return false;
 
+      // Department filter
       if (departmentFilter !== "All" && item.department !== departmentFilter)
         return false;
 
+      // Status / leave-type filter
+      if (statusFilter !== "All") {
+        if (activeTab === "1") {
+          const csName = (item.checkInStatus || "").toLowerCase();
+          if (csName !== statusFilter.toLowerCase()) return false;
+        } else if (activeTab === "3") {
+          if (getLeaveTypeLabel(item) !== statusFilter) return false;
+        }
+      }
+
+      // Search
       const q = search.toLowerCase();
       return (
         !q ||
@@ -353,11 +530,12 @@ const TodayAttendanceTable = () => {
         (item.totalHours || "").toLowerCase().includes(q)
       );
     });
-  }, [attendanceData, activeTab, departmentFilter, search]);
+  }, [attendanceData, activeTab, departmentFilter, statusFilter, search]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setSearch("");
+    setStatusFilter("All");
   };
 
   const defaultOptions = {
@@ -367,11 +545,10 @@ const TodayAttendanceTable = () => {
     rendererSettings: { preserveAspectRatio: "xMidYMid slice" },
   };
 
-  // ─── Column definitions per tab ──────────────────────────────────────────
   const getColumnCount = (tab) => {
     if (tab === "1") return 7;
     if (tab === "2") return 6;
-    return 5;
+    return 4;
   };
 
   // ─── Table headers ────────────────────────────────────────────────────────
@@ -379,9 +556,11 @@ const TodayAttendanceTable = () => {
     if (activeTab === "3") {
       return (
         <tr>
-          <th style={{ width: "28%" }}>Name</th>
-          <th style={{ width: "15%", ...thCenter }}>Department</th>
-          <th style={{ width: "15%", ...thCenter }}>
+          <th style={{ width: "28%", minWidth: "160px" }}>Name</th>
+          <th style={{ width: "15%", minWidth: "100px", ...thCenter }}>
+            Department
+          </th>
+          <th style={{ width: "20%", minWidth: "130px", ...thCenter }}>
             <span
               style={{
                 display: "inline-flex",
@@ -396,7 +575,7 @@ const TodayAttendanceTable = () => {
               Leave Type
             </span>
           </th>
-          <th style={{ width: "21%", ...thCenter }}>
+          <th style={{ width: "37%", minWidth: "180px", ...thCenter }}>
             <span
               style={{
                 display: "inline-flex",
@@ -405,25 +584,10 @@ const TodayAttendanceTable = () => {
               }}
             >
               <i
-                className="bx bx-time-five"
-                style={{ color: "#f59e0b", fontSize: "14px" }}
-              ></i>
-              Half Day
-            </span>
-          </th>
-          <th style={{ width: "21%", ...thCenter }}>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-              }}
-            >
-              <i
-                className="bx bx-exit"
+                className="bx bx-info-circle"
                 style={{ color: "#6366f1", fontSize: "14px" }}
               ></i>
-              Permission
+              Info
             </span>
           </th>
         </tr>
@@ -432,14 +596,22 @@ const TodayAttendanceTable = () => {
 
     return (
       <tr>
-        <th style={{ width: "30%" }}>Name</th>
-        <th style={{ width: "15%", ...thCenter }}>Department</th>
-        <th style={{ width: "12%", ...thCenter }}>In Time</th>
-        <th style={{ width: "12%", ...thCenter }}>Out Time</th>
-        <th style={{ width: "11%", ...thCenter }}>Total Hours</th>
-        <th style={{ width: "10%", ...thCenter }}>Status</th>
+        <th style={{ width: "28%", minWidth: "170px" }}>Name</th>
+        <th style={{ width: "14%", minWidth: "100px", ...thCenter }}>
+          Department
+        </th>
+        <th style={{ width: "11%", minWidth: "80px", ...thCenter }}>In Time</th>
+        <th style={{ width: "11%", minWidth: "80px", ...thCenter }}>
+          Out Time
+        </th>
+        <th style={{ width: "11%", minWidth: "80px", ...thCenter }}>
+          Total Hours
+        </th>
+        <th style={{ width: "10%", minWidth: "70px", ...thCenter }}>Status</th>
         {activeTab === "1" && (
-          <th style={{ width: "10%", ...thCenter }}>Location</th>
+          <th style={{ width: "10%", minWidth: "70px", ...thCenter }}>
+            Location
+          </th>
         )}
       </tr>
     );
@@ -486,7 +658,6 @@ const TodayAttendanceTable = () => {
         {/* ── Name Cell ── */}
         <td style={{ verticalAlign: "middle" }}>
           <div className="d-flex gap-2 align-items-start">
-            {/* Avatar */}
             <div className="flex-shrink-0" style={{ marginTop: "2px" }}>
               {row.profile_url ? (
                 <img
@@ -512,9 +683,7 @@ const TodayAttendanceTable = () => {
               )}
             </div>
 
-            {/* Name + badge + email */}
             <div className="flex-grow-1" style={{ minWidth: 0 }}>
-              {/* Name row with check-in status badge */}
               <div
                 className="d-flex align-items-center gap-2 flex-wrap"
                 style={{ marginBottom: "2px" }}
@@ -525,14 +694,15 @@ const TodayAttendanceTable = () => {
                     #{row.emp_id}
                   </span>
                 </h5>
-                {/* ✅ Check-in status badge — includes "Break" now */}
-                {row.checkInStatus && getCheckInStatusBadge(row.checkInStatus)}
+
+                {row.checkInStatus &&
+                  getCheckInStatusBadge(row.checkInStatus, customStatuses)}
               </div>
 
               <div
                 className="text-muted"
                 style={{
-                  fontSize: "11px",
+                  fontSize: "12px",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -541,7 +711,6 @@ const TodayAttendanceTable = () => {
                 {row.email}
               </div>
 
-              {/* Progress bar — Tab 1 only */}
               {activeTab === "1" && (
                 <div className="progress progress-sm animated-progess lc-color mt-1">
                   <div
@@ -562,7 +731,7 @@ const TodayAttendanceTable = () => {
           </div>
         </td>
 
-        {/* ── Leave tab layout ── */}
+        {/* ── Leave tab columns ── */}
         {activeTab === "3" ? (
           <>
             <td style={tdCenter}>{row.department || "-"}</td>
@@ -646,93 +815,113 @@ const TodayAttendanceTable = () => {
               </div>
             </td>
 
-            {/* Half Day details */}
+            {/* Info cell */}
             <td style={tdCenter}>
-              {row.halfday ? (
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "3px",
-                  }}
-                >
-                  {getApprovalBadge(row.halfday.status)}
-                  {row.halfday.start && (
-                    <small style={{ color: "#78716c", fontSize: "10px" }}>
-                      {formatTime(row.halfday.start)}
-                      {row.halfday.end
-                        ? ` – ${formatTime(row.halfday.end)}`
-                        : ""}
-                    </small>
-                  )}
-                  <small
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  justifyContent: "center",
+                  gap: "16px",
+                  flexWrap: "wrap",
+                }}
+              >
+                {row.halfday ? (
+                  <div
                     style={{
-                      color: "#57534e",
-                      fontSize: "10px",
-                      fontStyle: "italic",
-                      maxWidth: "130px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "3px",
+                      minWidth: "100px",
                     }}
                   >
-                    {row.halfday.reason}
-                  </small>
-                </div>
-              ) : (
-                <span style={{ color: "#d1d5db", fontSize: "18px" }}>—</span>
-              )}
-            </td>
+                    {getApprovalBadge(row.halfday.status)}
+                    {row.halfday.start && (
+                      <small style={{ color: "#78716c", fontSize: "10px" }}>
+                        {formatTime(row.halfday.start)}
+                        {row.halfday.end
+                          ? ` – ${formatTime(row.halfday.end)}`
+                          : ""}
+                      </small>
+                    )}
+                    <small
+                      style={{
+                        color: "#57534e",
+                        fontSize: "10px",
+                        fontStyle: "italic",
+                        maxWidth: "130px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {row.halfday.reason}
+                    </small>
+                  </div>
+                ) : null}
 
-            {/* Permission details */}
-            <td style={tdCenter}>
-              {row.permission ? (
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "3px",
-                  }}
-                >
-                  {getApprovalBadge(row.permission.status)}
-                  {row.permission.start && (
-                    <small style={{ color: "#78716c", fontSize: "10px" }}>
-                      {formatTime(row.permission.start)}
-                      {row.permission.end
-                        ? ` – ${formatTime(row.permission.end)}`
-                        : ""}
-                    </small>
-                  )}
-                  <small
+                {row.halfday && row.permission && (
+                  <div
                     style={{
-                      color: "#57534e",
-                      fontSize: "10px",
-                      fontStyle: "italic",
-                      maxWidth: "130px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                      width: "1px",
+                      backgroundColor: "#e5e7eb",
+                      alignSelf: "stretch",
+                      minHeight: "40px",
+                    }}
+                  />
+                )}
+
+                {row.permission ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "3px",
+                      minWidth: "100px",
                     }}
                   >
-                    {row.permission.reason}
-                  </small>
-                </div>
-              ) : (
-                <span style={{ color: "#d1d5db", fontSize: "18px" }}>—</span>
-              )}
+                    {getApprovalBadge(row.permission.status)}
+                    {row.permission.start && (
+                      <small style={{ color: "#78716c", fontSize: "10px" }}>
+                        {formatTime(row.permission.start)}
+                        {row.permission.end
+                          ? ` – ${formatTime(row.permission.end)}`
+                          : ""}
+                      </small>
+                    )}
+                    <small
+                      style={{
+                        color: "#57534e",
+                        fontSize: "10px",
+                        fontStyle: "italic",
+                        maxWidth: "130px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {row.permission.reason}
+                    </small>
+                  </div>
+                ) : null}
+
+                {!row.halfday && !row.permission && (
+                  <span style={{ color: "#d1d5db", fontSize: "18px" }}>—</span>
+                )}
+              </div>
             </td>
           </>
         ) : (
-          /* ── Tab 1 & 2 layout ── */
+          /* ── Tab 1 & 2 columns ── */
           <>
             <td style={tdCenter}>{row.department || "-"}</td>
             <td style={tdCenter}>{formatTime(row.inTime)}</td>
             <td style={tdCenter}>{formatTime(row.outTime)}</td>
             <td style={tdCenter}>{row.totalHours}</td>
 
-            {/* Attendance status badge */}
             <td style={tdCenter}>
               <span
                 className={`badge text-uppercase ${
@@ -749,7 +938,6 @@ const TodayAttendanceTable = () => {
               </span>
             </td>
 
-            {/* Location button — Tab 1 only */}
             {activeTab === "1" && (
               <td style={tdCenter}>
                 <Button
@@ -779,14 +967,21 @@ const TodayAttendanceTable = () => {
             </CardHeader>
 
             <CardBody>
-              {/* Filters */}
+              {/* ── Filters ── */}
               <div className="filter-container p-2 pt-2 pb-0">
-                <Row className="mb-3 d-flex align-items-center">
-                  <Col md="4" className="ps-1">
+                <Row className="mb-3 g-2" style={{ alignItems: "stretch" }}>
+                  {/* 1. Department */}
+                  <Col
+                    xs={12}
+                    sm={6}
+                    md={showStatusFilter ? 3 : 4}
+                    style={{ display: "flex", flexDirection: "column" }}
+                  >
                     <Input
                       type="select"
                       value={departmentFilter}
                       onChange={(e) => setDepartmentFilter(e.target.value)}
+                      style={filterInputStyle}
                     >
                       <option value="All">All Departments</option>
                       {departments.map((dept) => (
@@ -797,23 +992,73 @@ const TodayAttendanceTable = () => {
                     </Input>
                   </Col>
 
-                  <Col md="4">
+                  {/* 2. Status / leave filter */}
+                  {showStatusFilter && (
+                    <Col
+                      xs={12}
+                      sm={6}
+                      md={3}
+                      style={{ display: "flex", flexDirection: "column" }}
+                    >
+                      <Input
+                        type="select"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        style={filterInputStyle}
+                      >
+                        {statusFilterOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </Input>
+                    </Col>
+                  )}
+
+                  {/* 3. Date picker */}
+                  <Col
+                    xs={12}
+                    sm={6}
+                    md={showStatusFilter ? 3 : 4}
+                    style={{ display: "flex", flexDirection: "column" }}
+                  >
                     <DatePicker
-                      className="form-control"
                       value={dayjs(dateFilter, DateFormat)}
                       format={DateFormat}
                       allowClear={false}
                       onChange={(e, f) => setDateFilter(f)}
+                      style={{
+                        width: "100%",
+                        height: "38px",
+                        borderRadius: "6px",
+                        border: "1px solid #ced4da",
+                        padding: "0 11px",
+                        fontSize: "14px",
+                      }}
                     />
                   </Col>
 
-                  <Col md="4" className="position-relative">
+                  {/* 4. Search */}
+                  <Col
+                    xs={12}
+                    sm={6}
+                    md={showStatusFilter ? 3 : 4}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      position: "relative",
+                    }}
+                  >
                     <i
                       className="bx bx-search-alt search-icon position-absolute"
                       style={{
                         top: "50%",
                         left: "20px",
                         transform: "translateY(-50%)",
+                        zIndex: 1,
+                        color: "#888",
+                        fontSize: "15px",
+                        pointerEvents: "none",
                       }}
                     ></i>
                     <Input
@@ -821,13 +1066,13 @@ const TodayAttendanceTable = () => {
                       placeholder="Search employee"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      style={{ paddingLeft: "25px" }}
+                      style={{ ...filterInputStyle, paddingLeft: "30px" }}
                     />
                   </Col>
                 </Row>
               </div>
 
-              {/* Tabs */}
+              {/* ── Tabs ── */}
               <Nav
                 className="nav-tabs nav-tabs-custom nav-success pt-2"
                 role="tablist"
@@ -878,27 +1123,26 @@ const TodayAttendanceTable = () => {
                 </NavItem>
               </Nav>
 
+              {/* ── Responsive table wrapper ── */}
               <div
-                style={{ width: "100%", overflow: "hidden", marginTop: "8px" }}
+                className="attendance-table-wrapper"
+                style={{
+                  marginTop: "8px",
+                  border: "1px solid #f0f0f0",
+                  borderRadius: "6px",
+                }}
               >
-                <SimpleBar style={{ maxHeight: "420px" }} autoHide={false}>
-                  <div style={{ width: "100%" }}>
+                <SimpleBar
+                  style={{ maxHeight: "420px", minHeight: "420px" }}
+                  autoHide={false}
+                >
+                  <div style={{ minWidth: "100%" }}>
                     <table
-                      className="table align-middle mb-0"
-                      style={{
-                        width: "100%",
-                        tableLayout: "fixed",
-                        borderCollapse: "collapse",
-                      }}
+                      className={`table align-middle mb-0 attendance-table${
+                        activeTab === "3" ? " leave-tab" : ""
+                      }`}
                     >
-                      <thead
-                        className="table-light text-muted"
-                        style={{
-                          position: "sticky",
-                          top: 0,
-                          zIndex: 2,
-                        }}
-                      >
+                      <thead className="table-light text-muted">
                         {renderTableHeaders()}
                       </thead>
                       <tbody>
@@ -920,7 +1164,7 @@ const TodayAttendanceTable = () => {
           </Card>
         </Col>
 
-        {/* Map Modal */}
+        {/* ── Map Modal ── */}
         <Modal
           size="lg"
           isOpen={isMapOpen}
