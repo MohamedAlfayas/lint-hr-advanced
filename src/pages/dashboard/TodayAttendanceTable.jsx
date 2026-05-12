@@ -92,6 +92,24 @@ const getCheckInStatusBadge = (status) => {
           ● Not Checked In
         </span>
       );
+    // ✅ NEW: Break status from API
+    case "Break":
+      return (
+        <span
+          className="badge"
+          style={{
+            backgroundColor: "#ede9fe",
+            color: "#4c1d95",
+            fontSize: "10px",
+            padding: "3px 7px",
+            borderRadius: "6px",
+            fontWeight: 600,
+            letterSpacing: "0.3px",
+          }}
+        >
+          ● On Break
+        </span>
+      );
     default:
       return null;
   }
@@ -211,7 +229,7 @@ const TodayAttendanceTable = () => {
             return `${hours}h ${minutes}m`;
           })(),
 
-          // ✅ Fixed status logic:
+          // ✅ Status logic:
           // Priority: Leave (is_on_leave OR has half_day OR has permission) > Present > Not Check In
           status: (() => {
             if (item.is_on_leave || item.half_day || item.permission)
@@ -222,7 +240,7 @@ const TodayAttendanceTable = () => {
 
           isOnLeave: item.is_on_leave || false,
 
-          // Raw check-in/out status from API (for badge display)
+          // ✅ Raw check-in/out status from API (e.g. "checked-in", "checked-out", "not-checked-in", "Break")
           checkInStatus: item.status || null,
 
           date: item.date,
@@ -350,14 +368,10 @@ const TodayAttendanceTable = () => {
   };
 
   // ─── Column definitions per tab ──────────────────────────────────────────
-  // Tab 1 (In): Name | Dept | In Time | Out Time | Total Hrs | Status | Location
-  // Tab 2 (Not Check In): Name | Dept | In Time | Out Time | Total Hrs | Status
-  // Tab 3 (Leave): Name | Dept | Leave Type | Half Day | Permission
-
   const getColumnCount = (tab) => {
     if (tab === "1") return 7;
     if (tab === "2") return 6;
-    return 5; // Leave tab: Name, Dept, Leave Type, Half Day, Permission
+    return 5;
   };
 
   // ─── Table headers ────────────────────────────────────────────────────────
@@ -469,7 +483,7 @@ const TodayAttendanceTable = () => {
 
     return filteredData.map((row, idx) => (
       <tr key={idx}>
-        {/* ── Name Cell (always present) ── */}
+        {/* ── Name Cell ── */}
         <td style={{ verticalAlign: "middle" }}>
           <div className="d-flex gap-2 align-items-start">
             {/* Avatar */}
@@ -511,7 +525,7 @@ const TodayAttendanceTable = () => {
                     #{row.emp_id}
                   </span>
                 </h5>
-                {/* ★ Check-in status badge — right of name */}
+                {/* ✅ Check-in status badge — includes "Break" now */}
                 {row.checkInStatus && getCheckInStatusBadge(row.checkInStatus)}
               </div>
 
@@ -548,12 +562,12 @@ const TodayAttendanceTable = () => {
           </div>
         </td>
 
-        {/* ── Leave tab layout: Dept | Leave Type | Half Day | Permission ── */}
+        {/* ── Leave tab layout ── */}
         {activeTab === "3" ? (
           <>
             <td style={tdCenter}>{row.department || "-"}</td>
 
-            {/* Leave Type pill — shows all applicable types */}
+            {/* Leave Type pill */}
             <td style={tdCenter}>
               <div
                 style={{
@@ -711,7 +725,7 @@ const TodayAttendanceTable = () => {
             </td>
           </>
         ) : (
-          /* ── Tab 1 & 2 layout: Dept | In | Out | Total | Status | [Location] ── */
+          /* ── Tab 1 & 2 layout ── */
           <>
             <td style={tdCenter}>{row.department || "-"}</td>
             <td style={tdCenter}>{formatTime(row.inTime)}</td>
@@ -864,12 +878,6 @@ const TodayAttendanceTable = () => {
                 </NavItem>
               </Nav>
 
-              {/*
-                ★ Fixed-height table with no horizontal scroll.
-                - SimpleBar provides vertical-only scrolling.
-                - overflow-x: hidden on wrapper prevents x-axis scroll.
-                - table-layout: fixed ensures columns never overflow.
-              */}
               <div
                 style={{ width: "100%", overflow: "hidden", marginTop: "8px" }}
               >
