@@ -871,10 +871,12 @@ const CustomStatusTimeline = ({ rowData, dataKey, ...props }) => {
   return (
     <Cell {...props}>
       <div>
-        {count > 0 && (
+        {count > 0 ? (
           <Link to="#" className="link-opacity-75 ms-1" onClick={toggle}>
             {count} Custom Status
           </Link>
+        ) : (
+          "-"
         )}
       </div>
 

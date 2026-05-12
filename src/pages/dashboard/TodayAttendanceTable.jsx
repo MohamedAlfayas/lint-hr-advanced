@@ -38,6 +38,93 @@ import "simplebar-react/dist/simplebar.min.css";
 
 dayjs.extend(customParseFormat);
 
+// ─── Status badge for check-in status (shown right of name) ───────────────
+const getCheckInStatusBadge = (status) => {
+  switch (status) {
+    case "checked-in":
+      return (
+        <span
+          className="badge"
+          style={{
+            backgroundColor: "#d1fae5",
+            color: "#065f46",
+            fontSize: "10px",
+            padding: "3px 7px",
+            borderRadius: "6px",
+            fontWeight: 600,
+            letterSpacing: "0.3px",
+          }}
+        >
+          ● Checked In
+        </span>
+      );
+    case "checked-out":
+      return (
+        <span
+          className="badge"
+          style={{
+            backgroundColor: "#fee2e2",
+            color: "#991b1b",
+            fontSize: "10px",
+            padding: "3px 7px",
+            borderRadius: "6px",
+            fontWeight: 600,
+            letterSpacing: "0.3px",
+          }}
+        >
+          ● Checked Out
+        </span>
+      );
+    case "not-checked-in":
+      return (
+        <span
+          className="badge"
+          style={{
+            backgroundColor: "#fef3c7",
+            color: "#92400e",
+            fontSize: "10px",
+            padding: "3px 7px",
+            borderRadius: "6px",
+            fontWeight: 600,
+            letterSpacing: "0.3px",
+          }}
+        >
+          ● Not Checked In
+        </span>
+      );
+    default:
+      return null;
+  }
+};
+
+// ─── Status badge for half_day / permission approval ──────────────────────
+const getApprovalBadge = (status) => {
+  switch (status) {
+    case 1:
+      return (
+        <span className="badge bg-warning-subtle text-warning">Pending</span>
+      );
+    case 2:
+      return (
+        <span className="badge bg-success-subtle text-success">Approved</span>
+      );
+    case 3:
+      return (
+        <span className="badge bg-danger-subtle text-danger">Rejected</span>
+      );
+    case 4:
+      return (
+        <span className="badge bg-danger-subtle text-danger">Cancelled</span>
+      );
+    default:
+      return (
+        <span className="badge bg-secondary-subtle text-secondary">
+          Unknown
+        </span>
+      );
+  }
+};
+
 const TodayAttendanceTable = () => {
   const dispatch = useDispatch();
 
@@ -56,8 +143,6 @@ const TodayAttendanceTable = () => {
   const [countNotCheckIn, setCountNotCheckIn] = useState(0);
   const [countLeave, setCountLeave] = useState(0);
   const [loading, setLoading] = useState(false);
-
-  const getColumnCount = (tab) => (tab === "1" ? 7 : tab === "3" ? 8 : 6);
 
   // shared styles
   const thCenter = { textAlign: "center", verticalAlign: "middle" };
@@ -126,6 +211,7 @@ const TodayAttendanceTable = () => {
             return `${hours}h ${minutes}m`;
           })(),
 
+          // Attendance status for tab filtering
           status: item.is_on_leave
             ? "Leave"
             : item.is_present
@@ -133,6 +219,9 @@ const TodayAttendanceTable = () => {
                 ? "Late"
                 : "On Time"
               : "Not Check In",
+
+          // Raw check-in/out status from API (for badge display)
+          checkInStatus: item.status || null,
 
           date: item.date,
           location_history: item.location_history,
@@ -179,7 +268,7 @@ const TodayAttendanceTable = () => {
     fetchAttendance();
   }, [dateFilter, departments, dispatch]);
 
-  // ✅ Recalculate badge counts when filter or data changes
+  // ✅ Recalculate badge counts
   useEffect(() => {
     if (attendanceData.length === 0) {
       setCountIn(0);
@@ -208,10 +297,15 @@ const TodayAttendanceTable = () => {
     setIsMapOpen(true);
   };
 
-  const formatTime = (isoString) => {
-    if (!isoString) return "-";
+  const formatTime = (timeString) => {
+    if (!timeString) return "-";
+    // If already formatted like "10:37 AM", return as-is
+    if (typeof timeString === "string" && timeString.includes(" ")) {
+      return timeString;
+    }
+    // Try parsing as ISO
     try {
-      const parsed = moment.utc(isoString);
+      const parsed = moment.utc(timeString);
       if (!parsed.isValid()) return "-";
       return parsed.format("hh:mm A");
     } catch {
@@ -219,7 +313,7 @@ const TodayAttendanceTable = () => {
     }
   };
 
-  // ✅ Filtered data (no pagination)
+  // ✅ Filtered data
   const filteredData = useMemo(() => {
     return attendanceData.filter((item) => {
       if (activeTab === "1" && !["On Time", "Late"].includes(item.status))
@@ -253,56 +347,89 @@ const TodayAttendanceTable = () => {
     rendererSettings: { preserveAspectRatio: "xMidYMid slice" },
   };
 
-  // ✅ Status badge helper for halfday / permission
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 1:
-        return (
-          <span className="badge bg-warning-subtle text-warning">Pending</span>
-        );
-      case 2:
-        return (
-          <span className="badge bg-success-subtle text-success">Approved</span>
-        );
-      case 3:
-        return (
-          <span className="badge bg-danger-subtle text-danger">Rejected</span>
-        );
-      case 4:
-        return (
-          <span className="badge bg-danger-subtle text-danger">Cancelled</span>
-        );
-      default:
-        return (
-          <span className="badge bg-secondary-subtle text-secondary">
-            Unknown
-          </span>
-        );
-    }
+  // ─── Column definitions per tab ──────────────────────────────────────────
+  // Tab 1 (In): Name | Dept | In Time | Out Time | Total Hrs | Status | Location
+  // Tab 2 (Not Check In): Name | Dept | In Time | Out Time | Total Hrs | Status
+  // Tab 3 (Leave): Name | Dept | Leave Type | Half Day | Permission
+
+  const getColumnCount = (tab) => {
+    if (tab === "1") return 7;
+    if (tab === "2") return 6;
+    return 5; // Leave tab: Name, Dept, Leave Type, Half Day, Permission
   };
 
-  // ✅ Table headers — all centered except Name (left for readability)
-  const renderTableHeaders = () => (
-    <tr>
-      <th style={{ minWidth: 220 }}>Name</th>
-      <th style={{ minWidth: 130, ...thCenter }}>Department</th>
-      <th style={{ minWidth: 100, ...thCenter }}>In Time</th>
-      <th style={{ minWidth: 100, ...thCenter }}>Out Time</th>
-      <th style={{ minWidth: 110, ...thCenter }}>Total Hours</th>
-      <th style={{ minWidth: 100, ...thCenter }}>Status</th>
-      {activeTab === "1" && (
-        <th style={{ minWidth: 90, ...thCenter }}>Location</th>
-      )}
-      {activeTab === "3" && (
-        <th style={{ minWidth: 140, ...thCenter }}>Halfday</th>
-      )}
-      {activeTab === "3" && (
-        <th style={{ minWidth: 140, ...thCenter }}>Permission</th>
-      )}
-    </tr>
-  );
+  // ─── Table headers ────────────────────────────────────────────────────────
+  const renderTableHeaders = () => {
+    if (activeTab === "3") {
+      return (
+        <tr>
+          <th style={{ width: "28%" }}>Name</th>
+          <th style={{ width: "15%", ...thCenter }}>Department</th>
+          <th style={{ width: "15%", ...thCenter }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+              }}
+            >
+              <i
+                className="bx bx-calendar-x"
+                style={{ color: "#ef4444", fontSize: "14px" }}
+              ></i>
+              Leave Type
+            </span>
+          </th>
+          <th style={{ width: "21%", ...thCenter }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+              }}
+            >
+              <i
+                className="bx bx-time-five"
+                style={{ color: "#f59e0b", fontSize: "14px" }}
+              ></i>
+              Half Day
+            </span>
+          </th>
+          <th style={{ width: "21%", ...thCenter }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+              }}
+            >
+              <i
+                className="bx bx-exit"
+                style={{ color: "#6366f1", fontSize: "14px" }}
+              ></i>
+              Permission
+            </span>
+          </th>
+        </tr>
+      );
+    }
 
-  // ✅ Table rows
+    return (
+      <tr>
+        <th style={{ width: "30%" }}>Name</th>
+        <th style={{ width: "15%", ...thCenter }}>Department</th>
+        <th style={{ width: "12%", ...thCenter }}>In Time</th>
+        <th style={{ width: "12%", ...thCenter }}>Out Time</th>
+        <th style={{ width: "11%", ...thCenter }}>Total Hours</th>
+        <th style={{ width: "10%", ...thCenter }}>Status</th>
+        {activeTab === "1" && (
+          <th style={{ width: "10%", ...thCenter }}>Location</th>
+        )}
+      </tr>
+    );
+  };
+
+  // ─── Table rows ───────────────────────────────────────────────────────────
   const renderTableRows = () => {
     if (filteredData.length === 0) {
       return (
@@ -314,23 +441,19 @@ const TodayAttendanceTable = () => {
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                height: "250px",
+                height: "220px",
               }}
             >
               <lord-icon
                 src="https://cdn.lordicon.com/msoeawqm.json"
                 trigger="loop"
                 colors="primary:#405189,secondary:#0ab39c"
-                style={{
-                  width: "100px",
-                  height: "100px",
-                  marginBottom: "12px",
-                }}
+                style={{ width: "80px", height: "80px", marginBottom: "12px" }}
               ></lord-icon>
               <p
                 style={{
                   color: "#405189",
-                  fontSize: "18px",
+                  fontSize: "16px",
                   textAlign: "center",
                 }}
               >
@@ -344,10 +467,11 @@ const TodayAttendanceTable = () => {
 
     return filteredData.map((row, idx) => (
       <tr key={idx}>
-        {/* Name — left-aligned intentionally */}
+        {/* ── Name Cell (always present) ── */}
         <td style={{ verticalAlign: "middle" }}>
-          <div className="d-flex gap-2 align-items-center">
-            <div className="flex-shrink-0">
+          <div className="d-flex gap-2 align-items-start">
+            {/* Avatar */}
+            <div className="flex-shrink-0" style={{ marginTop: "2px" }}>
               {row.profile_url ? (
                 <img
                   src={row.profile_url}
@@ -366,21 +490,42 @@ const TodayAttendanceTable = () => {
                   }}
                 >
                   <span style={{ color: "white" }}>
-                    {row.first_name.charAt(0)}
+                    {(row.first_name || "?").charAt(0)}
                   </span>
                 </div>
               )}
             </div>
-            <div className="flex-grow-1">
-              <h5 className="fs-14 mb-0">
-                {row.first_name}{" "}
-                <span style={{ color: "#a29797", fontSize: "smaller" }}>
-                  #{row.emp_id}
-                </span>
-              </h5>
-              <div className="text-muted" style={{ fontSize: "12px" }}>
+
+            {/* Name + badge + email */}
+            <div className="flex-grow-1" style={{ minWidth: 0 }}>
+              {/* Name row with check-in status badge */}
+              <div
+                className="d-flex align-items-center gap-2 flex-wrap"
+                style={{ marginBottom: "2px" }}
+              >
+                <h5 className="fs-14 mb-0" style={{ whiteSpace: "nowrap" }}>
+                  {row.first_name}{" "}
+                  <span style={{ color: "#a29797", fontSize: "smaller" }}>
+                    #{row.emp_id}
+                  </span>
+                </h5>
+                {/* ★ Check-in status badge — right of name */}
+                {row.checkInStatus && getCheckInStatusBadge(row.checkInStatus)}
+              </div>
+
+              <div
+                className="text-muted"
+                style={{
+                  fontSize: "11px",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {row.email}
               </div>
+
+              {/* Progress bar — Tab 1 only */}
               {activeTab === "1" && (
                 <div className="progress progress-sm animated-progess lc-color mt-1">
                   <div
@@ -401,68 +546,195 @@ const TodayAttendanceTable = () => {
           </div>
         </td>
 
-        {/* All other cells — centered */}
-        <td style={tdCenter}>{row.department || "-"}</td>
-        <td style={tdCenter}>{formatTime(row.inTime)}</td>
-        <td style={tdCenter}>{formatTime(row.outTime)}</td>
-        <td style={tdCenter}>{row.totalHours}</td>
+        {/* ── Leave tab layout: Dept | Leave Type | Half Day | Permission ── */}
+        {activeTab === "3" ? (
+          <>
+            <td style={tdCenter}>{row.department || "-"}</td>
 
-        {/* Status Badge */}
-        <td style={tdCenter}>
-          <span
-            className={`badge text-uppercase ${
-              row.status === "On Time"
-                ? "bg-success-subtle text-success"
-                : row.status === "Late"
-                  ? "bg-warning-subtle text-warning"
-                  : row.status === "Leave"
-                    ? "bg-secondary-subtle text-secondary"
-                    : "bg-danger-subtle text-danger"
-            }`}
-          >
-            {row.status}
-          </span>
-        </td>
+            {/* Leave Type pill */}
+            <td style={tdCenter}>
+              {row.halfday ? (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    background: "#fffbeb",
+                    border: "1px solid #fde68a",
+                    color: "#92400e",
+                    borderRadius: "20px",
+                    padding: "3px 10px",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <i
+                    className="bx bx-time-five"
+                    style={{ color: "#d97706" }}
+                  ></i>
+                  Half Day Leave
+                </span>
+              ) : row.permission ? (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    background: "#f5f3ff",
+                    border: "1px solid #c4b5fd",
+                    color: "#4c1d95",
+                    borderRadius: "20px",
+                    padding: "3px 10px",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <i className="bx bx-exit" style={{ color: "#7c3aed" }}></i>
+                  Permission
+                </span>
+              ) : (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    background: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    color: "#991b1b",
+                    borderRadius: "20px",
+                    padding: "3px 10px",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <i
+                    className="bx bx-calendar-x"
+                    style={{ color: "#ef4444" }}
+                  ></i>
+                  Full Day Leave
+                </span>
+              )}
+            </td>
 
-        {/* Location — Tab 1 only */}
-        {activeTab === "1" && (
-          <td style={tdCenter}>
-            <Button
-              color="info"
-              size="sm"
-              onClick={() => handleViewLocations(row)}
-            >
-              View
-            </Button>
-          </td>
-        )}
+            {/* Half Day details */}
+            <td style={tdCenter}>
+              {row.halfday ? (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "3px",
+                  }}
+                >
+                  {getApprovalBadge(row.halfday.status)}
+                  {row.halfday.start && (
+                    <small style={{ color: "#78716c", fontSize: "10px" }}>
+                      {formatTime(row.halfday.start)}
+                      {row.halfday.end
+                        ? ` – ${formatTime(row.halfday.end)}`
+                        : ""}
+                    </small>
+                  )}
+                  <small
+                    style={{
+                      color: "#57534e",
+                      fontSize: "10px",
+                      fontStyle: "italic",
+                      maxWidth: "130px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {row.halfday.reason}
+                  </small>
+                </div>
+              ) : (
+                <span style={{ color: "#d1d5db", fontSize: "18px" }}>—</span>
+              )}
+            </td>
 
-        {/* Halfday — Tab 3 only */}
-        {activeTab === "3" && (
-          <td style={tdCenter}>
-            {row.halfday ? (
-              <div className="d-flex flex-column align-items-center gap-1">
-                {getStatusBadge(row.halfday.status)}
-                <small className="text-muted">{row.halfday.reason}</small>
-              </div>
-            ) : (
-              <span className="text-muted">—</span>
+            {/* Permission details */}
+            <td style={tdCenter}>
+              {row.permission ? (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "3px",
+                  }}
+                >
+                  {getApprovalBadge(row.permission.status)}
+                  {row.permission.start && (
+                    <small style={{ color: "#78716c", fontSize: "10px" }}>
+                      {formatTime(row.permission.start)}
+                      {row.permission.end
+                        ? ` – ${formatTime(row.permission.end)}`
+                        : ""}
+                    </small>
+                  )}
+                  <small
+                    style={{
+                      color: "#57534e",
+                      fontSize: "10px",
+                      fontStyle: "italic",
+                      maxWidth: "130px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {row.permission.reason}
+                  </small>
+                </div>
+              ) : (
+                <span style={{ color: "#d1d5db", fontSize: "18px" }}>—</span>
+              )}
+            </td>
+          </>
+        ) : (
+          /* ── Tab 1 & 2 layout: Dept | In | Out | Total | Status | [Location] ── */
+          <>
+            <td style={tdCenter}>{row.department || "-"}</td>
+            <td style={tdCenter}>{formatTime(row.inTime)}</td>
+            <td style={tdCenter}>{formatTime(row.outTime)}</td>
+            <td style={tdCenter}>{row.totalHours}</td>
+
+            {/* Attendance status badge */}
+            <td style={tdCenter}>
+              <span
+                className={`badge text-uppercase ${
+                  row.status === "On Time"
+                    ? "bg-success-subtle text-success"
+                    : row.status === "Late"
+                      ? "bg-warning-subtle text-warning"
+                      : row.status === "Leave"
+                        ? "bg-secondary-subtle text-secondary"
+                        : "bg-danger-subtle text-danger"
+                }`}
+              >
+                {row.status}
+              </span>
+            </td>
+
+            {/* Location button — Tab 1 only */}
+            {activeTab === "1" && (
+              <td style={tdCenter}>
+                <Button
+                  color="info"
+                  size="sm"
+                  onClick={() => handleViewLocations(row)}
+                >
+                  View
+                </Button>
+              </td>
             )}
-          </td>
-        )}
-
-        {/* Permission — Tab 3 only */}
-        {activeTab === "3" && (
-          <td style={tdCenter}>
-            {row.permission ? (
-              <div className="d-flex flex-column align-items-center gap-1">
-                {getStatusBadge(row.permission.status)}
-                <small className="text-muted">{row.permission.reason}</small>
-              </div>
-            ) : (
-              <span className="text-muted">—</span>
-            )}
-          </td>
+          </>
         )}
       </tr>
     ));
@@ -579,30 +851,50 @@ const TodayAttendanceTable = () => {
                 </NavItem>
               </Nav>
 
-              {/* Table with SimpleBar */}
-              <SimpleBar style={{ maxHeight: "400px" }}>
-                <div className="table-responsive table-card mb-1 mt-2">
-                  <table
-                    className="table align-middle table-nowrap"
-                    style={{ width: "100%" }}
-                  >
-                    <thead className="table-light text-muted">
-                      {renderTableHeaders()}
-                    </thead>
-                    <tbody>
-                      {loading ? (
-                        <SkletonDashboard
-                          rows={6}
-                          columns={getColumnCount(activeTab)}
-                          hasAvatar={true}
-                        />
-                      ) : (
-                        renderTableRows()
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </SimpleBar>
+              {/*
+                ★ Fixed-height table with no horizontal scroll.
+                - SimpleBar provides vertical-only scrolling.
+                - overflow-x: hidden on wrapper prevents x-axis scroll.
+                - table-layout: fixed ensures columns never overflow.
+              */}
+              <div
+                style={{ width: "100%", overflow: "hidden", marginTop: "8px" }}
+              >
+                <SimpleBar style={{ maxHeight: "420px" }} autoHide={false}>
+                  <div style={{ width: "100%" }}>
+                    <table
+                      className="table align-middle mb-0"
+                      style={{
+                        width: "100%",
+                        tableLayout: "fixed",
+                        borderCollapse: "collapse",
+                      }}
+                    >
+                      <thead
+                        className="table-light text-muted"
+                        style={{
+                          position: "sticky",
+                          top: 0,
+                          zIndex: 2,
+                        }}
+                      >
+                        {renderTableHeaders()}
+                      </thead>
+                      <tbody>
+                        {loading ? (
+                          <SkletonDashboard
+                            rows={6}
+                            columns={getColumnCount(activeTab)}
+                            hasAvatar={true}
+                          />
+                        ) : (
+                          renderTableRows()
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </SimpleBar>
+              </div>
             </CardBody>
           </Card>
         </Col>
