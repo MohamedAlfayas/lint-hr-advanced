@@ -74,6 +74,7 @@ import {
   leave_pending_table,
   leave_application_component_name,
   custom_field_component_name,
+  task_list_component_name,
 } from "../../../common/constant/Constants";
 
 import {
@@ -81,9 +82,9 @@ import {
   CREATE_CUSTOM_FIELD_ACCESS_KEY,
   EDIT_EMPLOYEE_ACCESS_KEY,
   EDIT_CUSTOM_FIELD_ACCESS_KEY,
-  APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY,
+  APPROVE_REJECT_HIERARCHY_LEAVE_ACCESS_KEY,
   APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
-  APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY,
+  APPROVE_REJECT_HIERARCHY_ATTENDANCE_ACCESS_KEY,
   APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
 } from "../../../common/constant/RoleConstants";
 
@@ -143,6 +144,7 @@ const InfoTable = ({
   const {
     search,
     employee_table_filter_keys,
+    task_list_filter_keys,
     leave_type_table_filter_keys,
     attendance_approval_table_filter_keys,
   } = useSelector((state) => state.TableFilterReducer);
@@ -150,11 +152,13 @@ const InfoTable = ({
   const table_filter_keys =
     formname === employee_component_name
       ? employee_table_filter_keys
-      : formname === leave_type_component_name
-        ? leave_type_table_filter_keys
-        : formname === attendance_approval_component_name
-          ? attendance_approval_table_filter_keys
-          : {};
+      : formname === task_list_component_name
+        ? task_list_filter_keys
+        : formname === leave_type_component_name
+          ? leave_type_table_filter_keys
+          : formname === attendance_approval_component_name
+            ? attendance_approval_table_filter_keys
+            : {};
 
   const tabOptions = filterOptions
     ? filterOptions.map((obj, idx) => {
@@ -1308,7 +1312,7 @@ const InfoTable = ({
     ) {
       setShowAllLeaveApprovalBtn(
         profile_data.permission_list.includes(
-          APPROVE_REJECT_ALL_LEAVE_ACCESS_KEY,
+          APPROVE_REJECT_HIERARCHY_LEAVE_ACCESS_KEY,
         ),
       );
       setShowTeamLeaveApprovalBtn(
@@ -1319,7 +1323,7 @@ const InfoTable = ({
 
       setShowAllAttendanceApprovalBtn(
         profile_data.permission_list.includes(
-          APPROVE_REJECT_ALL_ATTENDANCE_ACCESS_KEY,
+          APPROVE_REJECT_HIERARCHY_ATTENDANCE_ACCESS_KEY,
         ),
       );
       setShowTeamAttendanceApprovalBtn(
@@ -2199,89 +2203,86 @@ const InfoTable = ({
                   <TableContainer
                     columns={tableColumn}
                     data={
-                      (search.trim().length
-                        ? dataList
-                            .filter((obj) => {
-                              return Object.entries(table_filter_keys).every(
-                                ([key, value]) => {
-                                  // Skip filtering for keys with value 0
-                                  if (value === 0) {
-                                    return true;
-                                  }
+                      dataList
+                        ?.filter((obj) => {
+                          return Object.entries(table_filter_keys || {}).every(
+                            ([key, value]) => {
+                              // ─────────────────────────────
+                              // Skip Empty Filters
+                              // ─────────────────────────────
+                              if (
+                                value === 0 ||
+                                value === null ||
+                                value === undefined ||
+                                value === "" ||
+                                (Array.isArray(value) && value.length === 0)
+                              ) {
+                                return true;
+                              }
 
-                                  // ✅ Handle array fields
-                                  if (Array.isArray(obj[key])) {
-                                    return obj[key].includes(value);
-                                  }
+                              // ─────────────────────────────
+                              // Multi Select Array Filter
+                              // collaborator_id
+                              // ─────────────────────────────
+                              if (Array.isArray(value)) {
+                                const taskValues =
+                                  obj?.collaborators_id_list ||
+                                  obj?.[key] ||
+                                  [];
 
-                                  // ✅ Handle nested object fields (like role.id)
-                                  // If filter key ends with "_id" (e.g., role_id), we check obj.role.id
-                                  if (key.endsWith("_id")) {
-                                    const objectKey = key.replace("_id", ""); // role_id → role
-                                    if (
-                                      obj[objectKey] &&
-                                      typeof obj[objectKey] === "object" &&
-                                      "id" in obj[objectKey]
-                                    ) {
-                                      return obj[objectKey].id === value;
-                                    }
-                                  }
+                                return value.some((id) =>
+                                  taskValues
+                                    .map((v) => Number(v))
+                                    .includes(Number(id)),
+                                );
+                              }
 
-                                  // ✅ Handle direct value comparison
-                                  return obj[key] === value;
-                                },
-                              );
-                            })
-                            .filter((d) =>
-                              Object.values(d).some(
-                                (value) =>
-                                  typeof value === "string" &&
-                                  value
-                                    .toLowerCase()
-                                    .includes(search.toLowerCase()),
-                              ),
-                            )
-                        : dataList
-                            .filter((obj) => {
-                              return Object.entries(table_filter_keys).every(
-                                ([key, value]) => {
-                                  // Skip filtering for keys with value 0
-                                  if (value === 0) {
-                                    return true;
-                                  }
+                              // ─────────────────────────────
+                              // Nested Object ID
+                              // role_id → role.id
+                              // ─────────────────────────────
+                              if (key.endsWith("_id")) {
+                                const objectKey = key.replace("_id", "");
 
-                                  // ✅ Handle array fields
-                                  if (Array.isArray(obj[key])) {
-                                    return obj[key].includes(value);
-                                  }
+                                if (
+                                  obj?.[objectKey] &&
+                                  typeof obj[objectKey] === "object" &&
+                                  "id" in obj[objectKey]
+                                ) {
+                                  return (
+                                    Number(obj[objectKey].id) === Number(value)
+                                  );
+                                }
+                              }
 
-                                  // ✅ Handle nested object fields (like role.id)
-                                  // If filter key ends with "_id" (e.g., role_id), we check obj.role.id
-                                  if (key.endsWith("_id")) {
-                                    const objectKey = key.replace("_id", ""); // role_id → role
-                                    if (
-                                      obj[objectKey] &&
-                                      typeof obj[objectKey] === "object" &&
-                                      "id" in obj[objectKey]
-                                    ) {
-                                      return obj[objectKey].id === value;
-                                    }
-                                  }
+                              // ─────────────────────────────
+                              // Direct Compare
+                              // ─────────────────────────────
+                              return Number(obj?.[key]) === Number(value);
+                            },
+                          );
+                        })
 
-                                  // ✅ Handle direct value comparison
-                                  return obj[key] === value;
-                                },
-                              );
-                            })
-                            .filter((d) =>
-                              Object.values(d).some(
-                                (value) =>
-                                  typeof value === "string" &&
-                                  value
-                                    .toLowerCase()
-                                    .includes(search.toLowerCase()),
-                              ),
-                            )) || []
+                        // ─────────────────────────────
+                        // Search Filter
+                        // ─────────────────────────────
+                        .filter((d) => {
+                          if (!search?.trim()) return true;
+
+                          return Object.values(d).some((value) => {
+                            if (typeof value === "string") {
+                              return value
+                                .toLowerCase()
+                                .includes(search.toLowerCase());
+                            }
+
+                            if (typeof value === "number") {
+                              return String(value).includes(search);
+                            }
+
+                            return false;
+                          });
+                        }) || []
                     }
                     isPagination={true}
                     isGlobalFilter={true}

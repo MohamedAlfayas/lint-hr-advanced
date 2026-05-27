@@ -4,18 +4,25 @@ import AccountSettings from "../pages/employee/AccountSetting";
 import ApprovalFilter from "../component/common/tableFilter/ApprovalFilter";
 import {
   VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
-  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
+  VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
-  VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
+  VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
   CAN_VIEW_REPORT_ACCESS_KEY,
   VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
-  VIEW_ALL_ATTENDANCE_ACCESS_KEY,
-  CUSTOM_FIELD_VIEW_ACCESS_KEY
+  VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
+  CUSTOM_FIELD_VIEW_ACCESS_KEY,
 } from "../common/constant/RoleConstants";
 import Status from "../pages/Task/Status/Status";
-import Piriorities from "../pages/Task/Piriorities/Piriorities";
+import Priorities from "../pages/Task/Priorities/Priorities";
 import ContactGroup from "../pages/Contact/ContactGroup/ContactGroup";
 import Contacts from "../pages/Contact/Contacts/Contacts";
+import Clients from "../pages/Crm/Clients/Clients";
+import Projects from "../pages/Crm/Projects/Projects";
+import TaskTab from "../pages/Crm/Task/TaskTab";
+import TaskSettingsTab from "../pages/Task/TaskSettings/TaskSettingsTab";
+import ProjectOverviewTab from "../pages/Crm/Projects/ProjectOverviewTab";
+import ClientOverview from "../pages/Crm/Clients/ClientOverview";
+import ClientOverviewTab from "../pages/Crm/Clients/ClientOverviewTab";
 
 // import Dashboard from "../pages/dashboard/Dashboard";
 // import Login from "../pages/auth/login/Login";
@@ -41,8 +48,8 @@ import Contacts from "../pages/Contact/Contacts/Contacts";
 const Dashboard = lazy(() => import("../pages/dashboard/Dashboard"));
 const Login = lazy(() => import("../pages/auth/login/Login"));
 const Register = lazy(() => import("../pages/auth/register/Register"));
-const ForgetPassword = lazy(() =>
-  import("../pages/auth/forgotpassword/ForgetPassword")
+const ForgetPassword = lazy(
+  () => import("../pages/auth/forgotpassword/ForgetPassword"),
 );
 const WorkSpace = lazy(() => import("../pages/auth/workspace/WorkSpace"));
 const ProjectOverview = lazy(() => import("../pages/organization"));
@@ -58,17 +65,17 @@ const CustomField = lazy(() => import("../pages/customField/CustomField"));
 const PayRoll = lazy(() => import("../pages/payroll/PayRoll"));
 const Xlsx = lazy(() => import("../pages/xlsx/Xlsx"));
 const PayRollConfig = lazy(() => import("../pages/payroll/PayRollConfig"));
-const AttendanceDashboard = lazy(() =>
-  import("../pages/attendance/Attendance")
+const AttendanceDashboard = lazy(
+  () => import("../pages/attendance/Attendance"),
 );
-const AttendanceConfig = lazy(() =>
-  import("../pages/attendanceConfig/AttendanceConfig")
+const AttendanceConfig = lazy(
+  () => import("../pages/attendanceConfig/AttendanceConfig"),
 );
-const AttendanceReport = lazy(() =>
-  import("../pages/attendance/AttendanceReport")
+const AttendanceReport = lazy(
+  () => import("../pages/attendance/AttendanceReport"),
 );
-const AttendanceApproval = lazy(() =>
-  import("../pages/attendanceApproval/AttendanceApproval")
+const AttendanceApproval = lazy(
+  () => import("../pages/attendanceApproval/AttendanceApproval"),
 );
 
 const defaultRoutes = [
@@ -79,7 +86,7 @@ const defaultRoutes = [
     component: <Navigate to="/dashboard" />,
     perm: "all",
   },
-]
+];
 
 const privateRoutes = [
   { path: "/dashboard", component: <Dashboard />, perm: "all" },
@@ -88,7 +95,11 @@ const privateRoutes = [
     component: <ProjectOverview />,
     perm: ["dac690d1-6712-4aa6-9b4f-7d71bc4f8eb1"],
   },
-  { path: "/employee", component: <Employee />, perm: [VIEW_TEAM_EMPLOYEE_ACCESS_KEY, VIEW_ALL_EMPLOYEE_ACCESS_KEY] },
+  {
+    path: "/employee",
+    component: <Employee />,
+    perm: [VIEW_TEAM_EMPLOYEE_ACCESS_KEY, VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY],
+  },
   {
     path: "/employee/view/:id",
     component: <EmployeeView />,
@@ -102,10 +113,17 @@ const privateRoutes = [
   {
     path: "/leave-approval",
     component: <LeaveApproval />,
-    perm: [VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY, VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY],
+    perm: [
+      VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
+      VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
+    ],
   },
   { path: "/leaves", component: <LeaveDashboard />, perm: "all" },
-  { path: "/custom-field", component: <CustomField />, perm: [CUSTOM_FIELD_VIEW_ACCESS_KEY] },
+  {
+    path: "/custom-field",
+    component: <CustomField />,
+    perm: [CUSTOM_FIELD_VIEW_ACCESS_KEY],
+  },
   { path: "/payroll", component: <PayRoll />, perm: "all" },
   {
     path: "/payrollconfig",
@@ -131,16 +149,19 @@ const privateRoutes = [
   {
     path: "/attendanceapproval",
     component: <AttendanceApproval />,
-    perm: [VIEW_TEAM_ATTENDANCE_ACCESS_KEY, VIEW_ALL_ATTENDANCE_ACCESS_KEY],
+    perm: [
+      VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
+      VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
+    ],
   },
   {
     path: "/approval",
     component: <ApprovalFilter />,
     perm: [
       VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
-      VIEW_ALL_ATTENDANCE_ACCESS_KEY,
+      VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
       VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
-      VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY
+      VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
     ],
   },
   {
@@ -150,9 +171,27 @@ const privateRoutes = [
     perm: "all",
   },
   { path: "/status", component: <Status />, perm: "all" },
-  { path: "/piriorities", component: <Piriorities />, perm: "all" },
+  { path: "/priorities", component: <Priorities />, perm: "all" },
   { path: "/contact-group", component: <ContactGroup />, perm: "all" },
   { path: "/contacts", component: <Contacts />, perm: "all" },
+  { path: "/clients", component: <Clients />, perm: "all" },
+  { path: "/projects", component: <Projects />, perm: "all" },
+  { path: "/tasks", component: <TaskTab />, perm: "all" },
+  {
+    path: "/task-settings",
+    component: <TaskSettingsTab />,
+    perm: "all",
+  },
+  {
+    path: "/project-overview/:id",
+    component: <ProjectOverviewTab />,
+    perm: "all",
+  },
+  {
+    path: "/client-overview/:id",
+    component: <ClientOverviewTab />,
+    perm: "all",
+  },
 ];
 
 const publicRoutes = [
@@ -161,8 +200,6 @@ const publicRoutes = [
   { path: "/auth/register", component: <Register /> },
 ];
 
-const workSpaceRoutes = [
-  { path: "/auth/workspace", component: <WorkSpace /> },
-]
+const workSpaceRoutes = [{ path: "/auth/workspace", component: <WorkSpace /> }];
 
 export { defaultRoutes, publicRoutes, privateRoutes, workSpaceRoutes };

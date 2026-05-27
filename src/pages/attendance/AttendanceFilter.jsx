@@ -9,7 +9,7 @@ import {
 } from "../../common/constant/Constants";
 import {
   VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
-  VIEW_ALL_ATTENDANCE_ACCESS_KEY,
+  VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
 import { DatePicker } from "antd";
 import Select from "react-select";
@@ -54,7 +54,11 @@ const AttendanceFilter = () => {
 
   // 🔹 Permission-based filter
   useEffect(() => {
-    if (profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY)) {
+    if (
+      profile_data.permission_list.includes(
+        VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
+      )
+    ) {
       setAttendanceViewFilter(attendance_type_options);
     } else if (
       profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)

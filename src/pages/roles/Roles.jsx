@@ -14,8 +14,15 @@ import { default_roles_list } from "../../common/constant/RoleConstants";
 const Roles = () => {
   const dispatch = useDispatch();
 
-  const { role_data } = useSelector((state) => state.RoleReducer);
+  const frontendRoleUUIDs = useMemo(() => {
+    return new Set(
+      default_roles_list.flatMap((section) =>
+        section.permission.map((perm) => perm.role_uuid),
+      ),
+    );
+  }, []);
 
+  const { role_data } = useSelector((state) => state.RoleReducer);
 
   useEffect(() => {
     Api({
@@ -51,9 +58,11 @@ const Roles = () => {
       filterable: false,
       id: "roles",
       accessor: (obj) => {
-        let total_roles = obj.roles_list.length;
+        const matchedCount = obj.roles_list.filter((uuid) =>
+          frontendRoleUUIDs.has(uuid),
+        ).length;
 
-        return <b>{total_roles}</b>;
+        return <b>{matchedCount}</b>;
       },
     },
     {

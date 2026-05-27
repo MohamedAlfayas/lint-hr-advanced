@@ -19,7 +19,7 @@ import WebCheckInOut from "../common/timer/WebCheckInOut";
 import { leftsidbarSizeTypes } from "../../layout/Constants";
 import { path_list_for_timer_hide } from "../../common/constant/Constants";
 import {
-  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
+  VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
 import { GetTotalWorkDuration } from "../../common/js/GetTotalWorkDuration";
@@ -83,7 +83,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
       if (perm_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)) {
         setShowEmpTeam(true);
       }
-      if (perm_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)) {
+      if (perm_list.includes(VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY)) {
         setShowEmpAll(true);
       }
     }
@@ -232,7 +232,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
 
             <div
               className="d-flex align-items-center"
-              style={{ paddingRight: show_attendance_timer ? "0px" : "55px" }}
+              style={{ paddingRight: show_attendance_timer ? "0px" : "15px" }}
             >
               {path_list_for_timer_hide.includes(location.pathname) ? null : (
                 <WebCheckInOut showTimer={true} hideTimer={hideTimer} />

@@ -16,8 +16,8 @@ import classnames from "classnames";
 import AttendancePendingTable from "./AttendancePendingTable";
 import LeaveApprovalPending from "./LeavePending";
 import {
-  VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
-  VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
+  VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
@@ -58,7 +58,7 @@ const AttendanceLeaveApprovalTable = () => {
     if (
       profile_data?.is_admin === true ||
       permission_list.includes(VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY) ||
-      permission_list.includes(VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY)
+      permission_list.includes(VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY)
     ) {
       setShowAttendanceApproval(true);
     }
@@ -68,7 +68,7 @@ const AttendanceLeaveApprovalTable = () => {
     if (
       profile_data?.is_admin === true ||
       permission_list.includes(VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY) ||
-      permission_list.includes(VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY)
+      permission_list.includes(VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY)
     ) {
       setShowLeaveApproval(true);
     }

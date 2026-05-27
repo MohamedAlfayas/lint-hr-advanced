@@ -18,7 +18,7 @@ import SalaryPloiciesForm from "../../forms/Common/SalaryPoliciesForm";
 import LocationEditForm from "../../forms/Common/LocationEditForm";
 import BranchLocationForm from "../../forms/Common/BranchLocationForm";
 import StatusForm from "../../forms/Common/StatusForm";
-import PirioritiesForm from "../../forms/Common/PirioritiesForm";
+import PrioritiesForm from "../../forms/Common/PrioritiesForm";
 import {
   branch_component_name,
   custom_field_component_name,
@@ -37,7 +37,7 @@ import {
   location_edit_form_component_name,
   branch_location_form,
   status_component_name,
-  piriorities_component_name,
+  priorities_component_name,
   contact_group_component_name,
   contacts_component_name,
   custom_form_component_name,
@@ -47,6 +47,9 @@ import {
   pt_settings_form_component_name,
   location_group_component_name,
   custom_status_form_component_name,
+  client_component_name,
+  project_component_name,
+  task_list_component_name,
 } from "../../../common/constant/Constants";
 import BranchForm from "../../forms/BranchForm";
 import ContactGroupForm from "../../forms/Common/ContactGroupForm";
@@ -58,6 +61,9 @@ import ReimbursementsForm from "../../forms/Common/ReimbursementsForm";
 import PTSettingsForm from "../../../pages/payroll/AdvancedSettings/PTSettingsForm";
 import LocationGroupForm from "../../forms/LocationGroupForm";
 import CustomStatusForm from "../../forms/Common/CustomStatusForm";
+import ClientForm from "../../forms/Common/ClientsForm";
+import ProjectForm from "../../forms/Common/ProjectsForm";
+import TaskListForm from "../../forms/Common/TaskListForm";
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
   const { form_title, form_width_percentage, component_to_show } = useSelector(
@@ -128,10 +134,16 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
                 <CustomStatusForm />
               ) : component_to_show === status_component_name ? (
                 <StatusForm />
-              ) : component_to_show === piriorities_component_name ? (
-                <PirioritiesForm />
+              ) : component_to_show === priorities_component_name ? (
+                <PrioritiesForm />
               ) : component_to_show === contact_group_component_name ? (
                 <ContactGroupForm />
+              ) : component_to_show === client_component_name ? (
+                <ClientForm />
+              ) : component_to_show === project_component_name ? (
+                <ProjectForm />
+              ) : component_to_show === task_list_component_name ? (
+                <TaskListForm />
               ) : component_to_show === contacts_component_name ? (
                 <ContactsForm />
               ) : component_to_show === custom_form_component_name ? (

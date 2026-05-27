@@ -9,10 +9,6 @@ import Swal from "sweetalert2";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Reverse-geocodes lat/lng using OpenStreetMap Nominatim (no API key needed).
- * Falls back gracefully to "lat, lng" string if the request fails.
- */
 const reverseGeocode = async (latitude, longitude) => {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`;
@@ -31,17 +27,12 @@ const reverseGeocode = async (latitude, longitude) => {
   }
 };
 
-/**
- * Resolves the device's current GPS position + reverse-geocoded address.
- * Returns { latitude, longitude, accurate_address } or throws on denial.
- */
 const getLocationPayload = () =>
   new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject(new Error("Geolocation is not supported by this browser."));
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
@@ -84,11 +75,13 @@ const StatusBottomSheet = ({
 
   const [customStatuses, setCustomStatuses] = useState([]);
 
-  // ── notes modal state ──
+  // mode: "start" | "stop"
   const [notesModal, setNotesModal] = useState({
     open: false,
+    mode: "start",
     statusId: null,
     notes: "",
+    switchingFromId: null,
   });
 
   useEffect(() => {
@@ -105,10 +98,62 @@ const StatusBottomSheet = ({
           id: item.id,
           name: item.name,
           emoji: item.emoji ?? item.icon ?? "",
+          notes_required: item.notes_required ?? false,
+          location_required: item.location_required ?? false,
         }));
       setCustomStatuses(filtered);
     }
   }, [show]);
+
+  // ── helpers ───────────────────────────────────────────────────────────────
+
+  const closeNotesModal = () =>
+    setNotesModal({
+      open: false,
+      mode: "start",
+      statusId: null,
+      notes: "",
+      switchingFromId: null,
+    });
+
+  /**
+   * Fetches GPS location ONLY when location_required === true.
+   * Returns null (no GPS call at all) when location_required === false.
+   */
+  const maybeGetLocation = async (statusId) => {
+    const status = customStatuses.find((s) => s.id === statusId);
+
+    // ✅ Strict boolean check — only fetch GPS when explicitly true
+    if (status?.location_required !== true) {
+      return null; // skip GPS entirely, no location in payload
+    }
+
+    return await getLocationPayload(); // throws if user denies
+  };
+
+  /**
+   * Builds the API payload.
+   * ✅ "location" key is ONLY added when location is a non-null object.
+   *    When maybeGetLocation returns null (location_required false),
+   *    the location key is completely absent from the payload — not null, not undefined.
+   * - "notes" key → included only when a non-empty string is provided.
+   */
+  const buildPayload = (statusId, notes, location) => {
+    const payload = { custom_status_id: statusId };
+
+    // ✅ Only add notes if there is actual content
+    if (notes && notes.trim()) {
+      payload.notes = notes.trim();
+    }
+
+    // ✅ Only add location if it's a real object (i.e. location_required was true AND GPS succeeded)
+    // null / undefined → location key is NOT added to payload at all
+    if (location && typeof location === "object") {
+      payload.location = location;
+    }
+
+    return payload;
+  };
 
   // ── toggle handler ────────────────────────────────────────────────────────
 
@@ -116,16 +161,37 @@ const StatusBottomSheet = ({
     const isCurrentlyActive = activeStatus === statusId;
 
     if (isCurrentlyActive) {
-      // Turning OFF → confirm + send location payload
+      // Turning the active status OFF
       handleToggleOff(statusId);
+    } else if (activeStatus !== null) {
+      // A different status is active → switch
+      handleSwitch(statusId);
     } else {
-      // Turning ON → open notes input sheet
-      setNotesModal({ open: true, statusId, notes: "" });
+      // Nothing active → fresh start
+      handleToggleOn(statusId);
     }
   };
 
-  /** Toggle OFF — confirmed via SweetAlert, fetches location and sends full payload */
-  const handleToggleOff = async (statusId) => {
+  // ── Toggle OFF ────────────────────────────────────────────────────────────
+
+  const handleToggleOff = (statusId) => {
+    const status = customStatuses.find((s) => s.id === statusId);
+
+    if (status?.notes_required) {
+      setNotesModal({
+        open: true,
+        mode: "stop",
+        statusId,
+        notes: "",
+        switchingFromId: null,
+      });
+      return;
+    }
+
+    executeToggleOff(statusId, "");
+  };
+
+  const executeToggleOff = async (statusId, notes) => {
     const result = await Swal.fire({
       title: "Stop this status?",
       text: "This status will be turned OFF.",
@@ -141,21 +207,18 @@ const StatusBottomSheet = ({
 
     setLoadingId(statusId);
 
-    // ✅ FIX: Fetch location for toggle-off just like toggle-on
-    let location;
+    // ✅ Only calls GPS if location_required === true
+    let location = null;
     try {
-      location = await getLocationPayload();
+      location = await maybeGetLocation(statusId);
     } catch (err) {
       toast.error(err.message || "Could not get location.");
       setLoadingId(null);
       return;
     }
 
-    // ✅ FIX: Include location in the toggle-off payload
-    const payload = {
-      custom_status_id: statusId,
-      location,
-    };
+    // ✅ location is null here when location_required === false → not added to payload
+    const payload = buildPayload(statusId, notes, location);
 
     try {
       const response = await PostApi(
@@ -163,7 +226,6 @@ const StatusBottomSheet = ({
         payload,
         false,
       );
-
       const data = response?.data;
 
       if ([200, 201].includes(response?.status) && data) {
@@ -190,28 +252,40 @@ const StatusBottomSheet = ({
     }
   };
 
-  /** Toggle ON — called after user fills notes and confirms */
-  const handleToggleOn = async () => {
-    const { statusId, notes } = notesModal;
+  // ── Toggle ON ─────────────────────────────────────────────────────────────
 
-    // Close notes sheet immediately so UX feels snappy
-    setNotesModal({ open: false, statusId: null, notes: "" });
+  const handleToggleOn = (statusId) => {
+    const status = customStatuses.find((s) => s.id === statusId);
+
+    if (status?.notes_required) {
+      setNotesModal({
+        open: true,
+        mode: "start",
+        statusId,
+        notes: "",
+        switchingFromId: null,
+      });
+      return;
+    }
+
+    executeToggleOn(statusId, "");
+  };
+
+  const executeToggleOn = async (statusId, notes) => {
     setLoadingId(statusId);
 
-    let location;
+    // ✅ Only calls GPS if location_required === true
+    let location = null;
     try {
-      location = await getLocationPayload();
+      location = await maybeGetLocation(statusId);
     } catch (err) {
       toast.error(err.message || "Could not get location.");
       setLoadingId(null);
       return;
     }
 
-    const payload = {
-      custom_status_id: statusId,
-      location,
-      notes,
-    };
+    // ✅ location is null here when location_required === false → not added to payload
+    const payload = buildPayload(statusId, notes, location);
 
     try {
       const response = await PostApi(
@@ -219,7 +293,6 @@ const StatusBottomSheet = ({
         payload,
         false,
       );
-
       const data = response?.data;
 
       if ([200, 201].includes(response?.status) && data) {
@@ -251,6 +324,38 @@ const StatusBottomSheet = ({
       );
     } finally {
       setLoadingId(null);
+    }
+  };
+
+  // ── Switch ────────────────────────────────────────────────────────────────
+
+  const handleSwitch = (newStatusId) => {
+    const newStatus = customStatuses.find((s) => s.id === newStatusId);
+
+    if (newStatus?.notes_required) {
+      setNotesModal({
+        open: true,
+        mode: "start",
+        statusId: newStatusId,
+        notes: "",
+        switchingFromId: activeStatus,
+      });
+      return;
+    }
+
+    executeToggleOn(newStatusId, "");
+  };
+
+  // ── Notes modal confirm ───────────────────────────────────────────────────
+
+  const handleNotesConfirm = () => {
+    const { mode, statusId, notes } = notesModal;
+    closeNotesModal();
+
+    if (mode === "start") {
+      executeToggleOn(statusId, notes);
+    } else {
+      executeToggleOff(statusId, notes);
     }
   };
 
@@ -315,7 +420,6 @@ const StatusBottomSheet = ({
                   {userName?.charAt(0) || "U"}
                 </div>
               )}
-
               <div>
                 <strong>{userName}</strong>
                 {activeItem ? (
@@ -332,9 +436,7 @@ const StatusBottomSheet = ({
             {onCheckInOut && (
               <ListGroupItem className="py-3 px-3">
                 <button
-                  className={`btn w-100 ${
-                    currentlyCheckedIn ? "btn-warning" : "btn-success"
-                  }`}
+                  className={`btn w-100 ${currentlyCheckedIn ? "btn-warning" : "btn-success"}`}
                   onClick={onCheckInOut}
                   disabled={checkInLoading}
                   style={{
@@ -403,7 +505,6 @@ const StatusBottomSheet = ({
                       <span style={{ fontSize: 18 }}>{item.emoji}</span>
                       <span>{item.name}</span>
                     </div>
-
                     <div className="form-check form-switch m-0">
                       <input
                         className="form-check-input"
@@ -431,10 +532,10 @@ const StatusBottomSheet = ({
         </ModalBody>
       </Modal>
 
-      {/* ── NOTES BOTTOM SHEET (shown only when toggling ON) ── */}
+      {/* ── NOTES BOTTOM SHEET (shared for start & stop) ── */}
       <Modal
         isOpen={notesModal.open}
-        toggle={() => setNotesModal({ open: false, statusId: null, notes: "" })}
+        toggle={closeNotesModal}
         backdrop
         fade
         wrapClassName="d-flex align-items-end m-0"
@@ -461,23 +562,34 @@ const StatusBottomSheet = ({
                 {pendingStatus?.emoji && (
                   <span className="me-2">{pendingStatus.emoji}</span>
                 )}
-                Start "{pendingStatus?.name}"
+                {notesModal.mode === "start"
+                  ? `Start "${pendingStatus?.name}"`
+                  : `Stop "${pendingStatus?.name}"`}
               </h6>
               <p className="text-muted small mb-0 mt-1">
-                Add a note before starting this status. Your current location
-                will be recorded automatically.
+                {notesModal.mode === "start"
+                  ? "Add a note before starting this status."
+                  : "Add a note before stopping this status."}
+                {/* ✅ Only show location notice when location_required is strictly true */}
+                {pendingStatus?.location_required === true &&
+                  " Your current location will be recorded automatically."}
               </p>
             </ListGroupItem>
 
             {/* NOTES TEXTAREA */}
             <ListGroupItem className="py-2 px-3 border-0">
               <label className="form-label small fw-medium text-muted mb-1">
-                Notes (optional)
+                {notesModal.mode === "start" ? "Start Notes" : "End Notes"}{" "}
+                <span className="text-danger">*</span>
               </label>
               <textarea
                 className="form-control"
                 rows={4}
-                placeholder="e.g. Heading to client site, working remotely…"
+                placeholder={
+                  notesModal.mode === "start"
+                    ? "e.g. Heading to client site, working remotely…"
+                    : "e.g. Task completed, returning to office…"
+                }
                 value={notesModal.notes}
                 onChange={(e) =>
                   setNotesModal((prev) => ({ ...prev, notes: e.target.value }))
@@ -490,20 +602,27 @@ const StatusBottomSheet = ({
             <ListGroupItem className="py-3 px-3 border-0 d-flex gap-2">
               <button
                 className="btn btn-light flex-fill"
-                onClick={() =>
-                  setNotesModal({ open: false, statusId: null, notes: "" })
-                }
+                onClick={closeNotesModal}
               >
                 Cancel
               </button>
               <button
-                className="btn btn-success flex-fill"
-                onClick={handleToggleOn}
-                disabled={false}
+                className={`btn flex-fill ${
+                  notesModal.mode === "start" ? "btn-success" : "btn-danger"
+                }`}
+                onClick={handleNotesConfirm}
+                disabled={!notesModal.notes.trim()}
               >
                 <span className="d-flex align-items-center justify-content-center gap-2">
-                  <i className="ri-map-pin-line" style={{ fontSize: 15 }} />
-                  Start Status
+                  <i
+                    className={
+                      notesModal.mode === "start"
+                        ? "ri-map-pin-line"
+                        : "ri-stop-circle-line"
+                    }
+                    style={{ fontSize: 15 }}
+                  />
+                  {notesModal.mode === "start" ? "Start Status" : "Stop Status"}
                 </span>
               </button>
             </ListGroupItem>

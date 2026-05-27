@@ -19,6 +19,15 @@ const initialState = {
       .toString()
       .padStart(2, "0")}`,
   },
+  task_list_filter_keys: {
+    related_to: "",
+    project_id: null,
+    client_id: null,
+    assigned_to: null,
+    collaborator_id: [],
+    task_status: null,
+    task_priority: null,
+  },
 };
 
 const TableFilterReducer = createSlice({
@@ -70,6 +79,22 @@ const TableFilterReducer = createSlice({
         attendance_approval_table_filter_keys: payload,
       };
     },
+    setTaskListFilterKeys: (state, { payload }) => {
+      state.task_list_filter_keys = payload;
+    },
+    resetTaskListFilterKeys: (state) => {
+      state.task_list_filter_keys = {
+        related_to: "",
+        project_id: null,
+        client_id: null,
+        assigned_to: null,
+        collaborator_id: [],
+        task_status: null,
+        task_priority: null,
+      };
+
+      state.search = "";
+    },
   },
 });
 
@@ -81,5 +106,7 @@ export const {
   resetLeaveTypeTableFilterKeys,
   setLeaveApprovalTableFilterKeys,
   setAttendanceApprovalTableFilterKeys,
+  setTaskListFilterKeys,
+  resetTaskListFilterKeys,
 } = TableFilterReducer.actions;
 export default TableFilterReducer.reducer;

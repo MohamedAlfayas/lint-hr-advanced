@@ -53,7 +53,6 @@ const RESPONSIVE_STYLES = `
   .attendance-table.leave-tab {
     min-width: 560px;
   }
-  /* Tighten columns on medium screens */
   @media (max-width: 991px) {
     .attendance-table {
       min-width: 620px;
@@ -62,7 +61,6 @@ const RESPONSIVE_STYLES = `
       min-width: 480px;
     }
   }
-  /* Mobile card-style rows */
   @media (max-width: 575px) {
     .attendance-table,
     .attendance-table.leave-tab {
@@ -73,14 +71,12 @@ const RESPONSIVE_STYLES = `
       max-width: 100%;
     }
   }
-  /* Sticky header stays visible while scrolling */
   .attendance-table thead th {
     position: sticky;
     top: 0;
     z-index: 2;
     background: #f8f9fa;
   }
-  /* Compact cells on smaller screens */
   @media (max-width: 767px) {
     .attendance-table td,
     .attendance-table th {
@@ -220,10 +216,11 @@ const getApprovalBadge = (status) => {
   }
 };
 
-// ─── Leave type label ─────────────────────────────────────────────────────
+// ─── Leave type label (for status filter matching) ────────────────────────
 const getLeaveTypeLabel = (row) => {
   if (row.halfday) return "Half Day Leave";
   if (row.permission) return "Permission";
+  if (row.fullday) return "Full Day Leave";
   return "Full Day Leave";
 };
 
@@ -237,6 +234,70 @@ const filterInputStyle = {
   width: "100%",
   boxSizing: "border-box",
 };
+
+// ─── Divider between info blocks ──────────────────────────────────────────
+const InfoDivider = () => (
+  <div
+    style={{
+      width: "1px",
+      backgroundColor: "#e5e7eb",
+      alignSelf: "stretch",
+      minHeight: "40px",
+    }}
+  />
+);
+
+// ─── Single leave/permission info block ───────────────────────────────────
+const LeaveInfoBlock = ({
+  status,
+  timeStart,
+  timeEnd,
+  dateStart,
+  dateEnd,
+  reason,
+  formatTime,
+}) => (
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: "3px",
+      minWidth: "110px",
+    }}
+  >
+    {getApprovalBadge(status)}
+
+    {/* Show date range for full_day, time range for half_day / permission */}
+    {dateStart ? (
+      <small style={{ color: "#78716c", fontSize: "10px" }}>
+        {dateStart}
+        {dateEnd && dateEnd !== dateStart ? ` – ${dateEnd}` : ""}
+      </small>
+    ) : timeStart ? (
+      <small style={{ color: "#78716c", fontSize: "10px" }}>
+        {formatTime(timeStart)}
+        {timeEnd ? ` – ${formatTime(timeEnd)}` : ""}
+      </small>
+    ) : null}
+
+    {reason && (
+      <small
+        style={{
+          color: "#57534e",
+          fontSize: "10px",
+          fontStyle: "italic",
+          maxWidth: "130px",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {reason}
+      </small>
+    )}
+  </div>
+);
 
 // ─── Main Component ───────────────────────────────────────────────────────
 const TodayAttendanceTable = () => {
@@ -317,22 +378,23 @@ const TodayAttendanceTable = () => {
         }
 
         const formattedData = result.map((item) => {
-          // ─── FIX: Determine status correctly ────────────────────────────
-          // An employee can be BOTH present AND have half_day / permission.
-          // Previously such employees were bucketed only into "Leave" and
-          // disappeared from the "In" tab. Now we track both flags separately:
-          //   • attendanceStatus  → used to decide which tab(s) show this row
-          //   • hasLeaveInfo      → true when half_day or permission exists
-          //     (used by the Leave tab to include the row regardless of is_present)
+          // ─── Determine which leave records exist ──────────────────────
+          // full_day  → is_on_leave true, full_day object present
+          // half_day  → half_day object present
+          // permission → permission object present
+          // An employee can be BOTH present AND have leave records.
 
-          const hasLeaveRecord =
-            item.is_on_leave || item.half_day || item.permission;
+          const hasFullDay = !!item.full_day;
+          const hasHalfDay = !!item.half_day;
+          const hasPermission = !!item.permission;
+          const hasAnyLeave =
+            item.is_on_leave || hasHalfDay || hasPermission || hasFullDay;
 
-          // Primary attendance status for Tab 1 / Tab 2
+          // Primary attendance status (Tab 1 / Tab 2 gate)
           let attendanceStatus;
           if (item.is_present) {
             attendanceStatus = item.is_late ? "Late" : "On Time";
-          } else if (hasLeaveRecord) {
+          } else if (hasAnyLeave) {
             attendanceStatus = "Leave";
           } else {
             attendanceStatus = "Not Check In";
@@ -362,16 +424,10 @@ const TodayAttendanceTable = () => {
               return `${hours}h ${minutes}m`;
             })(),
 
-            // ✅ attendanceStatus drives Tab 1 / Tab 2 membership
             status: attendanceStatus,
 
-            // ✅ showInLeaveTab: true when employee has any leave/half-day/permission
-            //    regardless of whether they also checked in
-            showInLeaveTab: !!(
-              item.half_day ||
-              item.permission ||
-              item.is_on_leave
-            ),
+            // ✅ showInLeaveTab: true when any leave record exists
+            showInLeaveTab: hasAnyLeave,
 
             isOnLeave: item.is_on_leave || false,
             checkInStatus: item.status || null,
@@ -387,6 +443,16 @@ const TodayAttendanceTable = () => {
                     ),
                   )
                 : 0,
+
+            // ✅ full_day mapped from API
+            fullday: item.full_day
+              ? {
+                  start: item.full_day.start || null, // e.g. "2026-04-23"
+                  end: item.full_day.end || null, // e.g. "2026-04-24"
+                  reason: item.full_day.reason || "-",
+                  status: item.full_day.status,
+                }
+              : null,
 
             halfday: item.half_day
               ? {
@@ -435,7 +501,6 @@ const TodayAttendanceTable = () => {
       departmentFilter === "All" ? true : item.department === departmentFilter,
     );
 
-    // Tab 1: On Time + Late (includes those who also have half_day/permission)
     setCountIn(
       filtered.filter((i) => i.status === "On Time" || i.status === "Late")
         .length,
@@ -445,7 +510,7 @@ const TodayAttendanceTable = () => {
       filtered.filter((i) => i.status === "Not Check In").length,
     );
 
-    // ✅ Leave count: everyone with showInLeaveTab flag
+    // ✅ Leave count: everyone with any leave record
     setCountLeave(filtered.filter((i) => i.showInLeaveTab).length);
   }, [attendanceData, departmentFilter]);
 
@@ -496,21 +561,14 @@ const TodayAttendanceTable = () => {
   // ✅ Filtered data
   const filteredData = useMemo(() => {
     return attendanceData.filter((item) => {
-      // ─── Tab gate ─────────────────────────────────────────────────────
-      // Tab 1: present employees (On Time / Late)
-      // Tab 2: not checked in
-      // Tab 3: anyone with a leave / half_day / permission record
-      //         — this now INCLUDES employees who are also present (is_present true)
       if (activeTab === "1" && !["On Time", "Late"].includes(item.status))
         return false;
       if (activeTab === "2" && item.status !== "Not Check In") return false;
       if (activeTab === "3" && !item.showInLeaveTab) return false;
 
-      // Department filter
       if (departmentFilter !== "All" && item.department !== departmentFilter)
         return false;
 
-      // Status / leave-type filter
       if (statusFilter !== "All") {
         if (activeTab === "1") {
           const csName = (item.checkInStatus || "").toLowerCase();
@@ -520,7 +578,6 @@ const TodayAttendanceTable = () => {
         }
       }
 
-      // Search
       const q = search.toLowerCase();
       return (
         !q ||
@@ -614,6 +671,189 @@ const TodayAttendanceTable = () => {
           </th>
         )}
       </tr>
+    );
+  };
+
+  // ─── Leave type pills renderer ────────────────────────────────────────────
+  const renderLeaveTypePills = (row) => {
+    const pills = [];
+
+    if (row.fullday) {
+      pills.push(
+        <span
+          key="fullday"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "5px",
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            color: "#991b1b",
+            borderRadius: "20px",
+            padding: "3px 10px",
+            fontSize: "11px",
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <i className="bx bx-calendar-x" style={{ color: "#ef4444" }}></i>
+          Full Day Leave
+        </span>,
+      );
+    }
+
+    if (row.halfday) {
+      pills.push(
+        <span
+          key="halfday"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "5px",
+            background: "#fffbeb",
+            border: "1px solid #fde68a",
+            color: "#92400e",
+            borderRadius: "20px",
+            padding: "3px 10px",
+            fontSize: "11px",
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <i className="bx bx-time-five" style={{ color: "#d97706" }}></i>
+          Half Day Leave
+        </span>,
+      );
+    }
+
+    if (row.permission) {
+      pills.push(
+        <span
+          key="permission"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "5px",
+            background: "#f5f3ff",
+            border: "1px solid #c4b5fd",
+            color: "#4c1d95",
+            borderRadius: "20px",
+            padding: "3px 10px",
+            fontSize: "11px",
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <i className="bx bx-exit" style={{ color: "#7c3aed" }}></i>
+          Permission
+        </span>,
+      );
+    }
+
+    // Fallback: on_leave but no typed records
+    if (pills.length === 0 && row.isOnLeave) {
+      pills.push(
+        <span
+          key="leave"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "5px",
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            color: "#991b1b",
+            borderRadius: "20px",
+            padding: "3px 10px",
+            fontSize: "11px",
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <i className="bx bx-calendar-x" style={{ color: "#ef4444" }}></i>
+          Full Day Leave
+        </span>,
+      );
+    }
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "4px",
+        }}
+      >
+        {pills}
+      </div>
+    );
+  };
+
+  // ─── Info cell renderer ───────────────────────────────────────────────────
+  const renderInfoCell = (row) => {
+    const blocks = [];
+
+    // Full Day Leave block
+    if (row.fullday) {
+      blocks.push(
+        <LeaveInfoBlock
+          key="fullday"
+          status={row.fullday.status}
+          dateStart={row.fullday.start}
+          dateEnd={row.fullday.end}
+          reason={row.fullday.reason}
+          formatTime={formatTime}
+        />,
+      );
+    }
+
+    // Half Day block
+    if (row.halfday) {
+      if (blocks.length > 0) blocks.push(<InfoDivider key="div1" />);
+      blocks.push(
+        <LeaveInfoBlock
+          key="halfday"
+          status={row.halfday.status}
+          timeStart={row.halfday.start}
+          timeEnd={row.halfday.end}
+          reason={row.halfday.reason}
+          formatTime={formatTime}
+        />,
+      );
+    }
+
+    // Permission block
+    if (row.permission) {
+      if (blocks.length > 0) blocks.push(<InfoDivider key="div2" />);
+      blocks.push(
+        <LeaveInfoBlock
+          key="permission"
+          status={row.permission.status}
+          timeStart={row.permission.start}
+          timeEnd={row.permission.end}
+          reason={row.permission.reason}
+          formatTime={formatTime}
+        />,
+      );
+    }
+
+    if (blocks.length === 0) {
+      return <span style={{ color: "#d1d5db", fontSize: "18px" }}>—</span>;
+    }
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "flex-start",
+          justifyContent: "center",
+          gap: "16px",
+          flexWrap: "wrap",
+        }}
+      >
+        {blocks}
+      </div>
     );
   };
 
@@ -731,188 +971,16 @@ const TodayAttendanceTable = () => {
           </div>
         </td>
 
-        {/* ── Leave tab columns ── */}
+        {/* ── Leave Tab columns ── */}
         {activeTab === "3" ? (
           <>
             <td style={tdCenter}>{row.department || "-"}</td>
 
-            {/* Leave Type pill */}
-            <td style={tdCenter}>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "4px",
-                }}
-              >
-                {row.halfday && (
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      background: "#fffbeb",
-                      border: "1px solid #fde68a",
-                      color: "#92400e",
-                      borderRadius: "20px",
-                      padding: "3px 10px",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    <i
-                      className="bx bx-time-five"
-                      style={{ color: "#d97706" }}
-                    ></i>
-                    Half Day Leave
-                  </span>
-                )}
-                {row.permission && (
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      background: "#f5f3ff",
-                      border: "1px solid #c4b5fd",
-                      color: "#4c1d95",
-                      borderRadius: "20px",
-                      padding: "3px 10px",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    <i className="bx bx-exit" style={{ color: "#7c3aed" }}></i>
-                    Permission
-                  </span>
-                )}
-                {!row.halfday && !row.permission && (
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      background: "#fef2f2",
-                      border: "1px solid #fecaca",
-                      color: "#991b1b",
-                      borderRadius: "20px",
-                      padding: "3px 10px",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    <i
-                      className="bx bx-calendar-x"
-                      style={{ color: "#ef4444" }}
-                    ></i>
-                    Full Day Leave
-                  </span>
-                )}
-              </div>
-            </td>
+            {/* Leave Type pills */}
+            <td style={tdCenter}>{renderLeaveTypePills(row)}</td>
 
-            {/* Info cell */}
-            <td style={tdCenter}>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "flex-start",
-                  justifyContent: "center",
-                  gap: "16px",
-                  flexWrap: "wrap",
-                }}
-              >
-                {row.halfday ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: "3px",
-                      minWidth: "100px",
-                    }}
-                  >
-                    {getApprovalBadge(row.halfday.status)}
-                    {row.halfday.start && (
-                      <small style={{ color: "#78716c", fontSize: "10px" }}>
-                        {formatTime(row.halfday.start)}
-                        {row.halfday.end
-                          ? ` – ${formatTime(row.halfday.end)}`
-                          : ""}
-                      </small>
-                    )}
-                    <small
-                      style={{
-                        color: "#57534e",
-                        fontSize: "10px",
-                        fontStyle: "italic",
-                        maxWidth: "130px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {row.halfday.reason}
-                    </small>
-                  </div>
-                ) : null}
-
-                {row.halfday && row.permission && (
-                  <div
-                    style={{
-                      width: "1px",
-                      backgroundColor: "#e5e7eb",
-                      alignSelf: "stretch",
-                      minHeight: "40px",
-                    }}
-                  />
-                )}
-
-                {row.permission ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: "3px",
-                      minWidth: "100px",
-                    }}
-                  >
-                    {getApprovalBadge(row.permission.status)}
-                    {row.permission.start && (
-                      <small style={{ color: "#78716c", fontSize: "10px" }}>
-                        {formatTime(row.permission.start)}
-                        {row.permission.end
-                          ? ` – ${formatTime(row.permission.end)}`
-                          : ""}
-                      </small>
-                    )}
-                    <small
-                      style={{
-                        color: "#57534e",
-                        fontSize: "10px",
-                        fontStyle: "italic",
-                        maxWidth: "130px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {row.permission.reason}
-                    </small>
-                  </div>
-                ) : null}
-
-                {!row.halfday && !row.permission && (
-                  <span style={{ color: "#d1d5db", fontSize: "18px" }}>—</span>
-                )}
-              </div>
-            </td>
+            {/* Info cell — full_day + half_day + permission all shown */}
+            <td style={tdCenter}>{renderInfoCell(row)}</td>
           </>
         ) : (
           /* ── Tab 1 & 2 columns ── */
@@ -1136,6 +1204,9 @@ const TodayAttendanceTable = () => {
                   style={{ maxHeight: "420px", minHeight: "420px" }}
                   autoHide={false}
                 >
+                  <style>
+                    {`.simplebar-track { display: none !important; }`}
+                  </style>
                   <div style={{ minWidth: "100%" }}>
                     <table
                       className={`table align-middle mb-0 attendance-table${

@@ -41,7 +41,7 @@ import { toast } from "react-toastify";
 import { BuildAttendanceReportChart } from "../../common/js/BuildAttendanceReportChart";
 import EmployeeDocument from "./EmployeeDocument";
 import {
-  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
+  VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
 import { useTable } from "react-table";
@@ -63,7 +63,7 @@ const EmployeeView = () => {
     if (perm_list != null && perm_list != undefined) {
       if (
         perm_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY) ||
-        perm_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)
+        perm_list.includes(VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY)
       ) {
         setOtherEmpViewAccess(true);
       }

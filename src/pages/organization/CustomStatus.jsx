@@ -5,12 +5,10 @@ import { custom_status_form_component_name } from "../../common/constant/Constan
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
 const CustomStatus = () => {
-  // ✅ FIXED: was reading "custom_statuses" — correct key is "custom_status_data"
   const reduxData = useSelector(
     (state) => state.CustomStatusReducer?.custom_status_data,
   );
 
-  // ✅ useMemo: table updates in the same render cycle as dispatch (no delay)
   const custom_status_data = useMemo(() => {
     const sourceData =
       Array.isArray(reduxData) && reduxData.length > 0
@@ -24,8 +22,18 @@ const CustomStatus = () => {
         name: item.name,
         emoji: item.emoji ?? item.icon ?? "",
         is_active: item.is_active ?? item.active ?? true,
+        location_required: item.location_required ?? false,
+        notes_required: item.notes_required ?? false,
       }));
   }, [reduxData]);
+
+  const BoolBadge = ({ value, trueLabel = "Yes", falseLabel = "No" }) => (
+    <span
+      className={`badge text-uppercase bg-${value ? "success" : "warning"}-subtle text-${value ? "success" : "warning"}`}
+    >
+      {value ? trueLabel : falseLabel}
+    </span>
+  );
 
   const additionalColumn = [
     {
@@ -40,15 +48,21 @@ const CustomStatus = () => {
     },
     {
       Header: "Status",
-      accessor: (obj) => {
-        const label = obj.is_active ? "Active" : "Inactive";
-        const cls = obj.is_active ? "success" : "warning";
-        return (
-          <span className={`badge text-uppercase bg-${cls}-subtle text-${cls}`}>
-            {label}
-          </span>
-        );
-      },
+      accessor: (obj) => (
+        <BoolBadge
+          value={obj.is_active}
+          trueLabel="Active"
+          falseLabel="Inactive"
+        />
+      ),
+    },
+    {
+      Header: "Location Required",
+      accessor: (obj) => <BoolBadge value={obj.location_required} />,
+    },
+    {
+      Header: "Notes Required",
+      accessor: (obj) => <BoolBadge value={obj.notes_required} />,
     },
   ];
 
@@ -58,6 +72,8 @@ const CustomStatus = () => {
       name: "",
       emoji: "",
       is_active: true,
+      location_required: false,
+      notes_required: false,
     }),
     [],
   );

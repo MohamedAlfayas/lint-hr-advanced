@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
+  VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
 
@@ -174,7 +174,10 @@ const Navdata = () => {
         label: "Employee",
         link: "/employee",
         parentId: "baseUi",
-        perm: [VIEW_ALL_EMPLOYEE_ACCESS_KEY, VIEW_TEAM_EMPLOYEE_ACCESS_KEY],
+        perm: [
+          VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
+          VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
+        ],
         icon: "ri-account-circle-line",
       },
       {
@@ -300,6 +303,56 @@ const Navdata = () => {
           updateIconSidebar(e);
         },
       },
+      {
+        id: "control-panel",
+        label: "CRM",
+        icon: " ri-list-settings-line",
+        perm: "all",
+        link: "/#",
+        click: function (e) {
+          e.preventDefault();
+          setIsControlPanel(!isControlPanel);
+          setIscurrentState("Control Panel");
+          updateIconSidebar(e);
+        },
+        stateVariables: isControlPanel,
+        subItems: [
+          {
+            id: "clients",
+            label: "Clients",
+            link: "/clients",
+            parentId: "baseUi",
+            perm: "all",
+          },
+          {
+            id: "projects",
+            label: "Projects",
+            link: "/projects",
+            parentId: "baseUi",
+            perm: "all",
+          },
+          {
+            id: "tasks",
+            label: "Tasks",
+            link: "/tasks",
+            parentId: "baseUi",
+            perm: "all",
+          },
+        ],
+      },
+      {
+        id: "baseUi",
+        label: "Settings",
+        icon: "ri-settings-3-line",
+        link: "/task-settings",
+        perm: "all",
+        click: function (e) {
+          e.preventDefault();
+          setIsBaseUi(!isBaseUi);
+          setIscurrentState("BaseUi");
+          updateIconSidebar(e);
+        },
+      },
       // {
       //   label: "Task",
       //   isHeader: false,
@@ -326,9 +379,9 @@ const Navdata = () => {
       //       perm: "all",
       //     },
       //     {
-      //       id: "piriorities",
-      //       label: "Piriorities",
-      //       link: "/piriorities",
+      //       id: "priorities",
+      //       label: "Priorities",
+      //       link: "/priorities",
       //       parentId: "baseUi",
       //       perm: "all",
       //     },

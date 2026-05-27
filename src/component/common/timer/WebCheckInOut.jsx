@@ -7,13 +7,12 @@ import { GetTotalWorkDuration } from "../../../common/js/GetTotalWorkDuration";
 import { setTimer } from "../../../redux/reducers/ChildReducer/ClockReducer";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
 import StatusBottomSheet from "../timeLine/StatusBottomSheet";
-import TimelineModal from "../timeLine/TimelineModal"; // ✅ FIX: was missing
+import TimelineModal from "../timeLine/TimelineModal";
 
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_MAP_API_KEY;
 
 const WebCheckInOut = ({ showTimer, hideTimer }) => {
   const [loading, setLoading] = useState(false);
-  // ✅ FIX: removed local currentlyCheckedIn — use Redux source of truth only
   const [showStatusSheet, setShowStatusSheet] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
 
@@ -41,6 +40,7 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
   }, [total_seconds, currently_checked_in, dispatch]);
 
   const handleCheckInOut = async () => {
+    // Close the status sheet if it was open (checkout flow)
     setShowStatusSheet(false);
     setLoading(true);
 
@@ -88,7 +88,7 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
         }
 
         const payload = {
-          entry_type: currently_checked_in ? 2 : 1, // ✅ FIX: uses Redux value
+          entry_type: currently_checked_in ? 2 : 1,
           punched_by: 1,
           accurate_address,
           latitude,
@@ -108,7 +108,6 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
 
           if (!!ApiRes && ApiRes.status === 200) {
             toast.success(ApiRes?.data?.message);
-            // ✅ FIX: no local state to flip — Redux handles truth via GetTotalWorkDuration
             GetTotalWorkDuration(dispatch);
           } else {
             if (ApiRes?.data?.is_late) {
@@ -131,6 +130,21 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
         setLoading(false);
       },
     );
+  };
+
+  /**
+   * ✅ KEY FIX:
+   * - Check IN  → call handleCheckInOut directly (no bottom sheet)
+   * - Check OUT → open StatusBottomSheet so user can update status before leaving
+   */
+  const handleButtonClick = () => {
+    if (currently_checked_in) {
+      // Checked IN → show bottom sheet for checkout flow
+      setShowStatusSheet(true);
+    } else {
+      // Not checked in → go straight to check-in, no sheet needed
+      handleCheckInOut();
+    }
   };
 
   const FirstCheckinWithLateAttendanceNotesAPI = async () => {
@@ -170,8 +184,8 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
         xxl={hideTimer ? 3 : 6}
         md={hideTimer ? 3 : 6}
         style={{
-          flex: hideTimer ? "0 0 25%" : "0 0 53%",
-          maxWidth: hideTimer ? "25%" : "53%",
+          flex: hideTimer ? "0 0 25%" : "1 0 53%",
+          maxWidth: hideTimer ? "25%" : "66%",
         }}
       >
         {show_attendance_timer && (
@@ -189,7 +203,7 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
               <Button
                 color={currently_checked_in ? "warning" : "secondary"}
                 className="custom-toggle"
-                onClick={() => setShowStatusSheet(true)}
+                onClick={handleButtonClick} // ✅ FIX: uses smart handler
                 outline
               >
                 <span className="d-flex align-items-center">
@@ -214,7 +228,7 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
             className="ms-1 mt-1"
             style={{
               display: "inline-block",
-              width: "90px",
+              width: "110px",
               fontSize: "initial",
               fontWeight: 700,
             }}
@@ -224,6 +238,10 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
         )}
       </Col>
 
+      {/*
+        ✅ FIX: StatusBottomSheet is shown ONLY during checkout.
+        The onCheckInOut prop triggers the actual checkout API call.
+      */}
       <StatusBottomSheet
         show={showStatusSheet}
         onClose={() => setShowStatusSheet(false)}
@@ -232,11 +250,10 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
           setShowTimeline(true);
         }}
         onCheckInOut={handleCheckInOut}
-        currentlyCheckedIn={currently_checked_in} // ✅ FIX: Redux value only
+        currentlyCheckedIn={currently_checked_in}
         checkInLoading={loading}
       />
 
-      {/* ✅ FIX: TimelineModal was missing from this component */}
       <TimelineModal
         show={showTimeline}
         onClose={() => setShowTimeline(false)}

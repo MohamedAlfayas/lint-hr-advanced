@@ -11,6 +11,7 @@ const TimeLineList = () => {
   return (
     <>
       <button
+        style={{ display: "none" }}
         onClick={() => setShowSheet(false)}
         type="button"
         className="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle light-dark-mode"

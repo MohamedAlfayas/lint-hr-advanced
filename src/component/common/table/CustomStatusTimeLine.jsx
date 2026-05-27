@@ -273,10 +273,62 @@ const LocationMapModal = ({ isOpen, toggle, locationData, label }) => {
   );
 };
 
-/* ─── Notes Block ─────────────────────────── */
-const NotesBlock = ({ notes }) => {
-  if (!notes || (Array.isArray(notes) && notes.length === 0)) return null;
-  const noteList = Array.isArray(notes) ? notes : [notes];
+/* ─── Start / End Notes Block ─────────────── */
+// ✅ Handles the new API shape: separate start_notes and end_notes strings.
+//    Also falls back to the old single `notes` field for backward compatibility.
+const NotesBlock = ({ startNotes, endNotes, legacyNotes }) => {
+  // Collect entries to render
+  const entries = [];
+
+  // ✅ New API: start_notes
+  if (startNotes && String(startNotes).trim()) {
+    entries.push({
+      type: "start",
+      text: String(startNotes).trim(),
+      icon: "mdi mdi-arrow-right-circle-outline",
+      label: "Start Note",
+      bg: "#f0fff8",
+      border: "#6ee7b7",
+      accent: "#059669",
+      labelColor: "#065f46",
+      textColor: "#064e3b",
+    });
+  }
+
+  // ✅ New API: end_notes
+  if (endNotes && String(endNotes).trim()) {
+    entries.push({
+      type: "end",
+      text: String(endNotes).trim(),
+      icon: "mdi mdi-arrow-left-circle-outline",
+      label: "End Note",
+      bg: "#fff5f5",
+      border: "#fca5a5",
+      accent: "#dc2626",
+      labelColor: "#991b1b",
+      textColor: "#7f1d1d",
+    });
+  }
+
+  // ✅ Fallback: old single notes field (string, array, or object)
+  if (entries.length === 0 && legacyNotes) {
+    const noteList = Array.isArray(legacyNotes) ? legacyNotes : [legacyNotes];
+    const filtered = noteList.filter(Boolean);
+    if (filtered.length > 0) {
+      filtered.forEach((note, i) => {
+        const isObj = typeof note === "object" && note !== null;
+        const text = isObj
+          ? note.text || note.note || note.content || JSON.stringify(note)
+          : String(note);
+        const author = isObj ? note.author || note.created_by || null : null;
+        const time = isObj ? note.created_at || note.timestamp || null : null;
+        entries.push({ type: "legacy", text, author, time, index: i });
+      });
+    }
+  }
+
+  if (entries.length === 0) return null;
+
   return (
     <div
       style={{
@@ -285,13 +337,14 @@ const NotesBlock = ({ notes }) => {
         marginTop: "8px",
       }}
     >
+      {/* Section header */}
       <div
         style={{
           fontSize: "11px",
           color: "#999",
           textTransform: "uppercase",
           letterSpacing: "0.4px",
-          marginBottom: "6px",
+          marginBottom: "7px",
           display: "flex",
           alignItems: "center",
           gap: "4px",
@@ -300,52 +353,101 @@ const NotesBlock = ({ notes }) => {
         <i className="mdi mdi-note-text-outline" />
         Notes
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-        {noteList.map((note, i) => {
-          const isObj = typeof note === "object" && note !== null;
-          const text = isObj
-            ? note.text || note.note || note.content || JSON.stringify(note)
-            : String(note);
-          const author = isObj ? note.author || note.created_by || null : null;
-          const time = isObj ? note.created_at || note.timestamp || null : null;
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: entries.length > 1 ? "1fr 1fr" : "1fr",
+          gap: "8px",
+        }}
+      >
+        {entries.map((entry, i) => {
+          // ── Legacy note (old API) ──
+          if (entry.type === "legacy") {
+            return (
+              <div
+                key={i}
+                style={{
+                  background: "#fffbf0",
+                  border: "0.5px solid #f5e6c0",
+                  borderLeft: "3px solid #f0b429",
+                  borderRadius: "5px",
+                  padding: "7px 10px",
+                  fontSize: "12px",
+                  color: "#4a3f00",
+                  lineHeight: "1.5",
+                }}
+              >
+                <div>{entry.text}</div>
+                {(entry.author || entry.time) && (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      marginTop: "4px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    {entry.author && (
+                      <span style={{ fontSize: "10px", color: "#888" }}>
+                        <i className="mdi mdi-account-outline me-1" />
+                        {entry.author}
+                      </span>
+                    )}
+                    {entry.time && (
+                      <span style={{ fontSize: "10px", color: "#888" }}>
+                        <i className="mdi mdi-clock-outline me-1" />
+                        {formatDateTime(entry.time)}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          // ── Start note (green) / End note (red) ──
           return (
             <div
-              key={i}
+              key={entry.type}
               style={{
-                background: "#fffbf0",
-                border: "0.5px solid #f5e6c0",
-                borderLeft: "3px solid #f0b429",
+                background: entry.bg,
+                border: `0.5px solid ${entry.border}`,
+                borderLeft: `3px solid ${entry.accent}`,
                 borderRadius: "5px",
                 padding: "7px 10px",
                 fontSize: "12px",
-                color: "#4a3f00",
+                color: entry.textColor,
                 lineHeight: "1.5",
               }}
             >
-              <div>{text}</div>
-              {(author || time) && (
-                <div
+              {/* Label row */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  marginBottom: "3px",
+                }}
+              >
+                <i
+                  className={entry.icon}
+                  style={{ color: entry.accent, fontSize: "13px" }}
+                />
+                <span
                   style={{
-                    display: "flex",
-                    gap: "10px",
-                    marginTop: "4px",
-                    flexWrap: "wrap",
+                    fontSize: "10px",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.4px",
+                    color: entry.labelColor,
                   }}
                 >
-                  {author && (
-                    <span style={{ fontSize: "10px", color: "#888" }}>
-                      <i className="mdi mdi-account-outline me-1" />
-                      {author}
-                    </span>
-                  )}
-                  {time && (
-                    <span style={{ fontSize: "10px", color: "#888" }}>
-                      <i className="mdi mdi-clock-outline me-1" />
-                      {formatDateTime(time)}
-                    </span>
-                  )}
-                </div>
-              )}
+                  {entry.label}
+                </span>
+              </div>
+              {/* Note text */}
+              <div style={{ paddingLeft: "18px" }}>{entry.text}</div>
             </div>
           );
         })}
@@ -361,13 +463,11 @@ const CustomStatusTimelineModal = ({ isOpen, toggle, rowData }) => {
     ? format(new Date(rowData.date), "dd MMM, yyyy")
     : "";
 
-  /* ── Filter & Search state ── */
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("All");
 
-  /* Build unique tabs: "All" + one tab per unique status id */
   const uniqueTabs = useMemo(() => {
-    const seen = new Map(); // id → name
+    const seen = new Map();
     timeline.forEach((item) => {
       const id = item.status?.id;
       const name = item.status?.name || "Unknown";
@@ -380,7 +480,6 @@ const CustomStatusTimelineModal = ({ isOpen, toggle, rowData }) => {
     return tabs;
   }, [timeline]);
 
-  /* Filtered list */
   const filtered = useMemo(() => {
     return timeline.filter((item) => {
       const matchTab =
@@ -400,7 +499,6 @@ const CustomStatusTimelineModal = ({ isOpen, toggle, rowData }) => {
     0,
   );
 
-  /* Map sub-modal */
   const [mapModal, setMapModal] = useState({
     open: false,
     location: null,
@@ -411,7 +509,6 @@ const CustomStatusTimelineModal = ({ isOpen, toggle, rowData }) => {
   const closeMap = () =>
     setMapModal({ open: false, location: null, label: "" });
 
-  /* Reset filters when modal closes */
   const handleToggle = () => {
     setSearch("");
     setActiveTab("All");
@@ -501,7 +598,7 @@ const CustomStatusTimelineModal = ({ isOpen, toggle, rowData }) => {
                 />
               </div>
 
-              {/* ── Tabs (status id wise) — shown only when >1 unique status ── */}
+              {/* ── Tabs ── */}
               {uniqueTabs.length > 2 && (
                 <div
                   style={{
@@ -615,8 +712,15 @@ const CustomStatusTimelineModal = ({ isOpen, toggle, rowData }) => {
                     const statusIcon = item.status?.icon || "😐";
                     const badgeColor = getStatusColor(statusName);
                     const isActive = item.is_active;
-                    const notes =
-                      item.notes ?? item.note ?? item.remarks ?? null;
+
+                    // ✅ Extract start_notes and end_notes (new API)
+                    // Also keep legacy fallback: item.notes / item.note / item.remarks
+                    const startNotes = item.start_notes ?? null;
+                    const endNotes = item.end_notes ?? null;
+                    const legacyNotes =
+                      !startNotes && !endNotes
+                        ? (item.notes ?? item.note ?? item.remarks ?? null)
+                        : null;
 
                     return (
                       <div
@@ -822,8 +926,12 @@ const CustomStatusTimelineModal = ({ isOpen, toggle, rowData }) => {
                             </div>
                           </div>
 
-                          {/* Notes */}
-                          <NotesBlock notes={notes} />
+                          {/* ✅ Notes — start_notes (green) + end_notes (red) */}
+                          <NotesBlock
+                            startNotes={startNotes}
+                            endNotes={endNotes}
+                            legacyNotes={legacyNotes}
+                          />
                         </div>
                       </div>
                     );

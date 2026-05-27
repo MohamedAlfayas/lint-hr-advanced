@@ -15,6 +15,7 @@ import { Table, Row, Col, Button, Input, CardBody } from "reactstrap";
 import { DefaultColumnFilter } from "./Filters";
 import { Link } from "react-router-dom";
 import EmployeeTableFilter from "../tableFilter/EmployeeTableFilter";
+import TaskListFilter from "../tableFilter/TaskListFilter";
 import AttendanceApprovalFilter from "../tableFilter/AttendanceApprovalFilter";
 import {
   employee_component_name,
@@ -24,6 +25,8 @@ import {
   holiday_component_name,
   attendance_pending_table,
   leave_pending_table,
+  task_table,
+  task_list_component_name,
 } from "../../../common/constant/Constants";
 import LeaveApprovalFilter from "../tableFilter/LeaveApprovalFilter";
 import LeaveTypeFilter from "../tableFilter/LeaveTypeFilter";
@@ -178,6 +181,7 @@ const TableContainer = ({
               {formname === employee_component_name && <EmployeeTableFilter />}
               {formname === leave_type_component_name && <LeaveTypeFilter />}
               {formname === holiday_component_name && <HolidayFilter />}
+              {formname === task_list_component_name && <TaskListFilter />}
 
               {/* <Col md={2}>
                 <div>

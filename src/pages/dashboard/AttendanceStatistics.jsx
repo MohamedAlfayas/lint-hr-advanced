@@ -12,8 +12,8 @@ import ReactApexChart from "react-apexcharts";
 import Select from "react-select";
 import { employeeTypeOptions } from "../../common/constant/Constants";
 import {
-  VIEW_ALL_ATTENDANCE_ACCESS_KEY,
-  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
+  VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
+  VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
   VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
@@ -43,7 +43,7 @@ const AttendanceStatistics = () => {
   const [checkedOutPer, setCheckedOutPer] = useState(0);
 
   const { dashboard_attendance_stastics_type } = useSelector(
-    (state) => state.DashboardAttendanceStasticsReducer
+    (state) => state.DashboardAttendanceStasticsReducer,
   );
 
   const onAttStasticsTypeChange = (pType, val) => {
@@ -55,7 +55,7 @@ const AttendanceStatistics = () => {
   };
 
   const { currently_displaying_todays_attendance } = useSelector(
-    (state) => state.TeamTodaysAttendanceReducer
+    (state) => state.TeamTodaysAttendanceReducer,
   );
 
   const [showTeamAttendance, setShowTeamAttendance] = useState(false);
@@ -63,32 +63,29 @@ const AttendanceStatistics = () => {
 
   useEffect(() => {
     const profile_data = JSON.parse(
-      localStorage.getItem("lint_hr_profile_data")
+      localStorage.getItem("lint_hr_profile_data"),
     );
     let permission_list = profile_data?.permission_list || [];
     console.log("profile_data = ", profile_data);
 
     if (
       profile_data?.is_admin === true ||
-      permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)
+      permission_list.includes(VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY)
     ) {
-      
       setShowAllAttendance(true);
       setShowTeamAttendance(true);
       onAttStasticsTypeChange("All", 0);
     } else if (permission_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)) {
-      
       setShowTeamAttendance(true);
       onAttStasticsTypeChange("My Team", 1);
     } else {
-      
       setShowAllAttendance(false);
       setShowTeamAttendance(false);
     }
 
     // if (
     //   permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY) &&
-    //   permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY)
+    //   permission_list.includes(VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY)
     // ) {
     //   setShowAllAttendance(true);
     //   setShowTeamAttendance(true);
@@ -128,32 +125,32 @@ const AttendanceStatistics = () => {
         Math.round(
           (parseInt(ch_in_data?.length) /
             parseInt(currently_displaying_todays_attendance.length)) *
-            100
-        )
+            100,
+        ),
       );
 
       setNotCheckedInPer(
         Math.round(
           (parseInt(not_ch_in_data?.length) /
             parseInt(currently_displaying_todays_attendance.length)) *
-            100
-        )
+            100,
+        ),
       );
 
       setOnLeavePer(
         Math.round(
           (parseInt(ol_data?.length) /
             parseInt(currently_displaying_todays_attendance.length)) *
-            100
-        )
+            100,
+        ),
       );
 
       setCheckedOutPer(
         Math.round(
           (parseInt(ch_out_data?.length) /
             parseInt(currently_displaying_todays_attendance.length)) *
-            100
-        )
+            100,
+        ),
       );
     }
   }, [currently_displaying_todays_attendance]);
@@ -164,7 +161,7 @@ const AttendanceStatistics = () => {
       var newValue = value.replace(" ", "");
       if (newValue.indexOf(",") === -1) {
         var color = getComputedStyle(document.documentElement).getPropertyValue(
-          newValue
+          newValue,
         );
 
         if (color.indexOf("#") !== -1) color = color.replace(" ", "");
@@ -174,7 +171,7 @@ const AttendanceStatistics = () => {
         var val = value.split(",");
         if (val.length === 2) {
           var rgbaColor = getComputedStyle(
-            document.documentElement
+            document.documentElement,
           ).getPropertyValue(val[0]);
           rgbaColor = "rgba(" + rgbaColor + "," + val[1] + ")";
           return rgbaColor;
@@ -186,7 +183,7 @@ const AttendanceStatistics = () => {
   };
 
   var donutchartportfolioColors = getChartColorsArray(
-    '["--vz-success", "--vz-danger", "--vz-info", "--vz-warning"]'
+    '["--vz-success", "--vz-danger", "--vz-info", "--vz-warning"]',
   );
 
   const defaultOption = employeeTypeOptions.find((option) => option.id === 1);

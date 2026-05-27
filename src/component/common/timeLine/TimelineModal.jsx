@@ -18,7 +18,7 @@ import {
 import { GetApi } from "../../../common/api/GetApi";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Scrollbar CSS (matches CustomStatusTimeline)
+// Scrollbar CSS
 // ─────────────────────────────────────────────────────────────────────────────
 
 const scrollbarCSS = `
@@ -85,7 +85,7 @@ const formatDateTime = (isoString) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shared styles (identical to CustomStatusTimeline)
+// Shared styles
 // ─────────────────────────────────────────────────────────────────────────────
 
 const coordPill = {
@@ -349,13 +349,62 @@ const LocationMapModal = ({ isOpen, toggle, locationData, label }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NotesBlock (identical to CustomStatusTimeline)
+// NotesPair — renders start_notes and end_notes as separate labelled blocks
 // ─────────────────────────────────────────────────────────────────────────────
 
-const NotesBlock = ({ notes }) => {
-  if (!notes || (Array.isArray(notes) && notes.length === 0)) return null;
+const NotesPair = ({ startNotes, endNotes }) => {
+  const hasStart = startNotes && String(startNotes).trim() !== "";
+  const hasEnd = endNotes && String(endNotes).trim() !== "";
 
-  const noteList = Array.isArray(notes) ? notes : [notes];
+  if (!hasStart && !hasEnd) return null;
+
+  const NoteItem = ({ text, type }) => {
+    const isStart = type === "start";
+    return (
+      <div
+        style={{
+          background: isStart ? "#f0fbf5" : "#fff5f5",
+          border: `0.5px solid ${isStart ? "#b3dfc9" : "#f5c6c6"}`,
+          borderLeft: `3px solid ${isStart ? "#28a745" : "#dc3545"}`,
+          borderRadius: "5px",
+          padding: "7px 10px",
+          fontSize: "12px",
+          color: isStart ? "#1a4731" : "#5c1a1a",
+          lineHeight: "1.5",
+          flex: 1,
+          minWidth: 0,
+        }}
+      >
+        {/* Label row */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+            marginBottom: "4px",
+          }}
+        >
+          <i
+            className={`mdi ${isStart ? "mdi-arrow-right-circle-outline" : "mdi-stop-circle-outline"}`}
+            style={{ color: isStart ? "#28a745" : "#dc3545", fontSize: "13px" }}
+          />
+          <span
+            style={{
+              fontSize: "10px",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              color: isStart ? "#28a745" : "#dc3545",
+            }}
+          >
+            {isStart ? "Start Notes" : "End Notes"}
+          </span>
+        </div>
+        {/* Note text */}
+        <div style={{ wordBreak: "break-word" }}>{String(text)}</div>
+      </div>
+    );
+  };
 
   return (
     <div
@@ -365,13 +414,14 @@ const NotesBlock = ({ notes }) => {
         marginTop: "8px",
       }}
     >
+      {/* Section header */}
       <div
         style={{
           fontSize: "11px",
           color: "#999",
           textTransform: "uppercase",
           letterSpacing: "0.4px",
-          marginBottom: "6px",
+          marginBottom: "8px",
           display: "flex",
           alignItems: "center",
           gap: "4px",
@@ -380,56 +430,17 @@ const NotesBlock = ({ notes }) => {
         <i className="mdi mdi-note-text-outline" />
         Notes
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-        {noteList.map((note, i) => {
-          const isObj = typeof note === "object" && note !== null;
-          const text = isObj
-            ? note.text || note.note || note.content || JSON.stringify(note)
-            : String(note);
-          const author = isObj ? note.author || note.created_by || null : null;
-          const time = isObj ? note.created_at || note.timestamp || null : null;
 
-          return (
-            <div
-              key={i}
-              style={{
-                background: "#fffbf0",
-                border: "0.5px solid #f5e6c0",
-                borderLeft: "3px solid #f0b429",
-                borderRadius: "5px",
-                padding: "7px 10px",
-                fontSize: "12px",
-                color: "#4a3f00",
-                lineHeight: "1.5",
-              }}
-            >
-              <div>{text}</div>
-              {(author || time) && (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "10px",
-                    marginTop: "4px",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  {author && (
-                    <span style={{ fontSize: "10px", color: "#888" }}>
-                      <i className="mdi mdi-account-outline me-1" />
-                      {author}
-                    </span>
-                  )}
-                  {time && (
-                    <span style={{ fontSize: "10px", color: "#888" }}>
-                      <i className="mdi mdi-clock-outline me-1" />
-                      {formatDateTime(time)}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
+      {/* Side-by-side when both present, single column otherwise */}
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          flexWrap: "wrap",
+        }}
+      >
+        {hasStart && <NoteItem text={startNotes} type="start" />}
+        {hasEnd && <NoteItem text={endNotes} type="end" />}
       </div>
     </div>
   );
@@ -495,6 +506,7 @@ const TimelineModal = ({ show, onClose }) => {
               month: "short",
               year: "numeric",
             });
+
           return {
             id: `${item?.status?.id ?? index}-${index}`,
             type: item?.status?.name || "Unknown",
@@ -505,7 +517,9 @@ const TimelineModal = ({ show, onClose }) => {
             endTime: item.end_time || null,
             timeDisplay: `${fmtTime(start)} – ${end ? fmtTime(end) : "Now"} | ${fmtDate(start)}`,
             duration: item.duration_in_seconds ?? 0,
-            notes: item.notes ?? item.note ?? item.remarks ?? null,
+            // ── notes: map start_notes and end_notes separately ──
+            start_notes: item.start_notes ?? null,
+            end_notes: item.end_notes ?? null,
             start_location: item.start_location || null,
             end_location: item.end_location || null,
             is_active: item.is_active ?? false,
@@ -907,8 +921,11 @@ const TimelineModal = ({ show, onClose }) => {
                         </div>
                       </div>
 
-                      {/* Notes */}
-                      <NotesBlock notes={item.notes} />
+                      {/* ── Start & End Notes ── */}
+                      <NotesPair
+                        startNotes={item.start_notes}
+                        endNotes={item.end_notes}
+                      />
                     </div>
                   </div>
                 );

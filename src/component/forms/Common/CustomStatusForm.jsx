@@ -49,6 +49,8 @@ const CustomStatusForm = () => {
         name: values.name,
         icon: values.emoji,
         is_active: values.is_active,
+        location_required: values.location_required,
+        notes_required: values.notes_required,
       };
 
       const isNew = !values.id;
@@ -67,16 +69,15 @@ const CustomStatusForm = () => {
       const savedData = response?.data?.data || response?.data || null;
 
       if ([200, 201].includes(response?.status) && savedData) {
-        // ✅ Normalize: always store as { emoji, is_active } so the table
-        //    reads consistent field names from Redux
         const normalizedData = {
           ...savedData,
           emoji: savedData.emoji ?? savedData.icon ?? values.emoji,
           is_active: savedData.is_active ?? values.is_active,
+          location_required:
+            savedData.location_required ?? values.location_required,
+          notes_required: savedData.notes_required ?? values.notes_required,
         };
 
-        // ✅ Dispatch updates CustomStatusReducer.custom_status_data,
-        //    which CustomStatus.jsx now reads correctly via useSelector
         isNew
           ? dispatch(addCustomStatus(normalizedData))
           : dispatch(editCustomStatus(normalizedData));
@@ -129,6 +130,8 @@ const CustomStatusForm = () => {
       name: form_obj?.name || "",
       emoji: form_obj?.emoji ?? form_obj?.icon ?? "",
       is_active: form_obj?.is_active ?? form_obj?.active ?? true,
+      location_required: form_obj?.location_required ?? false,
+      notes_required: form_obj?.notes_required ?? false,
     },
     validationSchema: Yup.object({
       name: Yup.string().required("Please Enter Status Name").min(2),
@@ -143,6 +146,37 @@ const CustomStatusForm = () => {
   };
 
   const isEdit = !!formik.values.id;
+
+  const ToggleField = ({ id, label, helpText }) => (
+    <Col md={12} lg={12} xxl={12}>
+      <div>
+        <Label htmlFor={id} className="form-label">
+          {label}
+        </Label>
+        <div className="mb-2">
+          <div
+            className="form-check form-switch form-switch-md form-switch-success"
+            dir="ltr"
+          >
+            <Input
+              id={id}
+              name={id}
+              type="checkbox"
+              className="form-check-input"
+              checked={formik.values[id]}
+              onChange={(e) => formik.setFieldValue(id, e.target.checked)}
+            />
+          </div>
+        </div>
+      </div>
+      <div className="form-text mb-3">
+        {helpText}{" "}
+        <b>
+          <i>{formik.values[id] ? "Yes" : "No"}</i>
+        </b>
+      </div>
+    </Col>
+  );
 
   return (
     <Row>
@@ -195,39 +229,27 @@ const CustomStatusForm = () => {
                 </div>
               </FormGroup>
             </Col>
+            {/* Location Required — always visible */}
+            <ToggleField
+              id="location_required"
+              label="Location Required"
+              helpText="Location required is currently"
+            />
+
+            {/* Notes Required — always visible */}
+            <ToggleField
+              id="notes_required"
+              label="Notes Required"
+              helpText="Notes required is currently"
+            />
 
             {/* Toggle only in Edit mode */}
             {isEdit && (
-              <Col md={12} lg={12} xxl={12}>
-                <div>
-                  <Label htmlFor="is_active" className="form-label">
-                    Status
-                  </Label>
-                  <div className="mb-2">
-                    <div
-                      className="form-check form-switch form-switch-md form-switch-success"
-                      dir="ltr"
-                    >
-                      <Input
-                        id="is_active"
-                        name="is_active"
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={formik.values.is_active}
-                        onChange={(e) =>
-                          formik.setFieldValue("is_active", e.target.checked)
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="form-text mb-3">
-                  Status is currently{" "}
-                  <b>
-                    <i>{formik.values.is_active ? "Active" : "Inactive"}</i>
-                  </b>
-                </div>
-              </Col>
+              <ToggleField
+                id="is_active"
+                label="Status"
+                helpText="Status is currently"
+              />
             )}
 
             {/* Submit */}

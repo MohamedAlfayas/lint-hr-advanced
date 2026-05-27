@@ -31,7 +31,7 @@ import DashboardAttendanceStasticsReducer from "../ChildReducer/DashboardAttenda
 import ApprovalFilterReducer from "../ChildReducer/AprrovalFilterReducer";
 import ApprovalComponentReducer from "../ChildReducer/ApprovalComponentReducer";
 import StatusReducer from "../ChildReducer/StatusReducer";
-import PirioritiesReducer from "../ChildReducer/PirioritiesReducer";
+import PrioritiesReducer from "../ChildReducer/PrioritiesReducer";
 import ContactGroupReducer from "../ChildReducer/ContactGroupReducer";
 import ContactsReducer from "../ChildReducer/ContactsReducer";
 import TodayAttendanceReducer from "../ChildReducer/TodayAttendanceReducer";
@@ -42,6 +42,12 @@ import PTSettingsReducer from "../ChildReducer/PTSettingsReducer";
 import SalaryStructureReducer from "../ChildReducer/SalaryStructureReducer";
 import LocationGroupReducer from "../ChildReducer/LocationGroupReducer";
 import CustomStatusReducer from "../ChildReducer/CustomStatusReducer";
+import ClientReducer from "../ChildReducer/ClientReducer";
+import ProjectsReducer from "../ChildReducer/ProjectsReducer";
+import TaskReducer from "../ChildReducer/TaskReducer";
+import CheckListReducer from "../ChildReducer/CheckListReducer";
+import CommentReducer from "../ChildReducer/CommentReducer";
+
 export const MainReducer = combineReducers({
   MetaReducer: MetaReducer,
   EmployeeReducer: EmployeeReducer,
@@ -75,7 +81,7 @@ export const MainReducer = combineReducers({
   ApprovalFilterReducer: ApprovalFilterReducer,
   ApprovalComponentReducer: ApprovalComponentReducer,
   StatusReducer: StatusReducer,
-  PirioritiesReducer: PirioritiesReducer,
+  PrioritiesReducer: PrioritiesReducer,
   ContactGroupReducer: ContactGroupReducer,
   ContactsReducer: ContactsReducer,
   TodayAttendanceReducer: TodayAttendanceReducer,
@@ -86,4 +92,9 @@ export const MainReducer = combineReducers({
   SalaryStructureReducer: SalaryStructureReducer,
   LocationGroupReducer: LocationGroupReducer,
   CustomStatusReducer: CustomStatusReducer,
+  ClientReducer: ClientReducer,
+  ProjectsReducer: ProjectsReducer,
+  TaskReducer: TaskReducer,
+  CheckListReducer: CheckListReducer,
+  CommentReducer: CommentReducer,
 });

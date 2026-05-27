@@ -36,8 +36,8 @@ import {
   employeeTypeOptions,
 } from "../../common/constant/Constants";
 import {
-  VIEW_ALL_ATTENDANCE_ACCESS_KEY,
-  VIEW_ALL_EMPLOYEE_ACCESS_KEY,
+  VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
+  VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
   VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
@@ -50,7 +50,7 @@ const EmployeeActivity = (props) => {
   const [inData, setInData] = useState([]);
 
   const { currently_displaying_todays_attendance } = useSelector(
-    (state) => state.TeamTodaysAttendanceReducer
+    (state) => state.TeamTodaysAttendanceReducer,
   );
 
   const [filterOptions, setFilterOptions] = useState(attendanceStasticsOptions);
@@ -65,22 +65,19 @@ const EmployeeActivity = (props) => {
     let permission_list = profile_data?.permission_list || [];
     if (
       profile_data?.is_admin === true ||
-      permission_list.includes(VIEW_ALL_EMPLOYEE_ACCESS_KEY)
+      permission_list.includes(VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY)
     ) {
-      
       setShowAllAttendance(true);
       setShowTeamAttendance(true);
       onAttStasticsTypeChange(attendanceStasticsOptions[0]);
       GetTodaysAttReport(0);
       setFilterOptions(attendanceStasticsOptions);
     } else if (permission_list.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)) {
-     
       setShowTeamAttendance(true);
       onAttStasticsTypeChange(attendanceStasticsOptions[1]);
       GetTodaysAttReport(1);
       setFilterOptions(attendanceStasticsOptions.filter((d) => d.id === 1));
     } else {
-    
       setShowAllAttendance(false);
       setShowTeamAttendance(false);
       setFilterOptions([]);
@@ -121,27 +118,29 @@ const EmployeeActivity = (props) => {
       .then((res) => {
         dispatch(
           setAllMembersTodaysAttendanceData(
-            res?.data?.all_team_members_todays_attendance_report
-          )
+            res?.data?.all_team_members_todays_attendance_report,
+          ),
         );
         dispatch(
           setTeamTodaysAttendanceData(
-            res?.data?.my_team_members_todays_attendance_report
-          )
+            res?.data?.my_team_members_todays_attendance_report,
+          ),
         );
         if (
-          profile_data.permission_list.includes(VIEW_ALL_ATTENDANCE_ACCESS_KEY)
+          profile_data.permission_list.includes(
+            VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
+          )
         ) {
           dispatch(
             setCurrentlyDisplayingTodaysAttendanceData(
-              res?.data?.all_team_members_todays_attendance_report
-            )
+              res?.data?.all_team_members_todays_attendance_report,
+            ),
           );
         } else {
           dispatch(
             setCurrentlyDisplayingTodaysAttendanceData(
-              res?.data?.my_team_members_todays_attendance_report
-            )
+              res?.data?.my_team_members_todays_attendance_report,
+            ),
           );
         }
 
@@ -153,7 +152,7 @@ const EmployeeActivity = (props) => {
   };
 
   const { dashboard_attendance_stastics_type } = useSelector(
-    (state) => state.DashboardAttendanceStasticsReducer
+    (state) => state.DashboardAttendanceStasticsReducer,
   );
 
   const onAttStasticsTypeChange = (e) => {
@@ -237,7 +236,7 @@ const EmployeeActivity = (props) => {
                       className="basic-multi-select"
                       value={
                         filterOptions.find(
-                          (d) => d.value === dashboard_attendance_stastics_type
+                          (d) => d.value === dashboard_attendance_stastics_type,
                         ) || attendanceStasticsOptions[0]
                       }
                       onChange={(e) => onAttStasticsTypeChange(e)}

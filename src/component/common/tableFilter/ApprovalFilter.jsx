@@ -20,8 +20,8 @@ import {
   attendance_approval_component_name,
 } from "../../../common/constant/Constants";
 import {
-  VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
-  VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
+  VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
 } from "../../../common/constant/RoleConstants";
@@ -118,13 +118,13 @@ const ApprovalFilter = ({ formname }) => {
   useEffect(() => {
     if (
       (profile_data.permission_list.includes(
-        VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
+        VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
       ) &&
         !profile_data.permission_list.includes(
           VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
         )) ||
       (profile_data.permission_list.includes(
-        VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
+        VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
       ) &&
         !profile_data.permission_list.includes(
           VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
@@ -154,9 +154,10 @@ const ApprovalFilter = ({ formname }) => {
 
   useEffect(() => {
     const permissions = {
-      [VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY]: setShowAllAttendanceApproval,
+      [VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY]:
+        setShowAllAttendanceApproval,
       [VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY]: setShowTeamAttendanceApproval,
-      [VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY]: setShowAllLeaveApproval,
+      [VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY]: setShowAllLeaveApproval,
       [VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY]: setShowTeamLeaveApproval,
     };
 

@@ -10,7 +10,7 @@ import { Badge, Button, UncontrolledTooltip } from "reactstrap";
 import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import {
-  VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
+  VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
 import { setApprovalEmployeeTypeFilter } from "../../redux/reducers/ChildReducer/ApprovalComponentReducer";
@@ -66,12 +66,16 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
   // ── Employee type permission ────────────────────────────────
   let employee_type;
   if (
-    profile_data.permission_list.includes(VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY) &&
+    profile_data.permission_list.includes(
+      VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
+    ) &&
     profile_data.permission_list.includes(VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY)
   ) {
     employee_type = 1;
   } else if (
-    profile_data.permission_list.includes(VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY) &&
+    profile_data.permission_list.includes(
+      VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
+    ) &&
     !profile_data.permission_list.includes(VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY)
   ) {
     dispatch(setApprovalEmployeeTypeFilter(0));
@@ -90,7 +94,7 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
 
     if (
       profile_data.permission_list.includes(
-        VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
+        VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
       ) ||
       profile_data.permission_list.includes(VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY)
     ) {
