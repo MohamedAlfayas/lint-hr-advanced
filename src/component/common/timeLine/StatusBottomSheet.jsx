@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { PostApi } from "../../../common/api/PostApi";
 import Swal from "sweetalert2";
+import { Api } from "../../../common/api/Api";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -67,11 +68,7 @@ const StatusBottomSheet = ({
   const [imgError, setImgError] = useState(false);
   const [loadingId, setLoadingId] = useState(null);
 
-  const [activeStatus, setActiveStatus] = useState(() =>
-    localStorage.getItem("active_custom_status")
-      ? Number(localStorage.getItem("active_custom_status"))
-      : null,
-  );
+  const [activeStatus, setActiveStatus] = useState(null);
 
   const [customStatuses, setCustomStatuses] = useState([]);
 
@@ -102,6 +99,26 @@ const StatusBottomSheet = ({
           location_required: item.location_required ?? false,
         }));
       setCustomStatuses(filtered);
+
+      // ✅ API — real active status fetch
+      Api({
+        type: "GET",
+        url: "attendance/custom-statuses/current/v2/",
+      })
+        .then((res) => {
+          const data = res?.data;
+          if (data && data.id) {
+            setActiveStatus(Number(data.id));
+            localStorage.setItem("active_custom_status", data.id);
+          } else {
+            setActiveStatus(null);
+            localStorage.removeItem("active_custom_status");
+          }
+        })
+        .catch(() => {
+          setActiveStatus(null);
+          localStorage.removeItem("active_custom_status");
+        });
     }
   }, [show]);
 
@@ -222,7 +239,7 @@ const StatusBottomSheet = ({
 
     try {
       const response = await PostApi(
-        "attendance/custom-statuses/toggle/",
+        "attendance/custom-statuses/toggle/v2/",
         payload,
         false,
       );
@@ -289,7 +306,7 @@ const StatusBottomSheet = ({
 
     try {
       const response = await PostApi(
-        "attendance/custom-statuses/toggle/",
+        "attendance/custom-statuses/toggle/v2/",
         payload,
         false,
       );

@@ -131,7 +131,7 @@ const EmployeeView = () => {
         setFilterKeys(att_api_payload);
 
         const Att_Report_Api = await PostApi(
-          "report/get-attendance-report/",
+          "report/get-attendance-report/v2/",
           att_api_payload,
           false,
         );

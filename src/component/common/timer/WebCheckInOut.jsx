@@ -109,6 +109,9 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
           if (!!ApiRes && ApiRes.status === 200) {
             toast.success(ApiRes?.data?.message);
             GetTotalWorkDuration(dispatch);
+            if (currently_checked_in) {
+              localStorage.removeItem("active_custom_status");
+            }
           } else {
             if (ApiRes?.data?.is_late) {
               SetCICOPayload(payload);

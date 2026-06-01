@@ -675,6 +675,90 @@ const CustomStatusTimelineModal = ({ isOpen, toggle, rowData }) => {
                 </div>
               </div>
 
+              {/* ── Custom Status Duration Summary ── */}
+              {rowData?.custom_status_duration_summary &&
+                Object.keys(rowData.custom_status_duration_summary).length >
+                  0 && (
+                  <div
+                    style={{
+                      marginBottom: "16px",
+                      background: "#f8f9fc",
+                      border: "0.5px solid #e2e5ee",
+                      borderRadius: "10px",
+                      padding: "12px 16px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#999",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.4px",
+                        marginBottom: "10px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      <i className="mdi mdi-chart-bar me-1" />
+                      Status Duration Summary
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "8px",
+                      }}
+                    >
+                      {Object.entries(
+                        rowData.custom_status_duration_summary,
+                      ).map(([name, seconds]) => (
+                        <div
+                          key={name}
+                          style={{
+                            background: "#fff",
+                            border: "1px solid #e9ecef",
+                            borderRadius: "8px",
+                            padding: "8px 14px",
+                            fontSize: "12px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: "8px",
+                              height: "8px",
+                              borderRadius: "50%",
+                              background: "#405189",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <span style={{ color: "#444", fontWeight: 500 }}>
+                            {name}
+                          </span>
+                          <span
+                            style={{
+                              background: "#f0f4ff",
+                              color: "#405189",
+                              borderRadius: "5px",
+                              padding: "2px 8px",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              border: "0.5px solid #c5cff0",
+                            }}
+                          >
+                            {formatDuration(seconds)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
               {/* ── No results ── */}
               {filtered.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "30px 0" }}>

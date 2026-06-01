@@ -28,7 +28,11 @@ const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
   const BuildTable = async (payload) => {
     dispatch(setLoaderVisible(true));
 
-    const Api = await PostApi("report/get-attendance-report/", payload, false);
+    const Api = await PostApi(
+      "report/get-attendance-report/v2/",
+      payload,
+      false,
+    );
     if (Api.status && Api.status === 200) {
       dispatch(
         setIndividualAttendanceReportData(

@@ -1,21 +1,27 @@
-import React, { useMemo } from "react";
-import { useSelector } from "react-redux";
+import React, { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import InfoTable from "../../component/common/table/InfoTable";
 import { custom_status_form_component_name } from "../../common/constant/Constants";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { setCustomStatus } from "../../redux/reducers/ChildReducer/CustomStatusReducer";
 
 const CustomStatus = () => {
-  const reduxData = useSelector(
-    (state) => state.CustomStatusReducer?.custom_status_data,
+  const { custom_status_data } = useSelector(
+    (state) => state.CustomStatusReducer,
   );
 
-  const custom_status_data = useMemo(() => {
-    const sourceData =
-      Array.isArray(reduxData) && reduxData.length > 0
-        ? reduxData
-        : GetLocalStorageData("custom_statuses") || [];
+  const dispatch = useDispatch();
 
-    return sourceData
+  useEffect(() => {
+    dispatch(setCustomStatus(GetLocalStorageData("custom_statuses")));
+  }, []);
+
+  const [customStatusData, setCustomStatusData] = useState([]);
+
+  useEffect(() => {
+    console.log("Redux Data = ", custom_status_data);
+
+    let t = custom_status_data
       .filter((item) => item && typeof item === "object")
       .map((item) => ({
         id: item.id,
@@ -24,8 +30,11 @@ const CustomStatus = () => {
         is_active: item.is_active ?? item.active ?? true,
         location_required: item.location_required ?? false,
         notes_required: item.notes_required ?? false,
+        is_break: item.is_break ?? false,
       }));
-  }, [reduxData]);
+
+    setCustomStatusData(t);
+  }, [custom_status_data]);
 
   const BoolBadge = ({ value, trueLabel = "Yes", falseLabel = "No" }) => (
     <span
@@ -64,6 +73,10 @@ const CustomStatus = () => {
       Header: "Notes Required",
       accessor: (obj) => <BoolBadge value={obj.notes_required} />,
     },
+    {
+      Header: "Exclude Hours",
+      accessor: (obj) => <BoolBadge value={obj.is_break} />,
+    },
   ];
 
   const initialFormObj = useMemo(
@@ -74,6 +87,7 @@ const CustomStatus = () => {
       is_active: true,
       location_required: false,
       notes_required: false,
+      is_break: false,
     }),
     [],
   );
@@ -84,19 +98,19 @@ const CustomStatus = () => {
     {
       option: true,
       label: "Active",
-      count: custom_status_data.filter((e) => e.is_active).length,
+      count: customStatusData.filter((e) => e.is_active).length,
     },
     {
       option: false,
       label: "Inactive",
-      count: custom_status_data.filter((e) => !e.is_active).length,
+      count: customStatusData.filter((e) => !e.is_active).length,
     },
   ];
 
   return (
     <InfoTable
       additionalColumn={additionalColumn}
-      tabledata={custom_status_data}
+      tabledata={customStatusData}
       formname={custom_status_form_component_name}
       initialFormObj={initialFormObj}
       filterKey={filterKey}

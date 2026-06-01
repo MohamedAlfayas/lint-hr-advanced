@@ -128,7 +128,7 @@ const AttendanceFilter = () => {
     dispatch(setLoaderVisible(true));
 
     const attendanceApi = await PostApi(
-      "report/get-attendance-report/",
+      "report/get-attendance-report/v2/",
       filterKeys,
       false,
     );

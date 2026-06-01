@@ -457,6 +457,7 @@ const TimelineModal = ({ show, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [uniqueTabs, setUniqueTabs] = useState(["All"]);
   const [filtered, setFiltered] = useState([]);
+  const [durationSummary, setDurationSummary] = useState({});
 
   const [mapModal, setMapModal] = useState({
     open: false,
@@ -491,47 +492,50 @@ const TimelineModal = ({ show, onClose }) => {
 
   const fetchTimeline = async () => {
     setLoading(true);
+
     try {
-      const res = await GetApi("attendance/custom-statuses/timeline/");
+      const res = await GetApi("attendance/custom-statuses/timeline/v2/");
+
       if (res?.status === 200) {
         const raw = res?.data?.data || [];
-        const formatted = raw.map((item, index) => {
-          const start = new Date(item.start_time);
-          const end = item.end_time ? new Date(item.end_time) : null;
-          const fmtTime = (d) =>
-            d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-          const fmtDate = (d) =>
-            d.toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            });
 
-          return {
-            id: `${item?.status?.id ?? index}-${index}`,
-            type: item?.status?.name || "Unknown",
-            title: item?.status?.name || "Unknown",
-            icon: sanitizeIcon(item?.status?.icon),
-            statusId: item?.status?.id || null,
-            startTime: item.start_time || null,
-            endTime: item.end_time || null,
-            timeDisplay: `${fmtTime(start)} – ${end ? fmtTime(end) : "Now"} | ${fmtDate(start)}`,
-            duration: item.duration_in_seconds ?? 0,
-            // ── notes: map start_notes and end_notes separately ──
-            start_notes: item.start_notes ?? null,
-            end_notes: item.end_notes ?? null,
-            start_location: item.start_location || null,
-            end_location: item.end_location || null,
-            is_active: item.is_active ?? false,
-          };
-        });
-        setTimelineData(formatted.reverse());
-      } else {
-        setTimelineData([]);
+        const formatted = raw.map((item, index) => ({
+          id: index + 1,
+
+          // Status
+          type: item?.status?.name || "Unknown",
+          title: item?.status?.name || "Unknown",
+          icon: sanitizeIcon(item?.status?.icon),
+          statusId: item?.status?.id,
+
+          // Times
+          startTime: item?.start_time,
+          endTime: item?.end_time,
+
+          start: item?.start_time ? new Date(item.start_time) : null,
+
+          end: item?.end_time ? new Date(item.end_time) : new Date(),
+
+          duration: item?.duration_in_seconds || 0,
+
+          // Notes
+          start_notes: item?.start_notes,
+          end_notes: item?.end_notes,
+
+          // Locations
+          start_location: item?.start_location,
+          end_location: item?.end_location,
+
+          // Status
+          is_active: item?.is_active || false,
+        }));
+
+        setTimelineData(formatted);
+
+        setDurationSummary(res?.data?.custom_status_duration_summary || {});
       }
     } catch (err) {
-      console.error("Timeline error:", err);
-      setTimelineData([]);
+      console.error("Timeline API Error:", err);
     } finally {
       setLoading(false);
     }
@@ -618,43 +622,31 @@ const TimelineModal = ({ show, onClose }) => {
           </div>
 
           {/* Summary strip */}
-          {!loading && filtered.length > 0 && (
+          {Object.keys(durationSummary).length > 0 && (
             <div
               style={{
                 display: "flex",
-                gap: "12px",
-                marginBottom: "20px",
                 flexWrap: "wrap",
+                gap: "8px",
+                marginBottom: "15px",
               }}
             >
-              <div
-                style={{
-                  background: "#f0f4ff",
-                  borderRadius: "8px",
-                  padding: "8px 16px",
-                  fontSize: "13px",
-                  color: "#405189",
-                  fontWeight: 500,
-                  border: "0.5px solid #c5cff0",
-                }}
-              >
-                <i className="mdi mdi-clock-outline me-1" />
-                Total Duration: <b>{formatDuration(totalDuration)}</b>
-              </div>
-              <div
-                style={{
-                  background: "#f0faf4",
-                  borderRadius: "8px",
-                  padding: "8px 16px",
-                  fontSize: "13px",
-                  color: "#0a7b5e",
-                  fontWeight: 500,
-                  border: "0.5px solid #b3dfc9",
-                }}
-              >
-                <i className="mdi mdi-format-list-numbered me-1" />
-                Total Entries: <b>{filtered.length}</b>
-              </div>
+              {Object.entries(durationSummary).map(([name, seconds]) => (
+                <div
+                  key={name}
+                  style={{
+                    background: "#f8f9fa",
+                    border: "1px solid #e9ecef",
+                    borderRadius: "8px",
+                    padding: "8px 12px",
+                    fontSize: "12px",
+                  }}
+                >
+                  <strong>{name}</strong>
+                  <br />
+                  {formatDuration(seconds)}
+                </div>
+              ))}
             </div>
           )}
 

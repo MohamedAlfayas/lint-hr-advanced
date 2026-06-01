@@ -23,6 +23,7 @@ import {
 } from "../../../redux/reducers/ChildReducer/CustomStatusReducer";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { PutApi } from "../../../common/api/PutApi";
+import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
 
 const CustomStatusForm = () => {
   const dispatch = useDispatch();
@@ -51,16 +52,21 @@ const CustomStatusForm = () => {
         is_active: values.is_active,
         location_required: values.location_required,
         notes_required: values.notes_required,
+        is_break: values.is_break,
       };
 
       const isNew = !values.id;
       let response;
 
       if (isNew) {
-        response = await PostApi("attendance/custom-statuses/", payload, true);
+        response = await PostApi(
+          "attendance/custom-statuses/v2/",
+          payload,
+          true,
+        );
       } else {
         response = await PutApi(
-          `attendance/custom-statuses/${values.id}/`,
+          `attendance/custom-statuses/${values.id}/v2/`,
           payload,
           true,
         );
@@ -92,12 +98,12 @@ const CustomStatusForm = () => {
               i.id === normalizedData.id ? normalizedData : i,
             );
 
-        localStorage.setItem("custom_statuses", JSON.stringify(updatedData));
+        SetLocalStorage("custom_statuses", JSON.stringify(updatedData));
 
         let global =
           JSON.parse(localStorage.getItem("lint_hr_globaldata")) || {};
         global["custom_statuses"] = updatedData;
-        localStorage.setItem("lint_hr_globaldata", JSON.stringify(global));
+        SetLocalStorage("lint_hr_globaldata", JSON.stringify(global));
 
         toast.success(
           isNew
@@ -132,6 +138,7 @@ const CustomStatusForm = () => {
       is_active: form_obj?.is_active ?? form_obj?.active ?? true,
       location_required: form_obj?.location_required ?? false,
       notes_required: form_obj?.notes_required ?? false,
+      is_break: form_obj?.is_break ?? false,
     },
     validationSchema: Yup.object({
       name: Yup.string().required("Please Enter Status Name").min(2),
@@ -146,6 +153,37 @@ const CustomStatusForm = () => {
   };
 
   const isEdit = !!formik.values.id;
+
+  // const ToggleField = ({ id, label, helpText }) => (
+  //   <Col md={12} lg={12} xxl={12}>
+  //     <div>
+  //       <Label htmlFor={id} className="form-label">
+  //         {label}
+  //       </Label>
+  //       <div className="mb-2">
+  //         <div
+  //           className="form-check form-switch form-switch-md form-switch-success"
+  //           dir="ltr"
+  //         >
+  //           <Input
+  //             id={id}
+  //             name={id}
+  //             type="checkbox"
+  //             className="form-check-input"
+  //             checked={formik.values[id]}
+  //             onChange={(e) => formik.setFieldValue(id, e.target.checked)}
+  //           />
+  //         </div>
+  //       </div>
+  //     </div>
+  //     <div className="form-text mb-3">
+  //       {helpText}{" "}
+  //       <b>
+  //         <i>{formik.values[id] ? "Yes" : "No"}</i>
+  //       </b>
+  //     </div>
+  //   </Col>
+  // );
 
   const ToggleField = ({ id, label, helpText }) => (
     <Col md={12} lg={12} xxl={12}>
@@ -169,12 +207,14 @@ const CustomStatusForm = () => {
           </div>
         </div>
       </div>
-      <div className="form-text mb-3">
-        {helpText}{" "}
-        <b>
-          <i>{formik.values[id] ? "Yes" : "No"}</i>
-        </b>
-      </div>
+      {helpText && (
+        <div className="form-text mb-3">
+          {helpText}{" "}
+          <b>
+            <i>{formik.values[id] ? "Yes" : "No"}</i>
+          </b>
+        </div>
+      )}
     </Col>
   );
 
@@ -230,17 +270,16 @@ const CustomStatusForm = () => {
               </FormGroup>
             </Col>
             {/* Location Required — always visible */}
-            <ToggleField
-              id="location_required"
-              label="Location Required"
-              helpText="Location required is currently"
-            />
+            <ToggleField id="location_required" label="Location Required" />
 
             {/* Notes Required — always visible */}
+            <ToggleField id="notes_required" label="Notes Required" />
+
+            {/* Break Status — always visible */}
             <ToggleField
-              id="notes_required"
-              label="Notes Required"
-              helpText="Notes required is currently"
+              id="is_break"
+              label="Exclude from Working Hours"
+              helpText=" When enabled, time logged will not be counted toward working hours"
             />
 
             {/* Toggle only in Edit mode */}
