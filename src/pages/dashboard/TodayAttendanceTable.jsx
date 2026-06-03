@@ -608,16 +608,80 @@ const TodayAttendanceTable = () => {
     return 4;
   };
 
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: "asc",
+  });
+
+  const handleSort = (key) => {
+    let direction = "asc";
+
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+
+    setSortConfig({ key, direction });
+  };
+
+  const SortableHeader = ({ title, sortKey, style = {} }) => (
+    <th
+      onClick={() => handleSort(sortKey)}
+      style={{
+        cursor: "pointer",
+        userSelect: "none",
+        ...style,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "5px",
+        }}
+      >
+        {title}
+
+        {sortConfig.key === sortKey ? (
+          sortConfig.direction === "asc" ? (
+            <i className="bx bx-chevron-up"></i>
+          ) : (
+            <i className="bx bx-chevron-down"></i>
+          )
+        ) : (
+          <i className="bx bx-sort-alt-2" style={{ opacity: 0.5 }}></i>
+        )}
+      </div>
+    </th>
+  );
+
   // ─── Table headers ────────────────────────────────────────────────────────
   const renderTableHeaders = () => {
     if (activeTab === "3") {
       return (
         <tr>
-          <th style={{ width: "28%", minWidth: "160px" }}>Name</th>
-          <th style={{ width: "15%", minWidth: "100px", ...thCenter }}>
-            Department
-          </th>
-          <th style={{ width: "20%", minWidth: "130px", ...thCenter }}>
+          <SortableHeader
+            title="Name"
+            sortKey="first_name"
+            style={{ width: "28%", minWidth: "160px" }}
+          />
+
+          <SortableHeader
+            title="Department"
+            sortKey="department"
+            style={{ width: "15%", minWidth: "100px", ...thCenter }}
+          />
+
+          <th
+            onClick={() => handleSort("leave_type")}
+            style={{
+              width: "20%",
+              minWidth: "130px",
+              cursor: "pointer",
+              userSelect: "none",
+              ...thCenter,
+            }}
+          >
             <span
               style={{
                 display: "inline-flex",
@@ -630,45 +694,71 @@ const TodayAttendanceTable = () => {
                 style={{ color: "#ef4444", fontSize: "14px" }}
               ></i>
               Leave Type
+              {sortConfig.key === "leave_type" ? (
+                sortConfig.direction === "asc" ? (
+                  <i className="bx bx-chevron-up"></i>
+                ) : (
+                  <i className="bx bx-chevron-down"></i>
+                )
+              ) : (
+                <i className="bx bx-sort-alt-2" style={{ opacity: 0.5 }}></i>
+              )}
             </span>
           </th>
-          <th style={{ width: "37%", minWidth: "180px", ...thCenter }}>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-              }}
-            >
-              <i
-                className="bx bx-info-circle"
-                style={{ color: "#6366f1", fontSize: "14px" }}
-              ></i>
-              Info
-            </span>
-          </th>
+
+          <SortableHeader
+            title="Info"
+            sortKey="info"
+            style={{ width: "37%", minWidth: "180px", ...thCenter }}
+          />
         </tr>
       );
     }
 
     return (
       <tr>
-        <th style={{ width: "28%", minWidth: "170px" }}>Name</th>
-        <th style={{ width: "14%", minWidth: "100px", ...thCenter }}>
-          Department
-        </th>
-        <th style={{ width: "11%", minWidth: "80px", ...thCenter }}>In Time</th>
-        <th style={{ width: "11%", minWidth: "80px", ...thCenter }}>
-          Out Time
-        </th>
-        <th style={{ width: "11%", minWidth: "80px", ...thCenter }}>
-          Total Hours
-        </th>
-        <th style={{ width: "10%", minWidth: "70px", ...thCenter }}>Status</th>
+        <SortableHeader
+          title="Name"
+          sortKey="first_name"
+          style={{ width: "28%", minWidth: "170px" }}
+        />
+
+        <SortableHeader
+          title="Department"
+          sortKey="department"
+          style={{ width: "14%", minWidth: "100px", ...thCenter }}
+        />
+
+        <SortableHeader
+          title="In Time"
+          sortKey="inTime"
+          style={{ width: "11%", minWidth: "80px", ...thCenter }}
+        />
+
+        <SortableHeader
+          title="Out Time"
+          sortKey="outTime"
+          style={{ width: "11%", minWidth: "80px", ...thCenter }}
+        />
+
+        <SortableHeader
+          title="Total Hours"
+          sortKey="totalHours"
+          style={{ width: "11%", minWidth: "80px", ...thCenter }}
+        />
+
+        <SortableHeader
+          title="Status"
+          sortKey="status"
+          style={{ width: "10%", minWidth: "70px", ...thCenter }}
+        />
+
         {activeTab === "1" && (
-          <th style={{ width: "10%", minWidth: "70px", ...thCenter }}>
-            Location
-          </th>
+          <SortableHeader
+            title="Location"
+            sortKey="location"
+            style={{ width: "10%", minWidth: "70px", ...thCenter }}
+          />
         )}
       </tr>
     );
@@ -878,6 +968,7 @@ const TodayAttendanceTable = () => {
                 colors="primary:#405189,secondary:#0ab39c"
                 style={{ width: "80px", height: "80px", marginBottom: "12px" }}
               ></lord-icon>
+
               <p
                 style={{
                   color: "#405189",
@@ -893,9 +984,45 @@ const TodayAttendanceTable = () => {
       );
     }
 
-    return filteredData.map((row, idx) => (
+    // Sort Data
+    const sortedData = [...filteredData].sort((a, b) => {
+      if (!sortConfig.key) return 0;
+
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      aValue = aValue ?? "";
+      bValue = bValue ?? "";
+
+      // Time sorting
+      if (sortConfig.key === "inTime" || sortConfig.key === "outTime") {
+        aValue = aValue ? new Date(`1970-01-01 ${aValue}`).getTime() : 0;
+
+        bValue = bValue ? new Date(`1970-01-01 ${bValue}`).getTime() : 0;
+      }
+
+      // Total Hours sorting
+      if (sortConfig.key === "totalHours") {
+        aValue = parseFloat(aValue) || 0;
+        bValue = parseFloat(bValue) || 0;
+      }
+
+      // String sorting
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        const result = aValue.localeCompare(bValue);
+
+        return sortConfig.direction === "asc" ? result : -result;
+      }
+
+      // Number sorting
+      const result = aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+
+      return sortConfig.direction === "asc" ? result : -result;
+    });
+
+    return sortedData.map((row, idx) => (
       <tr key={idx}>
-        {/* ── Name Cell ── */}
+        {/* Name */}
         <td style={{ verticalAlign: "middle" }}>
           <div className="d-flex gap-2 align-items-start">
             <div className="flex-shrink-0" style={{ marginTop: "2px" }}>
@@ -930,7 +1057,12 @@ const TodayAttendanceTable = () => {
               >
                 <h5 className="fs-14 mb-0" style={{ whiteSpace: "nowrap" }}>
                   {row.first_name}{" "}
-                  <span style={{ color: "#a29797", fontSize: "smaller" }}>
+                  <span
+                    style={{
+                      color: "#a29797",
+                      fontSize: "smaller",
+                    }}
+                  >
                     #{row.emp_id}
                   </span>
                 </h5>
@@ -971,23 +1103,23 @@ const TodayAttendanceTable = () => {
           </div>
         </td>
 
-        {/* ── Leave Tab columns ── */}
+        {/* Leave Tab */}
         {activeTab === "3" ? (
           <>
             <td style={tdCenter}>{row.department || "-"}</td>
 
-            {/* Leave Type pills */}
             <td style={tdCenter}>{renderLeaveTypePills(row)}</td>
 
-            {/* Info cell — full_day + half_day + permission all shown */}
             <td style={tdCenter}>{renderInfoCell(row)}</td>
           </>
         ) : (
-          /* ── Tab 1 & 2 columns ── */
           <>
             <td style={tdCenter}>{row.department || "-"}</td>
+
             <td style={tdCenter}>{formatTime(row.inTime)}</td>
+
             <td style={tdCenter}>{formatTime(row.outTime)}</td>
+
             <td style={tdCenter}>{row.totalHours}</td>
 
             <td style={tdCenter}>
