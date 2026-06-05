@@ -24,6 +24,8 @@ import {
 } from "../../../../redux/reducers/ChildReducer/CommentReducer";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+import { DeleteApi } from "../../../../common/api/DeleteApi";
+import TaskCommentSection from "./TaskCommentSection";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const FIELD_LABELS = {
@@ -732,385 +734,385 @@ const AttachmentGrid = ({
 
 // ─── TaskCommentSection ───────────────────────────────────────────────────────
 
-const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
-  const dispatch = useDispatch();
+// const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
+//   const dispatch = useDispatch();
 
-  // ✅ Read comments from Redux store
-  const reduxComments = useSelector(
-    (state) => state.CommentReducer.comment_data,
-  );
+//   // ✅ Read comments from Redux store
+//   const reduxComments = useSelector(
+//     (state) => state.CommentReducer.comment_data,
+//   );
 
-  const [commentText, setCommentText] = useState("");
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [fileError, setFileError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
-  const fileInputRef = useRef(null);
+//   const [commentText, setCommentText] = useState("");
+//   const [selectedFiles, setSelectedFiles] = useState([]);
+//   const [fileError, setFileError] = useState("");
+//   const [submitting, setSubmitting] = useState(false);
+//   const [deletingId, setDeletingId] = useState(null);
+//   const fileInputRef = useRef(null);
 
-  const sortedComments = useMemo(
-    () =>
-      [...reduxComments].sort(
-        (a, b) => new Date(b.created_on) - new Date(a.created_on),
-      ),
-    [reduxComments],
-  );
+//   const sortedComments = useMemo(
+//     () =>
+//       [...reduxComments].sort(
+//         (a, b) => new Date(b.created_on) - new Date(a.created_on),
+//       ),
+//     [reduxComments],
+//   );
 
-  const handleFileChange = (e) => {
-    setFileError("");
-    const newFiles = Array.from(e.target.files || []);
-    const valid = [];
-    for (const file of newFiles) {
-      if (!ALLOWED_TYPES.includes(file.type)) {
-        setFileError(
-          `"${file.name}" is not allowed. Only images (JPEG, PNG, GIF, WebP) and PDF.`,
-        );
-        continue;
-      }
-      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        setFileError(
-          `"${file.name}" exceeds the ${MAX_FILE_SIZE_MB} MB limit.`,
-        );
-        continue;
-      }
-      const previewUrl = file.type.startsWith("image/")
-        ? URL.createObjectURL(file)
-        : null;
-      valid.push({ file, previewUrl, name: file.name });
-    }
-    setSelectedFiles((prev) => [...prev, ...valid]);
-    e.target.value = "";
-  };
+//   const handleFileChange = (e) => {
+//     setFileError("");
+//     const newFiles = Array.from(e.target.files || []);
+//     const valid = [];
+//     for (const file of newFiles) {
+//       if (!ALLOWED_TYPES.includes(file.type)) {
+//         setFileError(
+//           `"${file.name}" is not allowed. Only images (JPEG, PNG, GIF, WebP) and PDF.`,
+//         );
+//         continue;
+//       }
+//       if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+//         setFileError(
+//           `"${file.name}" exceeds the ${MAX_FILE_SIZE_MB} MB limit.`,
+//         );
+//         continue;
+//       }
+//       const previewUrl = file.type.startsWith("image/")
+//         ? URL.createObjectURL(file)
+//         : null;
+//       valid.push({ file, previewUrl, name: file.name });
+//     }
+//     setSelectedFiles((prev) => [...prev, ...valid]);
+//     e.target.value = "";
+//   };
 
-  const removeFile = (index) => {
-    setSelectedFiles((prev) => {
-      const copy = [...prev];
-      if (copy[index].previewUrl) URL.revokeObjectURL(copy[index].previewUrl);
-      copy.splice(index, 1);
-      return copy;
-    });
-  };
+//   const removeFile = (index) => {
+//     setSelectedFiles((prev) => {
+//       const copy = [...prev];
+//       if (copy[index].previewUrl) URL.revokeObjectURL(copy[index].previewUrl);
+//       copy.splice(index, 1);
+//       return copy;
+//     });
+//   };
 
-  const previewAttachments = useMemo(
-    () =>
-      selectedFiles.map((f) => ({
-        previewUrl: f.previewUrl || "",
-        attachment_url: f.previewUrl || `pdf::${f.name}`,
-        name: f.name,
-      })),
-    [selectedFiles],
-  );
+//   const previewAttachments = useMemo(
+//     () =>
+//       selectedFiles.map((f) => ({
+//         previewUrl: f.previewUrl || "",
+//         attachment_url: f.previewUrl || `pdf::${f.name}`,
+//         name: f.name,
+//       })),
+//     [selectedFiles],
+//   );
 
-  // =========================
-  // ADD COMMENT
-  // =========================
-  const handleSubmit = async () => {
-    if (!commentText.trim() && selectedFiles.length === 0) return;
-    setSubmitting(true);
-    setFileError("");
-    try {
-      const formData = new FormData();
-      formData.append("task", String(taskId));
-      formData.append("comment", commentText.trim());
-      selectedFiles.forEach(({ file }) => formData.append("attachments", file));
+//   // =========================
+//   // ADD COMMENT
+//   // =========================
+//   const handleSubmit = async () => {
+//     if (!commentText.trim() && selectedFiles.length === 0) return;
+//     setSubmitting(true);
+//     setFileError("");
+//     try {
+//       const formData = new FormData();
+//       formData.append("task", String(taskId));
+//       formData.append("comment", commentText.trim());
+//       selectedFiles.forEach(({ file }) => formData.append("attachments", file));
 
-      const response = await Api.post("/task/add-task-comment/", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+//       const response = await Api.post("/task/add-task-comment/", formData, {
+//         headers: { "Content-Type": "multipart/form-data" },
+//       });
 
-      const newComment = response?.data?.data;
+//       const newComment = response?.data?.data;
 
-      if (newComment) {
-        // ✅ Push only the new comment into Redux store
-        dispatch(addComment(newComment));
-      }
+//       if (newComment) {
+//         // ✅ Push only the new comment into Redux store
+//         dispatch(addComment(newComment));
+//       }
 
-      selectedFiles.forEach(({ previewUrl }) => {
-        if (previewUrl) URL.revokeObjectURL(previewUrl);
-      });
+//       selectedFiles.forEach(({ previewUrl }) => {
+//         if (previewUrl) URL.revokeObjectURL(previewUrl);
+//       });
 
-      setCommentText("");
-      setSelectedFiles([]);
-      toast.success(response?.data?.message || "Comment Added");
-    } catch (err) {
-      console.error("Add comment error:", err);
-      setFileError("Failed to post comment. Please try again.");
-      toast.error("Failed to post comment.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+//       setCommentText("");
+//       setSelectedFiles([]);
+//       toast.success(response?.data?.message || "Comment Added");
+//     } catch (err) {
+//       console.error("Add comment error:", err);
+//       setFileError("Failed to post comment. Please try again.");
+//       toast.error("Failed to post comment.");
+//     } finally {
+//       setSubmitting(false);
+//     }
+//   };
 
-  // =========================
-  // DELETE COMMENT
-  // =========================
-  const handleDeleteComment = async (commentId) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "You want to delete this comment?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#6c757d",
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonText: "Cancel",
-    });
+//   // =========================
+//   // DELETE COMMENT
+//   // =========================
+//   const handleDeleteComment = async (commentId) => {
+//     const result = await Swal.fire({
+//       title: "Are you sure?",
+//       text: "You want to delete this comment?",
+//       icon: "warning",
+//       showCancelButton: true,
+//       confirmButtonColor: "#d33",
+//       cancelButtonColor: "#6c757d",
+//       confirmButtonText: "Yes, delete it!",
+//       cancelButtonText: "Cancel",
+//     });
 
-    if (!result.isConfirmed) return;
+//     if (!result.isConfirmed) return;
 
-    setDeletingId(commentId);
+//     setDeletingId(commentId);
 
-    try {
-      const payload = {
-        id: commentId,
-        task: taskId,
-      };
+//     try {
+//       const payload = {
+//         id: commentId,
+//         task: taskId,
+//       };
 
-      const response = await PostApi("/task/delete-task-comment/", payload);
+//       const response = await PostApi("/task/delete-task-comment/", payload);
 
-      // Remove comment from Redux store
-      dispatch(deleteComment(commentId));
+//       // Remove comment from Redux store
+//       dispatch(deleteComment(commentId));
 
-      Swal.fire({
-        title: "Deleted!",
-        text: response?.data?.message || "Comment deleted successfully",
-        icon: "success",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-    } catch (error) {
-      console.error("Delete comment error:", error);
+//       Swal.fire({
+//         title: "Deleted!",
+//         text: response?.data?.message || "Comment deleted successfully",
+//         icon: "success",
+//         timer: 1500,
+//         showConfirmButton: false,
+//       });
+//     } catch (error) {
+//       console.error("Delete comment error:", error);
 
-      Swal.fire({
-        title: "Error!",
-        text: error?.response?.data?.message || "Failed to delete comment",
-        icon: "error",
-      });
-    } finally {
-      setDeletingId(null);
-    }
-  };
+//       Swal.fire({
+//         title: "Error!",
+//         text: error?.response?.data?.message || "Failed to delete comment",
+//         icon: "error",
+//       });
+//     } finally {
+//       setDeletingId(null);
+//     }
+//   };
 
-  return (
-    <div className="p-4 border-top">
-      {/* Section header */}
-      <h6
-        className="fw-bold mb-3 d-flex align-items-center gap-2"
-        style={{
-          fontSize: "0.8rem",
-          textTransform: "uppercase",
-          letterSpacing: ".6px",
-          color: "#6c757d",
-        }}
-      >
-        <i className="ri-chat-3-line text-primary" />
-        Comments
-        {sortedComments.length > 0 && (
-          <span
-            className="badge bg-primary ms-1"
-            style={{ fontSize: "0.65rem", padding: "2px 7px" }}
-          >
-            {sortedComments.length}
-          </span>
-        )}
-      </h6>
+//   return (
+//     <div className="p-4 border-top">
+//       {/* Section header */}
+//       <h6
+//         className="fw-bold mb-3 d-flex align-items-center gap-2"
+//         style={{
+//           fontSize: "0.8rem",
+//           textTransform: "uppercase",
+//           letterSpacing: ".6px",
+//           color: "#6c757d",
+//         }}
+//       >
+//         <i className="ri-chat-3-line text-primary" />
+//         Comments
+//         {sortedComments.length > 0 && (
+//           <span
+//             className="badge bg-primary ms-1"
+//             style={{ fontSize: "0.65rem", padding: "2px 7px" }}
+//           >
+//             {sortedComments.length}
+//           </span>
+//         )}
+//       </h6>
 
-      {/* Composer */}
-      <div
-        className="mb-4 rounded"
-        style={{
-          border: "1px solid #e2e8f0",
-          background: "#fff",
-          overflow: "hidden",
-        }}
-      >
-        <textarea
-          className="form-control border-0"
-          rows={3}
-          placeholder="Write a comment…"
-          value={commentText}
-          onChange={(e) => setCommentText(e.target.value)}
-          style={{ resize: "none", fontSize: "0.875rem", boxShadow: "none" }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSubmit();
-          }}
-        />
+//       {/* Composer */}
+//       <div
+//         className="mb-4 rounded"
+//         style={{
+//           border: "1px solid #e2e8f0",
+//           background: "#fff",
+//           overflow: "hidden",
+//         }}
+//       >
+//         <textarea
+//           className="form-control border-0"
+//           rows={3}
+//           placeholder="Write a comment…"
+//           value={commentText}
+//           onChange={(e) => setCommentText(e.target.value)}
+//           style={{ resize: "none", fontSize: "0.875rem", boxShadow: "none" }}
+//           onKeyDown={(e) => {
+//             if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSubmit();
+//           }}
+//         />
 
-        {selectedFiles.length > 0 && (
-          <div
-            className="px-3 py-2"
-            style={{ borderTop: "1px solid #f1f5f9", background: "#f8fafc" }}
-          >
-            <AttachmentGrid
-              attachments={previewAttachments}
-              isPreview
-              onRemoveIndex={removeFile}
-            />
-          </div>
-        )}
+//         {selectedFiles.length > 0 && (
+//           <div
+//             className="px-3 py-2"
+//             style={{ borderTop: "1px solid #f1f5f9", background: "#f8fafc" }}
+//           >
+//             <AttachmentGrid
+//               attachments={previewAttachments}
+//               isPreview
+//               onRemoveIndex={removeFile}
+//             />
+//           </div>
+//         )}
 
-        {fileError && (
-          <div
-            className="px-3 py-1 text-danger"
-            style={{ fontSize: "0.75rem", background: "#fff5f5" }}
-          >
-            <i className="ri-error-warning-line me-1" />
-            {fileError}
-          </div>
-        )}
+//         {fileError && (
+//           <div
+//             className="px-3 py-1 text-danger"
+//             style={{ fontSize: "0.75rem", background: "#fff5f5" }}
+//           >
+//             <i className="ri-error-warning-line me-1" />
+//             {fileError}
+//           </div>
+//         )}
 
-        <div
-          className="d-flex align-items-center justify-content-between px-3 py-2"
-          style={{ borderTop: "1px solid #f1f5f9", background: "#f8fafc" }}
-        >
-          <div className="d-flex align-items-center gap-2">
-            <button
-              type="button"
-              className="btn btn-sm btn-light border"
-              onClick={() => fileInputRef.current?.click()}
-              title="Attach images or PDF (max 5 MB each)"
-              style={{ fontSize: "0.78rem", padding: "3px 10px" }}
-            >
-              <i className="ri-attachment-2 me-1" />
-              Attach
-            </button>
-            <span style={{ fontSize: "0.7rem", color: "#9ca3af" }}>
-              Images &amp; PDF · max 5 MB
-            </span>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-              multiple
-              style={{ display: "none" }}
-              onChange={handleFileChange}
-            />
-          </div>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={handleSubmit}
-            disabled={
-              submitting || (!commentText.trim() && selectedFiles.length === 0)
-            }
-            style={{ fontSize: "0.78rem", padding: "4px 14px" }}
-          >
-            {submitting ? (
-              <>
-                <Spinner size="sm" className="me-1" />
-                Posting…
-              </>
-            ) : (
-              <>
-                <i className="ri-send-plane-line me-1" />
-                Post
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+//         <div
+//           className="d-flex align-items-center justify-content-between px-3 py-2"
+//           style={{ borderTop: "1px solid #f1f5f9", background: "#f8fafc" }}
+//         >
+//           <div className="d-flex align-items-center gap-2">
+//             <button
+//               type="button"
+//               className="btn btn-sm btn-light border"
+//               onClick={() => fileInputRef.current?.click()}
+//               title="Attach images or PDF (max 5 MB each)"
+//               style={{ fontSize: "0.78rem", padding: "3px 10px" }}
+//             >
+//               <i className="ri-attachment-2 me-1" />
+//               Attach
+//             </button>
+//             <span style={{ fontSize: "0.7rem", color: "#9ca3af" }}>
+//               Images &amp; PDF · max 5 MB
+//             </span>
+//             <input
+//               ref={fileInputRef}
+//               type="file"
+//               accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+//               multiple
+//               style={{ display: "none" }}
+//               onChange={handleFileChange}
+//             />
+//           </div>
+//           <button
+//             type="button"
+//             className="btn btn-primary btn-sm"
+//             onClick={handleSubmit}
+//             disabled={
+//               submitting || (!commentText.trim() && selectedFiles.length === 0)
+//             }
+//             style={{ fontSize: "0.78rem", padding: "4px 14px" }}
+//           >
+//             {submitting ? (
+//               <>
+//                 <Spinner size="sm" className="me-1" />
+//                 Posting…
+//               </>
+//             ) : (
+//               <>
+//                 <i className="ri-send-plane-line me-1" />
+//                 Post
+//               </>
+//             )}
+//           </button>
+//         </div>
+//       </div>
 
-      {/* Comment list */}
-      {sortedComments.length === 0 ? (
-        <div
-          className="text-center py-4 text-muted"
-          style={{ fontSize: "0.85rem" }}
-        >
-          <i className="ri-chat-smile-3-line fs-4 d-block mb-1" />
-          No comments yet. Be the first!
-        </div>
-      ) : (
-        <div className="d-flex flex-column gap-3">
-          {sortedComments.map((c) => {
-            const authorEmp = resolveEmployeeObj(c.created_by, allEmployees);
-            const authorName = authorEmp
-              ? getDisplayName(authorEmp) || `User #${c.created_by}`
-              : getEmployeeName(c.created_by) || `User #${c.created_by}`;
+//       {/* Comment list */}
+//       {sortedComments.length === 0 ? (
+//         <div
+//           className="text-center py-4 text-muted"
+//           style={{ fontSize: "0.85rem" }}
+//         >
+//           <i className="ri-chat-smile-3-line fs-4 d-block mb-1" />
+//           No comments yet. Be the first!
+//         </div>
+//       ) : (
+//         <div className="d-flex flex-column gap-3">
+//           {sortedComments.map((c) => {
+//             const authorEmp = resolveEmployeeObj(c.created_by, allEmployees);
+//             const authorName = authorEmp
+//               ? getDisplayName(authorEmp) || `User #${c.created_by}`
+//               : getEmployeeName(c.created_by) || `User #${c.created_by}`;
 
-            return (
-              <div key={c.id} className="d-flex gap-3">
-                <div className="flex-shrink-0" style={{ paddingTop: 2 }}>
-                  {authorEmp ? (
-                    <Avatar emp={authorEmp} size={32} />
-                  ) : (
-                    <InitialsAvatar
-                      name={authorName}
-                      id={Number(c.created_by) || 0}
-                      size={32}
-                    />
-                  )}
-                </div>
+//             return (
+//               <div key={c.id} className="d-flex gap-3">
+//                 <div className="flex-shrink-0" style={{ paddingTop: 2 }}>
+//                   {authorEmp ? (
+//                     <Avatar emp={authorEmp} size={32} />
+//                   ) : (
+//                     <InitialsAvatar
+//                       name={authorName}
+//                       id={Number(c.created_by) || 0}
+//                       size={32}
+//                     />
+//                   )}
+//                 </div>
 
-                <div className="flex-grow-1" style={{ minWidth: 0 }}>
-                  <div
-                    className="rounded p-3"
-                    style={{
-                      background: "#f8fafc",
-                      border: "1px solid #e2e8f0",
-                    }}
-                  >
-                    {/* Header */}
-                    <div className="d-flex align-items-center flex-wrap gap-2 mb-1">
-                      <span
-                        className="fw-semibold"
-                        style={{ fontSize: "0.83rem" }}
-                      >
-                        {authorName}
-                      </span>
-                      <span
-                        className="text-muted ms-auto"
-                        style={{ fontSize: "0.72rem", whiteSpace: "nowrap" }}
-                      >
-                        {fmt(c.created_on)}
-                      </span>
+//                 <div className="flex-grow-1" style={{ minWidth: 0 }}>
+//                   <div
+//                     className="rounded p-3"
+//                     style={{
+//                       background: "#f8fafc",
+//                       border: "1px solid #e2e8f0",
+//                     }}
+//                   >
+//                     {/* Header */}
+//                     <div className="d-flex align-items-center flex-wrap gap-2 mb-1">
+//                       <span
+//                         className="fw-semibold"
+//                         style={{ fontSize: "0.83rem" }}
+//                       >
+//                         {authorName}
+//                       </span>
+//                       <span
+//                         className="text-muted ms-auto"
+//                         style={{ fontSize: "0.72rem", whiteSpace: "nowrap" }}
+//                       >
+//                         {fmt(c.created_on)}
+//                       </span>
 
-                      {/* ✅ Delete comment button */}
-                      <button
-                        type="button"
-                        className="btn btn-link p-0 text-danger ms-1"
-                        title="Delete comment"
-                        onClick={() => handleDeleteComment(c.id)}
-                        disabled={deletingId === c.id}
-                        style={{ fontSize: "0.8rem", lineHeight: 1 }}
-                      >
-                        {deletingId === c.id ? (
-                          <Spinner size="sm" />
-                        ) : (
-                          <i className="ri-delete-bin-line" />
-                        )}
-                      </button>
-                    </div>
+//                       {/* ✅ Delete comment button */}
+//                       <button
+//                         type="button"
+//                         className="btn btn-link p-0 text-danger ms-1"
+//                         title="Delete comment"
+//                         onClick={() => handleDeleteComment(c.id)}
+//                         disabled={deletingId === c.id}
+//                         style={{ fontSize: "0.8rem", lineHeight: 1 }}
+//                       >
+//                         {deletingId === c.id ? (
+//                           <Spinner size="sm" />
+//                         ) : (
+//                           <i className="ri-delete-bin-line" />
+//                         )}
+//                       </button>
+//                     </div>
 
-                    {/* Text */}
-                    {c.comment && (
-                      <p
-                        className="mb-0 text-secondary"
-                        style={{
-                          fontSize: "0.85rem",
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {c.comment}
-                      </p>
-                    )}
+//                     {/* Text */}
+//                     {c.comment && (
+//                       <p
+//                         className="mb-0 text-secondary"
+//                         style={{
+//                           fontSize: "0.85rem",
+//                           whiteSpace: "pre-wrap",
+//                           wordBreak: "break-word",
+//                         }}
+//                       >
+//                         {c.comment}
+//                       </p>
+//                     )}
 
-                    {/* Attachments */}
-                    {c.task_comment_attachments?.length > 0 && (
-                      <AttachmentGrid
-                        attachments={c.task_comment_attachments}
-                        isPreview={false}
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
+//                     {/* Attachments */}
+//                     {c.task_comment_attachments?.length > 0 && (
+//                       <AttachmentGrid
+//                         attachments={c.task_comment_attachments}
+//                         isPreview={false}
+//                       />
+//                     )}
+//                   </div>
+//                 </div>
+//               </div>
+//             );
+//           })}
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
 
 // ─── TaskDetailModal (main) ───────────────────────────────────────────────────
 
@@ -1263,20 +1265,50 @@ const TaskDetailModal = ({
     }
   };
 
-  const handleDeleteTask = async () => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this task? This cannot be undone.",
-      )
-    )
-      return;
+  const handleDeleteTask = async (taskId) => {
+    console.log("id", taskId);
+
+    const result = await Swal.fire({
+      title: "Delete Task?",
+      text: "This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Yes, Delete",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
     setDeleting(true);
+
     try {
-      await Api.delete(`/task/${taskId}/`);
+      const response = await Api.delete("/task/", {
+        data: {
+          id: taskId,
+        },
+      });
+      console.log("res", response);
+
+      await Swal.fire({
+        title: "Deleted!",
+        text: response?.data?.message || "Task Deleted Successfully",
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
       onTaskDeleted?.();
       toggle();
     } catch (err) {
       console.error("Delete task error:", err);
+
+      Swal.fire({
+        title: "Error",
+        text: err?.response?.data?.message || "Failed to delete task.",
+        icon: "error",
+      });
     } finally {
       setDeleting(false);
     }
@@ -1774,7 +1806,7 @@ const TaskDetailModal = ({
             <button
               type="button"
               className="btn btn-outline-danger btn-sm"
-              onClick={handleDeleteTask}
+              onClick={() => handleDeleteTask(taskId)}
               disabled={closing || deleting}
             >
               {deleting ? (

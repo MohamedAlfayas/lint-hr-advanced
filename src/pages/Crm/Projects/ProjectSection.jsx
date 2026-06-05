@@ -201,7 +201,7 @@ const ProjectSection = () => {
               <Tasks projectId={id} />
             </TabPane>
             <TabPane tabId="3">
-              <ProjectsFiles />
+              <ProjectsFiles projectId={id} />
             </TabPane>
           </TabContent>
         </Col>

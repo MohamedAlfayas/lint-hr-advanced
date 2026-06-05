@@ -167,15 +167,115 @@ const Tasks = ({ projectId = null }) => {
         Header: "Title",
         id: "title",
         filterable: false,
-        accessor: (obj) => (
-          <b
-            className="text-primary"
-            style={{ cursor: "pointer" }}
-            onClick={() => openTaskDetail(obj.id)}
-          >
-            {obj.title}
-          </b>
-        ),
+        accessor: (obj) => {
+          const plainDescription =
+            obj.description?.replace(/<[^>]*>/g, "") || "";
+
+          const statuses = GetLocalStorageData("task_status") || [];
+
+          const statusObj = statuses.find(
+            (s) => Number(s.id) === Number(obj.task_status),
+          );
+
+          const statusName = (statusObj?.name || "").toLowerCase();
+
+          let progress = 0;
+          let progressColor = "bg-danger";
+
+          if (statusName.includes("not started")) {
+            progress = 0;
+            progressColor = "bg-danger";
+          } else if (statusName.includes("in progress")) {
+            progress = 50;
+            progressColor = "bg-warning";
+          } else if (
+            statusName.includes("review") ||
+            statusName.includes("testing")
+          ) {
+            progress = 80;
+            progressColor = "bg-info";
+          } else if (
+            statusName.includes("completed") ||
+            statusName.includes("complete") ||
+            statusName.includes("done")
+          ) {
+            progress = 100;
+            progressColor = "bg-success";
+          }
+
+          return (
+            <div>
+              <b
+                className="text-primary"
+                style={{ cursor: "pointer" }}
+                onClick={() => openTaskDetail(obj.id)}
+              >
+                {obj.title}
+              </b>
+
+              {plainDescription && (
+                <div
+                  title={plainDescription}
+                  style={{
+                    fontSize: "13px",
+                    color: "#6c757d",
+                    marginTop: "4px",
+                  }}
+                >
+                  {plainDescription.length > 60
+                    ? `${plainDescription.substring(0, 60)}...`
+                    : plainDescription}
+                </div>
+              )}
+
+              <div className="mt-2">
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <small
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      color: "#6c757d",
+                    }}
+                  >
+                    {statusObj?.name || "Not Started"}
+                  </small>
+
+                  <small
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: "#495057",
+                    }}
+                  >
+                    {progress}%
+                  </small>
+                </div>
+
+                <div
+                  className="progress"
+                  style={{
+                    height: "8px",
+                    borderRadius: "20px",
+                    backgroundColor: "#e9ecef",
+                  }}
+                >
+                  <div
+                    className={`progress-bar ${progressColor}`}
+                    role="progressbar"
+                    style={{
+                      width: `${progress}%`,
+                      borderRadius: "20px",
+                      transition: "all .4s ease",
+                    }}
+                    aria-valuenow={progress}
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        },
       },
 
       {

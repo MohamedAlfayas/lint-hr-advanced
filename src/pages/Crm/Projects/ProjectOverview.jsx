@@ -84,7 +84,7 @@ const GradientCircleRadialbar = ({ dataColors }) => {
       lineCap: "round",
     },
 
-    labels: ["Score"],
+    labels: ["Completed"],
   };
 
   return (
@@ -225,7 +225,7 @@ const ProjectOverview = ({ projectId }) => {
         <Col xl={4} lg={4}>
           <Card className="h-100">
             <CardBody>
-              <h5 className="mb-4">Project Score</h5>
+              <h5 className="mb-4">Project Completed</h5>
 
               <GradientCircleRadialbar dataColors='["--vz-info", "--vz-success"]' />
             </CardBody>

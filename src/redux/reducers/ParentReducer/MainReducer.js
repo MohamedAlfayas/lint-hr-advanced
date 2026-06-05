@@ -47,6 +47,7 @@ import ProjectsReducer from "../ChildReducer/ProjectsReducer";
 import TaskReducer from "../ChildReducer/TaskReducer";
 import CheckListReducer from "../ChildReducer/CheckListReducer";
 import CommentReducer from "../ChildReducer/CommentReducer";
+import FolderReducer from "../ChildReducer/FolderReducer";
 
 export const MainReducer = combineReducers({
   MetaReducer: MetaReducer,
@@ -97,4 +98,5 @@ export const MainReducer = combineReducers({
   TaskReducer: TaskReducer,
   CheckListReducer: CheckListReducer,
   CommentReducer: CommentReducer,
+  FolderReducer: FolderReducer,
 });

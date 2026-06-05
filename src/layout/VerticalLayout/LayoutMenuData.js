@@ -338,21 +338,16 @@ const Navdata = () => {
             parentId: "baseUi",
             perm: "all",
           },
+          {
+            id: "settings",
+            label: "Settings",
+            link: "/task-settings",
+            parentId: "baseUi",
+            perm: "all",
+          },
         ],
       },
-      {
-        id: "baseUi",
-        label: "Settings",
-        icon: "ri-settings-3-line",
-        link: "/task-settings",
-        perm: "all",
-        click: function (e) {
-          e.preventDefault();
-          setIsBaseUi(!isBaseUi);
-          setIscurrentState("BaseUi");
-          updateIconSidebar(e);
-        },
-      },
+
       // {
       //   label: "Task",
       //   isHeader: false,
