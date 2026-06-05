@@ -12,7 +12,7 @@ import {
 import classnames from "classnames";
 
 import SalaryStructureTable from "./SalaryStructureTable";
-import AssignStructureTable from "./AssignStructureTable";
+import EmployeeSalary from "../EmployeeSalary/EmployeeSalary";
 
 const SalaryStructureTab = ({ onEarningAdd }) => {
   const [activeTab, setActiveTab] = useState("1");
@@ -257,14 +257,14 @@ const SalaryStructureTab = ({ onEarningAdd }) => {
       
          {/*    Salary Structure */}
           <TabPane tabId="1">
-            <SalaryStructureTable   />
+            <SalaryStructureTable />
           </TabPane>   
 
        
   <TabPane tabId="2">
     
 
-    <AssignStructureTable/>
+    <EmployeeSalary/>
   </TabPane>
 
 
