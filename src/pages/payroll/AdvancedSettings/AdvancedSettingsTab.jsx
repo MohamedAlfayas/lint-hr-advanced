@@ -9,10 +9,17 @@ import {
   TabPane,
 } from "reactstrap";
 import classnames from "classnames";
+
 import PayrollSettings from "./PayrollSettings";
 import PFSettings from "./PFSettings";
 import ESISettings from "./ESISettings";
 import PTSettings from "./PTSettings";
+import AttendancePolicySettings from "./Attendancepolicysettings";
+import LeavePolicySettings from "./LeavePolicySettings";
+import LopPolicySettings from "./LopPolicySettings";
+import OvertimePolicySettings from "./OvertimePolicySettings";
+import BonusPolicySettings from "./BonusPolicySettings";
+import GratuityPolicySettings from "./GratuityPolicySettings";
 
 const AdvancedSettingsTab = ({ onEarningAdd }) => {
   const [activeTab, setActiveTab] = useState("1");
@@ -48,6 +55,7 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
               PF Settings
             </NavLink>
           </NavItem>
+
           <NavItem>
             <NavLink
               style={{ cursor: "pointer" }}
@@ -57,6 +65,7 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
               ESI Settings
             </NavLink>
           </NavItem>
+
           <NavItem>
             <NavLink
               style={{ cursor: "pointer" }}
@@ -66,27 +75,109 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
               Professional Tax Settings
             </NavLink>
           </NavItem>
+
+          <NavItem>
+            <NavLink
+              style={{ cursor: "pointer" }}
+              className={classnames({ active: activeTab === "5" })}
+              onClick={() => toggleTab("5")}
+            >
+              Attendance Policy
+            </NavLink>
+          </NavItem>
+
+          <NavItem>
+            <NavLink
+              style={{ cursor: "pointer" }}
+              className={classnames({ active: activeTab === "6" })}
+              onClick={() => toggleTab("6")}
+            >
+              Leave Policy
+            </NavLink>
+          </NavItem>
+
+          <NavItem>
+            <NavLink
+              style={{ cursor: "pointer" }}
+              className={classnames({ active: activeTab === "7" })}
+              onClick={() => toggleTab("7")}
+            >
+              LOP Policy
+            </NavLink>
+          </NavItem>
+
+          <NavItem>
+            <NavLink
+              style={{ cursor: "pointer" }}
+              className={classnames({ active: activeTab === "8" })}
+              onClick={() => toggleTab("8")}
+            >
+              Overtime Policy
+            </NavLink>
+          </NavItem>
+
+          <NavItem>
+            <NavLink
+              style={{ cursor: "pointer" }}
+              className={classnames({ active: activeTab === "9" })}
+              onClick={() => toggleTab("9")}
+            >
+              Bonus Policy
+            </NavLink>
+          </NavItem>
+
+          <NavItem>
+            <NavLink
+              style={{ cursor: "pointer" }}
+              className={classnames({ active: activeTab === "10" })}
+              onClick={() => toggleTab("10")}
+            >
+              Gratuity Policy
+            </NavLink>
+          </NavItem>
+
         </Nav>
 
         {/* Tab Content */}
         <TabContent activeTab={activeTab}>
-          {/* Tab 1 */}
           <TabPane tabId="1">
-           
             <PayrollSettings />
           </TabPane>
 
-          {/* Tab 2 */}
           <TabPane tabId="2">
-       <PFSettings />
+            <PFSettings />
           </TabPane>
-          {/* Tab 3 */}
+
           <TabPane tabId="3">
-       <ESISettings />
+            <ESISettings />
           </TabPane>
-          {/* Tab 4 */}
+
           <TabPane tabId="4">
-      <PTSettings />
+            <PTSettings />
+          </TabPane>
+
+          <TabPane tabId="5">
+            <AttendancePolicySettings />
+          </TabPane>
+
+          <TabPane tabId="6">
+            <LeavePolicySettings />
+          </TabPane>
+
+          <TabPane tabId="7">
+            <LopPolicySettings />
+          </TabPane>
+
+          <TabPane tabId="8">
+            <OvertimePolicySettings />
+          </TabPane>
+
+          <TabPane tabId="9">
+            <BonusPolicySettings />
+          </TabPane>
+
+          <TabPane tabId="10">
+            <GratuityPolicySettings />
           </TabPane>
         </TabContent>
       </Col>
