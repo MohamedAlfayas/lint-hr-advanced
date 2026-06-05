@@ -61,18 +61,69 @@ const Projects = ({ clientId }) => {
         Header: "Title",
         id: "title",
         filterable: false,
-        accessor: (obj) => (
-          <span
-            onClick={() => navigate(`/project-overview/${obj.id}`)}
-            style={{
-              cursor: "pointer",
-              color: "#405189",
-              fontWeight: 600,
-            }}
-          >
-            {obj.title}
-          </span>
-        ),
+        accessor: (obj) => {
+          const progress = obj.progress || 0; // replace with your actual progress field
+
+          return (
+            <div>
+              <span
+                onClick={() => navigate(`/project-overview/${obj.id}`)}
+                style={{
+                  cursor: "pointer",
+                  color: "#405189",
+                  fontWeight: 600,
+                }}
+              >
+                {obj.title}
+              </span>
+
+              <div
+                style={{
+                  fontSize: "13px",
+                  color: "#6c757d",
+                  marginTop: "4px",
+                }}
+                title={obj.description}
+              >
+                {obj.description?.length > 50
+                  ? `${obj.description.substring(0, 50)}...`
+                  : obj.description}
+              </div>
+
+              <div
+                className="progress mt-2"
+                style={{
+                  height: "4px",
+                  backgroundColor: "#e9ecef",
+                  borderRadius: "4px",
+                }}
+              >
+                <div
+                  className="progress-bar"
+                  role="progressbar"
+                  style={{
+                    width: `${progress}%`,
+                    backgroundColor: "#28a745",
+                    borderRadius: "4px",
+                    transition: "width 0.5s ease",
+                  }}
+                  aria-valuenow={progress}
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                />
+              </div>
+
+              <small
+                style={{
+                  color: "#6c757d",
+                  fontSize: "11px",
+                }}
+              >
+                {progress}% Complete
+              </small>
+            </div>
+          );
+        },
       },
 
       {

@@ -75,8 +75,12 @@ import {
   leave_application_component_name,
   custom_field_component_name,
   task_list_component_name,
+  project_component_name,
+  client_component_name,
 } from "../../../common/constant/Constants";
-
+import { removeProject } from "../../../redux/reducers/ChildReducer/ProjectsReducer";
+import { removeClient } from "../../../redux/reducers/ChildReducer/ClientReducer";
+import { removeTask } from "../../../redux/reducers/ChildReducer/TaskReducer";
 import {
   CREATE_EMPLOYEE_ACCESS_KEY,
   CREATE_CUSTOM_FIELD_ACCESS_KEY,
@@ -109,6 +113,7 @@ import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSel
 import TableSkeleton from "../skeleton/TableSkeloton";
 import { DeleteApi } from "../../../common/api/DeleteApi";
 import { editLeaveApplication } from "../../../redux/reducers/ChildReducer/LeaveApplyReducer";
+import { RemoveLocalStorageData } from "../../../meta/RemoveLocalStorageData";
 defineElement(loadAnimation);
 
 const InfoTable = ({
@@ -201,6 +206,88 @@ const InfoTable = ({
 
     fetchData();
   }, []);
+
+  const deleteHandler = async (id) => {
+    let url = "";
+    let entityName = "";
+    let storageKey = "";
+    let removeAction = null;
+
+    if (formname === project_component_name) {
+      url = "/projects/";
+      entityName = "Project";
+      storageKey = "projects";
+      removeAction = removeProject;
+    } else if (formname === client_component_name) {
+      url = "/clients/";
+      entityName = "Client";
+      storageKey = "clients";
+      removeAction = removeClient;
+    } else if (formname === task_list_component_name) {
+      url = "/task/";
+      entityName = "Task";
+      storageKey = "tasks";
+      removeAction = removeTask;
+    } else {
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: `Delete ${entityName}?`,
+      text: "This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Yes, Delete",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      Swal.fire({
+        title: "Deleting...",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      const response = await Api.delete(url, {
+        data: { id },
+      });
+
+      Swal.close();
+
+      // Redux Update
+      dispatch(removeAction(id));
+
+      // LocalStorage Update
+      RemoveLocalStorageData(storageKey, id);
+
+      await Swal.fire({
+        title: "Deleted!",
+        text: response?.data?.message || `${entityName} Deleted Successfully`,
+        icon: "success",
+        confirmButtonColor: "#3085d6",
+      });
+    } catch (error) {
+      Swal.close();
+
+      Swal.fire({
+        title: "Error!",
+        text:
+          error?.response?.data?.message ||
+          error?.message ||
+          `Failed to delete ${entityName}.`,
+        icon: "error",
+        confirmButtonColor: "#d33",
+      });
+
+      console.error(`${entityName} Delete Error:`, error);
+    }
+  };
 
   const tog_list = () => {
     setmodal_list(!modal_list);
@@ -1186,6 +1273,36 @@ const InfoTable = ({
                 </li>
               )}
             </ul>
+          );
+        } else if (
+          formname === project_component_name ||
+          formname === client_component_name ||
+          formname === task_list_component_name
+        ) {
+          const rowData = cellProps.row.original;
+
+          return (
+            <>
+              <li className="list-inline-item edit">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-primary d-inline-block edit-item-btn"
+                  onClick={() => handleCreateAndUpdate(rowData.id, rowData)}
+                >
+                  <i className="ri-pencil-fill fs-16"></i>
+                </Link>
+              </li>
+
+              <li className="list-inline-item">
+                <Link
+                  to="#"
+                  className="text-danger d-inline-block remove-item-btn"
+                  onClick={() => deleteHandler(rowData.id, formname)}
+                >
+                  <i className="ri-delete-bin-5-fill fs-16"></i>
+                </Link>
+              </li>
+            </>
           );
         } else if (formname && formname === employee_component_name) {
           return (

@@ -22,9 +22,13 @@ const ClientReducer = createSlice({
         state.client_data[index] = payload; // ✅ direct mutation — RTK handles immutability via Immer
       }
     },
+    removeClient: (state, { payload }) => {
+      state.client_data = state.client_data.filter((obj) => obj.id !== payload);
+    },
   },
 });
 
-export const { setClients, addClient, editClient } = ClientReducer.actions;
+export const { setClients, addClient, editClient, removeClient } =
+  ClientReducer.actions;
 
 export default ClientReducer.reducer;

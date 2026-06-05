@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Dropzone from "react-dropzone";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Card,
   CardBody,
@@ -17,23 +18,170 @@ import {
   DropdownMenu,
   DropdownToggle,
   UncontrolledDropdown,
+  Alert,
+  Spinner,
 } from "reactstrap";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+import {
+  setFolderData,
+  setFolderLoading,
+  setFolderActionLoading,
+  setFolderError,
+  setFolderSuccess,
+  clearFolderMessages,
+} from "../../../../redux/reducers/ChildReducer/FolderReducer";
+import { GetApi } from "../../../../common/api/GetApi";
+import { PostApi } from "../../../../common/api/PostApi";
+
+// ─── Formatters ───────────────────────────────────────────────────────────────
+
+const formatBytes = (bytes) => {
+  if (!bytes) return "0 KB";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const ALLOWED_EXTENSIONS = [
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "gif",
+  "pdf",
+  "zip",
+  "rar",
+  "xls",
+  "xlsx",
+  "txt",
+  "doc",
+  "docx",
+];
+
+const formatDate = (iso) =>
+  iso
+    ? new Date(iso).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "";
+
+const mapFile = (f) => ({
+  id: f.id,
+  name: f.original_file_name?.replace(/\.[^/.]+$/, "") || `file_${f.id}`,
+  ext: f.original_file_name?.split(".").pop()?.toLowerCase() || "",
+  type: "file",
+  size: formatBytes(f.file_size),
+  file_url: f.file_url,
+  folder: f.folder,
+  createdAt: formatDate(f.created_on),
+});
+
+const mapFolder = (f) => ({
+  id: f.id,
+  name: f.folder_name,
+  type: "folder",
+  parent_folder: f.parent_folder,
+  createdAt: formatDate(f.created_on),
+  children: [
+    ...(f.child_folders || []).map(mapFolder),
+    ...(f.files || []).map(mapFile),
+  ],
+});
+
+const mapProjectResponse = (data) => {
+  const source = data?.folders !== undefined ? data : (data?.data ?? data);
+  return {
+    allFolders: (source.folders || []).map(mapFolder),
+    rootFiles: (source.root_files || []).map(mapFile),
+  };
+};
+
+const insertFolderIntoState = (state, newFolder, parentFolderId) => {
+  if (parentFolderId === null) {
+    return { ...state, allFolders: [...(state.allFolders || []), newFolder] };
+  }
+  const insertIntoChildren = (folders) =>
+    folders.map((f) => {
+      if (f.type !== "folder") return f;
+      if (f.id === parentFolderId)
+        return { ...f, children: [...(f.children || []), newFolder] };
+      return { ...f, children: insertIntoChildren(f.children || []) };
+    });
+  return { ...state, allFolders: insertIntoChildren(state.allFolders || []) };
+};
+
+// ─── Optimistic helpers ───────────────────────────────────────────────────────
+
+/**
+ * Insert mapped file objects into the correct place in the Redux state
+ * without a full re-fetch.
+ *
+ * - parentFolderId === null  → push into rootFiles
+ * - parentFolderId !== null  → find the folder in allFolders and push into children
+ */
+const insertFilesIntoState = (state, newFiles, parentFolderId) => {
+  if (parentFolderId === null) {
+    return { ...state, rootFiles: [...(state.rootFiles || []), ...newFiles] };
+  }
+  const insertIntoChildren = (folders) =>
+    folders.map((f) => {
+      if (f.type !== "folder") return f;
+      if (f.id === parentFolderId)
+        return { ...f, children: [...(f.children || []), ...newFiles] };
+      return { ...f, children: insertIntoChildren(f.children || []) };
+    });
+  return { ...state, allFolders: insertIntoChildren(state.allFolders || []) };
+};
+
+/**
+ * Remove file/folder ids from the Redux state tree optimistically.
+ */
+const removeItemsFromState = (state, folderIds, fileIds) => {
+  const removeFromList = (list) => {
+    let result = list.filter(
+      (i) =>
+        !(i.type === "folder" && folderIds.includes(i.id)) &&
+        !(i.type === "file" && fileIds.includes(i.id)),
+    );
+    return result.map((i) =>
+      i.type === "folder"
+        ? { ...i, children: removeFromList(i.children || []) }
+        : i,
+    );
+  };
+  return {
+    ...state,
+    allFolders: removeFromList(state.allFolders || []),
+    rootFiles: (state.rootFiles || []).filter((f) => !fileIds.includes(f.id)),
+  };
+};
+
+// ─── File Icon Map ─────────────────────────────────────────────────────────────
 
 const FILE_ICONS = {
   png: { icon: "ri-image-2-fill", color: "success" },
   jpg: { icon: "ri-image-2-fill", color: "success" },
   jpeg: { icon: "ri-image-2-fill", color: "success" },
+  gif: { icon: "ri-image-2-fill", color: "success" },
+  webp: { icon: "ri-image-2-fill", color: "success" },
+  svg: { icon: "ri-image-2-fill", color: "success" },
   pdf: { icon: "ri-file-pdf-fill", color: "danger" },
   ppt: { icon: "ri-file-ppt-fill", color: "warning" },
   pptx: { icon: "ri-file-ppt-fill", color: "warning" },
   mp3: { icon: "ri-music-2-fill", color: "info" },
+  wav: { icon: "ri-music-2-fill", color: "info" },
+  ogg: { icon: "ri-music-2-fill", color: "info" },
   mp4: { icon: "ri-movie-fill", color: "primary" },
+  webm: { icon: "ri-movie-fill", color: "primary" },
   doc: { icon: "ri-file-word-fill", color: "primary" },
   docx: { icon: "ri-file-word-fill", color: "primary" },
   txt: { icon: "ri-file-text-fill", color: "secondary" },
   zip: { icon: "ri-file-zip-fill", color: "secondary" },
+  rar: { icon: "ri-file-zip-fill", color: "secondary" },
+  xlsx: { icon: "ri-file-excel-fill", color: "success" },
+  xls: { icon: "ri-file-excel-fill", color: "success" },
 };
 
 const getFileIcon = (ext) =>
@@ -42,17 +190,254 @@ const getFileIcon = (ext) =>
     color: "secondary",
   };
 
-let _nextId = 200;
-const nextId = () => _nextId++;
+// ─── File Type Helpers ─────────────────────────────────────────────────────────
 
-const todayStr = () =>
-  new Date().toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+const IMAGE_EXTS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"];
+const VIDEO_EXTS = ["mp4", "webm", "ogv", "mov", "avi"];
+const AUDIO_EXTS = ["mp3", "wav", "ogg", "aac", "flac"];
+const PDF_EXTS = ["pdf"];
+const TEXT_EXTS = ["txt", "csv", "json", "xml", "html", "css", "js", "md"];
 
-// ─── Right-click Context Menu ─────────────────────────────────────────────────
+const getViewerType = (ext) => {
+  const e = ext?.toLowerCase();
+  if (IMAGE_EXTS.includes(e)) return "image";
+  if (VIDEO_EXTS.includes(e)) return "video";
+  if (AUDIO_EXTS.includes(e)) return "audio";
+  if (PDF_EXTS.includes(e)) return "pdf";
+  if (TEXT_EXTS.includes(e)) return "text";
+  return "unsupported";
+};
+
+// ─── File Preview Modal ────────────────────────────────────────────────────────
+
+const FileViewerModal = ({ file, onClose }) => {
+  const [textContent, setTextContent] = useState(null);
+  const [textLoading, setTextLoading] = useState(false);
+  const [textError, setTextError] = useState(false);
+
+  const viewerType = file ? getViewerType(file.ext) : null;
+  const { icon, color } = file ? getFileIcon(file.ext) : {};
+
+  useEffect(() => {
+    if (file && viewerType === "text" && file.file_url) {
+      setTextLoading(true);
+      setTextContent(null);
+      setTextError(false);
+      fetch(file.file_url)
+        .then((r) => {
+          if (!r.ok) throw new Error("fetch failed");
+          return r.text();
+        })
+        .then((t) => setTextContent(t))
+        .catch(() => setTextError(true))
+        .finally(() => setTextLoading(false));
+    }
+  }, [file, viewerType]);
+
+  if (!file) return null;
+
+  return (
+    <Modal
+      isOpen={!!file}
+      toggle={onClose}
+      centered
+      size="xl"
+      className="file-viewer-modal"
+    >
+      {/* Header */}
+      <ModalHeader
+        toggle={onClose}
+        className="border-bottom"
+        style={{ paddingBottom: 20 }}
+      >
+        <div className="d-flex align-items-center gap-2">
+          <div
+            className={`avatar-xs d-flex align-items-center justify-content-center rounded bg-${color}-subtle flex-shrink-0`}
+          >
+            <i className={`${icon} text-${color} fs-16`}></i>
+          </div>
+          <span className="fw-semibold fs-15 d-block lh-sm">
+            {file.name}.{file.ext}
+          </span>
+        </div>
+      </ModalHeader>
+
+      {/* Body */}
+      <ModalBody className="p-0" style={{ minHeight: 340 }}>
+        {/* IMAGE */}
+        {viewerType === "image" && (
+          <div
+            className="d-flex align-items-center justify-content-center bg-light"
+            style={{ minHeight: 400, padding: 16 }}
+          >
+            <img
+              src={file.file_url}
+              alt={file.name}
+              style={{
+                maxWidth: "100%",
+                maxHeight: 560,
+                objectFit: "contain",
+                borderRadius: 6,
+                boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
+              }}
+              onError={(e) => {
+                e.target.style.display = "none";
+                e.target.nextSibling.style.display = "block";
+              }}
+            />
+            <div
+              style={{ display: "none" }}
+              className="text-center text-muted py-5"
+            >
+              <i className="ri-image-2-line display-4 d-block mb-2"></i>
+              <p>Could not load image.</p>
+            </div>
+          </div>
+        )}
+
+        {/* VIDEO */}
+        {viewerType === "video" && (
+          <div
+            className="d-flex align-items-center justify-content-center bg-dark"
+            style={{ minHeight: 400 }}
+          >
+            <video
+              controls
+              autoPlay={false}
+              style={{ maxWidth: "100%", maxHeight: 560, outline: "none" }}
+            >
+              <source src={file.file_url} />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        )}
+
+        {/* AUDIO */}
+        {viewerType === "audio" && (
+          <div
+            className="d-flex flex-column align-items-center justify-content-center gap-4 py-5"
+            style={{ minHeight: 260 }}
+          >
+            <div
+              className={`avatar-xxl d-flex align-items-center justify-content-center rounded-circle bg-${color}-subtle`}
+              style={{ width: 100, height: 100 }}
+            >
+              <i className={`ri-music-2-fill text-${color} display-4`}></i>
+            </div>
+            <div className="text-center">
+              <h6 className="fw-semibold mb-1">{file.name}</h6>
+              <span className="badge bg-info-subtle text-info">
+                {file.ext?.toUpperCase()}
+              </span>
+            </div>
+            <audio
+              controls
+              autoPlay={false}
+              style={{ width: "100%", maxWidth: 480 }}
+            >
+              <source src={file.file_url} />
+            </audio>
+          </div>
+        )}
+
+        {/* PDF */}
+        {viewerType === "pdf" && (
+          <div style={{ height: 620 }}>
+            <iframe
+              src={`${file.file_url}#toolbar=1&navpanes=0&scrollbar=1`}
+              title={file.name}
+              width="100%"
+              height="100%"
+              style={{ border: "none", display: "block" }}
+            />
+          </div>
+        )}
+
+        {/* TEXT */}
+        {viewerType === "text" && (
+          <div style={{ minHeight: 340 }}>
+            {textLoading && (
+              <div className="d-flex align-items-center justify-content-center py-5">
+                <Spinner color="success" className="me-2" />
+                <span className="text-muted">Loading file…</span>
+              </div>
+            )}
+            {textError && (
+              <div className="text-center py-5 text-danger">
+                <i className="ri-error-warning-line display-4 d-block mb-2"></i>
+                <p>Could not load file content.</p>
+              </div>
+            )}
+            {!textLoading && !textError && textContent !== null && (
+              <pre
+                className="mb-0 p-4"
+                style={{
+                  maxHeight: 560,
+                  overflowY: "auto",
+                  fontSize: 13,
+                  lineHeight: 1.7,
+                  background: "#f8f9fa",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  fontFamily: "'Fira Mono', 'Courier New', monospace",
+                }}
+              >
+                {textContent}
+              </pre>
+            )}
+          </div>
+        )}
+
+        {/* UNSUPPORTED */}
+        {viewerType === "unsupported" && (
+          <div className="text-center py-5">
+            <div
+              className={`avatar-xl d-inline-flex align-items-center justify-content-center rounded-circle bg-${color}-subtle mb-3`}
+              style={{ width: 80, height: 80 }}
+            >
+              <i className={`${icon} text-${color} display-5`}></i>
+            </div>
+            <h6 className="fw-semibold mb-1">
+              {file.name}.{file.ext}
+            </h6>
+            <p className="text-muted fs-13 mb-3">
+              Preview is not available for <strong>.{file.ext}</strong> files.
+            </p>
+            {file.file_url && (
+              <a
+                href={file.file_url}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-success btn-sm"
+              >
+                <i className="ri-download-line me-1"></i>Download to view
+              </a>
+            )}
+          </div>
+        )}
+      </ModalBody>
+
+      {/* Footer */}
+      <ModalFooter className="border-top gap-2" style={{ paddingTop: 20 }}>
+        {file.file_url && (
+          <a
+            href={file.file_url}
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-success btn-sm"
+          >
+            <i className="ri-download-line me-1"></i>Download
+          </a>
+        )}
+        <Button color="light" size="sm" onClick={onClose}>
+          Close
+        </Button>
+      </ModalFooter>
+    </Modal>
+  );
+};
+
+// ─── Right-click Context Menu ──────────────────────────────────────────────────
 
 const ContextMenu = ({ x, y, item, onClose, onAction }) => {
   const ref = useRef();
@@ -82,9 +467,9 @@ const ContextMenu = ({ x, y, item, onClose, onAction }) => {
         { icon: "ri-information-line", label: "Info", action: "info" },
       ]
     : [
+        { icon: "ri-eye-line", label: "View", action: "view" },
         { icon: "ri-download-line", label: "Download", action: "download" },
         { icon: "ri-star-line", label: "Add to Favorites", action: "favorite" },
-        { icon: "ri-pencil-line", label: "Rename", action: "rename" },
         { icon: "ri-arrow-right-line", label: "Move", action: "move" },
         { divider: true },
         {
@@ -129,26 +514,22 @@ const ContextMenu = ({ x, y, item, onClose, onAction }) => {
   );
 };
 
-// ─── Move Modal ───────────────────────────────────────────────────────────────
+// ─── Folder Tree (Move Modal) ──────────────────────────────────────────────────
 
-/**
- * Renders a tree of folders the user can pick as the move destination.
- * Excludes the item being moved (if it's a folder) and its subtree.
- */
 const FolderTree = ({
   folders,
-  excludeId,
+  excludeIds = [],
   selectedId,
   onSelect,
   depth = 0,
 }) => (
   <>
     {folders
-      .filter((f) => f.type === "folder" && f.id !== excludeId)
+      .filter((f) => f.type === "folder" && !excludeIds.includes(f.id))
       .map((f) => (
         <React.Fragment key={f.id}>
           <div
-            className={`d-flex align-items-center gap-2 py-1 px-2 rounded cursor-pointer ${
+            className={`d-flex align-items-center gap-2 py-1 px-2 rounded ${
               selectedId === f.id
                 ? "bg-success bg-opacity-10 text-success fw-medium"
                 : "text-body"
@@ -165,7 +546,7 @@ const FolderTree = ({
           {(f.children || []).some((c) => c.type === "folder") && (
             <FolderTree
               folders={f.children}
-              excludeId={excludeId}
+              excludeIds={excludeIds}
               selectedId={selectedId}
               onSelect={onSelect}
               depth={depth + 1}
@@ -176,101 +557,299 @@ const FolderTree = ({
   </>
 );
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main Component ────────────────────────────────────────────────────────────
 
-const Folders = () => {
-  const [allFolders, setAllFolders] = useState([
-    {
-      id: 1,
-      name: "Project Files",
-      type: "folder",
-      createdBy: "You",
-      createdAt: "22 May 2026",
-      children: [],
-    },
-    {
-      id: 2,
-      name: "Images",
-      type: "folder",
-      createdBy: "You",
-      createdAt: "20 May 2026",
-      children: [],
-    },
-    {
-      id: 3,
-      name: "Documents",
-      type: "folder",
-      createdBy: "You",
-      createdAt: "18 May 2026",
-      children: [],
-    },
-    {
-      id: 4,
-      name: "Videos",
-      type: "folder",
-      createdBy: "You",
-      createdAt: "15 May 2026",
-      children: [],
-    },
-  ]);
+const Folders = ({ projectId }) => {
+  const dispatch = useDispatch();
 
-  const [rootFiles, setRootFiles] = useState([
-    {
-      id: 101,
-      name: "Website Design",
-      ext: "png",
-      type: "file",
-      size: "2.4 MB",
-      createdAt: "22 May 2026",
-    },
-    {
-      id: 102,
-      name: "Company Report",
-      ext: "pdf",
-      type: "file",
-      size: "1.1 MB",
-      createdAt: "20 May 2026",
-    },
-    {
-      id: 103,
-      name: "Presentation",
-      ext: "pptx",
-      type: "file",
-      size: "4.2 MB",
-      createdAt: "18 May 2026",
-    },
-    {
-      id: 104,
-      name: "Music Track",
-      ext: "mp3",
-      type: "file",
-      size: "6.5 MB",
-      createdAt: "15 May 2026",
-    },
-  ]);
+  // ── Redux state ───────────────────────────────────────────────────────────────
+  const { allFolders, rootFiles } = useSelector(
+    (s) => s.FolderReducer.folder_data,
+  );
+  const loading = useSelector((s) => s.FolderReducer.folder_loading);
+  const actionLoading = useSelector(
+    (s) => s.FolderReducer.folder_action_loading,
+  );
+  const errorMsg = useSelector((s) => s.FolderReducer.folder_error);
+  const successMsg = useSelector((s) => s.FolderReducer.folder_success);
 
+  // ── Local UI state ────────────────────────────────────────────────────────────
   const [pathStack, setPathStack] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState([]);
   const [filterType, setFilterType] = useState("All");
+  const [selected, setSelected] = useState(new Set());
 
   // Modals
   const [newFolderModal, setNewFolderModal] = useState(false);
   const [newFileModal, setNewFileModal] = useState(false);
   const [renameModal, setRenameModal] = useState(null);
   const [infoModal, setInfoModal] = useState(null);
-  const [moveModal, setMoveModal] = useState(null); // item being moved
-  const [moveTarget, setMoveTarget] = useState(null); // destination folder id (null = root)
+  const [viewerFile, setViewerFile] = useState(null);
+  const [moveModal, setMoveModal] = useState(null);
+  const [moveTarget, setMoveTarget] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
+  // Form values
   const [newFolderName, setNewFolderName] = useState("");
-  const [newFileName, setNewFileName] = useState("");
-  const [newFileExt, setNewFileExt] = useState("png");
+  const [droppedFiles, setDroppedFiles] = useState([]);
   const [renameName, setRenameName] = useState("");
 
   const [ctxMenu, setCtxMenu] = useState(null);
 
-  // ── Deep tree helpers ─────────────────────────────────────────────────────
+  // ── Bootstrap ─────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    fetchProjectDetail();
+  }, []);
+
+  useEffect(() => {
+    if (successMsg || errorMsg) {
+      const t = setTimeout(() => dispatch(clearFolderMessages()), 3500);
+      return () => clearTimeout(t);
+    }
+  }, [successMsg, errorMsg]);
+
+  useEffect(() => {
+    const close = () => setCtxMenu(null);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, []);
+
+  useEffect(() => {
+    setSelected(new Set());
+  }, [pathStack]);
+
+  // ── Derived ───────────────────────────────────────────────────────────────────
+  const currentFolderId = pathStack.length
+    ? pathStack[pathStack.length - 1]
+    : null;
+  const itemKey = (item) => `${item.type}-${item.id}`;
+
+  // ── API ───────────────────────────────────────────────────────────────────────
+
+  const fetchProjectDetail = async () => {
+    dispatch(setFolderLoading(true));
+    try {
+      const res = await GetApi(`projects/get-project-detail/${projectId}`);
+      if (res?.status === 200) {
+        dispatch(setFolderData(mapProjectResponse(res.data?.data ?? res.data)));
+      } else {
+        dispatch(
+          setFolderError(res?.data?.message || "Failed to load project files"),
+        );
+      }
+    } catch {
+      dispatch(setFolderError("Failed to load project files"));
+    } finally {
+      dispatch(setFolderLoading(false));
+    }
+  };
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+    dispatch(setFolderActionLoading(true));
+    try {
+      const res = await PostApi("projects/create-folder/", {
+        project: projectId,
+        parent_folder: currentFolderId,
+        folder_name: newFolderName.trim(),
+      });
+      if (res?.status === 200 || res?.status === 201) {
+        const created = res.data?.data;
+        const newFolder = {
+          id: created?.id,
+          name: created?.folder_name || newFolderName.trim(),
+          type: "folder",
+          parent_folder: created?.parent_folder ?? currentFolderId,
+          createdAt: formatDate(created?.created_on),
+          children: [],
+        };
+        dispatch(
+          setFolderData(
+            insertFolderIntoState(
+              { allFolders, rootFiles },
+              newFolder,
+              currentFolderId,
+            ),
+          ),
+        );
+        dispatch(
+          setFolderSuccess(res.data?.message || "Folder Created Successfully"),
+        );
+        setNewFolderName("");
+        setNewFolderModal(false);
+      } else {
+        dispatch(
+          setFolderError(res?.data?.message || "Failed to create folder"),
+        );
+      }
+    } catch {
+      dispatch(setFolderError("Failed to create folder"));
+    } finally {
+      dispatch(setFolderActionLoading(false));
+    }
+  };
+
+  const handleRename = async () => {
+    if (!renameName.trim() || !renameModal) return;
+    dispatch(setFolderActionLoading(true));
+    try {
+      const res = await PostApi("projects/rename-folder/", {
+        folder: renameModal.id,
+        project: projectId,
+        folder_name: renameName.trim(),
+      });
+      if (res?.status === 200 || res?.status === 201) {
+        dispatch(setFolderSuccess(res.data?.message || "Renamed Successfully"));
+        // Rename requires a tree-wide re-fetch (folder name must update everywhere)
+        await fetchProjectDetail();
+        setRenameModal(null);
+        setRenameName("");
+      } else {
+        dispatch(setFolderError(res?.data?.message || "Failed to rename"));
+      }
+    } catch {
+      dispatch(setFolderError("Failed to rename"));
+    } finally {
+      dispatch(setFolderActionLoading(false));
+    }
+  };
+
+  // ── Add Files — optimistic insert, NO full re-fetch ───────────────────────────
+  const handleAddFiles = async () => {
+    if (!droppedFiles.length) return;
+    dispatch(setFolderActionLoading(true));
+    try {
+      const formData = new FormData();
+      formData.append("project", projectId);
+      if (currentFolderId !== null) formData.append("folder", currentFolderId);
+      droppedFiles.forEach((f) => formData.append("files", f));
+
+      const res = await PostApi("projects/add-file/", formData);
+
+      if (res?.status === 200 || res?.status === 201) {
+        // Map API response to the same shape the tree uses
+        const uploaded = (res.data?.data ?? []).map(mapFile);
+
+        // ── Optimistic insert into Redux tree ──────────────────────────────
+        dispatch(
+          setFolderData(
+            insertFilesIntoState(
+              { allFolders, rootFiles },
+              uploaded,
+              currentFolderId,
+            ),
+          ),
+        );
+
+        dispatch(
+          setFolderSuccess(res.data?.message || "Files Uploaded Successfully"),
+        );
+        setDroppedFiles([]);
+        setNewFileModal(false);
+      } else {
+        dispatch(
+          setFolderError(res?.data?.message || "Failed to upload files"),
+        );
+      }
+    } catch {
+      dispatch(setFolderError("Failed to upload files"));
+    } finally {
+      dispatch(setFolderActionLoading(false));
+    }
+  };
+
+  const handleMove = async () => {
+    if (!moveModal) return;
+    dispatch(setFolderActionLoading(true));
+    try {
+      const folderIds = moveModal.isBulk
+        ? moveModal.items.filter((i) => i.type === "folder").map((i) => i.id)
+        : moveModal.items[0].type === "folder"
+          ? [moveModal.items[0].id]
+          : [];
+      const fileIds = moveModal.isBulk
+        ? moveModal.items.filter((i) => i.type === "file").map((i) => i.id)
+        : moveModal.items[0].type === "file"
+          ? [moveModal.items[0].id]
+          : [];
+
+      const res = await PostApi("projects/move-items/", {
+        folder_ids: folderIds,
+        file_ids: fileIds,
+        target_parent_folder: moveTarget,
+      });
+      if (res?.status === 200 || res?.status === 201) {
+        dispatch(
+          setFolderSuccess(res.data?.message || "Items moved successfully"),
+        );
+        dispatch(setFolderData(mapProjectResponse(res.data?.data ?? res.data)));
+        setMoveModal(null);
+        setMoveTarget(null);
+        setSelectedItem(null);
+        setSelected(new Set());
+      } else {
+        dispatch(setFolderError(res?.data?.message || "Failed to move items"));
+      }
+    } catch {
+      dispatch(setFolderError("Failed to move items"));
+    } finally {
+      dispatch(setFolderActionLoading(false));
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteConfirm) return;
+    dispatch(setFolderActionLoading(true));
+    try {
+      const folderIds = deleteConfirm.isBulk
+        ? deleteConfirm.items
+            .filter((i) => i.type === "folder")
+            .map((i) => i.id)
+        : deleteConfirm.items[0].type === "folder"
+          ? [deleteConfirm.items[0].id]
+          : [];
+      const fileIds = deleteConfirm.isBulk
+        ? deleteConfirm.items.filter((i) => i.type === "file").map((i) => i.id)
+        : deleteConfirm.items[0].type === "file"
+          ? [deleteConfirm.items[0].id]
+          : [];
+
+      const res = await PostApi("projects/delete-items/", {
+        folder_ids: folderIds,
+        file_ids: fileIds,
+        project: projectId,
+      });
+      if (res?.status === 200 || res?.status === 201) {
+        dispatch(
+          setFolderSuccess(res.data?.message || "Items deleted successfully"),
+        );
+
+        // ── Optimistic removal from Redux tree ─────────────────────────────
+        dispatch(
+          setFolderData(
+            removeItemsFromState({ allFolders, rootFiles }, folderIds, fileIds),
+          ),
+        );
+
+        if (selectedItem && folderIds.concat(fileIds).includes(selectedItem.id))
+          setSelectedItem(null);
+        setDeleteConfirm(null);
+        setSelected(new Set());
+      } else {
+        dispatch(
+          setFolderError(res?.data?.message || "Failed to delete items"),
+        );
+      }
+    } catch {
+      dispatch(setFolderError("Failed to delete items"));
+    } finally {
+      dispatch(setFolderActionLoading(false));
+    }
+  };
+
+  // ── Tree Helpers ──────────────────────────────────────────────────────────────
 
   const getFolderByPath = (folders, path) => {
     if (!path.length) return null;
@@ -280,56 +859,6 @@ const Folders = () => {
       cur = (cur.children || []).find((f) => f.id === path[i]);
     }
     return cur;
-  };
-
-  const updateDeep = (folders, path, updater) => {
-    if (!path.length) return updater(folders);
-    return folders.map((f) =>
-      f.id === path[0]
-        ? {
-            ...f,
-            children: updateDeep(f.children || [], path.slice(1), updater),
-          }
-        : f,
-    );
-  };
-
-  /** Remove an item (by id) anywhere in the tree */
-  const removeDeep = (folders, id) =>
-    folders
-      .filter((f) => f.id !== id)
-      .map((f) => ({ ...f, children: removeDeep(f.children || [], id) }));
-
-  /** Insert an item into the folder with folderId (null = root) */
-  const insertDeep = (folders, folderId, item) => {
-    if (folderId === null) return [...folders, item];
-    return folders.map((f) => {
-      if (f.id === folderId)
-        return { ...f, children: [...(f.children || []), item] };
-      return { ...f, children: insertDeep(f.children || [], folderId, item) };
-    });
-  };
-
-  const deleteDeep = (folders, path, id) => {
-    if (!path.length) return folders.filter((f) => f.id !== id);
-    return folders.map((f) =>
-      f.id === path[0]
-        ? { ...f, children: deleteDeep(f.children || [], path.slice(1), id) }
-        : f,
-    );
-  };
-
-  const renameDeep = (folders, path, id, name) => {
-    if (!path.length)
-      return folders.map((f) => (f.id === id ? { ...f, name } : f));
-    return folders.map((f) =>
-      f.id === path[0]
-        ? {
-            ...f,
-            children: renameDeep(f.children || [], path.slice(1), id, name),
-          }
-        : f,
-    );
   };
 
   const getBreadcrumbName = (id) => {
@@ -343,182 +872,77 @@ const Folders = () => {
     return find(allFolders);
   };
 
-  // ── Current view items ────────────────────────────────────────────────────
-
   const currentItems = () => {
-    let items;
-    if (!pathStack.length) {
-      items = [...allFolders, ...rootFiles];
-    } else {
-      const folder = getFolderByPath(allFolders, pathStack);
-      items = folder ? folder.children || [] : [];
-    }
+    let items = !pathStack.length
+      ? [...allFolders, ...rootFiles]
+      : getFolderByPath(allFolders, pathStack)?.children || [];
 
     if (filterType !== "All") {
-      items = items.filter((i) => {
-        if (filterType === "Folders") return i.type === "folder";
-        const map = {
-          Video: ["mp4", "avi"],
-          Images: ["png", "jpg", "jpeg"],
-          Music: ["mp3"],
-          Documents: ["pdf", "doc", "docx", "ppt", "pptx", "txt"],
-        };
-        return map[filterType]?.includes(i.ext?.toLowerCase());
-      });
+      const extMap = {
+        Folders: null,
+        Video: ["mp4", "avi", "webm", "mov"],
+        Images: ["png", "jpg", "jpeg", "gif", "webp", "svg"],
+        Music: ["mp3", "wav", "ogg", "aac"],
+        Documents: ["pdf", "doc", "docx", "ppt", "pptx", "txt", "xlsx", "xls"],
+      };
+      items = items.filter((i) =>
+        filterType === "Folders"
+          ? i.type === "folder"
+          : extMap[filterType]?.includes(i.ext?.toLowerCase()),
+      );
     }
 
-    if (searchQuery) {
+    if (searchQuery)
       items = items.filter((i) =>
         i.name.toLowerCase().includes(searchQuery.toLowerCase()),
       );
-    }
+
     return items;
   };
 
-  // ── CRUD ──────────────────────────────────────────────────────────────────
+  // ── Bulk selection ────────────────────────────────────────────────────────────
 
-  const createFolder = () => {
-    if (!newFolderName.trim()) return;
-    const item = {
-      id: nextId(),
-      name: newFolderName.trim(),
-      type: "folder",
-      createdBy: "You",
-      createdAt: todayStr(),
-      children: [],
-    };
-    if (!pathStack.length) {
-      setAllFolders((p) => [...p, item]);
-    } else {
-      setAllFolders((p) => updateDeep(p, pathStack, (ch) => [...ch, item]));
-    }
-    setNewFolderName("");
-    setNewFolderModal(false);
+  const toggleSelect = (item, e) => {
+    e.stopPropagation();
+    setSelected((prev) => {
+      const next = new Set(prev);
+      const k = itemKey(item);
+      next.has(k) ? next.delete(k) : next.add(k);
+      return next;
+    });
   };
 
-  const createFile = () => {
-    if (!newFileName.trim()) return;
-    const item = {
-      id: nextId(),
-      name: newFileName.trim(),
-      ext: newFileExt,
-      type: "file",
-      size: "0 KB",
-      createdAt: todayStr(),
-    };
-    if (!pathStack.length) {
-      setRootFiles((p) => [...p, item]);
-    } else {
-      setAllFolders((p) => updateDeep(p, pathStack, (ch) => [...ch, item]));
-    }
-    setNewFileName("");
-    setNewFileExt("png");
-    setNewFileModal(false);
-  };
+  const getSelectedItems = (items) =>
+    items.filter((i) => selected.has(itemKey(i)));
 
-  const deleteItem = (item) => {
-    if (!pathStack.length) {
-      if (item.type === "folder")
-        setAllFolders((p) => p.filter((f) => f.id !== item.id));
-      else setRootFiles((p) => p.filter((f) => f.id !== item.id));
-    } else {
-      if (item.type === "folder") {
-        setAllFolders((p) => deleteDeep(p, pathStack, item.id));
-      } else {
-        setAllFolders((p) => deleteDeep(p, pathStack, item.id));
-        // also try rootFiles just in case
-        setRootFiles((p) => p.filter((f) => f.id !== item.id));
-      }
-    }
-    if (selectedItem?.id === item.id) setSelectedItem(null);
-  };
-
-  const doRename = () => {
-    if (!renameName.trim() || !renameModal) return;
-    const { id, type } = renameModal;
-    if (!pathStack.length) {
-      if (type === "folder")
-        setAllFolders((p) =>
-          p.map((f) => (f.id === id ? { ...f, name: renameName } : f)),
-        );
-      else
-        setRootFiles((p) =>
-          p.map((f) => (f.id === id ? { ...f, name: renameName } : f)),
-        );
-    } else {
-      setAllFolders((p) => renameDeep(p, pathStack, id, renameName));
-    }
-    setRenameModal(null);
-    setRenameName("");
-  };
-
-  // ── Move ──────────────────────────────────────────────────────────────────
-
-  /**
-   * Strategy:
-   *  1. Remove the item from wherever it currently lives (folders tree OR rootFiles).
-   *  2. Insert it at the chosen destination.
-   */
-  const doMove = () => {
-    if (!moveModal) return;
-    const item = moveModal;
-
-    if (item.type === "folder") {
-      // Remove from folders tree
-      setAllFolders((prev) => {
-        const withoutItem = removeDeep(prev, item.id);
-        if (moveTarget === null) {
-          // Move to root – just add back at root level
-          return [...withoutItem, item];
-        }
-        return insertDeep(withoutItem, moveTarget, item);
-      });
-    } else {
-      // It's a file
-      // Remove from root or from inside a folder
-      let itemCopy = item;
-      setRootFiles((prev) => prev.filter((f) => f.id !== item.id));
-      setAllFolders((prev) => {
-        const withoutItem = removeDeep(prev, item.id);
-        if (moveTarget === null) {
-          // Moving to root – handled via rootFiles, don't touch allFolders
-          setRootFiles((rf) =>
-            rf.find((f) => f.id === item.id) ? rf : [...rf, itemCopy],
-          );
-          return withoutItem;
-        }
-        return insertDeep(withoutItem, moveTarget, itemCopy);
-      });
-    }
-
-    setMoveModal(null);
-    setMoveTarget(null);
-    setSelectedItem(null);
-  };
-
-  // ── Context menu actions ──────────────────────────────────────────────────
+  // ── Context Menu Actions ──────────────────────────────────────────────────────
 
   const handleContextAction = (action, item) => {
-    if (action === "explore" && item.type === "folder") {
-      setPathStack((p) => [...p, item.id]);
-      setSelectedItem(null);
-    } else if (action === "favorite") {
-      setFavorites((p) =>
-        p.find((f) => f.id === item.id)
-          ? p.filter((f) => f.id !== item.id)
-          : [...p, item],
-      );
-    } else if (action === "rename") {
-      setRenameName(item.name);
-      setRenameModal(item);
-    } else if (action === "move") {
-      setMoveTarget(null);
-      setMoveModal(item);
-    } else if (action === "delete") {
-      deleteItem(item);
-    } else if (action === "info") {
-      setInfoModal(item);
-    }
+    ({
+      explore: () => {
+        setPathStack((p) => [...p, item.id]);
+        setSelectedItem(null);
+      },
+      favorite: () =>
+        setFavorites((p) =>
+          p.find((f) => f.id === item.id)
+            ? p.filter((f) => f.id !== item.id)
+            : [...p, item],
+        ),
+      rename: () => {
+        if (item.type !== "folder") return;
+        setRenameName(item.name);
+        setRenameModal(item);
+      },
+      move: () => {
+        setMoveTarget(null);
+        setMoveModal({ items: [item], isBulk: false });
+      },
+      delete: () => setDeleteConfirm({ items: [item], isBulk: false }),
+      info: () => setInfoModal(item),
+      view: () => setViewerFile(item),
+      download: () => item.file_url && window.open(item.file_url, "_blank"),
+    })[action]?.();
   };
 
   const onRightClick = (e, item) => {
@@ -527,19 +951,31 @@ const Folders = () => {
     setCtxMenu({ x: e.clientX, y: e.clientY, item });
   };
 
-  useEffect(() => {
-    const close = () => setCtxMenu(null);
-    document.addEventListener("click", close);
-    return () => document.removeEventListener("click", close);
-  }, []);
-
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   const items = currentItems();
+  const folderItems = items.filter((i) => i.type === "folder");
+  const fileItems = items.filter((i) => i.type === "file");
+  const selItems = getSelectedItems(items);
+  const hasSelection = selected.size > 0;
 
   return (
     <React.Fragment>
       <div className="file-manager-content w-100 p-3 py-0">
+        {/* ── Flash Messages ── */}
+        {successMsg && (
+          <Alert color="success" className="mt-2 py-2">
+            <i className="ri-check-line me-2"></i>
+            {successMsg}
+          </Alert>
+        )}
+        {errorMsg && (
+          <Alert color="danger" className="mt-2 py-2">
+            <i className="ri-error-warning-line me-2"></i>
+            {typeof errorMsg === "string" ? errorMsg : "Something went wrong"}
+          </Alert>
+        )}
+
         <div className="mx-n3 pt-4 px-4 file-manager-content-scroll overflow-x-hidden overflow-y-auto">
           {/* ── Toolbar ── */}
           <Row className="justify-content-between g-2 mb-3">
@@ -553,13 +989,16 @@ const Folders = () => {
                     <i className="ri-menu-2-fill align-bottom"></i>
                   </button>
                 </div>
+
+                {/* Breadcrumb */}
                 <div className="d-flex align-items-center gap-1">
                   <span
-                    className="text-muted cursor-pointer"
+                    className="text-muted"
                     style={{ cursor: "pointer" }}
                     onClick={() => {
                       setPathStack([]);
                       setSelectedItem(null);
+                      setSelected(new Set());
                     }}
                   >
                     <i className="ri-home-4-line fs-16 align-bottom"></i>
@@ -573,6 +1012,7 @@ const Folders = () => {
                         onClick={() => {
                           setPathStack((p) => p.slice(0, i + 1));
                           setSelectedItem(null);
+                          setSelected(new Set());
                         }}
                       >
                         {getBreadcrumbName(id)}
@@ -599,6 +1039,7 @@ const Folders = () => {
                   />
                   <i className="ri-search-line search-icon"></i>
                 </div>
+
                 <Input
                   type="select"
                   className="form-select"
@@ -613,25 +1054,86 @@ const Folders = () => {
                   <option>Music</option>
                   <option>Documents</option>
                 </Input>
+
+                <button
+                  className="btn btn-soft-secondary btn-icon"
+                  title="Refresh"
+                  disabled={loading}
+                  onClick={fetchProjectDetail}
+                >
+                  {loading ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <i className="ri-refresh-line"></i>
+                  )}
+                </button>
+
                 <button
                   className="btn btn-soft-success text-nowrap flex-shrink-0"
                   onClick={() => setNewFolderModal(true)}
                 >
-                  <i className="ri-folder-add-line align-bottom me-1"></i> New
+                  <i className="ri-folder-add-line align-bottom me-1"></i>New
                   Folder
                 </button>
                 <button
                   className="btn btn-success text-nowrap flex-shrink-0"
                   onClick={() => setNewFileModal(true)}
                 >
-                  <i className="ri-add-line align-bottom me-1"></i> Add Files
+                  <i className="ri-add-line align-bottom me-1"></i>Add Files
                 </button>
               </div>
             </Col>
           </Row>
 
-          {/* ── Empty state ── */}
-          {items.length === 0 && (
+          {/* ── Bulk Action Bar ── */}
+          {hasSelection && (
+            <div
+              className="d-flex align-items-center gap-3 px-3 py-2 mb-3 rounded border border-success bg-success bg-opacity-10"
+              style={{ flexWrap: "wrap" }}
+            >
+              <span className="fw-medium text-success fs-14">
+                <i className="ri-checkbox-multiple-line me-1"></i>
+                {selected.size} item{selected.size > 1 ? "s" : ""} selected
+              </span>
+              <div className="d-flex gap-2 ms-auto">
+                <button
+                  className="btn btn-sm btn-soft-primary d-flex align-items-center gap-1"
+                  onClick={() => {
+                    setMoveTarget(null);
+                    setMoveModal({ items: selItems, isBulk: true });
+                  }}
+                >
+                  <i className="ri-arrow-right-line"></i>Move Selected
+                </button>
+                <button
+                  className="btn btn-sm btn-soft-danger d-flex align-items-center gap-1"
+                  onClick={() =>
+                    setDeleteConfirm({ items: selItems, isBulk: true })
+                  }
+                >
+                  <i className="ri-delete-bin-line"></i>Delete Selected
+                </button>
+                <button
+                  className="btn btn-sm btn-ghost-secondary"
+                  onClick={() => setSelected(new Set())}
+                  title="Clear selection"
+                >
+                  <i className="ri-close-line"></i>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Loading State ── */}
+          {loading && (
+            <div className="text-center py-5">
+              <Spinner color="success" />
+              <p className="text-muted mt-2 mb-0">Loading files…</p>
+            </div>
+          )}
+
+          {/* ── Empty State ── */}
+          {!loading && items.length === 0 && (
             <div className="text-center py-5 text-muted">
               <i className="ri-folder-open-line display-4 d-block mb-2"></i>
               {searchQuery ? "No results found." : "This folder is empty."}
@@ -639,212 +1141,108 @@ const Folders = () => {
           )}
 
           {/* ── Folder Cards ── */}
-          {items.some((i) => i.type === "folder") && (
+          {!loading && folderItems.length > 0 && (
             <div className="mb-4">
-              <h6 className="text-muted text-uppercase fs-11 mb-3">Folders</h6>
+              <div className="d-flex align-items-center mb-3 gap-2">
+                <h6 className="text-muted text-uppercase fs-11 mb-0">
+                  Folders
+                </h6>
+                <div className="form-check mb-0 ms-2">
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    id="selectAllFolders"
+                    checked={
+                      folderItems.length > 0 &&
+                      folderItems.every((f) => selected.has(itemKey(f)))
+                    }
+                    onChange={() => {
+                      const allSelected = folderItems.every((f) =>
+                        selected.has(itemKey(f)),
+                      );
+                      setSelected((prev) => {
+                        const next = new Set(prev);
+                        folderItems.forEach((f) =>
+                          allSelected
+                            ? next.delete(itemKey(f))
+                            : next.add(itemKey(f)),
+                        );
+                        return next;
+                      });
+                    }}
+                    title="Select all folders"
+                  />
+                  <label
+                    className="form-check-label text-muted fs-12"
+                    htmlFor="selectAllFolders"
+                  >
+                    Select all
+                  </label>
+                </div>
+              </div>
+
               <Row className="g-3">
-                {items
-                  .filter((i) => i.type === "folder")
-                  .map((item) => {
-                    const isFav = favorites.find((f) => f.id === item.id);
-                    return (
-                      <Col xxl={3} md={4} sm={6} key={item.id}>
-                        <Card
-                          className={`bg-light shadow-none h-100 mb-0${selectedItem?.id === item.id ? " border border-success" : ""}`}
-                          style={{ cursor: "pointer" }}
-                          onClick={() => setSelectedItem(item)}
-                          onDoubleClick={() => {
-                            setPathStack((p) => [...p, item.id]);
-                            setSelectedItem(null);
+                {folderItems.map((item) => {
+                  const isFav = favorites.find((f) => f.id === item.id);
+                  const isSelected = selected.has(itemKey(item));
+                  return (
+                    <Col xxl={3} md={4} sm={6} key={item.id}>
+                      <Card
+                        className={`bg-light shadow-none h-100 mb-0${
+                          isSelected || selectedItem?.id === item.id
+                            ? " border border-success"
+                            : ""
+                        }`}
+                        style={{ cursor: "pointer", position: "relative" }}
+                        onClick={() => setSelectedItem(item)}
+                        onDoubleClick={() => {
+                          setPathStack((p) => [...p, item.id]);
+                          setSelectedItem(null);
+                          setSelected(new Set());
+                        }}
+                        onContextMenu={(e) => onRightClick(e, item)}
+                      >
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: 8,
+                            left: 10,
+                            zIndex: 2,
                           }}
-                          onContextMenu={(e) => onRightClick(e, item)}
+                          onClick={(e) => toggleSelect(item, e)}
                         >
-                          <CardBody>
-                            <div className="d-flex justify-content-between mb-1">
-                              <div className="ms-auto">
-                                <UncontrolledDropdown
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <DropdownToggle
-                                    tag="button"
-                                    className="btn btn-ghost-primary btn-icon btn-sm"
-                                  >
-                                    <i className="ri-more-2-fill fs-16 align-bottom" />
-                                  </DropdownToggle>
+                          <input
+                            type="checkbox"
+                            className="form-check-input"
+                            checked={isSelected}
+                            onChange={() => {}}
+                          />
+                        </div>
 
-                                  <DropdownMenu end>
-                                    <DropdownItem
-                                      onClick={() => {
-                                        setPathStack((p) => [...p, item.id]);
-                                        setSelectedItem(null);
-                                      }}
-                                    >
-                                      <i className="ri-compass-3-line me-2"></i>
-                                      Explore
-                                    </DropdownItem>
-
-                                    <DropdownItem
-                                      onClick={() =>
-                                        setFavorites((p) =>
-                                          p.find((f) => f.id === item.id)
-                                            ? p.filter((f) => f.id !== item.id)
-                                            : [...p, item],
-                                        )
-                                      }
-                                    >
-                                      <i
-                                        className={`${
-                                          isFav
-                                            ? "ri-star-fill text-warning"
-                                            : "ri-star-line"
-                                        } me-2`}
-                                      ></i>
-                                      {isFav
-                                        ? "Unfavorite"
-                                        : "Add to Favorites"}
-                                    </DropdownItem>
-
-                                    <DropdownItem
-                                      onClick={() => {
-                                        setRenameName(item.name);
-                                        setRenameModal(item);
-                                      }}
-                                    >
-                                      <i className="ri-pencil-line me-2"></i>
-                                      Rename
-                                    </DropdownItem>
-
-                                    <DropdownItem
-                                      onClick={() => {
-                                        setMoveTarget(null);
-                                        setMoveModal(item);
-                                      }}
-                                    >
-                                      <i className="ri-arrow-right-line me-2"></i>
-                                      Move
-                                    </DropdownItem>
-
-                                    <DropdownItem divider />
-
-                                    <DropdownItem
-                                      className="text-danger"
-                                      onClick={() => deleteItem(item)}
-                                    >
-                                      <i className="ri-delete-bin-line me-2"></i>
-                                      Delete
-                                    </DropdownItem>
-
-                                    <DropdownItem
-                                      onClick={() => setInfoModal(item)}
-                                    >
-                                      <i className="ri-information-line me-2"></i>
-                                      Info
-                                    </DropdownItem>
-                                  </DropdownMenu>
-                                </UncontrolledDropdown>
-                              </div>
-                              {isFav && (
-                                <i className="ri-star-fill text-warning fs-14 mt-1"></i>
-                              )}
-                            </div>
-                            <div className="text-center">
-                              <div className="mb-2">
-                                <i className="ri-folder-2-fill text-warning display-5"></i>
-                              </div>
-                              <h6 className="fs-15 mb-0">{item.name}</h6>
-                              <p className="text-muted fs-12 mb-0 mt-1">
-                                {(item.children || []).length} items
-                              </p>
-                            </div>
-                          </CardBody>
-                        </Card>
-                      </Col>
-                    );
-                  })}
-              </Row>
-            </div>
-          )}
-
-          {/* ── File List ── */}
-          {items.some((i) => i.type === "file") && (
-            <div className="mb-4">
-              <h6 className="text-muted text-uppercase fs-11 mb-3">Files</h6>
-              <div className="table-responsive">
-                <table className="table table-borderless align-middle mb-0">
-                  <thead className="table-light">
-                    <tr>
-                      <th style={{ width: 40 }}></th>
-                      <th>Name</th>
-                      <th>Type</th>
-                      <th>Size</th>
-                      <th>Date</th>
-                      <th style={{ width: 60 }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items
-                      .filter((i) => i.type === "file")
-                      .map((item) => {
-                        const { icon, color } = getFileIcon(item.ext);
-                        const isFav = favorites.find((f) => f.id === item.id);
-                        return (
-                          <tr
-                            key={item.id}
-                            className={
-                              selectedItem?.id === item.id
-                                ? "table-success"
-                                : ""
-                            }
-                            style={{ cursor: "pointer" }}
-                            onClick={() => setSelectedItem(item)}
-                            onContextMenu={(e) => onRightClick(e, item)}
-                          >
-                            <td>
-                              <div
-                                className={`avatar-xs d-flex align-items-center justify-content-center rounded bg-${color}-subtle`}
-                              >
-                                <i
-                                  className={`${icon} text-${color} fs-18`}
-                                ></i>
-                              </div>
-                            </td>
-                            <td>
-                              <div className="d-flex align-items-center gap-2">
-                                <span className="fw-medium">{item.name}</span>
-                                {isFav && (
-                                  <i className="ri-star-fill text-warning fs-12"></i>
-                                )}
-                              </div>
-                            </td>
-                            <td>
-                              <span
-                                className={`badge bg-${color}-subtle text-${color}`}
-                              >
-                                {item.ext?.toUpperCase()}
-                              </span>
-                            </td>
-                            <td>
-                              <span className="text-muted">{item.size}</span>
-                            </td>
-                            <td>
-                              <span className="text-muted">
-                                {item.createdAt}
-                              </span>
-                            </td>
-                            <td>
+                        <CardBody>
+                          <div className="d-flex justify-content-between mb-1">
+                            {isFav && (
+                              <i className="ri-star-fill text-warning fs-14 mt-1"></i>
+                            )}
+                            <div className="ms-auto">
                               <UncontrolledDropdown
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <DropdownToggle
                                   tag="button"
-                                  className="btn btn-ghost-secondary btn-icon btn-sm"
+                                  className="btn btn-ghost-primary btn-icon btn-sm"
                                 >
                                   <i className="ri-more-2-fill fs-16 align-bottom" />
                                 </DropdownToggle>
-                                <DropdownMenu className="dropdown-menu-end">
-                                  <DropdownItem>
-                                    <i className="ri-download-line me-2"></i>
-                                    Download
+                                <DropdownMenu end>
+                                  <DropdownItem
+                                    onClick={() => {
+                                      setPathStack((p) => [...p, item.id]);
+                                      setSelectedItem(null);
+                                    }}
+                                  >
+                                    <i className="ri-compass-3-line me-2"></i>
+                                    Explore
                                   </DropdownItem>
                                   <DropdownItem
                                     onClick={() =>
@@ -872,7 +1270,10 @@ const Folders = () => {
                                   <DropdownItem
                                     onClick={() => {
                                       setMoveTarget(null);
-                                      setMoveModal(item);
+                                      setMoveModal({
+                                        items: [item],
+                                        isBulk: false,
+                                      });
                                     }}
                                   >
                                     <i className="ri-arrow-right-line me-2"></i>
@@ -881,7 +1282,12 @@ const Folders = () => {
                                   <DropdownItem divider />
                                   <DropdownItem
                                     className="text-danger"
-                                    onClick={() => deleteItem(item)}
+                                    onClick={() =>
+                                      setDeleteConfirm({
+                                        items: [item],
+                                        isBulk: false,
+                                      })
+                                    }
                                   >
                                     <i className="ri-delete-bin-line me-2"></i>
                                     Delete
@@ -894,10 +1300,150 @@ const Folders = () => {
                                   </DropdownItem>
                                 </DropdownMenu>
                               </UncontrolledDropdown>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="mb-2">
+                              <i className="ri-folder-2-fill text-warning display-5"></i>
+                            </div>
+                            <h6 className="fs-15 mb-0">{item.name}</h6>
+                            <p className="text-muted fs-12 mb-0 mt-1">
+                              {(item.children || []).length} items
+                            </p>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    </Col>
+                  );
+                })}
+              </Row>
+            </div>
+          )}
+
+          {/* ── File Table ── */}
+          {!loading && fileItems.length > 0 && (
+            <div className="mb-4">
+              <h6 className="text-muted text-uppercase fs-11 mb-3">Files</h6>
+              <div className="table-responsive">
+                <table className="table table-borderless align-middle mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th style={{ width: 40 }}>
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          checked={
+                            fileItems.length > 0 &&
+                            fileItems.every((f) => selected.has(itemKey(f)))
+                          }
+                          onChange={() => {
+                            const allSelected = fileItems.every((f) =>
+                              selected.has(itemKey(f)),
+                            );
+                            setSelected((prev) => {
+                              const next = new Set(prev);
+                              fileItems.forEach((f) =>
+                                allSelected
+                                  ? next.delete(itemKey(f))
+                                  : next.add(itemKey(f)),
+                              );
+                              return next;
+                            });
+                          }}
+                          title="Select all files"
+                        />
+                      </th>
+                      <th style={{ width: 40 }}></th>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Size</th>
+                      <th>Date</th>
+                      <th style={{ width: 100 }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fileItems.map((item) => {
+                      const { icon, color } = getFileIcon(item.ext);
+                      const isFav = favorites.find((f) => f.id === item.id);
+                      const isSelected = selected.has(itemKey(item));
+                      const canPreview =
+                        getViewerType(item.ext) !== "unsupported";
+                      return (
+                        <tr
+                          key={item.id}
+                          className={
+                            isSelected || selectedItem?.id === item.id
+                              ? "table-success"
+                              : ""
+                          }
+                          style={{ cursor: "pointer" }}
+                          onClick={() => setSelectedItem(item)}
+                          onDoubleClick={() => setViewerFile(item)}
+                          onContextMenu={(e) => onRightClick(e, item)}
+                        >
+                          <td onClick={(e) => toggleSelect(item, e)}>
+                            <input
+                              type="checkbox"
+                              className="form-check-input"
+                              checked={isSelected}
+                              onChange={() => {}}
+                            />
+                          </td>
+                          <td>
+                            <div
+                              className={`avatar-xs d-flex align-items-center justify-content-center rounded bg-${color}-subtle`}
+                            >
+                              <i className={`${icon} text-${color} fs-18`}></i>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="d-flex align-items-center gap-2">
+                              <span className="fw-medium">{item.name}</span>
+                              {isFav && (
+                                <i className="ri-star-fill text-warning fs-12"></i>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <span
+                              className={`badge bg-${color}-subtle text-${color}`}
+                            >
+                              {item.ext?.toUpperCase()}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="text-muted">{item.size}</span>
+                          </td>
+                          <td>
+                            <span className="text-muted">{item.createdAt}</span>
+                          </td>
+                          <td onClick={(e) => e.stopPropagation()}>
+                            <div className="d-flex align-items-center gap-1">
+                              {canPreview && (
+                                <button
+                                  className="btn btn-ghost-success btn-icon btn-sm"
+                                  title="View file"
+                                  onClick={() => setViewerFile(item)}
+                                >
+                                  <i className="ri-eye-line fs-15"></i>
+                                </button>
+                              )}
+                              {item.file_url && (
+                                <a
+                                  href={item.file_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="btn btn-ghost-primary btn-icon btn-sm"
+                                  title="Download"
+                                >
+                                  <i className="ri-download-line fs-15"></i>
+                                </a>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -906,7 +1452,7 @@ const Folders = () => {
         </div>
       </div>
 
-      {/* ── Right-click Context Menu ── */}
+      {/* ── Context Menu ── */}
       {ctxMenu && (
         <ContextMenu
           x={ctxMenu.x}
@@ -916,6 +1462,9 @@ const Folders = () => {
           onAction={handleContextAction}
         />
       )}
+
+      {/* ── File Viewer Modal ── */}
+      <FileViewerModal file={viewerFile} onClose={() => setViewerFile(null)} />
 
       {/* ── New Folder Modal ── */}
       <Modal
@@ -932,118 +1481,145 @@ const Folders = () => {
             <Input
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && createFolder()}
+              onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
               placeholder="Enter folder name"
               autoFocus
             />
           </FormGroup>
+          {currentFolderId && (
+            <p className="text-muted fs-12 mb-0">
+              <i className="ri-folder-2-fill text-warning me-1"></i>
+              Creating inside:{" "}
+              <strong>{getBreadcrumbName(currentFolderId)}</strong>
+            </p>
+          )}
         </ModalBody>
         <ModalFooter>
           <Button color="light" onClick={() => setNewFolderModal(false)}>
             Cancel
           </Button>
-          <Button color="success" onClick={createFolder}>
-            <i className="ri-folder-add-line me-1"></i> Create
+          <Button
+            color="success"
+            onClick={handleCreateFolder}
+            disabled={actionLoading}
+          >
+            {actionLoading ? (
+              <>
+                <Spinner size="sm" className="me-1" />
+                Creating…
+              </>
+            ) : (
+              <>
+                <i className="ri-folder-add-line me-1"></i>Create
+              </>
+            )}
           </Button>
         </ModalFooter>
       </Modal>
 
-      {/* ── Add File Modal ── */}
+      {/* ── Add Files Modal ── */}
       <Modal
         isOpen={newFileModal}
-        toggle={() => setNewFileModal(false)}
+        toggle={() => {
+          setNewFileModal(false);
+          setDroppedFiles([]);
+        }}
         centered
         className="zoomIn"
       >
         <ModalHeader
-          toggle={() => setNewFileModal(false)}
+          toggle={() => {
+            setNewFileModal(false);
+            setDroppedFiles([]);
+          }}
           className="p-3 bg-success-subtle"
         >
-          Add File
+          Add Files
+          {currentFolderId && (
+            <span className="text-muted fs-12 ms-2 fw-normal">
+              → <i className="ri-folder-2-fill text-warning me-1"></i>
+              {getBreadcrumbName(currentFolderId)}
+            </span>
+          )}
         </ModalHeader>
         <ModalBody>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              createFile();
-            }}
-          >
-            <div className="mb-3">
-              <Label className="form-label">File Name</Label>
-              <Input
-                type="text"
-                placeholder="Enter file name"
-                value={newFileName}
-                onChange={(e) => setNewFileName(e.target.value)}
-                autoFocus
-              />
-            </div>
-
-            <div className="mb-4">
-              <Label className="form-label">
-                Upload File <span className="text-muted fs-12">(optional)</span>
-              </Label>
-              <Dropzone
-                onDrop={(acceptedFiles) => {
-                  if (acceptedFiles.length > 0) {
-                    const file = acceptedFiles[0];
-                    setNewFileName(file.name.replace(/\.[^/.]+$/, ""));
-                    setNewFileExt(file.name.split(".").pop().toLowerCase());
-                  }
-                }}
-              >
-                {({ getRootProps, getInputProps }) => (
-                  <div className="dropzone dz-clickable border rounded p-4 text-center">
-                    <div className="dz-message needsclick" {...getRootProps()}>
-                      <input {...getInputProps()} />
-                      <div className="mb-2">
-                        <i className="display-4 text-muted ri-upload-cloud-2-fill" />
-                      </div>
-                      <h5>Drop files here or click to upload.</h5>
-                      {newFileName && (
-                        <p className="mt-2 text-success mb-0">
-                          <i className="ri-check-line me-1"></i>
-                          Selected: {newFileName}.{newFileExt}
-                        </p>
-                      )}
-                    </div>
+          <Label className="form-label">
+            Upload Files{" "}
+            <small className="text-muted">
+              ({ALLOWED_EXTENSIONS.join(", ")})
+            </small>
+          </Label>
+          <Dropzone onDrop={(files) => setDroppedFiles(files)} multiple>
+            {({ getRootProps, getInputProps }) => (
+              <div className="dropzone dz-clickable border rounded p-4 text-center">
+                <div className="dz-message needsclick" {...getRootProps()}>
+                  <input {...getInputProps()} />
+                  <div className="mb-2">
+                    <i className="display-4 text-muted ri-upload-cloud-2-fill" />
                   </div>
-                )}
-              </Dropzone>
-            </div>
-
-            <div className="hstack gap-2 justify-content-end">
-              <button
-                type="button"
-                className="btn btn-ghost-success"
-                onClick={() => setNewFileModal(false)}
-              >
-                <i className="ri-close-line align-bottom me-1"></i>Cancel
-              </button>
-              <button type="submit" className="btn btn-primary">
-                <i className="ri-add-line align-bottom me-1"></i>Add File
-              </button>
-            </div>
-          </form>
+                  <h5>Drop files here or click to upload.</h5>
+                  {droppedFiles.length > 0 && (
+                    <div className="mt-2">
+                      {droppedFiles.map((f, i) => (
+                        <p key={i} className="text-success mb-0 fs-13">
+                          <i className="ri-check-line me-1"></i>
+                          {f.name}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </Dropzone>
+          <div className="hstack gap-2 justify-content-end mt-3">
+            <button
+              type="button"
+              className="btn btn-ghost-success"
+              onClick={() => {
+                setNewFileModal(false);
+                setDroppedFiles([]);
+              }}
+            >
+              <i className="ri-close-line align-bottom me-1"></i>Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleAddFiles}
+              disabled={!droppedFiles.length || actionLoading}
+            >
+              {actionLoading ? (
+                <>
+                  <Spinner size="sm" className="me-1" />
+                  Uploading…
+                </>
+              ) : (
+                <>
+                  <i className="ri-add-line align-bottom me-1"></i>Upload
+                </>
+              )}
+            </button>
+          </div>
         </ModalBody>
       </Modal>
 
-      {/* ── Rename Modal ── */}
+      {/* ── Rename Folder Modal ── */}
       <Modal
         isOpen={!!renameModal}
         toggle={() => setRenameModal(null)}
         centered
       >
         <ModalHeader toggle={() => setRenameModal(null)}>
-          Rename {renameModal?.type === "folder" ? "Folder" : "File"}
+          Rename Folder
         </ModalHeader>
         <ModalBody>
           <FormGroup>
-            <Label>New Name</Label>
+            <Label>New Folder Name</Label>
             <Input
               value={renameName}
               onChange={(e) => setRenameName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && doRename()}
+              onKeyDown={(e) => e.key === "Enter" && handleRename()}
               autoFocus
             />
           </FormGroup>
@@ -1052,31 +1628,72 @@ const Folders = () => {
           <Button color="light" onClick={() => setRenameModal(null)}>
             Cancel
           </Button>
-          <Button color="success" onClick={doRename}>
-            <i className="ri-pencil-line me-1"></i> Save
+          <Button
+            color="success"
+            onClick={handleRename}
+            disabled={actionLoading}
+          >
+            {actionLoading ? (
+              <>
+                <Spinner size="sm" className="me-1" />
+                Saving…
+              </>
+            ) : (
+              <>
+                <i className="ri-pencil-line me-1"></i>Save
+              </>
+            )}
           </Button>
         </ModalFooter>
       </Modal>
 
       {/* ── Move Modal ── */}
-      <Modal isOpen={!!moveModal} toggle={() => setMoveModal(null)} centered>
-        <ModalHeader toggle={() => setMoveModal(null)}>
+      <Modal
+        isOpen={!!moveModal}
+        toggle={() => {
+          setMoveModal(null);
+          setMoveTarget(null);
+        }}
+        centered
+      >
+        <ModalHeader
+          toggle={() => {
+            setMoveModal(null);
+            setMoveTarget(null);
+          }}
+        >
           <i className="ri-arrow-right-line me-2 text-success"></i>
-          Move "{moveModal?.name}"
+          {moveModal?.isBulk
+            ? `Move ${moveModal.items.length} item${moveModal.items.length > 1 ? "s" : ""}`
+            : `Move "${moveModal?.items[0]?.name}"`}
         </ModalHeader>
         <ModalBody>
+          {moveModal?.isBulk && (
+            <div className="mb-3 p-2 bg-light rounded border">
+              <p className="text-muted fs-12 mb-1 fw-medium">Selected items:</p>
+              <div className="d-flex flex-wrap gap-1">
+                {moveModal.items.map((item) => (
+                  <span
+                    key={itemKey(item)}
+                    className={`badge ${item.type === "folder" ? "bg-warning-subtle text-warning" : "bg-primary-subtle text-primary"}`}
+                  >
+                    <i
+                      className={`${item.type === "folder" ? "ri-folder-2-fill" : "ri-file-fill"} me-1`}
+                    ></i>
+                    {item.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           <p className="text-muted fs-13 mb-3">
             Select a destination folder. Choose <strong>Root</strong> to move to
             the top level.
           </p>
 
-          {/* Root option */}
           <div
-            className={`d-flex align-items-center gap-2 py-2 px-2 rounded mb-1 ${
-              moveTarget === null
-                ? "bg-success bg-opacity-10 text-success fw-medium"
-                : "text-body"
-            }`}
+            className={`d-flex align-items-center gap-2 py-2 px-2 rounded mb-1 ${moveTarget === null ? "bg-success bg-opacity-10 text-success fw-medium" : "text-body"}`}
             style={{ cursor: "pointer" }}
             onClick={() => setMoveTarget(null)}
           >
@@ -1087,7 +1704,6 @@ const Folders = () => {
             )}
           </div>
 
-          {/* Folder tree */}
           <div
             className="border rounded p-2"
             style={{ maxHeight: 260, overflowY: "auto" }}
@@ -1099,29 +1715,38 @@ const Folders = () => {
             ) : (
               <FolderTree
                 folders={allFolders}
-                excludeId={moveModal?.type === "folder" ? moveModal?.id : null}
+                excludeIds={
+                  moveModal?.isBulk
+                    ? moveModal.items
+                        .filter((i) => i.type === "folder")
+                        .map((i) => i.id)
+                    : moveModal?.items[0]?.type === "folder"
+                      ? [moveModal.items[0].id]
+                      : []
+                }
                 selectedId={moveTarget}
                 onSelect={setMoveTarget}
               />
             )}
           </div>
 
-          {moveTarget !== null && (
-            <div className="alert alert-success mt-3 py-2 mb-0 d-flex align-items-center gap-2">
-              <i className="ri-folder-2-fill text-success"></i>
-              <span className="fs-13">
-                Moving to: <strong>{getBreadcrumbName(moveTarget)}</strong>
-              </span>
-            </div>
-          )}
-          {moveTarget === null && (
-            <div className="alert alert-info mt-3 py-2 mb-0 d-flex align-items-center gap-2">
-              <i className="ri-home-4-line text-info"></i>
-              <span className="fs-13">
-                Moving to: <strong>Root</strong>
-              </span>
-            </div>
-          )}
+          <div
+            className={`alert alert-${moveTarget !== null ? "success" : "info"} mt-3 py-2 mb-0 d-flex align-items-center gap-2`}
+          >
+            <i
+              className={
+                moveTarget !== null
+                  ? "ri-folder-2-fill text-success"
+                  : "ri-home-4-line text-info"
+              }
+            ></i>
+            <span className="fs-13">
+              Moving to:{" "}
+              <strong>
+                {moveTarget !== null ? getBreadcrumbName(moveTarget) : "Root"}
+              </strong>
+            </span>
+          </div>
         </ModalBody>
         <ModalFooter>
           <Button
@@ -1133,8 +1758,96 @@ const Folders = () => {
           >
             Cancel
           </Button>
-          <Button color="success" onClick={doMove}>
-            <i className="ri-arrow-right-line me-1"></i> Move Here
+          <Button color="success" onClick={handleMove} disabled={actionLoading}>
+            {actionLoading ? (
+              <>
+                <Spinner size="sm" className="me-1" />
+                Moving…
+              </>
+            ) : (
+              <>
+                <i className="ri-arrow-right-line me-1"></i>Move Here
+              </>
+            )}
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* ── Delete Confirm Modal ── */}
+      <Modal
+        isOpen={!!deleteConfirm}
+        toggle={() => setDeleteConfirm(null)}
+        centered
+        size={deleteConfirm?.isBulk ? "md" : "sm"}
+      >
+        <ModalHeader toggle={() => setDeleteConfirm(null)}>
+          <i className="ri-delete-bin-line me-2 text-danger"></i>Confirm Delete
+        </ModalHeader>
+        <ModalBody>
+          {deleteConfirm?.isBulk ? (
+            <>
+              <p className="mb-2">
+                Are you sure you want to delete{" "}
+                <strong>
+                  {deleteConfirm.items.length} item
+                  {deleteConfirm.items.length > 1 ? "s" : ""}
+                </strong>
+                ?
+              </p>
+              <div className="d-flex flex-wrap gap-1 mb-2">
+                {deleteConfirm.items.map((item) => (
+                  <span
+                    key={itemKey(item)}
+                    className={`badge ${item.type === "folder" ? "bg-warning-subtle text-warning" : "bg-primary-subtle text-primary"}`}
+                  >
+                    <i
+                      className={`${item.type === "folder" ? "ri-folder-2-fill" : "ri-file-fill"} me-1`}
+                    ></i>
+                    {item.name}
+                  </span>
+                ))}
+              </div>
+              {deleteConfirm.items.some((i) => i.type === "folder") && (
+                <p className="text-danger fs-12 mb-0">
+                  <i className="ri-error-warning-line me-1"></i>
+                  All contents inside selected folders will also be deleted.
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="mb-1">
+                Are you sure you want to delete{" "}
+                <strong>"{deleteConfirm?.items[0]?.name}"</strong>?
+              </p>
+              {deleteConfirm?.items[0]?.type === "folder" && (
+                <p className="text-danger fs-12 mb-0">
+                  <i className="ri-error-warning-line me-1"></i>
+                  All contents inside this folder will also be deleted.
+                </p>
+              )}
+            </>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <Button color="light" onClick={() => setDeleteConfirm(null)}>
+            Cancel
+          </Button>
+          <Button
+            color="danger"
+            onClick={handleDelete}
+            disabled={actionLoading}
+          >
+            {actionLoading ? (
+              <>
+                <Spinner size="sm" className="me-1" />
+                Deleting…
+              </>
+            ) : (
+              <>
+                <i className="ri-delete-bin-line me-1"></i>Delete
+              </>
+            )}
           </Button>
         </ModalFooter>
       </Modal>
@@ -1147,50 +1860,58 @@ const Folders = () => {
         </ModalHeader>
         <ModalBody>
           {infoModal && (
-            <div className="table-responsive">
-              <table className="table table-borderless table-sm mb-0">
-                <tbody>
+            <table className="table table-borderless table-sm mb-0">
+              <tbody>
+                <tr>
+                  <th className="text-muted fw-normal" style={{ width: 100 }}>
+                    Name
+                  </th>
+                  <td className="fw-medium">{infoModal.name}</td>
+                </tr>
+                <tr>
+                  <th className="text-muted fw-normal">Type</th>
+                  <td>
+                    {infoModal.type === "folder"
+                      ? "Folder"
+                      : `${infoModal.ext?.toUpperCase()} File`}
+                  </td>
+                </tr>
+                {infoModal.size && (
                   <tr>
-                    <th className="text-muted fw-normal" style={{ width: 100 }}>
-                      Name
-                    </th>
-                    <td className="fw-medium">{infoModal.name}</td>
+                    <th className="text-muted fw-normal">Size</th>
+                    <td>{infoModal.size}</td>
                   </tr>
+                )}
+                {infoModal.file_url && (
                   <tr>
-                    <th className="text-muted fw-normal">Type</th>
+                    <th className="text-muted fw-normal">URL</th>
                     <td>
-                      {infoModal.type === "folder"
-                        ? "Folder"
-                        : `${infoModal.ext?.toUpperCase()} File`}
+                      <a
+                        href={infoModal.file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-success text-truncate d-block"
+                        style={{ maxWidth: 220 }}
+                      >
+                        {infoModal.file_url}
+                      </a>
                     </td>
                   </tr>
-                  {infoModal.size && (
-                    <tr>
-                      <th className="text-muted fw-normal">Size</th>
-                      <td>{infoModal.size}</td>
-                    </tr>
-                  )}
-                  {infoModal.createdBy && (
-                    <tr>
-                      <th className="text-muted fw-normal">Created by</th>
-                      <td className="text-success">{infoModal.createdBy}</td>
-                    </tr>
-                  )}
-                  {infoModal.createdAt && (
-                    <tr>
-                      <th className="text-muted fw-normal">Date</th>
-                      <td>{infoModal.createdAt}</td>
-                    </tr>
-                  )}
-                  {infoModal.type === "folder" && (
-                    <tr>
-                      <th className="text-muted fw-normal">Items</th>
-                      <td>{(infoModal.children || []).length} items</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                )}
+                {infoModal.createdAt && (
+                  <tr>
+                    <th className="text-muted fw-normal">Date</th>
+                    <td>{infoModal.createdAt}</td>
+                  </tr>
+                )}
+                {infoModal.type === "folder" && (
+                  <tr>
+                    <th className="text-muted fw-normal">Items</th>
+                    <td>{(infoModal.children || []).length} items</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           )}
         </ModalBody>
         <ModalFooter>

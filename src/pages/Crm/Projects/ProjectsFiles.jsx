@@ -15,7 +15,7 @@ import FilesList from "./Files/FilesList";
 import { Folder } from "react-feather";
 import Folders from "./Files/Folders";
 
-const ProjectsFiles = () => {
+const ProjectsFiles = ({ projectId }) => {
   const [activeTab, setActiveTab] = useState("1");
 
   const toggleTab = (tab) => {
@@ -59,11 +59,11 @@ const ProjectsFiles = () => {
           <CardBody className="p-0">
             <TabContent activeTab={activeTab} className="text-muted">
               <TabPane tabId="1">
-                <FilesList />
+                <FilesList projectId={projectId} />
               </TabPane>
 
               <TabPane tabId="2">
-                <Folders />
+                <Folders projectId={projectId} />
               </TabPane>
             </TabContent>
           </CardBody>
