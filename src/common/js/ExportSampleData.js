@@ -1,31 +1,22 @@
-import { toast } from "react-toastify";
-import { Api } from "../api/Api";
-import Papa from "papaparse";
-import { export_sample_data_info } from "../constant/Constants";
-import { ExportCSV } from "./ExportCSV";
+// ../../common/js/ExportSampleData.js
+import * as XLSX from "xlsx";
+import { employee_component_name } from "../constant/Constants";
+import { employeeSampleData } from "./employeeSampleData";
 
-export const ExportSampleData = (mod_name) => {
+export const ExportSampleData = (component_to_show) => {
+  let rows = [];
+  let fileName = "SampleData.xlsx";
 
-    let sample_data_info = export_sample_data_info.find(d => d.module_name === mod_name)
-    let api_url = sample_data_info?.api_url
-    let export_file_name = sample_data_info?.export_file_name
+  if (component_to_show === employee_component_name) {
+    rows = employeeSampleData;
+    fileName = "Bulk_Employee_Sample.xlsx";
+  } else {
+    // add other modules here later; bail out if unsupported
+    return;
+  }
 
-    try {
-        Api({
-            method: "GET",
-            url: api_url,
-        })
-            .then((res) => {
-                let jsonData = res?.data?.data;
-                let csvData = Papa.unparse(jsonData);
-                ExportCSV(csvData, export_file_name);
-            })
-            .catch((err) => {
-                console.log("ERRR");
-            });
-    }
-    catch (err) {
-        console.log("ERRRR");
-        toast.error('Something Went Wrong')
-    }
-}
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+  XLSX.writeFile(workbook, fileName); // triggers the download
+};

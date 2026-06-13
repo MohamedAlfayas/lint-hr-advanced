@@ -22,7 +22,7 @@ const TaskTab = () => {
 
   // grid = kanban | list = task list
   const [viewType, setViewType] = useState("list");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
@@ -42,6 +42,8 @@ const TaskTab = () => {
                     className="form-control"
                     id="searchMemberList"
                     placeholder="Search for task..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                   />
                   <i className="ri-search-line search-icon"></i>
                 </div>
@@ -73,23 +75,6 @@ const TaskTab = () => {
                   >
                     <i className="ri-grid-fill"></i>
                   </Button>
-
-                  {/* Dropdown */}
-                  <Dropdown isOpen={dropdownOpen} toggle={toggleDropdown}>
-                    <DropdownToggle
-                      color="soft-info"
-                      className="btn-icon fs-14"
-                    >
-                      <i className="ri-more-2-fill"></i>
-                    </DropdownToggle>
-
-                    <DropdownMenu end>
-                      <DropdownItem>All</DropdownItem>
-                      <DropdownItem>Last Week</DropdownItem>
-                      <DropdownItem>Last Month</DropdownItem>
-                      <DropdownItem>Last Year</DropdownItem>
-                    </DropdownMenu>
-                  </Dropdown>
                 </div>
               </Col>
             </Row>
@@ -98,7 +83,11 @@ const TaskTab = () => {
 
         {/* Content */}
         <div className="mt-3">
-          {viewType === "list" ? <TaskList /> : <TaskKanban />}
+          {viewType === "list" ? (
+            <TaskList searchQuery={searchQuery} />
+          ) : (
+            <TaskKanban searchQuery={searchQuery} />
+          )}
         </div>
       </div>
     </React.Fragment>

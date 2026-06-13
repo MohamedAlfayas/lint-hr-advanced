@@ -80,8 +80,8 @@ const ProjectForm = () => {
     type: PROJECT_TYPE_INTERNAL,
     client: null,
     description: "",
-    start_date: "",
-    deadline: "",
+    start_date: null,
+    deadline: null,
     price: "",
     status: true,
   });
@@ -158,17 +158,14 @@ const ProjectForm = () => {
         .nullable()
         .when("type", {
           is: PROJECT_TYPE_CLIENT,
-
           then: (schema) => schema.required("Please Select Client"),
-
           otherwise: (schema) => schema.nullable(),
         }),
 
-      start_date: Yup.string().required("Please Select Start Date"),
-
-      deadline: Yup.string().required("Please Select Deadline"),
-
-      price: Yup.string().required("Please Enter Price"),
+      // Optional Fields
+      start_date: Yup.string().nullable(),
+      deadline: Yup.string().nullable(),
+      price: Yup.string().nullable(),
     }),
 
     // ================= SUBMIT =================
@@ -368,7 +365,7 @@ const ProjectForm = () => {
               {/* START DATE */}
               <Col md={6}>
                 <div className="mb-3">
-                  <Label className="form-label">Start Date *</Label>
+                  <Label className="form-label">Start Date</Label>
 
                   <Input
                     type="date"
@@ -396,7 +393,7 @@ const ProjectForm = () => {
               {/* DEADLINE */}
               <Col md={6}>
                 <div className="mb-3">
-                  <Label className="form-label">Deadline *</Label>
+                  <Label className="form-label">Deadline</Label>
 
                   <Input
                     type="date"
@@ -421,7 +418,7 @@ const ProjectForm = () => {
               {/* PRICE */}
               <Col md={12}>
                 <div className="mb-3">
-                  <Label className="form-label">Price *</Label>
+                  <Label className="form-label">Price</Label>
 
                   <Input
                     type="number"

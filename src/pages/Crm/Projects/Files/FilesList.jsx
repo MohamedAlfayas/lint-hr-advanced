@@ -12,7 +12,6 @@ import {
   ModalHeader,
   Spinner,
 } from "reactstrap";
-import { Link } from "react-router-dom";
 import Dropzone from "react-dropzone";
 import { GetApi } from "../../../../common/api/GetApi";
 import { PostApi } from "../../../../common/api/PostApi";
@@ -43,6 +42,8 @@ const ALLOWED_EXTENSIONS = [
   "docx",
 ];
 
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif"];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const getFileIcon = (fileName) => {
@@ -65,30 +66,8 @@ const getFileIcon = (fileName) => {
   return map[ext] || { icon: "ri-file-fill", iconClass: "info" };
 };
 
-const getViewerType = (ext) => {
-  const e = ext?.toLowerCase();
-  if (["jpg", "jpeg", "png", "webp", "gif"].includes(e)) return "image";
-  if (["mp4", "webm", "mov"].includes(e)) return "video";
-  if (["mp3", "wav", "aac", "flac"].includes(e)) return "audio";
-  if (e === "pdf") return "pdf";
-  if (
-    [
-      "txt",
-      "md",
-      "csv",
-      "json",
-      "xml",
-      "html",
-      "js",
-      "ts",
-      "jsx",
-      "tsx",
-      "css",
-    ].includes(e)
-  )
-    return "text";
-  return "unsupported";
-};
+const isImage = (fileName) =>
+  IMAGE_EXTENSIONS.includes(fileName?.split(".").pop()?.toLowerCase());
 
 const formatFileSize = (bytes) => {
   if (!bytes) return "0 MB";
@@ -105,34 +84,55 @@ const formatDate = (dateStr) => {
   });
 };
 
+const formatBytes = (bytes) => {
+  if (!bytes) return "0 KB";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+// ─── Shape Converters ─────────────────────────────────────────────────────────
+
+// Raw API → unified Folders.jsx Redux shape
+// Folders.jsx renders item.name / item.ext / item.size / item.createdAt
+const toFoldersShape = (f) => ({
+  id: f.id,
+  name: f.original_file_name?.replace(/\.[^/.]+$/, "") || `file_${f.id}`,
+  ext: f.original_file_name?.split(".").pop()?.toLowerCase() || "",
+  type: "file",
+  size: formatBytes(f.file_size),
+  file_url: f.file_url ?? null,
+  file_size: f.file_size ?? null,
+  folder: f.folder ?? null,
+  created_on: f.created_on ?? null,
+  createdAt: f.created_on
+    ? new Date(f.created_on).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "",
+});
+
+// Folders.jsx Redux shape → FilesList display shape (original_file_name, etc.)
+const normaliseFile = (f) => {
+  if (f.original_file_name) return f; // already raw API shape
+  return {
+    id: f.id,
+    original_file_name: f.ext ? `${f.name}.${f.ext}` : f.name,
+    file_url: f.file_url ?? null,
+    file_size: f.file_size ?? null,
+    created_on: f.created_on ?? f.createdAt ?? null,
+  };
+};
+
 // ─── File Viewer Modal ────────────────────────────────────────────────────────
 
 const FileViewerModal = ({ file, onClose }) => {
-  const [textContent, setTextContent] = useState(null);
-  const [textLoading, setTextLoading] = useState(false);
-  const [textError, setTextError] = useState(false);
-
   const ext = file?.original_file_name?.split(".").pop()?.toLowerCase();
   const baseName = file?.original_file_name?.replace(/\.[^/.]+$/, "") ?? "";
-  const viewerType = file ? getViewerType(ext) : null;
   const { icon, iconClass } = file ? getFileIcon(file.original_file_name) : {};
-
-  // Fetch plain-text content when needed
-  useEffect(() => {
-    if (file && viewerType === "text" && file.file_url) {
-      setTextLoading(true);
-      setTextContent(null);
-      setTextError(false);
-      fetch(file.file_url)
-        .then((r) => {
-          if (!r.ok) throw new Error();
-          return r.text();
-        })
-        .then((t) => setTextContent(t))
-        .catch(() => setTextError(true))
-        .finally(() => setTextLoading(false));
-    }
-  }, [file, viewerType]);
+  const fileIsImage = file ? isImage(file.original_file_name) : false;
 
   if (!file) return null;
 
@@ -144,7 +144,6 @@ const FileViewerModal = ({ file, onClose }) => {
       size="xl"
       className="zoomIn"
     >
-      {/* ── Header ── */}
       <ModalHeader toggle={onClose} className="border-bottom pb-3">
         <div className="d-flex align-items-center gap-2">
           <div
@@ -158,10 +157,8 @@ const FileViewerModal = ({ file, onClose }) => {
         </div>
       </ModalHeader>
 
-      {/* ── Body ── */}
       <ModalBody className="p-0" style={{ minHeight: 340 }}>
-        {/* IMAGE */}
-        {viewerType === "image" && (
+        {fileIsImage ? (
           <div
             className="d-flex align-items-center justify-content-center bg-light"
             style={{ minHeight: 400, padding: 16 }}
@@ -189,132 +186,38 @@ const FileViewerModal = ({ file, onClose }) => {
               <p>Could not load image.</p>
             </div>
           </div>
-        )}
-
-        {/* VIDEO */}
-        {viewerType === "video" && (
-          <div
-            className="d-flex align-items-center justify-content-center bg-dark"
-            style={{ minHeight: 400 }}
-          >
-            <video
-              controls
-              autoPlay={false}
-              style={{ maxWidth: "100%", maxHeight: 560, outline: "none" }}
-            >
-              <source src={file.file_url} />
-              Your browser does not support the video tag.
-            </video>
-          </div>
-        )}
-
-        {/* AUDIO */}
-        {viewerType === "audio" && (
-          <div
-            className="d-flex flex-column align-items-center justify-content-center gap-4 py-5"
-            style={{ minHeight: 260 }}
-          >
-            <div
-              className={`d-flex align-items-center justify-content-center rounded-circle bg-${iconClass}-subtle`}
-              style={{ width: 100, height: 100 }}
-            >
-              <i className={`ri-music-2-fill text-${iconClass} display-4`} />
-            </div>
-            <div className="text-center">
-              <h6 className="fw-semibold mb-1">{baseName}</h6>
-              <span className="badge bg-info-subtle text-info">
-                {ext?.toUpperCase()}
-              </span>
-            </div>
-            <audio
-              controls
-              autoPlay={false}
-              style={{ width: "100%", maxWidth: 480 }}
-            >
-              <source src={file.file_url} />
-            </audio>
-          </div>
-        )}
-
-        {/* PDF — full-height iframe */}
-        {viewerType === "pdf" && (
-          <div style={{ height: 620 }}>
-            <iframe
-              src={`${file.file_url}#toolbar=1&navpanes=0&scrollbar=1`}
-              title={`${baseName}.pdf`}
-              width="100%"
-              height="100%"
-              style={{ border: "none", display: "block" }}
-            />
-          </div>
-        )}
-
-        {/* TEXT */}
-        {viewerType === "text" && (
-          <div style={{ minHeight: 340 }}>
-            {textLoading && (
-              <div className="d-flex align-items-center justify-content-center py-5">
-                <Spinner color="success" className="me-2" />
-                <span className="text-muted">Loading file…</span>
-              </div>
-            )}
-            {textError && (
-              <div className="text-center py-5 text-danger">
-                <i className="ri-error-warning-line display-4 d-block mb-2" />
-                <p>Could not load file content.</p>
-              </div>
-            )}
-            {!textLoading && !textError && textContent !== null && (
-              <pre
-                className="mb-0 p-4"
-                style={{
-                  maxHeight: 560,
-                  overflowY: "auto",
-                  fontSize: 13,
-                  lineHeight: 1.7,
-                  background: "#f8f9fa",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  fontFamily: "'Fira Mono', 'Courier New', monospace",
-                }}
-              >
-                {textContent}
-              </pre>
-            )}
-          </div>
-        )}
-
-        {/* UNSUPPORTED */}
-        {viewerType === "unsupported" && (
+        ) : (
           <div className="text-center py-5">
             <div
               className={`d-inline-flex align-items-center justify-content-center rounded-circle bg-${iconClass}-subtle mb-3`}
-              style={{ width: 80, height: 80 }}
+              style={{ width: 90, height: 90 }}
             >
-              <i className={`${icon} text-${iconClass} display-5`} />
+              <i className={`${icon} text-${iconClass} display-4`} />
             </div>
             <h6 className="fw-semibold mb-1">
               {baseName}.{ext}
             </h6>
-            <p className="text-muted fs-13 mb-3">
-              Preview is not available for <strong>.{ext}</strong> files.
+            <p className="text-muted fs-13 mb-4">
+              Preview is not available for{" "}
+              <strong>.{ext?.toUpperCase()}</strong> files.
+              <br />
+              Download the file to view it.
             </p>
             {file.file_url && (
               <a
                 href={file.file_url}
                 target="_blank"
                 rel="noreferrer"
-                className="btn btn-success btn-sm"
+                className="btn btn-success"
               >
-                <i className="ri-download-line me-1" />
-                Download to view
+                <i className="ri-download-2-line me-2" />
+                Download File
               </a>
             )}
           </div>
         )}
       </ModalBody>
 
-      {/* ── Footer ── */}
       <ModalFooter className="border-top gap-2 pt-3">
         {file.file_url && (
           <a
@@ -370,7 +273,6 @@ const ContextMenu = ({ menu, onAction, onClose }) => {
     padding: "4px 0",
     animation: "ctxFadeIn .12s ease",
   };
-
   const rowStyle = {
     display: "flex",
     alignItems: "center",
@@ -389,10 +291,10 @@ const ContextMenu = ({ menu, onAction, onClose }) => {
           from { opacity: 0; transform: scale(.97); }
           to   { opacity: 1; transform: scale(1);   }
         }
-        .ctx-row:hover            { background: #f1f5f9; }
-        .ctx-row-danger           { color: #ef4444; }
-        .ctx-row-danger:hover     { background: #fef2f2 !important; }
-        .ctx-divider              { border-top: 1px solid #f1f5f9; margin: 4px 0; }
+        .ctx-row:hover        { background: #f1f5f9; }
+        .ctx-row-danger       { color: #ef4444; }
+        .ctx-row-danger:hover { background: #fef2f2 !important; }
+        .ctx-divider          { border-top: 1px solid #f1f5f9; margin: 4px 0; }
       `}</style>
       <div ref={menuRef} style={wrapStyle}>
         <div
@@ -436,29 +338,24 @@ const ContextMenu = ({ menu, onAction, onClose }) => {
 const FilesList = ({ projectId, folderId }) => {
   const dispatch = useDispatch();
 
-  // ── Redux state ───────────────────────────────────────────────────────────
+  // ── Redux ─────────────────────────────────────────────────────────────────
+  const rootFiles = useSelector((s) => s.FolderReducer.folder_data.rootFiles);
   const actionLoading = useSelector(
     (s) => s.FolderReducer.folder_action_loading,
   );
   const successMsg = useSelector((s) => s.FolderReducer.folder_success);
   const errorMsg = useSelector((s) => s.FolderReducer.folder_error);
 
-  // ── Local state ───────────────────────────────────────────────────────────
-  const [fileList, setFileList] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // Derive display list — normalise Folders shape → FilesList shape
+  const fileList = (rootFiles || []).map(normaliseFile);
 
-  // Add-file modal
+  // ── Local UI state ────────────────────────────────────────────────────────
+  const [loading, setLoading] = useState(false);
   const [addModal, setAddModal] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [dropError, setDropError] = useState(""); // dropzone-only validation error
-
-  // File viewer modal
+  const [dropError, setDropError] = useState("");
   const [viewerFile, setViewerFile] = useState(null);
-
-  // Delete confirm modal
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-
-  // Right-click context menu
   const [ctxMenu, setCtxMenu] = useState({
     visible: false,
     x: 0,
@@ -473,17 +370,20 @@ const FilesList = ({ projectId, folderId }) => {
     return () => clearTimeout(t);
   }, [successMsg, errorMsg, dispatch]);
 
-  // ── Fetch files ───────────────────────────────────────────────────────────
-  const fetchFiles = useCallback(async () => {
-    setLoading(true);
-    const res = await GetApi(`/projects/get-files/${projectId}`);
-    if (res?.status === 200 && res?.data?.data) setFileList(res.data.data);
-    setLoading(false);
-  }, [projectId]);
-
+  // ── Seed Redux from API only when rootFiles is empty ──────────────────────
+  // (Folders.jsx already populates this on its own mount; skip if so)
   useEffect(() => {
-    fetchFiles();
-  }, [fetchFiles]);
+    if ((rootFiles || []).length === 0) {
+      setLoading(true);
+      GetApi(`/projects/get-files/${projectId}`)
+        .then((res) => {
+          if (res?.status === 200 && res?.data?.data) {
+            dispatch(addRootFiles(res.data.data.map(toFoldersShape)));
+          }
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [projectId]);
 
   // ── Right-click ───────────────────────────────────────────────────────────
   const handleRowContextMenu = useCallback((e, item) => {
@@ -502,7 +402,6 @@ const FilesList = ({ projectId, folderId }) => {
     [],
   );
 
-  // ── Context action dispatcher ─────────────────────────────────────────────
   const handleContextAction = useCallback((action, item) => {
     ({
       view: () => setViewerFile(item),
@@ -511,7 +410,7 @@ const FilesList = ({ projectId, folderId }) => {
     })[action]?.();
   }, []);
 
-  // ── Add File ──────────────────────────────────────────────────────────────
+  // ── Add File Modal ────────────────────────────────────────────────────────
   const openAddModal = () => {
     setUploadedFiles([]);
     setDropError("");
@@ -562,20 +461,14 @@ const FilesList = ({ projectId, folderId }) => {
 
       if (res?.status === 200 || res?.status === 201) {
         const uploaded = res?.data?.data ?? [];
-
-        // ── update local list ──
-        setFileList((prev) => [...prev, ...uploaded]);
-
-        // ── update Redux rootFiles (for components that read from store) ──
-        dispatch(addRootFiles(uploaded));
-
-        // ── flash success ──
+        // Convert to Folders.jsx shape before dispatching so both
+        // components render the new files immediately from Redux
+        dispatch(addRootFiles(uploaded.map(toFoldersShape)));
         dispatch(
           setFolderSuccess(
             `${uploaded.length} file${uploaded.length > 1 ? "s" : ""} uploaded successfully.`,
           ),
         );
-
         closeAddModal();
       } else {
         dispatch(setFolderError("Upload failed. Please try again."));
@@ -602,21 +495,12 @@ const FilesList = ({ projectId, folderId }) => {
       });
 
       if (res?.status === 200 || res?.status === 201) {
-        // ── update local list ──
-        setFileList((prev) =>
-          prev.filter((f) => f.id !== deleteConfirm.item.id),
-        );
-
-        // ── update Redux rootFiles ──
         dispatch(removeRootFile(deleteConfirm.item.id));
-
-        // ── flash success ──
         dispatch(
           setFolderSuccess(
             `"${deleteConfirm.item.original_file_name}" deleted successfully.`,
           ),
         );
-
         setDeleteConfirm(null);
       } else {
         dispatch(setFolderError("Delete failed. Please try again."));
@@ -636,14 +520,12 @@ const FilesList = ({ projectId, folderId }) => {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <React.Fragment>
-      {/* ── Right-click Context Menu ──────────────────────────────────── */}
       <ContextMenu
         menu={ctxMenu}
         onAction={handleContextAction}
         onClose={closeCtxMenu}
       />
 
-      {/* ── Flash Messages ────────────────────────────────────────────── */}
       {successMsg && (
         <Alert color="success" className="mt-2 py-2 d-flex align-items-center">
           <i className="ri-check-line me-2 fs-15" />
@@ -657,22 +539,21 @@ const FilesList = ({ projectId, folderId }) => {
         </Alert>
       )}
 
-      {/* ── Files Card ──────────────────────────────────────────────── */}
+      {/* ── Files Card ── */}
       <Card>
         <CardBody>
-          {/* Header */}
           <div className="d-flex align-items-center mb-3">
             <h5 className="flex-grow-1 fs-16 mb-0">Recent Files</h5>
-            <div className="flex-shrink-0">
-              <button className="btn btn-success" onClick={openAddModal}>
-                <i className="ri-add-line align-bottom me-1" />
-                Add File
-              </button>
-            </div>
+            <button className="btn btn-success" onClick={openAddModal}>
+              <i className="ri-add-line align-bottom me-1" />
+              Add File
+            </button>
           </div>
 
-          {/* Table */}
-          <div className="table-responsive">
+          <div
+            className="table-responsive"
+            style={{ maxHeight: 420, overflowY: "auto" }}
+          >
             {loading ? (
               <div className="text-center py-4 text-muted">
                 <Spinner size="sm" className="me-2" />
@@ -680,7 +561,10 @@ const FilesList = ({ projectId, folderId }) => {
               </div>
             ) : (
               <table className="table align-middle table-nowrap mb-0">
-                <thead className="table-active">
+                <thead
+                  className="table-active"
+                  style={{ position: "sticky", top: 0, zIndex: 1 }}
+                >
                   <tr>
                     <th>Name</th>
                     <th>File Type</th>
@@ -740,50 +624,29 @@ const FilesList = ({ projectId, folderId }) => {
             )}
           </div>
 
-          {/* Hint */}
-          {fileList.length > 0 && (
-            <p className="text-muted fs-12 mt-2 mb-0">
-              <i className="ri-mouse-line me-1" />
-              Right-click a file for options
-            </p>
+          {!loading && (
+            <div className="d-flex align-items-center justify-content-between mt-3 pt-2 border-top">
+              <span className="text-muted fs-13">
+                <i className="ri-file-list-3-line me-1" />
+                {fileList.length === 0
+                  ? "No files"
+                  : `${fileList.length} file${fileList.length > 1 ? "s" : ""} total`}
+              </span>
+              {fileList.length > 0 && (
+                <span className="text-muted fs-12">
+                  <i className="ri-mouse-line me-1" />
+                  Right-click a file for options
+                </span>
+              )}
+            </div>
           )}
-
-          {/* Pagination */}
-          <div className="align-items-center mt-3 row g-3 text-center text-sm-start">
-            <div className="col-sm">
-              <div className="text-muted">
-                Showing <span className="fw-semibold">{fileList.length}</span>{" "}
-                of <span className="fw-semibold">{fileList.length}</span>{" "}
-                Results
-              </div>
-            </div>
-            <div className="col-sm-auto">
-              <ul className="pagination pagination-separated pagination-sm justify-content-center justify-content-sm-start mb-0">
-                <li className="page-item disabled">
-                  <Link to="#" className="page-link">
-                    ←
-                  </Link>
-                </li>
-                <li className="page-item active">
-                  <Link to="#" className="page-link">
-                    1
-                  </Link>
-                </li>
-                <li className="page-item disabled">
-                  <Link to="#" className="page-link">
-                    →
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
         </CardBody>
       </Card>
 
-      {/* ── File Viewer Modal ─────────────────────────────────────────── */}
+      {/* ── File Viewer Modal ── */}
       <FileViewerModal file={viewerFile} onClose={() => setViewerFile(null)} />
 
-      {/* ── Add File Modal ────────────────────────────────────────────── */}
+      {/* ── Add File Modal ── */}
       <Modal
         isOpen={addModal}
         toggle={closeAddModal}
@@ -795,7 +658,6 @@ const FilesList = ({ projectId, folderId }) => {
           Add Files
         </ModalHeader>
         <ModalBody>
-          {/* Dropzone */}
           <div className="mb-3">
             <Label className="form-label">
               Upload Files{" "}
@@ -825,7 +687,6 @@ const FilesList = ({ projectId, folderId }) => {
             </Dropzone>
           </div>
 
-          {/* Queued list */}
           {uploadedFiles.length > 0 && (
             <div className="mb-3">
               <Label className="form-label">
@@ -866,15 +727,12 @@ const FilesList = ({ projectId, folderId }) => {
             </div>
           )}
 
-          {/* Dropzone validation error (local only) */}
           {dropError && (
             <div className="alert alert-warning py-2 mb-3">
               <i className="ri-error-warning-line me-2" />
               {dropError}
             </div>
           )}
-
-          {/* Redux flash messages inside modal too */}
           {successMsg && (
             <Alert color="success" className="py-2">
               <i className="ri-check-line me-2" />
@@ -920,7 +778,7 @@ const FilesList = ({ projectId, folderId }) => {
         </ModalBody>
       </Modal>
 
-      {/* ── Delete Confirm Modal ──────────────────────────────────────── */}
+      {/* ── Delete Confirm Modal ── */}
       <Modal
         isOpen={!!deleteConfirm}
         toggle={cancelDelete}

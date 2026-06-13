@@ -274,14 +274,14 @@ const Navdata = () => {
           // },
         ],
       },
-      {
-        id: "payroll",
-        label: "Pay Roll",
-        link: "/payroll",
-        parentId: "payroll",
-        perm: "all",
-        icon: " ri-currency-line",
-      },
+      // {
+      //   id: "payroll",
+      //   label: "Pay Roll",
+      //   link: "/payroll",
+      //   parentId: "payroll",
+      //   perm: "all",
+      //   icon: " ri-currency-line",
+      // },
       {
         id: "attendancereport",
         label: "Report",

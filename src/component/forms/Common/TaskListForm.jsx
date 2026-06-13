@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Col, Form, FormFeedback, Input, Label, Row, Button } from "reactstrap";
 import { useDispatch, useSelector } from "react-redux";
 import {
   addTask,
   editTask,
 } from "../../../redux/reducers/ChildReducer/TaskReducer";
+import {
+  editProject, // ✅ NEW IMPORT
+} from "../../../redux/reducers/ChildReducer/ProjectsReducer";
 import { toast } from "react-toastify";
 import { toggleRSBView } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { useFormik } from "formik";
@@ -15,9 +18,11 @@ import { PutApi } from "../../../common/api/PutApi";
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
 import Select from "react-select";
+import AsyncSelect from "react-select/async";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
 import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
+import { Api } from "../../../common/api/Api";
 
 defineElement(loadAnimation);
 
@@ -58,11 +63,23 @@ const defaultTaskData = {
   points: "1",
   assigned_to: null,
   collaborators_id_list: [],
+  collaborator_details: [],
   task_status: null,
   task_priority: null,
   start_time: "",
   end_time: "",
 };
+
+// ─── Build employee option object (normalised shape) ─────────────────────────
+const buildEmployeeOption = (emp) => ({
+  ...emp,
+  value: emp.id,
+  label:
+    `${emp.first_name || ""} ${emp.last_name || ""}`.trim() ||
+    emp.label ||
+    emp.name ||
+    `Employee ${emp.id}`,
+});
 
 const TaskListForm = () => {
   const dispatch = useDispatch();
@@ -70,17 +87,22 @@ const TaskListForm = () => {
 
   const [taskData, setTaskData] = useState(defaultTaskData);
 
+  // ─── Initial collaborator options from localStorage ───────────────────────
+  const buildDefaultCollaboratorOptions = useCallback(() => {
+    const list = GetLocalStorageData("employee") || [];
+    return list.map(buildEmployeeOption);
+  }, []);
+
+  // ─── Detect if we're in "add from project page" mode ─────────────────────
+  const isProjectLocked = !!(
+    form_obj?.project &&
+    (!form_obj?.id || form_obj?.id === 0)
+  );
+
   // ─── Load options from localStorage ──────────────────────────────────────
   const buildEmployeeOptions = () => {
     const list = GetLocalStorageData("employee") || [];
-    return list.map((emp) => ({
-      ...emp,
-      value: emp.id,
-      label:
-        `${emp.first_name || ""} ${emp.last_name || ""}`.trim() ||
-        emp.name ||
-        `Employee ${emp.id}`,
-    }));
+    return list.map(buildEmployeeOption);
   };
 
   const buildProjectOptions = () => {
@@ -121,18 +143,46 @@ const TaskListForm = () => {
   const taskStatusOptions = buildTaskStatusOptions();
   const taskPriorityOptions = buildTaskPriorityOptions();
 
+  // ─── Async load for collaborators search API ──────────────────────────────
+  const loadCollaboratorOptions = useCallback(
+    async (inputValue) => {
+      if (!inputValue || inputValue.trim().length === 0) {
+        return buildDefaultCollaboratorOptions();
+      }
+      try {
+        const response = await Api.get(
+          `/employee/get-data-on-search/?search=${encodeURIComponent(inputValue.trim())}`,
+        );
+        const results = response?.data?.data || [];
+        return results.map(buildEmployeeOption);
+      } catch (error) {
+        console.error("Collaborator search error:", error);
+        const fallback = buildDefaultCollaboratorOptions();
+        const q = inputValue.toLowerCase();
+        return fallback.filter((e) => e.label.toLowerCase().includes(q));
+      }
+    },
+    [buildDefaultCollaboratorOptions],
+  );
+
   // ─── Sync form_obj into local state ──────────────────────────────────────
   useEffect(() => {
     if (form_obj && Object.keys(form_obj).length > 0 && form_obj.id) {
-      // Edit mode — form_obj has a real task id
       setTaskData({
         ...defaultTaskData,
         ...form_obj,
         related_to: form_obj.related_to || "custom",
         points: form_obj.points ? String(form_obj.points) : "1",
+        collaborators_id_list: form_obj.collaborators_id_list || [],
+        collaborator_details: form_obj.collaborator_details || [],
+      });
+    } else if (form_obj && form_obj.project) {
+      setTaskData({
+        ...defaultTaskData,
+        related_to: "project",
+        project: Number(form_obj.project),
       });
     } else {
-      // Add mode — reset to defaults
       setTaskData(defaultTaskData);
     }
   }, [form_obj]);
@@ -182,39 +232,46 @@ const TaskListForm = () => {
 
         if (isEdit) payload.id = taskData.id;
 
-        // ─── Optimistic update — update reducer immediately ─────────────
+        // ── Optimistic update for edit ──────────────────────────────────────
         if (isEdit) {
-          // Merge with existing task data so nothing is lost
           dispatch(editTask({ ...taskData, ...payload }));
         }
 
-        const Api = isEdit
+        const response = isEdit
           ? await PutApi(`task/`, payload, false)
           : await PostApi("task/", payload, false);
 
-        if (Api?.status === 200 || Api?.status === 201) {
-          const responseData = Api?.data?.data;
+        if (response?.status === 200 || response?.status === 201) {
+          const responseData = response?.data?.data?.task_data;
 
-          // ─── Final update with server response ──────────────────────
-          dispatch(isEdit ? editTask(responseData) : addTask(responseData));
+          if (responseData) {
+            dispatch(isEdit ? editTask(responseData) : addTask(responseData));
 
-          // ─── Sync localStorage ──────────────────────────────────────
-          const oldTasks = GetLocalStorageData("tasks") || [];
-          const updatedTasks = isEdit
-            ? oldTasks.map((item) =>
-                item.id === responseData.id ? responseData : item,
-              )
-            : [...oldTasks, responseData];
-          SetLocalStorage("tasks", updatedTasks, 1);
+            // ✅ Immediately sync project progress in Redux
+            // API returns updated task_status_details inside project_data on every task save
+            const projectData = response?.data?.data?.project_data;
+            if (projectData) {
+              dispatch(editProject(projectData));
+            }
 
-          toast.success(Api?.data?.message || "Saved successfully");
+            // ── Sync localStorage ─────────────────────────────────────────
+            const oldTasks = GetLocalStorageData("tasks") || [];
+            const updatedTasks = isEdit
+              ? oldTasks.map((item) =>
+                  item.id === responseData.id ? responseData : item,
+                )
+              : [...oldTasks, responseData];
+            SetLocalStorage("tasks", updatedTasks, 1);
+          }
+
+          toast.success(response?.data?.message || "Saved successfully");
           dispatch(toggleRSBView(false));
         } else {
-          // ─── Revert optimistic update on failure ────────────────────
+          // ── Revert optimistic update on failure ───────────────────────
           if (isEdit) {
-            dispatch(editTask(taskData)); // revert to original
+            dispatch(editTask(taskData));
           }
-          toast.error(Api?.data?.message || "Something went wrong");
+          toast.error(response?.data?.message || "Something went wrong");
         }
       } catch (error) {
         console.error(error);
@@ -239,9 +296,18 @@ const TaskListForm = () => {
   const assignedToValue =
     employeeOptions.find((e) => e.id === taskData.assigned_to) || null;
 
-  const collaboratorsValue = employeeOptions.filter((e) =>
-    (taskData.collaborators_id_list || []).includes(e.id),
-  );
+  // ─── Collaborators: resolve selected values ───────────────────────────────
+  const collaboratorsValue = (() => {
+    const ids = taskData.collaborators_id_list || [];
+    if (!ids.length) return [];
+
+    const details = taskData.collaborator_details || [];
+    if (details.length) {
+      return details.filter((d) => ids.includes(d.id)).map(buildEmployeeOption);
+    }
+
+    return employeeOptions.filter((e) => ids.includes(e.id));
+  })();
 
   const taskStatusValue =
     taskStatusOptions.find((s) => s.id === taskData.task_status) || null;
@@ -334,6 +400,7 @@ const TaskListForm = () => {
                     className="basic-single-select"
                     classNamePrefix="lc-select"
                     placeholder="Select Related To"
+                    isDisabled={isProjectLocked}
                     styles={selectStyles(
                       FormikForm.touched.related_to,
                       FormikForm.errors.related_to,
@@ -348,17 +415,29 @@ const TaskListForm = () => {
                       }));
                     }}
                   />
-                  {FormikForm.touched.related_to &&
-                  FormikForm.errors.related_to ? (
-                    <div className="text-danger small mt-1">
-                      {FormikForm.errors.related_to}
-                    </div>
-                  ) : (
-                    <div className="form-text">
-                      Select whether task relates to In House, a Project, or
-                      Client.
+                  {isProjectLocked && (
+                    <div className="form-text text-muted">
+                      <i className="ri-lock-line me-1" />
+                      Locked to "Project" — adding task from project page.
                     </div>
                   )}
+                  {!isProjectLocked &&
+                    FormikForm.touched.related_to &&
+                    FormikForm.errors.related_to && (
+                      <div className="text-danger small mt-1">
+                        {FormikForm.errors.related_to}
+                      </div>
+                    )}
+                  {!isProjectLocked &&
+                    !(
+                      FormikForm.touched.related_to &&
+                      FormikForm.errors.related_to
+                    ) && (
+                      <div className="form-text">
+                        Select whether task relates to In House, a Project, or
+                        Client.
+                      </div>
+                    )}
                 </div>
               </Col>
 
@@ -369,23 +448,49 @@ const TaskListForm = () => {
                     <Label htmlFor="project" className="form-label">
                       Project
                     </Label>
-                    <Select
-                      id="project"
-                      name="project"
-                      isClearable
-                      options={projectOptions}
-                      className="basic-single-select"
-                      classNamePrefix="lc-select"
-                      placeholder="Select Project"
-                      value={projectValue}
-                      onChange={(selected) => {
-                        setTaskData((prev) => ({
-                          ...prev,
-                          project: selected ? selected.id : null,
-                        }));
-                      }}
-                    />
-                    <div className="form-text">Select a project.</div>
+
+                    {isProjectLocked ? (
+                      <>
+                        <div
+                          className="form-control d-flex align-items-center"
+                          style={{
+                            backgroundColor: "#f8f9fa",
+                            cursor: "not-allowed",
+                            color: "#495057",
+                          }}
+                        >
+                          <i className="ri-projector-line me-2 text-primary" />
+                          <span>
+                            {projectValue?.label ||
+                              `Project #${taskData.project}`}
+                          </span>
+                          <i className="ri-lock-line ms-auto text-muted" />
+                        </div>
+                        <div className="form-text text-muted">
+                          Project is pre-selected from the current project page.
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Select
+                          id="project"
+                          name="project"
+                          isClearable
+                          options={projectOptions}
+                          className="basic-single-select"
+                          classNamePrefix="lc-select"
+                          placeholder="Select Project"
+                          value={projectValue}
+                          onChange={(selected) => {
+                            setTaskData((prev) => ({
+                              ...prev,
+                              project: selected ? selected.id : null,
+                            }));
+                          }}
+                        />
+                        <div className="form-text">Select a project.</div>
+                      </>
+                    )}
                   </div>
                 </Col>
               )}
@@ -458,22 +563,28 @@ const TaskListForm = () => {
                 </div>
               </Col>
 
-              {/* ── Collaborators ─────────────────────────────────────── */}
+              {/* ── Collaborators (AsyncSelect) ───────────────────────── */}
               <Col md={12}>
                 <div className="mb-3">
                   <Label htmlFor="collaborators_id_list" className="form-label">
                     Collaborators
                   </Label>
-                  <Select
+                  <AsyncSelect
                     id="collaborators_id_list"
                     name="collaborators_id_list"
-                    isClearable
                     isMulti
-                    options={employeeOptions}
+                    isClearable
+                    cacheOptions
+                    defaultOptions={buildDefaultCollaboratorOptions()}
+                    loadOptions={loadCollaboratorOptions}
                     components={{ Option: EmployeeDisplayInSelect }}
                     className="basic-multi-select"
                     classNamePrefix="lc-select"
-                    placeholder="Select Collaborators"
+                    placeholder="Search collaborators..."
+                    noOptionsMessage={({ inputValue }) =>
+                      inputValue ? "No employees found" : "Type to search"
+                    }
+                    loadingMessage={() => "Searching..."}
                     value={collaboratorsValue}
                     onChange={(selected) => {
                       setTaskData((prev) => ({
@@ -481,11 +592,14 @@ const TaskListForm = () => {
                         collaborators_id_list: selected
                           ? selected.map((o) => o.id)
                           : [],
+                        collaborator_details: selected
+                          ? selected.map((o) => ({ ...o }))
+                          : [],
                       }));
                     }}
                   />
                   <div className="form-text">
-                    Select one or more collaborators (optional).
+                    Select or search collaborators (optional).
                   </div>
                 </div>
               </Col>

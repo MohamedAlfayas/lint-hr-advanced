@@ -1,17 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Col,
-  DropdownItem,
-  DropdownMenu,
-  DropdownToggle,
-  Row,
-  UncontrolledDropdown,
-} from "reactstrap";
+import React, { useEffect, useMemo, useState } from "react";
+import { Card, CardBody, CardHeader, Col, Row } from "reactstrap";
 import ReactApexChart from "react-apexcharts";
+import { useSelector } from "react-redux";
 import { GetApi } from "../../../common/api/GetApi";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import getChartColorsArray from "../../../component/common/dynamicColor/ChartsDynamicColor";
@@ -19,33 +9,23 @@ import getChartColorsArray from "../../../component/common/dynamicColor/ChartsDy
 // ─────────────────────────────────────────────
 // RADIAL SCORE CHART
 // ─────────────────────────────────────────────
-const GradientCircleRadialbar = ({ dataColors }) => {
+const GradientCircleRadialbar = ({ dataColors, percentage }) => {
   const chartColors = getChartColorsArray(dataColors);
 
-  const series = [75];
+  const series = [percentage ?? 0];
 
   const options = {
     chart: {
       height: 320,
       type: "radialBar",
-      toolbar: {
-        show: false,
-      },
+      toolbar: { show: false },
     },
-
     plotOptions: {
       radialBar: {
         startAngle: -135,
         endAngle: 225,
-
-        hollow: {
-          size: "70%",
-        },
-
-        track: {
-          strokeWidth: "67%",
-        },
-
+        hollow: { size: "70%" },
+        track: { strokeWidth: "67%" },
         dataLabels: {
           name: {
             show: true,
@@ -53,12 +33,10 @@ const GradientCircleRadialbar = ({ dataColors }) => {
             color: "#878a99",
             fontSize: "16px",
           },
-
           value: {
             show: true,
             fontSize: "34px",
             fontWeight: 600,
-
             formatter: function (val) {
               return `${parseInt(val)}%`;
             },
@@ -66,10 +44,8 @@ const GradientCircleRadialbar = ({ dataColors }) => {
         },
       },
     },
-
     fill: {
       type: "gradient",
-
       gradient: {
         shade: "dark",
         type: "horizontal",
@@ -79,11 +55,7 @@ const GradientCircleRadialbar = ({ dataColors }) => {
         stops: [0, 100],
       },
     },
-
-    stroke: {
-      lineCap: "round",
-    },
-
+    stroke: { lineCap: "round" },
     labels: ["Completed"],
   };
 
@@ -101,37 +73,16 @@ const GradientCircleRadialbar = ({ dataColors }) => {
 // ─────────────────────────────────────────────
 // DONUT TASK CHART
 // ─────────────────────────────────────────────
-const UsersByDeviceCharts = ({ dataColors, series }) => {
-  const chartColors = getChartColorsArray(dataColors);
+const UsersByDeviceCharts = ({ dataColors, series, labels, colors }) => {
+  const chartColors = colors?.length ? colors : getChartColorsArray(dataColors);
 
   const options = {
-    labels: ["Todo", "Processing", "Completed"],
-
-    chart: {
-      type: "donut",
-      height: 220,
-    },
-
-    plotOptions: {
-      pie: {
-        donut: {
-          size: "76%",
-        },
-      },
-    },
-
-    dataLabels: {
-      enabled: false,
-    },
-
-    legend: {
-      show: false,
-    },
-
-    stroke: {
-      width: 0,
-    },
-
+    labels: labels || [],
+    chart: { type: "donut", height: 220 },
+    plotOptions: { pie: { donut: { size: "76%" } } },
+    dataLabels: { enabled: false },
+    legend: { show: false },
+    stroke: { width: 0 },
     colors: chartColors,
   };
 
@@ -151,23 +102,117 @@ const UsersByDeviceCharts = ({ dataColors, series }) => {
 // ─────────────────────────────────────────────
 const ProjectOverview = ({ projectId }) => {
   const [members, setMembers] = useState([]);
+  const [taskStatusDetails, setTaskStatusDetails] = useState(null);
+  const [taskStatusRows, setTaskStatusRows] = useState([]);
+  const [donutSeries, setDonutSeries] = useState([]);
+  const [donutLabels, setDonutLabels] = useState([]);
+  const [donutColors, setDonutColors] = useState([]);
 
-  // Dummy chart data
-  const chartData = [12, 8, 24];
+  // ✅ Subscribe to Redux — when TaskListForm / TaskDetailModal dispatches
+  // editProject after a task save, this selector fires and the useMemo below
+  // picks up the updated task_status_details with zero extra API calls.
+  const { project_data } = useSelector((state) => state.ProjectsReducer);
+
+  // ✅ Find this project in Redux store reactively
+  const reduxProject = useMemo(
+    () => project_data?.find((p) => Number(p.id) === Number(projectId)),
+    [project_data, projectId],
+  );
 
   // ─────────────────────────────────────────
-  // FETCH MEMBERS
+  // SHARED: build chart/table data from task_status_details
+  // Called both on initial API fetch and when Redux project updates.
+  // ─────────────────────────────────────────
+  const processTaskStatusDetails = (details) => {
+    if (!details) return;
+
+    setTaskStatusDetails(details);
+
+    const taskStatusList = GetLocalStorageData("task_status") || [];
+    const statusCounts = details.status_counts || {};
+
+    const rows = [];
+    const series = [];
+    const labels = [];
+    const colors = [];
+
+    Object.entries(statusCounts).forEach(([statusId, count]) => {
+      const matched = taskStatusList.find(
+        (s) => String(s.id) === String(statusId),
+      );
+
+      if (matched) {
+        rows.push({
+          id: matched.id,
+          name: matched.name,
+          category: matched.category,
+          color: matched.color || "#808080",
+          count,
+        });
+        series.push(count);
+        labels.push(matched.name);
+        colors.push(matched.color || "#808080");
+      } else {
+        rows.push({
+          id: statusId,
+          name: `Status ${statusId}`,
+          category: "unknown",
+          color: "#808080",
+          count,
+        });
+        series.push(count);
+        labels.push(`Status ${statusId}`);
+        colors.push("#808080");
+      }
+    });
+
+    setTaskStatusRows(rows);
+    setDonutSeries(series);
+    setDonutLabels(labels);
+    setDonutColors(colors);
+  };
+
+  // ─────────────────────────────────────────
+  // INITIAL LOAD — fetch project detail from API once on mount
   // ─────────────────────────────────────────
   useEffect(() => {
     if (projectId) {
+      fetchProjectDetail();
       fetchProjectMembers();
     }
   }, [projectId]);
 
+  const fetchProjectDetail = async () => {
+    try {
+      const response = await GetApi(
+        `/projects/get-project-detail/${projectId}`,
+      );
+      const data = response?.data?.data;
+
+      if (data?.task_status_details) {
+        processTaskStatusDetails(data.task_status_details);
+      }
+    } catch (error) {
+      console.log("Error fetching project detail", error);
+    }
+  };
+
+  // ─────────────────────────────────────────
+  // ✅ REACTIVE UPDATE — when Redux project changes (after task save),
+  // rebuild chart data immediately without any API call.
+  // ─────────────────────────────────────────
+  useEffect(() => {
+    if (reduxProject?.task_status_details) {
+      processTaskStatusDetails(reduxProject.task_status_details);
+    }
+  }, [reduxProject]);
+
+  // ─────────────────────────────────────────
+  // FETCH MEMBERS
+  // ─────────────────────────────────────────
   const fetchProjectMembers = async () => {
     try {
       const response = await GetApi("/task/");
-
       const allTasks = response?.data?.data || [];
 
       const projectTasks = allTasks.filter(
@@ -218,6 +263,28 @@ const ProjectOverview = ({ projectId }) => {
     { bg: "#fde8f4", color: "#d63384" },
   ];
 
+  // ─────────────────────────────────────────
+  // CATEGORY BADGE HELPER
+  // ─────────────────────────────────────────
+  const getCategoryBadge = (category) => {
+    switch (category) {
+      case "todo":
+        return {
+          badgeClass: "bg-warning-subtle text-warning",
+          label: "Pending",
+        };
+      case "in_progress":
+        return { badgeClass: "bg-info-subtle text-info", label: "In Progress" };
+      case "completed":
+        return { badgeClass: "bg-success-subtle text-success", label: "Done" };
+      default:
+        return {
+          badgeClass: "bg-secondary-subtle text-secondary",
+          label: category,
+        };
+    }
+  };
+
   return (
     <React.Fragment>
       <Row>
@@ -226,8 +293,14 @@ const ProjectOverview = ({ projectId }) => {
           <Card className="h-100">
             <CardBody>
               <h5 className="mb-4">Project Completed</h5>
-
-              <GradientCircleRadialbar dataColors='["--vz-info", "--vz-success"]' />
+              {/* ✅ taskStatusDetails updates immediately via processTaskStatusDetails
+                  called from the reduxProject useEffect — no stale value */}
+              <GradientCircleRadialbar
+                dataColors='["--vz-info", "--vz-success"]'
+                percentage={
+                  taskStatusDetails?.project_completed_percentage ?? 0
+                }
+              />
             </CardBody>
           </Card>
         </Col>
@@ -236,67 +309,48 @@ const ProjectOverview = ({ projectId }) => {
         <Col xl={4} lg={4}>
           <Card className="h-100">
             <CardBody>
-              <UsersByDeviceCharts
-                series={chartData}
-                dataColors='["--vz-warning", "--vz-info", "--vz-success"]'
-              />
+              {donutSeries.length > 0 && (
+                <UsersByDeviceCharts
+                  series={donutSeries}
+                  labels={donutLabels}
+                  colors={donutColors}
+                  dataColors='["--vz-warning", "--vz-info", "--vz-success"]'
+                />
+              )}
 
               <div className="table-responsive mt-4">
                 <table className="table table-borderless table-sm align-middle mb-0">
                   <tbody>
-                    {/* TODO */}
-                    <tr>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          <i className="ri-stop-fill text-warning me-2 fs-16"></i>
-                          <span>Todo</span>
-                        </div>
-                      </td>
+                    {taskStatusRows.map((row) => {
+                      const badge = getCategoryBadge(row.category);
+                      return (
+                        <tr key={row.id}>
+                          <td>
+                            <div className="d-flex align-items-center">
+                              <i
+                                className="ri-stop-fill me-2 fs-16"
+                                style={{ color: row.color }}
+                              ></i>
+                              <span>{row.name}</span>
+                            </div>
+                          </td>
+                          <td className="text-muted">{row.count} Tasks</td>
+                          <td className="text-end">
+                            <span className={`badge ${badge.badgeClass}`}>
+                              {badge.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
 
-                      <td className="text-muted">{chartData[0]} Tasks</td>
-
-                      <td className="text-end">
-                        <span className="badge bg-warning-subtle text-warning">
-                          Pending
-                        </span>
-                      </td>
-                    </tr>
-
-                    {/* PROCESSING */}
-                    <tr>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          <i className="ri-stop-fill text-info me-2 fs-16"></i>
-                          <span>Processing</span>
-                        </div>
-                      </td>
-
-                      <td className="text-muted">{chartData[1]} Tasks</td>
-
-                      <td className="text-end">
-                        <span className="badge bg-info-subtle text-info">
-                          In Progress
-                        </span>
-                      </td>
-                    </tr>
-
-                    {/* COMPLETED */}
-                    <tr>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          <i className="ri-stop-fill text-success me-2 fs-16"></i>
-                          <span>Completed</span>
-                        </div>
-                      </td>
-
-                      <td className="text-muted">{chartData[2]} Tasks</td>
-
-                      <td className="text-end">
-                        <span className="badge bg-success-subtle text-success">
-                          Done
-                        </span>
-                      </td>
-                    </tr>
+                    {taskStatusRows.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="text-center text-muted py-3">
+                          No task data available
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -330,7 +384,6 @@ const ProjectOverview = ({ projectId }) => {
                 >
                   {members.map((member, index) => {
                     const colorSet = avatarColors[index % avatarColors.length];
-
                     return (
                       <div key={member?.id} className="text-center">
                         {member?.profile_url ? (
@@ -358,13 +411,9 @@ const ProjectOverview = ({ projectId }) => {
                             {getInitials(member?.first_name)}
                           </div>
                         )}
-
                         <p
                           className="mb-0 mt-2 text-truncate"
-                          style={{
-                            fontSize: "11px",
-                            maxWidth: "60px",
-                          }}
+                          style={{ fontSize: "11px", maxWidth: "60px" }}
                         >
                           {member?.first_name}
                         </p>

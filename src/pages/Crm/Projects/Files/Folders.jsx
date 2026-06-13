@@ -58,6 +58,9 @@ const ALLOWED_EXTENSIONS = [
   "docx",
 ];
 
+// Only these extensions get an inline image preview
+const IMAGE_EXTS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"];
+
 const formatDate = (iso) =>
   iso
     ? new Date(iso).toLocaleDateString("en-GB", {
@@ -112,15 +115,6 @@ const insertFolderIntoState = (state, newFolder, parentFolderId) => {
   return { ...state, allFolders: insertIntoChildren(state.allFolders || []) };
 };
 
-// ─── Optimistic helpers ───────────────────────────────────────────────────────
-
-/**
- * Insert mapped file objects into the correct place in the Redux state
- * without a full re-fetch.
- *
- * - parentFolderId === null  → push into rootFiles
- * - parentFolderId !== null  → find the folder in allFolders and push into children
- */
 const insertFilesIntoState = (state, newFiles, parentFolderId) => {
   if (parentFolderId === null) {
     return { ...state, rootFiles: [...(state.rootFiles || []), ...newFiles] };
@@ -135,9 +129,6 @@ const insertFilesIntoState = (state, newFiles, parentFolderId) => {
   return { ...state, allFolders: insertIntoChildren(state.allFolders || []) };
 };
 
-/**
- * Remove file/folder ids from the Redux state tree optimistically.
- */
 const removeItemsFromState = (state, folderIds, fileIds) => {
   const removeFromList = (list) => {
     let result = list.filter(
@@ -184,55 +175,25 @@ const FILE_ICONS = {
   xls: { icon: "ri-file-excel-fill", color: "success" },
 };
 
-const getFileIcon = (ext) =>
-  FILE_ICONS[ext?.toLowerCase()] || {
-    icon: "ri-file-fill",
-    color: "secondary",
-  };
-
-// ─── File Type Helpers ─────────────────────────────────────────────────────────
-
-const IMAGE_EXTS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"];
-const VIDEO_EXTS = ["mp4", "webm", "ogv", "mov", "avi"];
-const AUDIO_EXTS = ["mp3", "wav", "ogg", "aac", "flac"];
-const PDF_EXTS = ["pdf"];
-const TEXT_EXTS = ["txt", "csv", "json", "xml", "html", "css", "js", "md"];
-
-const getViewerType = (ext) => {
-  const e = ext?.toLowerCase();
-  if (IMAGE_EXTS.includes(e)) return "image";
-  if (VIDEO_EXTS.includes(e)) return "video";
-  if (AUDIO_EXTS.includes(e)) return "audio";
-  if (PDF_EXTS.includes(e)) return "pdf";
-  if (TEXT_EXTS.includes(e)) return "text";
-  return "unsupported";
+const getFileIcon = (extOrName) => {
+  const ext = extOrName?.includes(".") ? extOrName.split(".").pop() : extOrName;
+  return (
+    FILE_ICONS[ext?.toLowerCase()] || {
+      icon: "ri-file-fill",
+      color: "secondary",
+    }
+  );
 };
 
+const isImageExt = (ext) => IMAGE_EXTS.includes(ext?.toLowerCase());
+
 // ─── File Preview Modal ────────────────────────────────────────────────────────
+// Images  → inline preview
+// Others  → icon + Download button only (no iframe / text / audio / video)
 
 const FileViewerModal = ({ file, onClose }) => {
-  const [textContent, setTextContent] = useState(null);
-  const [textLoading, setTextLoading] = useState(false);
-  const [textError, setTextError] = useState(false);
-
-  const viewerType = file ? getViewerType(file.ext) : null;
   const { icon, color } = file ? getFileIcon(file.ext) : {};
-
-  useEffect(() => {
-    if (file && viewerType === "text" && file.file_url) {
-      setTextLoading(true);
-      setTextContent(null);
-      setTextError(false);
-      fetch(file.file_url)
-        .then((r) => {
-          if (!r.ok) throw new Error("fetch failed");
-          return r.text();
-        })
-        .then((t) => setTextContent(t))
-        .catch(() => setTextError(true))
-        .finally(() => setTextLoading(false));
-    }
-  }, [file, viewerType]);
+  const fileIsImage = file ? isImageExt(file.ext) : false;
 
   if (!file) return null;
 
@@ -264,8 +225,8 @@ const FileViewerModal = ({ file, onClose }) => {
 
       {/* Body */}
       <ModalBody className="p-0" style={{ minHeight: 340 }}>
-        {/* IMAGE */}
-        {viewerType === "image" && (
+        {fileIsImage ? (
+          /* ── IMAGE PREVIEW ── */
           <div
             className="d-flex align-items-center justify-content-center bg-light"
             style={{ minHeight: 400, padding: 16 }}
@@ -293,124 +254,33 @@ const FileViewerModal = ({ file, onClose }) => {
               <p>Could not load image.</p>
             </div>
           </div>
-        )}
-
-        {/* VIDEO */}
-        {viewerType === "video" && (
-          <div
-            className="d-flex align-items-center justify-content-center bg-dark"
-            style={{ minHeight: 400 }}
-          >
-            <video
-              controls
-              autoPlay={false}
-              style={{ maxWidth: "100%", maxHeight: 560, outline: "none" }}
-            >
-              <source src={file.file_url} />
-              Your browser does not support the video tag.
-            </video>
-          </div>
-        )}
-
-        {/* AUDIO */}
-        {viewerType === "audio" && (
-          <div
-            className="d-flex flex-column align-items-center justify-content-center gap-4 py-5"
-            style={{ minHeight: 260 }}
-          >
-            <div
-              className={`avatar-xxl d-flex align-items-center justify-content-center rounded-circle bg-${color}-subtle`}
-              style={{ width: 100, height: 100 }}
-            >
-              <i className={`ri-music-2-fill text-${color} display-4`}></i>
-            </div>
-            <div className="text-center">
-              <h6 className="fw-semibold mb-1">{file.name}</h6>
-              <span className="badge bg-info-subtle text-info">
-                {file.ext?.toUpperCase()}
-              </span>
-            </div>
-            <audio
-              controls
-              autoPlay={false}
-              style={{ width: "100%", maxWidth: 480 }}
-            >
-              <source src={file.file_url} />
-            </audio>
-          </div>
-        )}
-
-        {/* PDF */}
-        {viewerType === "pdf" && (
-          <div style={{ height: 620 }}>
-            <iframe
-              src={`${file.file_url}#toolbar=1&navpanes=0&scrollbar=1`}
-              title={file.name}
-              width="100%"
-              height="100%"
-              style={{ border: "none", display: "block" }}
-            />
-          </div>
-        )}
-
-        {/* TEXT */}
-        {viewerType === "text" && (
-          <div style={{ minHeight: 340 }}>
-            {textLoading && (
-              <div className="d-flex align-items-center justify-content-center py-5">
-                <Spinner color="success" className="me-2" />
-                <span className="text-muted">Loading file…</span>
-              </div>
-            )}
-            {textError && (
-              <div className="text-center py-5 text-danger">
-                <i className="ri-error-warning-line display-4 d-block mb-2"></i>
-                <p>Could not load file content.</p>
-              </div>
-            )}
-            {!textLoading && !textError && textContent !== null && (
-              <pre
-                className="mb-0 p-4"
-                style={{
-                  maxHeight: 560,
-                  overflowY: "auto",
-                  fontSize: 13,
-                  lineHeight: 1.7,
-                  background: "#f8f9fa",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  fontFamily: "'Fira Mono', 'Courier New', monospace",
-                }}
-              >
-                {textContent}
-              </pre>
-            )}
-          </div>
-        )}
-
-        {/* UNSUPPORTED */}
-        {viewerType === "unsupported" && (
+        ) : (
+          /* ── NON-IMAGE: download only ── */
           <div className="text-center py-5">
             <div
-              className={`avatar-xl d-inline-flex align-items-center justify-content-center rounded-circle bg-${color}-subtle mb-3`}
-              style={{ width: 80, height: 80 }}
+              className={`d-inline-flex align-items-center justify-content-center rounded-circle bg-${color}-subtle mb-3`}
+              style={{ width: 90, height: 90 }}
             >
-              <i className={`${icon} text-${color} display-5`}></i>
+              <i className={`${icon} text-${color} display-4`}></i>
             </div>
             <h6 className="fw-semibold mb-1">
               {file.name}.{file.ext}
             </h6>
-            <p className="text-muted fs-13 mb-3">
-              Preview is not available for <strong>.{file.ext}</strong> files.
+            <p className="text-muted fs-13 mb-4">
+              Preview is not available for{" "}
+              <strong>.{file.ext?.toUpperCase()}</strong> files.
+              <br />
+              Download the file to view it.
             </p>
             {file.file_url && (
               <a
                 href={file.file_url}
                 target="_blank"
                 rel="noreferrer"
-                className="btn btn-success btn-sm"
+                className="btn btn-success"
               >
-                <i className="ri-download-line me-1"></i>Download to view
+                <i className="ri-download-2-line me-2" />
+                Download File
               </a>
             )}
           </div>
@@ -594,6 +464,7 @@ const Folders = ({ projectId }) => {
   // Form values
   const [newFolderName, setNewFolderName] = useState("");
   const [droppedFiles, setDroppedFiles] = useState([]);
+  const [dropError, setDropError] = useState("");
   const [renameName, setRenameName] = useState("");
 
   const [ctxMenu, setCtxMenu] = useState(null);
@@ -625,6 +496,32 @@ const Folders = ({ projectId }) => {
     ? pathStack[pathStack.length - 1]
     : null;
   const itemKey = (item) => `${item.type}-${item.id}`;
+
+  const closeAddModal = () => {
+    setNewFileModal(false);
+    setDroppedFiles([]);
+    setDropError("");
+  };
+
+  const handleDrop = (acceptedFiles) => {
+    setDropError("");
+    const invalid = acceptedFiles.filter(
+      (f) =>
+        !ALLOWED_EXTENSIONS.includes(f.name.split(".").pop()?.toLowerCase()),
+    );
+    if (invalid.length) {
+      setDropError(
+        `Some files were skipped (unsupported type): ${invalid.map((f) => f.name).join(", ")}`,
+      );
+    }
+    const valid = acceptedFiles.filter((f) =>
+      ALLOWED_EXTENSIONS.includes(f.name.split(".").pop()?.toLowerCase()),
+    );
+    setDroppedFiles((prev) => [...prev, ...valid]);
+  };
+
+  const removeQueued = (index) =>
+    setDroppedFiles((prev) => prev.filter((_, i) => i !== index));
 
   // ── API ───────────────────────────────────────────────────────────────────────
 
@@ -702,7 +599,6 @@ const Folders = ({ projectId }) => {
       });
       if (res?.status === 200 || res?.status === 201) {
         dispatch(setFolderSuccess(res.data?.message || "Renamed Successfully"));
-        // Rename requires a tree-wide re-fetch (folder name must update everywhere)
         await fetchProjectDetail();
         setRenameModal(null);
         setRenameName("");
@@ -716,7 +612,6 @@ const Folders = ({ projectId }) => {
     }
   };
 
-  // ── Add Files — optimistic insert, NO full re-fetch ───────────────────────────
   const handleAddFiles = async () => {
     if (!droppedFiles.length) return;
     dispatch(setFolderActionLoading(true));
@@ -729,10 +624,7 @@ const Folders = ({ projectId }) => {
       const res = await PostApi("projects/add-file/", formData);
 
       if (res?.status === 200 || res?.status === 201) {
-        // Map API response to the same shape the tree uses
         const uploaded = (res.data?.data ?? []).map(mapFile);
-
-        // ── Optimistic insert into Redux tree ──────────────────────────────
         dispatch(
           setFolderData(
             insertFilesIntoState(
@@ -742,12 +634,10 @@ const Folders = ({ projectId }) => {
             ),
           ),
         );
-
         dispatch(
           setFolderSuccess(res.data?.message || "Files Uploaded Successfully"),
         );
-        setDroppedFiles([]);
-        setNewFileModal(false);
+        closeAddModal();
       } else {
         dispatch(
           setFolderError(res?.data?.message || "Failed to upload files"),
@@ -825,14 +715,11 @@ const Folders = ({ projectId }) => {
         dispatch(
           setFolderSuccess(res.data?.message || "Items deleted successfully"),
         );
-
-        // ── Optimistic removal from Redux tree ─────────────────────────────
         dispatch(
           setFolderData(
             removeItemsFromState({ allFolders, rootFiles }, folderIds, fileIds),
           ),
         );
-
         if (selectedItem && folderIds.concat(fileIds).includes(selectedItem.id))
           setSelectedItem(null);
         setDeleteConfirm(null);
@@ -1366,8 +1253,9 @@ const Folders = ({ projectId }) => {
                       const { icon, color } = getFileIcon(item.ext);
                       const isFav = favorites.find((f) => f.id === item.id);
                       const isSelected = selected.has(itemKey(item));
-                      const canPreview =
-                        getViewerType(item.ext) !== "unsupported";
+                      // Only images get the eye/preview button; others get download only
+                      const canPreview = isImageExt(item.ext);
+
                       return (
                         <tr
                           key={item.id}
@@ -1419,15 +1307,17 @@ const Folders = ({ projectId }) => {
                           </td>
                           <td onClick={(e) => e.stopPropagation()}>
                             <div className="d-flex align-items-center gap-1">
+                              {/* Eye button only for images */}
                               {canPreview && (
                                 <button
                                   className="btn btn-ghost-success btn-icon btn-sm"
-                                  title="View file"
+                                  title="View image"
                                   onClick={() => setViewerFile(item)}
                                 >
                                   <i className="ri-eye-line fs-15"></i>
                                 </button>
                               )}
+                              {/* Download button for all files */}
                               {item.file_url && (
                                 <a
                                   href={item.file_url}
@@ -1520,20 +1410,12 @@ const Folders = ({ projectId }) => {
       {/* ── Add Files Modal ── */}
       <Modal
         isOpen={newFileModal}
-        toggle={() => {
-          setNewFileModal(false);
-          setDroppedFiles([]);
-        }}
+        toggle={closeAddModal}
         centered
+        size="md"
         className="zoomIn"
       >
-        <ModalHeader
-          toggle={() => {
-            setNewFileModal(false);
-            setDroppedFiles([]);
-          }}
-          className="p-3 bg-success-subtle"
-        >
+        <ModalHeader toggle={closeAddModal} className="p-3 bg-success-subtle">
           Add Files
           {currentFolderId && (
             <span className="text-muted fs-12 ms-2 fw-normal">
@@ -1543,51 +1425,110 @@ const Folders = ({ projectId }) => {
           )}
         </ModalHeader>
         <ModalBody>
-          <Label className="form-label">
-            Upload Files{" "}
-            <small className="text-muted">
-              ({ALLOWED_EXTENSIONS.join(", ")})
-            </small>
-          </Label>
-          <Dropzone onDrop={(files) => setDroppedFiles(files)} multiple>
-            {({ getRootProps, getInputProps }) => (
-              <div className="dropzone dz-clickable border rounded p-4 text-center">
-                <div className="dz-message needsclick" {...getRootProps()}>
-                  <input {...getInputProps()} />
-                  <div className="mb-2">
-                    <i className="display-4 text-muted ri-upload-cloud-2-fill" />
-                  </div>
-                  <h5>Drop files here or click to upload.</h5>
-                  {droppedFiles.length > 0 && (
-                    <div className="mt-2">
-                      {droppedFiles.map((f, i) => (
-                        <p key={i} className="text-success mb-0 fs-13">
-                          <i className="ri-check-line me-1"></i>
-                          {f.name}
-                        </p>
-                      ))}
+          <div className="mb-3">
+            <Label className="form-label">
+              Upload Files{" "}
+              <small className="text-muted">
+                ({ALLOWED_EXTENSIONS.join(", ")})
+              </small>
+            </Label>
+            <Dropzone onDrop={handleDrop} multiple>
+              {({ getRootProps, getInputProps, isDragActive }) => (
+                <div
+                  className={`dropzone dz-clickable border rounded p-4 text-center ${
+                    isDragActive ? "border-success bg-success-subtle" : ""
+                  }`}
+                >
+                  <div className="dz-message needsclick" {...getRootProps()}>
+                    <input {...getInputProps()} />
+                    <div className="mb-3">
+                      <i className="display-4 text-muted ri-upload-cloud-2-fill" />
                     </div>
-                  )}
+                    <h5>Drop files here or click to upload</h5>
+                    <p className="text-muted small mb-0">
+                      Multiple files supported
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )}
-          </Dropzone>
-          <div className="hstack gap-2 justify-content-end mt-3">
+              )}
+            </Dropzone>
+          </div>
+
+          {droppedFiles.length > 0 && (
+            <div className="mb-3">
+              <Label className="form-label">
+                Selected Files ({droppedFiles.length})
+              </Label>
+              <ul className="list-group list-group-flush">
+                {droppedFiles.map((f, i) => {
+                  const { icon, color } = getFileIcon(f.name);
+                  return (
+                    <li
+                      key={i}
+                      className="list-group-item d-flex align-items-center justify-content-between px-0 py-1"
+                    >
+                      <div className="d-flex align-items-center gap-2">
+                        <i className={`${icon} text-${color} fs-17`} />
+                        <span
+                          className="text-truncate"
+                          style={{ maxWidth: 260 }}
+                        >
+                          {f.name}
+                        </span>
+                        <span className="text-muted small">
+                          ({formatBytes(f.size)})
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost-danger p-0 px-1"
+                        onClick={() => removeQueued(i)}
+                        disabled={actionLoading}
+                      >
+                        <i className="ri-close-line" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {dropError && (
+            <div className="alert alert-warning py-2 mb-3">
+              <i className="ri-error-warning-line me-2" />
+              {dropError}
+            </div>
+          )}
+
+          {successMsg && (
+            <Alert color="success" className="py-2">
+              <i className="ri-check-line me-2" />
+              {successMsg}
+            </Alert>
+          )}
+          {errorMsg && (
+            <Alert color="danger" className="py-2">
+              <i className="ri-error-warning-line me-2" />
+              {typeof errorMsg === "string" ? errorMsg : "Something went wrong"}
+            </Alert>
+          )}
+
+          <div className="hstack gap-2 justify-content-end mt-1">
             <button
               type="button"
               className="btn btn-ghost-success"
-              onClick={() => {
-                setNewFileModal(false);
-                setDroppedFiles([]);
-              }}
+              onClick={closeAddModal}
+              disabled={actionLoading}
             >
-              <i className="ri-close-line align-bottom me-1"></i>Cancel
+              <i className="ri-close-line align-bottom me-1" />
+              Close
             </button>
             <button
               type="button"
               className="btn btn-primary"
               onClick={handleAddFiles}
-              disabled={!droppedFiles.length || actionLoading}
+              disabled={actionLoading || droppedFiles.length === 0}
             >
               {actionLoading ? (
                 <>
@@ -1596,7 +1537,8 @@ const Folders = ({ projectId }) => {
                 </>
               ) : (
                 <>
-                  <i className="ri-add-line align-bottom me-1"></i>Upload
+                  <i className="ri-upload-2-line align-bottom me-1" />
+                  Upload
                 </>
               )}
             </button>

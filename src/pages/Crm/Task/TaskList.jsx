@@ -7,134 +7,99 @@ import { Api } from "../../../common/api/Api";
 import { MetaTitle } from "../../../common/data/MetaTitle";
 import { task_list_component_name } from "../../../common/constant/Constants";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
-import {
-  setTaskListFilterKeys,
-  resetLeaveTypeTableFilterKeys,
-  resetTaskListFilterKeys,
-} from "../../../redux/reducers/ChildReducer/TableFilterReducer";
+import { resetTaskListFilterKeys } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
 import InfoTable from "../../../component/common/table/InfoTable";
 import TaskDetailModal from "./Modal/TaskDetailModal";
-import {
-  getLabel,
-  getEmployeeName,
-  getEmployeeProfile,
-} from "../Task/Modal/Taskhelpers";
+import { getLabel, getEmployeeProfile } from "../Task/Modal/Taskhelpers";
+
+// ─── Helper: build avatar element ────────────────────────────────────────────
+const EmployeeAvatar = ({ emp, size = 32, style = {} }) => {
+  const initial =
+    `${emp.first_name?.[0] || ""}${emp.last_name?.[0] || ""}`.toUpperCase() ||
+    (emp.label || emp.name || "?")[0].toUpperCase();
+
+  const name =
+    `${emp.first_name || ""} ${emp.last_name || ""}`.trim() ||
+    emp.label ||
+    emp.name ||
+    "";
+
+  return (
+    <div
+      data-bs-toggle="tooltip"
+      title={name}
+      style={{ flexShrink: 0, ...style }}
+    >
+      {emp.profile_url ? (
+        <img
+          src={emp.profile_url}
+          alt={name}
+          style={{
+            width: `${size}px`,
+            height: `${size}px`,
+            borderRadius: "50%",
+            objectFit: "cover",
+            border: "2px solid #fff",
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            width: `${size}px`,
+            height: `${size}px`,
+            borderRadius: "50%",
+            background: "#0ab39c",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+            fontWeight: 600,
+            fontSize: size * 0.4,
+            border: "2px solid #fff",
+          }}
+        >
+          {initial}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
-const Tasks = ({ projectId = null }) => {
+const Tasks = ({ projectId = null, searchQuery = "" }) => {
   const dispatch = useDispatch();
 
   // ── Modal state ─────────────────────────────────────────────────────────────
   const [detailModal, setDetailModal] = useState({ open: false, taskId: null });
 
   // ── Redux ───────────────────────────────────────────────────────────────────
-  // FIX: reducer now uses `tasks` (was `task_data`)
   const { tasks: task_data } = useSelector((state) => state.TaskReducer);
-
-  const { task_list_filter_keys } = useSelector(
-    (state) => state.TableFilterReducer,
-  );
 
   const displayedTasks = useMemo(() => {
     if (!Array.isArray(task_data)) return [];
 
     let filtered = [...task_data];
 
-    // Project Page Filter
     if (projectId !== null && projectId !== undefined) {
       filtered = filtered.filter(
         (task) => String(task?.project || "") === String(projectId),
       );
     }
 
-    // Related To
-    if (
-      task_list_filter_keys?.related_to !== null &&
-      task_list_filter_keys?.related_to !== ""
-    ) {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (task) =>
-          String(task?.related_to || "") ===
-          String(task_list_filter_keys.related_to),
-      );
-    }
-
-    // Project
-    if (
-      task_list_filter_keys?.project_id !== null &&
-      task_list_filter_keys?.project_id !== 0
-    ) {
-      filtered = filtered.filter(
-        (task) =>
-          Number(task?.project || 0) ===
-          Number(task_list_filter_keys.project_id),
-      );
-    }
-
-    // Client
-    if (
-      task_list_filter_keys?.client_id !== null &&
-      task_list_filter_keys?.client_id !== 0
-    ) {
-      filtered = filtered.filter(
-        (task) =>
-          Number(task?.client || 0) === Number(task_list_filter_keys.client_id),
-      );
-    }
-
-    // Assigned To
-    if (
-      task_list_filter_keys?.assigned_to !== null &&
-      task_list_filter_keys?.assigned_to !== 0
-    ) {
-      filtered = filtered.filter(
-        (task) =>
-          Number(task?.assigned_to || 0) ===
-          Number(task_list_filter_keys.assigned_to),
-      );
-    }
-
-    // Collaborators
-    if (
-      Array.isArray(task_list_filter_keys?.collaborator_id) &&
-      task_list_filter_keys.collaborator_id.length > 0
-    ) {
-      filtered = filtered.filter((task) => {
-        const collaborators = Array.isArray(task?.collaborators_id_list)
-          ? task.collaborators_id_list
-          : [];
-        return task_list_filter_keys.collaborator_id.some((id) =>
-          collaborators.includes(id),
-        );
-      });
-    }
-
-    // Task Status
-    if (
-      task_list_filter_keys?.task_status !== null &&
-      task_list_filter_keys?.task_status !== 0
-    ) {
-      filtered = filtered.filter(
-        (task) =>
-          Number(task?.task_status || 0) ===
-          Number(task_list_filter_keys.task_status),
-      );
-    }
-
-    // Task Priority
-    if (
-      task_list_filter_keys?.task_priority !== null &&
-      task_list_filter_keys?.task_priority !== 0
-    ) {
-      filtered = filtered.filter(
-        (task) =>
-          Number(task?.task_priority || 0) ===
-          Number(task_list_filter_keys.task_priority),
+          task.title?.toLowerCase().includes(q) ||
+          task.description
+            ?.replace(/<[^>]*>/g, "")
+            .toLowerCase()
+            .includes(q),
       );
     }
 
     return filtered;
-  }, [task_data, projectId, task_list_filter_keys]);
+  }, [task_data, projectId, searchQuery]);
 
   // ── Fetch all tasks on mount ────────────────────────────────────────────────
   useEffect(() => {
@@ -227,52 +192,6 @@ const Tasks = ({ projectId = null }) => {
                     : plainDescription}
                 </div>
               )}
-
-              <div className="mt-2">
-                <div className="d-flex justify-content-between align-items-center mb-1">
-                  <small
-                    style={{
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      color: "#6c757d",
-                    }}
-                  >
-                    {statusObj?.name || "Not Started"}
-                  </small>
-
-                  <small
-                    style={{
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      color: "#495057",
-                    }}
-                  >
-                    {progress}%
-                  </small>
-                </div>
-
-                <div
-                  className="progress"
-                  style={{
-                    height: "8px",
-                    borderRadius: "20px",
-                    backgroundColor: "#e9ecef",
-                  }}
-                >
-                  <div
-                    className={`progress-bar ${progressColor}`}
-                    role="progressbar"
-                    style={{
-                      width: `${progress}%`,
-                      borderRadius: "20px",
-                      transition: "all .4s ease",
-                    }}
-                    aria-valuenow={progress}
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                  />
-                </div>
-              </div>
             </div>
           );
         },
@@ -321,43 +240,7 @@ const Tasks = ({ projectId = null }) => {
           const avatarSize = window.innerWidth < 768 ? 24 : 32;
           return (
             <div className="d-flex align-items-center">
-              <div
-                data-bs-toggle="tooltip"
-                title={employee.name}
-                style={{ flexShrink: 0 }}
-              >
-                {employee.profile_url ? (
-                  <img
-                    src={employee.profile_url}
-                    alt={employee.name}
-                    style={{
-                      width: `${avatarSize}px`,
-                      height: `${avatarSize}px`,
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      border: "2px solid #fff",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: `${avatarSize}px`,
-                      height: `${avatarSize}px`,
-                      borderRadius: "50%",
-                      background: "#0ab39c",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontWeight: 600,
-                      fontSize: avatarSize * 0.4,
-                      border: "2px solid #fff",
-                    }}
-                  >
-                    {employee.initial}
-                  </div>
-                )}
-              </div>
+              <EmployeeAvatar emp={employee} size={avatarSize} />
             </div>
           );
         },
@@ -368,58 +251,43 @@ const Tasks = ({ projectId = null }) => {
         id: "collaborators",
         filterable: false,
         accessor: (obj) => {
+          // ── Use collaborator_details from API if available ─────────────────
+          // Falls back to resolving from localStorage via getEmployeeProfile
+          const details = obj?.collaborator_details;
           const collaboratorIds = obj?.collaborators_id_list || [];
-          const collaborators = collaboratorIds
-            .map((id) => getEmployeeProfile(id))
-            .slice(0, 2);
-          const extraCount =
-            collaboratorIds.length > 2 ? collaboratorIds.length - 2 : 0;
+
+          let collaborators = [];
+
+          if (Array.isArray(details) && details.length > 0) {
+            // Use rich objects returned directly by the API
+            collaborators = details.slice(0, 2);
+          } else if (collaboratorIds.length > 0) {
+            // Fallback: resolve from localStorage
+            collaborators = collaboratorIds
+              .slice(0, 2)
+              .map((id) => getEmployeeProfile(id));
+          }
+
+          const totalCount = Array.isArray(details)
+            ? details.length
+            : collaboratorIds.length;
+          const extraCount = totalCount > 2 ? totalCount - 2 : 0;
           const avatarSize = window.innerWidth < 768 ? 24 : 34;
+
+          if (!collaborators.length) return "-";
+
           return (
             <div className="d-flex align-items-center">
               {collaborators.map((emp, index) => (
-                <div
-                  key={index}
-                  data-bs-toggle="tooltip"
-                  title={emp.name}
+                <EmployeeAvatar
+                  key={emp.id ?? index}
+                  emp={emp}
+                  size={avatarSize}
                   style={{
                     marginLeft: index !== 0 ? `-${avatarSize / 3}px` : "0",
                     zIndex: 10 - index,
-                    flexShrink: 0,
                   }}
-                >
-                  {emp.profile_url ? (
-                    <img
-                      src={emp.profile_url}
-                      alt={emp.name}
-                      style={{
-                        width: `${avatarSize}px`,
-                        height: `${avatarSize}px`,
-                        borderRadius: "50%",
-                        objectFit: "cover",
-                        border: "2px solid #fff",
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: `${avatarSize}px`,
-                        height: `${avatarSize}px`,
-                        borderRadius: "50%",
-                        background: "#0ab39c",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#fff",
-                        fontWeight: 600,
-                        fontSize: avatarSize * 0.4,
-                        border: "2px solid #fff",
-                      }}
-                    >
-                      {emp.initial}
-                    </div>
-                  )}
-                </div>
+                />
               ))}
               {extraCount > 0 && (
                 <div
@@ -524,24 +392,25 @@ const Tasks = ({ projectId = null }) => {
     [openTaskDetail],
   );
 
-  // ── Initial form object ─────────────────────────────────────────────────────
+  // ── Initial form object — pre-fills project when on project page ────────────
   const initialFormObj = useMemo(
     () => ({
       id: 0,
       title: "",
       description: "",
-      related_to: "project",
-      project: null,
+      related_to: projectId ? "project" : "custom",
+      project: projectId ? Number(projectId) : null,
       client: null,
-      points: "",
+      points: "1",
       assigned_to: null,
       collaborators_id_list: [],
+      collaborator_details: [],
       task_status: null,
       task_priority: null,
       start_time: "",
       end_time: "",
     }),
-    [],
+    [projectId],
   );
 
   // ── Filter options ──────────────────────────────────────────────────────────

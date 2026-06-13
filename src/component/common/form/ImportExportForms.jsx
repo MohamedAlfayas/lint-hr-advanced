@@ -6,7 +6,7 @@ import ImportForm from "../../forms/ImportForm";
 import { component_list_for_import_form_access } from "../../../common/constant/Constants";
 const ImportExportForms = ({ open, toggleImportCanvas }) => {
   const { form_title, form_width_percentage, component_to_show } = useSelector(
-    (state) => state.RightSideBarReducer
+    (state) => state.RightSideBarReducer,
   );
 
   return (
@@ -27,7 +27,7 @@ const ImportExportForms = ({ open, toggleImportCanvas }) => {
           <SimpleBar className="h-100">
             <div className="p-4">
               {component_list_for_import_form_access.includes(
-                component_to_show
+                component_to_show,
               ) ? (
                 <ImportForm />
               ) : (
