@@ -1,15 +1,18 @@
-import React, { useMemo, useRef } from "react";
+import React, { useMemo, useRef, useCallback } from "react";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { Col } from "reactstrap";
 import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
 import Select from "react-select";
+import AsyncSelect from "react-select/async";
 import { useDispatch, useSelector } from "react-redux";
 import { setTaskListFilterKeys } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
+import { Api } from "../../../common/api/Api";
+import { useState } from "react";
 
 const TaskListFilter = () => {
   const inputRef = useRef();
   const dispatch = useDispatch();
-
+  const [selectedCollaborators, setSelectedCollaborators] = useState([]);
   // ── Local storage options ──────────────────────────────────────────────────
   const employee_options = useMemo(
     () => GetLocalStorageData("employee") || [],
@@ -37,21 +40,70 @@ const TaskListFilter = () => {
   const { task_list_filter_keys } = useSelector(
     (state) => state.TableFilterReducer,
   );
-  console.log("filterrr", task_list_filter_keys);
+
+  // ── Collaborator default options (active employees from localStorage) ───────
+  const defaultCollaboratorOptions = useMemo(
+    () =>
+      employee_options
+        .filter((e) => e.is_active)
+        .map((emp) => ({
+          ...emp,
+          value: emp.id,
+          label:
+            `${emp.first_name || ""} ${emp.last_name || ""}`.trim() ||
+            emp.label ||
+            emp.name ||
+            `Employee ${emp.id}`,
+        })),
+    [employee_options],
+  );
+
+  // ── Async search for collaborators ─────────────────────────────────────────
+  const loadCollaboratorOptions = useCallback(async (inputValue) => {
+    try {
+      const response = await Api.get(
+        `/employee/get-data-on-search/?search=${encodeURIComponent(
+          inputValue || "",
+        )}`,
+      );
+
+      const results = response?.data?.data || [];
+
+      return results.map((emp) => ({
+        ...emp,
+        value: emp.id,
+        label:
+          `${emp.first_name || ""} ${emp.last_name || ""}`.trim() ||
+          emp.name ||
+          `Employee ${emp.id}`,
+      }));
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
+  }, []);
 
   // ── Generic change handler ─────────────────────────────────────────────────
   const handleFilterChange = (e, name) => {
+    if (name === "collaborator_id") {
+      setSelectedCollaborators(e || []);
+
+      dispatch(
+        setTaskListFilterKeys({
+          ...task_list_filter_keys,
+          collaborator_id: e ? e.map((item) => item.id || item.value) : [],
+        }),
+      );
+
+      return;
+    }
+
     let val;
 
-    if (Array.isArray(e)) {
-      val = e.map((item) => item.id || item.value);
-      console.log("handleFilterChange", val);
-    } else if (e) {
+    if (e) {
       val = e.id || e.value;
-      console.log("handleFilterChange", val);
     } else {
-      val = name === "collaborator_id" ? [] : null;
-      console.log("handleFilterChange", val);
+      val = null;
     }
 
     dispatch(
@@ -87,28 +139,28 @@ const TaskListFilter = () => {
         />
       </Col>
 
-      {/* Collaborators — multi select */}
+      {/* Collaborators — async multi select */}
       <Col md={2}>
-        <Select
+        <AsyncSelect
           id="collaborator_filter"
           name="collaborator_filter"
-          isClearable
           isMulti
+          isClearable
+          cacheOptions
+          defaultOptions={defaultCollaboratorOptions}
+          loadOptions={loadCollaboratorOptions}
           components={{ Option: EmployeeDisplayInSelect }}
-          innerRef={inputRef}
-          options={employee_options.filter((e) => e.is_active)}
           placeholder="Collaborators"
           className="basic-multi-select"
-          value={
-            Array.isArray(task_list_filter_keys?.collaborator_id) &&
-            task_list_filter_keys.collaborator_id.length
-              ? employee_options.filter((e) =>
-                  task_list_filter_keys.collaborator_id.includes(e.id),
-                )
-              : []
+          getOptionValue={(option) => String(option.id)}
+          getOptionLabel={(option) => option.label}
+          value={selectedCollaborators}
+          noOptionsMessage={({ inputValue }) =>
+            inputValue ? "No employees found" : "Type to search"
           }
+          loadingMessage={() => "Searching..."}
           onChange={(selected) =>
-            handleFilterChange(selected || [], "collaborator_id")
+            handleFilterChange(selected, "collaborator_id")
           }
         />
       </Col>

@@ -25,6 +25,7 @@ import {
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { Api } from "../../../common/api/Api";
 import { PutApi } from "../../../common/api/PutApi";
+import Swal from "sweetalert2";
 
 // ─── Fallback columns ──────────────────────────────────────────────
 const FALLBACK_COLUMNS = [
@@ -140,9 +141,6 @@ function avatarBg(id) {
 
 // ─── Inline styles ─────────────────────────────────────────────────
 const styles = {
-  // ─────────────────────────────────────────────
-  // BOARD WRAPPER
-  // ─────────────────────────────────────────────
   boardWrapper: {
     width: "100%",
     maxWidth: "100%",
@@ -154,39 +152,24 @@ const styles = {
     position: "relative",
   },
 
-  // ─────────────────────────────────────────────
-  // BOARD INNER
-  // ─────────────────────────────────────────────
   boardInner: {
     display: "flex",
     alignItems: "flex-start",
     gap: 12,
-
-    // IMPORTANT
     width: "max-content",
     minWidth: "100%",
-
     paddingBottom: 8,
   },
 
-  // ─────────────────────────────────────────────
-  // COLUMN
-  // ─────────────────────────────────────────────
   column: {
     width: 350,
     minWidth: 350,
     maxWidth: 350,
-
-    // IMPORTANT
     flexShrink: 0,
-
     display: "flex",
     flexDirection: "column",
   },
 
-  // ─────────────────────────────────────────────
-  // COLUMN HEADER
-  // ─────────────────────────────────────────────
   columnHeader: {
     display: "flex",
     alignItems: "center",
@@ -199,54 +182,32 @@ const styles = {
     minHeight: 52,
   },
 
-  // ─────────────────────────────────────────────
-  // DROP ZONE
-  // ─────────────────────────────────────────────
   dropZone: (isOver) => ({
     minHeight: 320,
     padding: 8,
-
     background: isOver
       ? "rgba(var(--vz-primary-rgb),0.05)"
       : "var(--vz-secondary-bg,#f3f3f9)",
-
     borderRadius: "0 0 10px 10px",
-
     border: `1px solid ${
       isOver ? "var(--vz-primary)" : "var(--vz-border-color)"
     }`,
-
     borderTop: "none",
-
     transition: "all 0.2s ease",
-
     overflowY: "auto",
     overflowX: "hidden",
-
     maxHeight: "calc(100vh - 300px)",
-
-    // IMPORTANT
     flex: 1,
   }),
 
-  // ─────────────────────────────────────────────
-  // TASK CARD
-  // ─────────────────────────────────────────────
   taskCard: {
     cursor: "grab",
-
     border: "1px solid var(--vz-border-color)",
-
     borderRadius: 10,
-
     marginBottom: 10,
-
     background: "var(--vz-card-bg)",
-
     boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-
     transition: "all 0.2s ease",
-
     overflow: "hidden",
   },
 };
@@ -291,7 +252,18 @@ function AvatarCircle({ id, employeeMap, size = 22, fontSize = 9 }) {
 }
 
 // ─── TaskCard ──────────────────────────────────────────────────────
-function TaskCard({ task, priorityMap, employeeMap, onDragStart, onEdit }) {
+// FIX: removed broken handleDeleteTask that referenced out-of-scope
+//      `dispatch` and `tasks`. Delete is now handled via the `onDelete`
+//      prop which is provided by the parent (TaskKanban) where both
+//      `dispatch` and `tasks` are in scope.
+function TaskCard({
+  task,
+  priorityMap,
+  employeeMap,
+  onDragStart,
+  onEdit,
+  onDelete, // FIX: used directly — no local re-implementation
+}) {
   const priority = priorityMap[Number(task.task_priority)] || {
     label: "Normal",
     color: "#6c757d",
@@ -334,7 +306,11 @@ function TaskCard({ task, priorityMap, employeeMap, onDragStart, onEdit }) {
                 <i className="ri-edit-2-line align-bottom me-2 text-muted"></i>
                 Edit
               </DropdownItem>
-              <DropdownItem className="text-danger">
+              {/* FIX: calls onDelete(task.id) — wired to handleDelete in TaskKanban */}
+              <DropdownItem
+                className="text-danger"
+                onClick={() => onDelete(task.id)}
+              >
                 <i className="ri-delete-bin-2-line align-bottom me-2"></i>
                 Delete
               </DropdownItem>
@@ -472,6 +448,7 @@ function TaskCard({ task, priorityMap, employeeMap, onDragStart, onEdit }) {
 }
 
 // ─── KanbanColumn ──────────────────────────────────────────────────
+// FIX: onDelete is now properly forwarded down to TaskCard
 function KanbanColumn({
   column,
   tasks,
@@ -481,6 +458,7 @@ function KanbanColumn({
   onDrop,
   onDragOver,
   onEdit,
+  onDelete, // FIX: was received but never passed to TaskCard
 }) {
   const [isOver, setIsOver] = useState(false);
 
@@ -531,6 +509,7 @@ function KanbanColumn({
               employeeMap={employeeMap}
               onDragStart={onDragStart}
               onEdit={onEdit}
+              onDelete={onDelete} // FIX: now properly passed down
             />
           ))
         )}
@@ -540,16 +519,14 @@ function KanbanColumn({
 }
 
 // ─── Main Component ────────────────────────────────────────────────
-const TaskKanban = () => {
+const TaskKanban = ({ searchQuery = "" }) => {
   const dispatch = useDispatch();
 
-  // ── FIX 1: correct selector — TaskReducer slice uses `tasks` key ──
   const tasks = useSelector(
     (state) =>
       state.TaskReducer?.tasks ?? state.Task?.tasks ?? state.task?.tasks ?? [],
   );
 
-  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [updatingIds, setUpdatingIds] = useState(new Set());
@@ -616,11 +593,9 @@ const TaskKanban = () => {
 
     if (!task || Number(task.task_status) === Number(targetColumnId)) return;
 
-    // ── FIX 2: optimistic update in reducer immediately ──────────────
     const optimisticTask = { ...task, task_status: Number(targetColumnId) };
     dispatch(editTask(optimisticTask));
 
-    // ── FIX 3: send only id + task_status in payload (not full task) ─
     const payload = {
       id: task.id,
       task_status: Number(targetColumnId),
@@ -633,16 +608,13 @@ const TaskKanban = () => {
       if (response?.status === 200 || response?.status === 201) {
         const serverData = response?.data?.data;
         if (serverData) {
-          // Sync with server's canonical response
           dispatch(editTask(serverData));
         }
       } else {
-        // Revert on failure
         dispatch(editTask(task));
         console.error("Status update failed:", response);
       }
     } catch (err) {
-      // Revert on error
       dispatch(editTask(task));
       console.error("Status update error:", err);
     } finally {
@@ -650,6 +622,53 @@ const TaskKanban = () => {
         const next = new Set(prev);
         next.delete(task.id);
         return next;
+      });
+    }
+  }
+
+  // ── Delete handler ────────────────────────────────────────────────
+  // FIX: moved here from TaskCard so dispatch and tasks are in scope
+  async function handleDelete(taskId) {
+    const result = await Swal.fire({
+      title: "Delete Task?",
+      text: "You won't be able to revert this task.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Yes, Delete",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const response = await Api.delete("/task/", {
+        data: { id: taskId },
+      });
+
+      if (response?.status === 200 || response?.status === 201) {
+        // FIX: tasks and dispatch are in scope here
+        dispatch(setTasks(tasks.filter((item) => item.id !== taskId)));
+
+        Swal.fire({
+          icon: "success",
+          title: "Deleted!",
+          text: response?.data?.message || "Task Deleted Successfully",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error!",
+          text: response?.data?.message || "Failed to delete task",
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error!",
+        text: error?.response?.data?.message || "Failed to delete task",
       });
     }
   }
@@ -662,9 +681,9 @@ const TaskKanban = () => {
     dispatch(toggleRSBView(true));
   }
 
-  // ── Add handler — pass empty obj so form detects "add" mode ───────
+  // ── Add handler ───────────────────────────────────────────────────
   function handleAddTask() {
-    dispatch(setFormObj({})); // ← empty = add mode; form resets to defaults
+    dispatch(setFormObj({}));
     dispatch(setFormTitle("Add Task"));
     dispatch(setComponentToShow(task_list_component_name));
     dispatch(toggleRSBView(true));
@@ -783,6 +802,7 @@ const TaskKanban = () => {
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onEdit={handleEdit}
+                onDelete={handleDelete}
               />
             ))}
           </div>

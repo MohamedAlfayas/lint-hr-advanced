@@ -33,6 +33,7 @@ import { timzone_options } from "../../../common/constant/Constants";
 import CountryList from "../../../common/data/CountryList";
 import LocationSearch from "../../../pages/organization/LocationSearch";
 import no_image from "../../../assets/images/users/no_img.jpg";
+import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
 
 defineElement(loadAnimation);
 
@@ -59,26 +60,6 @@ const initialLocationObj = {
 };
 
 // ─── Custom Option renderer ───────────────────────────────────────────────────
-const EmployeeDisplayInSelect = ({
-  innerRef,
-  innerProps,
-  data,
-  isSelected,
-}) => (
-  <div
-    ref={innerRef}
-    {...innerProps}
-    className={`lc-select__option px-3 py-2 d-flex align-items-center gap-2 ${
-      isSelected ? "bg-primary text-white" : ""
-    }`}
-    style={{ cursor: "pointer" }}
-  >
-    <span className="fw-semibold">{data.label}</span>
-    {data.employee_code && (
-      <span className="text-muted small">({data.employee_code})</span>
-    )}
-  </div>
-);
 
 const ClientForm = () => {
   const dispatch = useDispatch();
@@ -463,6 +444,7 @@ const ClientForm = () => {
                     isClearable
                     isMulti={true}
                     options={employeeOptions}
+                    components={{ Option: EmployeeDisplayInSelect }}
                     className="basic-multi-select"
                     classNamePrefix="lc-select"
                     placeholder="Select Managers"

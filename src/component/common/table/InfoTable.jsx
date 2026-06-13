@@ -1698,6 +1698,7 @@ const InfoTable = ({
   const HandleImportExport = () => {
     dispatch(toggleISBView(true));
     dispatch(setComponentToShow(formname));
+    dispatch(setFormTitle("Employee Bulk Import"));
     dispatch(setFormWidthPercentage(import_width_per));
   };
 
@@ -1883,6 +1884,7 @@ const InfoTable = ({
         <ExportCSV
           show={isExportCSV}
           onCloseClick={() => setIsExportCSV(false)}
+          formname={formname} // ✅ use the page's own formname
           data={dataList}
         />
 

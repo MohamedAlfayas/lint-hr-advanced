@@ -138,7 +138,7 @@ const ClientSection = () => {
                 </Row>
 
                 <Nav className="nav-tabs-custom border-bottom-0" role="tablist">
-                  <NavItem>
+                  {/* <NavItem>
                     <NavLink
                       className={classnames(
                         { active: activeTab === "1" },
@@ -149,14 +149,14 @@ const ClientSection = () => {
                     >
                       Overview
                     </NavLink>
-                  </NavItem>
+                  </NavItem> */}
                   <NavItem>
                     <NavLink
                       className={classnames(
-                        { active: activeTab === "2" },
+                        { active: activeTab === "1" },
                         "fw-semibold",
                       )}
-                      onClick={() => toggleTab("2")}
+                      onClick={() => toggleTab("1")}
                       href="#"
                     >
                       Projects
@@ -171,11 +171,11 @@ const ClientSection = () => {
       <Row>
         <Col lg={12}>
           <TabContent activeTab={activeTab} className="text-muted">
-            <TabPane tabId="1">
-              {/* Pass project down so ProjectOverview doesn't need to re-fetch */}
+            {/* <TabPane tabId="1">
+            
               <ClientOverview client={client} loading={loading} clientId={id} />
-            </TabPane>
-            <TabPane tabId="2">
+            </TabPane> */}
+            <TabPane tabId="1">
               <Projects clientId={id} />
             </TabPane>
             {/* <TabPane tabId="3">

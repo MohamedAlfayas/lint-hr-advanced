@@ -12,46 +12,48 @@ const Projects = ({ clientId }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // ================= REDUX STATE =================
+  // This is the single source of truth — editProject dispatched from
+  // TaskListForm / TaskDetailModal updates this immediately after a task save.
   const { project_data } = useSelector((state) => state.ProjectsReducer);
-
-  // ================= PROJECT LOCAL STORAGE =================
-  const ProjectLocalData = GetLocalStorageData("projects") || [];
 
   // ================= CLIENT LOCAL STORAGE =================
   const ClientLocalData = GetLocalStorageData("clients") || [];
 
   // ================= CLIENT STATE =================
   const [clientList, setClientList] = useState([]);
+
+  // ================= LOAD DATA ON MOUNT =================
+  useEffect(() => {
+    // Seed Redux from localStorage on first load if store is empty
+    if (!project_data || project_data.length === 0) {
+      const ProjectLocalData = GetLocalStorageData("projects") || [];
+      dispatch(setProjects(ProjectLocalData));
+    }
+    setClientList(ClientLocalData);
+  }, [dispatch]);
+
   // ================= FILTER PROJECTS BY CLIENT =================
+  // Depends only on Redux project_data — re-renders immediately when
+  // editProject is dispatched with updated task_status_details.
   const filteredProjects = useMemo(() => {
-    // If no clientId, show all projects
+    const source = project_data || [];
+
     if (!clientId) {
-      return project_data || ProjectLocalData;
+      return source;
     }
 
-    return (project_data || ProjectLocalData).filter(
+    return source.filter(
       (project) =>
         Number(project.type) === 2 &&
         Number(project.client) === Number(clientId),
     );
-  }, [project_data, ProjectLocalData, clientId]);
-
-  // ================= LOAD DATA =================
-  useEffect(() => {
-    dispatch(setProjects(ProjectLocalData));
-    setClientList(ClientLocalData);
-  }, [dispatch]);
+  }, [project_data, clientId]);
 
   // ================= PROJECT TYPE =================
   const PROJECT_TYPE_MAP = {
-    1: {
-      label: "Internal",
-      color: "info",
-    },
-    2: {
-      label: "Client",
-      color: "primary",
-    },
+    1: { label: "Internal", color: "info" },
+    2: { label: "Client", color: "primary" },
   };
 
   // ================= TABLE COLUMNS =================
@@ -62,7 +64,10 @@ const Projects = ({ clientId }) => {
         id: "title",
         filterable: false,
         accessor: (obj) => {
-          const progress = obj.progress || 0; // replace with your actual progress field
+          // ✅ Reads task_status_details directly from Redux project object —
+          // updates immediately when editProject is dispatched.
+          const progress =
+            obj?.task_status_details?.project_completed_percentage || 0;
 
           return (
             <div>
@@ -91,11 +96,11 @@ const Projects = ({ clientId }) => {
               </div>
 
               <div
-                className="progress mt-2"
+                className="progress"
                 style={{
-                  height: "4px",
+                  height: "8px",
+                  borderRadius: "20px",
                   backgroundColor: "#e9ecef",
-                  borderRadius: "4px",
                 }}
               >
                 <div
@@ -113,12 +118,7 @@ const Projects = ({ clientId }) => {
                 />
               </div>
 
-              <small
-                style={{
-                  color: "#6c757d",
-                  fontSize: "11px",
-                }}
-              >
+              <small style={{ color: "#6c757d", fontSize: "11px" }}>
                 {progress}% Complete
               </small>
             </div>
@@ -135,7 +135,6 @@ const Projects = ({ clientId }) => {
             label: "Unknown",
             color: "secondary",
           };
-
           return (
             <span
               className={`badge text-uppercase bg-${t.color}-subtle text-${t.color}`}
@@ -152,11 +151,9 @@ const Projects = ({ clientId }) => {
         filterable: false,
         accessor: (obj) => {
           if (Number(obj.type) !== 2) return "-";
-
           const client = clientList.find(
             (c) => Number(c.id) === Number(obj.client),
           );
-
           return client?.name || "-";
         },
       },
@@ -191,9 +188,7 @@ const Projects = ({ clientId }) => {
         filterable: false,
         accessor: (obj) => {
           const status = obj.status ? "Active" : "Inactive";
-
           const statusClass = obj.status ? "success" : "warning";
-
           return (
             <span
               className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
@@ -215,15 +210,15 @@ const Projects = ({ clientId }) => {
       type: 1,
       client: null,
       description: "",
-      start_date: "",
-      deadline: "",
+      start_date: null,
+      deadline: null,
       price: "",
       status: true,
     }),
     [],
   );
 
-  // ================= FILTER =================
+  // ================= FILTER OPTIONS =================
   const filterKey = "status";
 
   const filterOptions = [
@@ -232,7 +227,6 @@ const Projects = ({ clientId }) => {
       label: "Active",
       count: filteredProjects.filter((e) => e[filterKey] === true).length || 0,
     },
-
     {
       option: false,
       label: "Inactive",

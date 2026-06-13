@@ -8,7 +8,6 @@ import React, {
 import { useDispatch, useSelector } from "react-redux";
 import { Modal, ModalBody, ModalFooter, Spinner } from "reactstrap";
 import { Api } from "../../../../common/api/Api";
-import { PostApi } from "../../../../common/api/PostApi";
 import { GetLocalStorageData } from "../../../../meta/GetLocalStorageData";
 import { getLabel, getEmployeeName } from "../../Task/Modal/Taskhelpers";
 import TaskChecklist from "./TaskCheckList";
@@ -17,15 +16,13 @@ import {
   setFormObj,
   setComponentToShow,
 } from "../../../../redux/reducers/ChildReducer/RightSideBarReducer";
-import {
-  setComments,
-  addComment,
-  deleteComment,
-} from "../../../../redux/reducers/ChildReducer/CommentReducer";
+import { setComments } from "../../../../redux/reducers/ChildReducer/CommentReducer";
+import { editProject } from "../../../../redux/reducers/ChildReducer/ProjectsReducer";
+import { editTask } from "../../../../redux/reducers/ChildReducer/TaskReducer";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
-import { DeleteApi } from "../../../../common/api/DeleteApi";
 import TaskCommentSection from "./TaskCommentSection";
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const FIELD_LABELS = {
@@ -50,15 +47,6 @@ const ACTION_META = {
   deleted: { icon: "ri-close-circle-fill", color: "#ef4444", label: "Deleted" },
 };
 
-const MAX_FILE_SIZE_MB = 5;
-const ALLOWED_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "application/pdf",
-];
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmt = (iso) =>
@@ -68,6 +56,18 @@ const fmt = (iso) =>
         timeStyle: "short",
       })
     : "";
+
+const toDatetimeLocal = (iso) => {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d)) return "";
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return "";
+  }
+};
 
 const parseIdList = (rawValue) => {
   if (Array.isArray(rawValue)) return rawValue.map((v) => String(v).trim());
@@ -211,6 +211,16 @@ const downloadFile = (url, filename) => {
   document.body.removeChild(a);
 };
 
+// ─── Build employee display name ──────────────────────────────────────────────
+
+const getDisplayName = (emp) =>
+  emp
+    ? emp.full_name ||
+      emp.name ||
+      [emp.first_name, emp.last_name].filter(Boolean).join(" ") ||
+      ""
+    : "";
+
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
@@ -223,14 +233,6 @@ const AVATAR_COLORS = [
   "#14b8a6",
   "#f97316",
 ];
-
-const getDisplayName = (emp) =>
-  emp
-    ? emp.full_name ||
-      emp.name ||
-      [emp.first_name, emp.last_name].filter(Boolean).join(" ") ||
-      ""
-    : "";
 
 const Avatar = ({ emp, size = 28 }) => {
   if (!emp || typeof emp !== "object") return null;
@@ -352,7 +354,6 @@ const Lightbox = ({ items, startIndex, onClose }) => {
   }, [items.length, onClose]);
 
   if (!items.length) return null;
-
   const item = items[current];
 
   return (
@@ -390,7 +391,6 @@ const Lightbox = ({ items, startIndex, onClose }) => {
       >
         <i className="ri-close-line" />
       </button>
-
       {items.length > 1 && (
         <div
           style={{
@@ -403,13 +403,11 @@ const Lightbox = ({ items, startIndex, onClose }) => {
             background: "rgba(0,0,0,0.45)",
             borderRadius: 20,
             padding: "3px 14px",
-            letterSpacing: "0.5px",
           }}
         >
           {current + 1} / {items.length}
         </div>
       )}
-
       {items.length > 1 && (
         <button
           onClick={(e) => {
@@ -438,7 +436,6 @@ const Lightbox = ({ items, startIndex, onClose }) => {
           <i className="ri-arrow-left-s-line" />
         </button>
       )}
-
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -474,7 +471,6 @@ const Lightbox = ({ items, startIndex, onClose }) => {
           </span>
         )}
       </div>
-
       {items.length > 1 && (
         <button
           onClick={(e) => {
@@ -503,7 +499,6 @@ const Lightbox = ({ items, startIndex, onClose }) => {
           <i className="ri-arrow-right-s-line" />
         </button>
       )}
-
       {items.length > 1 && (
         <div
           onClick={(e) => e.stopPropagation()}
@@ -587,7 +582,6 @@ const AttachmentGrid = ({
             ? att.name
             : (att.attachment_url || "").split("/").pop();
           const pdf = isPdf(url || "");
-
           return (
             <div
               key={idx}
@@ -615,16 +609,6 @@ const AttachmentGrid = ({
                     alignItems: "center",
                     justifyContent: "center",
                     cursor: "pointer",
-                    transition: "transform .15s, box-shadow .15s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "scale(1.07)";
-                    e.currentTarget.style.boxShadow =
-                      "0 4px 12px rgba(239,68,68,.25)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "scale(1)";
-                    e.currentTarget.style.boxShadow = "none";
                   }}
                 >
                   <i
@@ -652,16 +636,6 @@ const AttachmentGrid = ({
                     overflow: "hidden",
                     border: "1px solid #e2e8f0",
                     cursor: "pointer",
-                    transition: "transform .15s, box-shadow .15s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "scale(1.07)";
-                    e.currentTarget.style.boxShadow =
-                      "0 4px 14px rgba(59,130,246,.3)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "scale(1)";
-                    e.currentTarget.style.boxShadow = "none";
                   }}
                 >
                   <img
@@ -675,7 +649,6 @@ const AttachmentGrid = ({
                   />
                 </div>
               )}
-
               {isPreview && onRemoveIndex && (
                 <button
                   type="button"
@@ -701,7 +674,6 @@ const AttachmentGrid = ({
                   <i className="ri-close-line" />
                 </button>
               )}
-
               <span
                 style={{
                   fontSize: "0.6rem",
@@ -720,7 +692,6 @@ const AttachmentGrid = ({
           );
         })}
       </div>
-
       {lightboxIndex !== null && imageItems.length > 0 && (
         <Lightbox
           items={imageItems}
@@ -732,387 +703,344 @@ const AttachmentGrid = ({
   );
 };
 
-// ─── TaskCommentSection ───────────────────────────────────────────────────────
+// ─── CollaboratorMultiSelect ──────────────────────────────────────────────────
+// Shows localStorage employees by default.
+// On typing, debounces 400ms then hits /employee/get-data-on-search/?search=
+// Merges API results with localStorage so selected chips never disappear.
 
-// const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
-//   const dispatch = useDispatch();
+const CollaboratorMultiSelect = ({ selectedIds, allEmployees, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const searchRef = useRef(null);
+  const containerRef = useRef(null);
+  const searchDebounce = useRef(null);
 
-//   // ✅ Read comments from Redux store
-//   const reduxComments = useSelector(
-//     (state) => state.CommentReducer.comment_data,
-//   );
+  // ── Close dropdown on outside click ──────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+        setSearchText("");
+        setSearchResults([]);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
-//   const [commentText, setCommentText] = useState("");
-//   const [selectedFiles, setSelectedFiles] = useState([]);
-//   const [fileError, setFileError] = useState("");
-//   const [submitting, setSubmitting] = useState(false);
-//   const [deletingId, setDeletingId] = useState(null);
-//   const fileInputRef = useRef(null);
+  // ── Focus search input when dropdown opens ────────────────────────────────
+  useEffect(() => {
+    if (open && searchRef.current) {
+      setTimeout(() => searchRef.current?.focus(), 50);
+    }
+  }, [open]);
 
-//   const sortedComments = useMemo(
-//     () =>
-//       [...reduxComments].sort(
-//         (a, b) => new Date(b.created_on) - new Date(a.created_on),
-//       ),
-//     [reduxComments],
-//   );
+  // ── Search: debounce 400ms, fall back to localStorage filter ─────────────
+  useEffect(() => {
+    if (searchDebounce.current) clearTimeout(searchDebounce.current);
 
-//   const handleFileChange = (e) => {
-//     setFileError("");
-//     const newFiles = Array.from(e.target.files || []);
-//     const valid = [];
-//     for (const file of newFiles) {
-//       if (!ALLOWED_TYPES.includes(file.type)) {
-//         setFileError(
-//           `"${file.name}" is not allowed. Only images (JPEG, PNG, GIF, WebP) and PDF.`,
-//         );
-//         continue;
-//       }
-//       if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-//         setFileError(
-//           `"${file.name}" exceeds the ${MAX_FILE_SIZE_MB} MB limit.`,
-//         );
-//         continue;
-//       }
-//       const previewUrl = file.type.startsWith("image/")
-//         ? URL.createObjectURL(file)
-//         : null;
-//       valid.push({ file, previewUrl, name: file.name });
-//     }
-//     setSelectedFiles((prev) => [...prev, ...valid]);
-//     e.target.value = "";
-//   };
+    if (!searchText.trim()) {
+      // Empty search → show all localStorage employees
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
 
-//   const removeFile = (index) => {
-//     setSelectedFiles((prev) => {
-//       const copy = [...prev];
-//       if (copy[index].previewUrl) URL.revokeObjectURL(copy[index].previewUrl);
-//       copy.splice(index, 1);
-//       return copy;
-//     });
-//   };
+    setSearching(true);
+    searchDebounce.current = setTimeout(async () => {
+      try {
+        const res = await Api.get(
+          `/employee/get-data-on-search/?search=${encodeURIComponent(searchText.trim())}`,
+        );
+        const apiResults = res?.data?.data || [];
+        // Normalise API shape to match localStorage shape
+        const normalised = apiResults.map((e) => ({
+          ...e,
+          id: e.id ?? e.value,
+        }));
+        setSearchResults(normalised);
+      } catch {
+        // Fallback: filter localStorage on network error
+        const q = searchText.toLowerCase();
+        const filtered = allEmployees.filter((e) => {
+          const name = getDisplayName(e).toLowerCase();
+          const empId = (e.emp_id || "").toLowerCase();
+          return name.includes(q) || empId.includes(q);
+        });
+        setSearchResults(filtered);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
 
-//   const previewAttachments = useMemo(
-//     () =>
-//       selectedFiles.map((f) => ({
-//         previewUrl: f.previewUrl || "",
-//         attachment_url: f.previewUrl || `pdf::${f.name}`,
-//         name: f.name,
-//       })),
-//     [selectedFiles],
-//   );
+    return () => clearTimeout(searchDebounce.current);
+  }, [searchText, allEmployees]);
 
-//   // =========================
-//   // ADD COMMENT
-//   // =========================
-//   const handleSubmit = async () => {
-//     if (!commentText.trim() && selectedFiles.length === 0) return;
-//     setSubmitting(true);
-//     setFileError("");
-//     try {
-//       const formData = new FormData();
-//       formData.append("task", String(taskId));
-//       formData.append("comment", commentText.trim());
-//       selectedFiles.forEach(({ file }) => formData.append("attachments", file));
+  // ── Displayed list: search results OR full localStorage list ─────────────
+  const displayList = searchText.trim() ? searchResults : allEmployees;
 
-//       const response = await Api.post("/task/add-task-comment/", formData, {
-//         headers: { "Content-Type": "multipart/form-data" },
-//       });
+  // ── Toggle a collaborator in/out ──────────────────────────────────────────
+  const toggle = (id) => {
+    const strId = String(id);
+    const exists = selectedIds.includes(strId);
+    onChange(
+      exists ? selectedIds.filter((x) => x !== strId) : [...selectedIds, strId],
+    );
+  };
 
-//       const newComment = response?.data?.data;
+  // ── Resolve selected chips — merge localStorage + any API-fetched objects ─
+  // so chips always show name+avatar even for API-only results
+  const selectedEmps = selectedIds
+    .map((id) => {
+      // Check localStorage first
+      const fromLocal = resolveEmployeeObj(id, allEmployees);
+      if (fromLocal) return fromLocal;
+      // Check current search results (API data)
+      return searchResults.find((e) => matchId(e.id, id)) || null;
+    })
+    .filter(Boolean);
 
-//       if (newComment) {
-//         // ✅ Push only the new comment into Redux store
-//         dispatch(addComment(newComment));
-//       }
+  return (
+    <div ref={containerRef} style={{ position: "relative" }}>
+      {/* ── Selected chips + open trigger ── */}
+      <div
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          minHeight: 38,
+          border: "1px solid #ced4da",
+          borderRadius: 6,
+          padding: "4px 8px",
+          cursor: "pointer",
+          background: "#fff",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 4,
+          alignItems: "center",
+        }}
+      >
+        {selectedEmps.length === 0 ? (
+          <span style={{ fontSize: "0.82rem", color: "#adb5bd" }}>
+            Select collaborators…
+          </span>
+        ) : (
+          selectedEmps.map((emp) => (
+            <span
+              key={emp.id}
+              className="badge bg-light text-dark border d-inline-flex align-items-center gap-1"
+              style={{
+                fontSize: "0.75rem",
+                padding: "3px 7px",
+                fontWeight: 400,
+              }}
+            >
+              <Avatar emp={emp} size={16} />
+              {getDisplayName(emp) || `#${emp.id}`}
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggle(emp.id);
+                }}
+                style={{ cursor: "pointer", marginLeft: 2, color: "#6c757d" }}
+              >
+                ×
+              </span>
+            </span>
+          ))
+        )}
+        <i
+          className={`ri-arrow-${open ? "up" : "down"}-s-line ms-auto`}
+          style={{ color: "#6c757d", fontSize: "0.9rem", flexShrink: 0 }}
+        />
+      </div>
 
-//       selectedFiles.forEach(({ previewUrl }) => {
-//         if (previewUrl) URL.revokeObjectURL(previewUrl);
-//       });
+      {/* ── Dropdown ── */}
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 4px)",
+            left: 0,
+            right: 0,
+            zIndex: 9999,
+            background: "#fff",
+            border: "1px solid #dee2e6",
+            borderRadius: 8,
+            boxShadow: "0 6px 24px rgba(0,0,0,0.12)",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* ── Search input ── */}
+          <div
+            style={{
+              padding: "8px 10px",
+              borderBottom: "1px solid #f1f3f5",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <i
+              className="ri-search-line"
+              style={{ color: "#9ca3af", fontSize: "0.9rem", flexShrink: 0 }}
+            />
+            <input
+              ref={searchRef}
+              type="text"
+              placeholder="Search by name or employee ID…"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                flex: 1,
+                border: "none",
+                outline: "none",
+                fontSize: "0.82rem",
+                background: "transparent",
+                color: "#374151",
+              }}
+            />
+            {searching && (
+              <Spinner
+                size="sm"
+                style={{ width: 14, height: 14, borderWidth: 2, flexShrink: 0 }}
+              />
+            )}
+            {searchText && !searching && (
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSearchText("");
+                  setSearchResults([]);
+                  searchRef.current?.focus();
+                }}
+                style={{
+                  cursor: "pointer",
+                  color: "#9ca3af",
+                  fontSize: "0.85rem",
+                }}
+              >
+                <i className="ri-close-line" />
+              </span>
+            )}
+          </div>
 
-//       setCommentText("");
-//       setSelectedFiles([]);
-//       toast.success(response?.data?.message || "Comment Added");
-//     } catch (err) {
-//       console.error("Add comment error:", err);
-//       setFileError("Failed to post comment. Please try again.");
-//       toast.error("Failed to post comment.");
-//     } finally {
-//       setSubmitting(false);
-//     }
-//   };
+          {/* ── Employee list ── */}
+          <div style={{ maxHeight: 200, overflowY: "auto" }}>
+            {!searching && displayList.length === 0 ? (
+              <div
+                className="px-3 py-2 text-muted"
+                style={{ fontSize: "0.82rem" }}
+              >
+                {searchText ? "No employees found" : "No employees available"}
+              </div>
+            ) : (
+              displayList.map((emp) => {
+                const checked = selectedIds.includes(String(emp.id));
+                const name = getDisplayName(emp) || `#${emp.id}`;
+                const empId = emp.emp_id || "";
+                return (
+                  <div
+                    key={emp.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggle(emp.id);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "7px 12px",
+                      cursor: "pointer",
+                      background: checked ? "#eff6ff" : "transparent",
+                      fontSize: "0.83rem",
+                      transition: "background .1s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!checked)
+                        e.currentTarget.style.background = "#f8fafc";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = checked
+                        ? "#eff6ff"
+                        : "transparent";
+                    }}
+                  >
+                    <Avatar emp={emp} size={26} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontWeight: checked ? 600 : 400,
+                          color: "#374151",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {name}
+                      </div>
+                      {empId && (
+                        <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>
+                          {empId}
+                        </div>
+                      )}
+                    </div>
+                    {checked && (
+                      <i
+                        className="ri-check-line text-primary"
+                        style={{ flexShrink: 0 }}
+                      />
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
-//   // =========================
-//   // DELETE COMMENT
-//   // =========================
-//   const handleDeleteComment = async (commentId) => {
-//     const result = await Swal.fire({
-//       title: "Are you sure?",
-//       text: "You want to delete this comment?",
-//       icon: "warning",
-//       showCancelButton: true,
-//       confirmButtonColor: "#d33",
-//       cancelButtonColor: "#6c757d",
-//       confirmButtonText: "Yes, delete it!",
-//       cancelButtonText: "Cancel",
-//     });
+// ─── AutoSave Field Wrapper (shows saving indicator per field) ────────────────
 
-//     if (!result.isConfirmed) return;
-
-//     setDeletingId(commentId);
-
-//     try {
-//       const payload = {
-//         id: commentId,
-//         task: taskId,
-//       };
-
-//       const response = await PostApi("/task/delete-task-comment/", payload);
-
-//       // Remove comment from Redux store
-//       dispatch(deleteComment(commentId));
-
-//       Swal.fire({
-//         title: "Deleted!",
-//         text: response?.data?.message || "Comment deleted successfully",
-//         icon: "success",
-//         timer: 1500,
-//         showConfirmButton: false,
-//       });
-//     } catch (error) {
-//       console.error("Delete comment error:", error);
-
-//       Swal.fire({
-//         title: "Error!",
-//         text: error?.response?.data?.message || "Failed to delete comment",
-//         icon: "error",
-//       });
-//     } finally {
-//       setDeletingId(null);
-//     }
-//   };
-
-//   return (
-//     <div className="p-4 border-top">
-//       {/* Section header */}
-//       <h6
-//         className="fw-bold mb-3 d-flex align-items-center gap-2"
-//         style={{
-//           fontSize: "0.8rem",
-//           textTransform: "uppercase",
-//           letterSpacing: ".6px",
-//           color: "#6c757d",
-//         }}
-//       >
-//         <i className="ri-chat-3-line text-primary" />
-//         Comments
-//         {sortedComments.length > 0 && (
-//           <span
-//             className="badge bg-primary ms-1"
-//             style={{ fontSize: "0.65rem", padding: "2px 7px" }}
-//           >
-//             {sortedComments.length}
-//           </span>
-//         )}
-//       </h6>
-
-//       {/* Composer */}
-//       <div
-//         className="mb-4 rounded"
-//         style={{
-//           border: "1px solid #e2e8f0",
-//           background: "#fff",
-//           overflow: "hidden",
-//         }}
-//       >
-//         <textarea
-//           className="form-control border-0"
-//           rows={3}
-//           placeholder="Write a comment…"
-//           value={commentText}
-//           onChange={(e) => setCommentText(e.target.value)}
-//           style={{ resize: "none", fontSize: "0.875rem", boxShadow: "none" }}
-//           onKeyDown={(e) => {
-//             if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSubmit();
-//           }}
-//         />
-
-//         {selectedFiles.length > 0 && (
-//           <div
-//             className="px-3 py-2"
-//             style={{ borderTop: "1px solid #f1f5f9", background: "#f8fafc" }}
-//           >
-//             <AttachmentGrid
-//               attachments={previewAttachments}
-//               isPreview
-//               onRemoveIndex={removeFile}
-//             />
-//           </div>
-//         )}
-
-//         {fileError && (
-//           <div
-//             className="px-3 py-1 text-danger"
-//             style={{ fontSize: "0.75rem", background: "#fff5f5" }}
-//           >
-//             <i className="ri-error-warning-line me-1" />
-//             {fileError}
-//           </div>
-//         )}
-
-//         <div
-//           className="d-flex align-items-center justify-content-between px-3 py-2"
-//           style={{ borderTop: "1px solid #f1f5f9", background: "#f8fafc" }}
-//         >
-//           <div className="d-flex align-items-center gap-2">
-//             <button
-//               type="button"
-//               className="btn btn-sm btn-light border"
-//               onClick={() => fileInputRef.current?.click()}
-//               title="Attach images or PDF (max 5 MB each)"
-//               style={{ fontSize: "0.78rem", padding: "3px 10px" }}
-//             >
-//               <i className="ri-attachment-2 me-1" />
-//               Attach
-//             </button>
-//             <span style={{ fontSize: "0.7rem", color: "#9ca3af" }}>
-//               Images &amp; PDF · max 5 MB
-//             </span>
-//             <input
-//               ref={fileInputRef}
-//               type="file"
-//               accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-//               multiple
-//               style={{ display: "none" }}
-//               onChange={handleFileChange}
-//             />
-//           </div>
-//           <button
-//             type="button"
-//             className="btn btn-primary btn-sm"
-//             onClick={handleSubmit}
-//             disabled={
-//               submitting || (!commentText.trim() && selectedFiles.length === 0)
-//             }
-//             style={{ fontSize: "0.78rem", padding: "4px 14px" }}
-//           >
-//             {submitting ? (
-//               <>
-//                 <Spinner size="sm" className="me-1" />
-//                 Posting…
-//               </>
-//             ) : (
-//               <>
-//                 <i className="ri-send-plane-line me-1" />
-//                 Post
-//               </>
-//             )}
-//           </button>
-//         </div>
-//       </div>
-
-//       {/* Comment list */}
-//       {sortedComments.length === 0 ? (
-//         <div
-//           className="text-center py-4 text-muted"
-//           style={{ fontSize: "0.85rem" }}
-//         >
-//           <i className="ri-chat-smile-3-line fs-4 d-block mb-1" />
-//           No comments yet. Be the first!
-//         </div>
-//       ) : (
-//         <div className="d-flex flex-column gap-3">
-//           {sortedComments.map((c) => {
-//             const authorEmp = resolveEmployeeObj(c.created_by, allEmployees);
-//             const authorName = authorEmp
-//               ? getDisplayName(authorEmp) || `User #${c.created_by}`
-//               : getEmployeeName(c.created_by) || `User #${c.created_by}`;
-
-//             return (
-//               <div key={c.id} className="d-flex gap-3">
-//                 <div className="flex-shrink-0" style={{ paddingTop: 2 }}>
-//                   {authorEmp ? (
-//                     <Avatar emp={authorEmp} size={32} />
-//                   ) : (
-//                     <InitialsAvatar
-//                       name={authorName}
-//                       id={Number(c.created_by) || 0}
-//                       size={32}
-//                     />
-//                   )}
-//                 </div>
-
-//                 <div className="flex-grow-1" style={{ minWidth: 0 }}>
-//                   <div
-//                     className="rounded p-3"
-//                     style={{
-//                       background: "#f8fafc",
-//                       border: "1px solid #e2e8f0",
-//                     }}
-//                   >
-//                     {/* Header */}
-//                     <div className="d-flex align-items-center flex-wrap gap-2 mb-1">
-//                       <span
-//                         className="fw-semibold"
-//                         style={{ fontSize: "0.83rem" }}
-//                       >
-//                         {authorName}
-//                       </span>
-//                       <span
-//                         className="text-muted ms-auto"
-//                         style={{ fontSize: "0.72rem", whiteSpace: "nowrap" }}
-//                       >
-//                         {fmt(c.created_on)}
-//                       </span>
-
-//                       {/* ✅ Delete comment button */}
-//                       <button
-//                         type="button"
-//                         className="btn btn-link p-0 text-danger ms-1"
-//                         title="Delete comment"
-//                         onClick={() => handleDeleteComment(c.id)}
-//                         disabled={deletingId === c.id}
-//                         style={{ fontSize: "0.8rem", lineHeight: 1 }}
-//                       >
-//                         {deletingId === c.id ? (
-//                           <Spinner size="sm" />
-//                         ) : (
-//                           <i className="ri-delete-bin-line" />
-//                         )}
-//                       </button>
-//                     </div>
-
-//                     {/* Text */}
-//                     {c.comment && (
-//                       <p
-//                         className="mb-0 text-secondary"
-//                         style={{
-//                           fontSize: "0.85rem",
-//                           whiteSpace: "pre-wrap",
-//                           wordBreak: "break-word",
-//                         }}
-//                       >
-//                         {c.comment}
-//                       </p>
-//                     )}
-
-//                     {/* Attachments */}
-//                     {c.task_comment_attachments?.length > 0 && (
-//                       <AttachmentGrid
-//                         attachments={c.task_comment_attachments}
-//                         isPreview={false}
-//                       />
-//                     )}
-//                   </div>
-//                 </div>
-//               </div>
-//             );
-//           })}
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
+const FieldSaveIndicator = ({ saving, saved }) => {
+  if (!saving && !saved) return null;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 3,
+        fontSize: "0.65rem",
+        fontWeight: 600,
+        marginLeft: 6,
+        padding: "1px 7px",
+        borderRadius: 20,
+        background: saving ? "#eff6ff" : "#f0fdf4",
+        color: saving ? "#3b82f6" : "#16a34a",
+        border: `1px solid ${saving ? "#bfdbfe" : "#bbf7d0"}`,
+        transition: "all .2s",
+      }}
+    >
+      {saving ? (
+        <>
+          <Spinner
+            size="sm"
+            style={{ width: 9, height: 9, borderWidth: 1.5 }}
+          />{" "}
+          Saving
+        </>
+      ) : (
+        <>
+          <i className="ri-check-line" style={{ fontSize: 10 }} /> Saved
+        </>
+      )}
+    </span>
+  );
+};
 
 // ─── TaskDetailModal (main) ───────────────────────────────────────────────────
 
@@ -1127,27 +1055,74 @@ const TaskDetailModal = ({
 }) => {
   const reduxDispatch = useDispatch();
 
+  // ── Read the live task list so we can merge updates back into it ───────────
+  const { tasks } = useSelector((state) => state.TaskReducer);
+  // Keep a ref to the latest list so autoSaveField (a stable useCallback)
+  // never closes over a stale copy.
+  const tasksRef = useRef([]);
+  useEffect(() => {
+    tasksRef.current = Array.isArray(tasks) ? tasks : [];
+  }, [tasks]);
+
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [closing, setClosing] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // ── Inline edit state ─────────────────────────────────────────────────────
+  const [editFields, setEditFields] = useState({
+    task_status: null,
+    task_priority: null,
+    collaborators_id_list: [],
+    start_time: "",
+    end_time: "",
+  });
+
+  // Per-field saving/saved indicators
+  const [fieldSaving, setFieldSaving] = useState({});
+  const [fieldSaved, setFieldSaved] = useState({});
+  const savedTimers = useRef({});
+
   const allEmployees = useMemo(() => getAllEmployees(), []);
+  const statusList = useMemo(
+    () => GetLocalStorageData("task_status") || [],
+    [],
+  );
+  const priorityList = useMemo(
+    () => GetLocalStorageData("task_priority") || [],
+    [],
+  );
+
+  // ── Fetch ─────────────────────────────────────────────────────────────────
 
   const fetchTask = useCallback(async () => {
     if (!taskId) return;
     setLoading(true);
     setError(null);
     setTask(null);
+    setFieldSaving({});
+    setFieldSaved({});
     try {
       const res = await Api.get(`/task/get-task-detail/${taskId}`);
       const taskData = res?.data?.data || null;
       setTask(taskData);
 
-      // ✅ Seed Redux comment store from API response
       if (taskData?.comments) {
         reduxDispatch(setComments(taskData.comments));
+      }
+
+      if (taskData) {
+        setEditFields({
+          task_status: taskData.task_status
+            ? String(taskData.task_status)
+            : null,
+          task_priority: taskData.task_priority
+            ? String(taskData.task_priority)
+            : null,
+          collaborators_id_list: parseIdList(taskData.collaborators_id_list),
+          start_time: toDatetimeLocal(taskData.start_time),
+          end_time: toDatetimeLocal(taskData.end_time),
+        });
       }
     } catch (err) {
       console.error("Task Detail Fetch Error:", err);
@@ -1160,6 +1135,117 @@ const TaskDetailModal = ({
   useEffect(() => {
     if (isOpen) fetchTask();
   }, [isOpen, fetchTask]);
+
+  // ── Auto-save on field change ─────────────────────────────────────────────
+
+  const autoSaveField = useCallback(
+    async (fieldKey, newEditFields) => {
+      if (!task) return;
+
+      setFieldSaving((prev) => ({ ...prev, [fieldKey]: true }));
+      setFieldSaved((prev) => ({ ...prev, [fieldKey]: false }));
+
+      if (savedTimers.current[fieldKey]) {
+        clearTimeout(savedTimers.current[fieldKey]);
+      }
+
+      try {
+        const payload = {
+          id: task.id,
+          title: task.title,
+          description: task.description,
+          related_to: task.related_to,
+          project: task.project || null,
+          client: task.client || null,
+          points: task.points || "",
+          assigned_to: task.assigned_to || null,
+          collaborators_id_list:
+            newEditFields.collaborators_id_list.map(Number),
+          task_status: newEditFields.task_status
+            ? Number(newEditFields.task_status)
+            : null,
+          task_priority: newEditFields.task_priority
+            ? Number(newEditFields.task_priority)
+            : null,
+          start_time: newEditFields.start_time
+            ? new Date(newEditFields.start_time).toISOString()
+            : null,
+          end_time: newEditFields.end_time
+            ? new Date(newEditFields.end_time).toISOString()
+            : null,
+        };
+
+        const response = await Api.put("/task/", payload);
+        const responseData = response?.data?.data;
+
+        // ✅ Update local task state with fresh task_data
+        const updatedTask = responseData?.task_data || responseData;
+        if (updatedTask && updatedTask.id !== undefined) {
+          setTask((prev) => ({ ...prev, ...updatedTask }));
+
+          // ✅ Immediately sync the task list (Tasks.jsx reads
+          // state.TaskReducer.tasks). Merge onto the existing list row so
+          // list-only fields (e.g. collaborator_details) aren't lost when the
+          // PUT response is partial.
+          const existing = tasksRef.current.find(
+            (t) => String(t.id) === String(updatedTask.id),
+          );
+          reduxDispatch(editTask({ ...(existing || {}), ...updatedTask }));
+        }
+
+        // ✅ Immediately sync project progress in Redux
+        // API returns updated task_status_details inside project_data on every task save
+        const projectData = responseData?.project_data;
+        if (projectData) {
+          reduxDispatch(editProject(projectData));
+        }
+
+        setFieldSaving((prev) => ({ ...prev, [fieldKey]: false }));
+        setFieldSaved((prev) => ({ ...prev, [fieldKey]: true }));
+
+        savedTimers.current[fieldKey] = setTimeout(() => {
+          setFieldSaved((prev) => ({ ...prev, [fieldKey]: false }));
+        }, 2000);
+      } catch (err) {
+        console.error("Auto-save error:", err);
+        toast.error(err?.response?.data?.message || "Failed to save changes.");
+        setFieldSaving((prev) => ({ ...prev, [fieldKey]: false }));
+      }
+    },
+    [task, reduxDispatch],
+  );
+
+  // Debounce timers for datetime fields
+  const debounceTimers = useRef({});
+
+  const updateEditField = useCallback(
+    (key, value, debounceMs = 0) => {
+      setEditFields((prev) => {
+        const next = { ...prev, [key]: value };
+
+        if (debounceMs > 0) {
+          if (debounceTimers.current[key])
+            clearTimeout(debounceTimers.current[key]);
+          debounceTimers.current[key] = setTimeout(() => {
+            autoSaveField(key, next);
+          }, debounceMs);
+        } else {
+          autoSaveField(key, next);
+        }
+
+        return next;
+      });
+    },
+    [autoSaveField],
+  );
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(debounceTimers.current).forEach(clearTimeout);
+      Object.values(savedTimers.current).forEach(clearTimeout);
+    };
+  }, []);
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
@@ -1179,13 +1265,17 @@ const TaskDetailModal = ({
   }, [task, assigneeEmp, allEmployees]);
 
   const statusObj = useMemo(
-    () => (task ? resolveStatusObj(task.task_status) : null),
-    [task],
+    () =>
+      editFields.task_status ? resolveStatusObj(editFields.task_status) : null,
+    [editFields.task_status],
   );
 
   const priorityObj = useMemo(
-    () => (task ? resolvePriorityObj(task.task_priority) : null),
-    [task],
+    () =>
+      editFields.task_priority
+        ? resolvePriorityObj(editFields.task_priority)
+        : null,
+    [editFields.task_priority],
   );
 
   const projectName = useMemo(
@@ -1203,17 +1293,6 @@ const TaskDetailModal = ({
         : null,
     [task],
   );
-
-  const collaboratorNames = useMemo(() => {
-    if (!task?.collaborators_id_list) return [];
-    return parseIdList(task.collaborators_id_list).map((strId) => {
-      const emp = resolveEmployeeObj(strId, allEmployees);
-      const name = emp
-        ? getDisplayName(emp) || `#${strId}`
-        : resolveEmployeeName(strId, allEmployees);
-      return { id: strId, name, emp };
-    });
-  }, [task, allEmployees]);
 
   const activities = useMemo(
     () =>
@@ -1251,23 +1330,7 @@ const TaskDetailModal = ({
     toggle();
   };
 
-  const handleCloseTask = async () => {
-    if (!window.confirm("Mark this task as closed?")) return;
-    setClosing(true);
-    try {
-      await Api.put(`/task/${taskId}/`, { status: false });
-      onTaskClosed?.();
-      toggle();
-    } catch (err) {
-      console.error("Close task error:", err);
-    } finally {
-      setClosing(false);
-    }
-  };
-
-  const handleDeleteTask = async (taskId) => {
-    console.log("id", taskId);
-
+  const handleDeleteTask = async (id) => {
     const result = await Swal.fire({
       title: "Delete Task?",
       text: "This action cannot be undone.",
@@ -1278,19 +1341,10 @@ const TaskDetailModal = ({
       confirmButtonText: "Yes, Delete",
       cancelButtonText: "Cancel",
     });
-
     if (!result.isConfirmed) return;
-
     setDeleting(true);
-
     try {
-      const response = await Api.delete("/task/", {
-        data: {
-          id: taskId,
-        },
-      });
-      console.log("res", response);
-
+      const response = await Api.delete("/task/", { data: { id } });
       await Swal.fire({
         title: "Deleted!",
         text: response?.data?.message || "Task Deleted Successfully",
@@ -1298,12 +1352,10 @@ const TaskDetailModal = ({
         timer: 2000,
         showConfirmButton: false,
       });
-
       onTaskDeleted?.();
       toggle();
     } catch (err) {
       console.error("Delete task error:", err);
-
       Swal.fire({
         title: "Error",
         text: err?.response?.data?.message || "Failed to delete task.",
@@ -1313,6 +1365,8 @@ const TaskDetailModal = ({
       setDeleting(false);
     }
   };
+
+  const isSavingAny = Object.values(fieldSaving).some(Boolean);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -1325,7 +1379,7 @@ const TaskDetailModal = ({
       centered
       className="task-detail-modal"
     >
-      {/* Header */}
+      {/* ── Header ── */}
       <div
         className="modal-header border-bottom"
         style={{ background: "linear-gradient(135deg,#f8fafc,#e8f4fd)" }}
@@ -1356,6 +1410,28 @@ const TaskDetailModal = ({
               {statusObj.name}
             </span>
           )}
+          {isSavingAny && (
+            <span
+              className="badge ms-1"
+              style={{
+                background: "#eff6ff",
+                color: "#3b82f6",
+                border: "1px solid #bfdbfe",
+                fontSize: "0.68rem",
+              }}
+            >
+              <Spinner
+                size="sm"
+                style={{
+                  width: 9,
+                  height: 9,
+                  borderWidth: 1.5,
+                  marginRight: 4,
+                }}
+              />
+              Auto-saving…
+            </span>
+          )}
         </div>
         <button
           type="button"
@@ -1365,7 +1441,7 @@ const TaskDetailModal = ({
         />
       </div>
 
-      {/* Body */}
+      {/* ── Body ── */}
       <ModalBody className="p-0">
         {loading && (
           <div className="d-flex justify-content-center align-items-center py-5">
@@ -1383,9 +1459,9 @@ const TaskDetailModal = ({
 
         {!loading && !error && task && (
           <>
-            {/* Two-column info */}
+            {/* ── Two-column info ── */}
             <div className="row g-0 border-bottom">
-              {/* Left */}
+              {/* ── Left col ── */}
               <div
                 className="col-12 col-lg-6 p-4"
                 style={{ borderRight: "1px solid #e9ecef" }}
@@ -1432,14 +1508,12 @@ const TaskDetailModal = ({
                     {task.related_to || "—"}
                   </span>
                 </InfoRow>
-
                 {task.related_to === "project" && task.project && (
                   <InfoRow label="Project">
                     <i className="ri-projector-line me-1 text-primary" />
                     {projectName || resolveProjectName(task.project)}
                   </InfoRow>
                 )}
-
                 {task.related_to === "client" && task.client && (
                   <InfoRow label="Client">
                     <i className="ri-building-line me-1 text-info" />
@@ -1447,36 +1521,26 @@ const TaskDetailModal = ({
                   </InfoRow>
                 )}
 
-                <InfoRow label="Collaborators">
-                  {collaboratorNames.length === 0 ? (
-                    <span className="text-muted">—</span>
-                  ) : (
-                    <div className="d-flex flex-wrap gap-2">
-                      {collaboratorNames.map(({ id, name, emp }) => (
-                        <span
-                          key={id}
-                          className="badge bg-light text-dark border d-inline-flex align-items-center gap-1"
-                          style={{
-                            fontWeight: 400,
-                            fontSize: "0.78rem",
-                            padding: "4px 8px",
-                          }}
-                        >
-                          {emp ? (
-                            <Avatar emp={emp} size={18} />
-                          ) : (
-                            <InitialsAvatar
-                              name={name}
-                              id={Number(id) || 0}
-                              size={18}
-                            />
-                          )}
-                          {name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </InfoRow>
+                {/* ── Collaborators (editable, auto-save, with search) ── */}
+                <div className="mb-3">
+                  <label
+                    className="text-muted fw-semibold d-block mb-1"
+                    style={{ fontSize: "0.78rem" }}
+                  >
+                    Collaborators
+                    <FieldSaveIndicator
+                      saving={fieldSaving.collaborators_id_list}
+                      saved={fieldSaved.collaborators_id_list}
+                    />
+                  </label>
+                  <CollaboratorMultiSelect
+                    selectedIds={editFields.collaborators_id_list}
+                    allEmployees={allEmployees}
+                    onChange={(ids) =>
+                      updateEditField("collaborators_id_list", ids)
+                    }
+                  />
+                </div>
 
                 {task.description && (
                   <div className="mt-3">
@@ -1503,69 +1567,263 @@ const TaskDetailModal = ({
                 )}
               </div>
 
-              {/* Right */}
+              {/* ── Right col ── */}
               <div
                 className="col-12 col-lg-6 p-4"
                 style={{ background: "#f8fafc" }}
               >
                 <div className="row g-3">
-                  {[
-                    {
-                      label: "Priority",
-                      obj: priorityObj,
-                      fallbackFn: resolvePriorityName,
-                      raw: task.task_priority,
-                    },
-                    {
-                      label: "Status",
-                      obj: statusObj,
-                      fallbackFn: resolveStatusName,
-                      raw: task.task_status,
-                    },
-                  ].map(({ label, obj, fallbackFn, raw }) => (
-                    <div className="col-6" key={label}>
-                      <div
-                        className="text-muted fw-semibold mb-1"
+                  {/* ── Priority (auto-save) ── */}
+                  <div className="col-6">
+                    <label
+                      className="text-muted fw-semibold d-flex align-items-center mb-1"
+                      style={{
+                        fontSize: "0.72rem",
+                        textTransform: "uppercase",
+                        gap: 4,
+                      }}
+                    >
+                      Priority
+                      <FieldSaveIndicator
+                        saving={fieldSaving.task_priority}
+                        saved={fieldSaved.task_priority}
+                      />
+                    </label>
+                    <div
+                      style={{
+                        position: "relative",
+                        borderRadius: 8,
+                        overflow: "hidden",
+                        border: priorityObj
+                          ? `1.5px solid ${priorityObj.color}55`
+                          : "1.5px solid #dee2e6",
+                        background: priorityObj
+                          ? `${priorityObj.color}08`
+                          : "#fff",
+                        transition: "border-color .2s, background .2s",
+                      }}
+                    >
+                      {priorityObj && (
+                        <span
+                          style={{
+                            position: "absolute",
+                            left: 10,
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            background: priorityObj.color,
+                            pointerEvents: "none",
+                            zIndex: 1,
+                          }}
+                        />
+                      )}
+                      <select
+                        className="form-select form-select-sm border-0 bg-transparent"
+                        value={editFields.task_priority || ""}
+                        onChange={(e) =>
+                          updateEditField(
+                            "task_priority",
+                            e.target.value || null,
+                          )
+                        }
                         style={{
-                          fontSize: "0.72rem",
-                          textTransform: "uppercase",
+                          fontSize: "0.82rem",
+                          fontWeight: 500,
+                          paddingLeft: priorityObj ? 26 : 10,
+                          color: priorityObj ? priorityObj.color : "#495057",
+                          boxShadow: "none",
                         }}
                       >
-                        {label}
-                      </div>
-                      {obj ? (
-                        <span
-                          className="badge"
-                          style={{
-                            background: obj.color,
-                            color: "#fff",
-                            fontSize: "0.75rem",
-                            padding: "4px 10px",
-                          }}
-                        >
-                          {obj.name}
-                        </span>
-                      ) : raw ? (
-                        <span
-                          className="badge bg-secondary"
-                          style={{ fontSize: "0.75rem", padding: "4px 10px" }}
-                        >
-                          {fallbackFn(raw)}
-                        </span>
-                      ) : (
-                        <span
-                          className="text-muted"
-                          style={{ fontSize: "0.85rem" }}
-                        >
-                          —
-                        </span>
-                      )}
+                        <option value="">— Select —</option>
+                        {priorityList.map((p) => (
+                          <option key={p.id} value={String(p.id)}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                  ))}
+                  </div>
 
+                  {/* ── Status (auto-save) ── */}
+                  <div className="col-6">
+                    <label
+                      className="text-muted fw-semibold d-flex align-items-center mb-1"
+                      style={{
+                        fontSize: "0.72rem",
+                        textTransform: "uppercase",
+                        gap: 4,
+                      }}
+                    >
+                      Status
+                      <FieldSaveIndicator
+                        saving={fieldSaving.task_status}
+                        saved={fieldSaved.task_status}
+                      />
+                    </label>
+                    <div
+                      style={{
+                        position: "relative",
+                        borderRadius: 8,
+                        overflow: "hidden",
+                        border: statusObj
+                          ? `1.5px solid ${statusObj.color}55`
+                          : "1.5px solid #dee2e6",
+                        background: statusObj ? `${statusObj.color}08` : "#fff",
+                        transition: "border-color .2s, background .2s",
+                      }}
+                    >
+                      {statusObj && (
+                        <span
+                          style={{
+                            position: "absolute",
+                            left: 10,
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            background: statusObj.color,
+                            pointerEvents: "none",
+                            zIndex: 1,
+                          }}
+                        />
+                      )}
+                      <select
+                        className="form-select form-select-sm border-0 bg-transparent"
+                        value={editFields.task_status || ""}
+                        onChange={(e) =>
+                          updateEditField("task_status", e.target.value || null)
+                        }
+                        style={{
+                          fontSize: "0.82rem",
+                          fontWeight: 500,
+                          paddingLeft: statusObj ? 26 : 10,
+                          color: statusObj ? statusObj.color : "#495057",
+                          boxShadow: "none",
+                        }}
+                      >
+                        <option value="">— Select —</option>
+                        {statusList.map((s) => (
+                          <option key={s.id} value={String(s.id)}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* ── Start Time (auto-save, debounced) ── */}
+                  <div className="col-6">
+                    <label
+                      className="text-muted fw-semibold d-flex align-items-center mb-1"
+                      style={{
+                        fontSize: "0.72rem",
+                        textTransform: "uppercase",
+                        gap: 4,
+                      }}
+                    >
+                      Start Time
+                      <FieldSaveIndicator
+                        saving={fieldSaving.start_time}
+                        saved={fieldSaved.start_time}
+                      />
+                    </label>
+                    <div
+                      style={{
+                        position: "relative",
+                        borderRadius: 8,
+                        overflow: "hidden",
+                        border: "1.5px solid #dee2e6",
+                        background: "#fff",
+                      }}
+                    >
+                      <i
+                        className="ri-calendar-event-line"
+                        style={{
+                          position: "absolute",
+                          left: 9,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          color: "#6b7280",
+                          fontSize: "0.85rem",
+                          pointerEvents: "none",
+                          zIndex: 1,
+                        }}
+                      />
+                      <input
+                        type="datetime-local"
+                        className="form-control form-control-sm border-0 bg-transparent"
+                        value={editFields.start_time}
+                        onChange={(e) =>
+                          updateEditField("start_time", e.target.value, 800)
+                        }
+                        style={{
+                          fontSize: "0.82rem",
+                          paddingLeft: 28,
+                          boxShadow: "none",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* ── End Time (auto-save, debounced) ── */}
+                  <div className="col-6">
+                    <label
+                      className="text-muted fw-semibold d-flex align-items-center mb-1"
+                      style={{
+                        fontSize: "0.72rem",
+                        textTransform: "uppercase",
+                        gap: 4,
+                      }}
+                    >
+                      End Time
+                      <FieldSaveIndicator
+                        saving={fieldSaving.end_time}
+                        saved={fieldSaved.end_time}
+                      />
+                    </label>
+                    <div
+                      style={{
+                        position: "relative",
+                        borderRadius: 8,
+                        overflow: "hidden",
+                        border: "1.5px solid #dee2e6",
+                        background: "#fff",
+                      }}
+                    >
+                      <i
+                        className="ri-calendar-check-line"
+                        style={{
+                          position: "absolute",
+                          left: 9,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          color: "#6b7280",
+                          fontSize: "0.85rem",
+                          pointerEvents: "none",
+                          zIndex: 1,
+                        }}
+                      />
+                      <input
+                        type="datetime-local"
+                        className="form-control form-control-sm border-0 bg-transparent"
+                        value={editFields.end_time}
+                        onChange={(e) =>
+                          updateEditField("end_time", e.target.value, 800)
+                        }
+                        style={{
+                          fontSize: "0.82rem",
+                          paddingLeft: 28,
+                          boxShadow: "none",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* ── Static read-only fields ── */}
                   {[
-                    { label: "Start Time", val: fmt(task.start_time) },
-                    { label: "End Time", val: fmt(task.end_time) },
                     { label: "Created On", val: fmt(task.created_on) },
                     { label: "Updated On", val: fmt(task.updated_on) },
                   ].map(({ label, val }) => (
@@ -1579,9 +1837,29 @@ const TaskDetailModal = ({
                       >
                         {label}
                       </div>
-                      <div style={{ fontSize: "0.85rem" }}>{val || "—"}</div>
+                      <div
+                        style={{
+                          fontSize: "0.82rem",
+                          padding: "6px 10px",
+                          background: "#fff",
+                          border: "1.5px solid #e9ecef",
+                          borderRadius: 8,
+                          color: "#374151",
+                        }}
+                      >
+                        {val || "—"}
+                      </div>
                     </div>
                   ))}
+                </div>
+
+                {/* ── Auto-save info note ── */}
+                <div
+                  className="mt-3 d-flex align-items-center gap-1"
+                  style={{ fontSize: "0.7rem", color: "#9ca3af" }}
+                >
+                  <i className="ri-save-3-line" />
+                  Changes are saved automatically
                 </div>
               </div>
             </div>
@@ -1592,7 +1870,7 @@ const TaskDetailModal = ({
               checklistData={task?.task_checklists || []}
             />
 
-            {/* Comments — ✅ no longer passes comments prop; reads from Redux */}
+            {/* Comments */}
             <TaskCommentSection taskId={taskId} allEmployees={allEmployees} />
 
             {/* Activity Log */}
@@ -1663,7 +1941,6 @@ const TaskDetailModal = ({
                             style={{ color: meta.color, fontSize: "0.9rem" }}
                           />
                         </div>
-
                         <div className="flex-grow-1" style={{ minWidth: 0 }}>
                           <div className="d-flex align-items-center flex-wrap gap-2 mb-1">
                             <span
@@ -1693,7 +1970,6 @@ const TaskDetailModal = ({
                               {fmt(activity.created_on)}
                             </span>
                           </div>
-
                           {activity.logs?.length > 0 && (
                             <div
                               className="rounded mt-1"
@@ -1719,7 +1995,6 @@ const TaskDetailModal = ({
                                   gap: 8,
                                   flexWrap: "wrap",
                                 };
-
                                 if (activity.action === "created") {
                                   return (
                                     <div key={log.id ?? li} style={rowStyle}>
@@ -1742,7 +2017,6 @@ const TaskDetailModal = ({
                                     </div>
                                   );
                                 }
-
                                 return (
                                   <div key={log.id ?? li} style={rowStyle}>
                                     <span
@@ -1786,28 +2060,15 @@ const TaskDetailModal = ({
         )}
       </ModalBody>
 
-      {/* Footer */}
+      {/* ── Footer ── */}
       {!loading && !error && task && (
         <ModalFooter className="d-flex justify-content-between border-top py-2">
           <div className="d-flex gap-2">
             <button
               type="button"
-              className="btn btn-outline-secondary btn-sm"
-              onClick={handleCloseTask}
-              disabled={closing || deleting}
-            >
-              {closing ? (
-                <Spinner size="sm" className="me-1" />
-              ) : (
-                <i className="ri-checkbox-circle-line me-1" />
-              )}
-              Close Task
-            </button>
-            <button
-              type="button"
               className="btn btn-outline-danger btn-sm"
               onClick={() => handleDeleteTask(taskId)}
-              disabled={closing || deleting}
+              disabled={deleting || isSavingAny}
             >
               {deleting ? (
                 <Spinner size="sm" className="me-1" />
@@ -1817,14 +2078,27 @@ const TaskDetailModal = ({
               Delete Task
             </button>
           </div>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={handleEditTask}
-          >
-            <i className="ri-edit-line me-1" />
-            Edit Task
-          </button>
+          <div className="d-flex gap-2 align-items-center">
+            {isSavingAny && (
+              <span className="text-muted" style={{ fontSize: "0.75rem" }}>
+                <Spinner
+                  size="sm"
+                  style={{ width: 10, height: 10, borderWidth: 1.5 }}
+                  className="me-1"
+                />
+                Saving changes…
+              </span>
+            )}
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={handleEditTask}
+              disabled={isSavingAny}
+            >
+              <i className="ri-edit-line me-1" />
+              Edit Task
+            </button>
+          </div>
         </ModalFooter>
       )}
     </Modal>
