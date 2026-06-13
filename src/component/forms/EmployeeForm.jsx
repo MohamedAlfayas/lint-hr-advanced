@@ -1613,24 +1613,23 @@ const EmployeeForm = () => {
                 : null}
 
               {/* ── Add Location Button — only shown for existing employees ──── */}
-              {(isExistingEmployee && (
+              {isExistingEmployee && (
                 <Col lg={12} className="mb-3">
-                  <div className="d-flex align-items-center justify-content-between">
-                    <Label className="form-label mb-0">Custom Locations</Label>
-                    <Button
-                      color="btn btn-primary"
-                      type="button"
-                      onClick={handleAddLocationClick}
-                    >
-                      Add Location <i className="ri-map-pin-line"></i>
+                  {/* Save Button */}
+                  <div className="text-end mb-3">
+                    <Button type="submit" color="success" className="btn-label">
+                      <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
+                      Save
                     </Button>
                   </div>
+
+                  <Label className="form-label mb-0">Custom Locations</Label>
+
                   <div id="passwordHelpBlock" className="form-text mt-1">
                     Add or manage employee locations.
                   </div>
                 </Col>
-              )) ||
-                null}
+              )}
 
               {(isExistingEmployee &&
                 employeeObj?.entity_location_details &&
@@ -1647,34 +1646,47 @@ const EmployeeForm = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {employeeObj?.entity_location_details.map(
-                          (location, index) => (
-                            <tr key={index}>
-                              <td>{location.name}</td>
-                              <td>{location.accurate_address}</td>
-                              <td>{location.radius_range} m</td>
-                              <td>
-                                <img
-                                  src={
-                                    location.image_url
-                                      ? location.image_url
-                                      : no_image
-                                  }
-                                  alt="location"
-                                  style={{ height: "50px", objectFit: "cover" }}
-                                />
-                              </td>
-                              <td>
-                                <a
-                                  onClick={() => handleEditLocation(location)}
-                                  className="text-primary d-inline-block edit-item-btn ms-2"
-                                  href="javascript:void(0)"
-                                >
-                                  <i className="ri-pencil-fill fs-16"></i>
-                                </a>
-                              </td>
-                            </tr>
-                          ),
+                        {employeeObj?.entity_location_details?.filter(
+                          (location) => location.type === "employee",
+                        ).length > 0 ? (
+                          employeeObj?.entity_location_details
+                            ?.filter((location) => location.type === "employee")
+                            .map((location, index) => (
+                              <tr key={index}>
+                                <td>{location.name}</td>
+                                <td>{location.accurate_address}</td>
+                                <td>{location.radius_range} m</td>
+                                <td>
+                                  <img
+                                    src={
+                                      location.image_url
+                                        ? location.image_url
+                                        : no_image
+                                    }
+                                    alt="location"
+                                    style={{
+                                      height: "50px",
+                                      objectFit: "cover",
+                                    }}
+                                  />
+                                </td>
+                                <td>
+                                  <a
+                                    onClick={() => handleEditLocation(location)}
+                                    className="text-primary d-inline-block edit-item-btn ms-2"
+                                    href="javascript:void(0)"
+                                  >
+                                    <i className="ri-pencil-fill fs-16"></i>
+                                  </a>
+                                </td>
+                              </tr>
+                            ))
+                        ) : (
+                          <tr>
+                            <td colSpan="5" className="text-center text-muted">
+                              No Custom Location
+                            </td>
+                          </tr>
                         )}
                       </tbody>
                     </table>
@@ -1682,14 +1694,19 @@ const EmployeeForm = () => {
                 )) ||
                 null}
 
-              <Col lg={12}>
-                <div className="text-end">
-                  <Button type="submit" color="success" className="btn-label">
-                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
-                    Save
-                  </Button>
-                </div>
-              </Col>
+              {isExistingEmployee && (
+                <Col lg={12}>
+                  <div className="text-end mt-3">
+                    <Button
+                      color="primary"
+                      type="button"
+                      onClick={handleAddLocationClick}
+                    >
+                      Add Location <i className="ri-map-pin-line"></i>
+                    </Button>
+                  </div>
+                </Col>
+              )}
             </Row>
           </Form>
         </Col>

@@ -65,7 +65,7 @@ const AttendanceDashboard = () => {
 
     Api({
       type: "GET",
-      url: "attendance/get_attendance_entry_log/?thisMonth=" + thisMonth,
+      url: "attendance/get_attendance_entry_log/v2/?thisMonth=" + thisMonth,
     })
       .then((res) => {
         dispatch(setIndividualAttendanceReportData(res?.data?.data));

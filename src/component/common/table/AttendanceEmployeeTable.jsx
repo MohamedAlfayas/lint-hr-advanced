@@ -1507,7 +1507,7 @@ const AttendanceEmployeeTable = () => {
         </ModalHeader>
         <ModalBody
           className="text-left"
-          style={{ maxHeight: "100px", overflowY: "auto" }}
+          style={{ maxHeight: "250px", overflowY: "auto" }}
         >
           <div>
             <SimpleBar style={{ maxHeight: "215px" }}>
@@ -1560,75 +1560,164 @@ const AttendanceEmployeeTable = () => {
                         return (
                           <tr key={idx}>
                             <td>
-                              <p
-                                className="text-muted mb-1"
-                                style={{ fontWeight: "bold" }}
-                              >
-                                {checkInTime}
-                              </p>
-                              <small
-                                className="mb-0 text-muted"
+                              <div
                                 style={{
-                                  display: "inline-block",
-                                  maxWidth: "100px",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "10px",
                                 }}
                               >
-                                {checkInData.location_id !== null ? (
-                                  <a
-                                    href={`https://maps.google.com/?q=${checkInData.latitude},${checkInData.longitude}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                {checkInData.face_url ? (
+                                  <img
+                                    src={checkInData.face_url}
+                                    alt="check-in"
+                                    style={{
+                                      width: "40px",
+                                      height: "40px",
+                                      borderRadius: "50%",
+                                      objectFit: "cover",
+                                      flexShrink: 0,
+                                    }}
+                                  />
+                                ) : (
+                                  <div
+                                    style={{
+                                      width: "40px",
+                                      height: "40px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      flexShrink: 0,
+                                    }}
                                   >
-                                    <i className="mdi mdi-map-marker"></i>{" "}
-                                    {checkInData.location || ""}
-                                  </a>
-                                ) : checkInData &&
-                                  checkInData.location !== "" ? (
-                                  <span>
-                                    <i className="mdi mdi-map-marker"></i>{" "}
-                                    {checkInData.location}
-                                  </span>
-                                ) : null}
-                              </small>
+                                    <i
+                                      className="mdi mdi-account-circle"
+                                      style={{
+                                        fontSize: "44px",
+                                        color: "#adb5bd",
+                                        lineHeight: 1,
+                                      }}
+                                    ></i>
+                                  </div>
+                                )}
+
+                                <div>
+                                  <p
+                                    className="text-muted mb-1"
+                                    style={{ fontWeight: "bold" }}
+                                  >
+                                    {checkInTime}
+                                  </p>
+
+                                  <small
+                                    className="mb-0 text-muted"
+                                    style={{
+                                      display: "inline-block",
+                                      maxWidth: "150px",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {checkInData.location_id !== null ? (
+                                      <a
+                                        href={`https://maps.google.com/?q=${checkInData.latitude},${checkInData.longitude}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        <i className="mdi mdi-map-marker"></i>
+                                        {checkInData.location || ""}
+                                      </a>
+                                    ) : checkInData.location !== "" ? (
+                                      <span>
+                                        <i className="mdi mdi-map-marker"></i>
+                                        {checkInData.location}
+                                      </span>
+                                    ) : null}
+                                  </small>
+                                </div>
+                              </div>
                             </td>
                             <td>
-                              <p
-                                className="text-muted mb-1"
-                                style={{ fontWeight: "bold" }}
-                              >
-                                {checkOutTime}
-                              </p>
-                              <small
-                                className="mb-0 text-muted"
+                              <div
                                 style={{
-                                  display: "inline-block",
-                                  maxWidth: "100px",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "10px",
                                 }}
                               >
-                                {checkOutData &&
-                                checkOutData.location_id !== null ? (
-                                  <a
-                                    href={`https://maps.google.com/?q=${checkOutData.latitude},${checkOutData.longitude}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                {checkOutData?.face_url ? (
+                                  <img
+                                    src={checkOutData.face_url}
+                                    alt="check-out"
+                                    style={{
+                                      width: "40px",
+                                      height: "40px",
+                                      borderRadius: "50%",
+                                      objectFit: "cover",
+                                      flexShrink: 0,
+                                    }}
+                                  />
+                                ) : checkOutData ? (
+                                  <div
+                                    style={{
+                                      width: "40px",
+                                      height: "40px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      flexShrink: 0,
+                                    }}
                                   >
-                                    <i className="mdi mdi-map-marker"></i>{" "}
-                                    {checkOutData.location || ""}
-                                  </a>
-                                ) : checkOutData &&
-                                  checkOutData.location !== "" ? (
-                                  <span>
-                                    <i className="mdi mdi-map-marker"></i>{" "}
-                                    {checkOutData.location}
-                                  </span>
+                                    <i
+                                      className="mdi mdi-account-circle"
+                                      style={{
+                                        fontSize: "44px",
+                                        color: "#adb5bd",
+                                        lineHeight: 1,
+                                      }}
+                                    ></i>
+                                  </div>
                                 ) : null}
-                              </small>
+
+                                <div>
+                                  <p
+                                    className="text-muted mb-1"
+                                    style={{ fontWeight: "bold" }}
+                                  >
+                                    {checkOutTime}
+                                  </p>
+
+                                  <small
+                                    className="mb-0 text-muted"
+                                    style={{
+                                      display: "inline-block",
+                                      maxWidth: "150px",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {checkOutData &&
+                                    checkOutData.location_id !== null ? (
+                                      <a
+                                        href={`https://maps.google.com/?q=${checkOutData.latitude},${checkOutData.longitude}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        <i className="mdi mdi-map-marker"></i>
+                                        {checkOutData.location || ""}
+                                      </a>
+                                    ) : checkOutData &&
+                                      checkOutData.location !== "" ? (
+                                      <span>
+                                        <i className="mdi mdi-map-marker"></i>
+                                        {checkOutData.location}
+                                      </span>
+                                    ) : null}
+                                  </small>
+                                </div>
+                              </div>
                             </td>
                             <td>
                               <p
