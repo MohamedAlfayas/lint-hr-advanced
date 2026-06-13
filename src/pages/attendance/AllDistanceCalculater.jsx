@@ -21,18 +21,14 @@ const AllDistanceCalculater = ({ allLocationData }) => {
   const branchData = GetLocalStorageData("branch") || [];
 
   const employeeBracnchID = employeeData.find(
-    (d) => allLocationData.employee_id === d.id
+    (d) => allLocationData.employee_id === d.id,
   );
   // console.log("employeeBracnchID", employeeBracnchID);
   // console.log("allLocationData", allLocationData);
-  
-  
 
   const branchObj = branchData.find((b) =>
-    employeeBracnchID.branch_id_list.includes(b.id)
+    employeeBracnchID.branch_id_list.includes(b.id),
   );
-  
-  
 
   const [mapZoom, setMapZoom] = useState(21);
 
@@ -65,7 +61,7 @@ const AllDistanceCalculater = ({ allLocationData }) => {
               name: entry.location,
               type: entry.entry_type,
             }
-          : null
+          : null,
       )
       .filter((location) => location !== null),
   ];
@@ -108,7 +104,7 @@ const AllDistanceCalculater = ({ allLocationData }) => {
 
   const containerStyle = {
     width: "100%",
-    height: "400px",
+    height: "280px",
   };
 
   const mapStyles = [
@@ -147,7 +143,7 @@ const AllDistanceCalculater = ({ allLocationData }) => {
     },
   ];
 
- const { isLoaded } = useJsApiLoader({
+  const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: process.env.REACT_APP_MAP_API_KEY,
     libraries: ["places"], // ✅ ensures no loader mismatch
@@ -191,7 +187,7 @@ const AllDistanceCalculater = ({ allLocationData }) => {
         allLocations[i - 1].lat,
         allLocations[i - 1].lng,
         allLocations[i].lat,
-        allLocations[i].lng
+        allLocations[i].lng,
       );
     }
     setDistance(totalDistance.toFixed(2)); // Set distance state
@@ -204,7 +200,7 @@ const AllDistanceCalculater = ({ allLocationData }) => {
 
       allLocations.forEach((location) => {
         bounds.extend(
-          new window.google.maps.LatLng(location.lat, location.lng)
+          new window.google.maps.LatLng(location.lat, location.lng),
         );
       });
 
@@ -219,7 +215,7 @@ const AllDistanceCalculater = ({ allLocationData }) => {
       const bounds = new window.google.maps.LatLngBounds();
       allLocations.forEach((location) => {
         bounds.extend(
-          new window.google.maps.LatLng(location.lat, location.lng)
+          new window.google.maps.LatLng(location.lat, location.lng),
         );
       });
 
@@ -232,7 +228,7 @@ const AllDistanceCalculater = ({ allLocationData }) => {
       const bounds = new window.google.maps.LatLngBounds();
       multipleLocations.forEach((location) => {
         bounds.extend(
-          new window.google.maps.LatLng(location.lat, location.lng)
+          new window.google.maps.LatLng(location.lat, location.lng),
         );
       });
 
@@ -344,7 +340,7 @@ const AllDistanceCalculater = ({ allLocationData }) => {
 
                 allLocations.forEach((location) => {
                   bounds.extend(
-                    new window.google.maps.LatLng(location.lat, location.lng)
+                    new window.google.maps.LatLng(location.lat, location.lng),
                   );
                 });
                 setMapZoom(mapRef.current.zoom);
