@@ -21,28 +21,23 @@ const transformPayslip = (item) => {
     }
   });
 
-  // ✅ Add LOP deduction as a line item
   const lopDays = parseFloat(item.lop_days || 0);
-  const grossEarnings = parseFloat(item.gross_earnings || 0);
-  const totalEarningsBeforeLop = (item.components || [])
-    .filter(c => c.component_type === "allowance" || c.component_type === "reimbursement")
-    .reduce((sum, c) => sum + parseFloat(c.calculated_amount || 0), 0);
-  const lopDeductedTotal = totalEarningsBeforeLop - grossEarnings;
-
-  // ✅ After — always uses the same key → single column
-  if (lopDays > 0 && lopDeductedTotal > 0) {
-    deductions["LOP Deduction"] = lopDeductedTotal.toFixed(2);
+  if (lopDays > 0 && parseFloat(item.lop_deduction) > 0) {
+    deductions["LOP Deduction"] = parseFloat(item.lop_deduction).toFixed(2);
   }
 
-  // ✅ Add statutory deductions
   if (parseFloat(item.pf_employee) > 0) deductions["PF (Employee)"] = item.pf_employee;
   if (parseFloat(item.esi_employee) > 0) deductions["ESI (Employee)"] = item.esi_employee;
   if (parseFloat(item.pt_amount) > 0) deductions["Professional Tax"] = item.pt_amount;
 
-  // ✅ Add OT in earnings
-  if (parseFloat(item.ot_amount) > 0) {
-    earnings["Overtime"] = item.ot_amount;
+  if (parseFloat(item.ot_amount) > 0) earnings["Overtime"] = item.ot_amount;
+
+  if (!item.bonus_included_in_ctc) {
+    if (parseFloat(item.statutory_bonus) > 0) earnings["Statutory Bonus"] = item.statutory_bonus;
+    if (parseFloat(item.performance_bonus) > 0) earnings["Performance Bonus"] = item.performance_bonus;
   }
+
+  if (parseFloat(item.gratuity_provision) > 0) earnings["Gratuity Provision"] = item.gratuity_provision;
 
   const empDetails = employees.find((e) => String(e.id) === String(item.employee));
 
@@ -57,7 +52,8 @@ const transformPayslip = (item) => {
     profile_url: empDetails?.profile_url || null,
   };
 };
-const EmployeePayslip = ({ payrollRunId = 12 }) => {
+
+const EmployeePayslip = ({ payrollRunId = 38 }) => {
   const EmployeeData = GetLocalStorageData("employee") || [];
   const [loading, setLoading] = useState(false);
   const [payslipData, setPayslipData] = useState([]);
@@ -93,10 +89,14 @@ const EmployeePayslip = ({ payrollRunId = 12 }) => {
     setModalOpen(true);
   };
 
-  const fmt = (val) =>
-    Number(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
+  const fmt = (val, allowDecimal = true) => {
+    return Number(val || 0).toLocaleString("en-IN", {
+      minimumFractionDigits: allowDecimal ? 2 : 0,
+      maximumFractionDigits: allowDecimal ? 2 : 0,
+    });
+  };
 
-  console.log("selectedPaySlip", selectedSlip)
+  const allowDecimal = selectedSlip?.allow_decimal_in_payslip ?? true;
 
   if (loading) {
     return (
@@ -205,8 +205,18 @@ const EmployeePayslip = ({ payrollRunId = 12 }) => {
           <ModalHeader toggle={() => setModalOpen(false)} className="bg-light p-3">
             Payslip — {selectedSlip.employee_name || "Employee"} ({selectedSlip.emp_id || selectedSlip.employee})
           </ModalHeader>
-          <ModalBody className="p-4">
-            <div className="p-3 border rounded bg-white">
+          
+          {/* Managed Inner Scroller with viewport bounds and layout limits */}
+          <ModalBody 
+            className="p-4" 
+            style={{ 
+              maxHeight: "75vh", 
+              overflowY: "auto", 
+              overflowX: "auto" 
+            }}
+          >
+            {/* Inner Wrapper to preserve absolute alignment layouts horizontally */}
+            <div className="p-3 border rounded bg-white" style={{ minWidth: "620px" }}>
 
               {/* Header */}
               <div className="text-center mb-3">
@@ -232,20 +242,20 @@ const EmployeePayslip = ({ payrollRunId = 12 }) => {
               </Row>
 
               {/* Attendance Summary */}
-              <div className="p-2 bg-light rounded mb-3 d-flex gap-4 flex-wrap" style={{ fontSize: 12 }}>
-                <span><strong>Total Days:</strong> {selectedSlip.total_days_in_month}</span>
-                <span><strong>Payable Days:</strong> {selectedSlip.payable_days}</span>
-                <span><strong>Present:</strong> {selectedSlip.present_days}</span>
-                <span><strong>Leave:</strong> {selectedSlip.approved_leave_days}</span>
-                <span className={parseFloat(selectedSlip.lop_days) > 0 ? "text-danger fw-bold" : ""}>
+              <div className="p-2 bg-light rounded mb-3 d-flex gap-4 flex-nowrap align-items-center" style={{ fontSize: 12, overflowX: "auto" }}>
+                <span className="text-nowrap"><strong>Total Days:</strong> {selectedSlip.total_days_in_month}</span>
+                <span className="text-nowrap"><strong>Payable Days:</strong> {selectedSlip.payable_days}</span>
+                <span className="text-nowrap"><strong>Present:</strong> {selectedSlip.present_days}</span>
+                <span className="text-nowrap"><strong>Leave:</strong> {selectedSlip.approved_leave_days}</span>
+                <span className={`text-nowrap ${parseFloat(selectedSlip.lop_days) > 0 ? "text-danger fw-bold" : ""}`}>
                   <strong>LOP:</strong> {selectedSlip.lop_days}
                 </span>
-                <span><strong>Week Off:</strong> {selectedSlip.week_off_days}</span>
-                <span><strong>Holidays:</strong> {selectedSlip.holiday_days}</span>
+                <span className="text-nowrap"><strong>Week Off:</strong> {selectedSlip.week_off_days}</span>
+                <span className="text-nowrap"><strong>Holidays:</strong> {selectedSlip.holiday_days}</span>
               </div>
 
-              {/* Earnings & Deductions */}
-              <Row>
+              {/* Earnings & Deductions Tables */}
+              <Row className="g-3">
                 <Col md={6}>
                   <p className="text-uppercase fw-bold text-success mb-2" style={{ fontSize: 11 }}>
                     Earnings
@@ -255,12 +265,14 @@ const EmployeePayslip = ({ payrollRunId = 12 }) => {
                       {Object.entries(selectedSlip.earnings || {}).map(([key, val]) => (
                         <tr key={key}>
                           <td style={{ fontSize: 12 }}>{key}</td>
-                          <td className="text-end" style={{ fontSize: 12 }}>₹{fmt(val)}</td>
+                          <td className="text-end" style={{ fontSize: 12 }}>₹{fmt(val, allowDecimal)}</td>
                         </tr>
                       ))}
                       <tr className="table-success fw-bold">
                         <td style={{ fontSize: 12 }}>Gross Earnings</td>
-                        <td className="text-end" style={{ fontSize: 12 }}>₹{fmt(selectedSlip.gross_earnings)}</td>
+                        <td className="text-end" style={{ fontSize: 12 }}>
+                          ₹{fmt(selectedSlip.gross_earnings, allowDecimal)}
+                        </td>
                       </tr>
                     </tbody>
                   </Table>
@@ -274,12 +286,14 @@ const EmployeePayslip = ({ payrollRunId = 12 }) => {
                       {Object.entries(selectedSlip.deductions || {}).map(([key, val]) => (
                         <tr key={key}>
                           <td style={{ fontSize: 12 }}>{key}</td>
-                          <td className="text-end text-danger" style={{ fontSize: 12 }}>₹{fmt(val)}</td>
+                          <td className="text-end text-danger" style={{ fontSize: 12 }}>₹{fmt(val, allowDecimal)}</td>
                         </tr>
                       ))}
                       <tr className="table-danger fw-bold">
                         <td style={{ fontSize: 12 }}>Total Deductions</td>
-                        <td className="text-end text-danger" style={{ fontSize: 12 }}>₹{fmt(selectedSlip.total_deductions)}</td>
+                        <td className="text-end text-danger" style={{ fontSize: 12 }}>
+                          ₹{fmt(selectedSlip.total_deductions)}
+                        </td>
                       </tr>
                     </tbody>
                   </Table>
@@ -290,11 +304,74 @@ const EmployeePayslip = ({ payrollRunId = 12 }) => {
               <div className="mt-3 p-3 bg-light rounded d-flex justify-content-between align-items-center">
                 <h6 className="mb-0 fw-bold text-uppercase" style={{ fontSize: 12 }}>Net Take-Home Pay</h6>
                 <h5 className={`mb-0 fw-bold ${parseFloat(selectedSlip.net_pay) < 0 ? "text-danger" : "text-success"}`}>
-                  ₹{fmt(selectedSlip.net_pay)}
+                  ₹{fmt(selectedSlip.net_pay, allowDecimal)}
                 </h5>
               </div>
 
-              {/* LOP Warning — only show when LOP > 0 */}
+              {/* Employer Cost Embedded (CTC mode) */}
+              {selectedSlip.based_on === "ctc" && parseFloat(selectedSlip.employer_cost_embedded) > 0 && (
+                <div className="mt-2 p-2 rounded border bg-light d-flex justify-content-between align-items-center">
+                  <span className="text-muted" style={{ fontSize: 12 }}>
+                    Employer Cost (PF/ESI/Gratuity embedded in CTC)
+                    <Badge color="secondary" className="ms-2" style={{ fontSize: 10 }}>CTC Only</Badge>
+                  </span>
+                  <span className="text-danger fw-medium" style={{ fontSize: 12 }}>
+                    ₹{fmt(selectedSlip.employer_cost_embedded, allowDecimal)}
+                  </span>
+                </div>
+              )}
+
+              {/* Bonus & Gratuity Summary */}
+              {(parseFloat(selectedSlip.total_bonus) > 0 || parseFloat(selectedSlip.gratuity_provision) > 0) && (
+                <div className="mt-3 border rounded overflow-hidden">
+                  <div className="px-3 py-2 bg-light border-bottom">
+                    <p className="mb-0 fw-bold text-uppercase" style={{ fontSize: 11 }}>
+                      Bonus & Gratuity
+                    </p>
+                  </div>
+                  <div className="px-3 py-2">
+                    {parseFloat(selectedSlip.statutory_bonus) > 0 && (
+                      <div className="d-flex justify-content-between py-1 border-bottom">
+                        <span style={{ fontSize: 12 }}>Statutory Bonus</span>
+                        <span className="text-success fw-medium" style={{ fontSize: 12 }}>
+                          ₹{fmt(selectedSlip.statutory_bonus)}
+                        </span>
+                      </div>
+                    )}
+                    {parseFloat(selectedSlip.performance_bonus) > 0 && (
+                      <div className="d-flex justify-content-between py-1 border-bottom">
+                        <span style={{ fontSize: 12 }}>Performance Bonus</span>
+                        <span className="text-success fw-medium" style={{ fontSize: 12 }}>
+                          ₹{fmt(selectedSlip.performance_bonus)}
+                        </span>
+                      </div>
+                    )}
+                    {parseFloat(selectedSlip.gratuity_provision) > 0 && (
+                      <div className="d-flex justify-content-between py-1">
+                        <span style={{ fontSize: 12 }}>
+                          Gratuity Provision
+                          <Badge color="secondary" className="ms-2" style={{ fontSize: 10 }}>
+                            CTC Only
+                          </Badge>
+                        </span>
+                        <span className="text-muted fw-medium" style={{ fontSize: 12 }}>
+                          ₹{fmt(selectedSlip.gratuity_provision)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {selectedSlip.bonus_notes && (
+                    <div className="px-3 py-2 border-top bg-light">
+                      <p className="mb-0 text-muted" style={{ fontSize: 11 }}>
+                        <i className="ri-information-line me-1"></i>
+                        {selectedSlip.bonus_notes}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* LOP Warning */}
               {parseFloat(selectedSlip.lop_days) > 0 && (
                 <div className="mt-2 p-2 rounded border border-warning border-opacity-25 bg-warning-subtle d-flex gap-2 align-items-start">
                   <i className="ri-error-warning-line text-warning mt-1"></i>

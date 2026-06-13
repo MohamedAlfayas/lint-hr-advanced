@@ -29,7 +29,6 @@ const SettingRow = ({ label, children, last = false }) => (
   </Row>
 );
 
-// Read-only toggle display (no disabled input)
 const ViewToggle = ({ checked, label }) => (
   <div className="d-flex align-items-center gap-2">
     <span
@@ -60,7 +59,6 @@ const ViewToggle = ({ checked, label }) => (
   </div>
 );
 
-// Read-only radio display
 const ViewRadio = ({ options, value }) => (
   <div className="d-flex gap-3 align-items-center">
     {options.map((opt) => (
@@ -200,9 +198,15 @@ const PFSettings = () => {
               <Row className="g-3 mb-4">
                 {[
                   {
-                    label: "Min Monthly Amount",
+                    label: "Min Eligibility Amount",
                     value: data.minimum_monthly_amount_for_pf_calculation
                       ? `₹${Number(data.minimum_monthly_amount_for_pf_calculation).toLocaleString()}`
+                      : "—"
+                  },
+                  {
+                    label: "PF Wage Ceiling",
+                    value: data.pf_wage_ceiling
+                      ? `₹${Number(data.pf_wage_ceiling).toLocaleString()}`
                       : "—"
                   },
                   { label: "Contribution Value", value: contributionLabel },
@@ -211,7 +215,7 @@ const PFSettings = () => {
                     value: selectedComponents.length ? selectedComponents.map(c => c.label).join(", ") : "—"
                   },
                 ].map(({ label, value }) => (
-                  <Col sm={6} md={4} key={label}>
+                  <Col sm={6} md={3} key={label}>
                     <div className="border rounded p-3 bg-light h-100">
                       <p className="text-muted mb-1" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.6px" }}>
                         {label}
@@ -254,8 +258,8 @@ const PFSettings = () => {
                 )}
               </SettingRow>
 
-              {/* Min Monthly Amount */}
-              <SettingRow label="Min Monthly Amount for PF">
+              {/* Min Eligibility Amount */}
+              <SettingRow label="Min Monthly Amount for PF Eligibility">
                 {isEditing ? (
                   <Input type="number"
                     value={form.minimum_monthly_amount_for_pf_calculation || ""}
@@ -265,6 +269,24 @@ const PFSettings = () => {
                   <span style={{ fontSize: 13 }}>
                     {data.minimum_monthly_amount_for_pf_calculation
                       ? `₹${Number(data.minimum_monthly_amount_for_pf_calculation).toLocaleString()}`
+                      : "—"}
+                  </span>
+                )}
+              </SettingRow>
+
+              {/* PF Wage Ceiling */}
+              <SettingRow label="PF Wage Ceiling (Statutory)">
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={form.pf_wage_ceiling || ""}
+                    onChange={(e) => handleChange("pf_wage_ceiling", Number(e.target.value))}
+                    style={{ width: 180 }}
+                  />
+                ) : (
+                  <span style={{ fontSize: 13 }}>
+                    {data.pf_wage_ceiling
+                      ? `₹${Number(data.pf_wage_ceiling).toLocaleString()}`
                       : "—"}
                   </span>
                 )}

@@ -326,16 +326,10 @@ const PayRollConfig = () => {
   };
 
   const navItems = [
-    { id: "1", label: "General" },
-    { id: "2", label: "Pay Cycles" },
-    { id: "3", label: "Basic Components" },
-    { id: "4", label: "Salary Components" },
-    { id: "5", label: "Salary Policies" },
-    { id: "6", label: "Salary Structure" },
-    { id: "7", label: "Component" },
-    { id: "8", label: "Advanced Settings" },
-    { id: "9", label: "Payroll Run" },
-    { id: "10", label: "Employee Payslip"},
+    { id: "1", label: "Component" },
+    { id: "2", label: "Salary Structure" },
+    { id: "3", label: "Advanced Settings" },
+    { id: "4", label: "Payroll Run" },
   ];
 
   return (
@@ -372,61 +366,22 @@ const PayRollConfig = () => {
                 className="text-muted mt-4 mt-md-0"
                 id="v-pills-tabContent"
               >
+                
                 <TabPane tabId="1">
-                  <GeneralTab
-                    payrollobj={payrollobj}
-                    locationOption={locationOption}
-                    currencyOption={currencyOption}
-                    salaryCalculationOption={salaryCalculationOption}
-                  />
-                </TabPane>
-
-                <TabPane tabId="2">
-                  <PayCyclesTab
-                    payrollobj={payrollobj}
-                    repeatOption={repeatOption}
-                    cutOfMonthOption={cutOfMonthOption}
-                  />
-                </TabPane>
-
-                <TabPane tabId="3">
-                  <BasicComponentsTab
-                    payrollobj={payrollobj}
-                    epfCycle={EPFCycle}
-                    taxSlab={taxSlab}
-                    onEPFEdit={handleEPFEdit}
-                    onTaxEdit={handleTaxEdit}
-                  />
-                </TabPane>
-
-                <TabPane tabId="4">
-                  <SalaryComponentsTab
-                    payrollobj={payrollobj}
-                    onEarningAdd={handleEarningAdd}
-                  />
-                </TabPane>
-
-                <TabPane tabId="5">
-                  <SalaryPoliciesTab onAddPolicy={handleSalaryPoliciesAdd} />
-                </TabPane>
-                <TabPane tabId="6">
-               <SalaryStructureTab
-                    payrollobj={payrollobj}
-                    onEarningAdd={handleEarningAdd}
-                  />
-                </TabPane>
-                <TabPane tabId="7">
                   <PayrollComponentTab />
                 </TabPane>
-                <TabPane tabId="8">
+                <TabPane tabId="2">
+                  <SalaryStructureTab
+                    payrollobj={payrollobj}
+                    onEarningAdd={handleEarningAdd}
+                  />
+                </TabPane>
+                <TabPane tabId="3">
                   <AdvancedSettingsTab />
                 </TabPane>
 
-                <TabPane tabId="9">
+                <TabPane tabId="4">
                   <PayrollRun />
-                </TabPane>
-                <TabPane tabId="10">
-                  <EmployeePayslip />
                 </TabPane>
               </TabContent>
             </Col>
