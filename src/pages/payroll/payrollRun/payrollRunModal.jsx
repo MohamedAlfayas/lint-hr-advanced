@@ -60,7 +60,7 @@ const PayrollRunModal = ({ isOpen, toggle, onSuccess }) => {
         handleClose();
         })
         .catch((err) => {
-        toast.error(err?.response?.data?.message || "Failed to execute calculations.");
+        toast.error(err?.response?.data?.detail || "Failed to execute calculations.");
         })
         .finally(() => setSubmitting(false));
     };

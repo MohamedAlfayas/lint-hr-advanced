@@ -25,7 +25,7 @@ const PAYOUT_FREQUENCY_OPTIONS = [
   { value: "monthly", label: "Monthly" },
   { value: "quarterly", label: "Quarterly" },
   { value: "half_yearly", label: "Half Yearly" },
-  { value: "yearly", label: "Yearly" },
+  { value: "annually", label: "Annually" },
 ];
 
 const SectionLabel = ({ children }) => (
@@ -514,53 +514,58 @@ const BonusPolicySettings = () => {
             : data.enable_performance_bonus) && (
             <>
               <SettingRow label="Calculation Basis">
-                <Select
-                  options={BONUS_BASIS_OPTIONS}
-                  value={BONUS_BASIS_OPTIONS.find(
-                    (o) =>
-                      o.value ===
-                      form.performance_bonus_calculation_basis
-                  )}
-                  onChange={(e) =>
-                    handleChange(
-                      "performance_bonus_calculation_basis",
-                      e.value
-                    )
-                  }
-                />
+                {isEditing ? (
+                  <Select
+                    options={BONUS_BASIS_OPTIONS}
+                    value={BONUS_BASIS_OPTIONS.find(
+                      (o) => o.value === form.performance_bonus_calculation_basis
+                    )}
+                    onChange={(e) =>
+                      handleChange("performance_bonus_calculation_basis", e.value)
+                    }
+                  />
+                ) : (
+                  <span>
+                    {BONUS_BASIS_OPTIONS.find(
+                      (o) => o.value === data.performance_bonus_calculation_basis
+                    )?.label ?? "—"}
+                  </span>
+                )}
               </SettingRow>
 
               <SettingRow label="Bonus Percentage">
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={
-                    form.performance_bonus_percentage || ""
-                  }
-                  onChange={(e) =>
-                    handleChange(
-                      "performance_bonus_percentage",
-                      e.target.value
-                    )
-                  }
-                />
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.performance_bonus_percentage || ""}
+                    onChange={(e) =>
+                      handleChange("performance_bonus_percentage", e.target.value)
+                    }
+                  />
+                ) : (
+                  <span>{data.performance_bonus_percentage ?? "—"}%</span>
+                )}
               </SettingRow>
 
               <SettingRow label="Payout Frequency" last>
-                <Select
-                  options={PAYOUT_FREQUENCY_OPTIONS}
-                  value={PAYOUT_FREQUENCY_OPTIONS.find(
-                    (o) =>
-                      o.value ===
-                      form.performance_bonus_payout_frequency
-                  )}
-                  onChange={(e) =>
-                    handleChange(
-                      "performance_bonus_payout_frequency",
-                      e.value
-                    )
-                  }
-                />
+                {isEditing ? (
+                  <Select
+                    options={PAYOUT_FREQUENCY_OPTIONS}
+                    value={PAYOUT_FREQUENCY_OPTIONS.find(
+                      (o) => o.value === form.performance_bonus_payout_frequency
+                    )}
+                    onChange={(e) =>
+                      handleChange("performance_bonus_payout_frequency", e.value)
+                    }
+                  />
+                ) : (
+                  <span>
+                    {PAYOUT_FREQUENCY_OPTIONS.find(
+                      (o) => o.value === data.performance_bonus_payout_frequency
+                    )?.label ?? "—"}
+                  </span>
+                )}
               </SettingRow>
             </>
           )}

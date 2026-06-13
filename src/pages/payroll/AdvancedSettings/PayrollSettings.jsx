@@ -376,37 +376,6 @@ const PayrollSettings = () => {
                   ))}
                 </div>
               </Col>
-
-              <Col md={6}>
-                <SectionLabel>Day Inclusions</SectionLabel>
-                <div className="border rounded">
-                  {[
-                    ["include_week_offs", "Include Weekly Offs"],
-                    ["include_holidays", "Include Holidays"],
-                    ["include_fixed_paydays", "Fixed Paydays"],
-                  ].map(([key, label], i, arr) => (
-                    <Row key={key}
-                      className={`align-items-center px-3 py-2 g-0${i < arr.length - 1 ? " border-bottom" : ""}`}>
-                      <Col xs={8}>
-                        <Label className="mb-0" style={{ fontSize: 13 }}>{label}</Label>
-                      </Col>
-                      <Col xs={4} className="text-end">
-                        {isEditing ? (
-                          <div className="form-check form-switch mb-0 d-flex justify-content-end">
-                            <Input className="form-check-input" type="checkbox"
-                              checked={!!form[key]}
-                              onChange={() => handleToggle(key)} />
-                          </div>
-                        ) : (
-                          <div className="d-flex justify-content-end">
-                            <ViewToggle checked={!!data[key]} />
-                          </div>
-                        )}
-                      </Col>
-                    </Row>
-                  ))}
-                </div>
-              </Col>
             </Row>
 
             {/* ── Save / Cancel ─────────────────────────────────────── */}

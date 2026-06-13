@@ -114,6 +114,10 @@ const AttendancePolicySettings = () => {
 
   const data = form || {};
 
+  const isWorkingDays =
+    (isEditing ? form?.salary_calculation_method : data?.salary_calculation_method)
+    === "working_days";
+
   if (isEmpty && !isEditing) {
     return (
       <Card>
@@ -219,7 +223,14 @@ const AttendancePolicySettings = () => {
               <Select
                 options={SALARY_METHOD_OPTIONS}
                 value={SALARY_METHOD_OPTIONS.find(o => o.value === form.salary_calculation_method)}
-                onChange={(e) => handleChange("salary_calculation_method", e.value)}
+                onChange={(e) => {
+                  handleChange("salary_calculation_method", e.value);
+
+                  if (e.value === "working_days") {
+                    handleChange("include_week_offs", false);
+                    handleChange("include_holidays", false);
+                  }
+                }}
                 styles={{ container: (p) => ({ ...p, width: 220 }) }}
               />
             ) : (
@@ -262,8 +273,19 @@ const AttendancePolicySettings = () => {
             <SettingRow key={key} label={label} last={i === arr.length - 1 && !isEditing}>
               {isEditing ? (
                 <div className="form-check form-switch mb-0">
-                  <Input className="form-check-input" type="checkbox" checked={!!form[key]} onChange={() => handleToggle(key)} />
+                  <Input
+                      className="form-check-input"
+                      type="checkbox"
+                      checked={!!form[key]}
+                      disabled={
+                        isWorkingDays &&
+                        ["include_week_offs", "include_holidays"].includes(key)
+                      }
+                      onChange={() => handleToggle(key)}
+                    />
                 </div>
+
+                
               ) : (
                 <ViewToggle checked={!!data[key]} />
               )}
