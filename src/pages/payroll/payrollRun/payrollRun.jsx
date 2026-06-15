@@ -1,20 +1,59 @@
 import React, { useEffect, useState } from "react";
 import {
-  Card, CardHeader, CardBody, CardTitle, CardSubtitle,
-  Col, Row, Button, Input, Badge, Table, Spinner
+  Card,
+  CardHeader,
+  CardBody,
+  CardTitle,
+  CardSubtitle,
+  Col,
+  Row,
+  Button,
+  Input,
+  Badge,
+  Table,
+  Spinner,
 } from "reactstrap";
+import SimpleBar from "simplebar-react";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import PayrollRunModal from "./payrollRunModal";
 import PayrollRunDetails from "./payrollRunDetails";
 
+const MONTH_NAMES = [
+  "",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+// Returns the readable month name whether `month` is a number (1..12) or a string.
+const getMonthName = (month) => {
+  if (month === null || month === undefined || month === "") return "";
+  if (isNaN(month)) return String(month);
+  return MONTH_NAMES[parseInt(month, 10)] || String(month);
+};
+
 const getStatusColor = (status) => {
   switch (String(status).toLowerCase()) {
-    case "draft": return "warning";
-    case "processed": return "primary";
-    case "approved": return "success";
-    case "paid": return "dark";
-    default: return "secondary";
+    case "draft":
+      return "warning";
+    case "processed":
+      return "primary";
+    case "approved":
+      return "success";
+    case "paid":
+      return "dark";
+    default:
+      return "secondary";
   }
 };
 
@@ -44,29 +83,30 @@ const PayrollRun = () => {
   }, []);
 
   // Summary Card Calculations
-  const processedCount = records.filter(x => x.status === "processed").length;
-  const approvedCount = records.filter(x => x.status === "approved").length;
-  const paidCount = records.filter(x => x.status === "paid").length;
+  const processedCount = records.filter((x) => x.status === "processed").length;
+  const approvedCount = records.filter((x) => x.status === "approved").length;
+  const paidCount = records.filter((x) => x.status === "paid").length;
 
-  const filteredRecords = records.filter(row => {
-    // Safely cast row.month to a string, or default to an empty string if null/undefined
-    const monthStr = row.month ? String(row.month).toLowerCase() : "";
+  // Search by month name ("january" / "jan"), raw month value, or year.
+  const filteredRecords = records.filter((row) => {
+    const searchLower = searchTerm.trim().toLowerCase();
+    if (!searchLower) return true;
+
+    const monthName = getMonthName(row.month).toLowerCase(); // "january"
+    const monthRaw = row.month ? String(row.month).toLowerCase() : ""; // "1"
     const yearStr = row.year ? String(row.year) : "";
-    
-    const searchLower = searchTerm.toLowerCase();
 
-    return monthStr.includes(searchLower) || yearStr.includes(searchLower);
+    return (
+      monthName.includes(searchLower) ||
+      monthRaw.includes(searchLower) ||
+      yearStr.includes(searchLower)
+    );
   });
 
   const handleViewDetails = (run) => {
     setSelectedRun(run);
     setDetailsOpen(true);
   };
-
-  const MONTH_NAMES = [
-    "", "January", "February", "March", "April", "May", "June", 
-    "July", "August", "September", "October", "November", "December"
-    ];
 
   return (
     <React.Fragment>
@@ -76,12 +116,15 @@ const PayrollRun = () => {
           { title: "Total Payroll Runs", count: records.length, bg: "info" },
           { title: "Processed", count: processedCount, bg: "primary" },
           { title: "Approved", count: approvedCount, bg: "success" },
-          { title: "Paid", count: paidCount, bg: "dark" }
+          { title: "Paid", count: paidCount, bg: "dark" },
         ].map((card, idx) => (
           <Col p="2" sm={6} md={3} key={idx}>
             <Card className="shadow-none border mb-0">
               <CardBody className="p-3">
-                <p className="text-muted text-uppercase fw-semibold mb-1" style={{ fontSize: 11 }}>
+                <p
+                  className="text-muted text-uppercase fw-semibold mb-1"
+                  style={{ fontSize: 11 }}
+                >
                   {card.title}
                 </p>
                 <h4 className={`mb-0 fw-bold text-${card.bg}`}>{card.count}</h4>
@@ -95,7 +138,9 @@ const PayrollRun = () => {
       <Card className="shadow-none border">
         <CardHeader className="bg-light d-flex justify-content-between align-items-center">
           <div>
-            <CardTitle tag="h5" className="mb-0">Payroll Run Management</CardTitle>
+            <CardTitle tag="h5" className="mb-0">
+              Payroll Run Management
+            </CardTitle>
             <CardSubtitle className="text-muted mt-1" style={{ fontSize: 12 }}>
               Process, verify, and monitor company payouts
             </CardSubtitle>
@@ -119,68 +164,89 @@ const PayrollRun = () => {
           {loading ? (
             <div className="text-center py-5">
               <Spinner color="primary" size="md" />
-              <p className="text-muted mt-2" style={{ fontSize: 13 }}>Fetching Payroll logs...</p>
+              <p className="text-muted mt-2" style={{ fontSize: 13 }}>
+                Fetching Payroll logs...
+              </p>
             </div>
           ) : filteredRecords.length === 0 ? (
             <div className="text-center py-5">
-              <h6 className="text-muted">No payroll run logs match your criteria.</h6>
+              <h6 className="text-muted">
+                No payroll run logs match your criteria.
+              </h6>
             </div>
           ) : (
-            <div className="table-responsive">
-              <Table className="align-middle table-nowrap mb-0 border">
-                <thead className="table-light text-muted" style={{ fontSize: 12 }}>
-                  <tr>
-                    <th>Month</th>
-                    <th>Year</th>
-                    <th>Status</th>
-                    <th>Processed At</th>
-                    <th className="text-end">Actions</th>
-                  </tr>
-                </thead>
-                <tbody style={{ fontSize: 13 }}>
-                  {filteredRecords.map((row, index) => (
-                    <tr key={row.id || index}>
-                      <td className="fw-medium">
-                        {isNaN(row.month) ? row.month : (MONTH_NAMES[parseInt(row.month)] || row.month)}
-                      </td>
-                      <td>{row.year}</td>
-                      <td>
-                        <Badge color={getStatusColor(row.status)} pill style={{ padding: "4px 10px" }}>
-                          {row.status}
-                        </Badge>
-                      </td>
-                      <td>{row.processed_at || "—"}</td>
-                      <td className="text-end">
-                        <Button 
-                          color="primary" 
-                          outline 
-                          size="sm" 
-                          className="py-1 px-2 me-1" 
-                          onClick={() => handleViewDetails(row)}
-                        >
-                          View Details
-                        </Button>
-                      </td>
+            <SimpleBar
+              style={{ maxHeight: "calc(100vh - 420px)" }}
+              autoHide={false}
+            >
+              <div className="table-responsive">
+                <Table className="align-middle table-nowrap mb-0 border">
+                  <thead
+                    className="table-light text-muted"
+                    style={{
+                      fontSize: 12,
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 1,
+                    }}
+                  >
+                    <tr>
+                      <th>Month</th>
+                      <th>Year</th>
+                      <th>Status</th>
+                      <th>Processed At</th>
+                      <th className="text-end">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
+                  </thead>
+                  <tbody style={{ fontSize: 13 }}>
+                    {filteredRecords.map((row, index) => (
+                      <tr key={row.id || index}>
+                        <td className="fw-medium">
+                          {getMonthName(row.month) || row.month}
+                        </td>
+                        <td>{row.year}</td>
+                        <td>
+                          <Badge
+                            color={getStatusColor(row.status)}
+                            pill
+                            style={{ padding: "4px 10px" }}
+                          >
+                            {row.status}
+                          </Badge>
+                        </td>
+                        <td>{row.processed_at || "—"}</td>
+                        <td className="text-end">
+                          <Button
+                            color="primary"
+                            outline
+                            size="sm"
+                            className="py-1 px-2 me-1"
+                            onClick={() => handleViewDetails(row)}
+                          >
+                            View Details
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </SimpleBar>
           )}
         </CardBody>
       </Card>
 
       {/* Shared Component Modals */}
-      <PayrollRunModal 
-        isOpen={modalOpen} 
-        toggle={() => setModalOpen(!modalOpen)} 
-        onSuccess={fetchData} 
+      <PayrollRunModal
+        isOpen={modalOpen}
+        toggle={() => setModalOpen(!modalOpen)}
+        onSuccess={fetchData}
       />
 
-      <PayrollRunDetails 
-        isOpen={detailsOpen} 
-        toggle={() => setDetailsOpen(!detailsOpen)} 
-        data={selectedRun} 
+      <PayrollRunDetails
+        isOpen={detailsOpen}
+        toggle={() => setDetailsOpen(!detailsOpen)}
+        data={selectedRun}
       />
     </React.Fragment>
   );

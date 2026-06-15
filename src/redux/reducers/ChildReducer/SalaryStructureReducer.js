@@ -1,15 +1,14 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  salary_structures: [],        // full list
-  salary_structure_single: null // selected / view / edit
+  salary_structures: [], // full list
+  salary_structure_single: null, // selected / view / edit
 };
 
 const SalaryStructureReducer = createSlice({
   name: "SalaryStructureReducer",
   initialState,
   reducers: {
-
     // ─── Set Full List ─────────────────────────────
     setSalaryStructures: (state, action) => {
       state.salary_structures = action.payload;
@@ -17,20 +16,30 @@ const SalaryStructureReducer = createSlice({
 
     // ─── Add New Structure ─────────────────────────
     addSalaryStructure: (state, action) => {
-      state.salary_structures.push(action.payload);
+      // guard against duplicates if the same id is added twice
+      const exists = state.salary_structures.some(
+        (item) => item.id === action.payload.id,
+      );
+      if (!exists) {
+        state.salary_structures.push(action.payload);
+      } else {
+        state.salary_structures = state.salary_structures.map((item) =>
+          item.id === action.payload.id ? action.payload : item,
+        );
+      }
     },
 
     // ─── Edit / Update Structure ───────────────────
     editSalaryStructure: (state, action) => {
       state.salary_structures = state.salary_structures.map((item) =>
-        item.id === action.payload.id ? action.payload : item
+        item.id === action.payload.id ? action.payload : item,
       );
     },
 
     // ─── Delete Structure ──────────────────────────
     deleteSalaryStructure: (state, action) => {
       state.salary_structures = state.salary_structures.filter(
-        (item) => item.id !== action.payload
+        (item) => item.id !== action.payload,
       );
     },
 
