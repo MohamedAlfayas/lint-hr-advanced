@@ -87,7 +87,7 @@ const OrgInfoTab = () => {
         label: d.countryName,
         value: d.countryName,
       };
-    }
+    },
   );
 
   const CountryCodeListOptions = CountryList.filter((c) => c.show === true).map(
@@ -97,7 +97,7 @@ const OrgInfoTab = () => {
         label: d.countryCode,
         value: d.countryCode,
       };
-    }
+    },
   );
 
   // Custom Field Option
@@ -127,8 +127,6 @@ const OrgInfoTab = () => {
 
   const [profileData, setProfileData] = useState(initialData);
 
-  
-  
   const [showUpdateBtn, setShowUpdateBtn] = useState(false);
 
   useEffect(() => {
@@ -163,7 +161,7 @@ const OrgInfoTab = () => {
 
           setStateListOptions(
             CountryListOptions.find((d) => d.value === response?.country)
-              .states || []
+              .states || [],
           );
         }
       })
@@ -187,7 +185,7 @@ const OrgInfoTab = () => {
     });
 
     setStateListOptions(
-      CountryListOptions.find((d) => d.value === e.countryName).states || []
+      CountryListOptions.find((d) => d.value === e.countryName).states || [],
     );
   };
 
@@ -200,7 +198,7 @@ const OrgInfoTab = () => {
     });
 
     setStateListOptions(
-      CountryListOptions.find((d) => d.value === e.value).states || []
+      CountryListOptions.find((d) => d.value === e.value).states || [],
     );
   };
 
@@ -234,7 +232,7 @@ const OrgInfoTab = () => {
     const newPD = {
       ...profileData,
       cf_values: [...profileData.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: e.target.value } : item
+        item.id === cf_id ? { ...item, value: e.target.value } : item,
       ),
     };
     setProfileData(newPD);
@@ -245,7 +243,7 @@ const OrgInfoTab = () => {
       cf_values: [...profileData.cf_values].map((item) =>
         item.id === cf_id
           ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
-          : item
+          : item,
       ),
     });
   };
@@ -285,7 +283,7 @@ const OrgInfoTab = () => {
       const Api = await PostApi(
         "/branch/save-company-profile/",
         form_data,
-        true
+        true,
       );
       if (Api.status && Api.status === 200) {
         toast.success(Api?.data?.message);
@@ -398,7 +396,7 @@ const OrgInfoTab = () => {
                                   profileData?.country_code !== ""
                                     ? CountryCodeListOptions.find(
                                         (d) =>
-                                          d.value === profileData.country_code
+                                          d.value === profileData.country_code,
                                       )
                                     : []
                                 }
@@ -417,7 +415,7 @@ const OrgInfoTab = () => {
                                 onChange={(e) =>
                                   updateProfileData(
                                     "contact_number",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 invalid={
@@ -459,7 +457,7 @@ const OrgInfoTab = () => {
                               onChange={(e) =>
                                 updateProfileData(
                                   "contact_email",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               invalid={
@@ -581,7 +579,7 @@ const OrgInfoTab = () => {
                             value={
                               profileData?.country !== ""
                                 ? CountryListOptions.find(
-                                    (d) => d.value === profileData.country
+                                    (d) => d.value === profileData.country,
                                   )
                                 : []
                             }
@@ -632,7 +630,7 @@ const OrgInfoTab = () => {
                             className="basic-multi-select"
                             value={
                               stateListOptions.find(
-                                (d) => d.value === profileData.state
+                                (d) => d.value === profileData.state,
                               ) || []
                             }
                             styles={{
@@ -772,7 +770,7 @@ const OrgInfoTab = () => {
                               value={
                                 profileData.timezone &&
                                 timzone_options.find(
-                                  (e) => e.value === profileData.timezone
+                                  (e) => e.value === profileData.timezone,
                                 )
                               }
                               styles={{
@@ -850,11 +848,14 @@ const OrgInfoTab = () => {
                         ? profileData.cf_values.map((obj) => (
                             <Col xxl={8} md={6}>
                               <div>
-                                <Label htmlFor="last_name" className="form-label">
+                                <Label
+                                  htmlFor="last_name"
+                                  className="form-label"
+                                >
                                   {obj.name}
                                 </Label>
                                 {form_default_input_types.includes(
-                                  obj.type
+                                  obj.type,
                                 ) && (
                                   <div className="form-icon right">
                                     <Input
@@ -882,7 +883,7 @@ const OrgInfoTab = () => {
                                         ? null
                                         : dayjs(
                                             ConvertDateFormat(obj.value),
-                                            DateFormat
+                                            DateFormat,
                                           )
                                     }
                                     allowClear={false}
@@ -905,7 +906,7 @@ const OrgInfoTab = () => {
                       <Col xxl={8} md={12}>
                         <Row>
                           {/* Dark Logo Section */}
-                          <Col xxl={6} md={6}>
+                          {/* <Col xxl={6} md={6}>
                             <div>
                               <Label
                                 htmlFor="exampleFormControlTextarea5"
@@ -991,7 +992,7 @@ const OrgInfoTab = () => {
                                 </div>
                               )}
                             </div>
-                          </Col>
+                          </Col> */}
 
                           {/* Light Logo Section */}
 
@@ -1001,7 +1002,7 @@ const OrgInfoTab = () => {
                                 htmlFor="exampleFormControlTextarea5"
                                 className="form-label"
                               >
-                                Light Logo
+                                Logo
                               </Label>
                               <Dropzone
                                 multiple={false}
