@@ -1611,17 +1611,18 @@ const EmployeeForm = () => {
                     </Col>
                   ))
                 : null}
-
+              <Col md={12} lg={12} xxl={12}>
+                <div className="text-end mb-3">
+                  <Button type="submit" color="success" className="btn-label">
+                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
+                    Save
+                  </Button>
+                </div>
+              </Col>
               {/* ── Add Location Button — only shown for existing employees ──── */}
               {isExistingEmployee && (
                 <Col lg={12} className="mb-3">
                   {/* Save Button */}
-                  <div className="text-end mb-3">
-                    <Button type="submit" color="success" className="btn-label">
-                      <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
-                      Save
-                    </Button>
-                  </div>
 
                   <Label className="form-label mb-0">Custom Locations</Label>
 
