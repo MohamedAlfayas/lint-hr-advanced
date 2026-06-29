@@ -94,10 +94,16 @@ const PFSettings = () => {
   const [pfSettings, setPfSettings] = useState(null);
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [salaryComponents] = useState([
-    { value: 1, label: "Basic" },
-    { value: 2, label: "DA" },
-  ]);
+
+  // ── FIX: salaryComponents must come from the real PayrollComponent table,
+  // not a hardcoded { value: 1, label: "Basic" } / { value: 2, label: "DA" }
+  // array. The hardcoded values caused pf_contribution_calculation_based_on
+  // to always save [1] regardless of which component the user actually
+  // picked, since "value" never matched the real PayrollComponent.id. That
+  // silently broke PF-eligible-base matching in compute_payslip's
+  // `pc.id in pf_basis_ids` check.
+  const [salaryComponents, setSalaryComponents] = useState([]);
+  const [componentsLoading, setComponentsLoading] = useState(false);
 
   const fetchPFSettings = () => {
     setLoading(true);
@@ -113,7 +119,25 @@ const PFSettings = () => {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchPFSettings(); }, []);
+  const fetchSalaryComponents = () => {
+    setComponentsLoading(true);
+    Api({ method: "GET", url: "payroll/component/" })
+      .then((res) => {
+        const list = res?.data?.data || [];
+        setSalaryComponents(
+          list.map((c) => ({ value: c.id, label: c.name }))
+        );
+      })
+      .catch((err) => {
+        toast.error(err?.response?.data?.message || "Failed to fetch payroll components");
+      })
+      .finally(() => setComponentsLoading(false));
+  };
+
+  useEffect(() => {
+    fetchPFSettings();
+    fetchSalaryComponents();
+  }, []);
 
   const handleChange = (field, value) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -315,11 +339,14 @@ const PFSettings = () => {
               <SettingRow label="Contribution Based On">
                 {isEditing ? (
                   <Select isMulti options={salaryComponents}
+                    isLoading={componentsLoading}
+                    isDisabled={componentsLoading}
+                    placeholder={componentsLoading ? "Loading components…" : "Select components…"}
                     value={salaryComponents.filter((c) =>
                       (form.pf_contribution_calculation_based_on || []).includes(c.value)
                     )}
                     onChange={(selected) =>
-                      handleChange("pf_contribution_calculation_based_on", selected.map(s => s.value))
+                      handleChange("pf_contribution_calculation_based_on", (selected || []).map(s => s.value))
                     }
                     styles={{ container: (p) => ({ ...p, minWidth: 250 }) }} />
                 ) : (

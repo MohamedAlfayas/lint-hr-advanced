@@ -6,6 +6,7 @@ import {
 import Select from "react-select";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
+import { required, range, min, runChecks } from "./validators";
 
 const OT_METHOD_OPTIONS = [
   { value: "actual", label: "Actual Hours" },
@@ -77,7 +78,27 @@ const OvertimePolicySettings = () => {
   const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
   const handleToggle = (field) => setForm((prev) => ({ ...prev, [field]: !prev[field] }));
 
+  const validate = () => {
+    if (!form.is_ot_enabled)
+      return runChecks([required("Effective date", form.effective_date)], toast);
+
+    const checks = [
+      required("Effective date", form.effective_date),
+      min("OT multiplier", form.ot_multiplier, 1),
+      min("Min OT minutes", form.minimum_ot_minutes, 0),
+      range("Max OT minutes/day", form.maximum_ot_minutes_per_day, 0, 1440),
+    ];
+    if (Number(form.maximum_ot_minutes_per_day) < Number(form.minimum_ot_minutes))
+      checks.push("Max OT minutes/day must be ≥ Min OT minutes");
+    if (form.is_weekend_ot_enabled)
+      checks.push(min("Weekend OT multiplier", form.weekend_ot_multiplier, 1));
+    if (form.is_holiday_ot_enabled)
+      checks.push(min("Holiday OT multiplier", form.holiday_ot_multiplier, 1));
+    return runChecks(checks, toast);
+  };
+
   const handleSave = () => {
+    if (!validate()) return;
     setLoading(true);
     const isUpdate = form?.id;
     Api({
@@ -198,7 +219,6 @@ const OvertimePolicySettings = () => {
           </div>
         )}
 
-        {/* General */}
         <SectionLabel>General</SectionLabel>
         <div className="border rounded mb-4">
           <SettingRow label="Effective Date">
@@ -232,7 +252,6 @@ const OvertimePolicySettings = () => {
 
         {otEnabled && (
           <>
-            {/* OT Calculation */}
             <SectionLabel>OT Calculation</SectionLabel>
             <div className="border rounded mb-4">
               <SettingRow label="Calculation Method">
@@ -300,7 +319,6 @@ const OvertimePolicySettings = () => {
               </SettingRow>
             </div>
 
-            {/* Weekend OT */}
             <SectionLabel>Weekend Overtime</SectionLabel>
             <div className="border rounded mb-4">
               <SettingRow label="Enable Weekend OT">
@@ -326,7 +344,6 @@ const OvertimePolicySettings = () => {
               )}
             </div>
 
-            {/* Holiday OT */}
             <SectionLabel>Holiday Overtime</SectionLabel>
             <div className="border rounded mb-4">
               <SettingRow label="Enable Holiday OT">

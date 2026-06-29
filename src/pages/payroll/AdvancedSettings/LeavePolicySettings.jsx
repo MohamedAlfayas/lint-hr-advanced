@@ -5,6 +5,7 @@ import {
 } from "reactstrap";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
+import { required, runChecks } from "./validators";
 
 const SectionLabel = ({ children }) => (
   <p className="text-uppercase fw-semibold text-muted mb-2" style={{ fontSize: 11, letterSpacing: "0.8px" }}>
@@ -17,7 +18,9 @@ const SettingRow = ({ label, children, last = false }) => (
     <Col sm={5} md={4}>
       <Label className="mb-0 text-muted" style={{ fontSize: 13 }}>{label}</Label>
     </Col>
-    <Col sm={7} md={8}>{children}</Col>
+    <Col sm={7} md={8}>
+      {children}
+    </Col>
   </Row>
 );
 
@@ -60,7 +63,11 @@ const LeavePolicySettings = () => {
   const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
   const handleToggle = (field) => setForm((prev) => ({ ...prev, [field]: !prev[field] }));
 
+  const validate = () =>
+    runChecks([required("Effective date", form.effective_date)], toast);
+
   const handleSave = () => {
+    if (!validate()) return;
     setLoading(true);
     const isUpdate = form?.id;
     Api({

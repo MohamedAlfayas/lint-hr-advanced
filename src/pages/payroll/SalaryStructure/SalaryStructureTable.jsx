@@ -12,6 +12,11 @@ import {
 import { setRecurring } from "../../../redux/reducers/ChildReducer/RecurringReducer";
 import { useDispatch, useSelector } from "react-redux";
 
+// ─── Stable per-row id (frontend only — never sent to backend) ────────────────
+let _uidCounter = 0;
+const makeUid = () => `c_${Date.now()}_${_uidCounter++}`;
+const withUid = (c) => ({ ...c, _uid: c._uid || makeUid() });
+
 // ─── Helper: build a human-readable calculation label ─────────────────────────
 function formatCalc(comp) {
   if (!comp) return "";
@@ -52,6 +57,17 @@ function isBasicComponent(c, payrollComponents) {
   if (c.payroll_component && payrollComponents?.length) {
     const found = payrollComponents.find((p) => p.id === c.payroll_component);
     if (found) return !!found.is_basic;
+  }
+  return false;
+}
+
+// ─── Helper: check if a component is the balancing component ──────────────────
+function isBalancingComponent(c, payrollComponents) {
+  if (!c) return false;
+  if (c._is_balancing) return true;
+  if (c.payroll_component && payrollComponents?.length) {
+    const found = payrollComponents.find((p) => p.id === c.payroll_component);
+    if (found) return !!found.is_balancing_component;
   }
   return false;
 }
@@ -291,9 +307,6 @@ function CreateNewComponentMenu({ onSelect }) {
 export default function SalaryStructureTable() {
   const dispatch = useDispatch();
 
-  // Read the payroll component list straight from Redux. RecurringTable and
-  // VariableTable both dispatch setRecurring() after a save, so any component
-  // created there now flows into this dropdown immediately — no refresh needed.
   const payrollComponents =
     useSelector((state) => state.RecurringReducer.recurring_data) || [];
 
@@ -305,7 +318,6 @@ export default function SalaryStructureTable() {
   const [recurringModalOpen, setRecurringModalOpen] = useState(false);
   const [variableModalOpen, setVariableModalOpen] = useState(false);
 
-  // ── Fetch payroll components ────────────────────────────────────────────────
   const fetchPayrollComponents = useCallback(() => {
     Api({ method: "GET", url: "payroll/component/" })
       .then((res) => {
@@ -315,7 +327,6 @@ export default function SalaryStructureTable() {
       .catch(() => {});
   }, [dispatch]);
 
-  // ── Fetch salary structures ─────────────────────────────────────────────────
   const fetchStructures = useCallback(() => {
     setLoading(true);
     Api({ method: "GET", url: "payroll/salary-structure/" })
@@ -347,13 +358,20 @@ export default function SalaryStructureTable() {
     fetchStructures();
   }, [fetchPayrollComponents, fetchStructures]);
 
-  // ── Sidebar select ──────────────────────────────────────────────────────────
   const selectStructure = (s) => {
     if (editMode) return;
     setSelected(s);
   };
 
-  // ── Create new structure ────────────────────────────────────────────────────
+  // Build an editable draft, tagging every component with a stable _uid.
+  const buildDraft = (source) => {
+    const copy = JSON.parse(JSON.stringify(source));
+    copy.salary_structure_components = (
+      copy.salary_structure_components || []
+    ).map(withUid);
+    return copy;
+  };
+
   const handleCreate = () => {
     if (editMode) return;
     const newItem = {
@@ -364,24 +382,21 @@ export default function SalaryStructureTable() {
       salary_structure_components: [],
     };
     setSelected(newItem);
-    setDraft(JSON.parse(JSON.stringify(newItem)));
+    setDraft(buildDraft(newItem));
     setEditMode(true);
   };
 
-  // ── Enter edit mode ─────────────────────────────────────────────────────────
   const handleEdit = () => {
-    setDraft(JSON.parse(JSON.stringify(selected)));
+    setDraft(buildDraft(selected));
     setEditMode(true);
   };
 
-  // ── Cancel edit ─────────────────────────────────────────────────────────────
   const handleCancel = () => {
     if (draft?.id === 0) setSelected(structures[0] || null);
     setEditMode(false);
     setDraft(null);
   };
 
-  // ── Save ────────────────────────────────────────────────────────────────────
   const handleSave = () => {
     if (!draft) return;
 
@@ -466,63 +481,63 @@ export default function SalaryStructureTable() {
       .finally(() => setLoading(false));
   };
 
-  // ── Draft helpers ───────────────────────────────────────────────────────────
   const setDraftField = (key, val) => setDraft((d) => ({ ...d, [key]: val }));
 
-  const setCompField = (visibleIdx, key, val) =>
+  // ── Update a component field by its stable _uid (no index lookups) ─────────
+  const setCompField = (uid, key, val) =>
     setDraft((d) => {
-      const allComps = [...(d.salary_structure_components || [])];
-      const visibleComps = allComps.filter((c) => c && !c._removed);
-      const actualComp = visibleComps[visibleIdx];
-      const actualIdx = allComps.indexOf(actualComp);
-      if (actualIdx === -1) return d;
-
-      allComps[actualIdx] = { ...allComps[actualIdx], [key]: val };
-
-      if (key === "calculation_type") {
-        if (val === "percentage") {
-          allComps[actualIdx].calculation_based_on = "ctc";
-        } else {
-          allComps[actualIdx].calculation_based_on = null;
+      const comps = (d.salary_structure_components || []).map((c) => {
+        if (c._uid !== uid) return c;
+        const updated = { ...c, [key]: val };
+        if (key === "calculation_type") {
+          updated.calculation_based_on =
+            val === "percentage" ? c.calculation_based_on || "ctc" : null;
         }
-      }
-
-      return { ...d, salary_structure_components: allComps };
+        return updated;
+      });
+      return { ...d, salary_structure_components: comps };
     });
 
-  const removeComponent = (visibleIdx) =>
+  // ── Remove a component by its stable _uid ──────────────────────────────────
+  //    New row (id 0)     → dropped from the array entirely.
+  //    Saved row (id > 0) → soft-deleted (_removed) so the backend deactivates it.
+  const removeComponent = (uid) =>
     setDraft((d) => {
-      const allComps = [...(d.salary_structure_components || [])];
-      const visibleComps = allComps.filter((c) => c && !c._removed);
-      const actualComp = visibleComps[visibleIdx];
-      const actualIdx = allComps.indexOf(actualComp);
-      if (actualIdx === -1) return d;
+      const comps = [...(d.salary_structure_components || [])];
+      const idx = comps.findIndex((c) => c._uid === uid);
+      if (idx === -1) return d;
 
-      if (!allComps[actualIdx].id || allComps[actualIdx].id === 0) {
-        allComps.splice(actualIdx, 1);
+      if (!comps[idx].id || comps[idx].id === 0) {
+        comps.splice(idx, 1);
       } else {
-        allComps[actualIdx] = {
-          ...allComps[actualIdx],
-          _removed: true,
-          is_active: false,
-        };
+        comps[idx] = { ...comps[idx], _removed: true, is_active: false };
       }
-      return { ...d, salary_structure_components: allComps };
+      return { ...d, salary_structure_components: comps };
     });
 
+  // ── Add an existing component from the dropdown ────────────────────────────
   const addComponentFromDropdown = (opt) => {
+    const isBasic = !!opt.is_basic;
+    const isBalancing = !!opt.is_balancing_component;
+
     setDraft((d) => ({
       ...d,
       salary_structure_components: [
         ...(d.salary_structure_components || []),
         {
           id: 0,
+          _uid: makeUid(),
           _name: opt.name,
-          _is_basic: opt.is_basic || false,
+          _is_basic: isBasic,
+          _is_balancing: isBalancing,
           payroll_component: opt.id,
-          calculation_type: "fixed",
-          calculation_based_on: null,
-          calculation_value: "",
+          calculation_type: isBalancing ? null : opt.calculation_type || "fixed",
+          calculation_based_on: isBalancing
+            ? null
+            : opt.calculation_type === "percentage"
+              ? opt.calculation_based_on || "ctc"
+              : null,
+          calculation_value: isBalancing ? 0 : (opt.calculation_value ?? ""),
         },
       ],
     }));
@@ -530,6 +545,9 @@ export default function SalaryStructureTable() {
 
   const handleNewComponentSaved = (savedComponent) => {
     fetchPayrollComponents();
+    const isBasic = !!savedComponent.is_basic;
+    const isBalancing = !!savedComponent.is_balancing_component;
+
     setDraft((d) => {
       if (!d) return d;
       return {
@@ -538,19 +556,26 @@ export default function SalaryStructureTable() {
           ...(d.salary_structure_components || []),
           {
             id: 0,
+            _uid: makeUid(),
             _name: savedComponent.name || savedComponent.component_name || "",
-            _is_basic: savedComponent.is_basic || false,
+            _is_basic: isBasic,
+            _is_balancing: isBalancing,
             payroll_component: savedComponent.id,
-            calculation_type: savedComponent.calculation_type || "fixed",
-            calculation_based_on: savedComponent.calculation_based_on || null,
-            calculation_value: savedComponent.calculation_value || "",
+            calculation_type: isBalancing
+              ? null
+              : savedComponent.calculation_type || "fixed",
+            calculation_based_on: isBalancing
+              ? null
+              : savedComponent.calculation_based_on || null,
+            calculation_value: isBalancing
+              ? 0
+              : (savedComponent.calculation_value ?? ""),
           },
         ],
       };
     });
   };
 
-  // ── Derived ─────────────────────────────────────────────────────────────────
   const current = editMode ? draft : selected;
 
   const components = (current?.salary_structure_components || []).filter(
@@ -565,7 +590,6 @@ export default function SalaryStructureTable() {
     (p) => !usedComponentIds.includes(p.id),
   );
 
-  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div
       style={{
@@ -576,7 +600,6 @@ export default function SalaryStructureTable() {
         overflow: "hidden",
       }}
     >
-      {/* ── TOP HEADER BAR with Create New Structure button ────────────────── */}
       <div
         className="d-flex align-items-center justify-content-end px-4 py-2 bg-white border-bottom"
         style={{ flexShrink: 0 }}
@@ -594,7 +617,6 @@ export default function SalaryStructureTable() {
         </button>
       </div>
 
-      {/* ── MAIN BODY ─────────────────────────────────────────────────────── */}
       <div
         className="d-flex"
         style={{
@@ -621,7 +643,6 @@ export default function SalaryStructureTable() {
           </div>
         )}
 
-        {/* ── SIDEBAR ──────────────────────────────────────────────────────── */}
         <div
           className="border-end bg-white"
           style={{
@@ -684,7 +705,6 @@ export default function SalaryStructureTable() {
           </div>
         </div>
 
-        {/* ── RIGHT PANEL ──────────────────────────────────────────────────── */}
         <div
           className="flex-grow-1 p-4"
           style={{ overflowY: "auto", background: "#f4f5f7", minHeight: 0 }}
@@ -696,7 +716,6 @@ export default function SalaryStructureTable() {
                   <h5 className="mb-0 fw-semibold">{current.name}</h5>
                 </div>
 
-                {/* Tab bar */}
                 <div className="border-bottom mb-3">
                   <span
                     className="pb-2 d-inline-block fw-medium"
@@ -711,7 +730,6 @@ export default function SalaryStructureTable() {
                   </span>
                 </div>
 
-                {/* Name */}
                 <div className="d-flex justify-content-between align-items-start mb-3">
                   <div className="flex-grow-1 me-3">
                     <div className="fw-semibold mb-1" style={{ fontSize: 13 }}>
@@ -758,7 +776,6 @@ export default function SalaryStructureTable() {
                   )}
                 </div>
 
-                {/* Description */}
                 <div className="mb-3">
                   <div className="fw-semibold mb-1" style={{ fontSize: 13 }}>
                     Description
@@ -789,7 +806,6 @@ export default function SalaryStructureTable() {
                 <hr />
                 <div className="fw-semibold mb-3">Salary Structure</div>
 
-                {/* Components table */}
                 <div style={{ maxWidth: 700 }}>
                   <Table bordered size="sm" className="mb-1">
                     <thead className="table-light">
@@ -822,9 +838,13 @@ export default function SalaryStructureTable() {
                             c,
                             payrollComponents,
                           );
+                          const isBalancing = isBalancingComponent(
+                            c,
+                            payrollComponents,
+                          );
 
                           return (
-                            <tr key={visibleIdx}>
+                            <tr key={c._uid}>
                               <td
                                 style={{
                                   fontSize: 13.5,
@@ -836,10 +856,29 @@ export default function SalaryStructureTable() {
                                   visibleIdx,
                                   payrollComponents,
                                 )}
+                                {isBalancing && (
+                                  <span
+                                    className="badge bg-info-subtle text-info ms-2"
+                                    style={{ fontSize: 10 }}
+                                  >
+                                    Balancing
+                                  </span>
+                                )}
                               </td>
 
                               <td style={{ verticalAlign: "middle" }}>
-                                {editMode ? (
+                                {isBalancing ? (
+                                  <span
+                                    style={{
+                                      fontSize: 12.5,
+                                      color: "#6b7280",
+                                      fontStyle: "italic",
+                                    }}
+                                  >
+                                    Auto-calculated — fills the remaining
+                                    CTC/Gross amount
+                                  </span>
+                                ) : editMode ? (
                                   <div className="d-flex align-items-center gap-2 flex-wrap">
                                     <Input
                                       type="select"
@@ -847,7 +886,7 @@ export default function SalaryStructureTable() {
                                       value={c.calculation_type || "fixed"}
                                       onChange={(e) =>
                                         setCompField(
-                                          visibleIdx,
+                                          c._uid,
                                           "calculation_type",
                                           e.target.value,
                                         )
@@ -868,7 +907,7 @@ export default function SalaryStructureTable() {
                                       value={c.calculation_value || ""}
                                       onChange={(e) =>
                                         setCompField(
-                                          visibleIdx,
+                                          c._uid,
                                           "calculation_value",
                                           e.target.value,
                                         )
@@ -899,7 +938,7 @@ export default function SalaryStructureTable() {
                                           }
                                           onChange={(e) =>
                                             setCompField(
-                                              visibleIdx,
+                                              c._uid,
                                               "calculation_based_on",
                                               e.target.value,
                                             )
@@ -931,7 +970,7 @@ export default function SalaryStructureTable() {
                                   }}
                                 >
                                   <button
-                                    onClick={() => removeComponent(visibleIdx)}
+                                    onClick={() => removeComponent(c._uid)}
                                     style={{
                                       background: "none",
                                       border: "none",
@@ -963,7 +1002,6 @@ export default function SalaryStructureTable() {
                   )}
                 </div>
 
-                {/* Edit footer */}
                 {editMode && (
                   <div className="d-flex align-items-center justify-content-between mt-3">
                     <CreateNewComponentMenu
@@ -1003,7 +1041,6 @@ export default function SalaryStructureTable() {
           )}
         </div>
 
-        {/* Recurring Modal */}
         <RecurringModal
           isOpen={recurringModalOpen}
           toggle={() => setRecurringModalOpen(false)}
@@ -1011,7 +1048,6 @@ export default function SalaryStructureTable() {
           onSaved={handleNewComponentSaved}
         />
 
-        {/* Variable Modal */}
         <VariableModal
           isOpen={variableModalOpen}
           toggle={() => setVariableModalOpen(false)}

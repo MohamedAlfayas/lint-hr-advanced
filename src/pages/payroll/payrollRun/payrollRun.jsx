@@ -35,6 +35,27 @@ const MONTH_NAMES = [
   "December",
 ];
 
+const fmtDateTime = (val) => {
+  if (!val) return "—";
+  const d = new Date(val);
+  if (isNaN(d)) return val;
+  return d.toLocaleString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: true,
+  });
+};
+
+const fmtDays = (val) => {
+  if (val === null || val === undefined || val === "") return "—";
+  const num = parseFloat(val);
+  if (isNaN(num)) return val;
+  const wholeDays = Math.floor(num);
+  const hours = Math.round((num - wholeDays) * 8); // 1 day = 8 hrs
+  if (hours === 0) return `${wholeDays} day${wholeDays !== 1 ? "s" : ""}`;
+  if (wholeDays === 0) return `${hours} hr${hours !== 1 ? "s" : ""}`;
+  return `${wholeDays} day${wholeDays !== 1 ? "s" : ""} ${hours} hr${hours !== 1 ? "s" : ""}`;
+};
+
 // Returns the readable month name whether `month` is a number (1..12) or a string.
 const getMonthName = (month) => {
   if (month === null || month === undefined || month === "") return "";
@@ -214,7 +235,7 @@ const PayrollRun = () => {
                             {row.status}
                           </Badge>
                         </td>
-                        <td>{row.processed_at || "—"}</td>
+                        <td>{fmtDateTime(row.processed_at) || "—"}</td>
                         <td className="text-end">
                           <Button
                             color="primary"

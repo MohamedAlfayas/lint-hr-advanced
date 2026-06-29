@@ -49,6 +49,7 @@ import PayrollSettings from "./AdvancedSettings/PayrollSettings";
 import AdvancedSettingsTab from "./AdvancedSettings/AdvancedSettingsTab";
 import PayrollRun from "./payrollRun/payrollRun";
 import EmployeePayslip from "./payrollRun/EmployeePayslip";
+import ReimbursementsTab from "./PayrollComponent/ReimbursementsTab";
 defineElement(loadAnimation);
 
 // ─── Shared static data ──────────────────────────────────────────────────────
@@ -327,9 +328,10 @@ const PayRollConfig = () => {
 
   const navItems = [
     { id: "1", label: "Component" },
-    { id: "2", label: "Salary Structure" },
-    { id: "3", label: "Advanced Settings" },
-    { id: "4", label: "Payroll Run" },
+    { id: "2", label: "Reimbursement" },
+    { id: "3", label: "Salary Structure" },
+    { id: "4", label: "Policy Settings" },
+    { id: "5", label: "Payroll Run" },
   ];
 
   return (
@@ -371,16 +373,19 @@ const PayRollConfig = () => {
                   <PayrollComponentTab />
                 </TabPane>
                 <TabPane tabId="2">
+                  <ReimbursementsTab />
+                </TabPane>
+                <TabPane tabId="3">
                   <SalaryStructureTab
                     payrollobj={payrollobj}
                     onEarningAdd={handleEarningAdd}
                   />
                 </TabPane>
-                <TabPane tabId="3">
+                <TabPane tabId="4">
                   <AdvancedSettingsTab />
                 </TabPane>
 
-                <TabPane tabId="4">
+                <TabPane tabId="5">
                   <PayrollRun />
                 </TabPane>
               </TabContent>

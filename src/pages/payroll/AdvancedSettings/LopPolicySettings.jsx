@@ -6,6 +6,7 @@ import {
 import Select from "react-select";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
+import { required, day, isBlank, runChecks } from "./validators";
 
 const LOP_METHOD_OPTIONS = [
   { value: "calendar_days", label: "Calendar Days" },
@@ -72,7 +73,22 @@ const LopPolicySettings = () => {
   const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
   const handleToggle = (field) => setForm((prev) => ({ ...prev, [field]: !prev[field] }));
 
+  const validate = () => {
+    const checks = [
+      required("Effective date", form.effective_date),
+      required("LOP calculation method", form.lop_calculation_method),
+    ];
+    if (form.lop_calculation_method === "fixed_days") {
+      checks.push(required("Fixed days", form.fixed_days));
+      checks.push(day("Fixed days", form.fixed_days));
+    }
+    if (!isBlank(form.max_lop_days_per_month))
+      checks.push(day("Max LOP days per month", form.max_lop_days_per_month));
+    return runChecks(checks, toast);
+  };
+
   const handleSave = () => {
+    if (!validate()) return;
     setLoading(true);
     const isUpdate = form?.id;
     Api({

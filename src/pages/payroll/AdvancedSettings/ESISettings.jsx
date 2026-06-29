@@ -5,6 +5,7 @@ import {
 } from "reactstrap";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
+import { required, percent, min, runChecks } from "./validators";
 
 const SectionLabel = ({ children }) => (
   <p className="text-uppercase fw-semibold text-muted mb-2" style={{ fontSize: 11, letterSpacing: "0.8px" }}>
@@ -23,7 +24,6 @@ const SettingRow = ({ label, children, last = false }) => (
   </Row>
 );
 
-// Read-only toggle display (no disabled input)
 const ViewToggle = ({ checked, label }) => (
   <div className="d-flex align-items-center gap-2">
     <span
@@ -87,7 +87,16 @@ const ESISettings = () => {
   const handleToggle = (field) =>
     setForm((prev) => ({ ...prev, [field]: !prev[field] }));
 
+  const validate = () =>
+    runChecks([
+      required("Effective date", form.effective_date),
+      min("Max monthly gross", form.statutory_max_monthly_gross, 1),
+      percent("Employee contribution %", form.employee_contribution_percentage),
+      percent("Employer contribution %", form.employer_contribution_percentage),
+    ], toast);
+
   const handleSave = () => {
+    if (!validate()) return;
     setLoading(true);
     Api({
       method: "POST",
@@ -128,8 +137,6 @@ const ESISettings = () => {
     <Row>
       <Col lg={12}>
         <Card>
-
-          {/* Header */}
           <CardHeader className="bg-light d-flex justify-content-between align-items-center">
             <div>
               <CardTitle tag="h5" className="mb-0">ESI Settings</CardTitle>
@@ -146,8 +153,6 @@ const ESISettings = () => {
           </CardHeader>
 
           <CardBody className="p-4">
-
-            {/* Status Banner */}
             {!isEditing && (
               <div className={`alert d-flex align-items-center gap-2 py-2 px-3 mb-4 ${data.is_active ? "alert-success" : "alert-secondary"}`}>
                 <i className={`fs-16 ${data.is_active ? "ri-checkbox-circle-fill" : "ri-close-circle-line"}`}></i>
@@ -163,7 +168,6 @@ const ESISettings = () => {
               </div>
             )}
 
-            {/* Summary Cards (view mode) */}
             {!isEditing && (
               <Row className="g-3 mb-4">
                 {[
@@ -198,11 +202,8 @@ const ESISettings = () => {
               </Row>
             )}
 
-            {/* General Section */}
             <SectionLabel>General</SectionLabel>
             <div className="border rounded mb-4">
-
-              {/* ESI Status */}
               <SettingRow label="ESI Status">
                 {isEditing ? (
                   <div className="form-check form-switch mb-0 d-flex align-items-center gap-2">
@@ -218,7 +219,6 @@ const ESISettings = () => {
                 )}
               </SettingRow>
 
-              {/* Effective Date */}
               <SettingRow label="Effective Date">
                 {isEditing ? (
                   <Input type="date" value={form.effective_date || ""}
@@ -229,7 +229,6 @@ const ESISettings = () => {
                 )}
               </SettingRow>
 
-              {/* Max Monthly Gross */}
               <SettingRow label="Max Monthly Gross for ESI">
                 {isEditing ? (
                   <Input type="number" step="0.01"
@@ -249,7 +248,6 @@ const ESISettings = () => {
                 )}
               </SettingRow>
 
-              {/* Employee Contribution */}
               <SettingRow label="Employee Contribution (%)">
                 {isEditing ? (
                   <Input type="number" step="0.01"
@@ -268,7 +266,6 @@ const ESISettings = () => {
                 )}
               </SettingRow>
 
-              {/* Employer Contribution */}
               <SettingRow label="Employer Contribution (%)" last>
                 {isEditing ? (
                   <Input type="number" step="0.01"
@@ -288,7 +285,6 @@ const ESISettings = () => {
               </SettingRow>
             </div>
 
-            {/* Toggles — two-column layout */}
             <Row className="g-4 mb-4">
               <Col md={6}>
                 <SectionLabel>CTC & Override</SectionLabel>
@@ -350,7 +346,6 @@ const ESISettings = () => {
               </Col>
             </Row>
 
-            {/* Info Note */}
             <div className="alert alert-info d-flex gap-2 py-2 px-3 mb-4">
               <i className="ri-information-line fs-16 flex-shrink-0 mt-1"></i>
               <div style={{ fontSize: 12 }}>
@@ -368,7 +363,6 @@ const ESISettings = () => {
               </div>
             </div>
 
-            {/* Save / Cancel */}
             {isEditing && (
               <div className="d-flex justify-content-end gap-2 pt-2 border-top">
                 <Button color="light" className="border" onClick={handleCancel} disabled={loading}>
@@ -380,7 +374,6 @@ const ESISettings = () => {
                 </Button>
               </div>
             )}
-
           </CardBody>
         </Card>
       </Col>
