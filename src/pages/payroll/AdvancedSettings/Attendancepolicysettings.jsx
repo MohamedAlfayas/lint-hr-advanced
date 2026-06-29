@@ -6,6 +6,7 @@ import {
 import Select from "react-select";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
+import { required, range, day, min, runChecks } from "./validators";
 
 const SALARY_METHOD_OPTIONS = [
   { value: "calendar_days", label: "Calendar Days" },
@@ -72,7 +73,25 @@ const AttendancePolicySettings = () => {
   const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
   const handleToggle = (field) => setForm((prev) => ({ ...prev, [field]: !prev[field] }));
 
+  const validate = () => {
+    const checks = [
+      required("Effective date", form.effective_date),
+      required("Salary calculation method", form.salary_calculation_method),
+      range("Half day value", form.half_day_value, 0, 1),
+    ];
+    if (form.salary_calculation_method === "fixed_days") {
+      checks.push(required("Fixed pay days", form.fixed_pay_days));
+      checks.push(day("Fixed pay days", form.fixed_pay_days));
+    }
+    if (form.enable_late_mark_policy) {
+      checks.push(range("Allowed late marks", form.late_mark_limit, 0, 31));
+      checks.push(min("Late mark penalty (LOP days)", form.late_mark_penalty_days, 0));
+    }
+    return runChecks(checks, toast);
+  };
+
   const handleSave = () => {
+    if (!validate()) return;
     setLoading(true);
     const isUpdate = form?.id;
     Api({
@@ -274,18 +293,16 @@ const AttendancePolicySettings = () => {
               {isEditing ? (
                 <div className="form-check form-switch mb-0">
                   <Input
-                      className="form-check-input"
-                      type="checkbox"
-                      checked={!!form[key]}
-                      disabled={
-                        isWorkingDays &&
-                        ["include_week_offs", "include_holidays"].includes(key)
-                      }
-                      onChange={() => handleToggle(key)}
-                    />
+                    className="form-check-input"
+                    type="checkbox"
+                    checked={!!form[key]}
+                    disabled={
+                      isWorkingDays &&
+                      ["include_week_offs", "include_holidays"].includes(key)
+                    }
+                    onChange={() => handleToggle(key)}
+                  />
                 </div>
-
-                
               ) : (
                 <ViewToggle checked={!!data[key]} />
               )}

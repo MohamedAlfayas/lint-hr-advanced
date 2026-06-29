@@ -15,8 +15,8 @@ import {
 import Select from "react-select";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
+import { required, day, range, min, runChecks } from "./validators";
 
-// Fix #5: Added "Gross Salary" to options
 const GRATUITY_BASIS_OPTIONS = [
   { value: "basic", label: "Basic Salary" },
   { value: "ctc", label: "CTC" },
@@ -84,17 +84,14 @@ const GratuityPolicySettings = () => {
 
   const fetchData = () => {
     setLoading(true);
-
     Api({
       method: "GET",
       url: "payroll/gratuity-policy-settings/",
     })
       .then((res) => {
         const list = res?.data?.data || [];
-
         setRecords(list);
         setIsEmpty(list.length === 0);
-
         if (list.length > 0) {
           setForm({ ...list[0] });
         }
@@ -107,20 +104,26 @@ const GratuityPolicySettings = () => {
   }, []);
 
   const handleChange = (field, value) =>
-    setForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleToggle = (field) =>
-    setForm((prev) => ({
-      ...prev,
-      [field]: !prev[field],
-    }));
+    setForm((prev) => ({ ...prev, [field]: !prev[field] }));
+
+  const validate = () => {
+    const checks = [required("Effective date", form.effective_date)];
+    if (form.enable_gratuity) {
+      checks.push(required("Calculation basis", form.calculation_basis));
+      checks.push(day("Days in month", form.days_in_month_for_calculation));
+      checks.push(day("Days per year of service", form.days_per_year_of_service));
+      checks.push(range("Minimum years of service", form.minimum_years_of_service, 0, 50));
+      checks.push(min("Maximum gratuity amount", form.maximum_gratuity_amount, 1));
+    }
+    return runChecks(checks, toast);
+  };
 
   const handleSave = () => {
+    if (!validate()) return;
     setLoading(true);
-
     Api({
       method: form?.id ? "PUT" : "POST",
       url: "payroll/gratuity-policy-settings/",
@@ -132,14 +135,11 @@ const GratuityPolicySettings = () => {
         setIsEditing(false);
       })
       .catch((err) => {
-        toast.error(
-          err?.response?.data?.message || "Failed to save policy"
-        );
+        toast.error(err?.response?.data?.message || "Failed to save policy");
       })
       .finally(() => setLoading(false));
   };
 
-  // Fix #6: Upgraded handleCancel logic for instances where records length is 0
   const handleCancel = () => {
     if (records.length > 0) {
       setForm({ ...records[0] });
@@ -162,12 +162,10 @@ const GratuityPolicySettings = () => {
       include_gratuity_in_ctc: false,
       is_active: true,
     });
-
     setIsEmpty(false);
     setIsEditing(true);
   };
 
-  // Fix #1: Placed "data" declaration above "gratuityEnabled" to resolve initialization error
   const data = form || {};
 
   const gratuityEnabled = isEditing
@@ -182,7 +180,6 @@ const GratuityPolicySettings = () => {
             Gratuity Policy
           </CardTitle>
         </CardHeader>
-
         <CardBody>
           <div className="text-center py-5">
             <div className="avatar-md mx-auto mb-4">
@@ -190,13 +187,10 @@ const GratuityPolicySettings = () => {
                 <i className="ri-money-rupee-circle-line"></i>
               </div>
             </div>
-
             <h6>No Gratuity Policy Configured</h6>
-
             <p className="text-muted mb-4">
               Configure gratuity eligibility and calculation rules.
             </p>
-
             <Button color="primary" onClick={handleNew}>
               <i className="ri-add-line me-1"></i>
               Configure Policy
@@ -214,15 +208,10 @@ const GratuityPolicySettings = () => {
           <CardTitle tag="h5" className="mb-0">
             Gratuity Policy
           </CardTitle>
-
-          <CardSubtitle
-            className="text-muted mt-1"
-            style={{ fontSize: 12 }}
-          >
+          <CardSubtitle className="text-muted mt-1" style={{ fontSize: 12 }}>
             Gratuity eligibility and payout calculation settings
           </CardSubtitle>
         </div>
-
         {!isEditing && (
           <div className="d-flex gap-2">
             <Button
@@ -236,13 +225,7 @@ const GratuityPolicySettings = () => {
             >
               <i className="ri-edit-line"></i> Edit
             </Button>
-
-            <Button
-              size="sm"
-              color="success"
-              outline
-              onClick={handleNew}
-            >
+            <Button size="sm" color="success" outline onClick={handleNew}>
               <i className="ri-add-line"></i> New Version
             </Button>
           </div>
@@ -250,31 +233,23 @@ const GratuityPolicySettings = () => {
       </CardHeader>
 
       <CardBody className="p-4">
-
         {!isEditing && records.length > 1 && (
           <div className="d-flex gap-2 flex-wrap mb-4">
             {records.map((r, i) => (
-              /* Fix #7: Enhanced version badge stylings matching OT configurations */
               <Badge
                 key={r.id}
                 color={form?.id === r.id ? "primary" : "light"}
                 className={form?.id === r.id ? "" : "text-dark border"}
-                style={{
-                  cursor: "pointer",
-                  fontSize: 12,
-                  padding: "5px 12px",
-                }}
+                style={{ cursor: "pointer", fontSize: 12, padding: "5px 12px" }}
                 onClick={() => setForm({ ...r })}
               >
                 {r.effective_date}
-                {i === 0 && (
-                  <span className="ms-1">· Latest</span>
-                )}
+                {i === 0 && <span className="ms-1">· Latest</span>}
               </Badge>
             ))}
           </div>
         )}
-        
+
         {!isEditing && (
           <div className={`alert d-flex align-items-center gap-2 py-2 px-3 mb-4 ${data.is_active ? "alert-success" : "alert-secondary"}`}>
             <i className={`fs-16 ${data.is_active ? "ri-checkbox-circle-fill" : "ri-close-circle-line"}`}></i>
@@ -286,16 +261,13 @@ const GratuityPolicySettings = () => {
         )}
 
         <SectionLabel>General</SectionLabel>
-
         <div className="border rounded mb-4">
           <SettingRow label="Effective Date">
             {isEditing ? (
               <Input
                 type="date"
                 value={form.effective_date || ""}
-                onChange={(e) =>
-                  handleChange("effective_date", e.target.value)
-                }
+                onChange={(e) => handleChange("effective_date", e.target.value)}
                 style={{ width: 180 }}
               />
             ) : (
@@ -328,9 +300,7 @@ const GratuityPolicySettings = () => {
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.include_gratuity_in_ctc}
-                  onChange={() =>
-                    handleToggle("include_gratuity_in_ctc")
-                  }
+                  onChange={() => handleToggle("include_gratuity_in_ctc")}
                 />
               </div>
             ) : (
@@ -340,7 +310,6 @@ const GratuityPolicySettings = () => {
         </div>
 
         <SectionLabel>Gratuity Configuration</SectionLabel>
-
         <div className="border rounded mb-4">
           <SettingRow label="Enable Gratuity">
             {isEditing ? (
@@ -357,9 +326,7 @@ const GratuityPolicySettings = () => {
             )}
           </SettingRow>
 
-          {(isEditing
-            ? form.enable_gratuity
-            : data.enable_gratuity) && (
+          {(isEditing ? form.enable_gratuity : data.enable_gratuity) && (
             <>
               <SettingRow label="Calculation Basis">
                 {isEditing ? (
@@ -368,23 +335,14 @@ const GratuityPolicySettings = () => {
                     value={GRATUITY_BASIS_OPTIONS.find(
                       (o) => o.value === form.calculation_basis
                     )}
-                    onChange={(e) =>
-                      handleChange("calculation_basis", e.value)
-                    }
-                    styles={{
-                      container: (p) => ({
-                        ...p,
-                        width: 220,
-                      }),
-                    }}
+                    onChange={(e) => handleChange("calculation_basis", e.value)}
+                    styles={{ container: (p) => ({ ...p, width: 220 }) }}
                   />
                 ) : (
                   <Badge color="primary" pill>
-                    {
-                      GRATUITY_BASIS_OPTIONS.find(
-                        (o) => o.value === data.calculation_basis
-                      )?.label
-                    }
+                    {GRATUITY_BASIS_OPTIONS.find(
+                      (o) => o.value === data.calculation_basis
+                    )?.label}
                   </Badge>
                 )}
               </SettingRow>
@@ -394,21 +352,14 @@ const GratuityPolicySettings = () => {
                   <Input
                     type="number"
                     min="1"
-                    value={
-                      form.days_in_month_for_calculation ?? ""
-                    }
+                    value={form.days_in_month_for_calculation ?? ""}
                     onChange={(e) =>
-                      handleChange(
-                        "days_in_month_for_calculation",
-                        parseInt(e.target.value)
-                      )
+                      handleChange("days_in_month_for_calculation", parseInt(e.target.value))
                     }
                     style={{ width: 120 }}
                   />
                 ) : (
-                  <span>
-                    {data.days_in_month_for_calculation} Days
-                  </span>
+                  <span>{data.days_in_month_for_calculation} Days</span>
                 )}
               </SettingRow>
 
@@ -419,17 +370,12 @@ const GratuityPolicySettings = () => {
                     min="1"
                     value={form.days_per_year_of_service ?? ""}
                     onChange={(e) =>
-                      handleChange(
-                        "days_per_year_of_service",
-                        parseInt(e.target.value)
-                      )
+                      handleChange("days_per_year_of_service", parseInt(e.target.value))
                     }
                     style={{ width: 120 }}
                   />
                 ) : (
-                  <span>
-                    {data.days_per_year_of_service} Days
-                  </span>
+                  <span>{data.days_per_year_of_service} Days</span>
                 )}
               </SettingRow>
 
@@ -438,19 +384,13 @@ const GratuityPolicySettings = () => {
                   <Input
                     type="number"
                     step="0.01"
-                    value={
-                      form.minimum_years_of_service || ""
-                    }
+                    value={form.minimum_years_of_service || ""}
                     onChange={(e) =>
-                      handleChange(
-                        "minimum_years_of_service",
-                        e.target.value
-                      )
+                      handleChange("minimum_years_of_service", e.target.value)
                     }
                     style={{ width: 120 }}
                   />
                 ) : (
-                  /* Fix #3: Encapsulated years of service output within an info pill Badge */
                   <Badge color="info" pill>
                     {data.minimum_years_of_service} Years
                   </Badge>
@@ -464,43 +404,27 @@ const GratuityPolicySettings = () => {
                       className="form-check-input"
                       type="checkbox"
                       checked={!!form.use_240_days_rule}
-                      onChange={() =>
-                        handleToggle("use_240_days_rule")
-                      }
+                      onChange={() => handleToggle("use_240_days_rule")}
                     />
                   </div>
                 ) : (
-                  <ViewToggle
-                    checked={!!data.use_240_days_rule}
-                  />
+                  <ViewToggle checked={!!data.use_240_days_rule} />
                 )}
               </SettingRow>
 
-              <SettingRow
-                label="Maximum Gratuity Amount"
-                last
-              >
+              <SettingRow label="Maximum Gratuity Amount" last>
                 {isEditing ? (
                   <Input
                     type="number"
                     step="0.01"
-                    value={
-                      form.maximum_gratuity_amount || ""
-                    }
+                    value={form.maximum_gratuity_amount || ""}
                     onChange={(e) =>
-                      handleChange(
-                        "maximum_gratuity_amount",
-                        e.target.value
-                      )
+                      handleChange("maximum_gratuity_amount", e.target.value)
                     }
                     style={{ width: 180 }}
                   />
                 ) : (
-                  /* Fix #2: Formatted raw currency numbers to match the localized Indian formatting output */
-                  <Badge
-                    color="success"
-                    className="text-white"
-                  >
+                  <Badge color="success" className="text-white">
                     ₹ {Number(data.maximum_gratuity_amount || 0).toLocaleString("en-IN")}
                   </Badge>
                 )}
@@ -509,7 +433,6 @@ const GratuityPolicySettings = () => {
           )}
         </div>
 
-        {/* Fix #4: Connected warning notification context alert right after Gratuity Configuration section */}
         {!gratuityEnabled && !isEditing && (
           <div className="alert alert-warning d-flex align-items-center gap-2 py-2 px-3">
             <i className="ri-information-line fs-16"></i>
@@ -521,7 +444,6 @@ const GratuityPolicySettings = () => {
 
         {isEditing && (
           <div className="d-flex justify-content-end gap-2 border-top pt-3">
-            {/* Fix #8: Disables cancel interaction when state actions are working / loading */}
             <Button
               color="light"
               className="border"
@@ -530,12 +452,7 @@ const GratuityPolicySettings = () => {
             >
               Cancel
             </Button>
-
-            <Button
-              color="success"
-              onClick={handleSave}
-              disabled={loading}
-            >
+            <Button color="success" onClick={handleSave} disabled={loading}>
               <i className="ri-check-double-line me-1"></i>
               {loading ? "Saving..." : "Save Changes"}
             </Button>

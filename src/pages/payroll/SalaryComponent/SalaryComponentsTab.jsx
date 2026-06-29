@@ -317,21 +317,6 @@ const SalaryComponentsTab = ({ onEarningAdd }) => {
               onEdit={(item) => onEarningAdd(item, "3")}
             />
           </TabPane>
-
-          {/* Reimbursements */}
-          <TabPane tabId="4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h5 className="mb-0">Reimbursements</h5>
-              <Button color="primary" onClick={() => onEarningAdd(null, "4")}>
-                <i className="ri-add-line me-1"></i> Add
-              </Button>
-            </div>
-
-            <ReimbursementsTable
-              items={default_salary_components.reimbursements}
-              onEdit={(item) => onEarningAdd(item, "4")}
-            />
-          </TabPane>
         </TabContent>
       </Col>
     </Row>

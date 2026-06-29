@@ -15,6 +15,7 @@ import {
 import Select from "react-select";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
+import { required, percent, min, day, runChecks } from "./validators";
 
 const BONUS_BASIS_OPTIONS = [
   { value: "basic", label: "Basic Salary" },
@@ -90,17 +91,14 @@ const BonusPolicySettings = () => {
 
   const fetchData = () => {
     setLoading(true);
-
     Api({
       method: "GET",
       url: "payroll/bonus-policy-settings/",
     })
       .then((res) => {
         const list = res?.data?.data || [];
-
         setRecords(list);
         setIsEmpty(list.length === 0);
-
         if (list.length > 0) {
           setForm({ ...list[0] });
         }
@@ -113,20 +111,37 @@ const BonusPolicySettings = () => {
   }, []);
 
   const handleChange = (field, value) =>
-    setForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleToggle = (field) =>
-    setForm((prev) => ({
-      ...prev,
-      [field]: !prev[field],
-    }));
+    setForm((prev) => ({ ...prev, [field]: !prev[field] }));
+
+  const validate = () => {
+    const checks = [required("Effective date", form.effective_date)];
+
+    if (form.enable_statutory_bonus) {
+      checks.push(required("Statutory calculation basis", form.statutory_bonus_calculation_basis));
+      checks.push(min("Eligibility ceiling", form.statutory_eligibility_ceiling, 1));
+      checks.push(min("Calculation ceiling", form.statutory_calculation_ceiling, 1));
+      checks.push(percent("Minimum bonus %", form.minimum_bonus_percentage));
+      checks.push(percent("Maximum bonus %", form.maximum_bonus_percentage));
+      if (Number(form.maximum_bonus_percentage) < Number(form.minimum_bonus_percentage))
+        checks.push("Maximum bonus % must be ≥ Minimum bonus %");
+      if (Number(form.statutory_calculation_ceiling) > Number(form.statutory_eligibility_ceiling))
+        checks.push("Calculation ceiling cannot exceed eligibility ceiling");
+      checks.push(day("Minimum working days", form.minimum_working_days_for_eligibility));
+    }
+    if (form.enable_performance_bonus) {
+      checks.push(required("Performance calculation basis", form.performance_bonus_calculation_basis));
+      checks.push(percent("Performance bonus %", form.performance_bonus_percentage));
+      checks.push(required("Payout frequency", form.performance_bonus_payout_frequency));
+    }
+    return runChecks(checks, toast);
+  };
 
   const handleSave = () => {
+    if (!validate()) return;
     setLoading(true);
-
     Api({
       method: form?.id ? "PUT" : "POST",
       url: "payroll/bonus-policy-settings/",
@@ -138,9 +153,7 @@ const BonusPolicySettings = () => {
         setIsEditing(false);
       })
       .catch((err) => {
-        toast.error(
-          err?.response?.data?.message || "Failed to save policy"
-        );
+        toast.error(err?.response?.data?.message || "Failed to save policy");
       })
       .finally(() => setLoading(false));
   };
@@ -169,7 +182,6 @@ const BonusPolicySettings = () => {
       include_bonus_in_ctc: false,
       is_active: true,
     });
-
     setIsEditing(true);
     setIsEmpty(false);
   };
@@ -184,7 +196,6 @@ const BonusPolicySettings = () => {
             Bonus Policy
           </CardTitle>
         </CardHeader>
-
         <CardBody>
           <div className="text-center py-5">
             <div className="avatar-md mx-auto mb-4">
@@ -192,13 +203,10 @@ const BonusPolicySettings = () => {
                 <i className="ri-award-line"></i>
               </div>
             </div>
-
             <h6>No Bonus Policy Configured</h6>
-
             <p className="text-muted mb-4">
               Configure statutory and performance bonus rules.
             </p>
-
             <Button color="primary" onClick={handleNew}>
               <i className="ri-add-line me-1"></i>
               Configure Policy
@@ -216,15 +224,10 @@ const BonusPolicySettings = () => {
           <CardTitle tag="h5" className="mb-0">
             Bonus Policy
           </CardTitle>
-
-          <CardSubtitle
-            className="text-muted mt-1"
-            style={{ fontSize: 12 }}
-          >
+          <CardSubtitle className="text-muted mt-1" style={{ fontSize: 12 }}>
             Statutory and Performance Bonus Configuration
           </CardSubtitle>
         </div>
-
         {!isEditing && (
           <div className="d-flex gap-2">
             <Button
@@ -238,13 +241,7 @@ const BonusPolicySettings = () => {
             >
               <i className="ri-edit-line"></i> Edit
             </Button>
-
-            <Button
-              size="sm"
-              color="success"
-              outline
-              onClick={handleNew}
-            >
+            <Button size="sm" color="success" outline onClick={handleNew}>
               <i className="ri-add-line"></i> New Version
             </Button>
           </div>
@@ -252,28 +249,23 @@ const BonusPolicySettings = () => {
       </CardHeader>
 
       <CardBody className="p-4">
-
         {!isEditing && records.length > 1 && (
           <div className="d-flex gap-2 flex-wrap mb-4">
             {records.map((r, i) => (
               <Badge
                 key={r.id}
                 color={form?.id === r.id ? "primary" : "light"}
-                className={
-                  form?.id === r.id ? "" : "text-dark border"
-                }
+                className={form?.id === r.id ? "" : "text-dark border"}
                 style={{ cursor: "pointer" }}
                 onClick={() => setForm({ ...r })}
               >
                 {r.effective_date}
-                {i === 0 && (
-                  <span className="ms-1">· Latest</span>
-                )}
+                {i === 0 && <span className="ms-1">· Latest</span>}
               </Badge>
             ))}
           </div>
         )}
-        
+
         {!isEditing && (
           <div className={`alert d-flex align-items-center gap-2 py-2 px-3 mb-4 ${data.is_active ? "alert-success" : "alert-secondary"}`}>
             <i className={`fs-16 ${data.is_active ? "ri-checkbox-circle-fill" : "ri-close-circle-line"}`}></i>
@@ -285,16 +277,13 @@ const BonusPolicySettings = () => {
         )}
 
         <SectionLabel>General</SectionLabel>
-
         <div className="border rounded mb-4">
           <SettingRow label="Effective Date">
             {isEditing ? (
               <Input
                 type="date"
                 value={form.effective_date || ""}
-                onChange={(e) =>
-                  handleChange("effective_date", e.target.value)
-                }
+                onChange={(e) => handleChange("effective_date", e.target.value)}
                 style={{ width: 180 }}
               />
             ) : (
@@ -327,21 +316,16 @@ const BonusPolicySettings = () => {
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.include_bonus_in_ctc}
-                  onChange={() =>
-                    handleToggle("include_bonus_in_ctc")
-                  }
+                  onChange={() => handleToggle("include_bonus_in_ctc")}
                 />
               </div>
             ) : (
-              <ViewToggle
-                checked={!!data.include_bonus_in_ctc}
-              />
+              <ViewToggle checked={!!data.include_bonus_in_ctc} />
             )}
           </SettingRow>
         </div>
 
         <SectionLabel>Statutory Bonus</SectionLabel>
-
         <div className="border rounded mb-4">
           <SettingRow label="Enable Statutory Bonus">
             {isEditing ? (
@@ -350,36 +334,25 @@ const BonusPolicySettings = () => {
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.enable_statutory_bonus}
-                  onChange={() =>
-                    handleToggle("enable_statutory_bonus")
-                  }
+                  onChange={() => handleToggle("enable_statutory_bonus")}
                 />
               </div>
             ) : (
-              <ViewToggle
-                checked={!!data.enable_statutory_bonus}
-              />
+              <ViewToggle checked={!!data.enable_statutory_bonus} />
             )}
           </SettingRow>
 
-          {(isEditing
-            ? form.enable_statutory_bonus
-            : data.enable_statutory_bonus) && (
+          {(isEditing ? form.enable_statutory_bonus : data.enable_statutory_bonus) && (
             <>
               <SettingRow label="Calculation Basis">
                 {isEditing ? (
                   <Select
                     options={BONUS_BASIS_OPTIONS}
                     value={BONUS_BASIS_OPTIONS.find(
-                      (o) =>
-                        o.value ===
-                        form.statutory_bonus_calculation_basis
+                      (o) => o.value === form.statutory_bonus_calculation_basis
                     )}
                     onChange={(e) =>
-                      handleChange(
-                        "statutory_bonus_calculation_basis",
-                        e.value
-                      )
+                      handleChange("statutory_bonus_calculation_basis", e.value)
                     }
                   />
                 ) : (
@@ -391,14 +364,9 @@ const BonusPolicySettings = () => {
                 {isEditing ? (
                   <Input
                     type="number"
-                    value={
-                      form.statutory_eligibility_ceiling || ""
-                    }
+                    value={form.statutory_eligibility_ceiling || ""}
                     onChange={(e) =>
-                      handleChange(
-                        "statutory_eligibility_ceiling",
-                        e.target.value
-                      )
+                      handleChange("statutory_eligibility_ceiling", e.target.value)
                     }
                   />
                 ) : (
@@ -410,14 +378,9 @@ const BonusPolicySettings = () => {
                 {isEditing ? (
                   <Input
                     type="number"
-                    value={
-                      form.statutory_calculation_ceiling || ""
-                    }
+                    value={form.statutory_calculation_ceiling || ""}
                     onChange={(e) =>
-                      handleChange(
-                        "statutory_calculation_ceiling",
-                        e.target.value
-                      )
+                      handleChange("statutory_calculation_ceiling", e.target.value)
                     }
                   />
                 ) : (
@@ -432,10 +395,7 @@ const BonusPolicySettings = () => {
                     step="0.01"
                     value={form.minimum_bonus_percentage || ""}
                     onChange={(e) =>
-                      handleChange(
-                        "minimum_bonus_percentage",
-                        e.target.value
-                      )
+                      handleChange("minimum_bonus_percentage", e.target.value)
                     }
                   />
                 ) : (
@@ -450,10 +410,7 @@ const BonusPolicySettings = () => {
                     step="0.01"
                     value={form.maximum_bonus_percentage || ""}
                     onChange={(e) =>
-                      handleChange(
-                        "maximum_bonus_percentage",
-                        e.target.value
-                      )
+                      handleChange("maximum_bonus_percentage", e.target.value)
                     }
                   />
                 ) : (
@@ -461,17 +418,11 @@ const BonusPolicySettings = () => {
                 )}
               </SettingRow>
 
-              <SettingRow
-                label="Minimum Working Days"
-                last
-              >
+              <SettingRow label="Minimum Working Days" last>
                 {isEditing ? (
                   <Input
                     type="number"
-                    value={
-                      form.minimum_working_days_for_eligibility ||
-                      ""
-                    }
+                    value={form.minimum_working_days_for_eligibility || ""}
                     onChange={(e) =>
                       handleChange(
                         "minimum_working_days_for_eligibility",
@@ -488,7 +439,6 @@ const BonusPolicySettings = () => {
         </div>
 
         <SectionLabel>Performance Bonus</SectionLabel>
-
         <div className="border rounded mb-4">
           <SettingRow label="Enable Performance Bonus">
             {isEditing ? (
@@ -497,21 +447,15 @@ const BonusPolicySettings = () => {
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.enable_performance_bonus}
-                  onChange={() =>
-                    handleToggle("enable_performance_bonus")
-                  }
+                  onChange={() => handleToggle("enable_performance_bonus")}
                 />
               </div>
             ) : (
-              <ViewToggle
-                checked={!!data.enable_performance_bonus}
-              />
+              <ViewToggle checked={!!data.enable_performance_bonus} />
             )}
           </SettingRow>
 
-          {(isEditing
-            ? form.enable_performance_bonus
-            : data.enable_performance_bonus) && (
+          {(isEditing ? form.enable_performance_bonus : data.enable_performance_bonus) && (
             <>
               <SettingRow label="Calculation Basis">
                 {isEditing ? (
@@ -573,19 +517,10 @@ const BonusPolicySettings = () => {
 
         {isEditing && (
           <div className="d-flex justify-content-end gap-2 border-top pt-3">
-            <Button
-              color="light"
-              className="border"
-              onClick={handleCancel}
-            >
+            <Button color="light" className="border" onClick={handleCancel}>
               Cancel
             </Button>
-
-            <Button
-              color="success"
-              onClick={handleSave}
-              disabled={loading}
-            >
+            <Button color="success" onClick={handleSave} disabled={loading}>
               <i className="ri-check-double-line me-1"></i>
               {loading ? "Saving..." : "Save Changes"}
             </Button>

@@ -12,6 +12,7 @@ import {
   updatePayrollSettings,
   setPayrollLoading,
 } from "../../../redux/reducers/ChildReducer/PayrollSettingsReducer";
+import { required, day, runChecks } from "./validators";
 
 const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => ({
   value: i + 1,
@@ -35,7 +36,6 @@ const SettingRow = ({ label, children, last = false }) => (
   </Row>
 );
 
-// Read-only toggle display (no disabled input)
 const ViewToggle = ({ checked, label }) => (
   <div className="d-flex align-items-center gap-2">
     <span
@@ -96,7 +96,18 @@ const PayrollSettings = () => {
   const handleToggle = (field) =>
     setForm((prev) => ({ ...prev, [field]: !prev[field] }));
 
+  const validate = () =>
+    runChecks([
+      required("Effective date", form.effective_date),
+      required("Salary structure basis", form.salary_structure_based_on),
+      day("Pay cycle start day", form.pay_cycle_from),
+      day("Leave & attendance cycle start day", form.payroll_leave_and_attendance_cycle_from),
+      day("Payout date", form.payout_date),
+      day("DOJ cutoff date", form.payroll_doj_cutoff_date),
+    ], toast);
+
   const handleSave = () => {
+    if (!validate()) return;
     dispatch(setPayrollLoading(true));
     Api({ method: "POST", url: "payroll/payroll-settings/", data: form })
       .then((res) => {
@@ -121,7 +132,6 @@ const PayrollSettings = () => {
   const cycleEnd = (from) =>
     !from ? "—" : from === 1 ? 31 : from - 1;
 
-  // ── Empty State ────────────────────────────────────────────────
   if (!form || isEmpty) {
     return (
       <Row>
@@ -158,13 +168,10 @@ const PayrollSettings = () => {
     );
   }
 
-  // ── Main View ──────────────────────────────────────────────────
   return (
     <Row>
       <Col lg={12}>
         <Card>
-
-          {/* Header */}
           <CardHeader className="bg-light d-flex justify-content-between align-items-center">
             <div>
               <CardTitle tag="h5" className="mb-0">Pay Settings</CardTitle>
@@ -181,8 +188,6 @@ const PayrollSettings = () => {
           </CardHeader>
 
           <CardBody className="p-4">
-
-            {/* Status Banner */}
             {!isEditing && (
               <div className={`alert d-flex align-items-center gap-2 py-2 px-3 mb-4 ${data.is_active ? "alert-success" : "alert-secondary"}`}>
                 <i className={`fs-16 ${data.is_active ? "ri-checkbox-circle-fill" : "ri-close-circle-line"}`}></i>
@@ -196,11 +201,8 @@ const PayrollSettings = () => {
               </div>
             )}
 
-            {/* ── General ─────────────────────────────────────────── */}
             <SectionLabel>General</SectionLabel>
             <div className="border rounded mb-4">
-
-              {/* Payroll Status */}
               <SettingRow label="Payroll Status">
                 {isEditing ? (
                   <div className="form-check form-switch mb-0">
@@ -216,7 +218,6 @@ const PayrollSettings = () => {
                 )}
               </SettingRow>
 
-              {/* Effective Date */}
               <SettingRow label="Effective Date">
                 {isEditing ? (
                   <Input type="date" value={form.effective_date || ""}
@@ -229,7 +230,6 @@ const PayrollSettings = () => {
                 )}
               </SettingRow>
 
-              {/* Salary Structure Based On */}
               <SettingRow label="Salary Structure Based On" last>
                 {isEditing ? (
                   <div className="d-flex gap-3">
@@ -251,15 +251,10 @@ const PayrollSettings = () => {
                       <div key={opt} className="d-flex align-items-center gap-1">
                         <span
                           style={{
-                            width: 16,
-                            height: 16,
-                            borderRadius: "50%",
+                            width: 16, height: 16, borderRadius: "50%",
                             border: `2px solid ${data.salary_structure_based_on === opt ? "#405189" : "#ced4da"}`,
                             background: data.salary_structure_based_on === opt ? "#405189" : "#fff",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
+                            display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                           }}
                         >
                           {data.salary_structure_based_on === opt && (
@@ -277,10 +272,8 @@ const PayrollSettings = () => {
               </SettingRow>
             </div>
 
-            {/* ── Pay Cycle & Schedule ─────────────────────────────── */}
             <SectionLabel>Pay Cycle & Schedule</SectionLabel>
 
-            {/* Cycle summary cards (view only) */}
             {!isEditing && (
               <Row className="g-3 mb-4">
                 {[
@@ -301,7 +294,6 @@ const PayrollSettings = () => {
               </Row>
             )}
 
-            {/* Cycle edit rows */}
             {isEditing && (
               <div className="border rounded mb-4">
                 <SettingRow label="Pay Frequency">
@@ -344,7 +336,6 @@ const PayrollSettings = () => {
               </div>
             )}
 
-            {/* ── Calculation Prefs + Day Inclusions ───────────────── */}
             <Row className="g-4 mb-4">
               <Col md={6}>
                 <SectionLabel>Calculation Preferences</SectionLabel>
@@ -378,7 +369,6 @@ const PayrollSettings = () => {
               </Col>
             </Row>
 
-            {/* ── Save / Cancel ─────────────────────────────────────── */}
             {isEditing && (
               <div className="d-flex justify-content-end gap-2 pt-2 border-top">
                 <Button color="light" className="border" onClick={handleCancel} disabled={payroll_loading}>
@@ -390,7 +380,6 @@ const PayrollSettings = () => {
                 </Button>
               </div>
             )}
-
           </CardBody>
         </Card>
       </Col>

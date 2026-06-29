@@ -20,7 +20,7 @@ import LopPolicySettings from "./LopPolicySettings";
 import OvertimePolicySettings from "./OvertimePolicySettings";
 import BonusPolicySettings from "./BonusPolicySettings";
 import GratuityPolicySettings from "./GratuityPolicySettings";
-
+import ReimbursementPolicySettings from "./ReimbursementpolicySettings";
 const AdvancedSettingsTab = ({ onEarningAdd }) => {
   const [activeTab, setActiveTab] = useState("1");
 
@@ -136,6 +136,16 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
             </NavLink>
           </NavItem>
 
+          <NavItem>
+            <NavLink
+              style={{ cursor: "pointer" }}
+              className={classnames({ active: activeTab === "11" })}
+              onClick={() => toggleTab("11")}
+            >
+              Reimbursement Policy
+            </NavLink>
+          </NavItem>
+
         </Nav>
 
         {/* Tab Content */}
@@ -179,6 +189,11 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
           <TabPane tabId="10">
             <GratuityPolicySettings />
           </TabPane>
+
+          <TabPane tabId="11">
+            <ReimbursementPolicySettings/>
+          </TabPane>
+
         </TabContent>
       </Col>
     </Row>
