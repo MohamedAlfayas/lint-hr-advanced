@@ -75,7 +75,6 @@ const EmployeeForm = () => {
   const role_id_option = GetLocalStorageData("role") || [];
 
   const [reportingManagerOptions, setReportingManagerOptions] = useState([]);
-
   const [employeeImage, setEmployeeImage] = useState(null);
   const [contactCountry, setContactCountry] = useState({
     id: 240,
@@ -84,7 +83,6 @@ const EmployeeForm = () => {
     countryCode: "+91",
   });
   const [dropdownOpen4, setDropdownOpen4] = useState(false);
-
   const toggle4 = () => setDropdownOpen4((prevState) => !prevState);
 
   const [dob, setDob] = useState([]);
@@ -98,78 +96,65 @@ const EmployeeForm = () => {
   const [errors, setErrors] = useState("");
   const inputRef = useRef();
 
-  // ── Location Modal State ──────────────────────────────────────────────
+  // ── Location Modal State ──────────────────────────────────────────────────
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [locationToEdit, setLocationToEdit] = useState(null);
-
-  // Only available for existing employees (id !== 0)
   const isExistingEmployee = form_obj?.id && form_obj.id !== 0;
 
   const handleAddLocationClick = () => {
-    setLocationToEdit(null); // Add mode
+    setLocationToEdit(null);
+    setLocationModalOpen(true);
+  };
+  const handleEditLocation = (location) => {
+    setLocationToEdit(location);
     setLocationModalOpen(true);
   };
 
-  const handleEditLocation = (location) => {
-    setLocationToEdit(location); // Edit mode
-    setLocationModalOpen(true);
-  };
+  // ── Date helpers ──────────────────────────────────────────────────────────
+  const today = dayjs().startOf("day");
+  const oneMonthLater = dayjs().add(1, "month").endOf("day");
+
+  // DOB: must be in the past (before today)
+  const disableDobDates = (current) => current && current >= today;
+
+  // Joining date: from past up to 1 month in future
+  const disableJoiningDates = (current) => current && current > oneMonthLater;
 
   const showFileNameIfSelected = () => {
     const idProofUrl = form_obj.id_proof_url;
     const fileName = idProofUrl ? idProofUrl.split("/").pop() : "";
     setSelectedFileName(fileName);
   };
-  const handleClearFile = () => {
-    setSelectedFileName("");
-  };
-  const handleClearFile1 = () => {
-    setSelectedFileName1("");
-  };
-  const handleClearFile2 = () => {
-    setSelectedFileName2("");
-  };
-  const handleClearFile3 = () => {
-    setSelectedFileName3("");
-  };
-  const handleClearFile4 = () => {
-    setSelectedFileName4("");
-  };
-  const handleClearFile5 = () => {
-    setSelectedFileName5("");
-  };
+  const handleClearFile = () => setSelectedFileName("");
+  const handleClearFile1 = () => setSelectedFileName1("");
+  const handleClearFile2 = () => setSelectedFileName2("");
+  const handleClearFile3 = () => setSelectedFileName3("");
+  const handleClearFile4 = () => setSelectedFileName4("");
+  const handleClearFile5 = () => setSelectedFileName5("");
 
   const showFile1NameIfSelected = () => {
     const file1Url = form_obj.file_1_url;
-    const fileName1 = file1Url ? file1Url.split("/").pop() : "";
-    setSelectedFileName1(fileName1);
+    setSelectedFileName1(file1Url ? file1Url.split("/").pop() : "");
   };
-
   const showFile2NameIfSelected = () => {
     const file2Url = form_obj.file_2_url;
-    const fileName2 = file2Url ? file2Url.split("/").pop() : "";
-    setSelectedFileName2(fileName2);
+    setSelectedFileName2(file2Url ? file2Url.split("/").pop() : "");
   };
-
   const showFile3NameIfSelected = () => {
     const file3Url = form_obj.file_3_url;
-    const fileName3 = file3Url ? file3Url.split("/").pop() : "";
-    setSelectedFileName3(fileName3);
+    setSelectedFileName3(file3Url ? file3Url.split("/").pop() : "");
   };
   const showFile4NameIfSelected = () => {
     const file4Url = form_obj.file_4_url;
-    const fileName4 = file4Url ? file4Url.split("/").pop() : "";
-    setSelectedFileName4(fileName4);
+    setSelectedFileName4(file4Url ? file4Url.split("/").pop() : "");
   };
   const showFile5NameIfSelected = () => {
     const file5Url = form_obj.file_5_url;
-    const fileName5 = file5Url ? file5Url.split("/").pop() : "";
-    setSelectedFileName5(fileName5);
+    setSelectedFileName5(file5Url ? file5Url.split("/").pop() : "");
   };
 
   useEffect(() => {
     console.clear();
-
     let this_role_id = 0;
     if (
       form_obj?.role !== null &&
@@ -188,7 +173,7 @@ const EmployeeForm = () => {
     setDob(ConvertDateFormat(ConvertISODateFormat(form_obj.dob)));
     setJoinDate(ConvertDateFormat(ConvertISODateFormat(form_obj.joining_date)));
 
-    (form_obj?.primary_department_id_list).length
+    form_obj?.primary_department_id_list?.length
       ? GetReportingManager(form_obj?.primary_department_id_list)
       : setReportingManagerOptions([]);
 
@@ -212,10 +197,13 @@ const EmployeeForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setEmployeeObj({
-      ...employeeObj,
-      [name]: value,
-    });
+    setEmployeeObj({ ...employeeObj, [name]: value });
+  };
+
+  // ── Name input: strip numbers and special chars on change ─────────────────
+  const handleNameInput = (e, field) => {
+    const val = e.target.value.replace(/[^a-zA-Z\s]/g, "");
+    setEmployeeObj({ ...employeeObj, [field]: val });
   };
 
   const handleProfileChange = (e) => {
@@ -223,10 +211,9 @@ const EmployeeForm = () => {
       setEmployeeImage(e.target.files[0]);
       const reader = new FileReader();
       reader.onload = (readerEvent) => {
-        const newImageSrc = readerEvent.target.result;
         setEmployeeObj({
           ...employeeObj,
-          profile_url: newImageSrc,
+          profile_url: readerEvent.target.result,
         });
       };
       reader.readAsDataURL(e.target.files[0]);
@@ -234,56 +221,43 @@ const EmployeeForm = () => {
   };
 
   const handleBranchChange = (e) => {
-    let branch_id_list = e.map((d) => d.value);
-    setEmployeeObj({
-      ...employeeObj,
-      branch_id_list: branch_id_list,
-    });
+    setEmployeeObj({ ...employeeObj, branch_id_list: e.map((d) => d.value) });
   };
 
   const GetReportingManager = async (valid_dep_ids) => {
-    const Api = await PostApi(
+    const ApiRes = await PostApi(
       "employee/get-employee-list-for-reporting-manager/",
       { dep_id: valid_dep_ids },
       false,
     );
-    if (Api.status && Api.status === 200) {
-      const response = Api?.data?.data;
+    if (ApiRes.status && ApiRes.status === 200) {
+      const response = ApiRes?.data?.data;
       setReportingManagerOptions(
         employee_data.filter(
           (d) => d.id !== form_obj.id && response.includes(d.id),
         ),
       );
-    } else {
-      console.log("ERRR");
     }
   };
 
   const handlePrimaryDepChange = async (e) => {
     let valid_dep_obj = [];
     let valid_dep_ids = [];
-
     for (var i = 0; i < e.length; i++) {
       var is_child = false;
       for (var j = 0; j < e.length; j++) {
-        if (i !== j) {
-          if (e[j].child_id_list.includes(e[i].id)) {
-            is_child = true;
-          }
+        if (i !== j && e[j].child_id_list.includes(e[i].id)) {
+          is_child = true;
         }
       }
-      if (is_child === false) {
+      if (!is_child) {
         valid_dep_obj.push(e[i]);
         valid_dep_ids.push(e[i].id);
       }
     }
-
-    if (valid_dep_ids.length) {
-      GetReportingManager(valid_dep_ids);
-    } else {
-      setReportingManagerOptions([]);
-    }
-
+    valid_dep_ids.length
+      ? GetReportingManager(valid_dep_ids)
+      : setReportingManagerOptions([]);
     setEmployeeObj({
       ...employeeObj,
       primary_department_id_list: valid_dep_ids,
@@ -297,33 +271,40 @@ const EmployeeForm = () => {
       ...employeeObj,
       dob: ConvertISODateFormat(ConvertDateFormat(dateStr)),
     });
+    FormikForm.setFieldValue(
+      "dob",
+      ConvertISODateFormat(ConvertDateFormat(dateStr)),
+    );
+    FormikForm.setFieldTouched("dob", true);
   };
+
   const handleJoinDateChange = (selectedJoinDate, dateStr, instance) => {
     setJoinDate(dateStr);
     setEmployeeObj({
       ...employeeObj,
       joining_date: ConvertISODateFormat(ConvertDateFormat(dateStr)),
     });
+    FormikForm.setFieldValue(
+      "joining_date",
+      ConvertISODateFormat(ConvertDateFormat(dateStr)),
+    );
+    FormikForm.setFieldTouched("joining_date", true);
   };
+
   const handleTimeZoneChange = (selectedTimezone) => {
     setEmployeeObj({
       ...employeeObj,
       profile_timezone: selectedTimezone.value,
     });
   };
+
   const updateProfileData = (name, value) => {
-    setEmployeeObj({
-      ...employeeObj,
-      [name]: value,
-    });
+    setEmployeeObj({ ...employeeObj, [name]: value });
   };
 
   const handleFileUpload = (e, name) => {
     const file = e.target.files[0];
-    setEmployeeObj((oldObj) => ({
-      ...oldObj,
-      [name]: file,
-    }));
+    setEmployeeObj((oldObj) => ({ ...oldObj, [name]: file }));
   };
 
   const handleCFInputChange = (e, cf_id) => {
@@ -349,19 +330,14 @@ const EmployeeForm = () => {
     let img_url = "";
     let cf_form_data = new FormData();
     cf_form_data.append("cf_file", file);
-
-    const Api = await PostApi(
+    const ApiRes = await PostApi(
       "fields/upload-custom-field-file/",
       cf_form_data,
       true,
     );
-    if (Api.status && Api.status === 200) {
-      img_url = String(Api?.data?.data);
-    } else {
-      img_url = "";
-      toast.error(Api?.data?.message || Api?.data?.detail);
-    }
-
+    img_url = ApiRes.status === 200 ? String(ApiRes?.data?.data) : "";
+    if (ApiRes.status !== 200)
+      toast.error(ApiRes?.data?.message || ApiRes?.data?.detail);
     setEmployeeObj({
       ...employeeObj,
       cf_values: [...employeeObj.cf_values].map((item) =>
@@ -369,132 +345,6 @@ const EmployeeForm = () => {
       ),
     });
   };
-
-  const FormikForm = useFormik({
-    enableReinitialize: true,
-    initialValues: employeeObj,
-    validationSchema: Yup.object({
-      emp_id: Yup.string()
-        .trim()
-        .matches(
-          /^[A-Z0-9_-]+$/,
-          "Please enter a valid Employee ID with no spaces and only uppercase letters, numbers, hyphens, and underscores.",
-        )
-        .required("Please Enter Employee ID"),
-      first_name: Yup.string().trim().required("Please Enter First Name"),
-      last_name: Yup.string().trim().required("Please Enter Last Name"),
-      email: Yup.string()
-        .email("Please Enter Valid Email")
-        .required("Please Enter Email"),
-      gender: Yup.number()
-        .required("Select Gender")
-        .min(1, "Please Select Gender"),
-      dob: Yup.string().trim().required("Please Select Date"),
-      contact_number: Yup.string().required("Please Enter Phone Number"),
-      role_id: Yup.number()
-        .required("Select Role")
-        .min(1, "Please Select Role"),
-      branch_id_list: Yup.array().min(1, "Please Select Branch"),
-      primary_department_id_list: Yup.array().min(
-        1,
-        "Please Select Department",
-      ),
-      work_schedule_id: Yup.number()
-        .required("Select Work Schedule")
-        .min(1, "Please Select Work Schedule"),
-    }),
-    onSubmit: async (values) => {
-      console.log("val", values);
-
-      const hasAtLeastOneTrue = Object.values(
-        values.allowed_attendance_methods,
-      ).some((v) => v === true);
-
-      if (!hasAtLeastOneTrue) {
-        setErrors("Please select at least one attendance method!");
-        return;
-      } else {
-        setErrors("");
-        await HandleEmployeeSaveAPI(values);
-      }
-    },
-  });
-
-  const HandleEmployeeSaveAPI = async (values) => {
-    console.log("Formik Values = ", values);
-    console.log("employee Save API");
-    let root_department = dep_options.find((d) => d.is_root === true);
-    let root_department_id = !!root_department && root_department.id;
-
-    if (
-      !(values?.primary_department_id_list).includes(root_department_id) &&
-      values?.reporting_manager_id === 0
-    ) {
-      toast.error("Please Select Reporting Manager");
-    } else {
-      dispatch(setLoaderVisible(true));
-
-      let form_data = new FormData();
-      employeeImage !== null &&
-        form_data.append("profile", employeeImage, employeeImage.name);
-      Object.entries(employeeObj).map((key, value) => {
-        if (key[0] === "cf_values" || key[0] === "allowed_attendance_methods") {
-          form_data.append(key[0], JSON.stringify(key[1]));
-        } else {
-          form_data.append(key[0], key[1]);
-        }
-      });
-
-      const Api = await PostApi("employee/add-new/", form_data, true);
-      if (Api.status && Api.status === 200) {
-        if (employeeObj.id === 0) {
-          dispatch(addEmployee(Api?.data.data));
-          SetLocalStorage("employee", Api?.data.data, 2);
-        } else {
-          dispatch(editEmployee(Api?.data?.data));
-          SetLocalStorage("employee", Api?.data.data, 3);
-        }
-
-        dispatch(toggleRSBView(false));
-        toast.success(Api?.data?.message);
-      } else {
-        console.log("Employee Create Exception = ", Api);
-        if (
-          !!Api?.data?.is_rep_man_error &&
-          Api?.data?.is_rep_man_error === true
-        ) {
-          setTeamsToBeUpdated(Api?.data?.team_employees_to_be_updated);
-          setShowRMModal(true);
-        } else {
-          toast.error(Api?.data?.message || Api?.data?.detail);
-        }
-      }
-
-      dispatch(setLoaderVisible(false));
-    }
-  };
-
-  useEffect(() => {
-    if (
-      FormikForm.submitCount > 0 &&
-      Object.keys(FormikForm.errors).length > 0
-    ) {
-      const firstErrorField = Object.keys(FormikForm.errors)[0];
-      FormikForm.setFieldTouched(firstErrorField);
-      const errorField = document.querySelector(`[name=${firstErrorField}]`);
-      if (errorField) {
-        errorField.focus();
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }
-    }
-  }, [
-    FormikForm.submitCount,
-    FormikForm.errors,
-    FormikForm.setFieldTouched,
-    inputRef,
-  ]);
 
   const handleCFDateChange = (e, dateStr, cf_id) => {
     setEmployeeObj({
@@ -507,26 +357,177 @@ const EmployeeForm = () => {
     });
   };
 
-  const [showRMModal, setShowRMModal] = useState(false);
-  const onRMModalCloseClick = () => {
-    setShowRMModal(false);
+  // ── Yup schema ────────────────────────────────────────────────────────────
+  const todayStr = dayjs().format("YYYY-MM-DD");
+  const maxJoinStr = dayjs().add(1, "month").format("YYYY-MM-DD");
+
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: employeeObj,
+    validationSchema: Yup.object({
+      emp_id: Yup.string()
+        .trim()
+        .matches(
+          /^[A-Z0-9_-]+$/,
+          "Employee ID must be uppercase letters, numbers, hyphens, or underscores only — no spaces.",
+        )
+        .required("Please enter employee ID"),
+
+      first_name: Yup.string()
+        .trim()
+        .required("Please enter first name")
+        .matches(
+          /^[a-zA-Z\s]+$/,
+          "First name must contain letters only — no numbers or special characters",
+        ),
+
+      last_name: Yup.string()
+        .trim()
+        .required("Please enter last name")
+        .matches(
+          /^[a-zA-Z\s]+$/,
+          "Last name must contain letters only — no numbers or special characters",
+        ),
+
+      email: Yup.string()
+        .email("Please enter a valid email")
+        .required("Please enter email"),
+
+      gender: Yup.number()
+        .required("Please select gender")
+        .min(1, "Please select gender"),
+
+      dob: Yup.string()
+        .trim()
+        .required("Please select date of birth")
+        .test(
+          "dob-not-future",
+          "Date of birth cannot be a future date",
+          (value) => {
+            if (!value) return false;
+            return dayjs(value).isBefore(dayjs());
+          },
+        ),
+
+      joining_date: Yup.string()
+        .trim()
+        .required("Please select joining date")
+        .test(
+          "joining-within-range",
+          "Joining date must be within the next 1 month",
+          (value) => {
+            if (!value) return false;
+            const d = dayjs(value);
+            return d.isBefore(dayjs().add(1, "month").add(1, "day"));
+          },
+        ),
+
+      contact_number: Yup.string()
+        .required("Please enter phone number")
+        .matches(/^[0-9]+$/, "Phone number must contain digits only")
+        .min(7, "Phone number is too short")
+        .max(10, "Phone number is too long"),
+
+      role_id: Yup.number()
+        .required("Please select role")
+        .min(1, "Please select role"),
+
+      branch_id_list: Yup.array().min(1, "Please select branch"),
+
+      primary_department_id_list: Yup.array().min(
+        1,
+        "Please select department",
+      ),
+
+      work_schedule_id: Yup.number()
+        .required("Please select work schedule")
+        .min(1, "Please select work schedule"),
+    }),
+    onSubmit: async (values) => {
+      const hasAtLeastOneTrue = Object.values(
+        values.allowed_attendance_methods,
+      ).some((v) => v === true);
+      if (!hasAtLeastOneTrue) {
+        setErrors("Please select at least one attendance method!");
+        return;
+      } else {
+        setErrors("");
+        await HandleEmployeeSaveAPI(values);
+      }
+    },
+  });
+
+  const HandleEmployeeSaveAPI = async (values) => {
+    let root_department = dep_options.find((d) => d.is_root === true);
+    let root_department_id = !!root_department && root_department.id;
+
+    if (
+      !(values?.primary_department_id_list).includes(root_department_id) &&
+      values?.reporting_manager_id === 0
+    ) {
+      toast.error("Please select reporting manager");
+    } else {
+      dispatch(setLoaderVisible(true));
+      let form_data = new FormData();
+      employeeImage !== null &&
+        form_data.append("profile", employeeImage, employeeImage.name);
+      Object.entries(employeeObj).forEach(([key, val]) => {
+        if (key === "cf_values" || key === "allowed_attendance_methods") {
+          form_data.append(key, JSON.stringify(val));
+        } else {
+          form_data.append(key, val);
+        }
+      });
+
+      const ApiRes = await PostApi("employee/add-new/", form_data, true);
+      if (ApiRes.status && ApiRes.status === 200) {
+        if (employeeObj.id === 0) {
+          dispatch(addEmployee(ApiRes?.data.data));
+          SetLocalStorage("employee", ApiRes?.data.data, 2);
+        } else {
+          dispatch(editEmployee(ApiRes?.data?.data));
+          SetLocalStorage("employee", ApiRes?.data.data, 3);
+        }
+        dispatch(toggleRSBView(false));
+        toast.success(ApiRes?.data?.message);
+      } else {
+        if (
+          !!ApiRes?.data?.is_rep_man_error &&
+          ApiRes?.data?.is_rep_man_error === true
+        ) {
+          setTeamsToBeUpdated(ApiRes?.data?.team_employees_to_be_updated);
+          setShowRMModal(true);
+        } else {
+          toast.error(ApiRes?.data?.message || ApiRes?.data?.detail);
+        }
+      }
+      dispatch(setLoaderVisible(false));
+    }
   };
 
+  useEffect(() => {
+    if (
+      FormikForm.submitCount > 0 &&
+      Object.keys(FormikForm.errors).length > 0
+    ) {
+      const firstErrorField = Object.keys(FormikForm.errors)[0];
+      FormikForm.setFieldTouched(firstErrorField, true, false);
+      const errorField = document.querySelector(`[name="${firstErrorField}"]`);
+      if (errorField) errorField.focus();
+    }
+  }, [FormikForm.submitCount]);
+
+  const [showRMModal, setShowRMModal] = useState(false);
+  const onRMModalCloseClick = () => setShowRMModal(false);
   const [TeamsToBeUpdated, setTeamsToBeUpdated] = useState([]);
 
   const handleNewReportingManager = (e, d_id) => {
     const { value } = e;
-    const new_rm = [...TeamsToBeUpdated].map((d) => {
-      if (d.id === d_id) {
-        return {
-          ...d,
-          new_reporting_manager_id: value,
-        };
-      } else {
-        return d;
-      }
-    });
-    setTeamsToBeUpdated(new_rm);
+    setTeamsToBeUpdated(
+      [...TeamsToBeUpdated].map((d) =>
+        d.id === d_id ? { ...d, new_reporting_manager_id: value } : d,
+      ),
+    );
   };
 
   const assignNewReportingManager = async () => {
@@ -534,27 +535,23 @@ const EmployeeForm = () => {
       (d) => parseInt(d.new_reporting_manager_id) === 0,
     );
     if (f.length > 0) {
-      toast.error("Please Select New Reporting Manager");
+      toast.error("Please select new reporting manager");
     } else {
-      const Payload = TeamsToBeUpdated.map((d) => {
-        return {
-          employee_id: d?.employee_id,
-          new_reporting_manager_id: d?.new_reporting_manager_id,
-          sub_child_details: d?.employee_details,
-        };
-      });
-
-      const Api = await PostApi(
+      const Payload = TeamsToBeUpdated.map((d) => ({
+        employee_id: d?.employee_id,
+        new_reporting_manager_id: d?.new_reporting_manager_id,
+        sub_child_details: d?.employee_details,
+      }));
+      const ApiRes = await PostApi(
         "employee/assign-new-reporting-manager/",
         Payload,
         false,
       );
-
-      if (Api.status && Api.status === 200) {
+      if (ApiRes.status && ApiRes.status === 200) {
         HandleEmployeeSaveAPI(employeeObj);
         setShowRMModal(false);
       } else {
-        toast.error("Something Went Wrong");
+        toast.error("Something went wrong");
       }
     }
   };
@@ -563,7 +560,11 @@ const EmployeeForm = () => {
     <React.Fragment>
       <Row>
         <Col>
-          <Form onSubmit={FormikForm.handleSubmit} action="javascript:void(0)">
+          <Form
+            onSubmit={FormikForm.handleSubmit}
+            noValidate
+            action="javascript:void(0)"
+          >
             <div className="text-center">
               <div className="profile-user position-relative d-inline-block mx-auto mb-4">
                 <img
@@ -596,11 +597,12 @@ const EmployeeForm = () => {
             </div>
 
             <Row>
+              {/* ── Employee ID ──────────────────────────────────────────── */}
               <Col md={12} lg={12} xxl={12}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <Label
-                      htmlFor="emailid"
+                      htmlFor="employeeid"
                       className="form-label"
                       style={{ display: "flex", alignItems: "center" }}
                     >
@@ -626,7 +628,7 @@ const EmployeeForm = () => {
                           padding: "3px",
                         }}
                       >
-                        Text and number only
+                        Uppercase letters and numbers only
                       </UncontrolledTooltip>
                     </Label>
                   </div>
@@ -638,35 +640,42 @@ const EmployeeForm = () => {
                       className="form-control"
                       placeholder="LC001"
                       value={employeeObj.emp_id || ""}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        // Strip lowercase and disallowed chars
+                        const val = e.target.value
+                          .toUpperCase()
+                          .replace(/[^A-Z0-9_-]/g, "");
+                        setEmployeeObj({ ...employeeObj, emp_id: val });
+                      }}
+                      onBlur={() => FormikForm.setFieldTouched("emp_id", true)}
                       invalid={
-                        FormikForm.touched.emp_id && FormikForm.errors.emp_id
-                          ? true
-                          : false
+                        !!(
+                          FormikForm.touched.emp_id && FormikForm.errors.emp_id
+                        )
                       }
                     />
-                    {!FormikForm.touched.emp_id &&
-                      !FormikForm.errors.emp_id && (
-                        <i className="ri-user-line"></i>
-                      )}
-                    {FormikForm.touched.emp_id && FormikForm.errors.emp_id ? (
+                    {!(
+                      FormikForm.touched.emp_id && FormikForm.errors.emp_id
+                    ) && <i className="ri-user-line"></i>}
+                    {FormikForm.touched.emp_id && FormikForm.errors.emp_id && (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.emp_id}
                       </FormFeedback>
-                    ) : null}
-                    <i className="ri-user-line"></i>
+                    )}
                   </div>
-                  {!FormikForm.errors.first_name && (
-                    <div id="passwordHelpBlock" className="form-text mb-3">
-                      Enter Employee ID.
+                  {!FormikForm.errors.emp_id && (
+                    <div className="form-text mb-3">
+                      Enter employee ID (uppercase letters, numbers, - _ only).
                     </div>
                   )}
                 </div>
               </Col>
+
+              {/* ── First Name ───────────────────────────────────────────── */}
               <Col md={6} lg={6} xxl={6}>
                 <div>
                   <Label htmlFor="first_name" className="form-label">
-                    First Name
+                    First Name <span>*</span>
                   </Label>
                   <div className="form-icon right">
                     <Input
@@ -676,36 +685,41 @@ const EmployeeForm = () => {
                       className="form-control"
                       placeholder="Elon"
                       value={employeeObj.first_name || ""}
-                      onChange={handleInputChange}
+                      onChange={(e) => handleNameInput(e, "first_name")}
+                      onBlur={() =>
+                        FormikForm.setFieldTouched("first_name", true)
+                      }
                       invalid={
-                        FormikForm.touched.first_name &&
-                        FormikForm.errors.first_name
-                          ? true
-                          : false
+                        !!(
+                          FormikForm.touched.first_name &&
+                          FormikForm.errors.first_name
+                        )
                       }
                     />
-                    {!FormikForm.touched.first_name &&
-                      !FormikForm.errors.first_name && (
-                        <i className="ri-user-line"></i>
-                      )}
+                    {!(
+                      FormikForm.touched.first_name &&
+                      FormikForm.errors.first_name
+                    ) && <i className="ri-user-line"></i>}
                     {FormikForm.touched.first_name &&
-                    FormikForm.errors.first_name ? (
-                      <FormFeedback type="invalid">
-                        {FormikForm.errors.first_name}
-                      </FormFeedback>
-                    ) : null}
+                      FormikForm.errors.first_name && (
+                        <FormFeedback type="invalid">
+                          {FormikForm.errors.first_name}
+                        </FormFeedback>
+                      )}
                   </div>
                   {!FormikForm.errors.first_name && (
-                    <div id="passwordHelpBlock" className="form-text mb-3">
-                      Enter First Name.
+                    <div className="form-text mb-3">
+                      Enter first name (letters only).
                     </div>
                   )}
                 </div>
               </Col>
+
+              {/* ── Last Name ────────────────────────────────────────────── */}
               <Col md={6} lg={6} xxl={6}>
                 <div>
                   <Label htmlFor="last_name" className="form-label">
-                    Last Name
+                    Last Name <span>*</span>
                   </Label>
                   <div className="form-icon right">
                     <Input
@@ -715,36 +729,41 @@ const EmployeeForm = () => {
                       className="form-control"
                       placeholder="Musk"
                       value={employeeObj.last_name || ""}
-                      onChange={handleInputChange}
+                      onChange={(e) => handleNameInput(e, "last_name")}
+                      onBlur={() =>
+                        FormikForm.setFieldTouched("last_name", true)
+                      }
                       invalid={
-                        FormikForm.touched.last_name &&
-                        FormikForm.errors.last_name
-                          ? true
-                          : false
+                        !!(
+                          FormikForm.touched.last_name &&
+                          FormikForm.errors.last_name
+                        )
                       }
                     />
-                    {!FormikForm.touched.last_name &&
-                      !FormikForm.errors.last_name && (
-                        <i className="ri-user-2-line"></i>
-                      )}
+                    {!(
+                      FormikForm.touched.last_name &&
+                      FormikForm.errors.last_name
+                    ) && <i className="ri-user-2-line"></i>}
                     {FormikForm.touched.last_name &&
-                    FormikForm.errors.last_name ? (
-                      <FormFeedback type="invalid">
-                        {FormikForm.errors.last_name}
-                      </FormFeedback>
-                    ) : null}
+                      FormikForm.errors.last_name && (
+                        <FormFeedback type="invalid">
+                          {FormikForm.errors.last_name}
+                        </FormFeedback>
+                      )}
                   </div>
                   {!FormikForm.errors.last_name && (
-                    <div id="passwordHelpBlock" className="form-text mb-3">
-                      Enter last Name.
+                    <div className="form-text mb-3">
+                      Enter last name (letters only).
                     </div>
                   )}
                 </div>
               </Col>
+
+              {/* ── Email ────────────────────────────────────────────────── */}
               <Col md={12} lg={12} xxl={12}>
                 <div>
                   <Label htmlFor="emailid" className="form-label">
-                    Email
+                    Email <span>*</span>
                   </Label>
                   <div className="form-icon right">
                     <Input
@@ -754,37 +773,35 @@ const EmployeeForm = () => {
                       placeholder="name@company.com"
                       value={employeeObj.email || ""}
                       onChange={handleInputChange}
+                      onBlur={() => FormikForm.setFieldTouched("email", true)}
                       invalid={
-                        FormikForm.touched.email && FormikForm.errors.email
-                          ? true
-                          : false
+                        !!(FormikForm.touched.email && FormikForm.errors.email)
                       }
                     />
-                    {!FormikForm.touched.email && !FormikForm.errors.email && (
+                    {!(FormikForm.touched.email && FormikForm.errors.email) && (
                       <i className="ri-at-line"></i>
                     )}
-                    {FormikForm.touched.email && FormikForm.errors.email ? (
+                    {FormikForm.touched.email && FormikForm.errors.email && (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.email}
                       </FormFeedback>
-                    ) : null}
+                    )}
                   </div>
                   {!FormikForm.errors.email && (
-                    <div id="passwordHelpBlock" className="form-text mb-3">
-                      Enter Email.
-                    </div>
+                    <div className="form-text mb-3">Enter email.</div>
                   )}
                 </div>
               </Col>
+
+              {/* ── Gender ───────────────────────────────────────────────── */}
               <Col lg={12}>
                 <div>
-                  <Label htmlFor="emp_gender" className="form-label">
-                    Gender
+                  <Label htmlFor="gender" className="form-label">
+                    Gender <span>*</span>
                   </Label>
                   <Select
                     id="gender"
                     name="gender"
-                    innerRef={inputRef}
                     isMulti={false}
                     options={gender_options || []}
                     className="basic-multi-select"
@@ -795,7 +812,7 @@ const EmployeeForm = () => {
                           !state.isFocused &&
                           FormikForm.touched.gender &&
                           FormikForm.errors.gender
-                            ? "red !important"
+                            ? "red"
                             : provided.borderColor,
                       }),
                     }}
@@ -808,49 +825,58 @@ const EmployeeForm = () => {
                     }
                     onChange={(e) => {
                       setEmployeeObj({ ...employeeObj, gender: e.value });
+                      FormikForm.setFieldValue("gender", e.value);
+                      FormikForm.setFieldTouched("gender", true);
                     }}
-                    invalid={
-                      FormikForm.touched.gender && FormikForm.errors.gender
-                        ? true
-                        : false
-                    }
+                    onBlur={() => FormikForm.setFieldTouched("gender", true)}
                   />
-                  {FormikForm.touched.gender && FormikForm.errors.gender ? (
+                  {FormikForm.touched.gender && FormikForm.errors.gender && (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.gender}
                     </div>
-                  ) : null}
+                  )}
                   {!FormikForm.errors.gender && (
-                    <div id="passwordHelpBlock" className="form-text mb-3">
-                      Select Gender.
+                    <div className="form-text mb-3">Select gender.</div>
+                  )}
+                </div>
+              </Col>
+
+              {/* ── DOB ──────────────────────────────────────────────────── */}
+              <Col lg={12}>
+                <div>
+                  <Label htmlFor="dob" className="form-label">
+                    Date of Birth <span>*</span>
+                  </Label>
+                  <DatePicker
+                    className={`form-control${FormikForm.touched.dob && FormikForm.errors.dob ? " border-danger" : ""}`}
+                    placeholder="Select DOB"
+                    id="dob"
+                    name="dob"
+                    value={dob ? dayjs(dob, DateFormat) : null}
+                    format={DateFormat}
+                    onChange={handleDateChange}
+                    allowClear={false}
+                    disabledDate={disableDobDates}
+                  />
+                  {FormikForm.touched.dob && FormikForm.errors.dob && (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.dob}
+                    </div>
+                  )}
+                  {!FormikForm.errors.dob && (
+                    <div className="form-text mb-3">
+                      Select date of birth (past dates only).
                     </div>
                   )}
                 </div>
               </Col>
-              <Col lg={12}>
-                <div>
-                  <Label htmlFor="dob" className="form-label">
-                    DOB
-                  </Label>
-                  <DatePicker
-                    className="form-control"
-                    placeholder="Select DOB"
-                    id="dob"
-                    name="dob"
-                    value={dayjs(dob, DateFormat)}
-                    format={"DD-MM-YYYY"}
-                    onChange={handleDateChange}
-                    allowClear={false}
-                  />
-                  <div id="passwordHelpBlock" className="form-text mb-3">
-                    Select DOB.
-                  </div>
-                </div>
-              </Col>
 
+              {/* ── Contact Number ───────────────────────────────────────── */}
               <Col lg={12}>
                 <div>
-                  <Label className="form-label">Contact Number*</Label>
+                  <Label className="form-label">
+                    Contact Number <span>*</span>
+                  </Label>
                   <Dropdown
                     className="input-group"
                     isOpen={dropdownOpen4}
@@ -871,31 +897,36 @@ const EmployeeForm = () => {
                       </span>
                     </DropdownToggle>
                     <Input
-                      type="number"
+                      type="text"
                       name="contact_number"
+                      inputMode="numeric"
                       maxLength={10}
                       className="form-control rounded-end flag-input"
                       placeholder="Enter number"
                       value={employeeObj.contact_number || ""}
                       onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, "");
+                        const value = e.target.value.replace(/[^0-9]/g, "");
                         if (value.length <= 10) {
                           updateProfileData("contact_number", value);
+                          FormikForm.setFieldValue("contact_number", value);
                         }
                       }}
+                      onBlur={() =>
+                        FormikForm.setFieldTouched("contact_number", true)
+                      }
                       invalid={
-                        FormikForm.touched.contact_number &&
-                        FormikForm.errors.contact_number
-                          ? true
-                          : false
+                        !!(
+                          FormikForm.touched.contact_number &&
+                          FormikForm.errors.contact_number
+                        )
                       }
                     />
                     {FormikForm.touched.contact_number &&
-                    FormikForm.errors.contact_number ? (
-                      <FormFeedback type="invalid">
-                        {FormikForm.errors.contact_number}
-                      </FormFeedback>
-                    ) : null}
+                      FormikForm.errors.contact_number && (
+                        <FormFeedback type="invalid">
+                          {FormikForm.errors.contact_number}
+                        </FormFeedback>
+                      )}
                     <DropdownMenu
                       as="ul"
                       className="list-unstyled w-100 dropdown-menu-list mb-0"
@@ -904,63 +935,63 @@ const EmployeeForm = () => {
                         style={{ maxHeight: "220px" }}
                         className="px-3"
                       >
-                        {(
-                          CountryList.filter((obj) => obj.show).sort((a, b) =>
+                        {CountryList.filter((obj) => obj.show)
+                          .sort((a, b) =>
                             a.countryName.localeCompare(b.countryName),
-                          ) || []
-                        ).map((item, key) => (
-                          <DropdownItem
-                            as="li"
-                            onClick={() => {
-                              updateProfileData(
-                                "country_code",
-                                item.countryCode,
-                              );
-                              setContactCountry(item);
-                            }}
-                            key={key}
-                            className="dropdown-item d-flex"
-                          >
-                            <div className="flex-shrink-0 me-2">
-                              <img
-                                src={item.flagImg}
-                                alt="country flag"
-                                className="options-flagimg"
-                                height="20"
-                              />
-                            </div>
-                            <div className="flex-grow-1">
-                              <div className="d-flex">
-                                <div className="country-name me-1">
-                                  {item.countryName}
-                                </div>
-                                <span className="countrylist-codeno text-muted">
-                                  {item.countryCode}
-                                </span>
+                          )
+                          .map((item, key) => (
+                            <DropdownItem
+                              as="li"
+                              onClick={() => {
+                                updateProfileData(
+                                  "country_code",
+                                  item.countryCode,
+                                );
+                                setContactCountry(item);
+                              }}
+                              key={key}
+                              className="dropdown-item d-flex"
+                            >
+                              <div className="flex-shrink-0 me-2">
+                                <img
+                                  src={item.flagImg}
+                                  alt="country flag"
+                                  className="options-flagimg"
+                                  height="20"
+                                />
                               </div>
-                            </div>
-                          </DropdownItem>
-                        ))}
+                              <div className="flex-grow-1">
+                                <div className="d-flex">
+                                  <div className="country-name me-1">
+                                    {item.countryName}
+                                  </div>
+                                  <span className="countrylist-codeno text-muted">
+                                    {item.countryCode}
+                                  </span>
+                                </div>
+                              </div>
+                            </DropdownItem>
+                          ))}
                       </SimpleBar>
                     </DropdownMenu>
                   </Dropdown>
                   {!FormikForm.errors.contact_number && (
-                    <div id="passwordHelpBlock" className="form-text mb-3">
-                      Enter Your Contact number with country code.
+                    <div className="form-text mb-3">
+                      Enter contact number (digits only).
                     </div>
                   )}
                 </div>
               </Col>
 
+              {/* ── Branch ───────────────────────────────────────────────── */}
               <Col lg={12}>
                 <div>
                   <Label htmlFor="branch" className="form-label">
-                    Branch
+                    Branch <span>*</span>
                   </Label>
                   <Select
                     id="branch"
-                    name="branch"
-                    innerRef={inputRef}
+                    name="branch_id_list"
                     isMulti
                     closeMenuOnSelect={false}
                     options={branch_options || []}
@@ -973,52 +1004,54 @@ const EmployeeForm = () => {
                           !state.isFocused &&
                           FormikForm.touched.branch_id_list &&
                           FormikForm.errors.branch_id_list
-                            ? "red !important"
+                            ? "red"
                             : provided.borderColor,
                       }),
                     }}
-                    placeholder={"Select Branch"}
+                    placeholder="Select Branch"
                     value={
                       employeeObj?.branch_id_list
                         ? branch_options.filter((d) =>
-                            (employeeObj?.branch_id_list).includes(d.id),
+                            employeeObj?.branch_id_list.includes(d.id),
                           )
                         : []
                     }
-                    onChange={handleBranchChange}
-                    invalid={
-                      FormikForm.touched.branch_id_list &&
-                      FormikForm.errors.branch_id_list
-                        ? true
-                        : false
+                    onChange={(e) => {
+                      handleBranchChange(e);
+                      FormikForm.setFieldValue(
+                        "branch_id_list",
+                        e.map((d) => d.value),
+                      );
+                      FormikForm.setFieldTouched("branch_id_list", true);
+                    }}
+                    onBlur={() =>
+                      FormikForm.setFieldTouched("branch_id_list", true)
                     }
                   />
                   {FormikForm.touched.branch_id_list &&
-                  FormikForm.errors.branch_id_list ? (
-                    <div className="lc_form_error_text">
-                      {FormikForm.errors.branch_id_list}
-                    </div>
-                  ) : null}
+                    FormikForm.errors.branch_id_list && (
+                      <div className="lc_form_error_text">
+                        {FormikForm.errors.branch_id_list}
+                      </div>
+                    )}
                   {!FormikForm.errors.branch_id_list && (
-                    <div id="passwordHelpBlock" className="form-text mb-3">
-                      Select Branch
-                    </div>
+                    <div className="form-text mb-3">Select branch.</div>
                   )}
                 </div>
               </Col>
 
+              {/* ── Primary Department ───────────────────────────────────── */}
               <Col lg={12}>
                 <div>
                   <Label
                     htmlFor="primary_department_id_list"
                     className="form-label"
                   >
-                    Primary Department
+                    Primary Department <span>*</span>
                   </Label>
                   <Select
                     id="primary_department_id_list"
                     name="primary_department_id_list"
-                    innerRef={inputRef}
                     isMulti
                     options={dep_options || []}
                     className="basic-multi-select"
@@ -1031,42 +1064,53 @@ const EmployeeForm = () => {
                           !state.isFocused &&
                           FormikForm.touched.primary_department_id_list &&
                           FormikForm.errors.primary_department_id_list
-                            ? "red !important"
+                            ? "red"
                             : provided.borderColor,
                       }),
                     }}
-                    placeholder={"Select Primary Department"}
+                    placeholder="Select Primary Department"
                     value={
                       employeeObj?.primary_department_id_list
                         ? dep_options.filter((d) =>
-                            (employeeObj?.primary_department_id_list).includes(
+                            employeeObj?.primary_department_id_list.includes(
                               d.id,
                             ),
                           )
                         : []
                     }
-                    onChange={handlePrimaryDepChange}
-                    invalid={
-                      FormikForm.touched.primary_department_id_list &&
-                      FormikForm.errors.primary_department_id_list
-                        ? true
-                        : false
+                    onChange={(e) => {
+                      handlePrimaryDepChange(e);
+                      FormikForm.setFieldValue(
+                        "primary_department_id_list",
+                        e.map((d) => d.id),
+                      );
+                      FormikForm.setFieldTouched(
+                        "primary_department_id_list",
+                        true,
+                      );
+                    }}
+                    onBlur={() =>
+                      FormikForm.setFieldTouched(
+                        "primary_department_id_list",
+                        true,
+                      )
                     }
                   />
                   {FormikForm.touched.primary_department_id_list &&
-                  FormikForm.errors.primary_department_id_list ? (
-                    <div className="lc_form_error_text">
-                      {FormikForm.errors.primary_department_id_list}
-                    </div>
-                  ) : null}
+                    FormikForm.errors.primary_department_id_list && (
+                      <div className="lc_form_error_text">
+                        {FormikForm.errors.primary_department_id_list}
+                      </div>
+                    )}
                   {!FormikForm.errors.primary_department_id_list && (
-                    <div id="passwordHelpBlock" className="form-text mb-3">
-                      Select Primary Department
+                    <div className="form-text mb-3">
+                      Select primary department.
                     </div>
                   )}
                 </div>
               </Col>
 
+              {/* ── Reporting Manager ────────────────────────────────────── */}
               <Col lg={12}>
                 <div>
                   <Label htmlFor="reporting_manager_id">
@@ -1075,24 +1119,12 @@ const EmployeeForm = () => {
                   <Select
                     id="reporting_manager_id"
                     name="reporting_manager_id"
-                    innerRef={inputRef}
                     isMulti={false}
                     isClearable={true}
                     options={reportingManagerOptions || []}
                     components={{ Option: EmployeeDisplayInSelect }}
                     className="basic-multi-select"
                     classNamePrefix="lc-select"
-                    styles={{
-                      control: (provided, state) => ({
-                        ...provided,
-                        borderColor:
-                          !state.isFocused &&
-                          FormikForm.touched.reporting_manager_id &&
-                          FormikForm.errors.reporting_manager_id
-                            ? "red !important"
-                            : provided.borderColor,
-                      }),
-                    }}
                     value={
                       (employeeObj.reporting_manager_id &&
                         reportingManagerOptions.find(
@@ -1101,49 +1133,28 @@ const EmployeeForm = () => {
                       null
                     }
                     onChange={(selectedOption) => {
-                      if (selectedOption) {
-                        setEmployeeObj({
-                          ...employeeObj,
-                          reporting_manager_id: selectedOption.id,
-                        });
-                      } else {
-                        setEmployeeObj({
-                          ...employeeObj,
-                          reporting_manager_id: null,
-                        });
-                      }
+                      setEmployeeObj({
+                        ...employeeObj,
+                        reporting_manager_id: selectedOption
+                          ? selectedOption.id
+                          : null,
+                      });
                     }}
-                    invalid={
-                      FormikForm.touched.reporting_manager_id &&
-                      FormikForm.errors.reporting_manager_id
-                        ? true
-                        : false
-                    }
                   />
-                  {FormikForm.touched.reporting_manager_id &&
-                  FormikForm.errors.reporting_manager_id ? (
-                    <div className="lc_form_error_text">
-                      {FormikForm.errors.reporting_manager_id}
-                    </div>
-                  ) : null}
                 </div>
-                {!FormikForm.errors.reporting_manager_id && (
-                  <div id="passwordHelpBlock" className="form-text mb-3">
-                    Select Reporting Manager
-                  </div>
-                )}
+                <div className="form-text mb-3">Select reporting manager.</div>
               </Col>
 
+              {/* ── Role ─────────────────────────────────────────────────── */}
               <Col lg={12}>
                 <div>
                   <Label htmlFor="role_id" className="form-label">
-                    Role
+                    Role <span>*</span>
                   </Label>
                   <Select
                     id="role_id"
                     name="role_id"
                     isMulti={false}
-                    innerRef={inputRef}
                     options={role_id_option || []}
                     className="basic-multi-select"
                     styles={{
@@ -1153,7 +1164,7 @@ const EmployeeForm = () => {
                           !state.isFocused &&
                           FormikForm.touched.role_id &&
                           FormikForm.errors.role_id
-                            ? "red !important"
+                            ? "red"
                             : provided.borderColor,
                       }),
                     }}
@@ -1166,33 +1177,31 @@ const EmployeeForm = () => {
                     }
                     onChange={(e) => {
                       setEmployeeObj({ ...employeeObj, role_id: e.id });
+                      FormikForm.setFieldValue("role_id", e.id);
+                      FormikForm.setFieldTouched("role_id", true);
                     }}
-                    invalid={
-                      FormikForm.touched.role_id && FormikForm.errors.role_id
-                        ? true
-                        : false
-                    }
+                    onBlur={() => FormikForm.setFieldTouched("role_id", true)}
                   />
-                  {FormikForm.touched.role_id && FormikForm.errors.role_id ? (
+                  {FormikForm.touched.role_id && FormikForm.errors.role_id && (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.role_id}
                     </div>
-                  ) : null}
+                  )}
                   {!FormikForm.errors.role_id && (
-                    <div id="passwordHelpBlock" className="form-text mb-3">
-                      Select Role
-                    </div>
+                    <div className="form-text mb-3">Select role.</div>
                   )}
                 </div>
               </Col>
 
+              {/* ── Work Schedule ────────────────────────────────────────── */}
               <Col lg={12}>
                 <div>
-                  <Label htmlFor="empWs">Work Schedule</Label>
+                  <Label htmlFor="empWs" className="form-label">
+                    Work Schedule <span>*</span>
+                  </Label>
                   <Select
                     id="empWs"
                     name="work_schedule_id"
-                    innerRef={inputRef}
                     isMulti={false}
                     options={ws_options || []}
                     className="basic-multi-select"
@@ -1203,7 +1212,7 @@ const EmployeeForm = () => {
                           !state.isFocused &&
                           FormikForm.touched.work_schedule_id &&
                           FormikForm.errors.work_schedule_id
-                            ? "red !important"
+                            ? "red"
                             : provided.borderColor,
                       }),
                     }}
@@ -1214,49 +1223,63 @@ const EmployeeForm = () => {
                         )) ||
                       []
                     }
-                    onChange={(e) =>
-                      setEmployeeObj({ ...employeeObj, work_schedule_id: e.id })
-                    }
-                    invalid={
-                      FormikForm.touched.work_schedule_id &&
-                      FormikForm.errors.work_schedule_id
-                        ? true
-                        : false
+                    onChange={(e) => {
+                      setEmployeeObj({
+                        ...employeeObj,
+                        work_schedule_id: e.id,
+                      });
+                      FormikForm.setFieldValue("work_schedule_id", e.id);
+                      FormikForm.setFieldTouched("work_schedule_id", true);
+                    }}
+                    onBlur={() =>
+                      FormikForm.setFieldTouched("work_schedule_id", true)
                     }
                   />
                   {FormikForm.touched.work_schedule_id &&
-                  FormikForm.errors.work_schedule_id ? (
-                    <div className="lc_form_error_text">
-                      {FormikForm.errors.work_schedule_id}
-                    </div>
-                  ) : null}
+                    FormikForm.errors.work_schedule_id && (
+                      <div className="lc_form_error_text">
+                        {FormikForm.errors.work_schedule_id}
+                      </div>
+                    )}
+                  {!FormikForm.errors.work_schedule_id && (
+                    <div className="form-text mb-3">Select work schedule.</div>
+                  )}
                 </div>
-                {!FormikForm.errors.work_schedule_id && (
-                  <div id="passwordHelpBlock" className="form-text mb-3">
-                    Select Work Schedule
-                  </div>
-                )}
               </Col>
 
+              {/* ── Joining Date ─────────────────────────────────────────── */}
               <Col lg={12}>
                 <div>
-                  <Label htmlFor="joindate" className="form-label">
-                    Joining Date
+                  <Label htmlFor="joining_date" className="form-label">
+                    Joining Date <span>*</span>
                   </Label>
                   <DatePicker
-                    className="form-control"
+                    className={`form-control${FormikForm.touched.joining_date && FormikForm.errors.joining_date ? " border-danger" : ""}`}
                     id="joining_date"
-                    value={dayjs(joining_date, DateFormat)}
+                    name="joining_date"
+                    value={
+                      joining_date ? dayjs(joining_date, DateFormat) : null
+                    }
                     format={DateFormat}
                     allowClear={false}
                     onChange={handleJoinDateChange}
+                    disabledDate={disableJoiningDates}
                   />
-                </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Select Your Joining Date.
+                  {FormikForm.touched.joining_date &&
+                    FormikForm.errors.joining_date && (
+                      <div className="lc_form_error_text">
+                        {FormikForm.errors.joining_date}
+                      </div>
+                    )}
+                  {!FormikForm.errors.joining_date && (
+                    <div className="form-text mb-3">
+                      Select joining date (past or up to 1 month in future).
+                    </div>
+                  )}
                 </div>
               </Col>
 
+              {/* ── ID Proof ─────────────────────────────────────────────── */}
               {selectedFileName ? (
                 <table>
                   <thead>
@@ -1294,227 +1317,135 @@ const EmployeeForm = () => {
                   </div>
                 </Col>
               )}
-              <div id="passwordHelpBlock" className="form-text mb-3">
-                {!selectedFileName && <p>Select ID Proof.</p>}
+              <div className="form-text mb-3">
+                {!selectedFileName && <p>Select ID proof.</p>}
               </div>
 
+              {/* ── Time Zone ────────────────────────────────────────────── */}
               <Col lg={12}>
                 <div>
                   <Label htmlFor="profile_timezone" className="form-label">
                     Time Zone
                   </Label>
-                  <div className="form-icon right">
-                    <Select
-                      name="profile_timezone"
-                      id="profile_timezone"
-                      value={
-                        employeeObj.profile_timezone &&
-                        timzone_options.find(
-                          (e) => e.value === employeeObj.profile_timezone,
-                        )
-                      }
-                      onChange={handleTimeZoneChange}
-                      options={timzone_options}
-                      placeholder="Select a time zone"
-                    />
-                  </div>
+                  <Select
+                    name="profile_timezone"
+                    id="profile_timezone"
+                    value={
+                      employeeObj.profile_timezone &&
+                      timzone_options.find(
+                        (e) => e.value === employeeObj.profile_timezone,
+                      )
+                    }
+                    onChange={handleTimeZoneChange}
+                    options={timzone_options}
+                    placeholder="Select a time zone"
+                  />
                 </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Select Time Zone
-                </div>
+                <div className="form-text mb-3">Select time zone.</div>
               </Col>
 
-              <Col md={12} lg={12} xxl={12}>
-                <div>
-                  <Label
-                    htmlFor="allow_attendance_outside_the_range"
-                    className="form-label"
-                  >
-                    Allow Check In/Out Outside the Range
-                  </Label>
-                  <div className="mb-2">
-                    <div
-                      className="form-check form-switch form-switch-md form-switch-success"
-                      dir="ltr"
-                    >
-                      <Input
-                        id="allow_attendance_outside_the_range"
-                        name="is_active"
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={employeeObj.allow_attendance_outside_the_range}
-                        onChange={(e) =>
-                          setEmployeeObj({
-                            ...employeeObj,
-                            allow_attendance_outside_the_range:
-                              e.target.checked,
-                          })
-                        }
-                      />
+              {/* ── Toggle Fields ─────────────────────────────────────────── */}
+              {[
+                {
+                  id: "allow_attendance_outside_the_range",
+                  label: "Allow Check In/Out Outside the Range",
+                  field: "allow_attendance_outside_the_range",
+                  hint: `Check if <b><i>${employeeObj.first_name}</i></b> is allowed to check in/out outside the branch range.`,
+                },
+                {
+                  id: "outside_range",
+                  label: "Outside Range Notes Required",
+                  field: "outside_range_notes_required",
+                  hint: `Check if <b><i>${employeeObj.first_name}</i></b> is required to add notes when outside range.`,
+                },
+                {
+                  id: "can_web_checkin",
+                  label: "Allow Web Check In/Out",
+                  field: "can_web_checkin",
+                  hint: `Check if <b><i>${employeeObj.first_name}</i></b> is allowed to web check in/out.`,
+                },
+              ].map(({ id, label, field, hint }) => (
+                <Col md={12} lg={12} xxl={12} key={id}>
+                  <div>
+                    <Label htmlFor={id} className="form-label">
+                      {label}
+                    </Label>
+                    <div className="mb-2">
+                      <div
+                        className="form-check form-switch form-switch-md form-switch-success"
+                        dir="ltr"
+                      >
+                        <Input
+                          id={id}
+                          type="checkbox"
+                          className="form-check-input"
+                          checked={!!employeeObj[field]}
+                          onChange={(e) =>
+                            setEmployeeObj({
+                              ...employeeObj,
+                              [field]: e.target.checked,
+                            })
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Check if{" "}
-                  <b>
-                    <i>{employeeObj.first_name}</i>
-                  </b>{" "}
-                  is allowed to checkIn/CheckOut outside the branch range.
-                </div>
-              </Col>
+                  <div
+                    className="form-text mb-3"
+                    dangerouslySetInnerHTML={{ __html: hint }}
+                  />
+                </Col>
+              ))}
 
-              <Col md={12} lg={12} xxl={12}>
-                <div>
-                  <Label htmlFor="outside_range" className="form-label">
-                    Outside Range Notes Required
-                  </Label>
-                  <div className="mb-2">
-                    <div
-                      className="form-check form-switch form-switch-md form-switch-success"
-                      dir="ltr"
-                    >
-                      <Input
-                        id="outside_range"
-                        name="is_active"
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={employeeObj.outside_range_notes_required}
-                        onChange={(e) =>
-                          setEmployeeObj({
-                            ...employeeObj,
-                            outside_range_notes_required: e.target.checked,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Check if{" "}
-                  <b>
-                    <i>{employeeObj.first_name}</i>
-                  </b>{" "}
-                  is allowed to checkIn/CheckOut outside the branch range.
-                </div>
-              </Col>
-
-              <Col md={12} lg={12} xxl={12}>
-                <div>
-                  <Label htmlFor="can_web_checkin" className="form-label">
-                    Allow Web Check In/Out
-                  </Label>
-                  <div className="mb-2">
-                    <div
-                      className="form-check form-switch form-switch-md form-switch-success"
-                      dir="ltr"
-                    >
-                      <Input
-                        id="can_web_checkin"
-                        name="is_active"
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={employeeObj.can_web_checkin}
-                        onChange={(e) =>
-                          setEmployeeObj({
-                            ...employeeObj,
-                            can_web_checkin: e.target.checked,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div id="passwordHelpBlock" className="form-text mb-3">
-                  Check if{" "}
-                  <b>
-                    <i>{employeeObj.first_name}</i>
-                  </b>{" "}
-                  is allowed to Web Check In/Out.
-                </div>
-              </Col>
-
+              {/* ── Attendance Methods ───────────────────────────────────── */}
               <Col md={12} lg={12} xxl={12}>
                 <div>
                   <Label htmlFor="auth_types" className="form-label">
-                    Allowed Attendance Methods
+                    Allowed Attendance Methods <span>*</span>
                   </Label>
                   <div className="d-flex gap-4 mb-2">
-                    <div className="form-check">
-                      <Input
-                        id="face_lock"
-                        name="face_lock"
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={
-                          employeeObj.allowed_attendance_methods
-                            ?.requires_face_verification || false
-                        }
-                        onChange={(e) =>
-                          setEmployeeObj({
-                            ...employeeObj,
-                            allowed_attendance_methods: {
-                              ...employeeObj?.allowed_attendance_methods,
-                              requires_face_verification: e.target.checked,
-                            },
-                          })
-                        }
-                      />
-                      <Label className="form-check-label" htmlFor="face_lock">
-                        Face Recognition
-                      </Label>
-                    </div>
-                    <div className="form-check">
-                      <Input
-                        id="fingerprint"
-                        name="fingerprint"
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={
-                          employeeObj.allowed_attendance_methods
-                            ?.requires_biometric_authentication || false
-                        }
-                        onChange={(e) =>
-                          setEmployeeObj({
-                            ...employeeObj,
-                            allowed_attendance_methods: {
-                              ...employeeObj?.allowed_attendance_methods,
-                              requires_biometric_authentication:
-                                e.target.checked,
-                            },
-                          })
-                        }
-                      />
-                      <Label className="form-check-label" htmlFor="fingerprint">
-                        Fingerprint
-                      </Label>
-                    </div>
-                    <div className="form-check">
-                      <Input
-                        id="manual_checkin"
-                        name="manual_checkin"
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={
-                          employeeObj.allowed_attendance_methods
-                            ?.allow_manual_checkin || false
-                        }
-                        onChange={(e) =>
-                          setEmployeeObj({
-                            ...employeeObj,
-                            allowed_attendance_methods: {
-                              ...employeeObj?.allowed_attendance_methods,
-                              allow_manual_checkin: e.target.checked,
-                            },
-                          })
-                        }
-                      />
-                      <Label
-                        className="form-check-label"
-                        htmlFor="manual_checkin"
-                      >
-                        Manual Check-In
-                      </Label>
-                    </div>
+                    {[
+                      {
+                        id: "face_lock",
+                        label: "Face Recognition",
+                        key: "requires_face_verification",
+                      },
+                      {
+                        id: "fingerprint",
+                        label: "Fingerprint",
+                        key: "requires_biometric_authentication",
+                      },
+                      {
+                        id: "manual_checkin",
+                        label: "Manual Check-In",
+                        key: "allow_manual_checkin",
+                      },
+                    ].map(({ id, label, key }) => (
+                      <div className="form-check" key={id}>
+                        <Input
+                          id={id}
+                          name={id}
+                          type="checkbox"
+                          className="form-check-input"
+                          checked={
+                            employeeObj.allowed_attendance_methods?.[key] ||
+                            false
+                          }
+                          onChange={(e) =>
+                            setEmployeeObj({
+                              ...employeeObj,
+                              allowed_attendance_methods: {
+                                ...employeeObj?.allowed_attendance_methods,
+                                [key]: e.target.checked,
+                              },
+                            })
+                          }
+                        />
+                        <Label className="form-check-label" htmlFor={id}>
+                          {label}
+                        </Label>
+                      </div>
+                    ))}
                   </div>
                   {errors && (
                     <div style={{ color: "red", marginTop: "4px" }}>
@@ -1524,14 +1455,14 @@ const EmployeeForm = () => {
                 </div>
               </Col>
 
-              <hr></hr>
+              <hr />
 
-              {/* ── Custom Fields ──────────────────────────────────────────────── */}
+              {/* ── Custom Fields ────────────────────────────────────────── */}
               {employeeObj.cf_values && employeeObj.cf_values.length
                 ? employeeObj.cf_values.map((obj) => (
                     <Col lg={12} key={obj.id}>
                       <div className="mb-3">
-                        <Label htmlFor="obj.input_name" className="form-label">
+                        <Label htmlFor={obj.input_name} className="form-label">
                           {obj.name}
                         </Label>
                         {form_default_input_types.includes(obj.type) && (
@@ -1548,27 +1479,22 @@ const EmployeeForm = () => {
                               />
                               <i className="ri-user-2-line"></i>
                             </div>
-                            <div id="passwordHelpBlock" className="form-text">
-                              Enter {obj.name}
-                            </div>
+                            <div className="form-text">Enter {obj.name}</div>
                           </Fragment>
                         )}
                         {obj.type === form_file_type && (
                           <Fragment>
                             <div className="form-icon right">
                               <Input
-                                type={"file"}
+                                type="file"
                                 name={obj.input_name}
                                 id={obj.input_name}
                                 className="form-control"
-                                placeholder={`Enter ${obj.name}`}
                                 onChange={(e) => handleCFFileChange(e, obj.id)}
                               />
                               <i className="ri-user-2-line"></i>
                             </div>
-                            <div id="passwordHelpBlock" className="form-text">
-                              Choose {obj.name}
-                            </div>
+                            <div className="form-text">Choose {obj.name}</div>
                             {!!obj.value && obj.value !== "" && (
                               <Fragment>{obj.name} Uploaded</Fragment>
                             )}
@@ -1625,8 +1551,7 @@ const EmployeeForm = () => {
                   {/* Save Button */}
 
                   <Label className="form-label mb-0">Custom Locations</Label>
-
-                  <div id="passwordHelpBlock" className="form-text mt-1">
+                  <div className="form-text mt-1">
                     Add or manage employee locations.
                   </div>
                 </Col>
@@ -1708,12 +1633,24 @@ const EmployeeForm = () => {
                   </div>
                 </Col>
               )}
+
+              {/* ── Save button for new employees ─────────────────────────── */}
+              {!isExistingEmployee && (
+                <Col lg={12}>
+                  <div className="text-end mt-3">
+                    <Button type="submit" color="success" className="btn-label">
+                      <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
+                      Save
+                    </Button>
+                  </div>
+                </Col>
+              )}
             </Row>
           </Form>
         </Col>
       </Row>
 
-      {/* ── Location Modal ──────────────────────────────────────────────────── */}
+      {/* ── Location Modal ───────────────────────────────────────────────────── */}
       <LocationModal
         isOpen={locationModalOpen}
         onClose={() => setLocationModalOpen(false)}
@@ -1722,7 +1659,7 @@ const EmployeeForm = () => {
         locationToEdit={locationToEdit}
       />
 
-      {/* ── Reporting Manager Reassignment Modal ────────────────────────────── */}
+      {/* ── Reporting Manager Reassignment Modal ─────────────────────────────── */}
       <Modal
         fade={true}
         isOpen={showRMModal}
@@ -1736,56 +1673,51 @@ const EmployeeForm = () => {
             </div>
             <div className="mt-3 pt-1">
               <p>
-                <b>{employeeObj?.first_name} </b> is The Reporting Manager For
-                The Following Employees
+                <b>{employeeObj?.first_name}</b> is the reporting manager for
+                the following employees
               </p>
             </div>
             <div className="mt-3 pt-1">
               {TeamsToBeUpdated &&
-                TeamsToBeUpdated.map((d) => {
-                  return (
-                    <React.Fragment key={d.id}>
-                      <Row className="mt-2">
-                        <Col lg={12} style={{ textAlign: "left" }}>
-                          <h5>{d?.name}</h5>
-                        </Col>
-                      </Row>
-                      <Row>
-                        <Col lg={6}>
-                          <Select
-                            name={`rep_man_select_${d.id}`}
-                            id={`rep_man_id_${d.id}`}
-                            options={d.rep_man_options}
-                            components={{ Option: EmployeeDisplayInSelect }}
-                            value={
-                              d.rep_man_options.find(
-                                (e) =>
-                                  e.id === parseInt(d.new_reporting_manager_id),
-                              ) || []
-                            }
-                            onChange={(e) =>
-                              handleNewReportingManager(e, d?.id)
-                            }
-                            className="basic-multi-select"
-                          />
-                        </Col>
-                        <Col lg={6}>
-                          <h5>Employees</h5>
-                          {(d?.employee_details).map((m) => (
-                            <h6 key={m?.id}>{m?.name}</h6>
-                          ))}
-                        </Col>
-                      </Row>
-                    </React.Fragment>
-                  );
-                })}
+                TeamsToBeUpdated.map((d) => (
+                  <React.Fragment key={d.id}>
+                    <Row className="mt-2">
+                      <Col lg={12} style={{ textAlign: "left" }}>
+                        <h5>{d?.name}</h5>
+                      </Col>
+                    </Row>
+                    <Row>
+                      <Col lg={6}>
+                        <Select
+                          name={`rep_man_select_${d.id}`}
+                          id={`rep_man_id_${d.id}`}
+                          options={d.rep_man_options}
+                          components={{ Option: EmployeeDisplayInSelect }}
+                          value={
+                            d.rep_man_options.find(
+                              (e) =>
+                                e.id === parseInt(d.new_reporting_manager_id),
+                            ) || []
+                          }
+                          onChange={(e) => handleNewReportingManager(e, d?.id)}
+                          className="basic-multi-select"
+                        />
+                      </Col>
+                      <Col lg={6}>
+                        <h5>Employees</h5>
+                        {d?.employee_details?.map((m) => (
+                          <h6 key={m?.id}>{m?.name}</h6>
+                        ))}
+                      </Col>
+                    </Row>
+                  </React.Fragment>
+                ))}
             </div>
           </div>
           <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
             <button
               type="button"
               className="btn w-sm btn-light"
-              data-bs-dismiss="modal"
               onClick={() => setShowRMModal(false)}
             >
               Close
@@ -1793,7 +1725,6 @@ const EmployeeForm = () => {
             <button
               type="button"
               className="btn w-sm btn-danger"
-              id="assign-record"
               onClick={assignNewReportingManager}
             >
               Assign

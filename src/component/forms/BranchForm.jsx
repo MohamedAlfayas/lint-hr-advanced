@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Button,
@@ -15,9 +15,7 @@ import {
 } from "reactstrap";
 import Select from "react-select";
 import {
-  gender_options,
   form_default_input_types,
-  form_select_type,
   timzone_options,
   form_date_type,
   DateFormat,
@@ -33,14 +31,9 @@ dayjs.extend(customParseFormat);
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
-//SimpleBar
-
 import CountryList from "../../common/data/CountryList";
 import no_image from "../../assets/images/users/no_img.jpg";
-
 import { toast } from "react-toastify";
-
-import { GoogleMap, Marker } from "@react-google-maps/api";
 import { useDispatch, useSelector } from "react-redux";
 import { CountryCodeDisplayInSelect } from "../../common/js/CountryCodeDisplayInSelect";
 import { PostApi } from "../../common/api/PostApi";
@@ -50,23 +43,25 @@ import {
   editBranch,
   setBranch,
 } from "../../redux/reducers/ChildReducer/BranchReducer";
-import {
-  toggleRSBView,
-  setFormTitle,
-  setFormWidthPercentage,
-  setComponentToShow,
-  setFormObj,
-} from "../../redux/reducers/ChildReducer/RightSideBarReducer";
+import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { SetLocalStorage } from "../../meta/SetLocalStorageData";
-import DistanceCalculaterInMap from "../../pages/attendance/DistanceCalculaterInMap";
 import LocationSearch from "../../pages/organization/LocationSearch";
-// import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
-import BranchLocationForm from "./Common/BranchLocationForm";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
-import { IndiaStates } from "../../common/constant/Constants";
 
 const BranchForm = () => {
   const dispatch = useDispatch();
+  const inputRef = useRef();
+  const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+
+  // ── Country / State options ──────────────────────────────────────────────
+  const [CountryListOptions, setCountryListOptions] = useState([]);
+  const [CountryCodeListOptions, setCountryCodeListOptions] = useState([]);
+  const [branchStateOptions, setBranchStateOptions] = useState([]);
+  const [locationStateOptions, setLocationStateOptions] = useState([]);
+
+  // ── Modal ────────────────────────────────────────────────────────────────
+  const [modalOpen, setModalOpen] = useState(false);
+
   const initialBranchLocationObj = {
     type_id: 0,
     type: "branch",
@@ -88,179 +83,175 @@ const BranchForm = () => {
     map_data: [],
   };
 
-  const [stateListOptions, setStateListOptions] = useState([]);
-  const [branchStateOptions, setBranchStateOptions] = useState([]);
-  const [locationStateOptions, setLocationStateOptions] = useState([]);
-  const [CountryCodeListOptions, setCountryCodeListOptions] = useState([]);
-  const [branchLocationObj, setBranchLocationObj] = useState(
-    initialBranchLocationObj,
-  );
-  const [branchObj, setBranchObj] = useState({});
   useEffect(() => {
-    if (branchLocationObj?.country) {
-      const selectedCountry = CountryList.find(
-        (d) => d.countryName === branchLocationObj.country,
-      );
-      setLocationStateOptions(selectedCountry?.states || []);
-    }
-  }, [branchLocationObj?.country]);
-
-  useEffect(() => {
-    if (branchObj?.country) {
-      const selectedCountry = CountryList.find(
-        (d) => d.countryName === branchObj.country,
-      );
-      setBranchStateOptions(selectedCountry?.states || []);
-    }
-  }, [branchObj?.country]);
-
-  const [CountryListOptions, setCountryListOptions] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [showTable, setShowTable] = useState(false);
-  const [branchId, setBranchID] = useState(0);
-  const handleAddClick = () => {
-    setModalOpen(true);
-
-    setBranchLocationObj({
-      ...initialBranchLocationObj,
-      type_id: branchObj?.id,
-    });
-  };
-  const handleModalClose = () => {
-    setModalOpen(false);
-  };
-  useEffect(() => {
-    let country_code_list = [];
-    let country_list = [];
-
-    CountryList.filter((c) => c.show === true).map((d) => {
+    const country_code_list = [];
+    const country_list = [];
+    CountryList.filter((c) => c.show === true).forEach((d) => {
       country_code_list.push({
         ...d,
         label: d.countryCode,
         value: d.countryCode,
       });
-      country_list.push({
-        ...d,
-        label: d.countryName,
-        value: d.countryName,
-      });
+      country_list.push({ ...d, label: d.countryName, value: d.countryName });
     });
-
     setCountryCodeListOptions(country_code_list);
     setCountryListOptions(country_list);
   }, []);
 
-  const inputRef = useRef();
+  // ── Branch Formik ────────────────────────────────────────────────────────
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues: {
+      id: 0,
+      name: "",
+      country: "",
+      country_code: "+91",
+      state: "",
+      address: "",
+      city: "",
+      pincode: "",
+      contact_number: "",
+      contact_email: "",
+      about: "",
+      cf_values: [],
+      entity_location_details: [],
+    },
+    validationSchema: Yup.object({
+      name: Yup.string().required("Please enter branch name"),
+      country: Yup.string().required("Please select country"),
+      state: Yup.string().required("Please select state"),
+      address: Yup.string().required("Please enter address"),
+      city: Yup.string()
+        .required("Please enter city")
+        .matches(/^[a-zA-Z\s]+$/, "City must contain letters only"),
+      pincode: Yup.string()
+        .required("Please enter pincode")
+        .matches(/^[0-9]+$/, "Pincode must contain digits only")
+        .min(4, "Pincode is too short")
+        .max(10, "Pincode is too long"),
+      country_code: Yup.string().required("Please select country code"),
+      contact_number: Yup.string()
+        .required("Please enter contact number")
+        .matches(/^[0-9]+$/, "Phone number must contain digits only")
+        .min(7, "Phone number is too short")
+        .max(10, "Phone number is too long"),
+      contact_email: Yup.string()
+        .required("Please enter email")
+        .email("Enter a valid email address"),
+    }),
+    onSubmit: async (values) => {
+      dispatch(setLoaderVisible(true));
 
-  const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-
-  useEffect(() => {
-    setBranchObj(form_obj);
-    if (!!form_obj?.country && form_obj?.country !== "") {
-      setStateListOptions(
-        CountryList.find((d) => d.countryName === form_obj?.country).states ||
-          [],
+      const updatedObject = Object.fromEntries(
+        Object.entries(values).filter(
+          ([key]) => key !== "entity_location_details",
+        ),
       );
+
+      const ApiRes = await PostApi("branch/add-new/", updatedObject, false);
+      dispatch(setLoaderVisible(false));
+
+      if (ApiRes.status && ApiRes.status === 200) {
+        if (values.id === 0) {
+          dispatch(addBranch(ApiRes?.data.data));
+          SetLocalStorage("branch", ApiRes?.data.data, 2);
+        } else {
+          dispatch(editBranch(ApiRes?.data?.data));
+          SetLocalStorage("branch", ApiRes?.data.data, 3);
+        }
+        dispatch(toggleRSBView(false));
+        toast.success(ApiRes?.data?.message);
+      } else {
+        toast.error(ApiRes?.data?.message || ApiRes?.data?.detail);
+      }
+    },
+  });
+
+  // ── Load form_obj into Formik when sidebar opens ─────────────────────────
+  useEffect(() => {
+    if (form_obj && Object.keys(form_obj).length) {
+      Object.entries(form_obj).forEach(([key, val]) => {
+        FormikForm.setFieldValue(key, val ?? "");
+      });
+
+      if (form_obj?.country) {
+        const found = CountryList.find(
+          (d) => d.countryName === form_obj.country,
+        );
+        setBranchStateOptions(found?.states || []);
+      }
     }
   }, [form_obj]);
 
-  const updateBranchObj = (e) => {
-    const { name, value } = e.target;
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  const setField = (name, value) => FormikForm.setFieldValue(name, value);
 
-    setBranchObj({
-      ...branchObj,
-      [name]: value,
-    });
-  };
-  const updateLocationBranchObj = (e) => {
-    const { name, value } = e.target;
-
-    setBranchLocationObj({
-      ...branchLocationObj,
-      [name]: value,
-    });
-  };
-  const handleCFInputChange = (e, cf_id) => {
-    const newPD = {
-      ...branchObj,
-      cf_values: [...branchObj.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: e.target.value } : item,
-      ),
-    };
-    setBranchObj(newPD);
-  };
-
-  const stateListOptionsBranch = IndiaStates;
-
-  const handleCFDateChange = (e, dateStr, cf_id) => {
-    setBranchObj({
-      ...branchObj,
-      cf_values: [...branchObj.cf_values].map((item) =>
-        item.id === cf_id
-          ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
-          : item,
-      ),
-    });
-  };
-
-  const handleCountryCodeChange = (e) => {
-    setBranchObj({
-      ...branchObj,
-      country_code: e.value,
-    });
+  const handleNumberOnly = (e, field) => {
+    const val = e.target.value.replace(/[^0-9]/g, "");
+    setField(field, val);
   };
 
   const handleBranchCountryChange = (e) => {
-    const selectedCountry = CountryList.find((d) => d.countryName === e?.value);
-
-    setBranchObj((prev) => ({
-      ...prev,
-      country: e?.value || "",
-      state: "",
-    }));
-
-    setBranchStateOptions(selectedCountry?.states || []);
+    setField("country", e?.value || "");
+    setField("state", "");
+    const found = CountryList.find((d) => d.countryName === e?.value);
+    setBranchStateOptions(found?.states || []);
   };
 
-  const handleLocationCountryChange = (e) => {
-    const selectedCountry = CountryList.find((d) => d.countryName === e?.value);
-
-    setBranchLocationObj((prev) => ({
-      ...prev,
-      country: e?.value || "",
-      state: "",
-    }));
-
-    setLocationStateOptions(selectedCountry?.states || []);
+  const handleCFInputChange = (e, cf_id) => {
+    const updated = FormikForm.values.cf_values.map((item) =>
+      item.id === cf_id ? { ...item, value: e.target.value } : item,
+    );
+    setField("cf_values", updated);
   };
 
-  const handleBranchStateChange = (e) => {
-    setBranchObj((prev) => ({
-      ...prev,
-      state: e?.value || "",
-    }));
+  const handleCFDateChange = (e, dateStr, cf_id) => {
+    const updated = FormikForm.values.cf_values.map((item) =>
+      item.id === cf_id
+        ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
+        : item,
+    );
+    setField("cf_values", updated);
   };
 
-  const handleLocationStateChange = (e) => {
-    setBranchLocationObj((prev) => ({
-      ...prev,
-      state: e?.value || "",
-    }));
-  };
+  // ── Auto-focus first error ───────────────────────────────────────────────
+  useEffect(() => {
+    if (
+      FormikForm.submitCount > 0 &&
+      Object.keys(FormikForm.errors).length > 0
+    ) {
+      const firstErrorField = Object.keys(FormikForm.errors)[0];
+      FormikForm.setFieldTouched(firstErrorField, true, false);
+      const errorField = document.querySelector(`[name="${firstErrorField}"]`);
+      if (errorField) errorField.focus();
+    }
+  }, [FormikForm.submitCount]);
+
+  const v = FormikForm.values;
+  const e = FormikForm.errors;
+  const t = FormikForm.touched;
+  const isInvalid = (field) => !!(t[field] && e[field]);
+  const showHint = (field) => !e[field];
+
+  // ── Location Formik ──────────────────────────────────────────────────────
+  const [branchLocationObj, setBranchLocationObj] = useState(
+    initialBranchLocationObj,
+  );
 
   const LocationFormikForm = useFormik({
     enableReinitialize: true,
     initialValues: branchLocationObj,
     validationSchema: Yup.object({
-      name: Yup.string().required("Please Enter Location Name"),
-      address: Yup.string().required("Please Enter Address"),
-      country: Yup.string().required("Please Select Country"),
-      state: Yup.string().required("Please Select State"),
-      city: Yup.string().required("Please Enter City"),
-      pincode: Yup.string().required("Please Enter Pincode"),
-      timezone: Yup.string().required("Please Select Time Zone"),
-      accurate_address: Yup.string().required("Please Enter Accurate Address"),
+      name: Yup.string().required("Please enter location name"),
+      address: Yup.string().required("Please enter address"),
+      country: Yup.string().required("Please select country"),
+      state: Yup.string().required("Please select state"),
+      city: Yup.string().required("Please enter city"),
+      pincode: Yup.string()
+        .required("Please enter pincode")
+        .matches(/^[0-9]+$/, "Pincode must contain digits only"),
+      timezone: Yup.string().required("Please select time zone"),
+      accurate_address: Yup.string().required("Please enter accurate address"),
     }),
     onSubmit: async (values) => {
       dispatch(setLoaderVisible(true));
@@ -283,11 +274,10 @@ const BranchForm = () => {
       ) {
         let updated_mapdata = {};
         for (const key of map_data_keys) {
-          if (values.map_data.hasOwnProperty(key)) {
+          if (Object.prototype.hasOwnProperty.call(values.map_data, key)) {
             updated_mapdata[key] = values.map_data[key];
           }
         }
-
         values.map_data = updated_mapdata;
       } else {
         values.map_data = [];
@@ -295,234 +285,124 @@ const BranchForm = () => {
 
       let form_data = new FormData();
       Object.entries(values).forEach(([key, value]) => {
-        // Check if the value is an array and the key is "entity_location_details"
         if (key === "map_data") {
           form_data.append(key, JSON.stringify(value));
         } else if (key === "image") {
           if (value === null || value === undefined) {
-            form_data.append(`image`, null);
+            form_data.append("image", "");
           } else {
-            form_data.append(`image`, value, value.name);
+            form_data.append("image", value, value.name);
           }
         } else {
-          // Append other key-value pairs to FormData
           form_data.append(key, value);
         }
       });
+
       const existing_entity_location_details = [
-        ...branchObj?.entity_location_details,
+        ...(v.entity_location_details || []),
       ];
-      const Api = await PostApi(
+      const ApiRes = await PostApi(
         "location/add-entity-location/",
         form_data,
         true,
       );
-      if (!!Api.status && Api.status === 200) {
-        const response = Api?.data.data;
+
+      if (ApiRes.status && ApiRes.status === 200) {
+        const response = ApiRes?.data?.data;
         const localStorageBranchData = GetLocalStorageData("branch");
 
+        let newLocationDetails;
         if (values.id === 0) {
-          setBranchObj({
-            ...branchObj,
-            entity_location_details: [
-              ...branchObj.entity_location_details,
-              response,
-            ],
-          });
-
-          let updatedBranch = localStorageBranchData.map((d) => {
-            if (d.id === values?.type_id) {
-              return {
-                ...d,
-                entity_location_details: [
-                  ...d.entity_location_details,
-                  response,
-                ],
-              };
-            } else {
-              return d;
-            }
-          });
-
-          let GlobalMetaData =
-            localStorage.getItem("lint_hr_globaldata") !== null
-              ? JSON.parse(localStorage.getItem("lint_hr_globaldata"))
-              : {};
-          GlobalMetaData["branch"] = updatedBranch;
-          localStorage.setItem(
-            "lint_hr_globaldata",
-            JSON.stringify(GlobalMetaData),
-          );
-
-          dispatch(setBranch(updatedBranch));
+          newLocationDetails = [...(v.entity_location_details || []), response];
         } else {
-          const new_entity_location_details =
-            existing_entity_location_details.map((d) => {
-              if (d.id === response.id) {
-                return response;
-              } else {
-                return d;
-              }
-            });
-          setBranchObj({
-            ...branchObj,
-            entity_location_details: new_entity_location_details,
-          });
-
-          let updatedBranch = localStorageBranchData.map((d) => {
-            if (d.id === values?.type_id) {
-              let newLD = d.entity_location_details.map((loc) => {
-                if (loc.id === response.id) {
-                  return response;
-                } else {
-                  return loc;
-                }
-              });
-
-              return {
-                ...d,
-                entity_location_details: newLD,
-              };
-            } else {
-              return d;
-            }
-          });
-
-          let GlobalMetaData =
-            localStorage.getItem("lint_hr_globaldata") !== null
-              ? JSON.parse(localStorage.getItem("lint_hr_globaldata"))
-              : {};
-          GlobalMetaData["branch"] = updatedBranch;
-          localStorage.setItem(
-            "lint_hr_globaldata",
-            JSON.stringify(GlobalMetaData),
+          newLocationDetails = existing_entity_location_details.map((d) =>
+            d.id === response.id ? response : d,
           );
-
-          dispatch(setBranch(updatedBranch));
         }
+
+        setField("entity_location_details", newLocationDetails);
+
+        let updatedBranch = localStorageBranchData.map((d) => {
+          if (d.id === values?.type_id) {
+            return { ...d, entity_location_details: newLocationDetails };
+          }
+          return d;
+        });
+
+        let GlobalMetaData =
+          localStorage.getItem("lint_hr_globaldata") !== null
+            ? JSON.parse(localStorage.getItem("lint_hr_globaldata"))
+            : {};
+        GlobalMetaData["branch"] = updatedBranch;
+        localStorage.setItem(
+          "lint_hr_globaldata",
+          JSON.stringify(GlobalMetaData),
+        );
+        dispatch(setBranch(updatedBranch));
+
         dispatch(setLoaderVisible(false));
-        toast.success(Api?.data?.message);
-        setShowTable(true);
+        toast.success(ApiRes?.data?.message);
         setModalOpen(false);
       } else {
-        toast.error(Api?.data?.message || Api?.data?.detail);
-        dispatch(toggleRSBView(false));
-        toast.error(Api?.data?.message);
+        toast.error(ApiRes?.data?.message || ApiRes?.data?.detail);
+        dispatch(setLoaderVisible(false));
       }
-      setShowTable(true);
-      setModalOpen(false);
-      dispatch(setLoaderVisible(false));
     },
   });
+
   useEffect(() => {
     if (
       LocationFormikForm.submitCount > 0 &&
       Object.keys(LocationFormikForm.errors).length > 0
     ) {
       const firstErrorField = Object.keys(LocationFormikForm.errors)[0];
-      LocationFormikForm.setFieldTouched(firstErrorField);
-      const errorField = document.querySelector(`[name=${firstErrorField}]`);
-      if (errorField) {
-        errorField.focus();
-
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }
+      LocationFormikForm.setFieldTouched(firstErrorField, true, false);
+      const errorField = document.querySelector(`[name="${firstErrorField}"]`);
+      if (errorField) errorField.focus();
     }
-  }, [
-    LocationFormikForm.submitCount,
-    LocationFormikForm.errors,
-    LocationFormikForm.setFieldTouched,
-    inputRef,
-  ]);
-  const FormikForm = useFormik({
-    enableReinitialize: true,
-    initialValues: branchObj,
-    validationSchema: Yup.object({
-      name: Yup.string().required("Please Enter Branch Name"),
-      state: Yup.string().required("Please Select State"),
-      country: Yup.string().required("Please Select Country"),
-      city: Yup.string().required("Please Enter City"),
-      pincode: Yup.string().required("Please Enter Pincode"),
-      address: Yup.string().required("Please Enter Address"),
-      country_code: Yup.string().required("Please Select Country Code"),
-      contact_number: Yup.string().required("Please Enter Contact Number"),
-      contact_email: Yup.string()
-        .email("Please Enter Valid Email")
-        .required("Please Enter Email"),
-    }),
-    onSubmit: async (values) => {
-      dispatch(setLoaderVisible(true));
+  }, [LocationFormikForm.submitCount]);
 
-      const updatedObject = Object.fromEntries(
-        Object.entries(values).filter(
-          ([key]) => key !== "entity_location_details",
-        ),
-      );
+  const setLocField = (name, value) => {
+    setBranchLocationObj((prev) => ({ ...prev, [name]: value }));
+    LocationFormikForm.setFieldValue(name, value);
+  };
 
-      const Api = await PostApi("branch/add-new/", updatedObject, false);
-      if (Api.status && Api.status === 200) {
-        if (branchObj.id === 0) {
-          dispatch(addBranch(Api?.data.data));
-          SetLocalStorage("branch", Api?.data.data, 2);
-        } else {
-          dispatch(editBranch(Api?.data?.data));
-          SetLocalStorage("branch", Api?.data.data, 3);
-        }
+  const lv = LocationFormikForm.values;
+  const le = LocationFormikForm.errors;
+  const lt = LocationFormikForm.touched;
+  const isLocInvalid = (field) => !!(lt[field] && le[field]);
+  const showLocHint = (field) => !le[field];
 
-        dispatch(toggleRSBView(false));
-        toast.success(Api?.data?.message);
-      } else {
-        toast.error(Api?.data?.message || Api?.data?.detail);
-      }
-
-      dispatch(setLoaderVisible(false));
-    },
-  });
-
-  useEffect(() => {
-    if (
-      FormikForm.submitCount > 0 &&
-      Object.keys(FormikForm.errors).length > 0
-    ) {
-      const firstErrorField = Object.keys(FormikForm.errors)[0];
-      FormikForm.setFieldTouched(firstErrorField);
-      const errorField = document.querySelector(`[name=${firstErrorField}]`);
-      if (errorField) {
-        errorField.focus();
-
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }
-    }
-  }, [
-    FormikForm.submitCount,
-    FormikForm.errors,
-    FormikForm.setFieldTouched,
-    inputRef,
-  ]);
-
-  const handleEditLocation = (location, index, br_id) => {
-    setModalOpen(true);
-    console.log("Location - ", location);
-
-    setBranchLocationObj({ ...location, type_id: br_id, type: "branch" });
+  const handleLocationCountryChange = (e) => {
+    setLocField("country", e?.value || "");
+    setLocField("state", "");
+    const found = CountryList.find((d) => d.countryName === e?.value);
+    setLocationStateOptions(found?.states || []);
   };
 
   const handleLocationImageUpdate = (e) => {
     if (e.target.files && e.target.files[0]) {
       const reader = new FileReader();
       reader.onload = (readerEvent) => {
-        const newImageSrc = readerEvent.target.result;
-        setBranchLocationObj({
-          ...branchLocationObj,
-          image: e.target.files[0],
-          image_url: newImageSrc,
-        });
+        setLocField("image_url", readerEvent.target.result);
       };
       reader.readAsDataURL(e.target.files[0]);
+      setLocField("image", e.target.files[0]);
+    }
+  };
+
+  const handleAddClick = () => {
+    setBranchLocationObj({ ...initialBranchLocationObj, type_id: v.id });
+    LocationFormikForm.resetForm();
+    setModalOpen(true);
+  };
+
+  const handleEditLocation = (location) => {
+    setBranchLocationObj({ ...location, type_id: v.id, type: "branch" });
+    setModalOpen(true);
+    if (location?.country) {
+      const found = CountryList.find((d) => d.countryName === location.country);
+      setLocationStateOptions(found?.states || []);
     }
   };
 
@@ -531,485 +411,440 @@ const BranchForm = () => {
       <Row>
         <Col xl={12} lg={12}>
           <div>
-            <Form onSubmit={FormikForm.handleSubmit}>
+            <Form onSubmit={FormikForm.handleSubmit} noValidate>
               <div className="live-preview">
                 <Row className="gy-4">
+                  {/* ── Branch Name ───────────────────────────────────── */}
                   <Col lg={12}>
-                    <div>
-                      <Label htmlFor="name" className="form-label">
-                        Branch Name
-                      </Label>
-                      <div className="form-icon right">
-                        <Input
-                          type="text"
-                          className="form-control form-control-icon"
-                          id="name"
-                          name="name"
-                          innerRef={inputRef}
-                          placeholder="New Branch"
-                          value={branchObj.name || ""}
-                          onChange={updateBranchObj}
-                          invalid={
-                            FormikForm.touched.name && FormikForm.errors.name
-                              ? true
-                              : false
-                          }
-                        />
-                        {!FormikForm.touched.name &&
-                          !FormikForm.errors.name && (
-                            <i className="ri-building-2-line"></i>
-                          )}
-                        {FormikForm.touched.name && FormikForm.errors.name ? (
-                          <FormFeedback type="invalid">
-                            {FormikForm.errors.name}
-                          </FormFeedback>
-                        ) : null}
-                      </div>
-                      {!FormikForm.errors.name && (
-                        <div id="passwordHelpBlock" className="form-text">
-                          Enter Your Branch Name.
-                        </div>
-                      )}
-                    </div>
-                  </Col>
-                  <Col lg={12}>
-                    <div>
-                      <Label htmlFor="country" className="form-label">
-                        Country
-                      </Label>
-                      <Select
-                        options={CountryListOptions}
-                        value={
-                          CountryListOptions.find(
-                            (d) => d.value === branchObj?.country,
-                          ) || null
-                        }
-                        onChange={handleBranchCountryChange}
-                      />
-                      {LocationFormikForm.touched.country &&
-                      LocationFormikForm.errors.country ? (
-                        <div className="lc_form_error_text">
-                          {LocationFormikForm.errors.country}
-                        </div>
-                      ) : null}
-                      {!LocationFormikForm.errors.country && (
-                        <div id="passwordHelpBlock" className="form-text">
-                          Enter Country.
-                        </div>
-                      )}
-                    </div>
-                  </Col>
-                  <Col lg={12}>
-                    <div>
-                      <Label
-                        htmlFor="exampleFormControlTextarea5"
-                        className="form-label"
-                      >
-                        State
-                      </Label>
-                      <Select
-                        options={branchStateOptions}
-                        value={
-                          branchStateOptions.find(
-                            (d) => d.value === branchObj?.state,
-                          ) || null
-                        }
-                        onChange={handleBranchStateChange}
-                      />
-                      {LocationFormikForm.touched.state &&
-                      LocationFormikForm.errors.state ? (
-                        <div className="lc_form_error_text">
-                          {LocationFormikForm.errors.state}
-                        </div>
-                      ) : null}
-                      {!LocationFormikForm.errors.state && (
-                        <div id="passwordHelpBlock" className="form-text">
-                          Select State.
-                        </div>
-                      )}
-                    </div>
-                  </Col>
-                  <Col lg={12}>
-                    <div>
-                      <Label htmlFor="address" className="form-label">
-                        Address
-                      </Label>
+                    <Label htmlFor="name" className="form-label">
+                      Branch Name <span>*</span>
+                    </Label>
+                    <div className="form-icon right">
                       <Input
-                        type="textarea"
-                        className="form-control"
-                        id="address"
-                        name="address"
-                        rows="2"
-                        value={branchObj.address || ""}
-                        onChange={updateBranchObj}
-                        invalid={
-                          LocationFormikForm.touched.address &&
-                          LocationFormikForm.errors.address
-                            ? true
-                            : false
-                        }
+                        type="text"
+                        className="form-control form-control-icon"
+                        id="name"
+                        name="name"
+                        innerRef={inputRef}
+                        placeholder="New Branch"
+                        value={v.name || ""}
+                        onChange={(ev) => setField("name", ev.target.value)}
+                        onBlur={() => FormikForm.setFieldTouched("name", true)}
+                        invalid={isInvalid("name")}
                       />
-                      {LocationFormikForm.touched.address &&
-                      LocationFormikForm.errors.address ? (
-                        <FormFeedback type="invalid">
-                          {LocationFormikForm.errors.address}
-                        </FormFeedback>
-                      ) : null}
-                      {!LocationFormikForm.errors.address && (
-                        <div id="passwordHelpBlock" className="form-text">
-                          Address.
-                        </div>
+                      {!isInvalid("name") && (
+                        <i className="ri-building-2-line" />
+                      )}
+                      {isInvalid("name") && (
+                        <FormFeedback type="invalid">{e.name}</FormFeedback>
                       )}
                     </div>
+                    {showHint("name") && (
+                      <div className="form-text">Enter your branch name.</div>
+                    )}
                   </Col>
+
+                  {/* ── Country ───────────────────────────────────────── */}
                   <Col lg={12}>
-                    <div>
-                      <Label htmlFor="city" className="form-label">
-                        City
-                      </Label>
-                      <div className="form-icon right">
-                        <Input
-                          type="text"
-                          className="form-control form-control-icon"
-                          id="city"
-                          name="city"
-                          placeholder="City"
-                          value={branchObj.city || ""}
-                          onChange={updateBranchObj}
-                          invalid={
-                            LocationFormikForm.touched.city &&
-                            LocationFormikForm.errors.city
-                              ? true
-                              : false
+                    <Label htmlFor="country" className="form-label">
+                      Country <span>*</span>
+                    </Label>
+                    <Select
+                      id="country"
+                      name="country"
+                      options={CountryListOptions}
+                      value={
+                        CountryListOptions.find((d) => d.value === v.country) ||
+                        null
+                      }
+                      onChange={handleBranchCountryChange}
+                      onBlur={() => FormikForm.setFieldTouched("country", true)}
+                      styles={{
+                        control: (provided, state) => ({
+                          ...provided,
+                          borderColor:
+                            !state.isFocused && t.country && e.country
+                              ? "red"
+                              : provided.borderColor,
+                        }),
+                      }}
+                    />
+                    {t.country && e.country && (
+                      <div className="lc_form_error_text">{e.country}</div>
+                    )}
+                    {showHint("country") && (
+                      <div className="form-text">Select country.</div>
+                    )}
+                  </Col>
+
+                  {/* ── State ─────────────────────────────────────────── */}
+                  <Col lg={12}>
+                    <Label className="form-label">
+                      State <span>*</span>
+                    </Label>
+                    <Select
+                      name="state"
+                      options={branchStateOptions}
+                      value={
+                        branchStateOptions.find((d) => d.value === v.state) ||
+                        null
+                      }
+                      onChange={(opt) => {
+                        setField("state", opt?.value || "");
+                        FormikForm.setFieldTouched("state", true);
+                      }}
+                      onBlur={() => FormikForm.setFieldTouched("state", true)}
+                      styles={{
+                        control: (provided, state) => ({
+                          ...provided,
+                          borderColor:
+                            !state.isFocused && t.state && e.state
+                              ? "red"
+                              : provided.borderColor,
+                        }),
+                      }}
+                    />
+                    {t.state && e.state && (
+                      <div className="lc_form_error_text">{e.state}</div>
+                    )}
+                    {showHint("state") && (
+                      <div className="form-text">Select state.</div>
+                    )}
+                  </Col>
+
+                  {/* ── Address ───────────────────────────────────────── */}
+                  <Col lg={12}>
+                    <Label htmlFor="address" className="form-label">
+                      Address <span>*</span>
+                    </Label>
+                    <Input
+                      type="textarea"
+                      className="form-control"
+                      id="address"
+                      name="address"
+                      rows="2"
+                      value={v.address || ""}
+                      onChange={(ev) => setField("address", ev.target.value)}
+                      onBlur={() => FormikForm.setFieldTouched("address", true)}
+                      invalid={isInvalid("address")}
+                    />
+                    {isInvalid("address") && (
+                      <FormFeedback type="invalid">{e.address}</FormFeedback>
+                    )}
+                    {showHint("address") && (
+                      <div className="form-text">Enter address.</div>
+                    )}
+                  </Col>
+
+                  {/* ── City ──────────────────────────────────────────── */}
+                  <Col lg={12}>
+                    <Label htmlFor="city" className="form-label">
+                      City <span>*</span>
+                    </Label>
+                    <div className="form-icon right">
+                      <Input
+                        type="text"
+                        className="form-control form-control-icon"
+                        id="city"
+                        name="city"
+                        placeholder="City"
+                        value={v.city || ""}
+                        onChange={(ev) => {
+                          const val = ev.target.value.replace(
+                            /[^a-zA-Z\s]/g,
+                            "",
+                          );
+                          setField("city", val);
+                        }}
+                        onBlur={() => FormikForm.setFieldTouched("city", true)}
+                        invalid={isInvalid("city")}
+                      />
+                      {!isInvalid("city") && <i className="ri-map-pin-line" />}
+                      {isInvalid("city") && (
+                        <FormFeedback type="invalid">{e.city}</FormFeedback>
+                      )}
+                    </div>
+                    {showHint("city") && (
+                      <div className="form-text">
+                        Enter city (letters only).
+                      </div>
+                    )}
+                  </Col>
+
+                  {/* ── Pincode ───────────────────────────────────────── */}
+                  <Col lg={12}>
+                    <Label htmlFor="pincode" className="form-label">
+                      Pincode <span>*</span>
+                    </Label>
+                    <div className="form-icon right">
+                      <Input
+                        type="text"
+                        className="form-control form-control-icon"
+                        id="pincode"
+                        name="pincode"
+                        placeholder="600001"
+                        inputMode="numeric"
+                        value={v.pincode || ""}
+                        onChange={(ev) => handleNumberOnly(ev, "pincode")}
+                        onBlur={() =>
+                          FormikForm.setFieldTouched("pincode", true)
+                        }
+                        invalid={isInvalid("pincode")}
+                      />
+                      {!isInvalid("pincode") && <i className="ri-map-2-line" />}
+                      {isInvalid("pincode") && (
+                        <FormFeedback type="invalid">{e.pincode}</FormFeedback>
+                      )}
+                    </div>
+                    {showHint("pincode") && (
+                      <div className="form-text">
+                        Enter pincode (digits only).
+                      </div>
+                    )}
+                  </Col>
+
+                  {/* ── Contact Number ────────────────────────────────── */}
+                  <Col lg={12}>
+                    <Label className="form-label">
+                      Contact Number <span>*</span>
+                    </Label>
+                    <Row>
+                      <Col md={3}>
+                        <Select
+                          id="country_code"
+                          name="country_code"
+                          isMulti={false}
+                          options={CountryCodeListOptions}
+                          components={{ Option: CountryCodeDisplayInSelect }}
+                          className="basic-multi-select"
+                          value={
+                            v.country_code
+                              ? CountryCodeListOptions.find(
+                                  (d) => d.countryCode === v.country_code,
+                                )
+                              : null
+                          }
+                          styles={{
+                            control: (provided, state) => ({
+                              ...provided,
+                              borderColor:
+                                !state.isFocused &&
+                                t.country_code &&
+                                e.country_code
+                                  ? "red"
+                                  : provided.borderColor,
+                            }),
+                          }}
+                          onChange={(opt) =>
+                            setField("country_code", opt.value)
+                          }
+                          onBlur={() =>
+                            FormikForm.setFieldTouched("country_code", true)
                           }
                         />
-                        {!LocationFormikForm.touched.city &&
-                          !LocationFormikForm.errors.city && (
-                            <i className="ri-mail-line"></i>
-                          )}
-                        {LocationFormikForm.touched.city &&
-                        LocationFormikForm.errors.city ? (
-                          <FormFeedback type="invalid">
-                            {LocationFormikForm.errors.city}
-                          </FormFeedback>
-                        ) : null}
-                      </div>
-                      {!LocationFormikForm.errors.city && (
-                        <div id="passwordHelpBlock" className="form-text">
-                          Select City.
-                        </div>
-                      )}
-                    </div>
-                  </Col>
-                  <Col lg={12}>
-                    <div>
-                      <Label htmlFor="pincode" className="form-label">
-                        Pincode
-                      </Label>
-                      <div className="form-icon right">
-                        <Input
-                          type="number"
-                          className="form-control form-control-icon"
-                          id="pincode"
-                          name="pincode"
-                          placeholder="666666"
-                          value={branchObj.pincode || ""}
-                          onChange={updateBranchObj}
-                          invalid={
-                            LocationFormikForm.touched.pincode &&
-                            LocationFormikForm.errors.pincode
-                              ? true
-                              : false
-                          }
-                        />
-                        {!LocationFormikForm.touched.pincode &&
-                          !LocationFormikForm.errors.pincode && (
-                            <i className="ri-mail-line"></i>
-                          )}
-                        {LocationFormikForm.touched.pincode &&
-                        LocationFormikForm.errors.pincode ? (
-                          <FormFeedback type="invalid">
-                            {LocationFormikForm.errors.pincode}
-                          </FormFeedback>
-                        ) : null}
-                      </div>
-                      {!LocationFormikForm.errors.pincode && (
-                        <div id="passwordHelpBlock" className="form-text">
-                          Pincode.
-                        </div>
-                      )}
-                    </div>
-                  </Col>
-
-                  <Col lg={12}>
-                    <div>
-                      <Label>Contact Number*</Label>
-                      <Row>
-                        <Col md={3}>
-                          <Select
-                            id="country_code"
-                            name="country_code"
-                            isMulti={false}
-                            options={CountryCodeListOptions || []}
-                            components={{
-                              Option: CountryCodeDisplayInSelect,
-                            }}
-                            className="basic-multi-select"
-                            value={
-                              branchObj?.country_code !== ""
-                                ? CountryCodeListOptions.find(
-                                    (d) =>
-                                      d.countryCode === branchObj.country_code,
-                                  )
-                                : []
-                            }
-                            styles={{
-                              control: (provided, state) => ({
-                                ...provided,
-                                borderColor:
-                                  !state.isFocused &&
-                                  FormikForm.touched.country_code &&
-                                  FormikForm.errors.country_code
-                                    ? "red !important"
-                                    : provided.borderColor,
-                              }),
-                            }}
-                            onChange={handleCountryCodeChange}
-                            invalid={
-                              FormikForm.touched.country_code &&
-                              FormikForm.errors.country_code
-                                ? true
-                                : false
-                            }
-                          />
-                          {FormikForm.touched.country_code &&
-                          FormikForm.errors.country_code ? (
-                            <div className="lc_form_error_text">
-                              {FormikForm.errors.country_code}
-                            </div>
-                          ) : null}
-                        </Col>
-                        <Col md={9}>
-                          <Input
-                            type="number"
-                            name="contact_number"
-                            innerRef={inputRef}
-                            className="form-control rounded-end flag-input"
-                            placeholder="Enter number"
-                            value={branchObj.contact_number || ""}
-                            onChange={updateBranchObj}
-                            invalid={
-                              FormikForm.touched.contact_number &&
-                              FormikForm.errors.contact_number
-                                ? true
-                                : false
-                            }
-                          />
-                          {FormikForm.touched.contact_number &&
-                          FormikForm.errors.contact_number ? (
-                            <FormFeedback type="invalid">
-                              {FormikForm.errors.contact_number}
-                            </FormFeedback>
-                          ) : null}
-                        </Col>
-                      </Row>
-                      {!FormikForm.errors.contact_number && (
-                        <div id="passwordHelpBlock" className="form-text">
-                          Enter Your Contact number with country code.
-                        </div>
-                      )}
-                    </div>
-                  </Col>
-
-                  <Col lg={12}>
-                    <div>
-                      <Label htmlFor="contact_email" className="form-label">
-                        Contact Email*
-                      </Label>
-                      <div className="form-icon right">
-                        <Input
-                          type="text"
-                          name="contact_email"
-                          className="form-control form-control-icon"
-                          id="contact_email"
-                          placeholder="user@company.com"
-                          value={branchObj.contact_email || ""}
-                          onChange={updateBranchObj}
-                          invalid={
-                            FormikForm.touched.contact_email &&
-                            FormikForm.errors.contact_email
-                              ? true
-                              : false
-                          }
-                        />
-                        {!FormikForm.touched.contact_email &&
-                          !FormikForm.errors.contact_email && (
-                            <i className="ri-mail-line"></i>
-                          )}
-                        {FormikForm.touched.contact_email &&
-                        FormikForm.errors.contact_email ? (
-                          <FormFeedback type="invalid">
-                            {FormikForm.errors.contact_email}
-                          </FormFeedback>
-                        ) : null}
-                      </div>
-                      {!FormikForm.errors.contact_email && (
-                        <div id="passwordHelpBlock" className="form-text">
-                          Enter Your Email.
-                        </div>
-                      )}
-                    </div>
-                  </Col>
-
-                  <Col lg={12}>
-                    <div>
-                      <Label htmlFor="about" className="form-label">
-                        Company Overview
-                      </Label>
-                      <textarea
-                        className="form-control"
-                        id="about"
-                        name="about"
-                        rows="3"
-                        value={branchObj.about || ""}
-                        onChange={updateBranchObj}
-                      ></textarea>
-                      <div id="passwordHelpBlock" className="form-text">
-                        Company Overview.
-                      </div>
-                    </div>
-                  </Col>
-
-                  {branchObj.cf_values && branchObj.cf_values.length
-                    ? branchObj.cf_values.map((obj) => (
-                        <Col lg={12}>
-                          <div>
-                            <Label htmlFor="last_name" className="form-label">
-                              {obj.name}
-                            </Label>
-                            {form_default_input_types.includes(obj.type) && (
-                              <div className="form-icon right">
-                                <Input
-                                  type={obj.type || "text"}
-                                  name={obj.input_name}
-                                  id={obj.input_name}
-                                  className="form-control"
-                                  placeholder={`Enter ${obj.name}`}
-                                  value={obj.value || ""}
-                                  required={obj.is_required || false}
-                                  onChange={(e) =>
-                                    handleCFInputChange(e, obj.id)
-                                  }
-                                />
-                              </div>
-                            )}
-                            {obj.type === form_date_type && (
-                              <DatePicker
-                                name={obj.input_name}
-                                id={obj.input_name}
-                                className="form-control"
-                                format={DateFormat}
-                                value={
-                                  obj.value === ""
-                                    ? null
-                                    : dayjs(
-                                        ConvertDateFormat(obj.value),
-                                        DateFormat,
-                                      )
-                                }
-                                allowClear={false}
-                                onChange={(e, dateStr) =>
-                                  handleCFDateChange(e, dateStr, obj.id)
-                                }
-                              />
-                            )}
-                            <div id="passwordHelpBlock" className="form-text">
-                              Enter {obj.name}
-                            </div>
+                        {t.country_code && e.country_code && (
+                          <div className="lc_form_error_text">
+                            {e.country_code}
                           </div>
+                        )}
+                      </Col>
+                      <Col md={9}>
+                        <Input
+                          type="text"
+                          name="contact_number"
+                          className="form-control rounded-end flag-input"
+                          placeholder="Enter number"
+                          inputMode="numeric"
+                          value={v.contact_number || ""}
+                          onChange={(ev) =>
+                            handleNumberOnly(ev, "contact_number")
+                          }
+                          onBlur={() =>
+                            FormikForm.setFieldTouched("contact_number", true)
+                          }
+                          invalid={isInvalid("contact_number")}
+                        />
+                        {isInvalid("contact_number") && (
+                          <FormFeedback type="invalid">
+                            {e.contact_number}
+                          </FormFeedback>
+                        )}
+                      </Col>
+                    </Row>
+                    {showHint("contact_number") && (
+                      <div className="form-text">Enter digits only.</div>
+                    )}
+                  </Col>
+
+                  {/* ── Contact Email ─────────────────────────────────── */}
+                  <Col lg={12}>
+                    <Label htmlFor="contact_email" className="form-label">
+                      Contact Email <span>*</span>
+                    </Label>
+                    <div className="form-icon right">
+                      <Input
+                        type="email"
+                        name="contact_email"
+                        className="form-control form-control-icon"
+                        id="contact_email"
+                        placeholder="user@company.com"
+                        value={v.contact_email || ""}
+                        onChange={(ev) =>
+                          setField("contact_email", ev.target.value)
+                        }
+                        onBlur={() =>
+                          FormikForm.setFieldTouched("contact_email", true)
+                        }
+                        invalid={isInvalid("contact_email")}
+                      />
+                      {!isInvalid("contact_email") && (
+                        <i className="ri-mail-line" />
+                      )}
+                      {isInvalid("contact_email") && (
+                        <FormFeedback type="invalid">
+                          {e.contact_email}
+                        </FormFeedback>
+                      )}
+                    </div>
+                    {showHint("contact_email") && (
+                      <div className="form-text">Enter contact email.</div>
+                    )}
+                  </Col>
+
+                  {/* ── About ─────────────────────────────────────────── */}
+                  <Col lg={12}>
+                    <Label htmlFor="about" className="form-label">
+                      Company Overview
+                    </Label>
+                    <textarea
+                      className="form-control"
+                      id="about"
+                      name="about"
+                      rows="3"
+                      value={v.about || ""}
+                      onChange={(ev) => setField("about", ev.target.value)}
+                    />
+                    <div className="form-text">Company overview.</div>
+                  </Col>
+
+                  {/* ── Custom Fields ─────────────────────────────────── */}
+                  {v.cf_values && v.cf_values.length
+                    ? v.cf_values.map((obj) => (
+                        <Col lg={12} key={obj.id}>
+                          <Label
+                            htmlFor={obj.input_name}
+                            className="form-label"
+                          >
+                            {obj.name}
+                          </Label>
+                          {form_default_input_types.includes(obj.type) && (
+                            <Input
+                              type={obj.type || "text"}
+                              name={obj.input_name}
+                              id={obj.input_name}
+                              className="form-control"
+                              placeholder={`Enter ${obj.name}`}
+                              value={obj.value || ""}
+                              onChange={(ev) => handleCFInputChange(ev, obj.id)}
+                            />
+                          )}
+                          {obj.type === form_date_type && (
+                            <DatePicker
+                              name={obj.input_name}
+                              id={obj.input_name}
+                              className="form-control"
+                              format={DateFormat}
+                              value={
+                                obj.value === ""
+                                  ? null
+                                  : dayjs(
+                                      ConvertDateFormat(obj.value),
+                                      DateFormat,
+                                    )
+                              }
+                              allowClear={false}
+                              onChange={(ev, dateStr) =>
+                                handleCFDateChange(ev, dateStr, obj.id)
+                              }
+                            />
+                          )}
+                          <div className="form-text">Enter {obj.name}</div>
                         </Col>
                       ))
                     : null}
-                  {branchObj?.entity_location_details &&
-                  branchObj.entity_location_details.length > 0 ? (
-                    <Col>
-                      <table className="table">
-                        <thead>
-                          <tr>
-                            <th>Name</th>
-                            <th>Address</th>
-                            <th>Radius</th>
-                            <th>Image</th>
-                            <th>Edit</th>
-                            {/* Add more table headers as needed */}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {branchObj.entity_location_details.map(
-                            (location, index) => (
-                              <tr key={index}>
-                                <td>{location.name}</td>
-                                <td>{location.accurate_address}</td>
-                                <td>{location.radius_range} m</td>
-                                <td>
-                                  <img
-                                    src={
-                                      location.image_url
-                                        ? location.image_url
-                                        : no_image
-                                    }
-                                    style={{
-                                      height: "50px",
-                                      objectFit: "cover",
-                                    }}
-                                  />
-                                </td>
 
-                                <td>
-                                  <a
-                                    onClick={() =>
-                                      handleEditLocation(
-                                        location,
-                                        index,
-                                        branchObj?.id,
-                                      )
-                                    }
-                                    className="text-primary d-inline-block edit-item-btn ms-2"
-                                    href="javascript:void(0)"
-                                  >
-                                    <i class="ri-pencil-fill fs-16"></i>
-                                  </a>
-                                </td>
-                              </tr>
-                            ),
-                          )}
-                        </tbody>
-                      </table>
-                    </Col>
-                  ) : null}
+                  {/* ── Location Table ────────────────────────────────── */}
+                  {v.entity_location_details &&
+                    v.entity_location_details.length > 0 && (
+                      <Col>
+                        <table className="table">
+                          <thead>
+                            <tr>
+                              <th>Name</th>
+                              <th>Address</th>
+                              <th>Radius</th>
+                              <th>Image</th>
+                              <th>Edit</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {v.entity_location_details.map(
+                              (location, index) => (
+                                <tr key={index}>
+                                  <td>{location.name}</td>
+                                  <td>{location.accurate_address}</td>
+                                  <td>{location.radius_range} m</td>
+                                  <td>
+                                    <img
+                                      src={location.image_url || no_image}
+                                      style={{
+                                        height: "50px",
+                                        objectFit: "cover",
+                                      }}
+                                      alt="loc"
+                                    />
+                                  </td>
+                                  <td>
+                                    <a
+                                      onClick={() =>
+                                        handleEditLocation(location)
+                                      }
+                                      className="text-primary d-inline-block edit-item-btn ms-2"
+                                      href="javascript:void(0)"
+                                    >
+                                      <i className="ri-pencil-fill fs-16"></i>
+                                    </a>
+                                  </td>
+                                </tr>
+                              ),
+                            )}
+                          </tbody>
+                        </table>
+                      </Col>
+                    )}
 
+                  {/* ── Footer Buttons ────────────────────────────────── */}
                   <Row>
                     <Col>
                       <Row className="mt-4" style={{ height: "50px" }}>
                         <Col lg={6} className="text-start">
-                          {branchObj?.id !== 0 ? (
+                          {v.id !== 0 && (
                             <Button
-                              color="btn btn-primary"
+                              color="primary"
                               type="button"
                               onClick={handleAddClick}
                             >
                               Add Location <i className="ri-map-pin-line"></i>
                             </Button>
-                          ) : null}
+                          )}
                         </Col>
-
                         <Col lg={6} className="text-end">
                           <Button
                             color="success"
                             type="submit"
                             className="btn-label"
                           >
-                            <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
+                            <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
                             Save
                           </Button>
                         </Col>
@@ -1020,372 +855,349 @@ const BranchForm = () => {
               </div>
             </Form>
 
-            <Modal isOpen={modalOpen} toggle={handleModalClose}>
-              <ModalHeader toggle={handleModalClose}>
-                Add New Location
+            {/* ── Location Modal ───────────────────────────────────────── */}
+            <Modal isOpen={modalOpen} toggle={() => setModalOpen(false)}>
+              <ModalHeader toggle={() => setModalOpen(false)}>
+                {branchLocationObj.id === 0
+                  ? "Add New Location"
+                  : "Edit Location"}
               </ModalHeader>
               <ModalBody>
                 <Row>
                   <Col xl={12} lg={12}>
-                    <div>
-                      <Form onSubmit={LocationFormikForm.handleSubmit}>
-                        <div className="live-preview">
-                          <Row className="gy-4">
-                            <Col lg={12}>
-                              <div>
-                                <Label htmlFor="name" className="form-label">
-                                  Location Name
-                                </Label>
-                                <div className="form-icon right">
-                                  <Input
-                                    type="text"
-                                    className="form-control form-control-icon"
-                                    id="name"
-                                    name="name"
-                                    innerRef={inputRef}
-                                    placeholder="Enter Name"
-                                    value={branchLocationObj.name || ""}
-                                    onChange={updateLocationBranchObj}
-                                    invalid={
-                                      LocationFormikForm.touched.name &&
-                                      LocationFormikForm.errors.name
-                                        ? true
-                                        : false
-                                    }
-                                  />
-                                  {!LocationFormikForm.touched.name &&
-                                    !LocationFormikForm.errors.name && (
-                                      <i className="ri-building-2-line"></i>
-                                    )}
-                                  {LocationFormikForm.touched.name &&
-                                  LocationFormikForm.errors.name ? (
-                                    <FormFeedback type="invalid">
-                                      {LocationFormikForm.errors.name}
-                                    </FormFeedback>
-                                  ) : null}
-                                </div>
-                                {!LocationFormikForm.errors.name && (
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text"
-                                  >
-                                    Enter Your Location Name.
-                                  </div>
-                                )}
-                              </div>
-                            </Col>
-
-                            <LocationSearch
-                              locationObj={branchLocationObj}
-                              setLocationObj={setBranchLocationObj}
-                              LocationFormikForm={LocationFormikForm}
+                    <Form onSubmit={LocationFormikForm.handleSubmit} noValidate>
+                      <Row className="gy-4">
+                        {/* Location Name */}
+                        <Col lg={12}>
+                          <Label htmlFor="loc_name" className="form-label">
+                            Location Name <span>*</span>
+                          </Label>
+                          <div className="form-icon right">
+                            <Input
+                              type="text"
+                              className="form-control form-control-icon"
+                              id="loc_name"
+                              name="name"
+                              placeholder="Enter Name"
+                              value={lv.name || ""}
+                              onChange={(ev) =>
+                                setLocField("name", ev.target.value)
+                              }
+                              onBlur={() =>
+                                LocationFormikForm.setFieldTouched("name", true)
+                              }
+                              invalid={isLocInvalid("name")}
                             />
+                            {!isLocInvalid("name") && (
+                              <i className="ri-building-2-line" />
+                            )}
+                            {isLocInvalid("name") && (
+                              <FormFeedback type="invalid">
+                                {le.name}
+                              </FormFeedback>
+                            )}
+                          </div>
+                          {showLocHint("name") && (
+                            <div className="form-text">
+                              Enter location name.
+                            </div>
+                          )}
+                        </Col>
 
-                            <Col lg={12}>
-                              <div>
-                                <Label htmlFor="address" className="form-label">
-                                  Address
-                                </Label>
-                                <Input
-                                  type="textarea"
-                                  className="form-control"
-                                  id="address"
-                                  name="address"
-                                  rows="2"
-                                  value={branchLocationObj.address || ""}
-                                  onChange={updateLocationBranchObj}
-                                  invalid={
-                                    LocationFormikForm.touched.address &&
-                                    LocationFormikForm.errors.address
-                                      ? true
-                                      : false
-                                  }
-                                />
-                                {LocationFormikForm.touched.address &&
-                                LocationFormikForm.errors.address ? (
-                                  <FormFeedback type="invalid">
-                                    {LocationFormikForm.errors.address}
-                                  </FormFeedback>
-                                ) : null}
-                                {!LocationFormikForm.errors.address && (
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text"
-                                  >
-                                    Address.
-                                  </div>
-                                )}
-                              </div>
-                            </Col>
+                        <LocationSearch
+                          locationObj={branchLocationObj}
+                          setLocationObj={setBranchLocationObj}
+                          LocationFormikForm={LocationFormikForm}
+                        />
 
-                            <Col lg={12}>
-                              <div>
-                                <Label htmlFor="country" className="form-label">
-                                  Country
-                                </Label>
-                                <Select
-                                  options={CountryListOptions}
-                                  value={
-                                    CountryListOptions.find(
-                                      (d) =>
-                                        d.value === branchLocationObj?.country,
-                                    ) || null
-                                  }
-                                  onChange={handleLocationCountryChange}
-                                />
-                                {LocationFormikForm.touched.country &&
-                                LocationFormikForm.errors.country ? (
-                                  <div className="lc_form_error_text">
-                                    {LocationFormikForm.errors.country}
-                                  </div>
-                                ) : null}
-                                {!LocationFormikForm.errors.country && (
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text"
-                                  >
-                                    Enter Country.
-                                  </div>
-                                )}
-                              </div>
-                            </Col>
+                        {/* Address */}
+                        <Col lg={12}>
+                          <Label htmlFor="loc_address" className="form-label">
+                            Address <span>*</span>
+                          </Label>
+                          <Input
+                            type="textarea"
+                            className="form-control"
+                            id="loc_address"
+                            name="address"
+                            rows="2"
+                            value={lv.address || ""}
+                            onChange={(ev) =>
+                              setLocField("address", ev.target.value)
+                            }
+                            onBlur={() =>
+                              LocationFormikForm.setFieldTouched(
+                                "address",
+                                true,
+                              )
+                            }
+                            invalid={isLocInvalid("address")}
+                          />
+                          {isLocInvalid("address") && (
+                            <FormFeedback type="invalid">
+                              {le.address}
+                            </FormFeedback>
+                          )}
+                          {showLocHint("address") && (
+                            <div className="form-text">Address.</div>
+                          )}
+                        </Col>
 
-                            <Col lg={12}>
-                              <div>
-                                <Label
-                                  htmlFor="exampleFormControlTextarea5"
-                                  className="form-label"
-                                >
-                                  State
-                                </Label>
-                                <Select
-                                  options={locationStateOptions}
-                                  value={
-                                    locationStateOptions.find(
-                                      (d) =>
-                                        d.value === branchLocationObj?.state,
-                                    ) || null
-                                  }
-                                  onChange={handleLocationStateChange}
-                                />
-                                {LocationFormikForm.touched.state &&
-                                LocationFormikForm.errors.state ? (
-                                  <div className="lc_form_error_text">
-                                    {LocationFormikForm.errors.state}
-                                  </div>
-                                ) : null}
-                                {!LocationFormikForm.errors.state && (
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text"
-                                  >
-                                    Select State.
-                                  </div>
-                                )}
-                              </div>
-                            </Col>
+                        {/* Country */}
+                        <Col lg={12}>
+                          <Label htmlFor="loc_country" className="form-label">
+                            Country <span>*</span>
+                          </Label>
+                          <Select
+                            id="loc_country"
+                            options={CountryListOptions}
+                            value={
+                              CountryListOptions.find(
+                                (d) => d.value === lv.country,
+                              ) || null
+                            }
+                            onChange={handleLocationCountryChange}
+                            onBlur={() =>
+                              LocationFormikForm.setFieldTouched(
+                                "country",
+                                true,
+                              )
+                            }
+                            styles={{
+                              control: (provided, state) => ({
+                                ...provided,
+                                borderColor:
+                                  !state.isFocused && lt.country && le.country
+                                    ? "red"
+                                    : provided.borderColor,
+                              }),
+                            }}
+                          />
+                          {lt.country && le.country && (
+                            <div className="lc_form_error_text">
+                              {le.country}
+                            </div>
+                          )}
+                          {showLocHint("country") && (
+                            <div className="form-text">Select country.</div>
+                          )}
+                        </Col>
 
-                            <Col lg={12}>
-                              <div>
-                                <Label htmlFor="city" className="form-label">
-                                  City
-                                </Label>
-                                <div className="form-icon right">
-                                  <Input
-                                    type="text"
-                                    className="form-control form-control-icon"
-                                    id="city"
-                                    name="city"
-                                    placeholder="City"
-                                    value={branchLocationObj.city || ""}
-                                    onChange={updateLocationBranchObj}
-                                    invalid={
-                                      LocationFormikForm.touched.city &&
-                                      LocationFormikForm.errors.city
-                                        ? true
-                                        : false
-                                    }
-                                  />
-                                  {!LocationFormikForm.touched.city &&
-                                    !LocationFormikForm.errors.city && (
-                                      <i className="ri-mail-line"></i>
-                                    )}
-                                  {LocationFormikForm.touched.city &&
-                                  LocationFormikForm.errors.city ? (
-                                    <FormFeedback type="invalid">
-                                      {LocationFormikForm.errors.city}
-                                    </FormFeedback>
-                                  ) : null}
-                                </div>
-                                {!LocationFormikForm.errors.city && (
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text"
-                                  >
-                                    Select City.
-                                  </div>
-                                )}
-                              </div>
-                            </Col>
+                        {/* State */}
+                        <Col lg={12}>
+                          <Label className="form-label">
+                            State <span>*</span>
+                          </Label>
+                          <Select
+                            options={locationStateOptions}
+                            value={
+                              locationStateOptions.find(
+                                (d) => d.value === lv.state,
+                              ) || null
+                            }
+                            onChange={(opt) => {
+                              setLocField("state", opt?.value || "");
+                              LocationFormikForm.setFieldTouched("state", true);
+                            }}
+                            onBlur={() =>
+                              LocationFormikForm.setFieldTouched("state", true)
+                            }
+                            styles={{
+                              control: (provided, state) => ({
+                                ...provided,
+                                borderColor:
+                                  !state.isFocused && lt.state && le.state
+                                    ? "red"
+                                    : provided.borderColor,
+                              }),
+                            }}
+                          />
+                          {lt.state && le.state && (
+                            <div className="lc_form_error_text">{le.state}</div>
+                          )}
+                          {showLocHint("state") && (
+                            <div className="form-text">Select state.</div>
+                          )}
+                        </Col>
 
-                            <Col lg={12}>
-                              <div>
-                                <Label htmlFor="pincode" className="form-label">
-                                  Pincode
-                                </Label>
-                                <div className="form-icon right">
-                                  <Input
-                                    type="number"
-                                    className="form-control form-control-icon"
-                                    id="pincode"
-                                    name="pincode"
-                                    placeholder="666666"
-                                    value={branchLocationObj.pincode || ""}
-                                    onChange={updateLocationBranchObj}
-                                    invalid={
-                                      LocationFormikForm.touched.pincode &&
-                                      LocationFormikForm.errors.pincode
-                                        ? true
-                                        : false
-                                    }
-                                  />
-                                  {!LocationFormikForm.touched.pincode &&
-                                    !LocationFormikForm.errors.pincode && (
-                                      <i className="ri-mail-line"></i>
-                                    )}
-                                  {LocationFormikForm.touched.pincode &&
-                                  LocationFormikForm.errors.pincode ? (
-                                    <FormFeedback type="invalid">
-                                      {LocationFormikForm.errors.pincode}
-                                    </FormFeedback>
-                                  ) : null}
-                                </div>
-                                {!LocationFormikForm.errors.pincode && (
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text"
-                                  >
-                                    Pincode.
-                                  </div>
-                                )}
-                              </div>
-                            </Col>
-                            <Col lg={12}>
-                              <div className="form-icon right">
-                                <div>
-                                  <Label
-                                    htmlFor="pincode"
-                                    className="form-label"
-                                  >
-                                    Image
-                                  </Label>
-                                  <Input
-                                    type={"file"}
-                                    name="image"
-                                    id="image"
-                                    className="form-control"
-                                    placeholder={`Choose Image`}
-                                    onChange={handleLocationImageUpdate}
-                                  />
-                                  <i className="ri-user-2-line"></i>
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text"
-                                  >
-                                    Choose Image
-                                  </div>
-                                </div>
-                              </div>
-                            </Col>
-                            <Col lg={12}>
-                              <div>
-                                <Label
-                                  htmlFor="exampleFormControlTextarea5"
-                                  className="form-label"
-                                >
-                                  Time Zone
-                                </Label>
-                                <div className="form-icon right">
-                                  <Select
-                                    name="timezone"
-                                    id="timezone"
-                                    value={
-                                      branchLocationObj.timezone &&
-                                      timzone_options.find(
-                                        (e) =>
-                                          e.value ===
-                                          branchLocationObj.timezone,
-                                      )
-                                    }
-                                    styles={{
-                                      control: (provided, state) => ({
-                                        ...provided,
-                                        borderColor:
-                                          !state.isFocused &&
-                                          LocationFormikForm.touched.timezone &&
-                                          LocationFormikForm.errors.timezone
-                                            ? "red !important"
-                                            : provided.borderColor,
-                                      }),
-                                    }}
-                                    onChange={(e) =>
-                                      setBranchLocationObj({
-                                        ...branchLocationObj,
-                                        timezone: e.value,
-                                      })
-                                    }
-                                    options={timzone_options}
-                                    placeholder="Select a time zone"
-                                    invalid={
-                                      LocationFormikForm.touched.timezone &&
-                                      LocationFormikForm.errors.timezone
-                                        ? true
-                                        : false
-                                    }
-                                  />
-                                  {!LocationFormikForm.touched.timezone &&
-                                    !LocationFormikForm.errors.timezone && (
-                                      <i className="ri-time-line"></i>
-                                    )}
-                                  {LocationFormikForm.touched.timezone &&
-                                  LocationFormikForm.errors.timezone ? (
-                                    <FormFeedback type="invalid">
-                                      {LocationFormikForm.errors.timezone}
-                                    </FormFeedback>
-                                  ) : null}
-                                </div>
-                                {!LocationFormikForm.errors.timezone && (
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text"
-                                  >
-                                    Time Zone.
-                                  </div>
-                                )}
-                              </div>
-                            </Col>
+                        {/* City */}
+                        <Col lg={12}>
+                          <Label htmlFor="loc_city" className="form-label">
+                            City <span>*</span>
+                          </Label>
+                          <div className="form-icon right">
+                            <Input
+                              type="text"
+                              className="form-control form-control-icon"
+                              id="loc_city"
+                              name="city"
+                              placeholder="City"
+                              value={lv.city || ""}
+                              onChange={(ev) => {
+                                const val = ev.target.value.replace(
+                                  /[^a-zA-Z\s]/g,
+                                  "",
+                                );
+                                setLocField("city", val);
+                              }}
+                              onBlur={() =>
+                                LocationFormikForm.setFieldTouched("city", true)
+                              }
+                              invalid={isLocInvalid("city")}
+                            />
+                            {!isLocInvalid("city") && (
+                              <i className="ri-map-pin-line" />
+                            )}
+                            {isLocInvalid("city") && (
+                              <FormFeedback type="invalid">
+                                {le.city}
+                              </FormFeedback>
+                            )}
+                          </div>
+                          {showLocHint("city") && (
+                            <div className="form-text">
+                              Enter city (letters only).
+                            </div>
+                          )}
+                        </Col>
 
-                            <Col className="text-end">
-                              <Button
-                                color="success"
-                                type="submit"
-                                className="btn-label"
-                              >
-                                <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                                Save
-                              </Button>
-                            </Col>
-                          </Row>
-                        </div>
-                      </Form>
-                    </div>
+                        {/* Pincode */}
+                        <Col lg={12}>
+                          <Label htmlFor="loc_pincode" className="form-label">
+                            Pincode <span>*</span>
+                          </Label>
+                          <div className="form-icon right">
+                            <Input
+                              type="text"
+                              className="form-control form-control-icon"
+                              id="loc_pincode"
+                              name="pincode"
+                              placeholder="600001"
+                              inputMode="numeric"
+                              value={lv.pincode || ""}
+                              onChange={(ev) => {
+                                const val = ev.target.value.replace(
+                                  /[^0-9]/g,
+                                  "",
+                                );
+                                setLocField("pincode", val);
+                              }}
+                              onBlur={() =>
+                                LocationFormikForm.setFieldTouched(
+                                  "pincode",
+                                  true,
+                                )
+                              }
+                              invalid={isLocInvalid("pincode")}
+                            />
+                            {!isLocInvalid("pincode") && (
+                              <i className="ri-map-2-line" />
+                            )}
+                            {isLocInvalid("pincode") && (
+                              <FormFeedback type="invalid">
+                                {le.pincode}
+                              </FormFeedback>
+                            )}
+                          </div>
+                          {showLocHint("pincode") && (
+                            <div className="form-text">
+                              Enter pincode (digits only).
+                            </div>
+                          )}
+                        </Col>
+
+                        {/* Image */}
+                        <Col lg={12}>
+                          <Label htmlFor="loc_image" className="form-label">
+                            Image
+                          </Label>
+                          <div className="form-icon right">
+                            <Input
+                              type="file"
+                              name="image"
+                              id="loc_image"
+                              className="form-control"
+                              placeholder="Choose Image"
+                              onChange={handleLocationImageUpdate}
+                            />
+                            <i className="ri-image-line" />
+                          </div>
+                          {lv.image_url && (
+                            <img
+                              src={lv.image_url}
+                              alt="preview"
+                              style={{
+                                height: "60px",
+                                marginTop: "8px",
+                                objectFit: "cover",
+                              }}
+                            />
+                          )}
+                          <div className="form-text">Choose image.</div>
+                        </Col>
+
+                        {/* Time Zone */}
+                        <Col lg={12}>
+                          <Label htmlFor="loc_timezone" className="form-label">
+                            Time Zone <span>*</span>
+                          </Label>
+                          <Select
+                            name="timezone"
+                            id="loc_timezone"
+                            options={timzone_options}
+                            placeholder="Select a time zone"
+                            value={
+                              lv.timezone
+                                ? timzone_options.find(
+                                    (opt) => opt.value === lv.timezone,
+                                  )
+                                : null
+                            }
+                            styles={{
+                              control: (provided, state) => ({
+                                ...provided,
+                                borderColor:
+                                  !state.isFocused && lt.timezone && le.timezone
+                                    ? "red"
+                                    : provided.borderColor,
+                              }),
+                            }}
+                            onChange={(opt) =>
+                              setLocField("timezone", opt.value)
+                            }
+                            onBlur={() =>
+                              LocationFormikForm.setFieldTouched(
+                                "timezone",
+                                true,
+                              )
+                            }
+                          />
+                          {lt.timezone && le.timezone && (
+                            <div className="lc_form_error_text">
+                              {le.timezone}
+                            </div>
+                          )}
+                          {showLocHint("timezone") && (
+                            <div className="form-text">Select time zone.</div>
+                          )}
+                        </Col>
+
+                        <Col className="text-end">
+                          <Button
+                            color="success"
+                            type="submit"
+                            className="btn-label"
+                          >
+                            <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
+                            Save
+                          </Button>
+                        </Col>
+                      </Row>
+                    </Form>
                   </Col>
                 </Row>
               </ModalBody>
-              <ModalFooter>
-                {/* <Button color="secondary" onClick={handleModalClose}>Cancel</Button> */}
-                {/* <Button color="primary">Save</Button> */}
-              </ModalFooter>
+              <ModalFooter />
             </Modal>
           </div>
         </Col>

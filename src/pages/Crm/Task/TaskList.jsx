@@ -66,7 +66,7 @@ const EmployeeAvatar = ({ emp, size = 32, style = {} }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-const Tasks = ({ projectId = null, searchQuery = "" }) => {
+const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
   const dispatch = useDispatch();
 
   // ── Modal state ─────────────────────────────────────────────────────────────
@@ -86,6 +86,12 @@ const Tasks = ({ projectId = null, searchQuery = "" }) => {
       );
     }
 
+    if (clientId !== null && clientId !== undefined) {
+      filtered = filtered.filter(
+        (task) => String(task?.client || "") === String(clientId),
+      );
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -99,7 +105,7 @@ const Tasks = ({ projectId = null, searchQuery = "" }) => {
     }
 
     return filtered;
-  }, [task_data, projectId, searchQuery]);
+  }, [task_data, projectId, clientId, searchQuery]);
 
   // ── Fetch all tasks on mount ────────────────────────────────────────────────
   useEffect(() => {
@@ -392,15 +398,15 @@ const Tasks = ({ projectId = null, searchQuery = "" }) => {
     [openTaskDetail],
   );
 
-  // ── Initial form object — pre-fills project when on project page ────────────
+  // ── Initial form object — pre-fills project/client when on that page ────────
   const initialFormObj = useMemo(
     () => ({
       id: 0,
       title: "",
       description: "",
-      related_to: projectId ? "project" : "custom",
+      related_to: projectId ? "project" : clientId ? "client" : "custom",
       project: projectId ? Number(projectId) : null,
-      client: null,
+      client: clientId ? Number(clientId) : null,
       points: "1",
       assigned_to: null,
       collaborators_id_list: [],
@@ -410,7 +416,7 @@ const Tasks = ({ projectId = null, searchQuery = "" }) => {
       start_time: "",
       end_time: "",
     }),
-    [projectId],
+    [projectId, clientId],
   );
 
   // ── Filter options ──────────────────────────────────────────────────────────

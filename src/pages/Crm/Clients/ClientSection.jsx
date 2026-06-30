@@ -162,6 +162,18 @@ const ClientSection = () => {
                       Projects
                     </NavLink>
                   </NavItem>
+                  <NavItem>
+                    <NavLink
+                      className={classnames(
+                        { active: activeTab === "2" },
+                        "fw-semibold",
+                      )}
+                      onClick={() => toggleTab("2")}
+                      href="#"
+                    >
+                      Task List
+                    </NavLink>
+                  </NavItem>
                 </Nav>
               </CardBody>
             </div>
@@ -177,6 +189,9 @@ const ClientSection = () => {
             </TabPane> */}
             <TabPane tabId="1">
               <Projects clientId={id} />
+            </TabPane>
+            <TabPane tabId="2">
+              <Tasks clientId={id} />
             </TabPane>
             {/* <TabPane tabId="3">
               <ProjectsFiles />
