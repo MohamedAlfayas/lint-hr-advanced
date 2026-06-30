@@ -77,6 +77,8 @@ const ClientForm = () => {
   const [CountryListOptions, setCountryListOptions] = useState([]);
   const [entityLocations, setEntityLocations] = useState([]);
 
+  const [stateListOptions, setStateListOptions] = useState([]);
+
   // ─── Build employee options ───────────────────────────────────────────────
   const EmployeeData = GetLocalStorageData("employee") || [];
   const employeeOptions = EmployeeData.map((emp) => ({
@@ -117,10 +119,62 @@ const ClientForm = () => {
     }
   }, [locationObj?.country]);
 
+  useEffect(() => {
+    if (form_obj) {
+      setClientData(form_obj);
+      setEntityLocations(form_obj?.entity_location_details || []);
+
+      const selectedCountry = CountryList.find(
+        (d) => d.countryName === form_obj.country,
+      );
+
+      setStateListOptions(selectedCountry?.states || []);
+    }
+  }, [form_obj]);
+
   // ─── Client input handler ─────────────────────────────────────────────────
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setClientData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleNumberOnly = (e) => {
+    const { name } = e.target;
+    const value = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
+
+    setClientData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleTextOnly = (e) => {
+    const { name, value } = e.target;
+
+    setClientData((prev) => ({
+      ...prev,
+      [name]: value.replace(/[^a-zA-Z\s]/g, ""),
+    }));
+  };
+
+  const handlePincodeOnly = (e) => {
+    const { name } = e.target;
+    const value = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
+
+    setClientData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handlePhoneNumberOnly = (e) => {
+    const { name } = e.target;
+    const value = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
+
+    setClientData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   // ─── Location helpers ─────────────────────────────────────────────────────
@@ -171,6 +225,28 @@ const ClientForm = () => {
     setModalOpen(true);
   };
 
+  const handleCountryChange = (e) => {
+    setClientData((prev) => ({
+      ...prev,
+      country: e.value,
+      country_code: e.countryCode,
+      state: "",
+    }));
+
+    setStateListOptions(
+      CountryListOptions.find((d) => d.value === e.value)?.states || [],
+    );
+  };
+
+  const handleGSTNumberOnly = (e) => {
+    const { name, value } = e.target;
+
+    setClientData((prev) => ({
+      ...prev,
+      [name]: value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
+    }));
+  };
+
   const handleModalClose = () => setModalOpen(false);
 
   // ─── Main client formik ───────────────────────────────────────────────────
@@ -178,18 +254,44 @@ const ClientForm = () => {
     enableReinitialize: true,
     initialValues: clientData,
     validationSchema: Yup.object({
-      name: Yup.string().required("Please Enter Client Name"),
-      phone_number: Yup.string().required("Please Enter Phone Number"),
-      city: Yup.string().required("Please Enter City"),
+      name: Yup.string()
+        .trim()
+        .matches(/^[A-Za-z\s]+$/, "Client name should contain only letters")
+        .required("Please Enter the Client name"),
+      phone_number: Yup.string()
+        .required("Please Enter Phone Number")
+        .matches(/^[0-9]+$/, "Phone number must contain digits only")
+        .min(7, "Phone number is too short")
+        .max(10, "Phone number is too long"),
+      city: Yup.string()
+        .trim()
+        .matches(/^[A-Za-z\s]+$/, "City should contain only letters")
+        .required("Please Enter City"),
       state: Yup.string().required("Please Enter State"),
       country: Yup.string().required("Please Enter Country"),
-      pincode: Yup.string().required("Please Enter Pincode"),
+      pincode: Yup.string()
+        .trim()
+        .matches(/^[0-9]+$/, "Pincode should contain only numbers")
+        .length(6, "Please Enter Valid 6 Digit Pincode")
+        .required("Please Enter Pincode"),
+      website: Yup.string()
+        .trim()
+        .required("Please enter website")
+        .matches(
+          /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+(\/[^\s]*)?$/,
+          "Enter a valid website URL",
+        ),
+      gst_number: Yup.string().matches(
+        /^[A-Za-z0-9]+$/,
+        "GST Number must contain only letters and numbers",
+      ),
     }),
     onSubmit: async () => {
       dispatch(setLoaderVisible(true));
       try {
         const payload = {
           ...clientData,
+          name: clientData.name.trim(),
           owner: clientData.owner || null,
           manager_id_list: clientData.manager_id_list || [],
         };
@@ -378,7 +480,7 @@ const ClientForm = () => {
                       className="form-control"
                       placeholder="Client Name"
                       value={clientData.name || ""}
-                      onChange={handleInputChange}
+                      onChange={handleTextOnly}
                       invalid={
                         FormikForm.touched.name && FormikForm.errors.name
                           ? true
@@ -498,7 +600,8 @@ const ClientForm = () => {
                     className="form-control"
                     placeholder="City"
                     value={clientData.city || ""}
-                    onChange={handleInputChange}
+                    onChange={handleTextOnly}
+                    onBlur={() => FormikForm.setFieldTouched("city", true)}
                     invalid={
                       FormikForm.touched.city && FormikForm.errors.city
                         ? true
@@ -517,18 +620,21 @@ const ClientForm = () => {
                   <Label htmlFor="state" className="form-label">
                     State *
                   </Label>
-                  <Input
-                    type="text"
-                    name="state"
+                  <Select
                     id="state"
-                    className="form-control"
-                    placeholder="State"
-                    value={clientData.state || ""}
-                    onChange={handleInputChange}
-                    invalid={
-                      FormikForm.touched.state && FormikForm.errors.state
-                        ? true
-                        : false
+                    name="state"
+                    isMulti={false}
+                    options={stateListOptions}
+                    value={
+                      stateListOptions.find(
+                        (d) => d.value === clientData.state,
+                      ) || null
+                    }
+                    onChange={(e) =>
+                      setClientData((prev) => ({
+                        ...prev,
+                        state: e.value,
+                      }))
                     }
                   />
                   {FormikForm.touched.state && FormikForm.errors.state ? (
@@ -551,8 +657,11 @@ const ClientForm = () => {
                     id="pincode"
                     className="form-control"
                     placeholder="Pincode"
+                    inputMode="numeric"
+                    maxLength={6}
                     value={clientData.pincode || ""}
-                    onChange={handleInputChange}
+                    onChange={handlePincodeOnly}
+                    onBlur={() => FormikForm.setFieldTouched("pincode", true)}
                     invalid={
                       FormikForm.touched.pincode && FormikForm.errors.pincode
                         ? true
@@ -571,19 +680,17 @@ const ClientForm = () => {
                   <Label htmlFor="country" className="form-label">
                     Country *
                   </Label>
-                  <Input
-                    type="text"
-                    name="country"
+                  <Select
                     id="country"
-                    className="form-control"
-                    placeholder="Country"
-                    value={clientData.country || ""}
-                    onChange={handleInputChange}
-                    invalid={
-                      FormikForm.touched.country && FormikForm.errors.country
-                        ? true
-                        : false
+                    name="country"
+                    isMulti={false}
+                    options={CountryListOptions}
+                    value={
+                      CountryListOptions.find(
+                        (d) => d.value === clientData.country,
+                      ) || null
                     }
+                    onChange={handleCountryChange}
                   />
                   {FormikForm.touched.country && FormikForm.errors.country ? (
                     <FormFeedback type="invalid">
@@ -620,9 +727,12 @@ const ClientForm = () => {
                     name="phone_number"
                     id="phone_number"
                     className="form-control"
-                    placeholder="+91 9876543210"
+                    placeholder="9876543210"
                     value={clientData.phone_number || ""}
-                    onChange={handleInputChange}
+                    onChange={handlePhoneNumberOnly}
+                    onBlur={() =>
+                      FormikForm.setFieldTouched("phone_number", true)
+                    }
                     invalid={
                       FormikForm.touched.phone_number &&
                       FormikForm.errors.phone_number
@@ -645,20 +755,43 @@ const ClientForm = () => {
                   <Label htmlFor="website" className="form-label">
                     Website
                   </Label>
-                  <Input
-                    type="text"
-                    name="website"
-                    id="website"
-                    className="form-control"
-                    placeholder="https://example.com"
-                    value={clientData.website || ""}
-                    onChange={handleInputChange}
-                  />
+                  <div className="form-icon right">
+                    <Input
+                      type="text"
+                      name="website"
+                      id="website"
+                      className="form-control form-control-icon"
+                      placeholder="www.company.com"
+                      value={clientData.website || ""}
+                      onChange={handleInputChange}
+                      onBlur={() => FormikForm.setFieldTouched("website", true)}
+                      invalid={
+                        FormikForm.touched.website && FormikForm.errors.website
+                          ? true
+                          : false
+                      }
+                    />
+
+                    {!FormikForm.touched.website &&
+                      !FormikForm.errors.website && (
+                        <i className="ri-global-line" />
+                      )}
+
+                    {FormikForm.touched.website && FormikForm.errors.website ? (
+                      <FormFeedback type="invalid">
+                        {FormikForm.errors.website}
+                      </FormFeedback>
+                    ) : null}
+                  </div>
+
+                  {!FormikForm.errors.website && (
+                    <div className="form-text">Enter Client Website.</div>
+                  )}
                 </div>
               </Col>
 
               {/* ── VAT / GST ── */}
-              <Col md={6} lg={6} xxl={6}>
+              {/* <Col md={6} lg={6} xxl={6}>
                 <div className="mb-3">
                   <Label htmlFor="vat_number" className="form-label">
                     VAT Number
@@ -673,8 +806,8 @@ const ClientForm = () => {
                     onChange={handleInputChange}
                   />
                 </div>
-              </Col>
-              <Col md={6} lg={6} xxl={6}>
+              </Col> */}
+              <Col md={12} lg={12} xxl={12}>
                 <div className="mb-3">
                   <Label htmlFor="gst_number" className="form-label">
                     GST Number
@@ -686,7 +819,7 @@ const ClientForm = () => {
                     className="form-control"
                     placeholder="GST Number"
                     value={clientData.gst_number || ""}
-                    onChange={handleInputChange}
+                    onChange={handleGSTNumberOnly}
                   />
                 </div>
               </Col>

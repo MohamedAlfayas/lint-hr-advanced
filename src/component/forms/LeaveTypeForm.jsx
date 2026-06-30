@@ -107,10 +107,12 @@ const LeaveTypeForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setLeaveTypeData({
-      ...leaveTypeData,
-      [name]: value,
-    });
+    if (name === "name") {
+      const textOnly = value.replace(/[^a-zA-Z\s]/g, "");
+      setLeaveTypeData({ ...leaveTypeData, [name]: textOnly });
+    } else {
+      setLeaveTypeData({ ...leaveTypeData, [name]: value });
+    }
   };
   const handleInputChangeLeaveCount = (e) => {
     const { name, value } = e.target;
@@ -143,7 +145,11 @@ const LeaveTypeForm = () => {
     enableReinitialize: true,
     initialValues: leaveTypeData,
     validationSchema: Yup.object({
-      name: Yup.string().required("Please Enter Leave Type Name"),
+      name: Yup.string()
+        .required("Please Enter Leave Type Name")
+        .trim()
+        .matches(/^[a-zA-Z\s]+$/, "Name must contain letters only")
+        .min(2, "Name must be at least 2 characters"),
       type: Yup.number()
         .required("Select Role")
         .min(1, "Please Select Leave Type"),
@@ -355,8 +361,52 @@ const LeaveTypeForm = () => {
                         id="lt_days_allow"
                         className="form-control"
                         placeholder="Year"
-                        value={leaveTypeData.allowed_count || 0}
-                        onChange={handleInputChangeLeaveCount}
+                        value={leaveTypeData.allowed_count ?? 0}
+                        onFocus={() => {
+                          if (!leaveTypeData.allowed_count) {
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              allowed_count: "",
+                            });
+                          }
+                        }}
+                        onBlur={() => {
+                          if (
+                            leaveTypeData.allowed_count === "" ||
+                            leaveTypeData.allowed_count === null
+                          ) {
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              allowed_count: 0,
+                            });
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (
+                            e.key === "-" ||
+                            e.key === "e" ||
+                            e.key === "E" ||
+                            e.key === "+"
+                          ) {
+                            e.preventDefault();
+                          }
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "") {
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              allowed_count: "",
+                            });
+                          } else {
+                            const parsed = parseInt(val, 10);
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              allowed_count:
+                                isNaN(parsed) || parsed < 0 ? 0 : parsed,
+                            });
+                          }
+                        }}
                       />
                       <i className="ri-calendar-2-line"></i>
                     </div>
@@ -383,8 +433,52 @@ const LeaveTypeForm = () => {
                         id="lt_hour_allow_year"
                         className="form-control"
                         placeholder="Year"
-                        value={leaveTypeData.allowed_count || 0}
-                        onChange={handleInputChangeLeaveCount}
+                        value={leaveTypeData.allowed_count ?? 0}
+                        onFocus={() => {
+                          if (!leaveTypeData.allowed_count) {
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              allowed_count: "",
+                            });
+                          }
+                        }}
+                        onBlur={() => {
+                          if (
+                            leaveTypeData.allowed_count === "" ||
+                            leaveTypeData.allowed_count === null
+                          ) {
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              allowed_count: 0,
+                            });
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (
+                            e.key === "-" ||
+                            e.key === "e" ||
+                            e.key === "E" ||
+                            e.key === "+"
+                          ) {
+                            e.preventDefault();
+                          }
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "") {
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              allowed_count: "",
+                            });
+                          } else {
+                            const parsed = parseInt(val, 10);
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              allowed_count:
+                                isNaN(parsed) || parsed < 0 ? 0 : parsed,
+                            });
+                          }
+                        }}
                       />
                       <i className="ri-time-line"></i>
                     </div>
@@ -406,8 +500,52 @@ const LeaveTypeForm = () => {
                         id="lt_hour_allow_day"
                         className="form-control"
                         placeholder="Day"
-                        value={leaveTypeData.hour_allowed_in_day || 0}
-                        onChange={handleInputChangeLeaveCount}
+                        value={leaveTypeData.hour_allowed_in_day ?? 0}
+                        onFocus={() => {
+                          if (!leaveTypeData.hour_allowed_in_day) {
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              hour_allowed_in_day: "",
+                            });
+                          }
+                        }}
+                        onBlur={() => {
+                          if (
+                            leaveTypeData.hour_allowed_in_day === "" ||
+                            leaveTypeData.hour_allowed_in_day === null
+                          ) {
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              hour_allowed_in_day: 0,
+                            });
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (
+                            e.key === "-" ||
+                            e.key === "e" ||
+                            e.key === "E" ||
+                            e.key === "+"
+                          ) {
+                            e.preventDefault();
+                          }
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "") {
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              hour_allowed_in_day: "",
+                            });
+                          } else {
+                            const parsed = parseInt(val, 10);
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              hour_allowed_in_day:
+                                isNaN(parsed) || parsed < 0 ? 0 : parsed,
+                            });
+                          }
+                        }}
                       />
                       <i className="ri-time-line"></i>
                     </div>
