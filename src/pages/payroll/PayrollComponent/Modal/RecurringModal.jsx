@@ -175,10 +175,10 @@ const RecurringModal = ({ isOpen, toggle, component, onSaved }) => {
           onSaved?.(Api.data.data);
           toggle();
         } else {
-          toast.error(Api.data.message || "Failed");
+          toast.error(Api.data.error_message || "Failed");
         }
       } catch (err) {
-        console.log("API ERROR:", err?.response?.data);
+        console.log("API ERROR:", err?.error_message);
         toast.error("Something went wrong");
       } finally {
         setSubmitting(false);

@@ -18,6 +18,8 @@ const FREQUENCY_LABELS = {
 
 const COMMON_UNIT_LABELS = ["km", "days", "nights", "meals", "hours", "trips"];
 
+const stripNumbers = (value) => value.replace(/[0-9]/g, "");
+
 const emptyType = () => ({
   id: 0, name: "", description: "",
   calculation_mode: "flat", meta: {},
@@ -25,8 +27,6 @@ const emptyType = () => ({
   frequency: "monthly", is_taxable: false,
   receipt_required: true, is_active: true,
 });
-
-const stripNumbers = (value) => value.replace(/[0-9]/g, "");
 
 const TypeFormModal = ({ isOpen, toggle, initial, policyId, onSaved }) => {
   const dispatch = useDispatch();
@@ -107,7 +107,7 @@ const TypeFormModal = ({ isOpen, toggle, initial, policyId, onSaved }) => {
               <Label>Name <span className="text-danger">*</span></Label>
               <Input
                 value={form.name}
-                onChange={(e) => set("name", stripNumbers(e.target.value))}
+                onChange={(e) => set("name", e.target.value)}
                 invalid={!!errors.name}
                 placeholder="e.g. Travel Reimbursement"
               />
