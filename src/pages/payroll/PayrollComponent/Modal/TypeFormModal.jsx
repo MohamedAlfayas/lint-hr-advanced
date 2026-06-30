@@ -47,6 +47,8 @@ const TypeFormModal = ({ isOpen, toggle, initial, policyId, onSaved }) => {
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = "Name is required";
+    else if (/\d/.test(form.name)) e.name = "Name cannot contain numbers";
+
     if (form.calculation_mode === "rate_x_units") {
       if (!form.meta?.unit_label?.trim()) e.unit_label = "Unit label is required";
       if (!form.meta?.rate || parseFloat(form.meta.rate) <= 0) e.rate = "Rate must be > 0";
@@ -107,7 +109,7 @@ const TypeFormModal = ({ isOpen, toggle, initial, policyId, onSaved }) => {
               <Label>Name <span className="text-danger">*</span></Label>
               <Input
                 value={form.name}
-                onChange={(e) => set("name", e.target.value)}
+                onChange={(e) => set("name", stripNumbers(e.target.value))}
                 invalid={!!errors.name}
                 placeholder="e.g. Travel Reimbursement"
               />

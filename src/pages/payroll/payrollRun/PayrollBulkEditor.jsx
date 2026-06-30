@@ -9,6 +9,7 @@ import Swal from "sweetalert2";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import EmployeeRegularization from "./EmployeeRegularization";
+import { useSelector } from "react-redux";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -224,7 +225,7 @@ const PayrollBulkEditor = () => {
   const [selectedStructId, setSelectedStructId] = useState("all");
 
   // ── Data
-  const [structures,   setStructures]   = useState([]);
+  const structures = useSelector((state) => state.SalaryStructureReducer.salary_structures) || [];
   const [payrollRun,   setPayrollRun]   = useState(null);
   const [rows,         setRows]         = useState([]);   // payslip rows for selected structure
   const [structCols,   setStructCols]   = useState([]);   // [{id,name,type}] from selected structure
@@ -253,14 +254,6 @@ const PayrollBulkEditor = () => {
 
   // ─── Load salary structures + master component list once ───────────────────
   useEffect(() => {
-    Api({ method: "GET", url: "payroll/salary-structure/" })
-      .then((r) => {
-        const list = r?.data?.data || [];
-        setStructures(list);
-        if (list.length > 0) setSelectedStructId(String(list[0].id));
-      })
-      .catch(() => {});
-
     Api({ method: "GET", url: "payroll/component/" })
       .then((r) => {
         const lookup = {};
