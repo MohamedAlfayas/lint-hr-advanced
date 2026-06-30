@@ -16,10 +16,20 @@ const TimeTracking = ({hideTimer}) => {
   const [loading, setLoading] = useState(false);
   const [position, setPosition] = useState(null);
 
-  const { total_seconds, currently_checked_in } = useSelector(
-    (state) => state.ClockReducer
-  );
+  // const { total_seconds, currently_checked_in } = useSelector(
+  //   (state) => state.ClockReducer
+  // );
 
+  const {
+    total_seconds,
+    currently_checked_in,
+    is_on_break,
+    total_break_duration,
+    maximum_break_duration,
+  } = useSelector((state) => state.ClockReducer);
+  const isTimerPaused =
+  is_on_break &&
+  total_break_duration > maximum_break_duration;
   const { employee_total_work_duration } = useSelector(
     (state) => state.TimeTrackingReducer
   );
@@ -102,6 +112,13 @@ const TimeTracking = ({hideTimer}) => {
     }
   };
   
+
+  const payableBreak = Math.min(
+    total_break_duration,
+    maximum_break_duration
+  );
+
+const displaySeconds = total_seconds + payableBreak;
  
 
   return (
@@ -115,7 +132,8 @@ const TimeTracking = ({hideTimer}) => {
             <lord-icon
               src="https://cdn.lordicon.com/kbtmbyzy.json"
               trigger={
-                currently_checked_in && currently_checked_in == true
+                // currently_checked_in && currently_checked_in == true
+                currently_checked_in && !isTimerPaused
                   ? "loop"
                   : ""
               }
@@ -125,7 +143,8 @@ const TimeTracking = ({hideTimer}) => {
           </div>
         
 
-          <h3 className="mb-1">{formatTime(total_seconds)}</h3>
+          {/* <h3 className="mb-1">{formatTime(total_seconds)}</h3> */}
+          <h3 className="mb-1">{formatTime(displaySeconds)}</h3>
           <h5 className="fs-14 mb-4">
             First In : <b> {firstCheckInTime}</b>
           </h5>

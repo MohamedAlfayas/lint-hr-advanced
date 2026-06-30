@@ -16,29 +16,85 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
   const [showStatusSheet, setShowStatusSheet] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
 
-  const { total_seconds, currently_checked_in, show_attendance_timer } =
-    useSelector((state) => state.ClockReducer);
+  // const { total_seconds, currently_checked_in, show_attendance_timer } =
+  //   useSelector((state) => state.ClockReducer);
 
+  const {
+    total_seconds,
+    // display_seconds,
+    currently_checked_in,
+    total_break_duration,
+    is_on_break,
+    maximum_break_duration,
+    show_attendance_timer,
+    clock_initialized,// ADD THIS
+  } = useSelector((state) => state.ClockReducer);
   const dispatch = useDispatch();
+
+  const isTimerPaused =
+  is_on_break &&
+  total_break_duration > maximum_break_duration;
 
   const [CICOPayload, SetCICOPayload] = useState(null);
   const [showLateModal, setShowLateModal] = useState(false);
   const [lateReason, setLateReason] = useState("");
+  const [liveBreakSeconds, setLiveBreakSeconds] = useState(0);
+  // useEffect(() => {
+  //   if (currently_checked_in) {
+  //     const interval = setInterval(() => {
+  //       dispatch(
+  //         setTimer({
+  //           total_seconds: total_seconds + 1,
+  //           currently_checked_in: currently_checked_in,
+  //         }),
+  //       );
+  //     }, 1000);
+  //     return () => clearInterval(interval);
+  //   }
+  // }, [total_seconds, currently_checked_in, dispatch]);
+
 
   useEffect(() => {
-    if (currently_checked_in) {
-      const interval = setInterval(() => {
-        dispatch(
-          setTimer({
-            total_seconds: total_seconds + 1,
-            currently_checked_in: currently_checked_in,
-          }),
-        );
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [total_seconds, currently_checked_in, dispatch]);
+  if (!currently_checked_in) return;
+    
+  const interval = setInterval(() => {
+    // const stopTimer =
+    //   is_on_break &&
+    //   total_break_duration >= maximum_break_duration;
+    const exceededBreakLimit =
+      total_break_duration > maximum_break_duration;
 
+    const stopTimer =
+      is_on_break && exceededBreakLimit;
+    dispatch(
+      setTimer({
+        total_seconds: stopTimer
+          ? total_seconds 
+          : total_seconds + 1,
+
+        currently_checked_in,
+
+        total_break_duration: is_on_break  && !stopTimer
+          ? total_break_duration + 1
+          : total_break_duration,
+
+        is_on_break,
+        maximum_break_duration,
+      })
+    );
+  }, 1000);
+
+  return () => clearInterval(interval);
+  }, [
+    total_seconds,
+    total_break_duration,
+    currently_checked_in,
+    is_on_break,
+    maximum_break_duration,
+    dispatch,
+  ]);
+
+ 
   const handleCheckInOut = async () => {
     // Close the status sheet if it was open (checkout flow)
     setShowStatusSheet(false);
@@ -181,6 +237,14 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
     return [h, m, s].map((v) => String(v).padStart(2, "0")).join(" : ");
   };
 
+  const payableBreak = Math.min(
+  total_break_duration,
+  maximum_break_duration
+  );
+
+  const displaySeconds =
+    total_seconds + payableBreak;
+
   return (
     <React.Fragment>
       <Col
@@ -203,25 +267,35 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
                 </span>
               </Button>
             ) : (
-              <Button
-                color={currently_checked_in ? "warning" : "secondary"}
-                className="custom-toggle"
-                onClick={handleButtonClick} // ✅ FIX: uses smart handler
-                outline
-              >
-                <span className="d-flex align-items-center">
-                  {currently_checked_in ? (
-                    <>
-                      <i className="ri-time-line align-bottom me-1" />
-                      <span className="flex-grow-1 ms-2">Check Out</span>
-                    </>
-                  ) : (
-                    <span className="icon-on">
-                      <i className="ri-time-line align-bottom me-1" /> Check IN
-                    </span>
-                  )}
-                </span>
-              </Button>
+              <>
+                <Button
+                  color={currently_checked_in ? "warning" : "secondary"}
+                  className="custom-toggle"
+                  onClick={handleButtonClick} // ✅ FIX: uses smart handler
+                  outline
+                >
+                  <span className="d-flex align-items-center">
+                    {currently_checked_in ? (
+                      <>
+                        <i className="ri-time-line align-bottom me-1" />
+                        <span className="flex-grow-1 ms-2">Check Out</span>
+                      </>
+                    ) : (
+                      <span className="icon-on">
+                        <i className="ri-time-line align-bottom me-1" /> Check IN
+                      </span>
+                    )}
+                  </span>
+                </Button>
+                {currently_checked_in && isTimerPaused && (
+                      <div
+                      className="mt-2 text-danger fw-bold"
+                      style={{ fontSize: "10px" }}
+                    >
+                      ⚠ Break time exceeded 1 hour.
+                    </div>
+                )}
+              </>
             )}
           </>
         )}
@@ -236,7 +310,10 @@ const WebCheckInOut = ({ showTimer, hideTimer }) => {
               fontWeight: 700,
             }}
           >
-            &nbsp;<span className="timer">{formatTime(total_seconds)}</span>
+            &nbsp;<span className="timer">
+              {/* {formatTime(total_seconds)} */}
+               {formatTime(displaySeconds)}
+              </span>
           </span>
         )}
       </Col>

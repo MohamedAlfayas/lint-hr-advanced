@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Modal, ModalBody, ListGroup, ListGroupItem } from "reactstrap";
-import { useSelector } from "react-redux";
+// import { useSelector } from "react-redux";
 import { Clock, ChevronRight } from "react-feather";
 import { toast } from "react-toastify";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
@@ -8,6 +8,8 @@ import { PostApi } from "../../../common/api/PostApi";
 import Swal from "sweetalert2";
 import { Api } from "../../../common/api/Api";
 
+import { useSelector, useDispatch } from "react-redux";
+import { GetTotalWorkDuration } from "../../../common/js/GetTotalWorkDuration";
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 const reverseGeocode = async (latitude, longitude) => {
@@ -63,7 +65,7 @@ const StatusBottomSheet = ({
   checkInLoading = false,
 }) => {
   const { profile_data } = useSelector((state) => state.MyProfileReducer);
-
+  const dispatch = useDispatch();//Added
   const [userName, setUserName] = useState("Admin");
   const [imgError, setImgError] = useState(false);
   const [loadingId, setLoadingId] = useState(null);
@@ -246,6 +248,9 @@ const StatusBottomSheet = ({
       const data = response?.data;
 
       if ([200, 201].includes(response?.status) && data) {
+
+        await GetTotalWorkDuration(dispatch);//Added
+
         if (data.action === "stopped") {
           setActiveStatus(null);
           localStorage.removeItem("active_custom_status");
@@ -313,6 +318,9 @@ const StatusBottomSheet = ({
       const data = response?.data;
 
       if ([200, 201].includes(response?.status) && data) {
+
+        await GetTotalWorkDuration(dispatch);//Added
+
         const action = data.action;
 
         if (action === "started") {
