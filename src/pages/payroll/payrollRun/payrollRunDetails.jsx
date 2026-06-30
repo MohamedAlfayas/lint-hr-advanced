@@ -128,7 +128,7 @@ const PayrollRunDetails = ({ isOpen, toggle, data }) => {
     ? payslips.find((p) => String(p.employee) === String(selectedRegEmp.value))
     : null;
 
-  const TABS = ["overview", "payslips", "regularization", "bonus & gratuity"];
+  const TABS = ["overview", "payslips"];
 
   return (
     <Modal isOpen={isOpen} toggle={toggle} centered size="xl">
@@ -201,98 +201,6 @@ const PayrollRunDetails = ({ isOpen, toggle, data }) => {
                 year={data.year}
                 refreshKey={payslipRefreshKey}
               />
-            </SimpleBar>
-          </TabPane>
-
-          {/* ── Regularization (NEW dedicated tab) ── */}
-          <TabPane tabId="regularization" className="h-100">
-            <SimpleBar style={{ maxHeight: "100%" }} autoHide={false} className="p-4">
-
-              {/* Employee picker with searchable react-select */}
-              <div
-                className="border rounded p-3 bg-white mb-3"
-                style={{ maxWidth: 560 }}
-              >
-                <p className="fw-semibold text-uppercase text-muted mb-2" style={{ fontSize: 11 }}>
-                  Select Employee to Regularize
-                </p>
-                <Select
-                  options={employeeOptions}
-                  value={selectedRegEmp}
-                  onChange={(opt) => setSelectedRegEmp(opt)}
-                  placeholder="Search by name, employee ID or department..."
-                  isClearable
-                  isLoading={loadingSlips}
-                  noOptionsMessage={() => "No employees found"}
-                  // Custom option rendering — shows name + emp_id + department
-                  formatOptionLabel={(opt) => (
-                    <div className="d-flex align-items-center justify-content-between">
-                      <div>
-                        <span className="fw-medium" style={{ fontSize: 13 }}>{opt.label}</span>
-                        <span className="text-muted ms-2" style={{ fontSize: 11 }}>({opt.emp_id})</span>
-                      </div>
-                      {opt.department && (
-                        <Badge color="light" className="text-muted border ms-2" style={{ fontSize: 10 }}>
-                          {opt.department}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                  // Filter by name OR emp_id OR department
-                  filterOption={(option, inputValue) => {
-                    const q = inputValue.toLowerCase();
-                    return (
-                      option.data.label.toLowerCase().includes(q) ||
-                      (option.data.emp_id || "").toLowerCase().includes(q) ||
-                      (option.data.department || "").toLowerCase().includes(q)
-                    );
-                  }}
-                  styles={{
-                    control: (base) => ({ ...base, fontSize: 13 }),
-                    option:  (base) => ({ ...base, fontSize: 13 }),
-                  }}
-                />
-                {selectedRegEmp && selectedPayslip && (
-                  <div className="mt-2 d-flex gap-3 align-items-center" style={{ fontSize: 12 }}>
-                    <span className="text-muted">
-                      LOP Days:{" "}
-                      <strong className={parseFloat(selectedPayslip.lop_days) > 0 ? "text-danger" : ""}>
-                        {selectedPayslip.lop_days || 0}
-                      </strong>
-                    </span>
-                    <span className="text-muted">
-                      Regularized:{" "}
-                      {selectedPayslip.is_regularized
-                        ? <Badge color="info" className="fs-11">Yes</Badge>
-                        : <Badge color="secondary" className="fs-11">No</Badge>}
-                    </span>
-                    <span className="text-muted">
-                      Net Pay:{" "}
-                      <strong className={parseFloat(selectedPayslip.net_pay) < 0 ? "text-danger" : "text-success"}>
-                        ₹{fmt(selectedPayslip.net_pay)}
-                      </strong>
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Show regularization panel only after an employee is selected */}
-              {!selectedRegEmp ? (
-                <div className="text-center py-5 text-muted">
-                  <i className="ri-calendar-check-line" style={{ fontSize: 36, opacity: 0.3 }}></i>
-                  <p className="mt-2" style={{ fontSize: 13 }}>
-                    Select an employee above to view and edit their attendance regularization.
-                  </p>
-                </div>
-              ) : (
-                <EmployeeRegularization
-                  employeeId={selectedRegEmp.value}
-                  employeeName={selectedRegEmp.label}
-                  month={data.month}
-                  year={data.year}
-                  onSaved={handleRegularizationSaved}
-                />
-              )}
             </SimpleBar>
           </TabPane>
 

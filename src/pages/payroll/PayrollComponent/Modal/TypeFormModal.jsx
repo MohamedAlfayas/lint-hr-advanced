@@ -26,6 +26,8 @@ const emptyType = () => ({
   receipt_required: true, is_active: true,
 });
 
+const stripNumbers = (value) => value.replace(/[0-9]/g, "");
+
 const TypeFormModal = ({ isOpen, toggle, initial, policyId, onSaved }) => {
   const dispatch = useDispatch();
   const [form, setForm]     = useState(emptyType());
@@ -96,7 +98,7 @@ const TypeFormModal = ({ isOpen, toggle, initial, policyId, onSaved }) => {
   return (
     <Modal isOpen={isOpen} toggle={toggle} size="lg" centered>
       <ModalHeader toggle={toggle}>
-        {isEdit ? `Edit — ${initial.name}` : "New reimbursement type"}
+        {isEdit ? `Edit — ${initial.name}` : "New Reimbursement Type"}
       </ModalHeader>
       <ModalBody>
         <Row>
@@ -105,7 +107,7 @@ const TypeFormModal = ({ isOpen, toggle, initial, policyId, onSaved }) => {
               <Label>Name <span className="text-danger">*</span></Label>
               <Input
                 value={form.name}
-                onChange={(e) => set("name", e.target.value)}
+                onChange={(e) => set("name", stripNumbers(e.target.value))}
                 invalid={!!errors.name}
                 placeholder="e.g. Travel Reimbursement"
               />
