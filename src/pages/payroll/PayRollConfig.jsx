@@ -48,6 +48,7 @@ import PayrollComponentTab from "./PayrollComponent/PayrollComponentTab";
 import PayrollSettings from "./AdvancedSettings/PayrollSettings";
 import AdvancedSettingsTab from "./AdvancedSettings/AdvancedSettingsTab";
 import PayrollRun from "./payrollRun/payrollRun";
+import PayrollBulkEditor from "./payrollRun/PayrollBulkEditor";
 import EmployeePayslip from "./payrollRun/EmployeePayslip";
 import ReimbursementsTab from "./PayrollComponent/ReimbursementsTab";
 defineElement(loadAnimation);
@@ -332,6 +333,7 @@ const PayRollConfig = () => {
     { id: "3", label: "Salary Structure" },
     { id: "4", label: "Policy Settings" },
     { id: "5", label: "Payroll Run" },
+    { id: "6", label: "Regularization" },
   ];
 
   return (
@@ -387,6 +389,11 @@ const PayRollConfig = () => {
 
                 <TabPane tabId="5">
                   <PayrollRun />
+                </TabPane>
+
+                
+                <TabPane tabId="6">
+                  <PayrollBulkEditor />
                 </TabPane>
               </TabContent>
             </Col>

@@ -36,17 +36,6 @@ const PayrollComponentTab = ({ onEarningAdd }) => {
               Recurring
             </NavLink>
           </NavItem>
-
-          <NavItem>
-            <NavLink
-              style={{ cursor: "pointer" }}
-              className={classnames({ active: activeTab === "2" })}
-              onClick={() => toggleTab("2")}
-            >
-              Variable
-            </NavLink>
-          </NavItem>
-
         </Nav>
 
         <TabContent activeTab={activeTab}>

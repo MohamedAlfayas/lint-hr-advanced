@@ -40,9 +40,7 @@ const Toggle = ({ value, onChange }) => (
 /* Options */
 const COMPONENT_TYPE_OPTIONS = [
   { value: "allowance", label: "Allowance" },
-  { value: "deduction", label: "Deduction" },
-  { value: "reimbursement", label: "Reimbursement" },
-  { value: "contribution", label: "Contribution" },
+  { value: "deduction", label: "Deduction" }
 ];
 
 const CALCULATION_TYPE_OPTIONS = [
@@ -54,6 +52,36 @@ const CALC_BASED_ON_OPTIONS = [
   { value: "ctc", label: "CTC" },
   { value: "basic", label: "Basic" },
 ];
+
+/* Helpers */
+// Strips digit characters from a string
+const stripNumbers = (value) => value.replace(/[0-9]/g, "");
+
+// Reusable Formik onChange handler: blocks numbers on any text field
+const handleNoNumberChange = (formik, fieldName) => (e) => {
+  formik.setFieldValue(fieldName, stripNumbers(e.target.value));
+};
+
+// Yup test to catch numbers from paste/autofill too
+const noNumbersTest = {
+  name: "no-numbers",
+  message: "Component name cannot contain numbers",
+  test: (value) => !value || !/\d/.test(value),
+};
+
+// Clamps calculation_value to 0–100 when calculation_type is "percentage"
+const handleCalculationValueChange = (formik) => (e) => {
+  let value = e.target.value;
+
+  if (formik.values.calculation_type === "percentage" && value !== "") {
+    const num = Number(value);
+    if (!Number.isNaN(num) && num > 100) {
+      value = "100";
+    }
+  }
+
+  formik.setFieldValue("calculation_value", value);
+};
 
 const CALC_BASED_ON_CTC_ONLY = [{ value: "ctc", label: "CTC" }];
 
@@ -100,7 +128,12 @@ const RecurringModal = ({ isOpen, toggle, component, onSaved }) => {
       calculation_value: Yup.number()
         .typeError("Must be a number")
         .required("Value is required")
-        .min(0, "Must be positive"),
+        .min(0, "Must be positive")
+        .when("calculation_type", {
+          is: "percentage",
+          then: (schema) => schema.max(100, "Percentage cannot exceed 100"),
+        }),
+        
 
       calculation_based_on: Yup.string().when("calculation_type", {
         is: "percentage",
@@ -180,8 +213,11 @@ const RecurringModal = ({ isOpen, toggle, component, onSaved }) => {
               <Input
                 name="name"
                 value={formik.values.name}
-                onChange={formik.handleChange}
+                onChange={handleNoNumberChange(formik, "name")}
               />
+              {formik.touched.name && formik.errors.name && (
+                <div className="text-danger small mt-1">{formik.errors.name}</div>
+              )}
             </FormGroup>
           ) : isBasic ? (
             <>
@@ -229,8 +265,11 @@ const RecurringModal = ({ isOpen, toggle, component, onSaved }) => {
                     type="number"
                     name="calculation_value"
                     value={formik.values.calculation_value}
-                    onChange={formik.handleChange}
+                    onChange={handleCalculationValueChange(formik)}
                   />
+                  {formik.touched.calculation_value && formik.errors.calculation_value && (
+                    <div className="text-danger small mt-1">{formik.errors.calculation_value}</div>
+                  )}
                 </Col>
               </Row>
             </>
@@ -241,8 +280,11 @@ const RecurringModal = ({ isOpen, toggle, component, onSaved }) => {
                 <Input
                   name="name"
                   value={formik.values.name}
-                  onChange={formik.handleChange}
+                  onChange={handleNoNumberChange(formik, "name")}
                 />
+                {formik.touched.name && formik.errors.name && (
+                  <div className="text-danger small mt-1">{formik.errors.name}</div>
+                )}
               </FormGroup>
 
               <FormGroup>
@@ -325,8 +367,11 @@ const RecurringModal = ({ isOpen, toggle, component, onSaved }) => {
                     type="number"
                     name="calculation_value"
                     value={formik.values.calculation_value}
-                    onChange={formik.handleChange}
+                    onChange={handleCalculationValueChange(formik)}
                   />
+                  {formik.touched.calculation_value && formik.errors.calculation_value && (
+                    <div className="text-danger small mt-1">{formik.errors.calculation_value}</div>
+                  )}
                 </Col>
               </Row>
             </>
