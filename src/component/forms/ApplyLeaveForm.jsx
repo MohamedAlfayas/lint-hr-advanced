@@ -363,7 +363,16 @@ const ApplyLeaveForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setLeaveApplyObj({ ...leaveapplyObj, [name]: value });
+
+    setLeaveApplyObj({
+      ...leaveapplyObj,
+      [name]: name === "reason" ? value.replace(/^\s+/, "") : value,
+    });
+
+    FormikForm.setFieldValue(
+      name,
+      name === "reason" ? value.replace(/^\s+/, "") : value,
+    );
   };
 
   // ── Day-type change (Full / Half) ────────────────────────────────────────
@@ -565,7 +574,14 @@ const ApplyLeaveForm = () => {
       leave_type_id: Yup.number()
         .required("Select Leave Type")
         .min(1, "Please Select Leave Type"),
-      reason: Yup.string().required("Reason is required"),
+      reason: Yup.string()
+        .trim()
+        .required("Reason is required")
+        .test(
+          "not-empty-space",
+          "Reason cannot contain only spaces",
+          (value) => value && value.trim().length > 0,
+        ),
     }),
     onSubmit: async (values) => {
       // ── Half-day validation ──

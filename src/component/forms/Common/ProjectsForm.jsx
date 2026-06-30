@@ -150,7 +150,10 @@ const ProjectForm = () => {
     initialValues: projectData,
 
     validationSchema: Yup.object({
-      title: Yup.string().required("Please Enter Project Title"),
+      title: Yup.string()
+        .trim("Please Enter the project title")
+        // .matches(/^[A-Za-z\s]+$/, "Project title should contain only letters")
+        .required("Please Enter the project title"),
 
       type: Yup.number().required("Please Select Project Type"),
 
@@ -176,7 +179,7 @@ const ProjectForm = () => {
         const isEdit = projectData?.id && projectData.id !== 0;
 
         const payload = {
-          title: projectData.title,
+          title: projectData.title.trim(),
 
           type: Number(projectData.type),
 
