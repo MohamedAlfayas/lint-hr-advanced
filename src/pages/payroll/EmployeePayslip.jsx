@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Card,
   CardBody,
@@ -11,8 +11,11 @@ import {
   Badge,
   Table,
   Spinner,
+  Alert,
 } from "reactstrap";
 import SimpleBar from "simplebar-react";
+import { GetApi } from "../../common/api/GetApi";
+import MyPayslipDetailModal from "./MyPayslipDetailModal";
 
 const MONTH_NAMES = [
   "",
@@ -29,83 +32,6 @@ const MONTH_NAMES = [
   "November",
   "December",
 ];
-
-// ---- Dummy employee profile (swap this block out for a real API call later) ----
-const EMPLOYEE = {
-  name: "Rahul Sharma",
-  empId: "EMP12345",
-  department: "IT",
-  designation: "Software Engineer",
-};
-
-// ---- Dummy payslips (swap this block out for a real API call later) ----
-const DUMMY_PAYSLIPS = [
-  {
-    id: 1,
-    month: 5,
-    year: 2025,
-    pay_date: "31 May 2025",
-    net_pay: "56,890.00",
-    status: "paid",
-  },
-  {
-    id: 2,
-    month: 4,
-    year: 2025,
-    pay_date: "30 Apr 2025",
-    net_pay: "56,890.00",
-    status: "paid",
-  },
-  {
-    id: 3,
-    month: 3,
-    year: 2025,
-    pay_date: "31 Mar 2025",
-    net_pay: "55,760.00",
-    status: "paid",
-  },
-  {
-    id: 4,
-    month: 2,
-    year: 2025,
-    pay_date: "28 Feb 2025",
-    net_pay: "55,760.00",
-    status: "paid",
-  },
-  {
-    id: 5,
-    month: 1,
-    year: 2025,
-    pay_date: "31 Jan 2025",
-    net_pay: "54,630.00",
-    status: "paid",
-  },
-  {
-    id: 6,
-    month: 12,
-    year: 2024,
-    pay_date: "31 Dec 2024",
-    net_pay: "54,630.00",
-    status: "paid",
-  },
-  {
-    id: 7,
-    month: 11,
-    year: 2024,
-    pay_date: "30 Nov 2024",
-    net_pay: "53,500.00",
-    status: "processed",
-  },
-  {
-    id: 8,
-    month: 10,
-    year: 2024,
-    pay_date: "31 Oct 2024",
-    net_pay: "53,500.00",
-    status: "draft",
-  },
-];
-// ----------------------------------------------------------------------
 
 // Returns the readable month name whether `month` is a number (1..12) or a string.
 const getMonthName = (month) => {
@@ -128,73 +54,89 @@ const getStatusColor = (status) => {
   }
 };
 
-// Builds [{ value, label }] financial-year-style options e.g. "2024 - 2025"
-// for the last 5 years. `value` is matched against a payslip's `year` field.
-// Swap the math here for real FY logic (Apr–Mar) once wired to a live API.
-const getYearOptions = () => {
-  const currentYear = new Date().getFullYear();
-  return Array.from({ length: 5 }, (_, i) => {
-    const endYear = currentYear - i;
-    return { value: endYear, label: `${endYear - 1} - ${endYear}` };
-  });
+// Builds calendar-year options (e.g. "2024", "2025") from the years actually
+// present in the fetched records — no fixed 5-year range, no FY math, no dupes.
+const getYearOptions = (records) => {
+  const years = [...new Set(records.map((r) => Number(r.year)))]
+    .filter((y) => !Number.isNaN(y))
+    .sort((a, b) => b - a);
+  return years.map((y) => ({ value: y, label: String(y) }));
 };
 
 const EmployeePayslip = () => {
+  const [employee, setEmployee] = useState(null);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [downloadingId, setDownloadingId] = useState(null);
+  const [error, setError] = useState(null);
   const [selectedYear, setSelectedYear] = useState("");
 
-  // Simulates a fetch so loading / empty states still demo correctly.
-  const fetchData = () => {
+  // ── Payslip detail modal state ──────────────────────────────────────────
+  // MyPayslipDetailModal is self-fetching: we only need to pass it the
+  // payslip id, it loads full detail + handles its own PDF download.
+  const [selectedPayslipId, setSelectedPayslipId] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    setTimeout(() => {
-      setRecords(DUMMY_PAYSLIPS);
-      setSelectedYear(DUMMY_PAYSLIPS[0]?.year ?? "");
+    setError(null);
+    try {
+      // GET /payroll/employee-payslip-list
+      // See payslipApi.requestResponse.md for the exact shape this expects.
+      const res = await GetApi("payroll/employee-payslip-list");
+      const data = res?.data ?? res;
+
+      const fetchedRecords = data?.data?.payslips ?? [];
+      setEmployee(data?.data?.employee ?? null);
+      setRecords(fetchedRecords);
+
+      const years = getYearOptions(fetchedRecords);
+      const currentYear = new Date().getFullYear();
+      const hasCurrentYear = years.some((y) => y.value === currentYear);
+      setSelectedYear(hasCurrentYear ? currentYear : (years[0]?.value ?? ""));
+    } catch (err) {
+      setError(
+        err?.response?.data?.message ||
+          "Unable to load payslips. Please try again.",
+      );
+    } finally {
       setLoading(false);
-    }, 500);
-  };
+    }
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const filteredRecords = records.filter(
-    (row) => !selectedYear || String(row.year) === String(selectedYear),
+    (row) => !selectedYear || Number(row.year) === Number(selectedYear),
   );
 
-  // Simulates a download by generating a small placeholder text file in-browser.
-  const handleDownload = (row) => {
-    setDownloadingId(row.id);
-    setTimeout(() => {
-      const content = `Payslip\nMonth: ${getMonthName(row.month)} ${row.year}\nPay Date: ${row.pay_date}\nNet Pay: ₹${row.net_pay}\nStatus: ${row.status}`;
-      const blob = new Blob([content], { type: "text/plain" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        `Payslip_${getMonthName(row.month)}_${row.year}.txt`,
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      setDownloadingId(null);
-    }, 400);
+  const handleOpenSlip = (row) => {
+    setSelectedPayslipId(row.id);
+    setModalOpen(true);
   };
 
-  const yearOptions = getYearOptions();
+  const handleCloseSlip = () => {
+    setModalOpen(false);
+    setSelectedPayslipId(null);
+  };
+
+  const yearOptions = getYearOptions(records);
 
   return (
     <React.Fragment>
-      {/* Page heading */}
       <div className="mb-4">
         <h3 className="fw-bold mb-1">Payslip</h3>
         <p className="text-muted mb-0">
           View and download your monthly payslips.
         </p>
       </div>
+
+      {error && (
+        <Alert color="danger" toggle={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
       {/* Employee summary banner */}
       <Card
@@ -203,7 +145,6 @@ const EmployeePayslip = () => {
       >
         <CardBody className="p-4">
           <Row className="align-items-center g-4">
-            {/* Employee details */}
             <Col xs={12} md={6} className="d-flex align-items-center gap-3">
               <span className="d-flex align-items-center justify-content-center rounded-circle bg-white flex-shrink-0">
                 <i
@@ -212,36 +153,35 @@ const EmployeePayslip = () => {
                 ></i>
               </span>
               <div>
-                <h5 className="mb-1 fw-bold">{EMPLOYEE.name}</h5>
+                <h5 className="mb-1 fw-bold">
+                  {employee?.name ?? (loading ? "Loading..." : "—")}
+                </h5>
                 <p className="mb-0 text-muted">
                   Emp ID:{" "}
-                  <span className="text-body fw-medium">{EMPLOYEE.empId}</span>
-                </p>
-                <p className="mb-0 text-muted">
-                  Department:{" "}
                   <span className="text-body fw-medium">
-                    {EMPLOYEE.department}
+                    {employee?.emp_id ?? "—"}
                   </span>
                 </p>
                 <p className="mb-0 text-muted">
                   Designation:{" "}
                   <span className="text-primary fw-medium">
-                    {EMPLOYEE.designation}
+                    {employee?.designation ?? "—"}
                   </span>
                 </p>
               </div>
             </Col>
 
-            {/* Year filter — desktop */}
             <Col md={4} className="border-start ps-4 d-none d-md-block">
               <Label className="text-muted mb-1">Year</Label>
               <Input
                 type="select"
                 bsSize="lm"
                 value={selectedYear}
+                disabled={yearOptions.length === 0}
                 onChange={(e) => setSelectedYear(e.target.value)}
                 style={{ maxWidth: 180 }}
               >
+                {yearOptions.length === 0 && <option value="">—</option>}
                 {yearOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
@@ -250,15 +190,16 @@ const EmployeePayslip = () => {
               </Input>
             </Col>
 
-            {/* Year filter — stacked version for small screens */}
             <Col xs={12} className="d-md-none">
               <Label className="text-muted mb-1">Year</Label>
               <Input
                 type="select"
                 bsSize="sm"
                 value={selectedYear}
+                disabled={yearOptions.length === 0}
                 onChange={(e) => setSelectedYear(e.target.value)}
               >
+                {yearOptions.length === 0 && <option value="">—</option>}
                 {yearOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
@@ -267,7 +208,6 @@ const EmployeePayslip = () => {
               </Input>
             </Col>
 
-            {/* Calendar illustration */}
             <Col md={2} className="d-none d-lg-flex justify-content-end">
               <span
                 className="d-flex align-items-center justify-content-center rounded-4"
@@ -350,17 +290,10 @@ const EmployeePayslip = () => {
                             outline
                             size="sm"
                             className="py-1 px-3"
-                            disabled={downloadingId === row.id}
-                            onClick={() => handleDownload(row)}
+                            onClick={() => handleOpenSlip(row)}
                           >
-                            {downloadingId === row.id ? (
-                              <Spinner size="sm" />
-                            ) : (
-                              <>
-                                <i className="ri-download-2-line align-bottom me-1"></i>
-                                Download
-                              </>
-                            )}
+                            <i className="ri-eye-line align-bottom me-1"></i>
+                            Open Slip
                           </Button>
                         </td>
                       </tr>
@@ -371,7 +304,6 @@ const EmployeePayslip = () => {
             </SimpleBar>
           )}
 
-          {/* Password note */}
           <div
             className="d-flex align-items-start gap-2 p-3 mt-3 rounded"
             style={{ backgroundColor: "#dff0fa" }}
@@ -388,6 +320,15 @@ const EmployeePayslip = () => {
           </div>
         </CardBody>
       </Card>
+
+      {/* Payslip detail modal — fetches its own data from payroll/employee-payslip/?id=
+          and generates the styled PDF client-side via @react-pdf/renderer.
+          This replaces the previous broken inline axios download call. */}
+      <MyPayslipDetailModal
+        payslipId={selectedPayslipId}
+        isOpen={modalOpen}
+        onClose={handleCloseSlip}
+      />
     </React.Fragment>
   );
 };
