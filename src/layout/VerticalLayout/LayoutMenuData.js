@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
@@ -7,6 +7,7 @@ import {
 
 const Navdata = () => {
   const history = useNavigate();
+  const location = useLocation();
   //state data
   const [isDashboard, setIsDashboard] = useState(false);
   const [isApps, setIsApps] = useState(false);
@@ -15,6 +16,7 @@ const Navdata = () => {
   const [isBaseUi, setIsBaseUi] = useState(false);
   const [isAttendance, setIsAttendance] = useState(false);
   const [isControlPanel, setIsControlPanel] = useState(false);
+  const [isReport, setIsReport] = useState(false);
   const [isAdvanceUi, setIsAdvanceUi] = useState(false);
   const [isForms, setIsForms] = useState(false);
   const [isTables, setIsTables] = useState(false);
@@ -77,6 +79,38 @@ const Navdata = () => {
     }
   }
 
+  // ── Sync open menu with the active route (prevents Report opening by default)
+  useEffect(() => {
+    const path = location.pathname;
+
+    const reportPaths = ["/attendancereport"];
+    const crmPaths = ["/clients", "/projects", "/tasks", "/task-settings"];
+    const attendancePaths = [
+      "/attendance",
+      "/holidays",
+      "/leaves",
+      "/approval",
+      "/leavetype",
+      "/workschedule",
+    ];
+
+    if (reportPaths.includes(path)) {
+      setIsReport(true);
+      setIscurrentState("Report");
+    } else if (crmPaths.includes(path)) {
+      setIsControlPanel(true);
+      setIscurrentState("Control Panel");
+    } else if (attendancePaths.includes(path)) {
+      setIsAttendance(true);
+      setIscurrentState("Attendance");
+    } else {
+      // not on any collapse route → keep all collapse menus closed
+      setIsReport(false);
+      setIsControlPanel(false);
+      setIsAttendance(false);
+    }
+  }, [location.pathname]);
+
   useEffect(() => {
     document.body.classList.remove("twocolumn-panel");
     if (iscurrentState !== "Dashboard") {
@@ -94,8 +128,14 @@ const Navdata = () => {
     if (iscurrentState !== "BaseUi") {
       setIsBaseUi(false);
     }
+    if (iscurrentState !== "Attendance") {
+      setIsAttendance(false);
+    }
     if (iscurrentState !== "Control Panel") {
       setIsControlPanel(false);
+    }
+    if (iscurrentState !== "Report") {
+      setIsReport(false);
     }
     if (iscurrentState !== "AdvanceUi") {
       setIsAdvanceUi(false);
@@ -137,6 +177,8 @@ const Navdata = () => {
     isPages,
     isBaseUi,
     isAttendance,
+    isControlPanel,
+    isReport,
     isAdvanceUi,
     isForms,
     isTables,
@@ -227,13 +269,6 @@ const Navdata = () => {
               "08cd201a-d20d-45d3-8b60-3a6fb7e4acc0",
             ],
           },
-          // {
-          //   id: "leaveapproval",
-          //   label: "Leave Approval",
-          //   link: "/leave-approval",
-          //   parentId: "baseUi",
-          //   perm: "leave_apporval",
-          // },
           {
             id: "leavetype",
             label: "Leave Type",
@@ -248,53 +283,53 @@ const Navdata = () => {
             parentId: "baseUi",
             perm: [],
           },
-
-          // {
-          //   id: "customfield",
-          //   label: "Custom Field",
-          //   link: "/custom-field",
-          //   parentId: "baseUi",
-          //   perm: "custom_field",
-          // },
-
-          // {
-          //   id: "attendanceconfig",
-          //   label: "Attendance Configuration",
-          //   link: "/attendanceconfig",
-          //   parentId: "baseUi",
-          //   perm: "attendance_config",
-          // },
-
-          // {
-          //   id: "payrollconfig",
-          //   label: "Pay Roll Configuration",
-          //   link: "/payrollconfig",
-          //   parentId: "baseUi",
-          //   perm: "payroll_config",
-          // },
         ],
       },
-      // {
-      //   id: "payroll",
-      //   label: "Pay Roll",
-      //   link: "/payroll",
-      //   parentId: "payroll",
-      //   perm: "all",
-      //   icon: " ri-currency-line",
-      // },
       {
-        id: "attendancereport",
+        id: "payroll",
+        label: "Pay Roll",
+        link: "/payroll",
+        parentId: "payroll",
+        perm: "all",
+        icon: " ri-currency-line",
+      },
+      {
+        id: "report",
         label: "Report",
-        link: "/attendancereport",
         parentId: "baseUi",
         perm: ["c77528b2-5d9f-49ad-b6d1-5f95e61a66a0"],
         icon: "ri-file-chart-line",
+        link: "/#",
+        click: function (e) {
+          e.preventDefault();
+          setIsReport(!isReport);
+          setIscurrentState("Report");
+          updateIconSidebar(e);
+        },
+        stateVariables: isReport,
+        subItems: [
+          {
+            id: "attendancereport",
+            label: "Attendance Report",
+            link: "/attendancereport",
+            parentId: "baseUi",
+            perm: "all",
+          },
+          {
+            id: "leavereport",
+            label: "Leave Report",
+            link: "/leavereport",
+            parentId: "baseUi",
+            perm: "all",
+          },
+        ],
       },
       {
-        id: "baseUi",
+        id: "configuration",
         label: "Configuration",
         icon: "ri-settings-3-line",
         link: "/organization",
+        parentId: "baseUi",
         perm: ["dac690d1-6712-4aa6-9b4f-7d71bc4f8eb1"],
         click: function (e) {
           e.preventDefault();
@@ -302,6 +337,7 @@ const Navdata = () => {
           setIscurrentState("BaseUi");
           updateIconSidebar(e);
         },
+        stateVariables: isBaseUi,
       },
       {
         id: "control-panel",
@@ -347,71 +383,6 @@ const Navdata = () => {
           },
         ],
       },
-
-      // {
-      //   label: "Task",
-      //   isHeader: false,
-      // },
-      // {
-      //   id: "control-panel",
-      //   label: "Control Panel",
-      //   icon: " ri-list-settings-line",
-      //   perm: "all",
-      //   link: "/#",
-      //   click: function (e) {
-      //     e.preventDefault();
-      //     setIsControlPanel(!isControlPanel);
-      //     setIscurrentState("Control Panel");
-      //     updateIconSidebar(e);
-      //   },
-      //   stateVariables: isControlPanel,
-      //   subItems: [
-      //     {
-      //       id: "status",
-      //       label: "Status",
-      //       link: "/status",
-      //       parentId: "baseUi",
-      //       perm: "all",
-      //     },
-      //     {
-      //       id: "priorities",
-      //       label: "Priorities",
-      //       link: "/priorities",
-      //       parentId: "baseUi",
-      //       perm: "all",
-      //     },
-      //   ],
-      // },
-      // {
-      //   id: "contact",
-      //   label: "Contact",
-      //   icon: "  ri-contacts-book-line",
-      //   perm: "all",
-      //   link: "/#",
-      //   click: function (e) {
-      //     e.preventDefault();
-      //     setIsContact(!isContact);
-      //     setIscurrentState("Contact");
-      //     updateIconSidebar(e);
-      //   },
-      //   stateVariables: isContact,
-      //   subItems: [
-      //     {
-      //       id: "contact-group",
-      //       label: "Contact Group",
-      //       link: "/contact-group",
-      //       parentId: "baseUi",
-      //       perm: "all",
-      //     },
-      //     {
-      //       id: "contacts",
-      //       label: "Contacts",
-      //       link: "/contacts",
-      //       parentId: "baseUi",
-      //       perm: "all",
-      //     },
-      //   ],
-      // },
     ];
 
     if (

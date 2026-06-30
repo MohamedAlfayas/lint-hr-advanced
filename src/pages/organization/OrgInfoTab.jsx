@@ -6,32 +6,25 @@ import {
   CardBody,
   CardHeader,
   Col,
-  Dropdown,
   DropdownItem,
   DropdownMenu,
   DropdownToggle,
   Form,
-  FormGroup,
   FormFeedback,
   Input,
-  Textarea,
   Label,
   Row,
   UncontrolledDropdown,
 } from "reactstrap";
 import Select from "react-select";
 import {
-  gender_options,
   form_default_input_types,
-  form_select_type,
   timzone_options,
   form_date_type,
   DateFormat,
   organization_component_name,
 } from "../../common/constant/Constants";
-
 import { UPDATE_COMPANY_PROFILE_ACCESS_KEY } from "../../common/constant/RoleConstants";
-
 import {
   ConvertDateFormat,
   ConvertISODateFormat,
@@ -43,72 +36,53 @@ dayjs.extend(customParseFormat);
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
-//import images
-import avatar8 from "../../assets/images/users/avatar-8.jpg";
-import avatar10 from "../../assets/images/users/avatar-10.jpg";
-import avatar6 from "../../assets/images/users/avatar-6.jpg";
 import avatar2 from "../../assets/images/users/avatar-2.jpg";
 import avatar3 from "../../assets/images/users/avatar-3.jpg";
 import avatar4 from "../../assets/images/users/avatar-4.jpg";
 import avatar7 from "../../assets/images/users/avatar-7.jpg";
-import image4 from "../../assets/images/small/img-4.jpg";
-import image5 from "../../assets/images/small/img-5.jpg";
 
-import indflag from "../../assets/images/flags/in.svg";
-//SimpleBar
 import SimpleBar from "simplebar-react";
 import CountryList from "../../common/data/CountryList";
 import Dropzone from "react-dropzone";
-import axios from "axios";
 import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
-import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { GetCustomField } from "../../common/js/GetCustomField";
-import {
-  CountryCodeDisplayInSelect,
-  CountryCodeDisplayStyles,
-} from "../../common/js/CountryCodeDisplayInSelect";
+import { CountryCodeDisplayInSelect } from "../../common/js/CountryCodeDisplayInSelect";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { useDispatch } from "react-redux";
 import { PostApi } from "../../common/api/PostApi";
 import { setCompanyDetail } from "../../redux/reducers/ChildReducer/CompanyReducer";
 import { CheckRoleAccess } from "../../common/js/CheckRoleAccess";
-// import WebCheckInOutBtn from "../attendance/WebCheckInOutBtn";
 
 const OrgInfoTab = () => {
   const [stateListOptions, setStateListOptions] = useState([]);
-
+  const [darkLogoFile, setDarkLogoFile] = useState(null);
+  const [lightLogoFile, setLightLogoFile] = useState(null);
+  const [showUpdateBtn, setShowUpdateBtn] = useState(false);
   const dispatch = useDispatch();
+  const inputRef = useRef();
 
   const CountryListOptions = CountryList.filter((c) => c.show === true).map(
-    (d) => {
-      return {
-        ...d,
-        label: d.countryName,
-        value: d.countryName,
-      };
-    },
+    (d) => ({
+      ...d,
+      label: d.countryName,
+      value: d.countryName,
+    }),
   );
 
   const CountryCodeListOptions = CountryList.filter((c) => c.show === true).map(
-    (d) => {
-      return {
-        ...d,
-        label: d.countryCode,
-        value: d.countryCode,
-      };
-    },
+    (d) => ({
+      ...d,
+      label: d.countryCode,
+      value: d.countryCode,
+    }),
   );
-
-  // Custom Field Option
 
   const CustomFieldsForThisForm =
     GetCustomField(organization_component_name) || [];
 
-  // Set Empty Data To form
-
-  const initialData = useMemo(() => {
-    return {
+  const initialValues = useMemo(
+    () => ({
       id: "0",
       website: "",
       contact_number: "",
@@ -120,14 +94,76 @@ const OrgInfoTab = () => {
       pincode: "",
       country: "",
       state: "",
+      timezone: "",
       show_attendance_timer: true,
       cf_values: CustomFieldsForThisForm || [],
-    };
-  }, []);
+    }),
+    [],
+  );
 
-  const [profileData, setProfileData] = useState(initialData);
+  const FormikForm = useFormik({
+    enableReinitialize: true,
+    initialValues,
+    validationSchema: Yup.object({
+      website: Yup.string()
+        .trim()
+        .required("Please enter website")
+        .matches(
+          /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+(\/[^\s]*)?$/,
+          "Enter a valid website URL",
+        ),
+      contact_number: Yup.string()
+        .required("Please enter phone number")
+        .matches(/^[0-9]+$/, "Phone number must contain digits only")
+        .min(7, "Phone number is too short")
+        .max(10, "Phone number is too long"),
+      contact_email: Yup.string()
+        .required("Please enter email")
+        .email("Enter a valid email address"),
+      about: Yup.string().required("Please enter company overview"),
+      address: Yup.string().required("Please enter address"),
+      country: Yup.string().required("Please select country"),
+      state: Yup.string().required("Please select state"),
+      city: Yup.string()
+        .required("Please enter city")
+        .matches(/^[a-zA-Z\s]+$/, "City must contain letters only"),
+      pincode: Yup.string()
+        .required("Please enter pincode")
+        .matches(/^[0-9]+$/, "Pincode must contain digits only")
+        .min(4, "Pincode is too short")
+        .max(10, "Pincode is too long"),
+      timezone: Yup.string().required("Please select time zone"),
+    }),
+    onSubmit: async (values) => {
+      dispatch(setLoaderVisible(true));
+      let form_data = new FormData();
 
-  const [showUpdateBtn, setShowUpdateBtn] = useState(false);
+      darkLogoFile !== null &&
+        form_data.append("dark_logo", darkLogoFile, darkLogoFile.name);
+      lightLogoFile !== null &&
+        form_data.append("light_logo", lightLogoFile, lightLogoFile.name);
+
+      Object.entries(values).forEach(([key, val]) => {
+        if (key === "cf_values") {
+          form_data.append(key, JSON.stringify(val));
+        } else {
+          form_data.append(key, val);
+        }
+      });
+
+      const ApiRes = await PostApi(
+        "/branch/save-company-profile/",
+        form_data,
+        true,
+      );
+      dispatch(setLoaderVisible(false));
+      if (ApiRes.status && ApiRes.status === 200) {
+        toast.success(ApiRes?.data?.message);
+      } else {
+        toast.error(ApiRes?.data?.message || ApiRes?.data?.detail);
+      }
+    },
+  });
 
   useEffect(() => {
     GetCompanyProfileData();
@@ -135,78 +171,81 @@ const OrgInfoTab = () => {
   }, []);
 
   const GetCompanyProfileData = () => {
-    Api({
-      method: "GET",
-      url: "/branch/get-company-profile/",
-    })
+    Api({ method: "GET", url: "/branch/get-company-profile/" })
       .then((res) => {
         const response = res?.data?.data;
-        if (Object.keys(response).length) {
-          let thisCFValues = [...response?.cf_values];
-          let cf = [];
-          if (thisCFValues && thisCFValues.length) {
-            cf = CustomFieldsForThisForm.map((obj) => {
-              return {
+        if (response && Object.keys(response).length) {
+          let thisCFValues = [...(response?.cf_values || [])];
+          let cf = thisCFValues.length
+            ? CustomFieldsForThisForm.map((obj) => ({
                 ...obj,
                 value:
                   thisCFValues.find((t) => t.id === obj.id)?.value || obj.value,
-              };
-            });
-          } else {
-            cf = CustomFieldsForThisForm;
-          }
-          setProfileData({ ...response, cf_values: cf });
+              }))
+            : CustomFieldsForThisForm;
 
-          dispatch(setCompanyDetail({ ...response, cf_values: cf }));
+          const merged = { ...response, cf_values: cf };
+          dispatch(setCompanyDetail(merged));
 
-          setStateListOptions(
-            CountryListOptions.find((d) => d.value === response?.country)
-              .states || [],
+          // ── Set all values into Formik at once ──────────────────────
+          Object.entries(merged).forEach(([key, val]) => {
+            FormikForm.setFieldValue(key, val ?? "");
+          });
+
+          const foundCountry = CountryListOptions.find(
+            (d) => d.value === response?.country,
           );
+          setStateListOptions(foundCountry?.states || []);
         }
       })
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch((err) => console.log(err));
   };
 
-  const updateProfileData = (name, value) => {
-    setProfileData({
-      ...profileData,
-      [name]: value,
-    });
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  const setField = (name, value) => {
+    FormikForm.setFieldValue(name, value);
   };
 
-  const handleCountryCodeChange = (e) => {
-    setProfileData({
-      ...profileData,
-      country: e.countryName,
-      country_code: e.value,
-    });
-
-    setStateListOptions(
-      CountryListOptions.find((d) => d.value === e.countryName).states || [],
-    );
+  const handleNumberOnly = (e, field) => {
+    const val = e.target.value.replace(/[^0-9]/g, "");
+    setField(field, val);
   };
 
   const handleCountryChange = (e) => {
-    setProfileData({
-      ...profileData,
-      country: e.value,
-      country_code: e.countryCode,
-      state: "",
-    });
-
+    setField("country", e.value);
+    setField("country_code", e.countryCode);
+    setField("state", "");
     setStateListOptions(
-      CountryListOptions.find((d) => d.value === e.value).states || [],
+      CountryListOptions.find((d) => d.value === e.value)?.states || [],
     );
   };
 
-  const [darkLogoFile, setDarkLogoFile] = useState(null);
-  const [lightLogoFile, setLightLogoFile] = useState(null);
+  const handleCountryCodeChange = (e) => {
+    setField("country_code", e.value);
+    setField("country", e.countryName);
+    setStateListOptions(
+      CountryListOptions.find((d) => d.value === e.countryName)?.states || [],
+    );
+  };
+
+  const handleCFInputChange = (e, cf_id) => {
+    const updated = FormikForm.values.cf_values.map((item) =>
+      item.id === cf_id ? { ...item, value: e.target.value } : item,
+    );
+    setField("cf_values", updated);
+  };
+
+  const handleCFDateChange = (e, dateStr, cf_id) => {
+    const updated = FormikForm.values.cf_values.map((item) =>
+      item.id === cf_id
+        ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
+        : item,
+    );
+    setField("cf_values", updated);
+  };
 
   function handleAcceptedFiles(file, logo_type) {
-    let chosenFile = Object.assign(file[0], {
+    const chosenFile = Object.assign(file[0], {
       preview: URL.createObjectURL(file[0]),
       formattedSize: formatBytes(file[0].size),
     });
@@ -215,109 +254,34 @@ const OrgInfoTab = () => {
       : setLightLogoFile(chosenFile);
   }
 
-  /**
-   * Formats the size
-   */
   function formatBytes(bytes, decimals = 2) {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
     const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
-
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
   }
 
-  const handleCFInputChange = (e, cf_id) => {
-    const newPD = {
-      ...profileData,
-      cf_values: [...profileData.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: e.target.value } : item,
-      ),
-    };
-    setProfileData(newPD);
-  };
-  const handleCFDateChange = (e, dateStr, cf_id) => {
-    setProfileData({
-      ...profileData,
-      cf_values: [...profileData.cf_values].map((item) =>
-        item.id === cf_id
-          ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
-          : item,
-      ),
-    });
-  };
-
-  const FormikForm = useFormik({
-    enableReinitialize: true,
-    initialValues: profileData,
-    validationSchema: Yup.object({
-      website: Yup.string().trim().required("Please Enter Your Website"),
-      contact_number: Yup.string().required("Please Enter Phone Number"),
-      contact_email: Yup.string().required("Please Enter Email"),
-      about: Yup.string().required("Please Enter Company Overview"),
-      address: Yup.string().required("Please Enter Address"),
-      country: Yup.string().required("Please Select Country"),
-      state: Yup.string().required("Please Select State"),
-      city: Yup.string().required("Please Enter City"),
-      pincode: Yup.string().required("Please Enter Pincode"),
-      timezone: Yup.string().required("Please Select Time Zone"),
-    }),
-    onSubmit: async (values) => {
-      dispatch(setLoaderVisible(true));
-
-      let form_data = new FormData();
-      darkLogoFile !== null &&
-        form_data.append("dark_logo", darkLogoFile, darkLogoFile.name);
-      lightLogoFile !== null &&
-        form_data.append("light_logo", lightLogoFile, lightLogoFile.name);
-
-      Object.entries(profileData).map((key, idx) => {
-        if (key[0] === "cf_values") {
-          form_data.append(key[0], JSON.stringify(key[1]));
-        } else {
-          form_data.append(key[0], key[1]);
-        }
-      });
-
-      const Api = await PostApi(
-        "/branch/save-company-profile/",
-        form_data,
-        true,
-      );
-      if (Api.status && Api.status === 200) {
-        toast.success(Api?.data?.message);
-        dispatch(setLoaderVisible(false));
-      } else {
-        toast.error(Api?.data?.message || Api?.data?.detail);
-        dispatch(setLoaderVisible(false));
-      }
-    },
-  });
-
-  const inputRef = useRef();
+  // ── Auto-focus first error field on submit ───────────────────────────────
   useEffect(() => {
     if (
       FormikForm.submitCount > 0 &&
       Object.keys(FormikForm.errors).length > 0
     ) {
       const firstErrorField = Object.keys(FormikForm.errors)[0];
-      FormikForm.setFieldTouched(firstErrorField);
-      const errorField = document.querySelector(`[name=${firstErrorField}]`);
-      if (errorField) {
-        errorField.focus();
-
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }
+      FormikForm.setFieldTouched(firstErrorField, true, false);
+      const errorField = document.querySelector(`[name="${firstErrorField}"]`);
+      if (errorField) errorField.focus();
     }
-  }, [
-    FormikForm.submitCount,
-    FormikForm.errors,
-    FormikForm.setFieldTouched,
-    inputRef,
-  ]);
+  }, [FormikForm.submitCount]);
+
+  const v = FormikForm.values;
+  const e = FormikForm.errors;
+  const t = FormikForm.touched;
+
+  const isInvalid = (field) => !!(t[field] && e[field]);
+  const showHint = (field) => !e[field];
 
   return (
     <React.Fragment>
@@ -325,814 +289,543 @@ const OrgInfoTab = () => {
         <Col xl={9} lg={8}>
           <Card>
             <CardBody>
-              <div>
-                <h6 className="mb-3 fw-semibold text-uppercase">
-                  Company Info
-                </h6>
+              <h6 className="mb-3 fw-semibold text-uppercase">Company Info</h6>
 
-                <Form onSubmit={FormikForm.handleSubmit}>
-                  <div className="live-preview">
-                    <Row className="gy-4">
-                      {/* <WebCheckInOutBtn /> */}
-
-                      <Col xxl={8} md={7}>
-                        <div>
-                          <Label htmlFor="orgwebsite" className="form-label">
-                            Company Website
-                          </Label>
-                          <div className="form-icon right">
-                            <Input
-                              type="text"
-                              name="website"
-                              innerRef={inputRef}
-                              className="form-control form-control-icon"
-                              id="orgwebsite"
-                              placeholder="www.company.com"
-                              value={profileData.website || ""}
-                              onChange={(e) =>
-                                updateProfileData("website", e.target.value)
-                              }
-                              invalid={
-                                FormikForm.touched.website &&
-                                FormikForm.errors.website
-                                  ? true
-                                  : false
-                              }
-                            />
-                            {!FormikForm.touched.website &&
-                              !FormikForm.errors.website && (
-                                <i className="ri-global-line"></i>
-                              )}
-                            {FormikForm.touched.website &&
-                            FormikForm.errors.website ? (
-                              <FormFeedback type="invalid">
-                                {FormikForm.errors.website}
-                              </FormFeedback>
-                            ) : null}
-                          </div>
-                          {!FormikForm.errors.website && (
-                            <div id="passwordHelpBlock" className="form-text">
-                              Enter Your Company Website.
-                            </div>
-                          )}
+              <Form onSubmit={FormikForm.handleSubmit} noValidate>
+                <div className="live-preview">
+                  <Row className="gy-4">
+                    {/* ── Website ──────────────────────────────────────── */}
+                    <Col xxl={8} md={7}>
+                      <Label htmlFor="orgwebsite" className="form-label">
+                        Company Website <span>*</span>
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type="text"
+                          name="website"
+                          id="orgwebsite"
+                          innerRef={inputRef}
+                          className="form-control form-control-icon"
+                          placeholder="www.company.com"
+                          value={v.website || ""}
+                          onChange={(e) => setField("website", e.target.value)}
+                          onBlur={() =>
+                            FormikForm.setFieldTouched("website", true)
+                          }
+                          invalid={isInvalid("website")}
+                        />
+                        {!isInvalid("website") && (
+                          <i className="ri-global-line" />
+                        )}
+                        {isInvalid("website") && (
+                          <FormFeedback type="invalid">
+                            {e.website}
+                          </FormFeedback>
+                        )}
+                      </div>
+                      {showHint("website") && (
+                        <div className="form-text">
+                          Enter your company website.
                         </div>
-                      </Col>
+                      )}
+                    </Col>
 
-                      <Col xxl={8} md={7}>
-                        <div>
-                          <Label htmlFor="country_code">Contact Number*</Label>
-                          <Row>
-                            <Col md={3}>
-                              <Select
-                                id="country_code"
-                                name="country_code"
-                                isMulti={false}
-                                options={CountryCodeListOptions || []}
-                                className="basic-multi-select"
-                                components={{
-                                  Option: CountryCodeDisplayInSelect,
-                                }}
-                                value={
-                                  profileData?.country_code !== ""
-                                    ? CountryCodeListOptions.find(
-                                        (d) =>
-                                          d.value === profileData.country_code,
-                                      )
-                                    : []
-                                }
-                                onChange={handleCountryCodeChange}
-                              />
-                            </Col>
-                            <Col md={9}>
+                    {/* ── Contact Number ───────────────────────────────── */}
+                    <Col xxl={8} md={7}>
+                      <Label htmlFor="contact_number" className="form-label">
+                        Contact Number <span>*</span>
+                      </Label>
+                      <Row>
+                        <Col md={3}>
+                          <Select
+                            id="country_code"
+                            name="country_code"
+                            isMulti={false}
+                            options={CountryCodeListOptions}
+                            className="basic-multi-select"
+                            components={{ Option: CountryCodeDisplayInSelect }}
+                            value={
+                              v.country_code
+                                ? CountryCodeListOptions.find(
+                                    (d) => d.value === v.country_code,
+                                  )
+                                : null
+                            }
+                            onChange={handleCountryCodeChange}
+                          />
+                        </Col>
+                        <Col md={9}>
+                          <Input
+                            type="text"
+                            id="contact_number"
+                            name="contact_number"
+                            className="form-control rounded-end flag-input"
+                            placeholder="Enter number"
+                            inputMode="numeric"
+                            value={v.contact_number || ""}
+                            onChange={(e) =>
+                              handleNumberOnly(e, "contact_number")
+                            }
+                            onBlur={() =>
+                              FormikForm.setFieldTouched("contact_number", true)
+                            }
+                            invalid={isInvalid("contact_number")}
+                          />
+                          {isInvalid("contact_number") && (
+                            <FormFeedback type="invalid">
+                              {e.contact_number}
+                            </FormFeedback>
+                          )}
+                        </Col>
+                      </Row>
+                      {showHint("contact_number") && (
+                        <div className="form-text">
+                          Enter digits only, no spaces or special characters.
+                        </div>
+                      )}
+                    </Col>
+
+                    {/* ── Contact Email ────────────────────────────────── */}
+                    <Col xxl={8} md={7}>
+                      <Label htmlFor="companyemail" className="form-label">
+                        Contact Email <span>*</span>
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type="email"
+                          name="contact_email"
+                          id="companyemail"
+                          className="form-control form-control-icon"
+                          placeholder="user@company.com"
+                          value={v.contact_email || ""}
+                          onChange={(ev) =>
+                            setField("contact_email", ev.target.value)
+                          }
+                          onBlur={() =>
+                            FormikForm.setFieldTouched("contact_email", true)
+                          }
+                          invalid={isInvalid("contact_email")}
+                        />
+                        {!isInvalid("contact_email") && (
+                          <i className="ri-mail-line" />
+                        )}
+                        {isInvalid("contact_email") && (
+                          <FormFeedback type="invalid">
+                            {e.contact_email}
+                          </FormFeedback>
+                        )}
+                      </div>
+                      {showHint("contact_email") && (
+                        <div className="form-text">
+                          Enter your contact email.
+                        </div>
+                      )}
+                    </Col>
+
+                    {/* ── Company Overview ─────────────────────────────── */}
+                    <Col xxl={8} md={7}>
+                      <Label htmlFor="about" className="form-label">
+                        Company Overview <span>*</span>
+                      </Label>
+                      <Input
+                        type="textarea"
+                        name="about"
+                        id="about"
+                        className="form-control"
+                        rows="3"
+                        value={v.about || ""}
+                        onChange={(e) => setField("about", e.target.value)}
+                        onBlur={() => FormikForm.setFieldTouched("about", true)}
+                        invalid={isInvalid("about")}
+                      />
+                      {isInvalid("about") && (
+                        <FormFeedback type="invalid">{e.about}</FormFeedback>
+                      )}
+                      {showHint("about") && (
+                        <div className="form-text">Company overview.</div>
+                      )}
+                    </Col>
+
+                    {/* ── Address ──────────────────────────────────────── */}
+                    <Col xxl={8} md={12}>
+                      <Label htmlFor="address" className="form-label">
+                        Address <span>*</span>
+                      </Label>
+                      <Input
+                        type="textarea"
+                        name="address"
+                        id="address"
+                        className="form-control"
+                        rows="2"
+                        value={v.address || ""}
+                        onChange={(e) => setField("address", e.target.value)}
+                        onBlur={() =>
+                          FormikForm.setFieldTouched("address", true)
+                        }
+                        invalid={isInvalid("address")}
+                      />
+                      {isInvalid("address") && (
+                        <FormFeedback type="invalid">{e.address}</FormFeedback>
+                      )}
+                      {showHint("address") && (
+                        <div className="form-text">Address.</div>
+                      )}
+                    </Col>
+
+                    {/* ── Country ──────────────────────────────────────── */}
+                    <Col xxl={8} md={6}>
+                      <Label htmlFor="country" className="form-label">
+                        Country <span>*</span>
+                      </Label>
+                      <Select
+                        id="country"
+                        name="country"
+                        isMulti={false}
+                        options={CountryListOptions}
+                        className="basic-multi-select"
+                        value={
+                          v.country
+                            ? CountryListOptions.find(
+                                (d) => d.value === v.country,
+                              )
+                            : null
+                        }
+                        styles={{
+                          control: (provided, state) => ({
+                            ...provided,
+                            borderColor:
+                              !state.isFocused && t.country && e.country
+                                ? "red"
+                                : provided.borderColor,
+                          }),
+                        }}
+                        onChange={handleCountryChange}
+                        onBlur={() =>
+                          FormikForm.setFieldTouched("country", true)
+                        }
+                      />
+                      {t.country && e.country && (
+                        <div className="lc_form_error_text">{e.country}</div>
+                      )}
+                      {showHint("country") && (
+                        <div className="form-text">Select country.</div>
+                      )}
+                    </Col>
+
+                    {/* ── State ────────────────────────────────────────── */}
+                    <Col xxl={8} md={6}>
+                      <Label htmlFor="state" className="form-label">
+                        State <span>*</span>
+                      </Label>
+                      <Select
+                        id="state"
+                        name="state"
+                        isMulti={false}
+                        options={stateListOptions}
+                        className="basic-multi-select"
+                        value={
+                          v.state
+                            ? stateListOptions.find(
+                                (d) => d.value === v.state,
+                              ) || null
+                            : null
+                        }
+                        styles={{
+                          control: (provided, state) => ({
+                            ...provided,
+                            borderColor:
+                              !state.isFocused && t.state && e.state
+                                ? "red"
+                                : provided.borderColor,
+                          }),
+                        }}
+                        onChange={(opt) => setField("state", opt.value)}
+                        onBlur={() => FormikForm.setFieldTouched("state", true)}
+                      />
+                      {t.state && e.state && (
+                        <div className="lc_form_error_text">{e.state}</div>
+                      )}
+                      {showHint("state") && (
+                        <div className="form-text">Select state.</div>
+                      )}
+                    </Col>
+
+                    {/* ── City ─────────────────────────────────────────── */}
+                    <Col xxl={8} md={6}>
+                      <Label htmlFor="companycity" className="form-label">
+                        City <span>*</span>
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type="text"
+                          name="city"
+                          id="companycity"
+                          className="form-control form-control-icon"
+                          placeholder="Chennai"
+                          value={v.city || ""}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(
+                              /[^a-zA-Z\s]/g,
+                              "",
+                            );
+                            setField("city", val);
+                          }}
+                          onBlur={() =>
+                            FormikForm.setFieldTouched("city", true)
+                          }
+                          invalid={isInvalid("city")}
+                        />
+                        {!isInvalid("city") && (
+                          <i className="ri-map-pin-line" />
+                        )}
+                        {isInvalid("city") && (
+                          <FormFeedback type="invalid">{e.city}</FormFeedback>
+                        )}
+                      </div>
+                      {showHint("city") && (
+                        <div className="form-text">
+                          Enter city name (letters only).
+                        </div>
+                      )}
+                    </Col>
+
+                    {/* ── Pincode ──────────────────────────────────────── */}
+                    <Col xxl={8} md={6}>
+                      <Label htmlFor="companypincode" className="form-label">
+                        Pincode <span>*</span>
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type="text"
+                          name="pincode"
+                          id="companypincode"
+                          className="form-control form-control-icon"
+                          placeholder="600001"
+                          inputMode="numeric"
+                          value={v.pincode || ""}
+                          onChange={(e) => handleNumberOnly(e, "pincode")}
+                          onBlur={() =>
+                            FormikForm.setFieldTouched("pincode", true)
+                          }
+                          invalid={isInvalid("pincode")}
+                        />
+                        {!isInvalid("pincode") && (
+                          <i className="ri-map-2-line" />
+                        )}
+                        {isInvalid("pincode") && (
+                          <FormFeedback type="invalid">
+                            {e.pincode}
+                          </FormFeedback>
+                        )}
+                      </div>
+                      {showHint("pincode") && (
+                        <div className="form-text">
+                          Enter pincode (digits only).
+                        </div>
+                      )}
+                    </Col>
+
+                    {/* ── Time Zone ────────────────────────────────────── */}
+                    <Col xxl={8} md={6}>
+                      <Label htmlFor="timezone" className="form-label">
+                        Time Zone <span>*</span>
+                      </Label>
+                      <Select
+                        name="timezone"
+                        id="timezone"
+                        options={timzone_options}
+                        placeholder="Select a time zone"
+                        value={
+                          v.timezone
+                            ? timzone_options.find(
+                                (opt) => opt.value === v.timezone,
+                              )
+                            : null
+                        }
+                        styles={{
+                          control: (provided, state) => ({
+                            ...provided,
+                            borderColor:
+                              !state.isFocused && t.timezone && e.timezone
+                                ? "red"
+                                : provided.borderColor,
+                          }),
+                        }}
+                        onChange={(opt) => setField("timezone", opt.value)}
+                        onBlur={() =>
+                          FormikForm.setFieldTouched("timezone", true)
+                        }
+                      />
+                      {t.timezone && e.timezone && (
+                        <div className="lc_form_error_text">{e.timezone}</div>
+                      )}
+                      {showHint("timezone") && (
+                        <div className="form-text">Select time zone.</div>
+                      )}
+                    </Col>
+
+                    {/* ── Custom Fields ────────────────────────────────── */}
+                    {v.cf_values && v.cf_values.length
+                      ? v.cf_values.map((obj) => (
+                          <Col xxl={8} md={6} key={obj.id}>
+                            <Label
+                              htmlFor={obj.input_name}
+                              className="form-label"
+                            >
+                              {obj.name}
+                            </Label>
+                            {form_default_input_types.includes(obj.type) && (
                               <Input
-                                type="text"
-                                id="contact_number"
-                                name="contact_number"
-                                innerRef={inputRef}
-                                className="form-control rounded-end flag-input"
-                                placeholder="Enter number"
-                                value={profileData.contact_number || ""}
-                                onChange={(e) =>
-                                  updateProfileData(
-                                    "contact_number",
-                                    e.target.value,
-                                  )
+                                type={obj.type || "text"}
+                                name={obj.input_name}
+                                id={obj.input_name}
+                                className="form-control"
+                                placeholder={`Enter ${obj.name}`}
+                                value={obj.value || ""}
+                                onChange={(e) => handleCFInputChange(e, obj.id)}
+                              />
+                            )}
+                            {obj.type === form_date_type && (
+                              <DatePicker
+                                name={obj.input_name}
+                                id={obj.input_name}
+                                className="form-control"
+                                format={DateFormat}
+                                value={
+                                  obj.value === ""
+                                    ? null
+                                    : dayjs(
+                                        ConvertDateFormat(obj.value),
+                                        DateFormat,
+                                      )
                                 }
-                                invalid={
-                                  FormikForm.touched.contact_number &&
-                                  FormikForm.errors.contact_number
-                                    ? true
-                                    : false
+                                allowClear={false}
+                                onChange={(e, dateStr) =>
+                                  handleCFDateChange(e, dateStr, obj.id)
                                 }
                               />
-                              {FormikForm.touched.contact_number &&
-                              FormikForm.errors.contact_number ? (
-                                <FormFeedback type="invalid">
-                                  {FormikForm.errors.contact_number}
-                                </FormFeedback>
-                              ) : null}
-                            </Col>
-                          </Row>
-                          {!FormikForm.errors.contact_number && (
-                            <div id="passwordHelpBlock" className="form-text">
-                              Enter Your Contact number with country code.
-                            </div>
-                          )}
-                        </div>
-                      </Col>
+                            )}
+                            <div className="form-text">Enter {obj.name}</div>
+                          </Col>
+                        ))
+                      : null}
 
-                      <Col xxl={8} md={7}>
-                        <div>
-                          <Label htmlFor="companyemail" className="form-label">
-                            Contact Email*
-                          </Label>
-                          <div className="form-icon right">
-                            <Input
-                              type="email"
-                              innerRef={inputRef}
-                              className="form-control form-control-icon"
-                              id="companyemail"
-                              placeholder="user@company.com"
-                              value={profileData.contact_email || ""}
-                              onChange={(e) =>
-                                updateProfileData(
-                                  "contact_email",
-                                  e.target.value,
-                                )
-                              }
-                              invalid={
-                                FormikForm.touched.contact_email &&
-                                FormikForm.errors.contact_email
-                                  ? true
-                                  : false
-                              }
-                            />
-                            {!FormikForm.touched.contact_email &&
-                              !FormikForm.errors.contact_email && (
-                                <i className="ri-mail-line"></i>
-                              )}
-                            {FormikForm.touched.contact_email &&
-                            FormikForm.errors.contact_email ? (
-                              <FormFeedback type="invalid">
-                                {FormikForm.errors.contact_email}
-                              </FormFeedback>
-                            ) : null}
-                          </div>
-                          {!FormikForm.errors.contact_email && (
-                            <div id="passwordHelpBlock" className="form-text">
-                              Enter Your Email.
-                            </div>
-                          )}
-                        </div>
-                      </Col>
-
-                      <Col xxl={8} md={7}>
-                        <div>
-                          <Label
-                            htmlFor="exampleFormControlTextarea5"
-                            className="form-label"
+                    {/* ── Logo Upload ──────────────────────────────────── */}
+                    <Col xxl={8} md={12}>
+                      <Row>
+                        <Col xxl={6} md={6}>
+                          <Label className="form-label">Logo</Label>
+                          <Dropzone
+                            multiple={false}
+                            onDrop={(acceptedFiles) =>
+                              handleAcceptedFiles(acceptedFiles, "light")
+                            }
                           >
-                            Company Overview
-                          </Label>
-                          <Input
-                            type="textarea"
-                            name="about"
-                            className="form-control"
-                            id="exampleFormControlTextarea5"
-                            rows="3"
-                            value={profileData.about || ""}
-                            onChange={(e) =>
-                              updateProfileData("about", e.target.value)
-                            }
-                            invalid={
-                              FormikForm.touched.about &&
-                              FormikForm.errors.about
-                                ? true
-                                : false
-                            }
-                          />
-                          {FormikForm.touched.about &&
-                          FormikForm.errors.about ? (
-                            <FormFeedback type="invalid">
-                              {FormikForm.errors.about}
-                            </FormFeedback>
-                          ) : null}
-                          {!FormikForm.errors.about && (
-                            <div id="passwordHelpBlock" className="form-text">
-                              Company Overview.
-                            </div>
-                          )}
-                        </div>
-                      </Col>
-
-                      <Col xxl={8} md={12}>
-                        <div>
-                          <Label
-                            htmlFor="exampleFormControlTextarea5"
-                            className="form-label"
-                          >
-                            Address
-                          </Label>
-                          <Input
-                            type="textarea"
-                            name="address"
-                            className="form-control"
-                            id="exampleFormControlTextarea5"
-                            rows="2"
-                            value={profileData.address || ""}
-                            onChange={(e) =>
-                              updateProfileData("address", e.target.value)
-                            }
-                            invalid={
-                              FormikForm.touched.address &&
-                              FormikForm.errors.address
-                                ? true
-                                : false
-                            }
-                          />
-                          {FormikForm.touched.address &&
-                          FormikForm.errors.address ? (
-                            <FormFeedback type="invalid">
-                              {FormikForm.errors.address}
-                            </FormFeedback>
-                          ) : null}
-                          {!FormikForm.errors.address && (
-                            <div id="passwordHelpBlock" className="form-text">
-                              Address.
-                            </div>
-                          )}
-                        </div>
-                      </Col>
-
-                      <Col xxl={8} md={6}>
-                        <div>
-                          <Label htmlFor="country" className="form-label">
-                            Country
-                          </Label>
-                          <Select
-                            id="country"
-                            name="country"
-                            isMulti={false}
-                            innerRef={inputRef}
-                            options={CountryListOptions || []}
-                            className="basic-multi-select"
-                            value={
-                              profileData?.country !== ""
-                                ? CountryListOptions.find(
-                                    (d) => d.value === profileData.country,
-                                  )
-                                : []
-                            }
-                            styles={{
-                              control: (provided, state) => ({
-                                ...provided,
-                                borderColor:
-                                  !state.isFocused &&
-                                  FormikForm.touched.country &&
-                                  FormikForm.errors.country
-                                    ? "red !important"
-                                    : provided.borderColor,
-                              }),
-                            }}
-                            onChange={handleCountryChange}
-                            invalid={
-                              FormikForm.touched.country &&
-                              FormikForm.errors.country
-                                ? true
-                                : false
-                            }
-                          />
-                          {FormikForm.touched.country &&
-                          FormikForm.errors.country ? (
-                            <div className="lc_form_error_text">
-                              {FormikForm.errors.country}
-                            </div>
-                          ) : null}
-                          {!FormikForm.errors.country && (
-                            <div id="passwordHelpBlock" className="form-text">
-                              Select Country.
-                            </div>
-                          )}
-                        </div>
-                      </Col>
-
-                      <Col xxl={8} md={6}>
-                        <div>
-                          <Label htmlFor="state" className="form-label">
-                            State
-                          </Label>
-                          <Select
-                            id="state"
-                            name="state"
-                            innerRef={inputRef}
-                            isMulti={false}
-                            options={stateListOptions || []}
-                            className="basic-multi-select"
-                            value={
-                              stateListOptions.find(
-                                (d) => d.value === profileData.state,
-                              ) || []
-                            }
-                            styles={{
-                              control: (provided, state) => ({
-                                ...provided,
-                                borderColor:
-                                  !state.isFocused &&
-                                  FormikForm.touched.state &&
-                                  FormikForm.errors.state
-                                    ? "red !important"
-                                    : provided.borderColor,
-                              }),
-                            }}
-                            onChange={(e) =>
-                              setProfileData({ ...profileData, state: e.value })
-                            }
-                            invalid={
-                              FormikForm.touched.state &&
-                              FormikForm.errors.state
-                                ? true
-                                : false
-                            }
-                          />
-                          {FormikForm.touched.state &&
-                          FormikForm.errors.state ? (
-                            <div className="lc_form_error_text">
-                              {FormikForm.errors.state}
-                            </div>
-                          ) : null}
-                          {!FormikForm.errors.state && (
-                            <div id="passwordHelpBlock" className="form-text">
-                              Select State.
-                            </div>
-                          )}
-                        </div>
-                      </Col>
-
-                      <Col xxl={8} md={6}>
-                        <div>
-                          <Label
-                            htmlFor="exampleFormControlTextarea5"
-                            className="form-label"
-                          >
-                            City
-                          </Label>
-                          <div className="form-icon right">
-                            <Input
-                              type="text"
-                              name="city"
-                              className="form-control form-control-icon"
-                              id="companycity"
-                              placeholder="Chennai"
-                              value={profileData.city || ""}
-                              onChange={(e) =>
-                                updateProfileData("city", e.target.value)
-                              }
-                              invalid={
-                                FormikForm.touched.city &&
-                                FormikForm.errors.city
-                                  ? true
-                                  : false
-                              }
-                            />
-                            {!FormikForm.touched.city &&
-                              !FormikForm.errors.city && (
-                                <i className="ri-mail-line"></i>
-                              )}
-                            {FormikForm.touched.city &&
-                            FormikForm.errors.city ? (
-                              <FormFeedback type="invalid">
-                                {FormikForm.errors.city}
-                              </FormFeedback>
-                            ) : null}
-                          </div>
-                          {!FormikForm.errors.city && (
-                            <div id="passwordHelpBlock" className="form-text">
-                              Select City.
-                            </div>
-                          )}
-                        </div>
-                      </Col>
-
-                      <Col xxl={8} md={6}>
-                        <div>
-                          <Label
-                            htmlFor="exampleFormControlTextarea5"
-                            className="form-label"
-                          >
-                            Pincode
-                          </Label>
-                          <div className="form-icon right">
-                            <Input
-                              type="number"
-                              name="pincode"
-                              className="form-control form-control-icon"
-                              id="companypincode"
-                              placeholder="666666"
-                              value={profileData.pincode || ""}
-                              onChange={(e) =>
-                                updateProfileData("pincode", e.target.value)
-                              }
-                              invalid={
-                                FormikForm.touched.pincode &&
-                                FormikForm.errors.pincode
-                                  ? true
-                                  : false
-                              }
-                            />
-                            {!FormikForm.touched.pincode &&
-                              !FormikForm.errors.contact_email && (
-                                <i className="ri-mail-line"></i>
-                              )}
-                            {FormikForm.touched.pincode &&
-                            FormikForm.errors.pincode ? (
-                              <FormFeedback type="invalid">
-                                {FormikForm.errors.pincode}
-                              </FormFeedback>
-                            ) : null}
-                          </div>
-                          {!FormikForm.errors.pincode && (
-                            <div id="passwordHelpBlock" className="form-text">
-                              Pincode.
-                            </div>
-                          )}
-                        </div>
-                      </Col>
-
-                      <Col xxl={8} md={6}>
-                        <div>
-                          <Label htmlFor="timezone" className="form-label">
-                            Time Zone
-                          </Label>
-                          <div className="form-icon right">
-                            <Select
-                              name="timezone"
-                              id="timezone"
-                              value={
-                                profileData.timezone &&
-                                timzone_options.find(
-                                  (e) => e.value === profileData.timezone,
-                                )
-                              }
-                              styles={{
-                                control: (provided, state) => ({
-                                  ...provided,
-                                  borderColor:
-                                    !state.isFocused &&
-                                    FormikForm.touched.timezone &&
-                                    FormikForm.errors.timezone
-                                      ? "red !important"
-                                      : provided.borderColor,
-                                }),
-                              }}
-                              onChange={(e) =>
-                                setProfileData({
-                                  ...profileData,
-                                  timezone: e.value,
-                                })
-                              }
-                              options={timzone_options}
-                              placeholder="Select a time zone"
-                              invalid={
-                                FormikForm.touched.timezone &&
-                                FormikForm.errors.timezone
-                                  ? true
-                                  : false
-                              }
-                            />
-                            {/* {!FormikForm.touched.timezone &&
-                              !FormikForm.errors.timezone && (
-                                <i className="ri-time-line"></i>
-                              )} */}
-                            {FormikForm.touched.timezone &&
-                            FormikForm.errors.timezone ? (
-                              <div className="lc_form_error_text">
-                                {FormikForm.errors.timezone}
-                              </div>
-                            ) : null}
-                            {!FormikForm.errors.timezone && (
-                              <div id="passwordHelpBlock" className="form-text">
-                                Time Zone.
+                            {({ getRootProps }) => (
+                              <div className="dropzone dz-clickable">
+                                <div
+                                  className="dz-message needsclick"
+                                  {...getRootProps()}
+                                >
+                                  <div className="mb-3">
+                                    <i className="display-4 text-muted ri-upload-cloud-2-fill" />
+                                  </div>
+                                  <h5>
+                                    Drop files here or click to upload Logo.
+                                  </h5>
+                                </div>
                               </div>
                             )}
-                          </div>
-                        </div>
-                      </Col>
-                      {/* <Col xxl={8} md={6}>
-                                          <div>
-                                            <Label htmlFor="show_attendance_timer" className="form-label">
-                                            Attendance Web Check In Enable
-                                            </Label>
-                                            <div className="mb-2">
-                                              <div
-                                                className="form-check form-switch form-switch-md form-switch-success"
-                                                dir="ltr"
-                                              >
-                                                <Input
-                                                  type="checkbox"
-                                                  className="form-check-input form-switch-md"
-                                                  id="show_attendance_timer"
-                                                  checked={profileData.show_attendance_timer}
-                                                  onChange={(e) => 
-                                                    setProfileData({
-                                                      ...profileData,
-                                                      show_attendance_timer: e.target.checked,
-                                                    })
-                                                  }
-                                                />
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </Col> */}
-
-                      {profileData.cf_values && profileData.cf_values.length
-                        ? profileData.cf_values.map((obj) => (
-                            <Col xxl={8} md={6}>
-                              <div>
-                                <Label
-                                  htmlFor="last_name"
-                                  className="form-label"
-                                >
-                                  {obj.name}
-                                </Label>
-                                {form_default_input_types.includes(
-                                  obj.type,
-                                ) && (
-                                  <div className="form-icon right">
-                                    <Input
-                                      type={obj.type || "text"}
-                                      name={obj.input_name}
-                                      id={obj.input_name}
-                                      className="form-control"
-                                      placeholder={`Enter ${obj.name}`}
-                                      value={obj.value || ""}
-                                      // required={obj.is_required || false}
-                                      onChange={(e) =>
-                                        handleCFInputChange(e, obj.id)
-                                      }
-                                    />
-                                  </div>
-                                )}
-                                {obj.type === form_date_type && (
-                                  <DatePicker
-                                    name={obj.input_name}
-                                    id={obj.input_name}
-                                    className="form-control"
-                                    format={DateFormat}
-                                    value={
-                                      obj.value === ""
-                                        ? null
-                                        : dayjs(
-                                            ConvertDateFormat(obj.value),
-                                            DateFormat,
-                                          )
-                                    }
-                                    allowClear={false}
-                                    onChange={(e, dateStr) =>
-                                      handleCFDateChange(e, dateStr, obj.id)
-                                    }
-                                  />
-                                )}
-                                <div
-                                  id="passwordHelpBlock"
-                                  className="form-text"
-                                >
-                                  Enter {obj.name}
-                                </div>
-                              </div>
-                            </Col>
-                          ))
-                        : null}
-
-                      <Col xxl={8} md={12}>
-                        <Row>
-                          {/* Dark Logo Section */}
-                          {/* <Col xxl={6} md={6}>
-                            <div>
-                              <Label
-                                htmlFor="exampleFormControlTextarea5"
-                                className="form-label"
-                              >
-                                Dark Logo
-                              </Label>
-                              <Dropzone
-                                multiple={false}
-                                onDrop={(acceptedFiles) => {
-                                  handleAcceptedFiles(acceptedFiles, "dark");
-                                }}
-                              >
-                                {({ getRootProps, getInputProps }) => (
-                                  <div className="dropzone dz-clickable">
-                                    <div
-                                      className="dz-message needsclick"
-                                      {...getRootProps()}
-                                    >
-                                      <div className="mb-3">
-                                        <i className="display-4 text-muted ri-upload-cloud-2-fill" />
-                                      </div>
-                                      <h5>
-                                        Drop files here or click to upload Dark
-                                        Logo.
-                                      </h5>
-                                    </div>
-                                  </div>
-                                )}
-                              </Dropzone>
-                              <div
-                                className="list-unstyled mb-0"
-                                id="file-previews"
-                              >
-                                {darkLogoFile && (
-                                  <Card
-                                    className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete"
-                                    key={darkLogoFile + "-file"}
-                                  >
-                                    <div className="p-2">
-                                      <Row className="align-items-center">
-                                        <Col className="col-auto">
-                                          <img
-                                            data-dz-thumbnail=""
-                                            height="80"
-                                            className="avatar-sm rounded bg-light"
-                                            alt={darkLogoFile.name}
-                                            src={darkLogoFile.preview}
-                                          />
-                                        </Col>
-                                        <Col>
-                                          <Link
-                                            to="#"
-                                            className="text-muted font-weight-bold"
-                                          >
-                                            {darkLogoFile.name}
-                                          </Link>
-                                          <p className="mb-0">
-                                            <strong>
-                                              {darkLogoFile.formattedSize}
-                                            </strong>
-                                          </p>
-                                        </Col>
-                                      </Row>
-                                    </div>
-                                  </Card>
-                                )}
-                              </div>
-
-                              {profileData.dark_logo_image && (
-                                <div className="p-2 m-3">
-                                  <Row className="align-items-center">
-                                    <Col className="col-auto">
-                                      <img
-                                        data-dz-thumbnail=""
-                                        height="80"
-                                        className="avatar-sm rounded bg-light"
-                                        alt={profileData.dark_logo_image}
-                                        src={profileData.dark_logo_image}
-                                      />
-                                    </Col>
-                                  </Row>
-                                </div>
-                              )}
-                            </div>
-                          </Col> */}
-
-                          {/* Light Logo Section */}
-
-                          <Col xxl={6} md={6}>
-                            <div>
-                              <Label
-                                htmlFor="exampleFormControlTextarea5"
-                                className="form-label"
-                              >
-                                Logo
-                              </Label>
-                              <Dropzone
-                                multiple={false}
-                                onDrop={(acceptedFiles) => {
-                                  handleAcceptedFiles(acceptedFiles, "light");
-                                }}
-                              >
-                                {({ getRootProps, getInputProps }) => (
-                                  <div className="dropzone dz-clickable">
-                                    <div
-                                      className="dz-message needsclick"
-                                      {...getRootProps()}
-                                    >
-                                      <div className="mb-3">
-                                        <i className="display-4 text-muted ri-upload-cloud-2-fill" />
-                                      </div>
-                                      <h5>
-                                        Drop files here or click to upload Light
-                                        Logo.
-                                      </h5>
-                                    </div>
-                                  </div>
-                                )}
-                              </Dropzone>
-                              <div
-                                className="list-unstyled mb-0"
-                                id="file-previews"
-                              >
-                                {lightLogoFile && (
-                                  <Card
-                                    className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete"
-                                    key={lightLogoFile + "-file"}
-                                  >
-                                    <div className="p-2">
-                                      <Row className="align-items-center">
-                                        <Col className="col-auto">
-                                          <img
-                                            data-dz-thumbnail=""
-                                            height="80"
-                                            className="avatar-sm rounded bg-light"
-                                            alt={lightLogoFile.name}
-                                            src={lightLogoFile.preview}
-                                          />
-                                        </Col>
-                                        <Col>
-                                          <Link
-                                            to="#"
-                                            className="text-muted font-weight-bold"
-                                          >
-                                            {lightLogoFile.name}
-                                          </Link>
-                                          <p className="mb-0">
-                                            <strong>
-                                              {lightLogoFile.formattedSize}
-                                            </strong>
-                                          </p>
-                                        </Col>
-                                      </Row>
-                                    </div>
-                                  </Card>
-                                )}
-                              </div>
-                            </div>
-
-                            {profileData.light_logo_image && (
-                              <div className="p-2 m-3">
+                          </Dropzone>
+                          {lightLogoFile && (
+                            <Card className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete">
+                              <div className="p-2">
                                 <Row className="align-items-center">
                                   <Col className="col-auto">
                                     <img
-                                      data-dz-thumbnail=""
                                       height="80"
                                       className="avatar-sm rounded bg-light"
-                                      alt={profileData.light_logo_image}
-                                      src={profileData.light_logo_image}
+                                      alt={lightLogoFile.name}
+                                      src={lightLogoFile.preview}
                                     />
+                                  </Col>
+                                  <Col>
+                                    <Link
+                                      to="#"
+                                      className="text-muted font-weight-bold"
+                                    >
+                                      {lightLogoFile.name}
+                                    </Link>
+                                    <p className="mb-0">
+                                      <strong>
+                                        {lightLogoFile.formattedSize}
+                                      </strong>
+                                    </p>
                                   </Col>
                                 </Row>
                               </div>
-                            )}
-                          </Col>
-                        </Row>
-                      </Col>
-
-                      {showUpdateBtn && (
-                        <Col xxl={12} md={12}>
-                          <Button
-                            type="submit"
-                            color="success"
-                            className="btn-label"
-                          >
-                            {" "}
-                            <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                            Update{" "}
-                          </Button>{" "}
+                            </Card>
+                          )}
+                          {v.light_logo_image && (
+                            <div className="p-2 m-3">
+                              <Row className="align-items-center">
+                                <Col className="col-auto">
+                                  <img
+                                    height="80"
+                                    className="avatar-sm rounded bg-light"
+                                    alt="logo"
+                                    src={v.light_logo_image}
+                                  />
+                                </Col>
+                              </Row>
+                            </div>
+                          )}
                         </Col>
-                      )}
-                    </Row>
-                  </div>
-                </Form>
-              </div>
+                      </Row>
+                    </Col>
+
+                    {/* ── Submit ───────────────────────────────────────── */}
+                    {showUpdateBtn && (
+                      <Col xxl={12} md={12}>
+                        <Button
+                          type="submit"
+                          color="success"
+                          className="btn-label"
+                        >
+                          <i className="ri-check-double-line label-icon align-middle fs-16 me-2" />
+                          Update
+                        </Button>
+                      </Col>
+                    )}
+                  </Row>
+                </div>
+              </Form>
             </CardBody>
           </Card>
         </Col>
 
+        {/* ── Right Sidebar ─────────────────────────────────────────────── */}
         <Col xl={3} lg={4}>
           <Card>
             <CardBody>
               <h5 className="card-title mb-4">Skills</h5>
               <div className="d-flex flex-wrap gap-2 fs-16">
-                <div className="badge fw-medium bg-secondary-subtle text-secondary">
-                  UI/UX
-                </div>
-                <div className="badge fw-medium bg-secondary-subtle text-secondary">
-                  Figma
-                </div>
-                <div className="badge fw-medium bg-secondary-subtle text-secondary">
-                  HTML
-                </div>
-                <div className="badge fw-medium bg-secondary-subtle text-secondary">
-                  CSS
-                </div>
-                <div className="badge fw-medium bg-secondary-subtle text-secondary">
-                  Javascript
-                </div>
-                <div className="badge fw-medium bg-secondary-subtle text-secondary">
-                  C#
-                </div>
-                <div className="badge fw-medium bg-secondary-subtle text-secondary">
-                  Nodejs
-                </div>
+                {[
+                  "UI/UX",
+                  "Figma",
+                  "HTML",
+                  "CSS",
+                  "Javascript",
+                  "C#",
+                  "Nodejs",
+                ].map((s) => (
+                  <div
+                    key={s}
+                    className="badge fw-medium bg-secondary-subtle text-secondary"
+                  >
+                    {s}
+                  </div>
+                ))}
               </div>
             </CardBody>
           </Card>
@@ -1152,7 +845,6 @@ const OrgInfoTab = () => {
                 </button>
               </div>
             </CardHeader>
-
             <CardBody>
               <SimpleBar
                 data-simplebar
@@ -1160,321 +852,82 @@ const OrgInfoTab = () => {
                 className="mx-n3 px-3"
               >
                 <div className="vstack gap-3">
-                  <div className="d-flex align-items-center">
-                    <div className="avatar-xs flex-shrink-0 me-3">
-                      <img
-                        src={avatar2}
-                        alt=""
-                        className="img-fluid rounded-circle"
-                      />
-                    </div>
-                    <div className="flex-grow-1">
-                      <h5 className="fs-13 mb-0">
-                        <Link to="#" className="text-body d-block">
-                          Nancy Martino
-                        </Link>
-                      </h5>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <div className="d-flex align-items-center gap-1">
-                        <button type="button" className="btn btn-light btn-sm">
-                          Message
-                        </button>
-                        <UncontrolledDropdown>
-                          <DropdownToggle
+                  {[
+                    { img: avatar2, name: "Nancy Martino" },
+                    { initials: "HB", color: "danger", name: "Henry Baird" },
+                    { img: avatar3, name: "Frank Hook" },
+                    { img: avatar4, name: "Jennifer Carter" },
+                    { initials: "AC", color: "success", name: "Alexis Clarke" },
+                    { img: avatar7, name: "Joseph Parker" },
+                  ].map((m) => (
+                    <div key={m.name} className="d-flex align-items-center">
+                      <div className="avatar-xs flex-shrink-0 me-3">
+                        {m.img ? (
+                          <img
+                            src={m.img}
+                            alt=""
+                            className="img-fluid rounded-circle"
+                          />
+                        ) : (
+                          <div
+                            className={`avatar-title bg-${m.color}-subtle text-${m.color} rounded-circle`}
+                          >
+                            {m.initials}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-grow-1">
+                        <h5 className="fs-13 mb-0">
+                          <Link to="#" className="text-body d-block">
+                            {m.name}
+                          </Link>
+                        </h5>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <div className="d-flex align-items-center gap-1">
+                          <button
                             type="button"
-                            className="btn btn-icon btn-sm fs-16 text-muted dropdown"
-                            tag="button"
+                            className="btn btn-light btn-sm"
                           >
-                            <i className="ri-more-fill"></i>
-                          </DropdownToggle>
-                          <DropdownMenu>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                                View
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                                Favourite
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                                Delete
-                              </DropdownItem>
-                            </li>
-                          </DropdownMenu>
-                        </UncontrolledDropdown>
+                            Message
+                          </button>
+                          <UncontrolledDropdown>
+                            <DropdownToggle
+                              tag="button"
+                              className="btn btn-icon btn-sm fs-16 text-muted dropdown"
+                            >
+                              <i className="ri-more-fill"></i>
+                            </DropdownToggle>
+                            <DropdownMenu>
+                              <li>
+                                <DropdownItem>
+                                  <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
+                                  View
+                                </DropdownItem>
+                              </li>
+                              <li>
+                                <DropdownItem>
+                                  <i className="ri-star-fill text-muted me-2 align-bottom"></i>
+                                  Favourite
+                                </DropdownItem>
+                              </li>
+                              <li>
+                                <DropdownItem>
+                                  <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
+                                  Delete
+                                </DropdownItem>
+                              </li>
+                            </DropdownMenu>
+                          </UncontrolledDropdown>
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="d-flex align-items-center">
-                    <div className="avatar-xs flex-shrink-0 me-3">
-                      <div className="avatar-title bg-danger-subtle text-danger rounded-circle">
-                        HB
-                      </div>
-                    </div>
-                    <div className="flex-grow-1">
-                      <h5 className="fs-13 mb-0">
-                        <Link to="#" className="text-body d-block">
-                          Henry Baird
-                        </Link>
-                      </h5>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <div className="d-flex align-items-center gap-1">
-                        <button type="button" className="btn btn-light btn-sm">
-                          Message
-                        </button>
-                        <UncontrolledDropdown>
-                          <DropdownToggle
-                            type="button"
-                            className="btn btn-icon btn-sm fs-16 text-muted dropdown"
-                            tag="button"
-                          >
-                            <i className="ri-more-fill"></i>
-                          </DropdownToggle>
-                          <DropdownMenu>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                                View
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                                Favourite
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                                Delete
-                              </DropdownItem>
-                            </li>
-                          </DropdownMenu>
-                        </UncontrolledDropdown>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="d-flex align-items-center">
-                    <div className="avatar-xs flex-shrink-0 me-3">
-                      <img
-                        src={avatar3}
-                        alt=""
-                        className="img-fluid rounded-circle"
-                      />
-                    </div>
-                    <div className="flex-grow-1">
-                      <h5 className="fs-13 mb-0">
-                        <Link to="#" className="text-body d-block">
-                          Frank Hook
-                        </Link>
-                      </h5>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <div className="d-flex align-items-center gap-1">
-                        <button type="button" className="btn btn-light btn-sm">
-                          Message
-                        </button>
-                        <UncontrolledDropdown>
-                          <DropdownToggle
-                            type="button"
-                            className="btn btn-icon btn-sm fs-16 text-muted dropdown"
-                            tag="button"
-                          >
-                            <i className="ri-more-fill"></i>
-                          </DropdownToggle>
-                          <DropdownMenu>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                                View
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                                Favourite
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                                Delete
-                              </DropdownItem>
-                            </li>
-                          </DropdownMenu>
-                        </UncontrolledDropdown>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="d-flex align-items-center">
-                    <div className="avatar-xs flex-shrink-0 me-3">
-                      <img
-                        src={avatar4}
-                        alt=""
-                        className="img-fluid rounded-circle"
-                      />
-                    </div>
-                    <div className="flex-grow-1">
-                      <h5 className="fs-13 mb-0">
-                        <Link to="#" className="text-body d-block">
-                          Jennifer Carter
-                        </Link>
-                      </h5>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <div className="d-flex align-items-center gap-1">
-                        <button type="button" className="btn btn-light btn-sm">
-                          Message
-                        </button>
-                        <UncontrolledDropdown>
-                          <DropdownToggle
-                            type="button"
-                            className="btn btn-icon btn-sm fs-16 text-muted dropdown"
-                            tag="button"
-                          >
-                            <i className="ri-more-fill"></i>
-                          </DropdownToggle>
-                          <DropdownMenu>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                                View
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                                Favourite
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                                Delete
-                              </DropdownItem>
-                            </li>
-                          </DropdownMenu>
-                        </UncontrolledDropdown>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="d-flex align-items-center">
-                    <div className="avatar-xs flex-shrink-0 me-3">
-                      <div className="avatar-title bg-success-subtle text-success rounded-circle">
-                        AC
-                      </div>
-                    </div>
-                    <div className="flex-grow-1">
-                      <h5 className="fs-13 mb-0">
-                        <Link to="#" className="text-body d-block">
-                          Alexis Clarke
-                        </Link>
-                      </h5>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <div className="d-flex align-items-center gap-1">
-                        <button type="button" className="btn btn-light btn-sm">
-                          Message
-                        </button>
-                        <UncontrolledDropdown>
-                          <DropdownToggle
-                            tag="button"
-                            className="btn btn-icon btn-sm fs-16 text-muted dropdown"
-                          >
-                            <i className="ri-more-fill"></i>
-                          </DropdownToggle>
-                          <DropdownMenu>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                                View
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                                Favourite
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                                Delete
-                              </DropdownItem>
-                            </li>
-                          </DropdownMenu>
-                        </UncontrolledDropdown>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="d-flex align-items-center">
-                    <div className="avatar-xs flex-shrink-0 me-3">
-                      <img
-                        src={avatar7}
-                        alt=""
-                        className="img-fluid rounded-circle"
-                      />
-                    </div>
-                    <div className="flex-grow-1">
-                      <h5 className="fs-13 mb-0">
-                        <Link to="#" className="text-body d-block">
-                          Joseph Parker
-                        </Link>
-                      </h5>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <div className="d-flex align-items-center gap-1">
-                        <button type="button" className="btn btn-light btn-sm">
-                          Message
-                        </button>
-                        <UncontrolledDropdown>
-                          <DropdownToggle
-                            tag="button"
-                            className="btn btn-icon btn-sm fs-16 text-muted dropdown"
-                          >
-                            <i className="ri-more-fill"></i>
-                          </DropdownToggle>
-                          <DropdownMenu>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                                View
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                                Favourite
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                                Delete
-                              </DropdownItem>
-                            </li>
-                          </DropdownMenu>
-                        </UncontrolledDropdown>
-                      </div>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </SimpleBar>
             </CardBody>
           </Card>
+
           <Card>
             <CardHeader className="align-items-center d-flex border-bottom-dashed">
               <h4 className="card-title mb-0 flex-grow-1">Attachments</h4>
@@ -1484,232 +937,89 @@ const OrgInfoTab = () => {
                 </button>
               </div>
             </CardHeader>
-
             <CardBody>
               <div className="vstack gap-2">
-                <div className="border rounded border-dashed p-2">
-                  <div className="d-flex align-items-center">
-                    <div className="flex-shrink-0 me-3">
-                      <div className="avatar-sm">
-                        <div className="avatar-title bg-light text-secondary rounded fs-24">
-                          <i className="ri-folder-zip-line"></i>
+                {[
+                  {
+                    icon: "ri-folder-zip-line",
+                    name: "App-pages.zip",
+                    size: "2.2MB",
+                  },
+                  {
+                    icon: "ri-file-ppt-2-line",
+                    name: "Velzon-admin.ppt",
+                    size: "2.4MB",
+                  },
+                  {
+                    icon: "ri-folder-zip-line",
+                    name: "Images.zip",
+                    size: "1.2MB",
+                  },
+                  {
+                    icon: "ri-image-2-line",
+                    name: "bg-pattern.png",
+                    size: "1.1MB",
+                  },
+                ].map((f) => (
+                  <div
+                    key={f.name}
+                    className="border rounded border-dashed p-2"
+                  >
+                    <div className="d-flex align-items-center">
+                      <div className="flex-shrink-0 me-3">
+                        <div className="avatar-sm">
+                          <div className="avatar-title bg-light text-secondary rounded fs-24">
+                            <i className={f.icon}></i>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex-grow-1 overflow-hidden">
+                        <h5 className="fs-13 mb-1">
+                          <Link
+                            to="#"
+                            className="text-body text-truncate d-block"
+                          >
+                            {f.name}
+                          </Link>
+                        </h5>
+                        <div>{f.size}</div>
+                      </div>
+                      <div className="flex-shrink-0 ms-2">
+                        <div className="d-flex gap-1">
+                          <button
+                            type="button"
+                            className="btn btn-icon text-muted btn-sm fs-18"
+                          >
+                            <i className="ri-download-2-line"></i>
+                          </button>
+                          <UncontrolledDropdown>
+                            <DropdownToggle
+                              tag="button"
+                              className="btn btn-icon text-muted btn-sm fs-18 dropdown"
+                              type="button"
+                            >
+                              <i className="ri-more-fill"></i>
+                            </DropdownToggle>
+                            <DropdownMenu>
+                              <li>
+                                <DropdownItem>
+                                  <i className="ri-pencil-fill align-bottom me-2 text-muted"></i>
+                                  Rename
+                                </DropdownItem>
+                              </li>
+                              <li>
+                                <DropdownItem>
+                                  <i className="ri-delete-bin-fill align-bottom me-2 text-muted"></i>
+                                  Delete
+                                </DropdownItem>
+                              </li>
+                            </DropdownMenu>
+                          </UncontrolledDropdown>
                         </div>
                       </div>
                     </div>
-                    <div className="flex-grow-1 overflow-hidden">
-                      <h5 className="fs-13 mb-1">
-                        <Link
-                          to="#"
-                          className="text-body text-truncate d-block"
-                        >
-                          App-pages.zip
-                        </Link>
-                      </h5>
-                      <div>2.2MB</div>
-                    </div>
-                    <div className="flex-shrink-0 ms-2">
-                      <div className="d-flex gap-1">
-                        <button
-                          type="button"
-                          className="btn btn-icon text-muted btn-sm fs-18"
-                        >
-                          <i className="ri-download-2-line"></i>
-                        </button>
-                        <UncontrolledDropdown>
-                          <DropdownToggle
-                            tag="button"
-                            className="btn btn-icon text-muted btn-sm fs-18 dropdown"
-                            type="button"
-                          >
-                            <i className="ri-more-fill"></i>
-                          </DropdownToggle>
-                          <DropdownMenu>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-pencil-fill align-bottom me-2 text-muted"></i>{" "}
-                                Rename
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-delete-bin-fill align-bottom me-2 text-muted"></i>{" "}
-                                Delete
-                              </DropdownItem>
-                            </li>
-                          </DropdownMenu>
-                        </UncontrolledDropdown>
-                      </div>
-                    </div>
                   </div>
-                </div>
-
-                <div className="border rounded border-dashed p-2">
-                  <div className="d-flex align-items-center">
-                    <div className="flex-shrink-0 me-3">
-                      <div className="avatar-sm">
-                        <div className="avatar-title bg-light text-secondary rounded fs-24">
-                          <i className="ri-file-ppt-2-line"></i>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex-grow-1 overflow-hidden">
-                      <h5 className="fs-13 mb-1">
-                        <Link
-                          to="#"
-                          className="text-body text-truncate d-block"
-                        >
-                          Velzon-admin.ppt
-                        </Link>
-                      </h5>
-                      <div>2.4MB</div>
-                    </div>
-                    <div className="flex-shrink-0 ms-2">
-                      <div className="d-flex gap-1">
-                        <button
-                          type="button"
-                          className="btn btn-icon text-muted btn-sm fs-18"
-                        >
-                          <i className="ri-download-2-line"></i>
-                        </button>
-                        <UncontrolledDropdown>
-                          <DropdownToggle
-                            tag="button"
-                            className="btn btn-icon text-muted btn-sm fs-18 dropdown"
-                            type="button"
-                          >
-                            <i className="ri-more-fill"></i>
-                          </DropdownToggle>
-                          <DropdownMenu>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-pencil-fill align-bottom me-2 text-muted"></i>{" "}
-                                Rename
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-delete-bin-fill align-bottom me-2 text-muted"></i>{" "}
-                                Delete
-                              </DropdownItem>
-                            </li>
-                          </DropdownMenu>
-                        </UncontrolledDropdown>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border rounded border-dashed p-2">
-                  <div className="d-flex align-items-center">
-                    <div className="flex-shrink-0 me-3">
-                      <div className="avatar-sm">
-                        <div className="avatar-title bg-light text-secondary rounded fs-24">
-                          <i className="ri-folder-zip-line"></i>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex-grow-1 overflow-hidden">
-                      <h5 className="fs-13 mb-1">
-                        <Link
-                          to="#"
-                          className="text-body text-truncate d-block"
-                        >
-                          Images.zip
-                        </Link>
-                      </h5>
-                      <div>1.2MB</div>
-                    </div>
-                    <div className="flex-shrink-0 ms-2">
-                      <div className="d-flex gap-1">
-                        <button
-                          type="button"
-                          className="btn btn-icon text-muted btn-sm fs-18"
-                        >
-                          <i className="ri-download-2-line"></i>
-                        </button>
-                        <UncontrolledDropdown>
-                          <DropdownToggle
-                            tag="button"
-                            className="btn btn-icon text-muted btn-sm fs-18 dropdown"
-                            type="button"
-                          >
-                            <i className="ri-more-fill"></i>
-                          </DropdownToggle>
-                          <DropdownMenu>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-pencil-fill align-bottom me-2 text-muted"></i>{" "}
-                                Rename
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-delete-bin-fill align-bottom me-2 text-muted"></i>{" "}
-                                Delete
-                              </DropdownItem>
-                            </li>
-                          </DropdownMenu>
-                        </UncontrolledDropdown>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border rounded border-dashed p-2">
-                  <div className="d-flex align-items-center">
-                    <div className="flex-shrink-0 me-3">
-                      <div className="avatar-sm">
-                        <div className="avatar-title bg-light text-secondary rounded fs-24">
-                          <i className="ri-image-2-line"></i>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex-grow-1 overflow-hidden">
-                      <h5 className="fs-13 mb-1">
-                        <Link
-                          to="#"
-                          className="text-body text-truncate d-block"
-                        >
-                          bg-pattern.png
-                        </Link>
-                      </h5>
-                      <div>1.1MB</div>
-                    </div>
-                    <div className="flex-shrink-0 ms-2">
-                      <div className="d-flex gap-1">
-                        <button
-                          type="button"
-                          className="btn btn-icon text-muted btn-sm fs-18"
-                        >
-                          <i className="ri-download-2-line"></i>
-                        </button>
-                        <UncontrolledDropdown>
-                          <DropdownToggle
-                            tag="button"
-                            className="btn btn-icon text-muted btn-sm fs-18 dropdown"
-                            type="button"
-                          >
-                            <i className="ri-more-fill"></i>
-                          </DropdownToggle>
-                          <DropdownMenu>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-pencil-fill align-bottom me-2 text-muted"></i>{" "}
-                                Rename
-                              </DropdownItem>
-                            </li>
-                            <li>
-                              <DropdownItem>
-                                <i className="ri-delete-bin-fill align-bottom me-2 text-muted"></i>{" "}
-                                Delete
-                              </DropdownItem>
-                            </li>
-                          </DropdownMenu>
-                        </UncontrolledDropdown>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                ))}
                 <div className="mt-2 text-center">
                   <button type="button" className="btn btn-success">
                     View more

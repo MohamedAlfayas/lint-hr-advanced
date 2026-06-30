@@ -23,6 +23,7 @@ import TaskSettingsTab from "../pages/Task/TaskSettings/TaskSettingsTab";
 import ProjectOverviewTab from "../pages/Crm/Projects/ProjectOverviewTab";
 import ClientOverview from "../pages/Crm/Clients/ClientOverview";
 import ClientOverviewTab from "../pages/Crm/Clients/ClientOverviewTab";
+import LeaveReport from "../pages/attendance/LeaveReport";
 
 // import Dashboard from "../pages/dashboard/Dashboard";
 // import Login from "../pages/auth/login/Login";
@@ -62,7 +63,7 @@ const LeaveType = lazy(() => import("../pages/leave/LeaveType"));
 const LeaveApproval = lazy(() => import("../pages/leave/LeaveApproval"));
 const LeaveDashboard = lazy(() => import("../pages/leave/Leaves"));
 const CustomField = lazy(() => import("../pages/customField/CustomField"));
-const PayRoll = lazy(() => import("../pages/payroll/PayRoll"));
+const PayRoll = lazy(() => import("../pages/payroll/EmployeePayslip"));
 const Xlsx = lazy(() => import("../pages/xlsx/Xlsx"));
 const PayRollConfig = lazy(() => import("../pages/payroll/PayRollConfig"));
 const AttendanceDashboard = lazy(
@@ -144,6 +145,11 @@ const privateRoutes = [
   {
     path: "/attendancereport",
     component: <AttendanceReport />,
+    perm: [CAN_VIEW_REPORT_ACCESS_KEY],
+  },
+  {
+    path: "/leavereport",
+    component: <LeaveReport />,
     perm: [CAN_VIEW_REPORT_ACCESS_KEY],
   },
   {
