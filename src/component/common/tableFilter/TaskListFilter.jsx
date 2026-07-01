@@ -114,6 +114,17 @@ const TaskListFilter = () => {
     );
   };
 
+  const selectStyles = {
+    menuPortal: (base) => ({
+      ...base,
+      zIndex: 9999,
+    }),
+    menu: (base) => ({
+      ...base,
+      zIndex: 9999,
+    }),
+  };
+
   return (
     <React.Fragment>
       {/* Assigned To */}
@@ -136,6 +147,9 @@ const TaskListFilter = () => {
               : null
           }
           onChange={(e) => handleFilterChange(e, "assigned_to")}
+          menuPortalTarget={document.body}
+          menuPosition="fixed"
+          styles={selectStyles}
         />
       </Col>
 
@@ -162,6 +176,9 @@ const TaskListFilter = () => {
           onChange={(selected) =>
             handleFilterChange(selected, "collaborator_id")
           }
+          menuPortalTarget={document.body}
+          menuPosition="fixed"
+          styles={selectStyles}
         />
       </Col>
 
@@ -183,6 +200,9 @@ const TaskListFilter = () => {
               : null
           }
           onChange={(e) => handleFilterChange(e, "task_status")}
+          menuPortalTarget={document.body}
+          menuPosition="fixed"
+          styles={selectStyles}
         />
       </Col>
 
@@ -204,6 +224,9 @@ const TaskListFilter = () => {
               : null
           }
           onChange={(e) => handleFilterChange(e, "task_priority")}
+          menuPortalTarget={document.body}
+          menuPosition="fixed"
+          styles={selectStyles}
         />
       </Col>
     </React.Fragment>

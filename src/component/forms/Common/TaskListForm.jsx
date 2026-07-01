@@ -143,6 +143,8 @@ const TaskListForm = () => {
   const taskStatusOptions = buildTaskStatusOptions();
   const taskPriorityOptions = buildTaskPriorityOptions();
 
+  console.log("Task Priority Options:", taskPriorityOptions);
+
   // ─── Async load for collaborators search API ──────────────────────────────
   const loadCollaboratorOptions = useCallback(
     async (inputValue) => {
@@ -189,7 +191,17 @@ const TaskListForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setTaskData((prev) => ({ ...prev, [name]: value }));
+
+    setTaskData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    FormikForm.setFieldValue(name, value);
+
+    if (FormikForm.touched[name]) {
+      FormikForm.validateField(name);
+    }
   };
 
   // ─── Formik ──────────────────────────────────────────────────────────────
@@ -197,7 +209,7 @@ const TaskListForm = () => {
     enableReinitialize: true,
     initialValues: taskData,
     validationSchema: Yup.object({
-      title: Yup.string().required("Please Enter Task Title"),
+      title: Yup.string().trim().required("Please enter a valid task title."),
       related_to: Yup.string().required("Please Select Related To"),
       assigned_to: Yup.number()
         .nullable()
@@ -205,16 +217,34 @@ const TaskListForm = () => {
       points: Yup.string()
         .required("Please Select Points")
         .oneOf(["1", "2", "3", "4", "5"], "Please Select a valid Points value"),
+      end_time: Yup.string()
+        .nullable()
+        .test(
+          "end-after-start",
+          "Deadline cannot be before the start date.",
+          function (value) {
+            const { start_time } = this.parent;
+            if (!value || !start_time) return true;
+            return new Date(value) >= new Date(start_time);
+          },
+        ),
     }),
 
     onSubmit: async () => {
+      const trimmedTitle = taskData.title.trim();
+
+      if (!trimmedTitle) {
+        FormikForm.setFieldTouched("title", true);
+        FormikForm.setFieldError("title", "Please enter a valid task title.");
+        return;
+      }
       dispatch(setLoaderVisible(true));
 
       try {
         const isEdit = !!(taskData?.id && taskData.id !== 0);
 
         const payload = {
-          title: taskData.title,
+          title: trimmedTitle,
           description: taskData.description || "",
           related_to: taskData.related_to,
           project:
@@ -322,7 +352,16 @@ const TaskListForm = () => {
   // ─── Helper: format datetime-local value ─────────────────────────────────
   const toDatetimeLocal = (isoStr) => {
     if (!isoStr) return "";
-    return isoStr.slice(0, 16);
+    const date = new Date(isoStr);
+    if (isNaN(date.getTime())) return "";
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   const showProject = taskData.related_to === "project";
@@ -733,16 +772,32 @@ const TaskListForm = () => {
                     id="end_time"
                     className="form-control"
                     value={toDatetimeLocal(taskData.end_time)}
+                    invalid={
+                      !!taskData.start_time &&
+                      !!taskData.end_time &&
+                      new Date(taskData.end_time) <
+                        new Date(taskData.start_time)
+                    }
                     onChange={(e) => {
                       const val = e.target.value
                         ? new Date(e.target.value).toISOString()
                         : "";
                       setTaskData((prev) => ({ ...prev, end_time: val }));
+                      FormikForm.setFieldValue("end_time", val);
                     }}
                   />
-                  <div className="form-text">
-                    Task deadline date and time (optional).
-                  </div>
+                  {taskData.start_time &&
+                  taskData.end_time &&
+                  new Date(taskData.end_time) <
+                    new Date(taskData.start_time) ? (
+                    <FormFeedback type="invalid" className="d-block">
+                      Deadline cannot be before the start date.
+                    </FormFeedback>
+                  ) : (
+                    <div className="form-text">
+                      Task deadline date and time (optional).
+                    </div>
+                  )}
                 </div>
               </Col>
 

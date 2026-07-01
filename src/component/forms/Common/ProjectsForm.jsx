@@ -106,6 +106,16 @@ const ProjectForm = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
+    if (name === "price") {
+      if (value === "" || Number(value) >= 0) {
+        setProjectData((prev) => ({
+          ...prev,
+          [name]: value,
+        }));
+      }
+      return;
+    }
+
     setProjectData((prev) => ({
       ...prev,
       [name]: value,
@@ -168,7 +178,14 @@ const ProjectForm = () => {
       // Optional Fields
       start_date: Yup.string().nullable(),
       deadline: Yup.string().nullable(),
-      price: Yup.string().nullable(),
+      price: Yup.number().min(0, "Price cannot be negative").nullable(),
+      description: Yup.string()
+        .test(
+          "not-only-spaces",
+          "Please enter a valid description",
+          (value) => !value || value.trim().length > 0,
+        )
+        .nullable(),
     }),
 
     // ================= SUBMIT =================
@@ -361,7 +378,19 @@ const ProjectForm = () => {
                     placeholder="Project Description"
                     value={projectData.description || ""}
                     onChange={handleInputChange}
+                    invalid={
+                      FormikForm.touched.description &&
+                      FormikForm.errors.description
+                        ? true
+                        : false
+                    }
                   />
+                  {FormikForm.touched.description &&
+                    FormikForm.errors.description && (
+                      <FormFeedback>
+                        {FormikForm.errors.description}
+                      </FormFeedback>
+                    )}
                 </div>
               </Col>
 
@@ -428,6 +457,12 @@ const ProjectForm = () => {
                     name="price"
                     className="form-control"
                     placeholder="0.00"
+                    min={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "-" || e.key === "e" || e.key === "E") {
+                        e.preventDefault();
+                      }
+                    }}
                     value={projectData.price || ""}
                     onChange={handleInputChange}
                     invalid={
