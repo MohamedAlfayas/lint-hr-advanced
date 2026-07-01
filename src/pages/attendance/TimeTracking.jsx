@@ -118,8 +118,8 @@ const TimeTracking = ({hideTimer}) => {
     maximum_break_duration
   );
 
-const displaySeconds = total_seconds + payableBreak;
- 
+// const displaySeconds = total_seconds + payableBreak;
+const displaySeconds = total_seconds; 
 
   return (
     <React.Fragment>
