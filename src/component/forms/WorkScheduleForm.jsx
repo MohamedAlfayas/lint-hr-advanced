@@ -25,6 +25,8 @@ import classnames from "classnames";
 import {
   hourOptions,
   minuteOptions,
+  graceBreakMinuteOptions,
+  graceHourOptions,
   week_list,
 } from "../../common/constant/Constants";
 
@@ -205,22 +207,22 @@ const WorkScheduleForm = () => {
     const fullday = values.fullday_work_duration || 0;
 
     if (values.type === 1) {
-      if (values.halfday_work_duration > fullday) {
+      if (values.halfday_work_duration >= fullday) {
         toast.error("Half Day duration cannot exceed Full Day duration!");
         return false;
       }
-      if (values.grace_time_duration > fullday) {
+      if (values.grace_time_duration >= fullday) {
         toast.error("Grace Period cannot exceed Full Day duration!");
         return false;
       }
-      if (values.maximum_break_duration > fullday) {
+      if (values.maximum_break_duration >= fullday) {
         toast.error("Maximum Break Duration cannot exceed Full Day duration!");
         return false;
       }
     }
 
     if (values.type === 2) {
-      if (values.halfday_work_duration > fullday) {
+      if (values.halfday_work_duration >= fullday) {
         toast.error("Half Day duration cannot exceed Full Day duration!");
         return false;
       }
@@ -736,8 +738,8 @@ const WorkScheduleForm = () => {
                                     id="gracePeriodInHours"
                                     name="gracePeriodInHours"
                                     placeholder="00"
-                                    options={hourOptions}
-                                    value={hourOptions.find(
+                                    options={graceHourOptions}
+                                    value={graceHourOptions.find(
                                       (option) =>
                                         option.value ===
                                         String(
@@ -766,8 +768,8 @@ const WorkScheduleForm = () => {
                                     id="gracePeriodInMinutes"
                                     name="gracePeriodInMinutes"
                                     placeholder="00"
-                                    options={minuteOptions}
-                                    value={minuteOptions.find(
+                                    options={graceBreakMinuteOptions}
+                                    value={graceBreakMinuteOptions.find(
                                       (option) =>
                                         option.value ===
                                         String(
@@ -810,8 +812,8 @@ const WorkScheduleForm = () => {
                                     id="maximum_break_hr"
                                     name="maximum_break_hr"
                                     placeholder="00"
-                                    options={hourOptions}
-                                    value={hourOptions.find(
+                                    options={graceHourOptions}
+                                    value={graceHourOptions.find(
                                       (option) =>
                                         option.value ===
                                         String(
@@ -840,8 +842,8 @@ const WorkScheduleForm = () => {
                                     id="maximum_break_min"
                                     name="maximum_break_min"
                                     placeholder="00"
-                                    options={minuteOptions}
-                                    value={minuteOptions.find(
+                                    options={graceBreakMinuteOptions}
+                                    value={graceBreakMinuteOptions.find(
                                       (option) =>
                                         option.value ===
                                         String(

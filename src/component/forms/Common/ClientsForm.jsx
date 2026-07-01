@@ -183,6 +183,14 @@ const ClientForm = () => {
     setLocationObj((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleLocationTextOnly = (e) => {
+    const { name, value } = e.target;
+    setLocationObj((prev) => ({
+      ...prev,
+      [name]: value.replace(/[^a-zA-Z\s]/g, ""),
+    }));
+  };
+
   const handleLocationCountryChange = (e) => {
     const found = CountryList.find((d) => d.countryName === e?.value);
     setLocationObj((prev) => ({ ...prev, country: e?.value || "", state: "" }));
@@ -194,17 +202,35 @@ const ClientForm = () => {
   };
 
   const handleLocationImageUpdate = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (readerEvent) => {
-        setLocationObj((prev) => ({
-          ...prev,
-          image: e.target.files[0],
-          image_url: readerEvent.target.result,
-        }));
-      };
-      reader.readAsDataURL(e.target.files[0]);
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Please upload a file in a valid image format.");
+      e.target.value = "";
+      return;
     }
+
+    const reader = new FileReader();
+
+    reader.onload = (readerEvent) => {
+      setLocationObj((prev) => ({
+        ...prev,
+        image: file,
+        image_url: readerEvent.target.result,
+      }));
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const handleAddClick = () => {
@@ -285,6 +311,7 @@ const ClientForm = () => {
         /^[A-Za-z0-9]+$/,
         "GST Number must contain only letters and numbers",
       ),
+      address: Yup.string().trim().required("Address is required"),
     }),
     onSubmit: async () => {
       dispatch(setLoaderVisible(true));
@@ -331,14 +358,26 @@ const ClientForm = () => {
     enableReinitialize: true,
     initialValues: locationObj,
     validationSchema: Yup.object({
-      name: Yup.string().required("Please Enter Location Name"),
-      address: Yup.string().required("Please Enter Address"),
+      name: Yup.string()
+        .trim()
+        .matches(/^[A-Za-z\s]+$/, "Location name should contain only letters")
+        .required("Please Enter Location Name"),
+      address: Yup.string().trim().required("Please Enter Address"),
       country: Yup.string().required("Please Select Country"),
       state: Yup.string().required("Please Select State"),
-      city: Yup.string().required("Please Enter City"),
-      pincode: Yup.string().required("Please Enter Pincode"),
+      city: Yup.string()
+        .trim()
+        .matches(/^[A-Za-z\s]+$/, "City should contain only letters")
+        .required("Please Enter City"),
+      pincode: Yup.string()
+        .trim()
+        .matches(/^[0-9]+$/, "Pincode should contain only numbers")
+        .length(6, "Please Enter Valid 6 Digit Pincode")
+        .required("Please Enter Pincode"),
       timezone: Yup.string().required("Please Select Time Zone"),
-      accurate_address: Yup.string().required("Please Enter Accurate Address"),
+      accurate_address: Yup.string()
+        .trim()
+        .required("Please Enter Accurate Address"),
     }),
     onSubmit: async (values) => {
       dispatch(setLoaderVisible(true));
@@ -570,10 +609,11 @@ const ClientForm = () => {
               </Col>
 
               {/* ── Address ── */}
+
               <Col md={12} lg={12} xxl={12}>
                 <div className="mb-3">
                   <Label htmlFor="address" className="form-label">
-                    Address
+                    Address *
                   </Label>
                   <Input
                     type="textarea"
@@ -583,7 +623,18 @@ const ClientForm = () => {
                     placeholder="Address"
                     value={clientData.address || ""}
                     onChange={handleInputChange}
+                    onBlur={() => FormikForm.setFieldTouched("address", true)}
+                    invalid={
+                      FormikForm.touched.address && FormikForm.errors.address
+                        ? true
+                        : false
+                    }
                   />
+                  {FormikForm.touched.address && FormikForm.errors.address ? (
+                    <FormFeedback type="invalid">
+                      {FormikForm.errors.address}
+                    </FormFeedback>
+                  ) : null}
                 </div>
               </Col>
 
@@ -912,24 +963,32 @@ const ClientForm = () => {
                   <Input
                     type="text"
                     name="name"
+                    id="location_name"
                     innerRef={inputRef}
+                    className="form-control"
                     placeholder="Enter Location Name"
                     value={locationObj.name || ""}
-                    onChange={updateLocationObj}
+                    onChange={handleLocationTextOnly}
+                    onBlur={() => locationFormik.setFieldTouched("name", true)}
                     invalid={
-                      locationFormik.touched.name &&
-                      !!locationFormik.errors.name
+                      locationFormik.touched.name && locationFormik.errors.name
+                        ? true
+                        : false
                     }
                   />
                   {!locationFormik.touched.name &&
                     !locationFormik.errors.name && (
-                      <i className="ri-building-2-line"></i>
+                      <i className="ri-building-2-line" />
                     )}
-                  {locationFormik.touched.name &&
-                    locationFormik.errors.name && (
-                      <FormFeedback>{locationFormik.errors.name}</FormFeedback>
-                    )}
+                  {locationFormik.touched.name && locationFormik.errors.name ? (
+                    <FormFeedback type="invalid">
+                      {locationFormik.errors.name}
+                    </FormFeedback>
+                  ) : null}
                 </div>
+                {!locationFormik.errors.name && (
+                  <div className="form-text">Enter Location Name.</div>
+                )}
               </Col>
 
               {/* Map / Accurate Address Search */}
@@ -1008,7 +1067,7 @@ const ClientForm = () => {
                     name="city"
                     placeholder="City"
                     value={locationObj.city || ""}
-                    onChange={updateLocationObj}
+                    onChange={handleLocationTextOnly}
                     invalid={
                       locationFormik.touched.city &&
                       !!locationFormik.errors.city
@@ -1030,11 +1089,21 @@ const ClientForm = () => {
                 <Label className="form-label">Pincode</Label>
                 <div className="form-icon right">
                   <Input
-                    type="number"
+                    type="text"
                     name="pincode"
                     placeholder="600001"
+                    inputMode="numeric"
+                    maxLength={6}
                     value={locationObj.pincode || ""}
-                    onChange={updateLocationObj}
+                    onChange={(e) => {
+                      const value = e.target.value
+                        .replace(/[^0-9]/g, "")
+                        .slice(0, 6);
+                      setLocationObj((prev) => ({
+                        ...prev,
+                        pincode: value,
+                      }));
+                    }}
                     invalid={
                       locationFormik.touched.pincode &&
                       !!locationFormik.errors.pincode

@@ -62,10 +62,19 @@ const StatusForm = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
+    const inputValue =
+      name === "name" ? value.replace(/[^a-zA-Z\s]/g, "") : value;
+
     setStatusData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: inputValue,
     }));
+
+    FormikForm.setFieldValue(name, inputValue);
+
+    if (FormikForm.touched[name]) {
+      FormikForm.validateField(name);
+    }
   };
 
   // ================= FORMIK =================
@@ -75,11 +84,21 @@ const StatusForm = () => {
     initialValues: statusData,
 
     validationSchema: Yup.object({
-      name: Yup.string().required("Please Enter Status Name"),
+      name: Yup.string()
+        .trim()
+        .required("Please Enter the status name")
+        .matches(/^[a-zA-Z\s]+$/, "Status name must contain letters only"),
     }),
 
     // ================= SUBMIT =================
     onSubmit: async () => {
+      const trimmedName = statusData.name.trim();
+
+      if (!trimmedName) {
+        FormikForm.setFieldTouched("name", true);
+        FormikForm.setFieldError("name", "Please Enter the status name");
+        return;
+      }
       dispatch(setLoaderVisible(true));
 
       try {
@@ -87,6 +106,7 @@ const StatusForm = () => {
 
         const payload = {
           ...statusData,
+          name: trimmedName,
         };
 
         // ================= API =================
@@ -170,13 +190,13 @@ const StatusForm = () => {
                     placeholder="Status Name"
                     value={statusData.name}
                     onChange={handleInputChange}
+                    onBlur={FormikForm.handleBlur}
+                    invalid={
+                      FormikForm.touched.name && !!FormikForm.errors.name
+                    }
                   />
 
-                  {FormikForm.errors.name && (
-                    <div className="text-danger small mt-1">
-                      {FormikForm.errors.name}
-                    </div>
-                  )}
+                  <FormFeedback>{FormikForm.errors.name}</FormFeedback>
                 </div>
               </Col>
 

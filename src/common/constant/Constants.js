@@ -2132,6 +2132,15 @@ export const minuteOptions = Array.from({ length: 6 }, (_, i) => ({
   value: (i * 10).toString().padStart(2, "0"),
 }));
 
+export const graceBreakMinuteOptions = Array.from({ length: 12 }, (_, i) => ({
+  label: (i * 5).toString().padStart(2, "0"),
+  value: (i * 5).toString().padStart(2, "0"),
+}));
+
+export const graceHourOptions = hourOptions.filter(
+  (option) => Number(option.value) <= 3,
+);
+
 export const AllMinuteOptions = Array.from({ length: 60 }, (_, i) => ({
   label: i.toString().padStart(2, "0"),
   value: i.toString().padStart(2, "0"),
