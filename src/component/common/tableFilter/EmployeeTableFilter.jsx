@@ -35,6 +35,19 @@ const EmployeeTableFilter = () => {
     );
   };
 
+  const handleFilterOption = (candidate, inputValue) => {
+    if (!inputValue) return true;
+
+    if (/^\d+$/.test(inputValue.trim())) {
+      return false;
+    }
+
+    return (
+      candidate.label?.toLowerCase().includes(inputValue.toLowerCase()) ||
+      candidate.data?.name?.toLowerCase().includes(inputValue.toLowerCase())
+    );
+  };
+
   return (
     <React.Fragment>
       <Col md={3}>
@@ -56,6 +69,7 @@ const EmployeeTableFilter = () => {
                 )
               : []
           }
+          filterOption={handleFilterOption}
           onChange={(e) => handleFilterChange(e, "primary_department_id_list")}
         />
       </Col>
@@ -70,6 +84,7 @@ const EmployeeTableFilter = () => {
           options={role_options || []}
           className="basic-multi-select"
           placeholder="Select Role"
+          filterOption={handleFilterOption}
           onChange={(e) => handleFilterChange(e, "role_id")}
           value={
             !!employee_table_filter_keys?.role_id
@@ -92,6 +107,7 @@ const EmployeeTableFilter = () => {
           options={manager_options.filter((d) => d.is_active) || []}
           className="basic-multi-select"
           placeholder="Select Reporting Manager"
+          filterOption={handleFilterOption}
           onChange={(e) => handleFilterChange(e, "reporting_manager_id")}
           value={
             !!employee_table_filter_keys?.reporting_manager_id
