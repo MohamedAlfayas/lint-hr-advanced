@@ -409,7 +409,7 @@ const LocationGroupForm = () => {
           {/* Name */}
           <Col lg={12}>
             <Label className="form-label">
-              Location Group Name <span className="text-danger">*</span>
+              Location Group Name <span>*</span>
             </Label>
             <div className="form-icon right">
               <Input

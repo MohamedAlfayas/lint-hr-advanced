@@ -304,7 +304,26 @@ const EmployeeForm = () => {
 
   const handleFileUpload = (e, name) => {
     const file = e.target.files[0];
-    setEmployeeObj((oldObj) => ({ ...oldObj, [name]: file }));
+
+    if (!file) return;
+
+    const allowedTypes = [
+      "image/jpeg",
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only JPG, JPEG, PDF, DOC and DOCX files are allowed.");
+      e.target.value = "";
+      return;
+    }
+
+    setEmployeeObj((oldObj) => ({
+      ...oldObj,
+      [name]: file,
+    }));
   };
 
   const handleCFInputChange = (e, cf_id) => {
@@ -1310,7 +1329,7 @@ const EmployeeForm = () => {
                     <Input
                       className="form-control"
                       type="file"
-                      accept=".doc, .docx, .xls, .xlsx, .pdf, .txt, image/*, .gif, .bmp, .svg"
+                      accept=".jpg,.jpeg,.pdf,.doc,.docx"
                       id="formFile"
                       onChange={(e) => handleFileUpload(e, "id_proof")}
                     />

@@ -120,18 +120,18 @@ const OrgInfoTab = () => {
       contact_email: Yup.string()
         .required("Please enter email")
         .email("Enter a valid email address"),
-      about: Yup.string().required("Please enter company overview"),
-      address: Yup.string().required("Please enter address"),
+      about: Yup.string().trim().required("Please enter company overview"),
+      address: Yup.string().trim().required("Please enter address"),
       country: Yup.string().required("Please select country"),
       state: Yup.string().required("Please select state"),
       city: Yup.string()
+        .trim()
         .required("Please enter city")
         .matches(/^[a-zA-Z\s]+$/, "City must contain letters only"),
       pincode: Yup.string()
         .required("Please enter pincode")
         .matches(/^[0-9]+$/, "Pincode must contain digits only")
-        .min(4, "Pincode is too short")
-        .max(10, "Pincode is too long"),
+        .length(6, "Please enter valid 6 digit pincode"),
       timezone: Yup.string().required("Please select time zone"),
     }),
     onSubmit: async (values) => {
@@ -207,7 +207,7 @@ const OrgInfoTab = () => {
   };
 
   const handleNumberOnly = (e, field) => {
-    const val = e.target.value.replace(/[^0-9]/g, "");
+    const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
     setField(field, val);
   };
 
@@ -602,6 +602,7 @@ const OrgInfoTab = () => {
                           className="form-control form-control-icon"
                           placeholder="600001"
                           inputMode="numeric"
+                          maxLength={6}
                           value={v.pincode || ""}
                           onChange={(e) => handleNumberOnly(e, "pincode")}
                           onBlur={() =>

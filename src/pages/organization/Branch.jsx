@@ -63,10 +63,10 @@ const Branch = () => {
       id: 0,
       name: "",
       country: "",
-      state:"",
-      address:"",
-      city:"",
-      pincode:"",
+      state: "",
+      address: "",
+      city: "",
+      pincode: "",
       contact_number: "",
       country_code: "+91",
       contact_email: "",
@@ -77,8 +77,8 @@ const Branch = () => {
   }, []);
 
   const handleBranchCreateOrEdit = (id, obj) => {
-    console.log(obj,"obbbjjj");
-    
+    console.log(obj, "obbbjjj");
+
     let FormObj = {};
 
     if (parseInt(id) === 0) {
@@ -99,7 +99,7 @@ const Branch = () => {
         cf = CustomFieldsForThisForm;
       }
 
-      FormObj = { ...obj,state: obj?.state || "", cf_values: cf };
+      FormObj = { ...obj, state: obj?.state || "", cf_values: cf };
     }
 
     dispatch(setFormTitle("Branch Form"));
@@ -157,7 +157,7 @@ const Branch = () => {
                           </div>
                           <div className="flex-shrink-0">
                             <div className="d-flex gap-1 align-items-center my-n2">
-                              <div className="form-check form-switch form-switch-success  ">
+                              {/* <div className="form-check form-switch form-switch-success  ">
                                 <Input
                                   className="form-check-input"
                                   type="checkbox"
@@ -171,7 +171,7 @@ const Branch = () => {
                                 >
                                   Active
                                 </Label>
-                              </div>
+                              </div> */}
                               {showEditBtn && (
                                 <a
                                   onClick={() =>
@@ -217,9 +217,7 @@ const Branch = () => {
                           <Col xs={2}>
                             <div>
                               <p className="text-muted mb-1">City</p>
-                              <h5 className="fs-14">
-                                 {bd?.city}{" "}
-                              </h5>
+                              <h5 className="fs-14">{bd?.city} </h5>
                             </div>
                           </Col>
                           <Col xs={3}>
