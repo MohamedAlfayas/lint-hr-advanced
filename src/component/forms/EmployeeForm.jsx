@@ -113,8 +113,9 @@ const EmployeeForm = () => {
   // ── Date helpers ──────────────────────────────────────────────────────────
   const today = dayjs().startOf("day");
   const minDobDate = dayjs("1900-01-01");
-  const oneMonthLater = dayjs().add(1, "month").endOf("day");
-
+  // const oneMonthLater = dayjs().add(1, "month").endOf("day");
+  const minJoiningDate = dayjs("1900-01-01");
+  const maxJoiningDate = dayjs().add(1, "year").endOf("day");
   // DOB: must be in the past (before today)
   // const disableDobDates = (current) => current && current >= today;
   const disableDobDates = (current) => {
@@ -127,7 +128,16 @@ const EmployeeForm = () => {
   );
 };
   // Joining date: from past up to 1 month in future
-  const disableJoiningDates = (current) => current && current > oneMonthLater;
+  // const disableJoiningDates = (current) => current && current > oneMonthLater;
+  const disableJoiningDates = (current) => {
+  return (
+    current &&
+    (
+      current.isBefore(minJoiningDate, "day") ||
+      current.isAfter(maxJoiningDate, "day")
+    )
+  );
+};
 
   const showFileNameIfSelected = () => {
     const idProofUrl = form_obj.id_proof_url;
@@ -179,10 +189,16 @@ const EmployeeForm = () => {
       role_id: this_role_id,
     });
     console.log("form_obj.dob:", form_obj.dob);
+    console.log("form_obj.joining_date:", form_obj.joining_date);
     setDob(form_obj.dob ? ConvertDateFormat(ConvertISODateFormat(form_obj.dob)) : null);
     console.log("form_obj:", form_obj);
-    setJoinDate(ConvertDateFormat(ConvertISODateFormat(form_obj.joining_date)));
-
+    setJoinDate(
+      form_obj.joining_date
+        ? ConvertDateFormat(
+            ConvertISODateFormat(form_obj.joining_date)
+          )
+        : null
+    );
     form_obj?.primary_department_id_list?.length
       ? GetReportingManager(form_obj?.primary_department_id_list)
       : setReportingManagerOptions([]);
@@ -216,20 +232,7 @@ const EmployeeForm = () => {
     setEmployeeObj({ ...employeeObj, [field]: val });
   };
 
-  // //
-  // const handleProfileChange = (e) => {
-  //   if (e.target.files && e.target.files[0]) {
-  //     setEmployeeImage(e.target.files[0]);
-  //     const reader = new FileReader();
-  //     reader.onload = (readerEvent) => {
-  //       setEmployeeObj({
-  //         ...employeeObj,
-  //         profile_url: readerEvent.target.result,
-  //       });
-  //     };
-  //     reader.readAsDataURL(e.target.files[0]);
-  //   }
-  // };//
+
 
   const handleProfileChange = (e) => {
     const file = e.target.files[0];
@@ -496,8 +499,35 @@ const EmployeeForm = () => {
           (value) => {
             if (!value) return false;
             const d = dayjs(value);
-            return d.isBefore(dayjs().add(1, "month").add(1, "day"));
+            // return d.isBefore(dayjs().add(1, "month").add(1, "day"));
+            return (
+              d.isSame(dayjs("1900-01-01"), "day") ||
+              (
+                d.isAfter(dayjs("1900-01-01"), "day") &&
+                d.isBefore(dayjs().add(1, "year").add(1, "day"))
+              )
+            );
           },
+        )
+        // New validation for minimum age 15
+        .test(
+          "minimum-age-at-joining",
+          "Employee must be at least 15 years old on joining date",
+          function (joiningDate) {
+            const { dob } = this.parent;
+
+            if (!dob || !joiningDate) return true;
+
+            const dobDate = dayjs(dob);
+            const dojDate = dayjs(joiningDate);
+
+            const minimumJoiningDate = dobDate.add(15, "year");
+
+            return (
+              dojDate.isSame(minimumJoiningDate, "day") ||
+              dojDate.isAfter(minimumJoiningDate, "day")
+            );
+          }
         ),
 
       contact_number: Yup.string()
@@ -641,6 +671,16 @@ const EmployeeForm = () => {
       }
     }
   };
+
+  console.log("joining_date:", joining_date);
+console.log(
+  "dayjs value:",
+  joining_date ? dayjs(joining_date, DateFormat) : null
+);
+console.log(
+  "isValid:",
+  joining_date ? dayjs(joining_date, DateFormat).isValid() : null
+);
 
   return (
     <React.Fragment>
@@ -952,7 +992,7 @@ const EmployeeForm = () => {
                   )}
                   {!FormikForm.errors.dob && (
                     <div className="form-text mb-3">
-                      Select date of birth (past dates only).
+                      Select a valid date of birth.
                     </div>
                   )}
                 </div>
@@ -1351,6 +1391,7 @@ const EmployeeForm = () => {
                     allowClear={false}
                     onChange={handleJoinDateChange}
                     disabledDate={disableJoiningDates}
+                    inputReadOnly={true} 
                   />
                   {FormikForm.touched.joining_date &&
                     FormikForm.errors.joining_date && (
@@ -1360,7 +1401,7 @@ const EmployeeForm = () => {
                     )}
                   {!FormikForm.errors.joining_date && (
                     <div className="form-text mb-3">
-                      Select joining date (past or up to 1 month in future).
+                      Select a valid joining date (up to 1 year in the future).
                     </div>
                   )}
                 </div>
