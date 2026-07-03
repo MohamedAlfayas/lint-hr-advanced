@@ -112,11 +112,20 @@ const EmployeeForm = () => {
 
   // ── Date helpers ──────────────────────────────────────────────────────────
   const today = dayjs().startOf("day");
+  const minDobDate = dayjs("1900-01-01");
   const oneMonthLater = dayjs().add(1, "month").endOf("day");
 
   // DOB: must be in the past (before today)
-  const disableDobDates = (current) => current && current >= today;
-
+  // const disableDobDates = (current) => current && current >= today;
+  const disableDobDates = (current) => {
+     return (
+    current &&
+    (
+      current.isBefore(minDobDate, "day") ||
+      current.isAfter(today, "day")
+    )
+  );
+};
   // Joining date: from past up to 1 month in future
   const disableJoiningDates = (current) => current && current > oneMonthLater;
 
@@ -169,8 +178,9 @@ const EmployeeForm = () => {
       joining_date: ConvertISODateFormat(form_obj.joining_date),
       role_id: this_role_id,
     });
-
-    setDob(ConvertDateFormat(ConvertISODateFormat(form_obj.dob)));
+    console.log("form_obj.dob:", form_obj.dob);
+    setDob(form_obj.dob ? ConvertDateFormat(ConvertISODateFormat(form_obj.dob)) : null);
+    console.log("form_obj:", form_obj);
     setJoinDate(ConvertDateFormat(ConvertISODateFormat(form_obj.joining_date)));
 
     form_obj?.primary_department_id_list?.length
@@ -206,18 +216,61 @@ const EmployeeForm = () => {
     setEmployeeObj({ ...employeeObj, [field]: val });
   };
 
+  // //
+  // const handleProfileChange = (e) => {
+  //   if (e.target.files && e.target.files[0]) {
+  //     setEmployeeImage(e.target.files[0]);
+  //     const reader = new FileReader();
+  //     reader.onload = (readerEvent) => {
+  //       setEmployeeObj({
+  //         ...employeeObj,
+  //         profile_url: readerEvent.target.result,
+  //       });
+  //     };
+  //     reader.readAsDataURL(e.target.files[0]);
+  //   }
+  // };//
+
   const handleProfileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setEmployeeImage(e.target.files[0]);
-      const reader = new FileReader();
-      reader.onload = (readerEvent) => {
-        setEmployeeObj({
-          ...employeeObj,
-          profile_url: readerEvent.target.result,
-        });
-      };
-      reader.readAsDataURL(e.target.files[0]);
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    const allowedImageTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/bmp",
+      "image/svg+xml",
+      "image/webp",
+    ];
+
+    if (!allowedImageTypes.includes(file.type)) {
+      toast.error("Only image files are allowed");
+
+      setEmployeeImage(null);
+
+      setEmployeeObj({
+        ...employeeObj,
+        profile_url: "",
+      });
+
+      e.target.value = "";
+
+      return;
     }
+
+    setEmployeeImage(file);
+
+    const reader = new FileReader();
+    reader.onload = (readerEvent) => {
+      setEmployeeObj({
+        ...employeeObj,
+        profile_url: readerEvent.target.result,
+      });
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleBranchChange = (e) => {
@@ -277,6 +330,8 @@ const EmployeeForm = () => {
     );
     FormikForm.setFieldTouched("dob", true);
   };
+
+  
 
   const handleJoinDateChange = (selectedJoinDate, dateStr, instance) => {
     setJoinDate(dateStr);
@@ -405,7 +460,11 @@ const EmployeeForm = () => {
           "Date of birth cannot be a future date",
           (value) => {
             if (!value) return false;
-            return dayjs(value).isBefore(dayjs());
+            // return dayjs(value).isBefore(dayjs());
+            return (
+            dayjs(value).isSame(dayjs(), "day") ||
+            dayjs(value).isBefore(dayjs(), "day")
+            );
           },
         ),
 
@@ -460,6 +519,14 @@ const EmployeeForm = () => {
   const HandleEmployeeSaveAPI = async (values) => {
     let root_department = dep_options.find((d) => d.is_root === true);
     let root_department_id = !!root_department && root_department.id;
+
+    if (
+      employeeImage &&
+      !employeeImage.type.startsWith("image/")
+    ) {
+      toast.error("Only image files are allowed");
+      return;
+    }
 
     if (
       !(values?.primary_department_id_list).includes(root_department_id) &&
@@ -849,7 +916,7 @@ const EmployeeForm = () => {
                   </Label>
                   <DatePicker
                     className={`form-control${FormikForm.touched.dob && FormikForm.errors.dob ? " border-danger" : ""}`}
-                    placeholder="Select DOB"
+                    placeholder="DD-MM-YYYY"
                     id="dob"
                     name="dob"
                     value={dob ? dayjs(dob, DateFormat) : null}
@@ -857,6 +924,7 @@ const EmployeeForm = () => {
                     onChange={handleDateChange}
                     allowClear={false}
                     disabledDate={disableDobDates}
+                    inputReadOnly={true} 
                   />
                   {FormikForm.touched.dob && FormikForm.errors.dob && (
                     <div className="lc_form_error_text">
