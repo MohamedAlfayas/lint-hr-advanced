@@ -3,7 +3,7 @@ import {
   Card, CardHeader, CardBody, CardTitle, Table, Spinner,
   Button, Modal, ModalHeader, ModalBody, ModalFooter, Row, Col, Badge,
 } from "reactstrap";
-import { Document, Page, Text, View, StyleSheet, pdf } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet, pdf, Image } from "@react-pdf/renderer";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
@@ -177,10 +177,12 @@ const S = StyleSheet.create({
   lopWarn: { flexDirection:"row", backgroundColor:"#fffbeb", borderWidth:1, borderColor:"#f59e0b", borderRadius:4, padding:7, marginTop:8 },
   lopText: { fontSize:7, color:"#92400e", flex:1 },
   footerNote: { borderTopWidth:1, borderTopColor:"#e5e7eb", paddingTop:7, marginTop:28, fontSize:7, color:"#aaaaaa", textAlign:"center" },
+  headerLeft: { flexDirection: "column", justifyContent: "center" },
+  companyLogo: { maxWidth: 140, maxHeight: 45, objectFit: "contain" },
 });
 
 // ─── PDF Component (unchanged) ────────────────────────────────────────────────
-const PayslipPDF = ({ slip, companyName, allowDecimal }) => {
+const PayslipPDF = ({ slip, companyName, companyLogo, allowDecimal }) => {
   if (!slip) return null;
   const ad        = allowDecimal ?? true;
   const netPayNum = parseFloat(slip.net_pay || 0);
@@ -198,7 +200,13 @@ const PayslipPDF = ({ slip, companyName, allowDecimal }) => {
     <Document>
       <Page size="A4" style={S.page}>
         <View style={S.headerRow}>
-          <View><Text style={S.companyName}>{companyName || "Company"}</Text></View>
+          <View style={S.headerLeft}>
+            {companyLogo ? (
+              <Image src={companyLogo} style={S.companyLogo} />
+            ) : (
+              <Text style={S.companyName}>{companyName || "Company"}</Text>
+            )}
+          </View>
           <View style={S.headerRight}>
             <Text style={S.payslipLabel}>Payslip For the Month</Text>
             <Text style={S.payPeriod}>{slip.pay_period || "—"}</Text>
@@ -339,6 +347,37 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
   const [selectedSlip, setSelectedSlip]           = useState(null);
   const [modalOpen, setModalOpen]                 = useState(false);
   const [downloading, setDownloading]             = useState(false);
+  const [companyLogo, setCompanyLogo] = useState(null);
+
+
+  const urlToBase64 = async (url) => {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result); // e.g. "data:image/png;base64,...."
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  useEffect(() => {
+    Api({ method: "GET", url: "branch/get-company-profile/" })
+      .then(async (res) => {
+        const profile = res?.data?.data || {};
+        const logoUrl = profile.dark_logo_image || profile.light_logo_image;
+        if (!logoUrl) return;
+        try {
+          const base64 = await urlToBase64(logoUrl);
+          setCompanyLogo(base64);
+        } catch (err) {
+          console.error("Failed to load company logo for payslip PDF:", err);
+          // Silently fall back to text company name — not worth blocking the download over
+        }
+      })
+      .catch((err) => console.error("Failed to fetch company profile:", err));
+  }, []);
 
   const fetchPayslips = () => {
     setLoading(true);
@@ -422,7 +461,12 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
     try {
       const ad   = selectedSlip?.allow_decimal_in_payslip ?? true;
       const blob = await pdf(
-        <PayslipPDF slip={selectedSlip} companyName={companyName} allowDecimal={ad} />
+        <PayslipPDF
+          slip={selectedSlip}
+          companyName={companyName}
+          companyLogo={companyLogo}
+          allowDecimal={ad}
+        />
       ).toBlob();
       const url  = URL.createObjectURL(blob);
       const link = document.createElement("a");

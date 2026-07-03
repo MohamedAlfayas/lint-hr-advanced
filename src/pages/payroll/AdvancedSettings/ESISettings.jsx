@@ -5,7 +5,7 @@ import {
 } from "reactstrap";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
-import { required, percent, min, runChecks } from "./validators";
+import { required, range, percent, min, runChecks } from "./validators";
 
 const SectionLabel = ({ children }) => (
   <p className="text-uppercase fw-semibold text-muted mb-2" style={{ fontSize: 11, letterSpacing: "0.8px" }}>
@@ -90,7 +90,7 @@ const ESISettings = () => {
   const validate = () =>
     runChecks([
       required("Effective date", form.effective_date),
-      min("Max monthly gross", form.statutory_max_monthly_gross, 1),
+      range("Max monthly gross", form.statutory_max_monthly_gross, 1, 1000000),
       percent("Employee contribution %", form.employee_contribution_percentage),
       percent("Employer contribution %", form.employer_contribution_percentage),
     ], toast);
@@ -234,7 +234,9 @@ const ESISettings = () => {
                   <Input type="number" step="0.01"
                     value={form.statutory_max_monthly_gross || ""}
                     onChange={(e) => {
-                      const val = e.target.value;
+                      let val = e.target.value;
+                      if (val !== "" && Number(val) > 1000000) val = "1000000";
+                      if (val !== "" && Number(val) < 0) val = "0";
                       if (val === "" || /^\d+(\.\d{0,2})?$/.test(val))
                         handleChange("statutory_max_monthly_gross", val);
                     }}
@@ -253,7 +255,9 @@ const ESISettings = () => {
                   <Input type="number" step="0.01"
                     value={form.employee_contribution_percentage || ""}
                     onChange={(e) => {
-                      const val = e.target.value;
+                      let val = e.target.value;
+                      if (val !== "" && Number(val) > 100) val = "100";
+                      if (val !== "" && Number(val) < 0) val = "0";
                       if (val === "" || /^\d+(\.\d{0,2})?$/.test(val))
                         handleChange("employee_contribution_percentage", val);
                     }}
@@ -271,7 +275,9 @@ const ESISettings = () => {
                   <Input type="number" step="0.01"
                     value={form.employer_contribution_percentage || ""}
                     onChange={(e) => {
-                      const val = e.target.value;
+                      let val = e.target.value;
+                      if (val !== "" && Number(val) > 100) val = "100";
+                      if (val !== "" && Number(val) < 0) val = "0";
                       if (val === "" || /^\d+(\.\d{0,2})?$/.test(val))
                         handleChange("employer_contribution_percentage", val);
                     }}
