@@ -130,7 +130,7 @@ const ClientForm = () => {
 
       setStateListOptions(selectedCountry?.states || []);
     }
-  }, [form_obj]);
+  }, [form_obj?.id]);
 
   // ─── Client input handler ─────────────────────────────────────────────────
   const handleInputChange = (e) => {
@@ -352,7 +352,6 @@ const ClientForm = () => {
       dispatch(setLoaderVisible(false));
     },
   });
-
   // ─── Location formik ──────────────────────────────────────────────────────
   const locationFormik = useFormik({
     enableReinitialize: true,
@@ -381,6 +380,7 @@ const ClientForm = () => {
     }),
     onSubmit: async (values) => {
       dispatch(setLoaderVisible(true));
+
       try {
         const map_data_keys = [
           "address_components",
@@ -394,13 +394,13 @@ const ClientForm = () => {
           "vicinity",
         ];
 
-        let map_data = [];
+        let map_data = {};
+
         if (
           typeof values.map_data === "object" &&
           values.map_data !== null &&
           !Array.isArray(values.map_data)
         ) {
-          map_data = {};
           for (const key of map_data_keys) {
             if (Object.prototype.hasOwnProperty.call(values.map_data, key)) {
               map_data[key] = values.map_data[key];
@@ -410,36 +410,82 @@ const ClientForm = () => {
 
         const isNewLocation = values.id === 0;
 
-        const payload = {
-          type: "client",
-          type_id: form_obj?.id,
-          name: values.name,
-          address: values.address,
-          city: values.city,
-          state: values.state,
-          country: values.country,
-          pincode: values.pincode,
-          timezone: values.timezone,
-          accurate_address: values.accurate_address,
-          radius_range: values.radius_range,
-          latitude: values.latitude,
-          longitude: values.longitude,
-          location_id: values.location_id || null,
-          map_data: map_data,
-        };
+        const formData = new FormData();
 
-        const Api = isNewLocation
-          ? await PostApi("location/entity-locations/", payload)
-          : await PutApi(`location/entity-locations/${values.id}/`, payload);
+        // Send id in body for update
+        if (!isNewLocation) {
+          formData.append("id", values.id);
+        }
+
+        formData.append("type", "client");
+        formData.append("type_id", form_obj?.id);
+        formData.append("name", values.name || "");
+        formData.append("address", values.address || "");
+        formData.append("city", values.city || "");
+        formData.append("state", values.state || "");
+        formData.append("country", values.country || "");
+        formData.append("pincode", values.pincode || "");
+        formData.append("timezone", values.timezone || "");
+        formData.append("accurate_address", values.accurate_address || "");
+        formData.append("radius_range", values.radius_range || "");
+        formData.append("latitude", values.latitude || "");
+        formData.append("longitude", values.longitude || "");
+        formData.append("location_id", values.location_id || "");
+
+        formData.append("map_data", JSON.stringify(map_data));
+
+        // Image
+        if (values.image instanceof File) {
+          formData.append("image", values.image);
+        }
+
+        // Debug
+        for (const [key, value] of formData.entries()) {
+          console.log(key, value);
+        }
+
+        let Api;
+
+        if (isNewLocation) {
+          Api = await PostApi("location/add-entity-location/", formData, true);
+        } else {
+          Api = await PostApi("location/add-entity-location/", formData, true);
+        }
 
         if ([200, 201].includes(Api?.status)) {
-          const response = Api?.data;
+          // Handle both flat and nested response shapes
+          const response = Api?.data?.data ?? Api?.data;
 
-          // Update local entity locations state
-          setEntityLocations((prev) =>
-            isNewLocation
-              ? [...prev, response]
-              : prev.map((loc) => (loc.id === response.id ? response : loc)),
+          const updatedLocations = isNewLocation
+            ? [...entityLocations, response]
+            : entityLocations.map((loc) =>
+                loc.id === response.id ? response : loc,
+              );
+
+          // 1. Local table state
+          setEntityLocations(updatedLocations);
+
+          // 2. Keep form_obj-backed clientData in sync (so re-render uses fresh data)
+          setClientData((prev) => ({
+            ...prev,
+            entity_location_details: updatedLocations,
+          }));
+
+          // 3. localStorage "clients"
+          const oldClients = GetLocalStorageData("clients") || [];
+          const updatedClients = oldClients.map((client) =>
+            client.id === form_obj?.id
+              ? { ...client, entity_location_details: updatedLocations }
+              : client,
+          );
+          SetLocalStorage("clients", updatedClients, 1);
+
+          // 4. redux
+          dispatch(
+            editClient({
+              ...clientData,
+              entity_location_details: updatedLocations,
+            }),
           );
 
           toast.success(
@@ -447,6 +493,7 @@ const ClientForm = () => {
               ? "Location added successfully."
               : "Location updated successfully.",
           );
+
           setModalOpen(false);
         } else {
           toast.error(

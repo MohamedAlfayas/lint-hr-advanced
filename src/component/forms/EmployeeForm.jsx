@@ -202,7 +202,7 @@ const EmployeeForm = () => {
 
   // ── Name input: strip numbers and special chars on change ─────────────────
   const handleNameInput = (e, field) => {
-    const val = e.target.value.replace(/[^a-zA-Z\s]/g, "");
+    const val = e.target.value.replace(/[^A-Za-z\s'-]/g, "");
     setEmployeeObj({ ...employeeObj, [field]: val });
   };
 
@@ -395,22 +395,32 @@ const EmployeeForm = () => {
       first_name: Yup.string()
         .trim()
         .required("Please enter first name")
+        .min(2, "First name must be at least 2 characters")
+        .max(50, "First name cannot exceed 50 characters")
         .matches(
-          /^[a-zA-Z\s]+$/,
-          "First name must contain letters only — no numbers or special characters",
+          /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/,
+          "Only alphabets, spaces, hyphens (-), and apostrophes (') are allowed",
         ),
 
       last_name: Yup.string()
         .trim()
         .required("Please enter last name")
+        .min(2, "Last name must be at least 2 characters")
+        .max(50, "Last name cannot exceed 50 characters")
         .matches(
-          /^[a-zA-Z\s]+$/,
-          "Last name must contain letters only — no numbers or special characters",
+          /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/,
+          "Only alphabets, spaces, hyphens (-), and apostrophes (') are allowed",
         ),
 
       email: Yup.string()
-        .email("Please enter a valid email")
-        .required("Please enter email"),
+        .trim()
+        .required("Please enter email")
+        .transform((value) => (value ? value.trim().toLowerCase() : value))
+        .max(254, "Email must not exceed 254 characters")
+        .matches(
+          /^[a-zA-Z0-9]+([._+][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/,
+          "Enter a valid email address",
+        ),
 
       gender: Yup.number()
         .required("Please select gender")
@@ -442,10 +452,9 @@ const EmployeeForm = () => {
         ),
 
       contact_number: Yup.string()
-        .required("Please enter phone number")
+        .required("Please Enter Phone Number")
         .matches(/^[0-9]+$/, "Phone number must contain digits only")
-        .min(7, "Phone number is too short")
-        .max(10, "Phone number is too long"),
+        .length(10, "Phone number must be 10 digits"),
 
       role_id: Yup.number()
         .required("Please select role")
@@ -727,9 +736,7 @@ const EmployeeForm = () => {
                       )}
                   </div>
                   {!FormikForm.errors.first_name && (
-                    <div className="form-text mb-3">
-                      Enter first name (letters only).
-                    </div>
+                    <div className="form-text mb-3">Enter first name.</div>
                   )}
                 </div>
               </Col>
@@ -771,9 +778,7 @@ const EmployeeForm = () => {
                       )}
                   </div>
                   {!FormikForm.errors.last_name && (
-                    <div className="form-text mb-3">
-                      Enter last name (letters only).
-                    </div>
+                    <div className="form-text mb-3">Enter last name.</div>
                   )}
                 </div>
               </Col>
@@ -791,8 +796,23 @@ const EmployeeForm = () => {
                       className="form-control"
                       placeholder="name@company.com"
                       value={employeeObj.email || ""}
-                      onChange={handleInputChange}
-                      onBlur={() => FormikForm.setFieldTouched("email", true)}
+                      onChange={(e) => {
+                        setEmployeeObj({
+                          ...employeeObj,
+                          email: e.target.value,
+                        });
+                      }}
+                      onBlur={(e) => {
+                        const value = e.target.value.trim().toLowerCase();
+
+                        setEmployeeObj({
+                          ...employeeObj,
+                          email: value,
+                        });
+
+                        FormikForm.setFieldValue("email", value);
+                        FormikForm.handleBlur(e);
+                      }}
                       invalid={
                         !!(FormikForm.touched.email && FormikForm.errors.email)
                       }
@@ -924,11 +944,12 @@ const EmployeeForm = () => {
                       placeholder="Enter number"
                       value={employeeObj.contact_number || ""}
                       onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9]/g, "");
-                        if (value.length <= 10) {
-                          updateProfileData("contact_number", value);
-                          FormikForm.setFieldValue("contact_number", value);
-                        }
+                        const value = e.target.value
+                          .replace(/[^0-9]/g, "")
+                          .slice(0, 10);
+
+                        updateProfileData("contact_number", value);
+                        FormikForm.setFieldValue("contact_number", value);
                       }}
                       onBlur={() =>
                         FormikForm.setFieldTouched("contact_number", true)
@@ -996,7 +1017,7 @@ const EmployeeForm = () => {
                   </Dropdown>
                   {!FormikForm.errors.contact_number && (
                     <div className="form-text mb-3">
-                      Enter contact number (digits only).
+                      Enter contact number (10 digits only).
                     </div>
                   )}
                 </div>

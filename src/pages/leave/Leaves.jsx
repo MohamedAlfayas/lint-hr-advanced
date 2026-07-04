@@ -177,6 +177,35 @@ const LeaveDashboard = () => {
       },
     },
     {
+      Header: "Work Date",
+      filterable: false,
+      id: "comp_off_work_date",
+      accessor: (obj) => {
+        console.log("full leave obj:", obj);
+        if (!obj.comp_off_work_date) {
+          return <b style={getCellStyle(obj)}>—</b>;
+        }
+        const date = convertDate(
+          new Date(obj.comp_off_work_date).toDateString(),
+        );
+        return <b style={getCellStyle(obj)}>{date}</b>;
+      },
+    },
+    {
+      Header: "Holiday Name",
+      filterable: false,
+      id: "holiday_name",
+      accessor: (obj) => {
+        const globalData = GetLocalStorageData("holiday") || [];
+        const matchedHoliday = globalData.find(
+          (h) => h.date === (obj.start ? obj.start.split(" ")[0] : null),
+        );
+        return (
+          <b style={getCellStyle(obj)}>{matchedHoliday?.name?.trim() || "—"}</b>
+        );
+      },
+    },
+    {
       Header: "Total",
       filterable: false,
       id: "Total",
@@ -285,6 +314,7 @@ const LeaveDashboard = () => {
       status: 1,
       day_type: 1,
       in_between_dates: [],
+      comp_off_work_date: null,
     }),
     [],
   );
@@ -338,7 +368,7 @@ const LeaveDashboard = () => {
               filterKey={filterKey}
               filterOptions={filterOptions}
               width_per={"45%"}
-              table_col={8}
+              table_col={9}
               table_class={"Lc_leave_apply_table me-n3 ms-n3"}
               onChangeLeave={(row) => openChangeModal(row)}
             />
