@@ -50,6 +50,9 @@ const HolidayForm = () => {
   const dispatch = useDispatch();
   const [date, setDate] = useState("");
   const [holidayObj, setHolidayObj] = useState({});
+  const [dateError, setDateError] = useState("");
+  const minDate = dayjs("01-01-1900", "DD-MM-YYYY");
+  const maxDate = dayjs().add(1, "year");
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   console.log("form_obj Holiday FORM", form_obj);
   const ws_options = GetLocalStorageData("work_schedule") || [];
@@ -73,7 +76,15 @@ const HolidayForm = () => {
     enableReinitialize: true,
     initialValues: holidayObj,
     validationSchema: Yup.object({
-      name: Yup.string().trim().required("Please Enter Holiday Name"),
+      // name: Yup.string().trim().required("Please Enter Holiday Name"),
+      name: Yup.string()
+        .trim()
+        .required("Please Enter Holiday Name")
+        .max(150, "Holiday Name must not exceed 150 characters")
+        .matches(
+          /^[A-Za-z\s'-]+$/,
+          "Holiday Name can contain letters, spaces, apostrophes (') and hyphens (-) only"
+        ),
       work_schedule_id_list: Yup.array()
         .required("Select Work Schedule")
         .min(1, "Select Work Schedule"),
@@ -127,6 +138,26 @@ const HolidayForm = () => {
     });
   };
 
+  const disableHolidayDates = (current) => {
+  if (!current) return false;
+
+  return (
+    current.isBefore(dayjs("01-01-1900", "DD-MM-YYYY"), "day") ||
+    current.isAfter(dayjs().add(1, "year"), "day")
+  );
+};
+
+  const filterWorkSchedule = (option, inputValue) => {
+  // Don't show results when numbers or special characters are typed
+  if (inputValue && !/^[A-Za-z\s]*$/.test(inputValue)) {
+    return false;
+  }
+
+  return option.label
+    .toLowerCase()
+    .includes(inputValue.toLowerCase());
+};
+
   return (
     <React.Fragment>
       <Row>
@@ -135,7 +166,7 @@ const HolidayForm = () => {
             <Row className="g-3">
               <Col lg={12}>
                 <label htmlFor="holidayName" className="form-label">
-                  Holiday Name
+                  Holiday Name <span>*</span>
                 </label>
                 <Input
                   type="text"
@@ -144,7 +175,17 @@ const HolidayForm = () => {
                   id="holidayName"
                   placeholder="Enter holiday name"
                   value={holidayObj.name || ""}
-                  onChange={handleInputChange}
+                  // onChange={handleInputChange}
+                  onChange={(e) => {
+                    const value = e.target.value
+                      .replace(/[^A-Za-z\s'-]/g, "")
+                      .slice(0, 150);
+
+                    setHolidayObj({
+                      ...holidayObj,
+                      name: value,
+                    });
+                  }}
                   invalid={
                     FormikForm.touched.name && FormikForm.errors.name
                       ? true
@@ -159,26 +200,62 @@ const HolidayForm = () => {
               </Col>
               <Col lg={12}>
                 <div className="mb-3">
-                  <Label htmlfor="date">Date</Label>
+                  <Label htmlfor="date">Date <span>*</span></Label>
                   <DatePicker
                     name="date"
                     id="date"
-                    className="form-control"
-                    format={DateFormat}
-                    value={dayjs(date, DateFormat)}
+                    className={`form-control ${dateError ? "border-danger" : ""}`}
+                    format="DD-MM-YYYY"
+                    value={date ? dayjs(date, "DD-MM-YYYY") : null}
                     allowClear={false}
-                    // value={date || ""}
-                    onChange={handleDateChange}
+                    disabledDate={disableHolidayDates}
+                    inputReadOnly={true}
+                    onChange={(selectedDate, dateString) => {
+                      if (!selectedDate) {
+                        setDateError("Enter the valid date");
+                        return;
+                      }
+
+                      setDateError("");
+
+                      setDate(dateString);
+
+                      setHolidayObj({
+                        ...holidayObj,
+                        date: ConvertISODateFormat(ConvertDateFormat(dateString)),
+                      });
+                    }}
+                    onBlur={(e) => {
+                      const value = e.target.value?.trim();
+
+                      const parsedDate = dayjs(value, "DD-MM-YYYY", true);
+
+                      if (
+                        !parsedDate.isValid() ||
+                        parsedDate.isBefore(dayjs("01-01-1900", "DD-MM-YYYY"), "day") ||
+                        parsedDate.isAfter(dayjs().add(1, "year"), "day")
+                      ) {
+                        setDateError("Enter the valid date");
+                      } else {
+                        setDateError("");
+                      }
+                    }}
                   />
+                  {dateError && (
+                      <div className="lc_form_error_text">
+                        {dateError}
+                      </div>
+                  )}
                 </div>
               </Col>
               <Col lg={12}>
                 <div className={`mb-3`}>
-                  <Label>Work Schedule</Label>
+                  <Label>Work Schedule <span>*</span></Label>
                   <Select
                     name="work_schedule_id_list"
                     isMulti
                     options={ws_options || []}
+                    filterOption={filterWorkSchedule}
                     className="basic-multi-select"
                     classNamePrefix="lc-select"
                     styles={{
