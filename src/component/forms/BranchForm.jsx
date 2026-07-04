@@ -117,27 +117,36 @@ const BranchForm = () => {
       entity_location_details: [],
     },
     validationSchema: Yup.object({
-      name: Yup.string().required("Please enter branch name"),
+      name: Yup.string()
+        .trim()
+        .matches(/^[A-Za-z\s]+$/, "Branch name should contain only letters")
+        .required("Please Enter Branch Name"),
       country: Yup.string().required("Please select country"),
       state: Yup.string().required("Please select state"),
-      address: Yup.string().required("Please enter address"),
+      address: Yup.string().trim().required("Please enter address"),
       city: Yup.string()
+        .trim()
         .required("Please enter city")
         .matches(/^[a-zA-Z\s]+$/, "City must contain letters only"),
       pincode: Yup.string()
-        .required("Please enter pincode")
-        .matches(/^[0-9]+$/, "Pincode must contain digits only")
-        .min(4, "Pincode is too short")
-        .max(10, "Pincode is too long"),
+        .trim()
+        .matches(/^[0-9]+$/, "Pincode should contain only numbers")
+        .length(6, "Please Enter Valid 6 Digit Pincode")
+        .required("Please Enter Pincode"),
       country_code: Yup.string().required("Please select country code"),
       contact_number: Yup.string()
-        .required("Please enter contact number")
+        .required("Please Enter Phone Number")
         .matches(/^[0-9]+$/, "Phone number must contain digits only")
-        .min(7, "Phone number is too short")
-        .max(10, "Phone number is too long"),
+        .length(10, "Phone number must be 10 digits"),
       contact_email: Yup.string()
+        .trim()
         .required("Please enter email")
-        .email("Enter a valid email address"),
+        .transform((value) => (value ? value.trim().toLowerCase() : value))
+        .max(254, "Email must not exceed 254 characters")
+        .matches(
+          /^[a-zA-Z0-9]+([._+][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/,
+          "Enter a valid email address",
+        ),
     }),
     onSubmit: async (values) => {
       dispatch(setLoaderVisible(true));
@@ -191,6 +200,12 @@ const BranchForm = () => {
     setField(field, val);
   };
 
+  const handleTextOnly = (e) => {
+    const { name, value } = e.target;
+
+    FormikForm.setFieldValue(name, value.replace(/[^a-zA-Z\s]/g, ""));
+  };
+
   const handleBranchCountryChange = (e) => {
     setField("country", e?.value || "");
     setField("state", "");
@@ -242,16 +257,33 @@ const BranchForm = () => {
     enableReinitialize: true,
     initialValues: branchLocationObj,
     validationSchema: Yup.object({
-      name: Yup.string().required("Please enter location name"),
-      address: Yup.string().required("Please enter address"),
-      country: Yup.string().required("Please select country"),
-      state: Yup.string().required("Please select state"),
-      city: Yup.string().required("Please enter city"),
+      name: Yup.string()
+        .trim()
+        .matches(/^[A-Za-z\s]+$/, "Location name should contain only letters")
+        .required("Please Enter Location Name"),
+
+      address: Yup.string().trim().required("Please Enter Address"),
+
+      country: Yup.string().required("Please Select Country"),
+
+      state: Yup.string().required("Please Select State"),
+
+      city: Yup.string()
+        .trim()
+        .matches(/^[A-Za-z\s]+$/, "City should contain only letters")
+        .required("Please Enter City"),
+
       pincode: Yup.string()
-        .required("Please enter pincode")
-        .matches(/^[0-9]+$/, "Pincode must contain digits only"),
-      timezone: Yup.string().required("Please select time zone"),
-      accurate_address: Yup.string().required("Please enter accurate address"),
+        .trim()
+        .matches(/^[0-9]+$/, "Pincode should contain only numbers")
+        .length(6, "Please Enter Valid 6 Digit Pincode")
+        .required("Please Enter Pincode"),
+
+      timezone: Yup.string().required("Please Select Time Zone"),
+
+      accurate_address: Yup.string()
+        .trim()
+        .required("Please Enter Accurate Address"),
     }),
     onSubmit: async (values) => {
       dispatch(setLoaderVisible(true));
@@ -381,14 +413,34 @@ const BranchForm = () => {
   };
 
   const handleLocationImageUpdate = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (readerEvent) => {
-        setLocField("image_url", readerEvent.target.result);
-      };
-      reader.readAsDataURL(e.target.files[0]);
-      setLocField("image", e.target.files[0]);
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error(
+        "Please upload a valid image. Accepted formats: JPG, JPEG, PNG, GIF, WEBP.",
+      );
+      e.target.value = "";
+      return;
     }
+
+    const reader = new FileReader();
+
+    reader.onload = (readerEvent) => {
+      setLocField("image", file);
+      setLocField("image_url", readerEvent.target.result);
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const handleAddClick = () => {
@@ -428,7 +480,7 @@ const BranchForm = () => {
                         innerRef={inputRef}
                         placeholder="New Branch"
                         value={v.name || ""}
-                        onChange={(ev) => setField("name", ev.target.value)}
+                        onChange={handleTextOnly}
                         onBlur={() => FormikForm.setFieldTouched("name", true)}
                         invalid={isInvalid("name")}
                       />
@@ -549,13 +601,7 @@ const BranchForm = () => {
                         name="city"
                         placeholder="City"
                         value={v.city || ""}
-                        onChange={(ev) => {
-                          const val = ev.target.value.replace(
-                            /[^a-zA-Z\s]/g,
-                            "",
-                          );
-                          setField("city", val);
-                        }}
+                        onChange={handleTextOnly}
                         onBlur={() => FormikForm.setFieldTouched("city", true)}
                         invalid={isInvalid("city")}
                       />
@@ -585,6 +631,7 @@ const BranchForm = () => {
                         placeholder="600001"
                         inputMode="numeric"
                         value={v.pincode || ""}
+                        maxLength={6}
                         onChange={(ev) => handleNumberOnly(ev, "pincode")}
                         onBlur={() =>
                           FormikForm.setFieldTouched("pincode", true)
@@ -656,6 +703,7 @@ const BranchForm = () => {
                           placeholder="Enter number"
                           inputMode="numeric"
                           value={v.contact_number || ""}
+                          maxLength={10}
                           onChange={(ev) =>
                             handleNumberOnly(ev, "contact_number")
                           }
@@ -672,7 +720,7 @@ const BranchForm = () => {
                       </Col>
                     </Row>
                     {showHint("contact_number") && (
-                      <div className="form-text">Enter digits only.</div>
+                      <div className="form-text">Enter 10 digits only.</div>
                     )}
                   </Col>
 
@@ -690,11 +738,15 @@ const BranchForm = () => {
                         placeholder="user@company.com"
                         value={v.contact_email || ""}
                         onChange={(ev) =>
-                          setField("contact_email", ev.target.value)
+                          setField("contact_email", ev.target.value.trim())
                         }
-                        onBlur={() =>
-                          FormikForm.setFieldTouched("contact_email", true)
-                        }
+                        onBlur={() => {
+                          FormikForm.setFieldTouched("contact_email", true);
+                          setField(
+                            "contact_email",
+                            (v.contact_email || "").trim().toLowerCase(),
+                          );
+                        }}
                         invalid={isInvalid("contact_email")}
                       />
                       {!isInvalid("contact_email") && (
@@ -880,9 +932,13 @@ const BranchForm = () => {
                               name="name"
                               placeholder="Enter Name"
                               value={lv.name || ""}
-                              onChange={(ev) =>
-                                setLocField("name", ev.target.value)
-                              }
+                              onChange={(ev) => {
+                                const val = ev.target.value.replace(
+                                  /[^a-zA-Z\s]/g,
+                                  "",
+                                );
+                                setLocField("name", val);
+                              }}
                               onBlur={() =>
                                 LocationFormikForm.setFieldTouched("name", true)
                               }
@@ -1076,10 +1132,10 @@ const BranchForm = () => {
                               inputMode="numeric"
                               value={lv.pincode || ""}
                               onChange={(ev) => {
-                                const val = ev.target.value.replace(
-                                  /[^0-9]/g,
-                                  "",
-                                );
+                                const val = ev.target.value
+                                  .replace(/[^0-9]/g, "")
+                                  .slice(0, 6);
+
                                 setLocField("pincode", val);
                               }}
                               onBlur={() =>

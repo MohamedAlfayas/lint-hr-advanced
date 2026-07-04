@@ -158,6 +158,14 @@ const ApplyLeaveForm = () => {
   const [leaveBalanceCount, setLeaveBalanceCount] = useState(0);
   const [timeError, setTimeError] = useState("");
 
+  const [isRestrictedLeave, setIsRestrictedLeave] = useState(false);
+  const [selectedRestrictedHoliday, setSelectedRestrictedHoliday] =
+    useState(null);
+
+  const [isCompOffLeave, setIsCompOffLeave] = useState(false);
+  const [compOffWorkDate, setCompOffWorkDate] = useState(null);
+  const [compOffDateError, setCompOffDateError] = useState("");
+
   // Half-day & permission times stored as dayjs objects (null when unset)
   const [halfDayStartTime, setHalfDayStartTime] = useState(null);
   const [halfDayEndTime, setHalfDayEndTime] = useState(null);
@@ -168,6 +176,11 @@ const ApplyLeaveForm = () => {
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
   const profileData = GetLocalStorageData("my_profile") || [];
   const holidayData = GetLocalStorageData("holiday") || [];
+
+  console.log("workScheduleData:", workScheduleData);
+  console.log("profileData:", profileData);
+  console.log("holidayData:", holidayData);
+  console.log("profileData.work_schedule_id:", profileData?.work_schedule_id);
 
   const { leave_type_for_current_employee } = useSelector(
     (state) => state.LeaveTypeReducer,
@@ -188,6 +201,20 @@ const ApplyLeaveForm = () => {
     [], // eslint-disable-line
   );
 
+  const restrictedHolidayOptions = useMemo(() => {
+    return (holidayData || [])
+      .filter(
+        (h) =>
+          h.is_restricted === true &&
+          h.work_schedule_id_list?.includes(profileData?.work_schedule_id),
+      )
+      .map((h) => ({
+        value: h.id,
+        label: h.name?.trim(),
+        date: h.date,
+      }));
+  }, [holidayData, profileData]);
+
   // ── Recompute half-day boundaries whenever the selected date changes ─────
   useEffect(() => {
     const dateStr = leaveapplyObj?.start
@@ -201,65 +228,100 @@ const ApplyLeaveForm = () => {
   }, [leaveapplyObj?.start, shiftInfo]);
 
   // ── Populate form when editing ───────────────────────────────────────────
-  useEffect(() => {
-    if (!!form_obj) {
-      const thisEmpWS = workScheduleData?.find(
-        (val) => val.id === profileData.work_schedule_id,
-      );
-      !!thisEmpWS &&
-        setWeekOffDays(
-          thisEmpWS.workday
-            .map((d) => (d.is_day_on === false ? d.day_id : null))
-            .filter(Boolean),
+  useEffect(
+    () => {
+      if (!!form_obj) {
+        const thisEmpWS = workScheduleData?.find(
+          (val) => val.id === profileData.work_schedule_id,
         );
+        !!thisEmpWS &&
+          setWeekOffDays(
+            thisEmpWS.workday
+              .map((d) => (d.is_day_on === false ? d.day_id : null))
+              .filter(Boolean),
+          );
 
-      setHolidayDays(holidayData.map((d) => d?.date));
+        setHolidayDays(holidayData.map((d) => d?.date));
 
-      if (form_obj?.leave_type_id !== 0) {
-        let leave_type_record = leave_type_for_current_employee.find(
-          (d) => d.leave_type?.id === form_obj.leave_type_id,
-        );
-        if (leave_type_record) {
-          setLeaveBalanceCount(leave_type_record.available_count);
-          handleStartEndDatesChange(leave_type_record, true);
-          setSelectedLeaveTypeObj(leave_type_record);
+        if (form_obj?.leave_type_id !== 0) {
+          let leave_type_record = leave_type_for_current_employee.find(
+            (d) => d.leave_type?.id === form_obj.leave_type_id,
+          );
+          if (leave_type_record) {
+            setLeaveBalanceCount(leave_type_record.available_count);
+            handleStartEndDatesChange(leave_type_record, true);
+            setSelectedLeaveTypeObj(leave_type_record);
+
+            setIsCompOffLeave(leave_type_record?.leave_type?.type === 2);
+
+            const isRestricted = leave_type_record?.leave_type?.type === 1;
+            setIsRestrictedLeave(isRestricted);
+
+            if (isRestricted && form_obj?.start) {
+              const matchedHoliday = restrictedHolidayOptions.find(
+                (h) => h.date === form_obj.start,
+              );
+              setSelectedRestrictedHoliday(matchedHoliday || null);
+            } else {
+              setSelectedRestrictedHoliday(null);
+            }
+          }
+        }
+
+        setLeaveApplyObj({
+          ...form_obj,
+          start: form_obj?.start,
+          end: form_obj?.end,
+        });
+
+        if (form_obj?.comp_off_work_date) {
+          setCompOffWorkDate(dayjs(form_obj.comp_off_work_date));
+        } else {
+          setCompOffWorkDate(null);
+        }
+        setCompOffDateError("");
+
+        // Restore half-day times on edit — stored as dayjs objects
+        if (form_obj?.day_type === 2 && form_obj.unit === leave_type_day_unit) {
+          if (form_obj.start) setHalfDayStartTime(dayjs(form_obj.start));
+          if (form_obj.end) setHalfDayEndTime(dayjs(form_obj.end));
+        }
+
+        setHourDiff(timeConvert(form_obj.requested_leave_count));
+        setDaysCount(form_obj.requested_leave_count);
+        setInBetweenDays(form_obj.in_between_dates);
+
+        if (form_obj?.unit === 2 && form_obj?.start !== null) {
+          setFromDate(
+            ConvertToDateTimeFormat(ConvertToISODateTimeFormat(form_obj.start)),
+          );
+        }
+        if (form_obj?.unit === 2 && form_obj?.end !== null) {
+          setToDate(
+            ConvertToDateTimeFormat(ConvertToISODateTimeFormat(form_obj.end)),
+          );
         }
       }
-
-      setLeaveApplyObj({
-        ...form_obj,
-        start: form_obj?.start,
-        end: form_obj?.end,
-      });
-
-      // Restore half-day times on edit — stored as dayjs objects
-      if (form_obj?.day_type === 2 && form_obj.unit === leave_type_day_unit) {
-        if (form_obj.start) setHalfDayStartTime(dayjs(form_obj.start));
-        if (form_obj.end) setHalfDayEndTime(dayjs(form_obj.end));
-      }
-
-      setHourDiff(timeConvert(form_obj.requested_leave_count));
-      setDaysCount(form_obj.requested_leave_count);
-      setInBetweenDays(form_obj.in_between_dates);
-
-      if (form_obj?.unit === 2 && form_obj?.start !== null) {
-        setFromDate(
-          ConvertToDateTimeFormat(ConvertToISODateTimeFormat(form_obj.start)),
-        );
-      }
-      if (form_obj?.unit === 2 && form_obj?.end !== null) {
-        setToDate(
-          ConvertToDateTimeFormat(ConvertToISODateTimeFormat(form_obj.end)),
-        );
-      }
-    }
-  }, [form_obj]); // eslint-disable-line
+    },
+    [form_obj],
+    restrictedHolidayOptions,
+  ); // eslint-disable-line
 
   // ── Leave type change ────────────────────────────────────────────────────
   const handleLeaveTypeChange = (selectedOption) => {
     if (!selectedOption) return;
     const fullRecord = selectedOption.full_obj;
     setLeaveBalanceCount(selectedOption.balance_leave_count);
+
+    const compOff = fullRecord?.leave_type?.type === 2;
+    setIsCompOffLeave(compOff);
+    setCompOffWorkDate(null);
+    setCompOffDateError("");
+
+    const isRestricted = fullRecord?.leave_type?.type === 1;
+    setIsRestrictedLeave(isRestricted);
+    setSelectedRestrictedHoliday(null);
+
     handleStartEndDatesChange(fullRecord, false);
   };
 
@@ -303,7 +365,37 @@ const ApplyLeaveForm = () => {
       setFromDate(null);
       setToDate(null);
       setHalfDayBoundaries(null);
+      setCompOffWorkDate(null);
+      setCompOffDateError("");
     }
+  };
+
+  const handleRestrictedHolidayChange = (selectedOption) => {
+    if (!selectedOption) {
+      setSelectedRestrictedHoliday(null);
+      setLeaveApplyObj((prev) => ({
+        ...prev,
+        start: null,
+        end: null,
+        requested_leave_count: 0,
+        in_between_dates: [],
+      }));
+      setDaysCount("");
+      return;
+    }
+    setSelectedRestrictedHoliday(selectedOption);
+
+    const isoDate = selectedOption.date;
+
+    setLeaveApplyObj((prev) => ({
+      ...prev,
+      start: isoDate,
+      end: isoDate,
+      day_type: 1,
+      requested_leave_count: 1,
+      in_between_dates: [isoDate],
+    }));
+    setDaysCount(1);
   };
 
   // ── Multi-day range picker ───────────────────────────────────────────────
@@ -584,6 +676,11 @@ const ApplyLeaveForm = () => {
         ),
     }),
     onSubmit: async (values) => {
+      if (isCompOffLeave && !compOffWorkDate) {
+        setCompOffDateError("Please select the Work Date");
+        toast.error("Please select the Work Date for Comp-Off leave");
+        return;
+      }
       // ── Half-day validation ──
       if (values.day_type === 2) {
         if (!halfDayStartTime) {
@@ -603,6 +700,9 @@ const ApplyLeaveForm = () => {
       // Build final object — store times in ISO format (YYYY-MM-DD HH:mm:00)
       const finalLeaveObj = {
         ...values,
+        ...(isCompOffLeave && {
+          comp_off_work_date: compOffWorkDate.format("YYYY-MM-DD"),
+        }),
         start:
           values.day_type === 2
             ? halfDayStartTime.format("YYYY-MM-DD HH:mm:00")
@@ -612,6 +712,10 @@ const ApplyLeaveForm = () => {
             ? halfDayEndTime.format("YYYY-MM-DD HH:mm:00")
             : values.end,
       };
+
+      if (isRestrictedLeave) {
+        delete finalLeaveObj.in_between_dates;
+      }
 
       dispatch(setLoaderVisible(true));
 
@@ -709,72 +813,252 @@ const ApplyLeaveForm = () => {
                 </div>
               </Col>
 
-              {/* ── Day-unit: date range picker ── */}
-              {!!currentUnit && currentUnit === leave_type_day_unit && (
+              {/* ── Restricted Holiday Selection ── */}
+              {isRestrictedLeave && (
                 <Col lg={12}>
-                  <div className="input-group">
-                    <div className="input-group">
-                      <Label className="form-label">Select Date</Label>
-                    </div>
-                    <RangePicker
-                      name="multiple_date"
-                      format={DateFormat}
-                      placeholder={["Start Date", "End Date"]}
-                      disabledDate={disabledDate}
-                      onChange={handleMultiDayChange}
-                      value={
-                        !!leaveapplyObj?.start && !!leaveapplyObj?.end
-                          ? [
-                              dayjs(
-                                ConvertDateFormat(
-                                  ConvertISODateFormat(leaveapplyObj?.start),
-                                ),
-                                DateFormat,
-                              ),
-                              dayjs(
-                                ConvertDateFormat(
-                                  ConvertISODateFormat(leaveapplyObj?.end),
-                                ),
-                                DateFormat,
-                              ),
-                            ]
-                          : null
-                      }
+                  <div className="mb-3">
+                    <Label>Select Restricted Holiday *</Label>
+                    <Select
+                      name="restricted_holiday"
+                      isMulti={false}
+                      options={restrictedHolidayOptions}
+                      value={selectedRestrictedHoliday}
+                      onChange={handleRestrictedHolidayChange}
+                      placeholder="Select Restricted Holiday"
+                      className="basic-multi-select"
+                      classNamePrefix="lc-select"
                     />
-                    <span className="input-group-text">{daysCount} Days</span>
-                  </div>
-                  <div id="passwordHelpBlock" className="form-text">
-                    Please select Start &amp; End Date
+                    {restrictedHolidayOptions.length === 0 && (
+                      <div className="form-text text-warning">
+                        No restricted holidays available for your work schedule.
+                      </div>
+                    )}
                   </div>
 
-                  {/* ── Day type (Full / Half) ── */}
-                  {(daysCount === 1 || daysCount === 0.5) && (
-                    <div className="input-group mt-3">
-                      <Col lg={12}>
-                        <Label className="form-label">Select Day Type</Label>
-                      </Col>
-                      <Col lg={6}>
-                        <Select
-                          name="day_type"
-                          isMulti={false}
-                          options={day_type || []}
-                          placeholder="Select Day Type"
-                          className="basic-multi-select"
-                          classNamePrefix="lc-select"
-                          value={
-                            leaveapplyObj?.day_type
-                              ? day_type.find(
-                                  (d) => d.value === leaveapplyObj?.day_type,
-                                )
-                              : null
-                          }
-                          onChange={handleDayType}
-                        />
-                      </Col>
+                  {leaveapplyObj?.start && (
+                    <div className="mb-3">
+                      <Label>Date</Label>
+                      <Input
+                        type="text"
+                        value={ConvertDateFormat(leaveapplyObj.start)}
+                        disabled
+                      />
                     </div>
                   )}
                 </Col>
               )}
+
+              {/* ── Day-unit: date range picker ── */}
+              {!!currentUnit &&
+                currentUnit === leave_type_day_unit &&
+                !isRestrictedLeave && (
+                  <Col lg={12}>
+                    {isCompOffLeave ? (
+                      <>
+                        <Label className="form-label">Select Date</Label>
+                        <div className="row g-2 mb-3">
+                          <Col md={6}>
+                            <DatePicker
+                              name="start_date"
+                              format={DateFormat}
+                              placeholder="Start Date"
+                              disabledDate={disabledDate}
+                              style={{ width: "100%" }}
+                              value={
+                                leaveapplyObj?.start
+                                  ? dayjs(
+                                      ConvertDateFormat(
+                                        ConvertISODateFormat(
+                                          leaveapplyObj.start,
+                                        ),
+                                      ),
+                                      DateFormat,
+                                    )
+                                  : null
+                              }
+                              onChange={(date, dateStr) => {
+                                const isoDate = !dateStr
+                                  ? null
+                                  : ConvertISODateFormat(
+                                      ConvertDateFormat(dateStr),
+                                    );
+                                setLeaveApplyObj((prev) => ({
+                                  ...prev,
+                                  start: isoDate,
+                                  end: isoDate,
+                                  day_type: 1,
+                                  requested_leave_count: isoDate ? 1 : 0,
+                                  in_between_dates: isoDate ? [isoDate] : [],
+                                }));
+                                setDaysCount(isoDate ? 1 : "");
+                                // NEW: reset dependent fields when start date changes
+                                setCompOffWorkDate(null);
+                                setCompOffDateError("");
+                              }}
+                            />
+                          </Col>
+
+                          <Col md={6}>
+                            <DatePicker
+                              name="end_date"
+                              format={DateFormat}
+                              placeholder="End Date"
+                              disabled={true}
+                              style={{ width: "100%" }}
+                              value={
+                                leaveapplyObj?.end
+                                  ? dayjs(
+                                      ConvertDateFormat(
+                                        ConvertISODateFormat(leaveapplyObj.end),
+                                      ),
+                                      DateFormat,
+                                    )
+                                  : null
+                              }
+                            />
+                          </Col>
+                        </div>
+                        <div id="passwordHelpBlock" className="form-text mb-3">
+                          End Date auto-selects same as Start Date
+                        </div>
+
+                        {/* NEW: Work Date shows only after Start Date is selected */}
+                        {leaveapplyObj?.start && (
+                          <>
+                            <Label className="form-label">Work Date</Label>
+                            <DatePicker
+                              name="comp_off_work_date"
+                              format={DateFormat}
+                              placeholder="Select Work Date"
+                              style={{ width: "100%" }}
+                              value={compOffWorkDate}
+                              onChange={(date, dateStr) => {
+                                if (!dateStr) {
+                                  setCompOffWorkDate(null);
+                                  return;
+                                }
+                                setCompOffWorkDate(dayjs(dateStr, DateFormat));
+                                setCompOffDateError("");
+                              }}
+                            />
+                            {compOffDateError ? (
+                              <div className="lc_form_error_text">
+                                {compOffDateError}
+                              </div>
+                            ) : (
+                              <div id="passwordHelpBlock" className="form-text">
+                                Please select the Work Date (day you worked for
+                                this comp-off)
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {/* NEW: Day Type shows only after Work Date is selected */}
+                        {leaveapplyObj?.start && compOffWorkDate && (
+                          <div className="input-group mt-3">
+                            <Col lg={12}>
+                              <Label className="form-label">
+                                Select Day Type
+                              </Label>
+                            </Col>
+                            <Col lg={6}>
+                              <Select
+                                name="day_type"
+                                isMulti={false}
+                                options={day_type || []}
+                                placeholder="Select Day Type"
+                                className="basic-multi-select"
+                                classNamePrefix="lc-select"
+                                value={
+                                  leaveapplyObj?.day_type
+                                    ? day_type.find(
+                                        (d) =>
+                                          d.value === leaveapplyObj?.day_type,
+                                      )
+                                    : null
+                                }
+                                onChange={handleDayType}
+                              />
+                            </Col>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="input-group">
+                          <div className="input-group">
+                            <Label className="form-label">Select Date</Label>
+                          </div>
+                          <RangePicker
+                            name="multiple_date"
+                            format={DateFormat}
+                            placeholder={["Start Date", "End Date"]}
+                            disabledDate={disabledDate}
+                            onChange={handleMultiDayChange}
+                            value={
+                              !!leaveapplyObj?.start && !!leaveapplyObj?.end
+                                ? [
+                                    dayjs(
+                                      ConvertDateFormat(
+                                        ConvertISODateFormat(
+                                          leaveapplyObj?.start,
+                                        ),
+                                      ),
+                                      DateFormat,
+                                    ),
+                                    dayjs(
+                                      ConvertDateFormat(
+                                        ConvertISODateFormat(
+                                          leaveapplyObj?.end,
+                                        ),
+                                      ),
+                                      DateFormat,
+                                    ),
+                                  ]
+                                : null
+                            }
+                          />
+                          <span className="input-group-text">
+                            {daysCount} Days
+                          </span>
+                        </div>
+                        <div id="passwordHelpBlock" className="form-text">
+                          Please select Start &amp; End Date
+                        </div>
+
+                        {(daysCount === 1 || daysCount === 0.5) && (
+                          <div className="input-group mt-3">
+                            <Col lg={12}>
+                              <Label className="form-label">
+                                Select Day Type
+                              </Label>
+                            </Col>
+                            <Col lg={6}>
+                              <Select
+                                name="day_type"
+                                isMulti={false}
+                                options={day_type || []}
+                                placeholder="Select Day Type"
+                                className="basic-multi-select"
+                                classNamePrefix="lc-select"
+                                value={
+                                  leaveapplyObj?.day_type
+                                    ? day_type.find(
+                                        (d) =>
+                                          d.value === leaveapplyObj?.day_type,
+                                      )
+                                    : null
+                                }
+                                onChange={handleDayType}
+                              />
+                            </Col>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </Col>
+                )}
 
               {/* ── Half-day time pickers (day_type === 2) ── */}
               {leaveapplyObj?.day_type === 2 && (
