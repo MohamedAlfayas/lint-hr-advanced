@@ -50,13 +50,13 @@ const HolidayForm = () => {
   const dispatch = useDispatch();
   const [date, setDate] = useState("");
   const [holidayObj, setHolidayObj] = useState({});
-  const [dateError, setDateError] = useState("");
   const minDate = dayjs("01-01-1900", "DD-MM-YYYY");
   const maxDate = dayjs().add(1, "year");
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   console.log("form_obj Holiday FORM", form_obj);
   const ws_options = GetLocalStorageData("work_schedule") || [];
   const [selectedWS, setSelectedWS] = useState([]);
+
 
   useEffect(() => {
     console.log("USEEFFECT CALLED HOLIDAY");
@@ -74,6 +74,8 @@ const HolidayForm = () => {
 
   const FormikForm = useFormik({
     enableReinitialize: true,
+    validateOnChange: true,
+    validateOnBlur: true,
     initialValues: holidayObj,
     validationSchema: Yup.object({
       // name: Yup.string().trim().required("Please Enter Holiday Name"),
@@ -85,11 +87,35 @@ const HolidayForm = () => {
           /^[A-Za-z\s'-]+$/,
           "Holiday Name can contain letters, spaces, apostrophes (') and hyphens (-) only"
         ),
+
+      date: Yup.string()
+        .required("Select Date")
+        .test(
+          "valid-date",
+          "Enter the valid date",
+          (value) => {
+            if (!value) return false;
+
+            const parsedDate = dayjs(value, "YYYY-MM-DD", true);
+
+            return (
+              parsedDate.isValid() &&
+              !parsedDate.isBefore(dayjs("1900-01-01"), "day") &&
+              !parsedDate.isAfter(dayjs().add(1, "year"), "day")
+            );
+          }
+        ),
+
+      description: Yup.string()
+        .trim()
+        .max(200, "Description must not exceed 200 characters"),
+
       work_schedule_id_list: Yup.array()
         .required("Select Work Schedule")
         .min(1, "Select Work Schedule"),
     }),
     onSubmit: async (values) => {
+
       dispatch(setLoaderVisible(true));
 
       const Api = await PostApi("holiday/create/", values, false);
@@ -122,12 +148,19 @@ const HolidayForm = () => {
     });
   };
 
+
   const handleWSChange = (obj) => {
     setSelectedWS(obj);
+
+    const ids = obj.map((d) => d.id);
+
     setHolidayObj({
       ...holidayObj,
-      work_schedule_id_list: obj.map((d) => d.id),
+      work_schedule_id_list: ids,
     });
+
+    FormikForm.setFieldValue("work_schedule_id_list", ids);
+    FormikForm.setFieldTouched("work_schedule_id_list", true, false);
   };
 
   const handleDateChange = (selectedDates, dateStr) => {
@@ -139,24 +172,24 @@ const HolidayForm = () => {
   };
 
   const disableHolidayDates = (current) => {
-  if (!current) return false;
+    if (!current) return false;
 
-  return (
-    current.isBefore(dayjs("01-01-1900", "DD-MM-YYYY"), "day") ||
-    current.isAfter(dayjs().add(1, "year"), "day")
-  );
-};
+    return (
+      current.isBefore(dayjs("01-01-1900", "DD-MM-YYYY"), "day") ||
+      current.isAfter(dayjs().add(1, "year"), "day")
+    );
+  };
 
   const filterWorkSchedule = (option, inputValue) => {
-  // Don't show results when numbers or special characters are typed
-  if (inputValue && !/^[A-Za-z\s]*$/.test(inputValue)) {
-    return false;
-  }
+    // Don't show results when numbers or special characters are typed
+    if (inputValue && !/^[A-Za-z\s]*$/.test(inputValue)) {
+      return false;
+    }
 
-  return option.label
-    .toLowerCase()
-    .includes(inputValue.toLowerCase());
-};
+    return option.label
+      .toLowerCase()
+      .includes(inputValue.toLowerCase());
+  };
 
   return (
     <React.Fragment>
@@ -174,29 +207,30 @@ const HolidayForm = () => {
                   className="form-control"
                   id="holidayName"
                   placeholder="Enter holiday name"
-                  value={holidayObj.name || ""}
-                  // onChange={handleInputChange}
+                  value={FormikForm.values.name || ""}
                   onChange={(e) => {
                     const value = e.target.value
-                      .replace(/[^A-Za-z\s'-]/g, "")
-                      .slice(0, 150);
+                      .replace(/^\s+/, "")
+                      .replace(/[^A-Za-z\s'-]/g, "");
+
+                    FormikForm.setFieldValue("name", value);
+                    FormikForm.setFieldTouched("name", true, false);
 
                     setHolidayObj({
                       ...holidayObj,
                       name: value,
                     });
+
                   }}
-                  invalid={
-                    FormikForm.touched.name && FormikForm.errors.name
-                      ? true
-                      : false
-                  }
+                  onBlur={() => FormikForm.setFieldTouched("name", true)}
+
+                  invalid={!!(FormikForm.touched.name && FormikForm.errors.name)}
                 />
-                {FormikForm.touched.name && FormikForm.errors.name ? (
-                  <FormFeedback type="invalid">
+                {FormikForm.errors.name && (
+                  <div className="lc_form_error_text">
                     {FormikForm.errors.name}
-                  </FormFeedback>
-                ) : null}
+                  </div>
+                )}
               </Col>
               <Col lg={12}>
                 <div className="mb-3">
@@ -204,47 +238,39 @@ const HolidayForm = () => {
                   <DatePicker
                     name="date"
                     id="date"
-                    className={`form-control ${dateError ? "border-danger" : ""}`}
+                    className={`form-control ${FormikForm.touched.date && FormikForm.errors.date
+                        ? "border-danger"
+                        : ""
+                      }`}
                     format="DD-MM-YYYY"
-                    value={date ? dayjs(date, "DD-MM-YYYY") : null}
+                    value={
+                      FormikForm.values.date
+                        ? dayjs(FormikForm.values.date, "YYYY-MM-DD")
+                        : null
+                    }
                     allowClear={false}
                     disabledDate={disableHolidayDates}
                     inputReadOnly={true}
                     onChange={(selectedDate, dateString) => {
-                      if (!selectedDate) {
-                        setDateError("Enter the valid date");
-                        return;
-                      }
-
-                      setDateError("");
+                      const formattedDate = ConvertISODateFormat(
+                        ConvertDateFormat(dateString)
+                      );
 
                       setDate(dateString);
 
                       setHolidayObj({
                         ...holidayObj,
-                        date: ConvertISODateFormat(ConvertDateFormat(dateString)),
+                        date: formattedDate,
                       });
-                    }}
-                    onBlur={(e) => {
-                      const value = e.target.value?.trim();
 
-                      const parsedDate = dayjs(value, "DD-MM-YYYY", true);
-
-                      if (
-                        !parsedDate.isValid() ||
-                        parsedDate.isBefore(dayjs("01-01-1900", "DD-MM-YYYY"), "day") ||
-                        parsedDate.isAfter(dayjs().add(1, "year"), "day")
-                      ) {
-                        setDateError("Enter the valid date");
-                      } else {
-                        setDateError("");
-                      }
+                      FormikForm.setFieldValue("date", formattedDate);
+                      FormikForm.setFieldTouched("date", true, false);
                     }}
                   />
-                  {dateError && (
-                      <div className="lc_form_error_text">
-                        {dateError}
-                      </div>
+                  {FormikForm.errors.date && (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.date}
+                    </div>
                   )}
                 </div>
               </Col>
@@ -263,8 +289,8 @@ const HolidayForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.work_schedule_id_list &&
-                          FormikForm.errors.work_schedule_id_list
+                            FormikForm.touched.work_schedule_id_list &&
+                            FormikForm.errors.work_schedule_id_list
                             ? "red !important"
                             : provided.borderColor,
                       }),
@@ -273,14 +299,14 @@ const HolidayForm = () => {
                     onChange={handleWSChange}
                     invalid={
                       FormikForm.touched.work_schedule_id_list &&
-                      FormikForm.errors.work_schedule_id_list
+                        FormikForm.errors.work_schedule_id_list
                         ? true
                         : false
                     }
                     closeMenuOnSelect={false}
                   />
                   {FormikForm.touched.work_schedule_id_list &&
-                  FormikForm.errors.work_schedule_id_list ? (
+                    FormikForm.errors.work_schedule_id_list ? (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.work_schedule_id_list}
                     </div>
@@ -321,9 +347,29 @@ const HolidayForm = () => {
                   className="form-control"
                   id="description"
                   placeholder="Enter description"
-                  value={holidayObj.description || ""}
-                  onChange={handleInputChange}
-                ></textarea>
+                  value={FormikForm.values.description || ""}
+                  onChange={(e) => {
+                    const filteredValue = e.target.value
+                      .replace(/^\s+/, "")
+                      .replace(/[^A-Za-z0-9\s.,!?'"@\-_;:/&()\n]/g, "");
+
+                    FormikForm.setFieldValue("description", filteredValue);
+                    FormikForm.setFieldTouched("description", true, false);
+
+                    setHolidayObj({
+                      ...holidayObj,
+                      description: filteredValue,
+                    });
+                  }}
+                  onBlur={() => FormikForm.setFieldTouched("description", true)}
+                  rows={4}
+                >
+                </textarea>
+                {FormikForm.errors.description && (
+                  <div className="lc_form_error_text">
+                    {FormikForm.errors.description}
+                  </div>
+                )}
               </Col>
 
               <Col lg={12}>
