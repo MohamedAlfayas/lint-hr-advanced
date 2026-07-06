@@ -103,11 +103,13 @@ const ProjectForm = () => {
   }, [form_obj]);
 
   // ================= INPUT CHANGE =================
+  const MAX_PRICE = 5000000000;
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
     if (name === "price") {
-      if (value === "" || Number(value) >= 0) {
+      if (value === "" || (Number(value) >= 0 && Number(value) <= MAX_PRICE)) {
         setProjectData((prev) => ({
           ...prev,
           [name]: value,
@@ -161,9 +163,14 @@ const ProjectForm = () => {
 
     validationSchema: Yup.object({
       title: Yup.string()
-        .trim("Please Enter the project title")
-        // .matches(/^[A-Za-z\s]+$/, "Project title should contain only letters")
-        .required("Please Enter the project title"),
+        .trim()
+        .matches(/^[A-Za-z0-9._/\- ]+$/, "Please enter a valid project title.")
+        .required("Please Enter the project title")
+        .test(
+          "not-only-spaces",
+          "Please Enter the project title",
+          (value) => !value || value.trim().length > 0,
+        ),
 
       type: Yup.number().required("Please Select Project Type"),
 
@@ -178,7 +185,10 @@ const ProjectForm = () => {
       // Optional Fields
       start_date: Yup.string().nullable(),
       deadline: Yup.string().nullable(),
-      price: Yup.number().min(0, "Price cannot be negative").nullable(),
+      price: Yup.number()
+        .min(0, "Price cannot be negative")
+        .max(5000000000, "Price cannot exceed 500 Crores (5,000,000,000.00)")
+        .nullable(),
       description: Yup.string()
         .test(
           "not-only-spaces",
@@ -286,6 +296,7 @@ const ProjectForm = () => {
                     placeholder="Project Title"
                     value={projectData.title || ""}
                     onChange={handleInputChange}
+                    onBlur={FormikForm.handleBlur}
                     invalid={
                       FormikForm.touched.title && FormikForm.errors.title
                         ? true
@@ -458,11 +469,13 @@ const ProjectForm = () => {
                     className="form-control"
                     placeholder="0.00"
                     min={0}
+                    max={5000000000}
                     onKeyDown={(e) => {
                       if (e.key === "-" || e.key === "e" || e.key === "E") {
                         e.preventDefault();
                       }
                     }}
+                    onBlur={() => FormikForm.setFieldTouched("price", true)}
                     value={projectData.price || ""}
                     onChange={handleInputChange}
                     invalid={

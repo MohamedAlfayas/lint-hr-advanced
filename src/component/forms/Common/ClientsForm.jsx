@@ -37,6 +37,92 @@ import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSel
 
 defineElement(loadAnimation);
 
+const allowedTlds = [
+  "com",
+  "org",
+  "net",
+  "edu",
+  "gov",
+  "mil",
+  "info",
+  "biz",
+  "name",
+  "pro",
+  "xyz",
+  "online",
+  "site",
+  "store",
+  "tech",
+  "app",
+  "dev",
+  "ai",
+  "io",
+
+  "in",
+  "us",
+  "uk",
+  "au",
+  "ca",
+  "de",
+  "fr",
+  "jp",
+  "cn",
+  "sg",
+  "ae",
+  "nz",
+  "pk",
+  "lk",
+];
+
+const validateWebsite = (value) => {
+  if (!value || !value.trim()) {
+    return false;
+  }
+
+  const website = value.trim().toLowerCase();
+
+  if (website.length > 500) {
+    return false;
+  }
+
+  if (/^(ftp|smtp):\/\//i.test(website)) {
+    return false;
+  }
+
+  if (/\s/.test(website)) {
+    return false;
+  }
+
+  if (website.includes("..")) {
+    return false;
+  }
+
+  if (/^(w|ww)\./i.test(website)) {
+    return false;
+  }
+
+  const regex = /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}(:\d{1,5})?(\/.*)?$/i;
+
+  if (!regex.test(website)) {
+    return false;
+  }
+
+  const hostname = website
+    .replace(/^https?:\/\//, "")
+    .split("/")[0]
+    .split(":")[0];
+
+  const parts = hostname.split(".");
+
+  const lastTwo = parts.slice(-2).join(".");
+  const lastOne = parts[parts.length - 1];
+
+  return (
+    allowedTlds.includes(lastOne) ||
+    ["co.in", "gov.in", "edu.in"].includes(lastTwo)
+  );
+};
+
 // ─── Initial location object ──────────────────────────────────────────────────
 const initialLocationObj = {
   type_id: 0,
@@ -187,7 +273,7 @@ const ClientForm = () => {
     const { name, value } = e.target;
     setLocationObj((prev) => ({
       ...prev,
-      [name]: value.replace(/[^a-zA-Z\s]/g, ""),
+      [name]: value.replace(/[^a-zA-Z\s\-_]/g, ""),
     }));
   };
 
@@ -269,7 +355,10 @@ const ClientForm = () => {
 
     setClientData((prev) => ({
       ...prev,
-      [name]: value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
+      [name]: value
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase()
+        .slice(0, 15),
     }));
   };
 
@@ -287,8 +376,7 @@ const ClientForm = () => {
       phone_number: Yup.string()
         .required("Please Enter Phone Number")
         .matches(/^[0-9]+$/, "Phone number must contain digits only")
-        .min(7, "Phone number is too short")
-        .max(10, "Phone number is too long"),
+        .length(10, "Phone number must be 10 digits"),
       city: Yup.string()
         .trim()
         .matches(/^[A-Za-z\s]+$/, "City should contain only letters")
@@ -303,14 +391,18 @@ const ClientForm = () => {
       website: Yup.string()
         .trim()
         .required("Please enter website")
-        .matches(
-          /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+(\/[^\s]*)?$/,
-          "Enter a valid website URL",
+        .max(500, "Website URL must not exceed 500 characters")
+        .test(
+          "website-validation",
+          "Enter a valid website URL with a supported domain extension",
+          (value) => validateWebsite(value),
         ),
-      gst_number: Yup.string().matches(
-        /^[A-Za-z0-9]+$/,
-        "GST Number must contain only letters and numbers",
-      ),
+      gst_number: Yup.string()
+        .matches(
+          /^\d{2}[A-Z0-9]{5}[A-Z0-9]{4}\d{1}\d{1}[A-Z0-9]{2}$/,
+          "Enter a valid 15-character GST Number (e.g. 27AABFR5055K1Z0)",
+        )
+        .length(15, "GST Number must be exactly 15 characters"),
       address: Yup.string().trim().required("Address is required"),
     }),
     onSubmit: async () => {
@@ -358,9 +450,16 @@ const ClientForm = () => {
     initialValues: locationObj,
     validationSchema: Yup.object({
       name: Yup.string()
-        .trim()
-        .matches(/^[A-Za-z\s]+$/, "Location name should contain only letters")
-        .required("Please Enter Location Name"),
+        .matches(
+          /^[A-Za-z\s\-_]+$/,
+          "Location name should contain only letters, spaces, hyphens or underscores",
+        )
+        .required("Please Enter Location Name")
+        .test(
+          "not-only-spaces",
+          "Please Enter Location Name",
+          (value) => !value || value.trim().length > 0,
+        ),
       address: Yup.string().trim().required("Please Enter Address"),
       country: Yup.string().required("Please Select Country"),
       state: Yup.string().required("Please Select State"),
@@ -861,7 +960,16 @@ const ClientForm = () => {
                       className="form-control form-control-icon"
                       placeholder="www.company.com"
                       value={clientData.website || ""}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        const value = e.target.value
+                          .toLowerCase()
+                          .replace(/[^a-z0-9:/.-]/g, "");
+
+                        setClientData((prev) => ({
+                          ...prev,
+                          website: value,
+                        }));
+                      }}
                       onBlur={() => FormikForm.setFieldTouched("website", true)}
                       invalid={
                         FormikForm.touched.website && FormikForm.errors.website
@@ -916,9 +1024,25 @@ const ClientForm = () => {
                     id="gst_number"
                     className="form-control"
                     placeholder="GST Number"
+                    maxLength={15}
                     value={clientData.gst_number || ""}
                     onChange={handleGSTNumberOnly}
+                    onBlur={() =>
+                      FormikForm.setFieldTouched("gst_number", true)
+                    }
+                    invalid={
+                      FormikForm.touched.gst_number &&
+                      FormikForm.errors.gst_number
+                        ? true
+                        : false
+                    }
                   />
+                  {FormikForm.touched.gst_number &&
+                  FormikForm.errors.gst_number ? (
+                    <FormFeedback type="invalid">
+                      {FormikForm.errors.gst_number}
+                    </FormFeedback>
+                  ) : null}
                 </div>
               </Col>
 

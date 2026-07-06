@@ -56,15 +56,41 @@ import { CheckRoleAccess } from "../../common/js/CheckRoleAccess";
 
 const allowedTlds = [
   // gTLDs
-  "com", "org", "net", "edu", "gov", "mil",
-  "info", "biz", "name", "pro", "xyz",
-  "online", "site", "store", "tech", "app",
-  "dev", "ai", "io",
+  "com",
+  "org",
+  "net",
+  "edu",
+  "gov",
+  "mil",
+  "info",
+  "biz",
+  "name",
+  "pro",
+  "xyz",
+  "online",
+  "site",
+  "store",
+  "tech",
+  "app",
+  "dev",
+  "ai",
+  "io",
 
   // ccTLDs
-  "in", "us", "uk", "au", "ca", "de",
-  "fr", "jp", "cn", "sg", "ae", "nz",
-  "pk", "lk"
+  "in",
+  "us",
+  "uk",
+  "au",
+  "ca",
+  "de",
+  "fr",
+  "jp",
+  "cn",
+  "sg",
+  "ae",
+  "nz",
+  "pk",
+  "lk",
 ];
 const validateWebsite = (value) => {
   if (!value || !value.trim()) {
@@ -97,8 +123,7 @@ const validateWebsite = (value) => {
     return false;
   }
 
-  const regex =
-    /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}(:\d{1,5})?(\/.*)?$/i;
+  const regex = /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}(:\d{1,5})?(\/.*)?$/i;
 
   // return regex.test(website);
   if (!regex.test(website)) {
@@ -122,7 +147,6 @@ const validateWebsite = (value) => {
     ["co.in", "gov.in", "edu.in"].includes(lastTwo);
 
   return valid;
-
 };
 
 const OrgInfoTab = () => {
@@ -183,13 +207,12 @@ const OrgInfoTab = () => {
         .test(
           "website-validation",
           "Enter a valid website URL with a supported domain extension",
-          (value) => validateWebsite(value)
+          (value) => validateWebsite(value),
         ),
       contact_number: Yup.string()
         .required("Please enter phone number")
         .matches(/^[0-9]+$/, "Phone number must contain digits only")
-        .min(7, "Phone number is too short")
-        .max(10, "Phone number is too long"),
+        .length(10, "Phone number must be 10 digits"),
       contact_email: Yup.string()
         .trim()
         .required("Please enter email")
@@ -396,7 +419,6 @@ const OrgInfoTab = () => {
                             setField("website", value);
                             console.log(value.length);
                           }}
-                          
                           onBlur={() =>
                             FormikForm.setFieldTouched("website", true)
                           }
@@ -439,7 +461,7 @@ const OrgInfoTab = () => {
                                   )
                                 : null
                             }
-                            onChange={handleCountryCodeChange}    
+                            onChange={handleCountryCodeChange}
                           />
                         </Col>
                         <Col md={9}>
@@ -452,7 +474,7 @@ const OrgInfoTab = () => {
                             inputMode="numeric"
                             value={v.contact_number || ""}
                             onChange={(e) =>
-                              handleNumberOnly(e, "contact_number",10)
+                              handleNumberOnly(e, "contact_number", 10)
                             }
                             onBlur={() =>
                               FormikForm.setFieldTouched("contact_number", true)
@@ -493,7 +515,7 @@ const OrgInfoTab = () => {
                             FormikForm.setFieldTouched("contact_email", true);
                             setField(
                               "contact_email",
-                              (v.contact_email || "").trim().toLowerCase()
+                              (v.contact_email || "").trim().toLowerCase(),
                             );
                           }}
                           invalid={isInvalid("contact_email")}

@@ -63,7 +63,7 @@ const StatusForm = () => {
     const { name, value } = e.target;
 
     const inputValue =
-      name === "name" ? value.replace(/[^a-zA-Z\s]/g, "") : value;
+      name === "name" ? value.replace(/[^a-zA-Z\s\-_]/g, "") : value;
 
     setStatusData((prev) => ({
       ...prev,
@@ -85,9 +85,16 @@ const StatusForm = () => {
 
     validationSchema: Yup.object({
       name: Yup.string()
-        .trim()
+        .matches(
+          /^[A-Za-z\s\-_]+$/,
+          "Status name should contain only letters, spaces, hyphens or underscores",
+        )
         .required("Please Enter the status name")
-        .matches(/^[a-zA-Z\s]+$/, "Status name must contain letters only"),
+        .test(
+          "not-only-spaces",
+          "Please Enter the status name",
+          (value) => !value || value.trim().length > 0,
+        ),
     }),
 
     // ================= SUBMIT =================

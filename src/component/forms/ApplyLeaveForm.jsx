@@ -456,15 +456,25 @@ const ApplyLeaveForm = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    setLeaveApplyObj({
-      ...leaveapplyObj,
-      [name]: name === "reason" ? value.replace(/^\s+/, "") : value,
-    });
+    if (name === "reason") {
+      const filteredValue = value
+        .replace(/^\s+/, "")
+        .replace(/[^A-Za-z0-9\s.,\-\/()&:]/g, "");
 
-    FormikForm.setFieldValue(
-      name,
-      name === "reason" ? value.replace(/^\s+/, "") : value,
-    );
+      setLeaveApplyObj({
+        ...leaveapplyObj,
+        reason: filteredValue,
+      });
+
+      FormikForm.setFieldValue("reason", filteredValue);
+    } else {
+      setLeaveApplyObj({
+        ...leaveapplyObj,
+        [name]: value,
+      });
+
+      FormikForm.setFieldValue(name, value);
+    }
   };
 
   // ── Day-type change (Full / Half) ────────────────────────────────────────
@@ -669,6 +679,12 @@ const ApplyLeaveForm = () => {
       reason: Yup.string()
         .trim()
         .required("Reason is required")
+        .min(2, "Reason must be at least 2 characters")
+        .max(500, "Reason cannot exceed 500 characters")
+        .matches(
+          /^[A-Za-z0-9\s.,\-\/()&:]+$/,
+          "Only alphabets, numbers, spaces and . , - / ( ) & : are allowed",
+        )
         .test(
           "not-empty-space",
           "Reason cannot contain only spaces",
@@ -676,6 +692,7 @@ const ApplyLeaveForm = () => {
         ),
     }),
     onSubmit: async (values) => {
+      values.reason = values.reason.trim();
       if (isCompOffLeave && !compOffWorkDate) {
         setCompOffDateError("Please select the Work Date");
         toast.error("Please select the Work Date for Comp-Off leave");
@@ -781,6 +798,13 @@ const ApplyLeaveForm = () => {
                     name="leave_type_id"
                     isMulti={false}
                     options={leaveTypeOptions}
+                    isSearchable={true}
+                    filterOption={(option, inputValue) =>
+                      option.label
+                        .toLowerCase()
+                        .includes(inputValue.toLowerCase())
+                    }
+                    noOptionsMessage={() => "No records found"}
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
@@ -967,6 +991,13 @@ const ApplyLeaveForm = () => {
                                 name="day_type"
                                 isMulti={false}
                                 options={day_type || []}
+                                isSearchable={true}
+                                filterOption={(option, inputValue) =>
+                                  option.label
+                                    .toLowerCase()
+                                    .includes(inputValue.toLowerCase())
+                                }
+                                noOptionsMessage={() => "No records found"}
                                 placeholder="Select Day Type"
                                 className="basic-multi-select"
                                 classNamePrefix="lc-select"
@@ -1039,6 +1070,13 @@ const ApplyLeaveForm = () => {
                                 name="day_type"
                                 isMulti={false}
                                 options={day_type || []}
+                                isSearchable={true}
+                                filterOption={(option, inputValue) =>
+                                  option.label
+                                    .toLowerCase()
+                                    .includes(inputValue.toLowerCase())
+                                }
+                                noOptionsMessage={() => "No records found"}
                                 placeholder="Select Day Type"
                                 className="basic-multi-select"
                                 classNamePrefix="lc-select"

@@ -192,7 +192,7 @@ const LeaveDashboard = () => {
       },
     },
     {
-      Header: "Holiday Name",
+      Header: "Holiday",
       filterable: false,
       id: "holiday_name",
       accessor: (obj) => {
@@ -368,7 +368,7 @@ const LeaveDashboard = () => {
               filterKey={filterKey}
               filterOptions={filterOptions}
               width_per={"45%"}
-              table_col={9}
+              table_col={8}
               table_class={"Lc_leave_apply_table me-n3 ms-n3"}
               onChangeLeave={(row) => openChangeModal(row)}
             />

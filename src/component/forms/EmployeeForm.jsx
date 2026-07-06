@@ -119,25 +119,20 @@ const EmployeeForm = () => {
   // DOB: must be in the past (before today)
   // const disableDobDates = (current) => current && current >= today;
   const disableDobDates = (current) => {
-     return (
-    current &&
-    (
-      current.isBefore(minDobDate, "day") ||
-      current.isAfter(today, "day")
-    )
-  );
-};
+    return (
+      current &&
+      (current.isBefore(minDobDate, "day") || current.isAfter(today, "day"))
+    );
+  };
   // Joining date: from past up to 1 month in future
   // const disableJoiningDates = (current) => current && current > oneMonthLater;
   const disableJoiningDates = (current) => {
-  return (
-    current &&
-    (
-      current.isBefore(minJoiningDate, "day") ||
-      current.isAfter(maxJoiningDate, "day")
-    )
-  );
-};
+    return (
+      current &&
+      (current.isBefore(minJoiningDate, "day") ||
+        current.isAfter(maxJoiningDate, "day"))
+    );
+  };
 
   const showFileNameIfSelected = () => {
     const idProofUrl = form_obj.id_proof_url;
@@ -190,14 +185,16 @@ const EmployeeForm = () => {
     });
     console.log("form_obj.dob:", form_obj.dob);
     console.log("form_obj.joining_date:", form_obj.joining_date);
-    setDob(form_obj.dob ? ConvertDateFormat(ConvertISODateFormat(form_obj.dob)) : null);
+    setDob(
+      form_obj.dob
+        ? ConvertDateFormat(ConvertISODateFormat(form_obj.dob))
+        : null,
+    );
     console.log("form_obj:", form_obj);
     setJoinDate(
       form_obj.joining_date
-        ? ConvertDateFormat(
-            ConvertISODateFormat(form_obj.joining_date)
-          )
-        : null
+        ? ConvertDateFormat(ConvertISODateFormat(form_obj.joining_date))
+        : null,
     );
     form_obj?.primary_department_id_list?.length
       ? GetReportingManager(form_obj?.primary_department_id_list)
@@ -231,8 +228,6 @@ const EmployeeForm = () => {
     const val = e.target.value.replace(/[^A-Za-z\s'-]/g, "");
     setEmployeeObj({ ...employeeObj, [field]: val });
   };
-
-
 
   const handleProfileChange = (e) => {
     const file = e.target.files[0];
@@ -333,8 +328,6 @@ const EmployeeForm = () => {
     );
     FormikForm.setFieldTouched("dob", true);
   };
-
-  
 
   const handleJoinDateChange = (selectedJoinDate, dateStr, instance) => {
     setJoinDate(dateStr);
@@ -452,22 +445,46 @@ const EmployeeForm = () => {
 
       first_name: Yup.string()
         .trim()
-        .required("Please enter first name")
-        .min(2, "First name must be at least 2 characters")
-        .max(50, "First name cannot exceed 50 characters")
-        .matches(
-          /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/,
+        .nullable()
+        .test(
+          "first-name-validation",
           "Only alphabets, spaces, hyphens (-), and apostrophes (') are allowed",
+          (value) => {
+            if (!value || value.trim() === "") return true;
+
+            return /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/.test(value);
+          },
+        )
+        .test(
+          "first-name-length",
+          "First name must be between 2 and 50 characters",
+          (value) => {
+            if (!value || value.trim() === "") return true;
+
+            return value.trim().length >= 2 && value.trim().length <= 50;
+          },
         ),
 
       last_name: Yup.string()
         .trim()
-        .required("Please enter last name")
-        .min(2, "Last name must be at least 2 characters")
-        .max(50, "Last name cannot exceed 50 characters")
-        .matches(
-          /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/,
+        .nullable()
+        .test(
+          "last-name-validation",
           "Only alphabets, spaces, hyphens (-), and apostrophes (') are allowed",
+          (value) => {
+            if (!value || value.trim() === "") return true;
+
+            return /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/.test(value);
+          },
+        )
+        .test(
+          "last-name-length",
+          "Last name must be between 2 and 50 characters",
+          (value) => {
+            if (!value || value.trim() === "") return true;
+
+            return value.trim().length >= 2 && value.trim().length <= 50;
+          },
         ),
 
       email: Yup.string()
@@ -494,8 +511,8 @@ const EmployeeForm = () => {
             if (!value) return false;
             // return dayjs(value).isBefore(dayjs());
             return (
-            dayjs(value).isSame(dayjs(), "day") ||
-            dayjs(value).isBefore(dayjs(), "day")
+              dayjs(value).isSame(dayjs(), "day") ||
+              dayjs(value).isBefore(dayjs(), "day")
             );
           },
         ),
@@ -512,10 +529,8 @@ const EmployeeForm = () => {
             // return d.isBefore(dayjs().add(1, "month").add(1, "day"));
             return (
               d.isSame(dayjs("1900-01-01"), "day") ||
-              (
-                d.isAfter(dayjs("1900-01-01"), "day") &&
-                d.isBefore(dayjs().add(1, "year").add(1, "day"))
-              )
+              (d.isAfter(dayjs("1900-01-01"), "day") &&
+                d.isBefore(dayjs().add(1, "year").add(1, "day")))
             );
           },
         )
@@ -537,7 +552,7 @@ const EmployeeForm = () => {
               dojDate.isSame(minimumJoiningDate, "day") ||
               dojDate.isAfter(minimumJoiningDate, "day")
             );
-          }
+          },
         ),
 
       contact_number: Yup.string()
@@ -561,6 +576,8 @@ const EmployeeForm = () => {
         .min(1, "Please select work schedule"),
     }),
     onSubmit: async (values) => {
+      values.first_name = values.first_name?.trim() || "";
+      values.last_name = values.last_name?.trim() || "";
       const hasAtLeastOneTrue = Object.values(
         values.allowed_attendance_methods,
       ).some((v) => v === true);
@@ -578,10 +595,7 @@ const EmployeeForm = () => {
     let root_department = dep_options.find((d) => d.is_root === true);
     let root_department_id = !!root_department && root_department.id;
 
-    if (
-      employeeImage &&
-      !employeeImage.type.startsWith("image/")
-    ) {
+    if (employeeImage && !employeeImage.type.startsWith("image/")) {
       toast.error("Only image files are allowed");
       return;
     }
@@ -682,14 +696,14 @@ const EmployeeForm = () => {
   };
 
   console.log("joining_date:", joining_date);
-console.log(
-  "dayjs value:",
-  joining_date ? dayjs(joining_date, DateFormat) : null
-);
-console.log(
-  "isValid:",
-  joining_date ? dayjs(joining_date, DateFormat).isValid() : null
-);
+  console.log(
+    "dayjs value:",
+    joining_date ? dayjs(joining_date, DateFormat) : null,
+  );
+  console.log(
+    "isValid:",
+    joining_date ? dayjs(joining_date, DateFormat).isValid() : null,
+  );
 
   return (
     <React.Fragment>
@@ -810,7 +824,7 @@ console.log(
               <Col md={6} lg={6} xxl={6}>
                 <div>
                   <Label htmlFor="first_name" className="form-label">
-                    First Name <span>*</span>
+                    First Name
                   </Label>
                   <div className="form-icon right">
                     <Input
@@ -852,7 +866,7 @@ console.log(
               <Col md={6} lg={6} xxl={6}>
                 <div>
                   <Label htmlFor="last_name" className="form-label">
-                    Last Name <span>*</span>
+                    Last Name
                   </Label>
                   <div className="form-icon right">
                     <Input
@@ -1003,7 +1017,7 @@ console.log(
                     onChange={handleDateChange}
                     allowClear={false}
                     disabledDate={disableDobDates}
-                    inputReadOnly={true} 
+                    inputReadOnly={true}
                   />
                   {FormikForm.touched.dob && FormikForm.errors.dob && (
                     <div className="lc_form_error_text">
@@ -1262,7 +1276,7 @@ console.log(
               <Col lg={12}>
                 <div>
                   <Label htmlFor="reporting_manager_id">
-                    Reporting Manager
+                    Reporting Manager <span>*</span>
                   </Label>
                   <Select
                     id="reporting_manager_id"
@@ -1412,7 +1426,7 @@ console.log(
                     allowClear={false}
                     onChange={handleJoinDateChange}
                     disabledDate={disableJoiningDates}
-                    inputReadOnly={true} 
+                    inputReadOnly={true}
                   />
                   {FormikForm.touched.joining_date &&
                     FormikForm.errors.joining_date && (
@@ -1784,7 +1798,7 @@ console.log(
               )}
 
               {/* ── Save button for new employees ─────────────────────────── */}
-              {!isExistingEmployee && (
+              {/* {!isExistingEmployee && (
                 <Col lg={12}>
                   <div className="text-end mt-3">
                     <Button type="submit" color="success" className="btn-label">
@@ -1793,7 +1807,7 @@ console.log(
                     </Button>
                   </div>
                 </Col>
-              )}
+              )} */}
             </Row>
           </Form>
         </Col>
