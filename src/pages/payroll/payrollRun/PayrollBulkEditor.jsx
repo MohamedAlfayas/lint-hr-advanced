@@ -261,14 +261,15 @@ const PayrollBulkEditor = () => {
   const [componentLookup, setComponentLookup] = useState({});
   // { key: string, label: string, type: "earning"|"deduction", reason: string }
   const [adjCols,    setAdjCols]    = useState([]);
-  const [adjForm,    setAdjForm]    = useState({ label: "", type: "earning", reason: "" });
-  const [adjPanelOpen, setAdjPanelOpen] = useState(false);
+  const [adjForm, setAdjForm] = useState({ label: "", type: "earning", reason: "", defaultAmount: "", applyTo: "all" });
+  const [adjModalOpen, setAdjModalOpen] = useState(false);
 
   // ── Existing payslip adjustments fetched from API (to pre-fill cells)
   const [existingAdjs, setExistingAdjs] = useState({}); // { empId: [{id, label, adjustment_type, amount}] }
 
   // ── Regularization modal — { employeeId, employeeName } | null
   const [regModal, setRegModal] = useState(null);
+  
 
   // ─── Load salary structures + master component list once ───────────────────
   useEffect(() => {
@@ -472,20 +473,53 @@ const PayrollBulkEditor = () => {
       toast.warning("An adjustment with this label and type already exists.");
       return;
     }
-    setAdjCols((prev) => [...prev, { key, label, type: adjForm.type, reason: adjForm.reason }]);
-    // Pre-fill 0 for all employees
+    const defaultAmt = safeNum(adjForm.defaultAmount);
+    const applyToAll = adjForm.applyTo === "all";
+    const selectedIds = adjForm.selectedStructures || [];
+
+    setAdjCols((prev) => [...prev, {
+      key, label, type: adjForm.type, reason: adjForm.reason,
+      defaultAmount: safeNum(adjForm.defaultAmount),
+      structureIds: adjForm.applyTo === "all" ? null : adjForm.selectedStructures,
+    }]);
+
     setEdits((prev) => {
       const next = { ...prev };
-      Object.keys(next).forEach((eid) => { next[eid] = { ...next[eid], [key]: 0 }; });
+      rows.forEach((row) => {
+        const eid = row._isPayslip ? row.employee : row.id;
+        const rowStructId = row._isPayslip ? row.salary_structure : row.salary_structure_id;
+        const applies = applyToAll || selectedIds.includes(String(rowStructId));
+        next[eid] = { ...next[eid], [key]: applies ? defaultAmt : 0 };
+      });
       return next;
     });
+
     setOrigEdits((prev) => {
       const next = { ...prev };
-      Object.keys(next).forEach((eid) => { next[eid] = { ...next[eid], [key]: 0 }; });
+      rows.forEach((row) => {
+        const eid = row._isPayslip ? row.employee : row.id;
+        next[eid] = { ...next[eid], [key]: 0 };
+      });
       return next;
     });
-    setAdjForm({ label: "", type: "earning", reason: "" });
+
+    setAdjForm({ label: "", type: "earning", reason: "", defaultAmount: "", applyTo: "all", selectedStructures: [] });
     toast.success(`Column "${label}" added to the sheet.`);
+  };
+
+  // Wraps handleAddAdjCol for the modal's primary button: validates first so
+  // the modal only closes on a successful add (duplicate labels stay open
+  // with the warning toast still visible).
+  const handleAddAdjColAndClose = () => {
+    const label = adjForm.label.trim();
+    if (!label) { toast.warning("Enter a label."); return; }
+    const key = `adj_${label}_${adjForm.type}`;
+    if (adjCols.find((c) => c.key === key)) {
+      toast.warning("An adjustment with this label and type already exists.");
+      return;
+    }
+    handleAddAdjCol();
+    setAdjModalOpen(false);
   };
 
   const removeAdjCol = async (col) => {
@@ -784,84 +818,151 @@ const PayrollBulkEditor = () => {
         </CardBody>
       </Card>
 
-      {/* ── Adjustment column panel ── */}
-      <Card className="shadow-none border mb-3" style={{ borderLeft: "3px solid #6366f1 !important" }}>
-        <CardHeader
-          className="py-2 px-3 d-flex align-items-center justify-content-between"
-          style={{ cursor: "pointer", background: "#f5f3ff", borderBottom: adjPanelOpen ? "1px solid #e0e7ff" : "none" }}
-          onClick={() => setAdjPanelOpen((p) => !p)}
+      {/* ── Adjustment columns bar — compact strip showing active columns as
+          chips (removable inline) plus a button that opens the add-adjustment
+          modal. Replaces the old always-expandable panel so the grid below
+          doesn't get pushed down while the form is in use. ── */}
+      <Card className="shadow-none border mb-3" style={{ borderLeft: "3px solid #6366f1" }}>
+        <CardBody
+          className="d-flex align-items-center justify-content-between flex-wrap gap-3"
+          style={{ padding: "12px 18px" }}
         >
-          <div className="d-flex align-items-center gap-2">
-            <i className="ri-add-circle-line" style={{ fontSize: 16, color: "#6366f1" }}></i>
-            <span style={{ fontWeight: 700, fontSize: 13, color: "#4338ca" }}>Add Adjustment Column</span>
-            {adjCols.length > 0 && (
-              <Badge color="primary" pill style={{ fontSize: 10 }}>{adjCols.length} active</Badge>
-            )}
-          </div>
-          <i className={`ri-arrow-${adjPanelOpen ? "up" : "down"}-s-line`} style={{ color: "#6366f1", fontSize: 16 }}></i>
-        </CardHeader>
+          <div className="d-flex align-items-center flex-wrap gap-3">
+            <div className="d-flex align-items-center gap-2">
+              
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: "#3730a3", lineHeight: 1.2 }}>Adjustment Columns</div>
+                <div style={{ fontSize: 10.5, color: "#818cf8" }}>One-off earnings / deductions for this run</div>
+              </div>
+            </div>
 
-        {adjPanelOpen && (
-          <CardBody className="py-3 px-3">
-            <p className="text-muted mb-3" style={{ fontSize: 12 }}>
-              Adding a column here creates a new <strong>Additional Earnings</strong> or <strong>Additional Deductions</strong> column
-              visible for every employee. Enter the amount per-employee in the grid. Only employees where you enter a non-zero value will have that adjustment saved.
-            </p>
-
-            {/* Active adjustment columns */}
             {adjCols.length > 0 && (
-              <div className="mb-3 d-flex flex-wrap gap-2">
-                {adjCols.map((col) => (
-                  <div key={col.key} style={{
-                    display: "flex", alignItems: "center", gap: 6, padding: "4px 10px",
-                    borderRadius: 20, fontSize: 12, fontWeight: 600,
-                    background: col.type === "earning" ? "#f0fdf4" : "#fff5f5",
-                    border: `1px solid ${col.type === "earning" ? "#86efac" : "#fca5a5"}`,
-                    color: col.type === "earning" ? "#166534" : "#c53030",
-                  }}>
-                    <i className={`ri-${col.type === "earning" ? "arrow-up" : "arrow-down"}-line`}></i>
-                    {col.label}
-                    <button
-                      onClick={() => handleRemoveAdjCol(col)}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginLeft: 2, color: "#999", fontSize: 13, lineHeight: 1 }}
-                      title="Remove column"
-                    >×</button>
-                  </div>
-                ))}
+              <div className="d-flex flex-wrap gap-2">
+                {adjCols.map((col) => {
+                  const isEarn = col.type === "earning";
+                  const palette = isEarn ? GROUP_COLORS.earning : GROUP_COLORS.deduction;
+                  return (
+                    <div key={col.key} style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      padding: "4px 6px 4px 10px", borderRadius: 8,
+                      background: "#fff",
+                      border: `1px solid ${palette.border}`,
+                    }}>
+                      <i className={`ri-arrow-${isEarn ? "up" : "down"}-line`} style={{ fontSize: 11, color: palette.text }}></i>
+                      <span style={{ fontSize: 11.5, fontWeight: 700, color: "#334155" }}>{col.label}</span>
+                      <button
+                        onClick={() => handleRemoveAdjCol(col)}
+                        style={{
+                          background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 5,
+                          cursor: "pointer", width: 17, height: 17, display: "flex",
+                          alignItems: "center", justifyContent: "center", color: "#94a3b8",
+                          fontSize: 11, lineHeight: 1, flexShrink: 0,
+                        }}
+                        title="Remove column"
+                      >×</button>
+                    </div>
+                  );
+                })}
               </div>
             )}
+          </div>
 
-            {/* New column form */}
-            <Row className="g-2 align-items-end">
-              <Col sm={4}>
-                <Label style={{ fontSize: 12, fontWeight: 600 }}>Column Label</Label>
-                <Input bsSize="sm" value={adjForm.label}
-                  onChange={(e) => setAdjForm({ ...adjForm, label: e.target.value })}
-                  placeholder="e.g. Festival Bonus, Advance Recovery" />
-              </Col>
-              <Col sm={2}>
-                <Label style={{ fontSize: 12, fontWeight: 600 }}>Type</Label>
-                <Input type="select" bsSize="sm" value={adjForm.type}
-                  onChange={(e) => setAdjForm({ ...adjForm, type: e.target.value })}>
-                  <option value="earning">Earning (+)</option>
-                  <option value="deduction">Deduction (−)</option>
+          <Button
+            color="primary" size="sm"
+            onClick={() => setAdjModalOpen(true)}
+            style={{ borderRadius: 7, fontWeight: 600, padding: "7px 16px", boxShadow: "0 2px 6px rgba(99,102,241,0.25)", flexShrink: 0 }}
+          >
+            <i className="ri-add-line me-1"></i>Add Adjustment
+          </Button>
+        </CardBody>
+      </Card>
+
+      {/* ── Add Adjustment modal ── */}
+      <Modal isOpen={adjModalOpen} toggle={() => setAdjModalOpen(false)} centered size="lg">
+        <ModalHeader toggle={() => setAdjModalOpen(false)} className="bg-light">
+          Add Adjustment Column
+        </ModalHeader>
+        <ModalBody>
+          <p className="mb-3 d-flex align-items-start gap-2" style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>
+            <i className="ri-information-line mt-1" style={{ color: "#a5b4fc", fontSize: 14, flexShrink: 0 }}></i>
+            <span>
+              Creates a new <strong style={{ color: "#166534" }}>Earnings</strong> or{" "}
+              <strong style={{ color: "#c53030" }}>Deductions</strong> column visible for every employee in the grid.
+              Enter the amount per employee there — only non-zero cells are saved.
+            </span>
+          </p>
+
+          <Row className="g-3">
+            <Col md={6}>
+              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Column Label</Label>
+              <Input bsSize="sm" value={adjForm.label}
+                onChange={(e) => setAdjForm({ ...adjForm, label: e.target.value })}
+                placeholder="e.g. Festival Bonus"
+                style={{ borderRadius: 7 }} />
+            </Col>
+            <Col md={6}>
+              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Type</Label>
+              <Input type="select" bsSize="sm" value={adjForm.type}
+                onChange={(e) => setAdjForm({ ...adjForm, type: e.target.value })}
+                style={{ borderRadius: 7 }}>
+                <option value="earning">▲ Earning</option>
+                <option value="deduction">▼ Deduction</option>
+              </Input>
+            </Col>
+
+            <Col md={6}>
+              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Default Amount</Label>
+              <Input type="number" min="0" bsSize="sm" value={adjForm.defaultAmount}
+                onChange={(e) => setAdjForm({ ...adjForm, defaultAmount: e.target.value })}
+                placeholder="0" style={{ borderRadius: 7 }} />
+            </Col>
+            <Col md={6}>
+              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Apply To</Label>
+              <Input type="select" bsSize="sm" value={adjForm.applyTo}
+                onChange={(e) => setAdjForm({ ...adjForm, applyTo: e.target.value, selectedStructures: [] })}
+                style={{ borderRadius: 7 }}>
+                <option value="all">All Structures</option>
+                <option value="specific">Specific</option>
+              </Input>
+            </Col>
+
+            {adjForm.applyTo === "specific" && (
+              <Col md={12}>
+                <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Select Structures</Label>
+                <Input type="select" multiple bsSize="sm"
+                  value={adjForm.selectedStructures || []}
+                  onChange={(e) => setAdjForm({
+                    ...adjForm,
+                    selectedStructures: Array.from(e.target.selectedOptions, (o) => o.value),
+                  })}
+                  style={{ height: 90, borderRadius: 7 }}
+                >
+                  {structures.map((s) => <option key={s.id} value={String(s.id)}>{s.name}</option>)}
                 </Input>
               </Col>
-              <Col sm={4}>
-                <Label style={{ fontSize: 12, fontWeight: 600 }}>Reason / Note (optional)</Label>
-                <Input bsSize="sm" value={adjForm.reason}
-                  onChange={(e) => setAdjForm({ ...adjForm, reason: e.target.value })}
-                  placeholder="e.g. Diwali bonus payout" />
-              </Col>
-              <Col sm={2}>
-                <Button color="primary" size="sm" className="w-100" onClick={handleAddAdjCol}>
-                  <i className="ri-add-line me-1"></i>Add Column
-                </Button>
-              </Col>
-            </Row>
-          </CardBody>
-        )}
-      </Card>
+            )}
+
+            <Col md={12}>
+              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Reason (optional)</Label>
+              <Input bsSize="sm" value={adjForm.reason}
+                onChange={(e) => setAdjForm({ ...adjForm, reason: e.target.value })}
+                placeholder="Shown on the audit trail"
+                style={{ borderRadius: 7 }} />
+            </Col>
+          </Row>
+        </ModalBody>
+        <ModalFooter className="bg-light">
+          <Button color="secondary" outline size="sm" onClick={() => setAdjModalOpen(false)}>Cancel</Button>
+          <Button
+            color="primary" size="sm"
+            onClick={handleAddAdjColAndClose}
+            disabled={!adjForm.label.trim()}
+            style={{ fontWeight: 600 }}
+          >
+            <i className="ri-add-line me-1"></i>Add Column
+          </Button>
+        </ModalFooter>
+      </Modal>
 
       {/* ── Grid ── */}
       <Card className="shadow-none border">
