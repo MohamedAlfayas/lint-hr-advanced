@@ -219,7 +219,7 @@ const OrgInfoTab = () => {
         .transform((value) => (value ? value.trim().toLowerCase() : value))
         .max(254, "Email must not exceed 254 characters")
         .matches(
-          /^[a-zA-Z0-9]+([._+][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/,
+          /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/,
           "Enter a valid email address",
         ),
       about: Yup.string().trim().required("Please enter company overview"),

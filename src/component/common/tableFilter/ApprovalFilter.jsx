@@ -125,6 +125,19 @@ const ApprovalFilter = ({ formname }) => {
     setSelectedEmployees(selected || []);
   };
 
+  const handleEmployeeSearch = (option, inputValue) => {
+    const search = inputValue.trim();
+
+    if (!search) return true;
+    if (/^\d+$/.test(search)) {
+      return false;
+    }
+
+    return (option.label || option.data?.name || "")
+      .toLowerCase()
+      .includes(search.toLowerCase());
+  };
+
   useEffect(() => {
     if (
       (profile_data.permission_list.includes(
@@ -437,6 +450,7 @@ const ApprovalFilter = ({ formname }) => {
                           (d) => d.id === employeeType,
                         ) || employeeTypeOptions[1]
                       }
+                      filterOption={handleEmployeeSearch}
                     />
                   </Col>
                 ) : null}
@@ -454,6 +468,7 @@ const ApprovalFilter = ({ formname }) => {
                     onChange={handleEmployeeChange}
                     components={{ Option: EmployeeDisplayInSelect }}
                     value={selectedEmployees}
+                    filterOption={handleEmployeeSearch}
                   />
                 </Col>
                 <Col md={3}>
@@ -480,6 +495,7 @@ const ApprovalFilter = ({ formname }) => {
                     onChange={(e) =>
                       handleFilterChange(e, "primary_department_id_list")
                     }
+                    filterOption={handleEmployeeSearch}
                   />
                 </Col>
                 <Col md={3}>

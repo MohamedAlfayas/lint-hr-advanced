@@ -745,11 +745,11 @@ const ApplyLeaveForm = () => {
         return;
       }
 
-      if (finalLeaveObj.requested_leave_count > leaveBalanceCount) {
-        toast.error("Selected Leave Exceeds Balance Leave");
-        dispatch(setLoaderVisible(false));
-        return;
-      }
+      // if (finalLeaveObj.requested_leave_count > leaveBalanceCount) {
+      //   toast.error("Selected Leave Exceeds Balance Leave");
+      //   dispatch(setLoaderVisible(false));
+      //   return;
+      // }
 
       try {
         const ApiRes = await PostApi(

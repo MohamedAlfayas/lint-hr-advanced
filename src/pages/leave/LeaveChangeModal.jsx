@@ -63,28 +63,28 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
   const dispatch = useDispatch();
 
   const { leave_type_for_current_employee } = useSelector(
-    (state) => state.LeaveTypeReducer
+    (state) => state.LeaveTypeReducer,
   );
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
-  const profileData      = GetLocalStorageData("my_profile")    || [];
-  const holidayData      = GetLocalStorageData("holiday")        || [];
+  const profileData = GetLocalStorageData("my_profile") || [];
+  const holidayData = GetLocalStorageData("holiday") || [];
 
   // ── local state ────────────────────────────────────────────────────────────
-  const [leaveapplyObj,        setLeaveApplyObj]        = useState({});
+  const [leaveapplyObj, setLeaveApplyObj] = useState({});
   const [selectedLeaveTypeObj, setSelectedLeaveTypeObj] = useState({});
-  const [WeekOffDays,          setWeekOffDays]          = useState([]);
-  const [HolidayDays,          setHolidayDays]          = useState([]);
-  const [daysCount,            setDaysCount]            = useState("");
-  const [hourDiff,             setHourDiff]             = useState(null);
-  const [inBetweenDays,        setInBetweenDays]        = useState([]);
-  const [leaveBalanceCount,    setLeaveBalanceCount]    = useState(0);
-  const [fromDate,             setFromDate]             = useState(null);
-  const [toDate,               setToDate]               = useState(null);
-  const [halfDayStartTime,     setHalfDayStartTime]     = useState(null);
-  const [halfDayEndTime,       setHalfDayEndTime]       = useState(null);
-  const [timeError,            setTimeError]            = useState("");
-  const [cancelLoading,        setCancelLoading]        = useState(false);
+  const [WeekOffDays, setWeekOffDays] = useState([]);
+  const [HolidayDays, setHolidayDays] = useState([]);
+  const [daysCount, setDaysCount] = useState("");
+  const [hourDiff, setHourDiff] = useState(null);
+  const [inBetweenDays, setInBetweenDays] = useState([]);
+  const [leaveBalanceCount, setLeaveBalanceCount] = useState(0);
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
+  const [halfDayStartTime, setHalfDayStartTime] = useState(null);
+  const [halfDayEndTime, setHalfDayEndTime] = useState(null);
+  const [timeError, setTimeError] = useState("");
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const { RangePicker } = DatePicker;
   const initialTime = dayjs("00:00", "HH:mm");
@@ -92,11 +92,11 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
   // ── Build select options — mirrors ApplyLeaveForm exactly ─────────────────
   // value = leave_type.id, full_obj = the full leave_type_for_employee record
   const leaveTypeOptions = leave_type_for_current_employee.map((item) => ({
-    value:               item.leave_type.id,
-    label:               item.leave_type.name,
+    value: item.leave_type.id,
+    label: item.leave_type.name,
     balance_leave_count: item.available_count,
-    unit:                item.leave_type.unit,
-    full_obj:            item,
+    unit: item.leave_type.unit,
+    full_obj: item,
   }));
 
   // ── populate form when record / open changes ───────────────────────────────
@@ -105,13 +105,13 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
 
     // ── Work schedule week-off days ────────────────────────────────────────
     const thisEmpWS = workScheduleData?.find(
-      (val) => val.id === profileData.work_schedule_id
+      (val) => val.id === profileData.work_schedule_id,
     );
     if (thisEmpWS) {
       setWeekOffDays(
         thisEmpWS.workday
           .map((d) => (d.is_day_on === false ? d.day_id : null))
-          .filter((id) => id !== null)
+          .filter((id) => id !== null),
       );
     }
     setHolidayDays(holidayData.map((d) => d?.date));
@@ -120,7 +120,7 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
     // Match by leave_type.id (same as ApplyLeaveForm's form_obj.leave_type_id)
     if (leaveRecord.leave_type_id !== 0) {
       const leaveTypeRecord = leave_type_for_current_employee.find(
-        (d) => d.leave_type?.id === leaveRecord.leave_type_id
+        (d) => d.leave_type?.id === leaveRecord.leave_type_id,
       );
       if (leaveTypeRecord) {
         setLeaveBalanceCount(leaveTypeRecord.available_count);
@@ -134,7 +134,7 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
     setLeaveApplyObj({
       ...leaveRecord,
       start: leaveRecord?.start,
-      end:   leaveRecord?.end,
+      end: leaveRecord?.end,
     });
 
     setDaysCount(leaveRecord.requested_leave_count);
@@ -146,14 +146,14 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
     // Only populate half-day times for day-unit leaves with day_type=2 (Half Day).
     // For hour-unit leaves clear these states so the half-day section never renders.
     const leaveTypeRecordForUnit = leave_type_for_current_employee.find(
-      (d) => d.leave_type?.id === leaveRecord.leave_type_id
+      (d) => d.leave_type?.id === leaveRecord.leave_type_id,
     );
     if (
       leaveRecord.day_type === 2 &&
       leaveTypeRecordForUnit?.leave_type?.unit === leave_type_day_unit
     ) {
       setHalfDayStartTime(leaveRecord.start ?? null);
-      setHalfDayEndTime(leaveRecord.end   ?? null);
+      setHalfDayEndTime(leaveRecord.end ?? null);
     } else {
       setHalfDayStartTime(null);
       setHalfDayEndTime(null);
@@ -163,11 +163,13 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
     if (leaveRecord?.unit === 2) {
       if (leaveRecord.start)
         setFromDate(
-          ConvertToDateTimeFormat(ConvertToISODateTimeFormat(leaveRecord.start))
+          ConvertToDateTimeFormat(
+            ConvertToISODateTimeFormat(leaveRecord.start),
+          ),
         );
       if (leaveRecord.end)
         setToDate(
-          ConvertToDateTimeFormat(ConvertToISODateTimeFormat(leaveRecord.end))
+          ConvertToDateTimeFormat(ConvertToISODateTimeFormat(leaveRecord.end)),
         );
     } else {
       setFromDate(null);
@@ -202,7 +204,7 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
    */
   const handleStartEndDatesChange = (leave_type_record, skipReset = false) => {
     const localEmpWS = workScheduleData?.find(
-      (val) => val.id === profileData.work_schedule_id
+      (val) => val.id === profileData.work_schedule_id,
     );
 
     // Support both shapes: record.leave_type.* OR record.*
@@ -214,7 +216,7 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
         setWeekOffDays(
           localEmpWS.workday
             .map((d) => (d.is_day_on === false ? d.day_id : null))
-            .filter((id) => id !== null)
+            .filter((id) => id !== null),
         );
 
     leaveTypeData?.holiday_between_leave === true
@@ -228,12 +230,12 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
       // New selection — clear dates, counts, times
       setLeaveApplyObj((prev) => ({
         ...prev,
-        leave_type_id:         leaveTypeData?.id,
-        unit:                  leaveTypeData?.unit,
-        start:                 null,
-        end:                   null,
-        in_between_dates:      [],
-        day_type:              null,
+        leave_type_id: leaveTypeData?.id,
+        unit: leaveTypeData?.unit,
+        start: null,
+        end: null,
+        in_between_dates: [],
+        day_type: null,
         requested_leave_count: 0,
       }));
       setHourDiff("");
@@ -249,7 +251,7 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
   const disabledDate = (current) =>
     WeekOffDays.includes(current.day()) ||
     HolidayDays.map((d) => ConvertDateFormat(d)).includes(
-      current.format("DD-MM-YYYY")
+      current.format("DD-MM-YYYY"),
     );
 
   // Called when user picks a leave type from the Select dropdown
@@ -292,8 +294,7 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
     const intermediateDates = generateIntermediaryDates();
     const validDays = intermediateDates.filter(
       (d) =>
-        !WeekOffDays.includes(new Date(d).getDay()) &&
-        !HolidayDays.includes(d)
+        !WeekOffDays.includes(new Date(d).getDay()) && !HolidayDays.includes(d),
     );
 
     setInBetweenDays(validDays);
@@ -305,12 +306,10 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
       start: startDate
         ? ConvertISODateFormat(ConvertDateFormat(startDate))
         : null,
-      end: endDate
-        ? ConvertISODateFormat(ConvertDateFormat(endDate))
-        : null,
+      end: endDate ? ConvertISODateFormat(ConvertDateFormat(endDate)) : null,
       requested_leave_count: validDaysCount,
-      day_type:              1,
-      in_between_dates:      validDaysCount < 1 ? [] : validDays,
+      day_type: 1,
+      in_between_dates: validDaysCount < 1 ? [] : validDays,
     }));
   };
 
@@ -322,9 +321,9 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
     setHalfDayEndTime(null);
     setLeaveApplyObj((prev) => ({
       ...prev,
-      day_type:              value,
+      day_type: value,
       requested_leave_count: count,
-      in_between_dates:      value === 1 ? [prev.start] : [],
+      in_between_dates: value === 1 ? [prev.start] : [],
     }));
     setDaysCount(count);
   };
@@ -371,18 +370,18 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
       diffMs = e - s;
     }
 
-    const hrs           = diffMs / (1000 * 60 * 60);
-    const roundedMins   = Math.round((hrs * 60) / 30) * 30;
-    const roundedHours  = Math.floor(roundedMins / 60);
+    const hrs = diffMs / (1000 * 60 * 60);
+    const roundedMins = Math.round((hrs * 60) / 30) * 30;
+    const roundedHours = Math.floor(roundedMins / 60);
     const remainingMins = roundedMins % 60;
 
     setHourDiff(
-      `${String(roundedHours).padStart(2, "0")}:${String(remainingMins).padStart(2, "0")}`
+      `${String(roundedHours).padStart(2, "0")}:${String(remainingMins).padStart(2, "0")}`,
     );
     setLeaveApplyObj((prev) => ({
       ...prev,
       requested_leave_count: roundedHours + remainingMins / 60,
-      day_type:              1,
+      day_type: 1,
     }));
   };
 
@@ -402,13 +401,13 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
         </p>
       `,
       icon: "warning",
-      showCancelButton:    true,
-      confirmButtonColor:  "#d33",
-      cancelButtonColor:   "#6c757d",
-      confirmButtonText:   "Yes, Cancel Leave",
-      cancelButtonText:    "No, Keep It",
-      reverseButtons:      true,
-      focusCancel:         true,
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Yes, Cancel Leave",
+      cancelButtonText: "No, Keep It",
+      reverseButtons: true,
+      focusCancel: true,
     }).then(async (result) => {
       if (!result.isConfirmed) return;
 
@@ -419,21 +418,22 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
         const res = await PostApi(
           "leave/cancel-leave/",
           { id: leaveRecord?.id },
-          false
+          false,
         );
 
         if (res.status === 200) {
           const listRes = await Api({
             method: "GET",
-            url:    "leave/get-my-leave-application/",
+            url: "leave/get-my-leave-application/",
           });
           dispatch(setLeaveApplication(listRes?.data?.data || []));
 
           MySwal.fire({
-            title:             "Cancelled!",
-            text:              res?.data?.message || "Leave has been cancelled successfully.",
-            icon:              "success",
-            timer:             2000,
+            title: "Cancelled!",
+            text:
+              res?.data?.message || "Leave has been cancelled successfully.",
+            icon: "success",
+            timer: 2000,
             showConfirmButton: false,
           });
 
@@ -454,8 +454,8 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
   // ── Formik ────────────────────────────────────────────────────────────────
   const FormikForm = useFormik({
     enableReinitialize: true,
-    initialValues:      leaveapplyObj,
-    validationSchema:   Yup.object({
+    initialValues: leaveapplyObj,
+    validationSchema: Yup.object({
       leave_type_id: Yup.number()
         .required("Select Leave Type")
         .min(1, "Please Select Leave Type"),
@@ -464,32 +464,39 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
     onSubmit: async (values) => {
       // Half-day validation
       if (values.day_type === 2) {
-        if (!halfDayStartTime) { toast.error("Please select Start Time"); return; }
-        if (!halfDayEndTime)   { toast.error("Please select End Time");   return; }
+        if (!halfDayStartTime) {
+          toast.error("Please select Start Time");
+          return;
+        }
+        if (!halfDayEndTime) {
+          toast.error("Please select End Time");
+          return;
+        }
       }
 
-      const startValue = values.day_type === 2 ? halfDayStartTime : values.start;
-      const endValue   = values.day_type === 2 ? halfDayEndTime   : values.end;
+      const startValue =
+        values.day_type === 2 ? halfDayStartTime : values.start;
+      const endValue = values.day_type === 2 ? halfDayEndTime : values.end;
 
       if (!values.requested_leave_count || values.requested_leave_count === 0) {
         toast.error("Selected Hour Can't Be Zero");
         return;
       }
-      if (values.requested_leave_count > leaveBalanceCount) {
-        toast.error("Selected Leave Exceeds Balance Leave");
-        return;
-      }
+      // if (values.requested_leave_count > leaveBalanceCount) {
+      //   toast.error("Selected Leave Exceeds Balance Leave");
+      //   return;
+      // }
 
       // ── Payload matches raise-request-for-reapproval API exactly ──────────
       const reApprovalPayload = {
-        id:                    leaveRecord?.id,
-        leave_type_id:         values.leave_type_id,
-        start:                 startValue,
-        end:                   endValue,
+        id: leaveRecord?.id,
+        leave_type_id: values.leave_type_id,
+        start: startValue,
+        end: endValue,
         requested_leave_count: values.requested_leave_count,
-        reason:                values.reason,
-        day_type:              values.day_type,
-        is_cancel_request:     false,
+        reason: values.reason,
+        day_type: values.day_type,
+        is_cancel_request: false,
       };
 
       dispatch(setLoaderVisible(true));
@@ -499,7 +506,7 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
         const res = await PostApi(
           "leave/raise-request-for-reapproval/",
           reApprovalPayload,
-          false
+          false,
         );
 
         if (res.status === 200) {
@@ -508,15 +515,21 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
 
           dispatch(
             setLeaveTypeForCurrentEmployee(
-              res?.data?.leave_type_for_employee || []
-            )
+              res?.data?.leave_type_for_employee || [],
+            ),
           );
 
-          toast.success(res?.data?.message || "Re-approval request raised successfully");
+          toast.success(
+            res?.data?.message || "Re-approval request raised successfully",
+          );
           dispatch(toggleRSBView(false));
           onClose();
         } else {
-          toast.error(res?.data?.error_message || res?.data?.detail || "Something went wrong");
+          toast.error(
+            res?.data?.error_message ||
+              res?.data?.detail ||
+              "Something went wrong",
+          );
         }
       } catch (err) {
         console.error(err);
@@ -535,7 +548,6 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
       <ModalBody>
         <Form onSubmit={FormikForm.handleSubmit} action="javascript:void(0)">
           <Row className="g-3">
-
             {/* ── Leave Type ── */}
             <Col lg={12}>
               <div className="mb-3">
@@ -544,7 +556,9 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
                   name="leave_type_id"
                   isMulti={false}
                   options={leaveTypeOptions}
-                  isOptionDisabled={(option) => option.balance_leave_count === 0}
+                  isOptionDisabled={(option) =>
+                    option.balance_leave_count === 0
+                  }
                   styles={{
                     control: (provided, state) => ({
                       ...provided,
@@ -559,7 +573,7 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
                   value={
                     leaveapplyObj?.leave_type_id
                       ? leaveTypeOptions.find(
-                          (d) => d.value === leaveapplyObj.leave_type_id
+                          (d) => d.value === leaveapplyObj.leave_type_id,
                         ) || null
                       : null
                   }
@@ -602,15 +616,15 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
                         ? [
                             dayjs(
                               ConvertDateFormat(
-                                ConvertISODateFormat(leaveapplyObj.start)
+                                ConvertISODateFormat(leaveapplyObj.start),
                               ),
-                              DateFormat
+                              DateFormat,
                             ),
                             dayjs(
                               ConvertDateFormat(
-                                ConvertISODateFormat(leaveapplyObj.end)
+                                ConvertISODateFormat(leaveapplyObj.end),
                               ),
-                              DateFormat
+                              DateFormat,
                             ),
                           ]
                         : null
@@ -639,7 +653,7 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
                         value={
                           leaveapplyObj?.day_type
                             ? day_type.find(
-                                (d) => d.value === leaveapplyObj.day_type
+                                (d) => d.value === leaveapplyObj.day_type,
                               ) || null
                             : null
                         }
@@ -664,9 +678,15 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
                       minuteStep={30}
                       onChange={(time) => {
                         if (!time) return;
-                        const datePart = dayjs(leaveapplyObj.start).format("YYYY-MM-DD");
-                        const newDateTime = dayjs(`${datePart} ${time.format("HH:mm:ss")}`);
-                        setHalfDayStartTime(newDateTime.format("YYYY-MM-DD HH:mm:00"));
+                        const datePart = dayjs(leaveapplyObj.start).format(
+                          "YYYY-MM-DD",
+                        );
+                        const newDateTime = dayjs(
+                          `${datePart} ${time.format("HH:mm:ss")}`,
+                        );
+                        setHalfDayStartTime(
+                          newDateTime.format("YYYY-MM-DD HH:mm:00"),
+                        );
                       }}
                       style={{ width: "100%" }}
                     />
@@ -682,8 +702,12 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
                       disabled={!halfDayStartTime}
                       onChange={(time) => {
                         if (!time) return;
-                        const datePart = dayjs(leaveapplyObj.start).format("YYYY-MM-DD");
-                        const end = dayjs(`${datePart} ${time.format("HH:mm:ss")}`);
+                        const datePart = dayjs(leaveapplyObj.start).format(
+                          "YYYY-MM-DD",
+                        );
+                        const end = dayjs(
+                          `${datePart} ${time.format("HH:mm:ss")}`,
+                        );
                         if (end.isBefore(dayjs(halfDayStartTime))) {
                           setTimeError("End time cannot be before start time!");
                           return;
@@ -725,9 +749,9 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
                       name="start"
                       placeholder="Select Start Time"
                       showTime={{
-                        minuteStep:   30,
+                        minuteStep: 30,
                         defaultValue: initialTime,
-                        format:       "HH:mm",
+                        format: "HH:mm",
                       }}
                       format={DateTimeFormat}
                       onChange={handleFromDateChange}
@@ -735,9 +759,9 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
                         !!leaveapplyObj?.start
                           ? dayjs(
                               ConvertToDateTimeFormat(
-                                ConvertToISODateTimeFormat(leaveapplyObj.start)
+                                ConvertToISODateTimeFormat(leaveapplyObj.start),
                               ),
-                              DateTimeFormat
+                              DateTimeFormat,
                             )
                           : null
                       }
@@ -749,9 +773,9 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
                       name="end"
                       placeholder="Select End Time"
                       showTime={{
-                        minuteStep:   30,
+                        minuteStep: 30,
                         defaultValue: initialTime,
-                        format:       "HH:mm",
+                        format: "HH:mm",
                       }}
                       format={DateTimeFormat}
                       onChange={handleToDateChange}
@@ -759,9 +783,9 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
                         !!leaveapplyObj?.end
                           ? dayjs(
                               ConvertToDateTimeFormat(
-                                ConvertToISODateTimeFormat(leaveapplyObj.end)
+                                ConvertToISODateTimeFormat(leaveapplyObj.end),
                               ),
-                              DateTimeFormat
+                              DateTimeFormat,
                             )
                           : null
                       }

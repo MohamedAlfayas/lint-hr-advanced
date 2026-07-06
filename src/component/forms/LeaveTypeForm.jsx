@@ -63,6 +63,9 @@ const LeaveTypeForm = () => {
   const [selectedWS, setSelectedWS] = useState([]);
   const [selectedGenders, setSelectedGenders] = useState([]);
 
+  const [daysCountError, setDaysCountError] = useState("");
+  const [carryForwardError, setCarryForwardError] = useState("");
+
   useEffect(() => {
     setLeaveTypeData(form_obj);
     setCurrentUnit(form_obj.unit);
@@ -150,9 +153,6 @@ const LeaveTypeForm = () => {
         .trim()
         .matches(/^[a-zA-Z\s]+$/, "Name must contain letters only")
         .min(2, "Name must be at least 2 characters"),
-      type: Yup.number()
-        .required("Select Role")
-        .min(1, "Please Select Leave Type"),
       genders: Yup.array()
         .required("Please Select Gender")
         .min(1, "Please Select Gender"),
@@ -164,6 +164,13 @@ const LeaveTypeForm = () => {
       dispatch(setLoaderVisible(true));
       if (values.allowed_count === 0) {
         toast.error("Leave Days Must not be 0");
+      } else if (values.allowed_count > 365) {
+        toast.error("Leave Days Count must not exceed 365");
+      } else if (
+        values.allowed_to_carry_forward &&
+        values.carry_forward_limit > values.allowed_count
+      ) {
+        toast.error("Carry Forward Limit must not exceed Leave Days Count");
       } else if (values.unit === 2 && values.hour_allowed_in_day === 0) {
         toast.error("Leave Hour Must not be 0");
       } else {
@@ -245,57 +252,6 @@ const LeaveTypeForm = () => {
                     </div>
                   )}
                 </div>
-              </Col>
-              <Col md={12} lg={12} xxl={12}>
-                <div>
-                  <Label htmlFor="gender" className="form-label">
-                    Type *
-                  </Label>
-
-                  <Select
-                    name="type"
-                    isMulti={false}
-                    options={leave_types_options || []}
-                    className="basic-multi-select"
-                    classNamePrefix="lc-select"
-                    styles={{
-                      control: (provided, state) => ({
-                        ...provided,
-                        borderColor:
-                          !state.isFocused &&
-                          FormikForm.touched.type &&
-                          FormikForm.errors.type
-                            ? "red !important"
-                            : provided.borderColor,
-                      }),
-                    }}
-                    value={
-                      (leaveTypeData.type &&
-                        leave_types_options.find(
-                          (e) => e.value === leaveTypeData.type,
-                        )) ||
-                      []
-                    }
-                    onChange={(e) => {
-                      setLeaveTypeData({ ...leaveTypeData, type: e.value });
-                    }}
-                    invalid={
-                      FormikForm.touched.type && FormikForm.errors.type
-                        ? true
-                        : false
-                    }
-                  />
-                  {FormikForm.touched.type && FormikForm.errors.type ? (
-                    <div className="lc_form_error_text">
-                      {FormikForm.errors.type}
-                    </div>
-                  ) : null}
-                </div>
-                {!FormikForm.errors.type && (
-                  <div id="passwordHelpBlock" className="form-text mb-3">
-                    Select Leave Type.
-                  </div>
-                )}
               </Col>
 
               <Col md={12} lg={12} xxl={12}>
@@ -398,21 +354,45 @@ const LeaveTypeForm = () => {
                               ...leaveTypeData,
                               allowed_count: "",
                             });
+                            setDaysCountError("");
                           } else {
                             const parsed = parseInt(val, 10);
+                            const safeVal =
+                              isNaN(parsed) || parsed < 0 ? 0 : parsed;
+
+                            setDaysCountError(
+                              safeVal > 365
+                                ? "Leave Days Count must not exceed 365"
+                                : "",
+                            );
+
                             setLeaveTypeData({
                               ...leaveTypeData,
-                              allowed_count:
-                                isNaN(parsed) || parsed < 0 ? 0 : parsed,
+                              allowed_count: safeVal,
+                              carry_forward_limit:
+                                leaveTypeData.carry_forward_limit > safeVal
+                                  ? safeVal
+                                  : leaveTypeData.carry_forward_limit,
                             });
+
+                            if (leaveTypeData.carry_forward_limit > safeVal) {
+                              setCarryForwardError("");
+                            }
                           }
                         }}
+                        invalid={daysCountError ? true : false}
                       />
                       <i className="ri-calendar-2-line"></i>
                     </div>
-                    <div id="passwordHelpBlock" className="form-text">
-                      Please Enter Leave Days Allowed in a year.
-                    </div>
+                    {daysCountError ? (
+                      <FormFeedback type="invalid" style={{ display: "block" }}>
+                        {daysCountError}
+                      </FormFeedback>
+                    ) : (
+                      <div id="passwordHelpBlock" className="form-text">
+                        Please Enter Leave Days Allowed in a year.
+                      </div>
+                    )}
                   </div>
                 </Col>
               )}
@@ -756,28 +736,6 @@ const LeaveTypeForm = () => {
                       </div>
                     </div>
                   </Col>
-                  {/* ✅ Config Exempt */}
-                  <Col md={12}>
-                    <Label htmlFor="lt_config_exempt" className="form-label">
-                      Config Exempt
-                    </Label>
-                    <div className="mb-2">
-                      <div className="form-check form-switch form-switch-md form-switch-success">
-                        <Input
-                          type="checkbox"
-                          className="form-check-input form-switch-md"
-                          id="lt_config_exempt"
-                          checked={leaveTypeData.is_config_exempt || false}
-                          onChange={(e) =>
-                            setLeaveTypeData({
-                              ...leaveTypeData,
-                              is_config_exempt: e.target.checked,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </Col>
 
                   {/* ✅ Allow Employee to Exceed */}
                   {/* <Col md={12}>
@@ -881,19 +839,37 @@ const LeaveTypeForm = () => {
                                 ...leaveTypeData,
                                 carry_forward_limit: "",
                               });
+                              setCarryForwardError("");
                             } else {
                               const val = parseInt(e.target.value);
+                              const safeVal = isNaN(val) || val < 0 ? 0 : val;
+
+                              setCarryForwardError(
+                                safeVal > (leaveTypeData.allowed_count || 0)
+                                  ? "Carry Forward Limit must not exceed Leave Days Count"
+                                  : "",
+                              );
+
                               setLeaveTypeData({
                                 ...leaveTypeData,
-                                carry_forward_limit:
-                                  isNaN(val) || val < 0 ? 0 : val,
+                                carry_forward_limit: safeVal,
                               });
                             }
                           }}
+                          invalid={carryForwardError ? true : false}
                         />
-                        <div className="form-text">
-                          Enter maximum carry forward limit.
-                        </div>
+                        {carryForwardError ? (
+                          <FormFeedback
+                            type="invalid"
+                            style={{ display: "block" }}
+                          >
+                            {carryForwardError}
+                          </FormFeedback>
+                        ) : (
+                          <div className="form-text">
+                            Enter maximum carry forward limit.
+                          </div>
+                        )}
                       </div>
                     </Col>
                   )}
