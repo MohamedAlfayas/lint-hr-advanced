@@ -784,34 +784,32 @@ const ClientForm = () => {
                 </div>
               </Col>
 
-              {/* ── City / State ── */}
+              {/* ── Contry / State ── */}
               <Col md={6} lg={6} xxl={6}>
                 <div className="mb-3">
-                  <Label htmlFor="city" className="form-label">
-                    City *
+                  <Label htmlFor="country" className="form-label">
+                    Country *
                   </Label>
-                  <Input
-                    type="text"
-                    name="city"
-                    id="city"
-                    className="form-control"
-                    placeholder="City"
-                    value={clientData.city || ""}
-                    onChange={handleTextOnly}
-                    onBlur={() => FormikForm.setFieldTouched("city", true)}
-                    invalid={
-                      FormikForm.touched.city && FormikForm.errors.city
-                        ? true
-                        : false
+                  <Select
+                    id="country"
+                    name="country"
+                    isMulti={false}
+                    options={CountryListOptions}
+                    value={
+                      CountryListOptions.find(
+                        (d) => d.value === clientData.country,
+                      ) || null
                     }
+                    onChange={handleCountryChange}
                   />
-                  {FormikForm.touched.city && FormikForm.errors.city ? (
+                  {FormikForm.touched.country && FormikForm.errors.country ? (
                     <FormFeedback type="invalid">
-                      {FormikForm.errors.city}
+                      {FormikForm.errors.country}
                     </FormFeedback>
                   ) : null}
                 </div>
               </Col>
+
               <Col md={6} lg={6} xxl={6}>
                 <div className="mb-3">
                   <Label htmlFor="state" className="form-label">
@@ -842,7 +840,52 @@ const ClientForm = () => {
                 </div>
               </Col>
 
-              {/* ── Pincode / Country ── */}
+              {/* ── city / Country code ── */}
+              <Col md={6} lg={6} xxl={6}>
+                <div className="mb-3">
+                  <Label htmlFor="city" className="form-label">
+                    City *
+                  </Label>
+                  <Input
+                    type="text"
+                    name="city"
+                    id="city"
+                    className="form-control"
+                    placeholder="City"
+                    value={clientData.city || ""}
+                    onChange={handleTextOnly}
+                    onBlur={() => FormikForm.setFieldTouched("city", true)}
+                    invalid={
+                      FormikForm.touched.city && FormikForm.errors.city
+                        ? true
+                        : false
+                    }
+                  />
+                  {FormikForm.touched.city && FormikForm.errors.city ? (
+                    <FormFeedback type="invalid">
+                      {FormikForm.errors.city}
+                    </FormFeedback>
+                  ) : null}
+                </div>
+              </Col>
+              <Col md={6} lg={6} xxl={6}>
+                <div className="mb-3">
+                  <Label htmlFor="country_code" className="form-label">
+                    Country Code
+                  </Label>
+                  <Input
+                    type="text"
+                    name="country_code"
+                    id="country_code"
+                    className="form-control"
+                    placeholder="e.g. IN"
+                    value={clientData.country_code || ""}
+                    readOnly
+                  />
+                </div>
+              </Col>
+
+              {/* ── pincode / Phone ── */}
               <Col md={6} lg={6} xxl={6}>
                 <div className="mb-3">
                   <Label htmlFor="pincode" className="form-label">
@@ -870,48 +913,6 @@ const ClientForm = () => {
                       {FormikForm.errors.pincode}
                     </FormFeedback>
                   ) : null}
-                </div>
-              </Col>
-              <Col md={6} lg={6} xxl={6}>
-                <div className="mb-3">
-                  <Label htmlFor="country" className="form-label">
-                    Country *
-                  </Label>
-                  <Select
-                    id="country"
-                    name="country"
-                    isMulti={false}
-                    options={CountryListOptions}
-                    value={
-                      CountryListOptions.find(
-                        (d) => d.value === clientData.country,
-                      ) || null
-                    }
-                    onChange={handleCountryChange}
-                  />
-                  {FormikForm.touched.country && FormikForm.errors.country ? (
-                    <FormFeedback type="invalid">
-                      {FormikForm.errors.country}
-                    </FormFeedback>
-                  ) : null}
-                </div>
-              </Col>
-
-              {/* ── Country Code / Phone ── */}
-              <Col md={6} lg={6} xxl={6}>
-                <div className="mb-3">
-                  <Label htmlFor="country_code" className="form-label">
-                    Country Code
-                  </Label>
-                  <Input
-                    type="text"
-                    name="country_code"
-                    id="country_code"
-                    className="form-control"
-                    placeholder="e.g. IN"
-                    value={clientData.country_code || ""}
-                    onChange={handleInputChange}
-                  />
                 </div>
               </Col>
               <Col md={6} lg={6} xxl={6}>
