@@ -91,7 +91,11 @@ const PayrollSettings = () => {
   useEffect(() => { fetchPayroll(); }, []);
 
   const handleChange = (field, value) =>
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+      ...(field === "pay_cycle_from" ? { payroll_leave_and_attendance_cycle_from: value } : {}),
+    }));
 
   const handleToggle = (field) =>
     setForm((prev) => ({ ...prev, [field]: !prev[field] }));
@@ -101,7 +105,6 @@ const PayrollSettings = () => {
       required("Effective date", form.effective_date),
       required("Salary structure basis", form.salary_structure_based_on),
       day("Pay cycle start day", form.pay_cycle_from),
-      day("Leave & attendance cycle start day", form.payroll_leave_and_attendance_cycle_from),
       day("Payout date", form.payout_date),
       day("DOJ cutoff date", form.payroll_doj_cutoff_date),
     ], toast);
@@ -312,13 +315,12 @@ const PayrollSettings = () => {
                 </SettingRow>
                 <SettingRow label="Leave & Attendance Cycle">
                   <div className="d-flex align-items-center gap-2">
-                    <span className="text-muted" style={{ fontSize: 13 }}>From</span>
-                    <Select options={DAY_OPTIONS}
-                      value={DAY_OPTIONS.find(o => o.value === form.payroll_leave_and_attendance_cycle_from)}
-                      onChange={(e) => handleChange("payroll_leave_and_attendance_cycle_from", e.value)}
-                      styles={{ container: (p) => ({ ...p, width: 90 }) }} />
-                    <span className="text-muted" style={{ fontSize: 13 }}>to</span>
-                    <span className="fw-medium">{cycleEnd(form.payroll_leave_and_attendance_cycle_from)}</span>
+                    <span className="fw-medium" style={{ fontSize: 13 }}>
+                      {form.pay_cycle_from || "—"} → {cycleEnd(form.pay_cycle_from)}
+                    </span>
+                    <Badge color="light" className="text-dark border" style={{ fontSize: 11 }}>
+                      Synced with Pay Cycle
+                    </Badge>
                   </div>
                 </SettingRow>
                 <SettingRow label="Payout Date">
@@ -343,7 +345,6 @@ const PayrollSettings = () => {
                   {[
                     ["allow_decimal_in_payslip", "Allow Decimal in Payslip"],
                     ["wage_esi_for_overtime", "Wage ESI for Overtime"],
-                    ["enable_da_payroll_calculation", "Enable DA Calculation"],
                   ].map(([key, label], i, arr) => (
                     <Row key={key}
                       className={`align-items-center px-3 py-2 g-0${i < arr.length - 1 ? " border-bottom" : ""}`}>

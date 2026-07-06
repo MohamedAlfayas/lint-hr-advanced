@@ -1,3 +1,4 @@
+// LopPolicySettings.jsx
 import React, { useEffect, useState } from "react";
 import {
   Card, CardHeader, CardBody, CardTitle, CardSubtitle,
@@ -55,6 +56,7 @@ const LopPolicySettings = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState(null);
   const [isEmpty, setIsEmpty] = useState(false);
+  const [attendanceMethod, setAttendanceMethod] = useState(null);
 
   const fetchData = () => {
     setLoading(true);
@@ -68,7 +70,18 @@ const LopPolicySettings = () => {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchData(); }, []);
+  const fetchAttendanceMethod = () => {
+    Api({ method: "GET", url: "payroll/attendence-policy-settings/" })
+      .then((res) => {
+        const list = res?.data?.data || [];
+        if (list.length > 0) setAttendanceMethod(list[0].salary_calculation_method);
+      });
+  };
+
+  useEffect(() => {
+    fetchData();
+    fetchAttendanceMethod();
+  }, []);
 
   const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
   const handleToggle = (field) => setForm((prev) => ({ ...prev, [field]: !prev[field] }));
@@ -82,7 +95,7 @@ const LopPolicySettings = () => {
       checks.push(required("Fixed days", form.fixed_days));
       checks.push(day("Fixed days", form.fixed_days));
     }
-    if (!isBlank(form.max_lop_days_per_month))
+    if (!isBlank(form.max_lop_days_per_month) && form.max_lop_days_per_month !== 0)
       checks.push(day("Max LOP days per month", form.max_lop_days_per_month));
     return runChecks(checks, toast);
   };
@@ -127,6 +140,7 @@ const LopPolicySettings = () => {
 
   const data = form || {};
   const currentMethod = isEditing ? form?.lop_calculation_method : data.lop_calculation_method;
+  const methodMismatch = attendanceMethod && currentMethod && currentMethod !== attendanceMethod;
 
   if (isEmpty && !isEditing) {
     return (
@@ -225,16 +239,33 @@ const LopPolicySettings = () => {
           </SettingRow>
           <SettingRow label="LOP Calculation Method" last>
             {isEditing ? (
-              <Select
-                options={LOP_METHOD_OPTIONS}
-                value={LOP_METHOD_OPTIONS.find(o => o.value === form.lop_calculation_method)}
-                onChange={(e) => handleChange("lop_calculation_method", e.value)}
-                styles={{ container: (p) => ({ ...p, width: 220 }) }}
-              />
+              <div>
+                <Select
+                  options={LOP_METHOD_OPTIONS}
+                  value={LOP_METHOD_OPTIONS.find(o => o.value === form.lop_calculation_method)}
+                  onChange={(e) => {
+                    handleChange("lop_calculation_method", e.value);
+                    if (e.value !== "fixed_days") handleChange("fixed_days", null);
+                  }}
+                  styles={{ container: (p) => ({ ...p, width: 220 }) }}
+                />
+                {methodMismatch && (
+                  <small className="text-warning d-block mt-1">
+                    ⚠ Differs from Attendance Policy ({LOP_METHOD_OPTIONS.find(o => o.value === attendanceMethod)?.label})
+                  </small>
+                )}
+              </div>
             ) : (
-              <Badge color="primary" pill style={{ fontSize: 12, padding: "4px 12px" }}>
-                {LOP_METHOD_OPTIONS.find(o => o.value === data.lop_calculation_method)?.label || "—"}
-              </Badge>
+              <div>
+                <Badge color="primary" pill style={{ fontSize: 12, padding: "4px 12px" }}>
+                  {LOP_METHOD_OPTIONS.find(o => o.value === data.lop_calculation_method)?.label || "—"}
+                </Badge>
+                {methodMismatch && (
+                  <small className="text-warning d-block mt-1">
+                    ⚠ Differs from Attendance Policy ({LOP_METHOD_OPTIONS.find(o => o.value === attendanceMethod)?.label})
+                  </small>
+                )}
+              </div>
             )}
           </SettingRow>
         </div>
@@ -259,30 +290,51 @@ const LopPolicySettings = () => {
           </>
         )}
 
-        <SectionLabel>Day Inclusions & Rules</SectionLabel>
+        {currentMethod !== "fixed_days" && (
+          <>
+            <SectionLabel>Day Inclusions</SectionLabel>
+            <div className="border rounded mb-4">
+              {[
+                ["include_week_offs_in_lop", "Include Week Offs in LOP"],
+                ["include_holidays_in_lop", "Include Holidays in LOP"],
+              ].map(([key, label], i, arr) => (
+                <SettingRow key={key} label={label} last={i === arr.length - 1}>
+                  {isEditing ? (
+                    <div className="form-check form-switch mb-0">
+                      <Input className="form-check-input" type="checkbox" checked={!!form[key]} onChange={() => handleToggle(key)} />
+                    </div>
+                  ) : (
+                    <ViewToggle checked={!!data[key]} />
+                  )}
+                </SettingRow>
+              ))}
+            </div>
+          </>
+        )}
+
+        <SectionLabel>Rules & Limits</SectionLabel>
         <div className="border rounded mb-4">
-          {[
-            ["include_week_offs_in_lop", "Include Week Offs in LOP"],
-            ["include_holidays_in_lop", "Include Holidays in LOP"],
-            ["prioritise_leave_over_lop", "Prioritise Leave Over LOP"],
-          ].map(([key, label], i, arr) => (
-            <SettingRow key={key} label={label} last={i === arr.length - 1 && !isEditing}>
-              {isEditing ? (
-                <div className="form-check form-switch mb-0">
-                  <Input className="form-check-input" type="checkbox" checked={!!form[key]} onChange={() => handleToggle(key)} />
-                </div>
-              ) : (
-                <ViewToggle checked={!!data[key]} />
-              )}
-            </SettingRow>
-          ))}
+          <SettingRow label="Prioritise Leave Over LOP">
+            {isEditing ? (
+              <div className="form-check form-switch mb-0">
+                <Input className="form-check-input" type="checkbox" checked={!!form.prioritise_leave_over_lop} onChange={() => handleToggle("prioritise_leave_over_lop")} />
+              </div>
+            ) : (
+              <ViewToggle checked={!!data.prioritise_leave_over_lop} />
+            )}
+          </SettingRow>
           <SettingRow label="Max LOP Days Per Month" last>
             {isEditing ? (
               <Input
-                type="number" min="0"
+                type="number" min="0" max="31"
                 value={form.max_lop_days_per_month ?? ""}
                 placeholder="No limit"
-                onChange={(e) => handleChange("max_lop_days_per_month", e.target.value === "" ? null : parseInt(e.target.value))}
+                onChange={(e) => {
+                  let val = e.target.value === "" ? null : parseInt(e.target.value);
+                  if (val !== null && val > 31) val = 31;
+                  if (val !== null && val < 0) val = 0;
+                  handleChange("max_lop_days_per_month", val);
+                }}
                 style={{ width: 120 }}
               />
             ) : (

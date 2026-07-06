@@ -36,6 +36,7 @@ import {
   salary_form_component_name_benefits,
   salary_form_component_name_reimbursements
 } from "../../common/constant/Constants";
+import RecurringTable from "./PayrollComponent/RecurringTable";
 
 // Tab components
 import GeneralTab from "./GeneralTab";
@@ -372,7 +373,7 @@ const PayRollConfig = () => {
               >
                 
                 <TabPane tabId="1">
-                  <PayrollComponentTab />
+                  <RecurringTable />
                 </TabPane>
                 <TabPane tabId="2">
                   <ReimbursementsTab />

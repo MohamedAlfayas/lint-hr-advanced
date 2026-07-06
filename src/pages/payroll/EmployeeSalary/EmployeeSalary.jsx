@@ -554,10 +554,18 @@ const EmployeeSalary = () => {
   }));
 
   const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [selectedDepartment, setSelectedDepartment] = useState(null); // react-select option | null
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [fullscreen, setFullscreen] = useState(false);
+
+  const departmentOptions = departments.map((d) => ({
+    value: d.id,
+    label: d.name,
+  }));
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -569,6 +577,10 @@ const EmployeeSalary = () => {
       const res1 = await GetApi("/payroll/salary-structure/");
       const data1 = res1?.data?.data || [];
       dispatch(setSalaryStructures(Array.isArray(data1) ? data1 : []));
+
+      const res2 = await GetApi("/department/get/");
+      const data2 = res2?.data?.data || [];
+      setDepartments(Array.isArray(data2) ? data2 : []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -579,6 +591,19 @@ const EmployeeSalary = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // ── Fullscreen UX: Escape to exit, lock page scroll while active ───────────
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e) => { if (e.key === "Escape") setFullscreen(false); };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [fullscreen]);
 
   const openModal = (emp) => {
     setSelectedEmployee(emp);
@@ -597,12 +622,18 @@ const EmployeeSalary = () => {
     loadData();
   };
 
-  const filtered = employees.filter(
-    (e) =>
+  const filtered = employees.filter((e) => {
+    const matchesSearch =
       !search ||
       e.name?.toLowerCase().includes(search.toLowerCase()) ||
-      e.emp_id?.toLowerCase().includes(search.toLowerCase()),
-  );
+      e.emp_id?.toLowerCase().includes(search.toLowerCase());
+
+    const matchesDepartment =
+      !selectedDepartment ||
+      String(e.department_id) === String(selectedDepartment.value);
+
+    return matchesSearch && matchesDepartment;
+  });
 
   const stats = {
     total: employees.length,
@@ -611,7 +642,31 @@ const EmployeeSalary = () => {
   };
 
   return (
-    <div>
+    <div
+      style={
+        fullscreen
+          ? {
+              position: "fixed", inset: 0, zIndex: 1050,
+              background: "#fff", padding: "16px 20px",
+              overflowY: "auto",
+            }
+          : undefined
+      }
+    >
+      {fullscreen && (
+        <div
+          className="d-flex align-items-center justify-content-between mb-2 pb-2"
+          style={{ borderBottom: "1px solid #e5e7eb" }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#475569" }}>
+            <i className="ri-fullscreen-line me-2"></i>Full Screen Edit Mode
+          </span>
+          <Button color="light" size="sm" className="border" style={{display: "flex", alignItems: "center"}} onClick={() => setFullscreen(false)}>
+            <i className="ri-fullscreen-exit-line me-1"></i>Exit Full Screen (Esc)
+          </Button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="d-flex align-items-center justify-content-between mb-4">
         <div>
@@ -621,6 +676,17 @@ const EmployeeSalary = () => {
             breakdowns.
           </p>
         </div>
+        {!fullscreen && (
+          <Button
+            color="light"
+            className="border"
+            onClick={() => setFullscreen(true)}
+            title="Full screen view"
+            style={{display: "flex", alignItems: "center"}}
+          >
+            <i className="ri-fullscreen-line me-1"></i>Full Screen
+          </Button>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -672,9 +738,11 @@ const EmployeeSalary = () => {
       {/* Table Card */}
       <Card className="shadow-none border">
         <CardBody className="p-0">
-          {/* Search bar */}
-          <div className="p-3 border-bottom">
-            <div className="search-box" style={{ maxWidth: 320 }}>
+          {/* Search + Department filter — placed right next to each other,
+              minimal gap, no extra Row/Col width allocated beyond what each
+              control needs. */}
+          <div className="p-3 border-bottom d-flex align-items-center gap-2 flex-wrap">
+            <div className="search-box" style={{ width: 260 }}>
               <Input
                 type="search"
                 className="form-control search"
@@ -683,6 +751,16 @@ const EmployeeSalary = () => {
                 onChange={(e) => setSearch(e.target.value)}
               />
               <i className="ri-search-line search-icon"></i>
+            </div>
+            <div style={{ width: 220 }}>
+              <Select
+                options={departmentOptions}
+                value={selectedDepartment}
+                onChange={(val) => setSelectedDepartment(val)}
+                isClearable
+                placeholder="Filter by department..."
+                classNamePrefix="select2-selection"
+              />
             </div>
           </div>
 
@@ -696,7 +774,7 @@ const EmployeeSalary = () => {
             </div>
           ) : (
             <SimpleBar
-              style={{ maxHeight: "calc(100vh - 360px)" }}
+              style={{ maxHeight: fullscreen ? "calc(100vh - 320px)" : "calc(100vh - 360px)" }}
               autoHide={false}
             >
               <div className="table-responsive">

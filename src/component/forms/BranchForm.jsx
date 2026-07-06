@@ -47,7 +47,7 @@ import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarRed
 import { SetLocalStorage } from "../../meta/SetLocalStorageData";
 import LocationSearch from "../../pages/organization/LocationSearch";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
-
+import { GetApi } from "../../common/api/GetApi";
 const BranchForm = () => {
   const dispatch = useDispatch();
   const inputRef = useRef();
@@ -61,6 +61,7 @@ const BranchForm = () => {
 
   // ── Modal ────────────────────────────────────────────────────────────────
   const [modalOpen, setModalOpen] = useState(false);
+  const [ptSettingsOptions, setPtSettingsOptions] = useState([]);
 
   const initialBranchLocationObj = {
     type_id: 0,
@@ -71,6 +72,7 @@ const BranchForm = () => {
     pincode: "",
     country: "",
     state: "",
+    pt_settings: null,
     timezone: "Asia/Kolkata",
     accurate_address: "",
     radius_range: 10,
@@ -96,6 +98,18 @@ const BranchForm = () => {
     });
     setCountryCodeListOptions(country_code_list);
     setCountryListOptions(country_list);
+  }, []);
+
+  useEffect(() => {
+    GetApi("payroll/pt-settings/").then((res) => {
+
+      console.log("pt",res?.data?.data || [])
+      const opts = (res?.data?.data || []).map((p) => ({
+        value: p.id,
+        label: `${p.state_display} (${p.deduction_cycle})`,
+      }));
+      setPtSettingsOptions(opts);
+    });
   }, []);
 
   // ── Branch Formik ────────────────────────────────────────────────────────
@@ -562,6 +576,17 @@ const BranchForm = () => {
                     {showHint("state") && (
                       <div className="form-text">Select state.</div>
                     )}
+                  </Col>
+
+                  <Col lg={12}>
+                    <Label className="form-label">Professional Tax Settings</Label>
+                    <Select
+                      options={ptSettingsOptions}
+                      value={ptSettingsOptions.find((d) => d.value === v.pt_settings) || null}
+                      onChange={(opt) => setField("pt_settings", opt?.value || null)}
+                      isClearable
+                    />
+                    <div className="form-text">Links PT slab rules to this branch.</div>
                   </Col>
 
                   {/* ── Address ───────────────────────────────────────── */}
