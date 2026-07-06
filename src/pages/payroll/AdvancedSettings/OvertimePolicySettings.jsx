@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   Card, CardHeader, CardBody, CardTitle, CardSubtitle,
-  Col, Row, Label, Button, Input, Badge,
+  Col, Row, Label, Button, Input, Badge, FormFeedback,
 } from "reactstrap";
 import Select from "react-select";
 import { Api } from "../../../common/api/Api";
@@ -23,6 +23,19 @@ const OT_BASED_ON_OPTIONS = [
   { value: "gross", label: "Gross Salary" },
   { value: "ctc", label: "CTC" },
 ];
+
+// Fields that only matter (and should only be validated / shown as invalid)
+// when their parent toggle is on. Keeps validation state in sync with
+// which fields are actually interactable.
+const FIELDS_GATED_BY = {
+  is_ot_enabled: ["ot_multiplier", "minimum_ot_minutes", "maximum_ot_minutes_per_day"],
+  is_weekend_ot_enabled: ["weekend_ot_multiplier"],
+  is_holiday_ot_enabled: ["holiday_ot_multiplier"],
+};
+
+// Sane bounds for any "×" multiplier field — prevents someone fat-fingering
+// a multiplier like 50 that would blow up payroll calculations.
+const MULTIPLIER_RANGE = { min: 1, max: 5 };
 
 const SectionLabel = ({ children }) => (
   <p className="text-uppercase fw-semibold text-muted mb-2" style={{ fontSize: 11, letterSpacing: "0.8px" }}>
@@ -60,6 +73,7 @@ const OvertimePolicySettings = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState(null);
   const [isEmpty, setIsEmpty] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const fetchData = () => {
     setLoading(true);
@@ -75,26 +89,139 @@ const OvertimePolicySettings = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
-  const handleToggle = (field) => setForm((prev) => ({ ...prev, [field]: !prev[field] }));
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    // Live-clear the error for this field as soon as it's edited; the
+    // authoritative re-check happens on blur / save.
+    if (errors[field]) {
+      setErrors((prev) => {
+        const updated = { ...prev };
+        delete updated[field];
+        return updated;
+      });
+    }
+  };
+
+  // Validates a single field against the same rules used on save, but only
+  // if the field is currently "active" (its gating toggle, if any, is on).
+  const validateFieldLive = (field, value = form?.[field]) => {
+    let msg = null;
+
+    switch (field) {
+      case "effective_date":
+        msg = required("Effective date", value);
+        break;
+      case "ot_multiplier":
+        if (form.is_ot_enabled) msg = range("OT multiplier", value, MULTIPLIER_RANGE.min, MULTIPLIER_RANGE.max);
+        break;
+      case "minimum_ot_minutes":
+        if (form.is_ot_enabled) {
+          msg = min("Min OT minutes", value, 0, 1440);
+          if (!msg && Number(value) > Number(form.maximum_ot_minutes_per_day)) {
+            msg = "Min OT minutes cannot exceed Max OT minutes/day";
+          }
+        }
+        break;
+      case "maximum_ot_minutes_per_day":
+        if (form.is_ot_enabled) {
+          msg = range("Max OT minutes/day", value, 0, 1440);
+          if (!msg && Number(value) < Number(form.minimum_ot_minutes)) {
+            msg = "Max OT minutes/day must be ≥ Min OT minutes";
+          }
+        }
+        break;
+      case "weekend_ot_multiplier":
+        if (form.is_ot_enabled && form.is_weekend_ot_enabled) msg = range("Weekend OT multiplier", value, MULTIPLIER_RANGE.min, MULTIPLIER_RANGE.max);
+        break;
+      case "holiday_ot_multiplier":
+        if (form.is_ot_enabled && form.is_holiday_ot_enabled) msg = range("Holiday OT multiplier", value, MULTIPLIER_RANGE.min, MULTIPLIER_RANGE.max);
+        break;
+      default:
+        break;
+    }
+
+    setErrors((prev) => {
+      const updated = { ...prev };
+      if (msg) updated[field] = msg;
+      else delete updated[field];
+      return updated;
+    });
+  };
+
+  const handleBlur = (field) => validateFieldLive(field);
+
+  // Toggling a switch off must immediately drop any lingering validation
+  // errors for the field(s) it gates, since those fields become inactive
+  // and are excluded from the save-time validation below.
+  const handleToggle = (field) => {
+    const turningOff = !!form?.[field];
+    setForm((prev) => ({ ...prev, [field]: !prev[field] }));
+
+    if (turningOff && FIELDS_GATED_BY[field]) {
+      setErrors((prev) => {
+        const updated = { ...prev };
+        FIELDS_GATED_BY[field].forEach((f) => delete updated[f]);
+        return updated;
+      });
+    } else if (!turningOff) {
+      // Turning a gate ON: re-validate its dependent fields against
+      // whatever values are currently sitting in the form.
+      setTimeout(() => {
+        (FIELDS_GATED_BY[field] || []).forEach((f) => validateFieldLive(f));
+      }, 0);
+    }
+  };
+
+  const buildValidationErrors = () => {
+    const errs = {};
+
+    const effDateErr = required("Effective date", form.effective_date);
+    if (effDateErr) errs.effective_date = effDateErr;
+
+    if (form.is_ot_enabled) {
+      const otMultErr = range("OT multiplier", form.ot_multiplier, MULTIPLIER_RANGE.min, MULTIPLIER_RANGE.max);
+      if (otMultErr) errs.ot_multiplier = otMultErr;
+
+      const minOtErr = min("Min OT minutes", form.minimum_ot_minutes, 0, 1440);
+      if (minOtErr) errs.minimum_ot_minutes = minOtErr;
+
+      const maxOtErr = range("Max OT minutes/day", form.maximum_ot_minutes_per_day, 0, 1440);
+      if (maxOtErr) errs.maximum_ot_minutes_per_day = maxOtErr;
+
+      // Bidirectional check: Min must never exceed Max, and Max must never
+      // fall below Min — flag whichever field(s) aren't already showing
+      // their own range error, so the message lands wherever the user is
+      // actually looking.
+      if (!minOtErr && !maxOtErr && Number(form.minimum_ot_minutes) > Number(form.maximum_ot_minutes_per_day)) {
+        errs.minimum_ot_minutes = errs.minimum_ot_minutes || "Min OT minutes cannot exceed Max OT minutes/day";
+        errs.maximum_ot_minutes_per_day = errs.maximum_ot_minutes_per_day || "Max OT minutes/day must be ≥ Min OT minutes";
+      }
+
+      // Interlinked check: only validate weekend/holiday multipliers when
+      // their own toggle — and the parent OT toggle — are both on.
+      if (form.is_weekend_ot_enabled) {
+        const weekendErr = range("Weekend OT multiplier", form.weekend_ot_multiplier, MULTIPLIER_RANGE.min, MULTIPLIER_RANGE.max);
+        if (weekendErr) errs.weekend_ot_multiplier = weekendErr;
+      }
+      if (form.is_holiday_ot_enabled) {
+        const holidayErr = range("Holiday OT multiplier", form.holiday_ot_multiplier, MULTIPLIER_RANGE.min, MULTIPLIER_RANGE.max);
+        if (holidayErr) errs.holiday_ot_multiplier = holidayErr;
+      }
+    }
+
+    return errs;
+  };
 
   const validate = () => {
-    if (!form.is_ot_enabled)
-      return runChecks([required("Effective date", form.effective_date)], toast);
+    const errs = buildValidationErrors();
+    setErrors(errs);
 
-    const checks = [
-      required("Effective date", form.effective_date),
-      min("OT multiplier", form.ot_multiplier, 1),
-      min("Min OT minutes", form.minimum_ot_minutes, 0),
-      range("Max OT minutes/day", form.maximum_ot_minutes_per_day, 0, 1440),
-    ];
-    if (Number(form.maximum_ot_minutes_per_day) < Number(form.minimum_ot_minutes))
-      checks.push("Max OT minutes/day must be ≥ Min OT minutes");
-    if (form.is_weekend_ot_enabled)
-      checks.push(min("Weekend OT multiplier", form.weekend_ot_multiplier, 1));
-    if (form.is_holiday_ot_enabled)
-      checks.push(min("Holiday OT multiplier", form.holiday_ot_multiplier, 1));
-    return runChecks(checks, toast);
+    const messages = Object.values(errs).filter(Boolean);
+    if (messages.length > 0) {
+      toast.error(messages[0]);
+      return false;
+    }
+    return true;
   };
 
   const handleSave = () => {
@@ -110,6 +237,7 @@ const OvertimePolicySettings = () => {
         toast.success(res?.data?.message || "Saved successfully");
         fetchData();
         setIsEditing(false);
+        setErrors({});
       })
       .catch((err) => toast.error(err?.response?.data?.message || "Failed to save"))
       .finally(() => setLoading(false));
@@ -118,6 +246,7 @@ const OvertimePolicySettings = () => {
   const handleCancel = () => {
     if (records.length > 0) setForm({ ...records[0] });
     setIsEditing(false);
+    setErrors({});
   };
 
   const handleNew = () => {
@@ -138,6 +267,7 @@ const OvertimePolicySettings = () => {
     });
     setIsEmpty(false);
     setIsEditing(true);
+    setErrors({});
   };
 
   const data = form || {};
@@ -181,7 +311,7 @@ const OvertimePolicySettings = () => {
         <div className="d-flex gap-2">
           {!isEditing && (
             <>
-              <Button size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); }}>
+              <Button size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); setErrors({}); }}>
                 <i className="ri-edit-line fs-14"></i> Edit
               </Button>
               <Button size="sm" color="success" outline onClick={handleNew}>
@@ -201,7 +331,7 @@ const OvertimePolicySettings = () => {
                 color={form?.id === r.id ? "primary" : "light"}
                 className={form?.id === r.id ? "" : "text-dark border"}
                 style={{ cursor: "pointer", fontSize: 12, padding: "5px 12px" }}
-                onClick={() => setForm({ ...r })}
+                onClick={() => { setForm({ ...r }); setErrors({}); }}
               >
                 {r.effective_date} {i === 0 && <span className="ms-1">· Latest</span>}
               </Badge>
@@ -223,7 +353,17 @@ const OvertimePolicySettings = () => {
         <div className="border rounded mb-4">
           <SettingRow label="Effective Date">
             {isEditing ? (
-              <Input type="date" value={form.effective_date || ""} onChange={(e) => handleChange("effective_date", e.target.value)} style={{ width: 180 }} />
+              <div>
+                <Input
+                  type="date"
+                  invalid={!!errors.effective_date}
+                  value={form.effective_date || ""}
+                  onChange={(e) => handleChange("effective_date", e.target.value)}
+                  onBlur={() => handleBlur("effective_date")}
+                  style={{ width: 180 }}
+                />
+                {errors.effective_date && <FormFeedback style={{ display: "block" }}>{errors.effective_date}</FormFeedback>}
+              </div>
             ) : (
               <span style={{ fontSize: 13 }}>{data.effective_date || "—"}</span>
             )}
@@ -298,21 +438,59 @@ const OvertimePolicySettings = () => {
               </SettingRow>
               <SettingRow label="OT Multiplier">
                 {isEditing ? (
-                  <Input type="number" step="0.01" min="1" value={form.ot_multiplier || ""} onChange={(e) => handleChange("ot_multiplier", e.target.value)} style={{ width: 100 }} />
+                  <div>
+                    <Input
+                      type="number" step="0.01" min={MULTIPLIER_RANGE.min} max={MULTIPLIER_RANGE.max}
+                      invalid={!!errors.ot_multiplier}
+                      value={form.ot_multiplier || ""}
+                      onChange={(e) => handleChange("ot_multiplier", e.target.value)}
+                      onBlur={() => handleBlur("ot_multiplier")}
+                      style={{ width: 100 }}
+                    />
+                    {errors.ot_multiplier && <FormFeedback style={{ display: "block" }}>{errors.ot_multiplier}</FormFeedback>}
+                  </div>
                 ) : (
                   <Badge color="light" className="text-dark border" style={{ fontSize: 12 }}>×{data.ot_multiplier || "—"}</Badge>
                 )}
               </SettingRow>
               <SettingRow label="Min OT Minutes">
                 {isEditing ? (
-                  <Input type="number" min="0" value={form.minimum_ot_minutes ?? ""} onChange={(e) => handleChange("minimum_ot_minutes", parseInt(e.target.value))} style={{ width: 100 }} />
+                  <div>
+                    <Input
+                      type="number" min="0"
+                      invalid={!!errors.minimum_ot_minutes}
+                      value={form.minimum_ot_minutes ?? ""}
+                      onChange={(e) => handleChange("minimum_ot_minutes", parseInt(e.target.value))}
+                      onBlur={() => {
+                        handleBlur("minimum_ot_minutes");
+                        // Min/Max are interlinked — re-check Max whenever Min changes.
+                        validateFieldLive("maximum_ot_minutes_per_day");
+                      }}
+                      style={{ width: 100 }}
+                    />
+                    {errors.minimum_ot_minutes && <FormFeedback style={{ display: "block" }}>{errors.minimum_ot_minutes}</FormFeedback>}
+                  </div>
                 ) : (
                   <span style={{ fontSize: 13 }}>{data.minimum_ot_minutes ?? "—"} min</span>
                 )}
               </SettingRow>
               <SettingRow label="Max OT Minutes / Day" last>
                 {isEditing ? (
-                  <Input type="number" min="0" value={form.maximum_ot_minutes_per_day ?? ""} onChange={(e) => handleChange("maximum_ot_minutes_per_day", parseInt(e.target.value))} style={{ width: 100 }} />
+                  <div>
+                    <Input
+                      type="number" min="0"
+                      invalid={!!errors.maximum_ot_minutes_per_day}
+                      value={form.maximum_ot_minutes_per_day ?? ""}
+                      onChange={(e) => handleChange("maximum_ot_minutes_per_day", parseInt(e.target.value))}
+                      onBlur={() => {
+                        handleBlur("maximum_ot_minutes_per_day");
+                        // Min/Max are interlinked — re-check Min whenever Max changes.
+                        validateFieldLive("minimum_ot_minutes");
+                      }}
+                      style={{ width: 100 }}
+                    />
+                    {errors.maximum_ot_minutes_per_day && <FormFeedback style={{ display: "block" }}>{errors.maximum_ot_minutes_per_day}</FormFeedback>}
+                  </div>
                 ) : (
                   <span style={{ fontSize: 13 }}>{data.maximum_ot_minutes_per_day ?? "—"} min</span>
                 )}
@@ -333,7 +511,17 @@ const OvertimePolicySettings = () => {
               {(isEditing ? form.is_weekend_ot_enabled : data.is_weekend_ot_enabled) && (
                 <SettingRow label="Weekend OT Multiplier" last>
                   {isEditing ? (
-                    <Input type="number" step="0.01" min="1" value={form.weekend_ot_multiplier || ""} onChange={(e) => handleChange("weekend_ot_multiplier", e.target.value)} style={{ width: 100 }} />
+                    <div>
+                      <Input
+                        type="number" step="0.01" min={MULTIPLIER_RANGE.min} max={MULTIPLIER_RANGE.max}
+                        invalid={!!errors.weekend_ot_multiplier}
+                        value={form.weekend_ot_multiplier || ""}
+                        onChange={(e) => handleChange("weekend_ot_multiplier", e.target.value)}
+                        onBlur={() => handleBlur("weekend_ot_multiplier")}
+                        style={{ width: 100 }}
+                      />
+                      {errors.weekend_ot_multiplier && <FormFeedback style={{ display: "block" }}>{errors.weekend_ot_multiplier}</FormFeedback>}
+                    </div>
                   ) : (
                     <Badge color="light" className="text-dark border" style={{ fontSize: 12 }}>×{data.weekend_ot_multiplier || "—"}</Badge>
                   )}
@@ -358,7 +546,17 @@ const OvertimePolicySettings = () => {
               {(isEditing ? form.is_holiday_ot_enabled : data.is_holiday_ot_enabled) && (
                 <SettingRow label="Holiday OT Multiplier" last>
                   {isEditing ? (
-                    <Input type="number" step="0.01" min="1" value={form.holiday_ot_multiplier || ""} onChange={(e) => handleChange("holiday_ot_multiplier", e.target.value)} style={{ width: 100 }} />
+                    <div>
+                      <Input
+                        type="number" step="0.01" min={MULTIPLIER_RANGE.min} max={MULTIPLIER_RANGE.max}
+                        invalid={!!errors.holiday_ot_multiplier}
+                        value={form.holiday_ot_multiplier || ""}
+                        onChange={(e) => handleChange("holiday_ot_multiplier", e.target.value)}
+                        onBlur={() => handleBlur("holiday_ot_multiplier")}
+                        style={{ width: 100 }}
+                      />
+                      {errors.holiday_ot_multiplier && <FormFeedback style={{ display: "block" }}>{errors.holiday_ot_multiplier}</FormFeedback>}
+                    </div>
                   ) : (
                     <Badge color="light" className="text-dark border" style={{ fontSize: 12 }}>×{data.holiday_ot_multiplier || "—"}</Badge>
                   )}

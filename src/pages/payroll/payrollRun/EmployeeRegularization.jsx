@@ -33,6 +33,11 @@ const AttendanceEditTab = ({ days, period, employeeName, onRegularize }) => {
   const closeEdit = () => setEditDay(null);
 
   const handleSave = () => {
+    const wordCount = remarks.trim().split(/[\s,]+/).filter(Boolean).length;
+    if (wordCount < 3) {
+      toast.error("Remarks must have at least 3 words.");
+      return;
+    }
     setSaving(true);
     onRegularize(
       { date: editDay.date, original_status: editDay.computed_status, regularized_status: status, remarks },
@@ -72,9 +77,9 @@ const AttendanceEditTab = ({ days, period, employeeName, onRegularize }) => {
                     <td>{d.date}</td>
                     <td>{secondsToHrs(d.worked_seconds)}</td>
                     <td>{secondsToHrs(d.leave_seconds)}</td>
-                    <td>{d.is_week_off ? <Badge color="secondary">Yes</Badge> : "—"}</td>
-                    <td>{d.is_holiday ? <Badge color="secondary">Yes</Badge> : "—"}</td>
-                    <td><Badge color={STATUS_BADGE[d.computed_status] || "secondary"}>{d.computed_status}</Badge></td>
+                    <td>{d.is_week_off ? <Badge color="secondary">YES</Badge> : "—"}</td>
+                    <td>{d.is_holiday ? <Badge color="secondary">YES</Badge> : "—"}</td>
+                    <td><Badge color={STATUS_BADGE[d.computed_status] || "secondary"}>{d.computed_status.toUpperCase()}</Badge></td>
                     <td>
                       {d.regularized_status ? (
                         <Badge color={d.regularized_status === "paid" ? "success" : "danger"}>{d.regularized_status}</Badge>
@@ -110,9 +115,9 @@ const AttendanceEditTab = ({ days, period, employeeName, onRegularize }) => {
               </Input>
             </FormGroup>
             <FormGroup className="mb-0">
-              <Label style={{ fontSize: 13 }}>Remarks</Label>
+              <Label style={{ fontSize: 13 }}>Remarks <span className="text-danger">*</span></Label>
               <Input type="textarea" rows="3" value={remarks} onChange={(e) => setRemarks(e.target.value)}
-                placeholder="Reason for regularization..." />
+                placeholder="Reason for regularization... (minimum 3 words)" />
             </FormGroup>
           </ModalBody>
           <ModalFooter className="bg-light p-3">

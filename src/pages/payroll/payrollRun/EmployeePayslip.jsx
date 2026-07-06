@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Card, CardHeader, CardBody, CardTitle, Table, Spinner,
-  Button, Modal, ModalHeader, ModalBody, ModalFooter, Row, Col, Badge,
+  Button, Modal, ModalHeader, ModalBody, ModalFooter, Row, Col, Badge, Input,
 } from "reactstrap";
+import Select from "react-select";
 import { Document, Page, Text, View, StyleSheet, pdf, Image } from "@react-pdf/renderer";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
@@ -74,6 +75,7 @@ const transformPayslip = (item) => {
     employee_name,
     emp_id:          item.employee_emp_id  || empDetails?.emp_id          || "—",
     department:      item.department_name  || getDeptName(empDetails) || "",
+    department_id:   item.department_id    || (empDetails?.primary_department_id_list || [])[0] || null,
     joining_date:    item.joining_date      || empDetails?.date_of_joining  || "—",
     pay_period:      item.pay_period        || "—",
     pay_date:        item.pay_date          || "—",
@@ -349,6 +351,11 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
   const [downloading, setDownloading]             = useState(false);
   const [companyLogo, setCompanyLogo] = useState(null);
 
+  // ── Filters ──
+  const [search, setSearch] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState(null); // react-select option | null
+
+  const departmentOptions = departments.map((d) => ({ value: d.id, label: d.name }));
 
   const urlToBase64 = async (url) => {
     const response = await fetch(url);
@@ -401,14 +408,30 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
 
   useEffect(() => { fetchPayslips(); }, [payrollRunId, refreshKey]);
 
+  // ── Filtered rows — name/emp_id search AND department, both optional ──
+  const filteredPayslipData = useMemo(() => {
+    return payslipData.filter((row) => {
+      const matchesSearch =
+        !search ||
+        row.employee_name?.toLowerCase().includes(search.toLowerCase()) ||
+        row.emp_id?.toLowerCase().includes(search.toLowerCase());
+
+      const matchesDepartment =
+        !selectedDepartment ||
+        String(row.department_id) === String(selectedDepartment.value);
+
+      return matchesSearch && matchesDepartment;
+    });
+  }, [payslipData, search, selectedDepartment]);
+
   // ── Excel export — now INSIDE the component so it can read state ──
   const handleExportExcel = () => {
-    if (!payslipData.length) {
+    if (!filteredPayslipData.length) {
       toast.warning("No payslips to export.");
       return;
     }
 
-    const rows = payslipData.map((row) => {
+    const rows = filteredPayslipData.map((row) => {
       const base = {
         "Employee":     row.employee_name,
         "Emp ID":       row.emp_id,
@@ -498,24 +521,48 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
 
   return (
     <React.Fragment>
-      <Card className="shadow-none border">
+      <Card className="shadow-none border h-100 d-flex flex-column" style={{ minHeight: 0 }}>
         {/* ── Card Header ── */}
-        <CardHeader className="bg-light d-flex align-items-center justify-content-between">
+        <CardHeader className="bg-light d-flex align-items-center justify-content-between flex-shrink-0">
           <CardTitle tag="h5" className="mb-0">Employee Payslip Registry</CardTitle>
           <div className="d-flex align-items-center gap-3">
             <span className="text-muted" style={{ fontSize: 12 }}>
-              {payslipData.length} employee{payslipData.length !== 1 ? "s" : ""}
+              {filteredPayslipData.length} employee{filteredPayslipData.length !== 1 ? "s" : ""}
             </span>
-            <Button color="success" size="sm" onClick={handleExportExcel} disabled={!payslipData.length}>
+            <Button color="success" size="sm" onClick={handleExportExcel} disabled={!filteredPayslipData.length}>
               <i className="ri-file-excel-2-line align-middle me-1"></i> Export Excel
             </Button>
           </div>
         </CardHeader>
 
-        <CardBody className="p-0">
+        {/* ── Filters — name search + department, side by side, minimal spacing ── */}
+        <div className="px-3 py-2 border-bottom d-flex align-items-center gap-2 flex-wrap flex-shrink-0">
+          <div className="search-box" style={{ width: 240 }}>
+            <Input
+              type="search"
+              className="form-control search"
+              placeholder="Search employee name or ID..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <i className="ri-search-line search-icon"></i>
+          </div>
+          <div style={{ width: 200 }}>
+            <Select
+              options={departmentOptions}
+              value={selectedDepartment}
+              onChange={(val) => setSelectedDepartment(val)}
+              isClearable
+              placeholder="Filter by department..."
+              classNamePrefix="select2-selection"
+            />
+          </div>
+        </div>
+
+        <CardBody className="p-0 flex-grow-1" style={{ minHeight: 0 }}>
           <div
             className="table-responsive"
-            style={{ maxHeight: "65vh", overflow: "auto", position: "relative" }}
+            style={{ height: "100%", overflow: "auto", position: "relative" }}
           >
             <Table
               className="table-bordered align-middle table-nowrap mb-0"
@@ -552,13 +599,13 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
                 </tr>
               </thead>
               <tbody>
-                {payslipData.length === 0 ? (
+                {filteredPayslipData.length === 0 ? (
                   <tr>
                     <td colSpan={9 + dynamicEarnings.length + dynamicDeductions.length} className="text-center py-4 text-muted">
                       No payslip data found.
                     </td>
                   </tr>
-                ) : payslipData.map((row, index) => {
+                ) : filteredPayslipData.map((row, index) => {
                   const netPay = parseFloat(row.net_pay || 0);
                   return (
                     <tr key={row.id || index}>
@@ -764,7 +811,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
                       <tr className="table-danger fw-bold">
                         <td style={{ fontSize:12 }}>Total Deductions</td>
                         <td className="text-end text-danger" style={{ fontSize:12 }}>
-                          &#8377;{fmt(selectedSlip.total_deductions)}
+                          &#8377;{fmt(selectedSlip.total_deductions, allowDecimal)}
                         </td>
                       </tr>
                     </tbody>
@@ -796,7 +843,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
               )}
 
               {selectedSlip.bonus_notes && (
-                <div className="mt-2 px-3 py-2 border-top bg-light rounded">
+                <div className="mt-2 px-3 py-2 border-top bg-light rounded" style={{display: "flex", alignItems: "center"}}>
                   <p className="mb-0 text-muted" style={{ fontSize:11 }}>
                     <i className="ri-information-line me-1"></i>
                     {selectedSlip.bonus_notes}
@@ -805,7 +852,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
               )}
 
               {parseFloat(selectedSlip.lop_days) > 0 && (
-                <div className="mt-2 p-2 rounded border border-warning border-opacity-25 bg-warning-subtle d-flex gap-2 align-items-start">
+                <div className="mt-2 p-2 rounded border border-warning border-opacity-25 bg-warning-subtle d-flex gap-2 align-items-center">
                   <i className="ri-error-warning-line text-warning mt-1"></i>
                   <p className="mb-0 text-warning-emphasis" style={{ fontSize:12 }}>
                     <strong>{selectedSlip.lop_days} LOP days</strong> were deducted this month.

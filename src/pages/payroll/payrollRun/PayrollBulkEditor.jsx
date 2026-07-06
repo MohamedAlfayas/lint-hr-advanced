@@ -26,6 +26,20 @@ const MONTHS = MONTH_NAMES.slice(1).map((name, i) => ({ label: name, value: i + 
 // Shared control height so every filter / action element in the toolbar lines up
 const CONTROL_HEIGHT = 42;
 
+// ─── Column width tokens (used by <colgroup> to lock table-layout: fixed) ──────
+const COL_W = {
+  employee: 220,
+  attendance: 95,
+  lop: 95,
+  earning: 130,
+  addEarning: 130,
+  deduction: 130,
+  addDeduct: 130,
+  statutoryPfEsi: 100,
+  statutoryPt: 90,
+  summary: 130,
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmt = (val) =>
@@ -62,10 +76,16 @@ const cellSt = {
   borderBottom: "1px solid #e9ecef",
 };
 
+// NOTE: whiteSpace changed from "nowrap" to "normal" (+ wordBreak) so that
+// long header labels wrap within their fixed-width column instead of forcing
+// the column wider than its <col> width — required for table-layout: fixed
+// to keep every header/body cell in a column perfectly aligned.
 const thSt = (extra = {}) => ({
   padding: "6px 8px",
   fontSize: 10.5,
-  whiteSpace: "nowrap",
+  whiteSpace: "normal",
+  wordBreak: "break-word",
+  lineHeight: 2.25,
   fontWeight: 700,
   textTransform: "uppercase",
   letterSpacing: "0.4px",
@@ -135,7 +155,6 @@ const EditCell = ({ value, origValue, onChange, readOnly = false, danger = false
         ...cellSt,
         background: bg,
         cursor: readOnly ? "default" : "text",
-        minWidth: 90,
         textAlign: "right",
       }}
     >
@@ -196,7 +215,7 @@ const GroupTh = ({ label, span, colorKey, borderLeft = false }) => {
 
 // ─── Sub header cell ──────────────────────────────────────────────────────────
 
-const SubTh = ({ label, colorKey, borderLeft = false, minWidth = 90, right = true }) => {
+const SubTh = ({ label, colorKey, borderLeft = false, right = true }) => {
   const c = GROUP_COLORS[colorKey];
   return (
     <th
@@ -207,7 +226,6 @@ const SubTh = ({ label, colorKey, borderLeft = false, minWidth = 90, right = tru
           top: 36,
           textAlign: right ? "right" : "left",
           borderLeft: borderLeft ? `2px solid ${c.border}` : undefined,
-          minWidth,
         }),
       }}
     >
@@ -470,16 +488,40 @@ const PayrollBulkEditor = () => {
     toast.success(`Column "${label}" added to the sheet.`);
   };
 
-  const removeAdjCol = (key) => {
-    setAdjCols((prev) => prev.filter((c) => c.key !== key));
+  const removeAdjCol = async (col) => {
+    // Delete any already-saved adjustment rows for this label/type across all employees
+    const deletePromises = Object.entries(existingAdjs).flatMap(([eid, adjs]) => {
+      const match = adjs.find((a) => a.label === col.label && a.adjustment_type === col.type);
+      if (!match) return [];
+      return [
+        Api({
+          method: "DELETE",
+          url: "payroll/payslip-adjustment/",
+          data: { id: match.id },
+        }).catch(() => {
+          toast.error(`Failed to delete "${col.label}" for employee ${eid}`);
+        }),
+      ];
+    });
+
+    await Promise.all(deletePromises);
+
+    setAdjCols((prev) => prev.filter((c) => c.key !== col.key));
     setEdits((prev) => {
       const next = { ...prev };
-      Object.keys(next).forEach((eid) => { delete next[eid][key]; });
+      Object.keys(next).forEach((eid) => { delete next[eid][col.key]; });
       return next;
     });
     setOrigEdits((prev) => {
       const next = { ...prev };
-      Object.keys(next).forEach((eid) => { delete next[eid][key]; });
+      Object.keys(next).forEach((eid) => { delete next[eid][col.key]; });
+      return next;
+    });
+    setExistingAdjs((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((eid) => {
+        next[eid] = next[eid].filter((a) => !(a.label === col.label && a.adjustment_type === col.type));
+      });
       return next;
     });
   };
@@ -488,13 +530,12 @@ const PayrollBulkEditor = () => {
   const handleRemoveAdjCol = (col) => {
     confirmAction({
       title: "Remove this column?",
-      text: `"${col.label}" will be removed from the sheet for every employee. This does not delete anything already saved on the server.`,
+      text: `"${col.label}" will be permanently deleted for every employee who has it saved.`,
       confirmText: "Yes, remove",
     }).then((confirmed) => {
-      if (confirmed) removeAdjCol(col.key);
+      if (confirmed) removeAdjCol(col);
     });
   };
-
   // ─── Dirty detection ─────────────────────────────────────────────────────────
   const dirtyEmpIds = Object.keys(edits).filter((eid) => {
     const e = edits[eid] || {};
@@ -822,27 +863,6 @@ const PayrollBulkEditor = () => {
         )}
       </Card>
 
-      {/* ── Legend ── */}
-      <div className="d-flex flex-wrap align-items-center gap-4 mb-2 px-1" style={{ fontSize: 11, color: "#888" }}>
-        {[
-          { bg: "#fffbeb", border: "#fcd34d", label: "Attendance" },
-          { bg: "#f0fdf4", border: "#86efac", label: "Earnings" },
-          { bg: "#ecfdf5", border: "#6ee7b7", label: "Add. Earnings" },
-          { bg: "#fff5f5", border: "#fca5a5", label: "Deductions" },
-          { bg: "#fff0f0", border: "#f87171", label: "Add. Deductions" },
-          { bg: "#eff6ff", border: "#93c5fd", label: "Statutory (read-only)" },
-        ].map((l) => (
-          <span key={l.label} className="d-flex align-items-center gap-1">
-            <span style={{ display: "inline-block", width: 10, height: 10, background: l.bg, border: `1px solid ${l.border}`, borderRadius: 2 }} />
-            {l.label}
-          </span>
-        ))}
-        <span className="ms-auto" style={{ color: "#aaa" }}>
-          <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#f59e0b", marginRight: 4 }} />
-          Amber dot = unsaved edit · Click salary/adjustment cells to edit · Click LOP to open Attendance &amp; Regularization
-        </span>
-      </div>
-
       {/* ── Grid ── */}
       <Card className="shadow-none border">
         <CardHeader className="bg-light py-2 px-3 d-flex align-items-center justify-content-between">
@@ -878,12 +898,35 @@ const PayrollBulkEditor = () => {
             </div>
           ) : (
             <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: fullscreen ? "calc(100vh - 280px)" : "72vh" }}>
-              <table style={{ borderCollapse: "separate", borderSpacing: 0, width: "100%", fontSize: 12 }}>
+              <table style={{ borderCollapse: "separate", borderSpacing: 0, width: "100%", fontSize: 12, tableLayout: "fixed" }}>
+                {/* ── COLGROUP — locks every column to a fixed width shared
+                     by both header rows and every body row. This is what
+                     keeps headers aligned to their data columns regardless
+                     of scroll position, in both normal and fullscreen mode. ── */}
+                <colgroup>
+                  <col style={{ width: COL_W.employee }} />{/* Employee */}
+                  <col style={{ width: COL_W.attendance }} />{/* Total Days */}
+                  <col style={{ width: COL_W.attendance }} />{/* Payable Days */}
+                  <col style={{ width: COL_W.attendance }} />{/* Present */}
+                  <col style={{ width: COL_W.attendance }} />{/* Leaves */}
+                  <col style={{ width: COL_W.lop }} />{/* LOP Days */}
+                  {earnCols.map((col)    => <col key={`ce_${col.id}`}   style={{ width: COL_W.earning }} />)}
+                  {addEarnCols.map((col) => <col key={`cae_${col.key}`} style={{ width: COL_W.addEarning }} />)}
+                  {dedCols.map((col)     => <col key={`cd_${col.id}`}   style={{ width: COL_W.deduction }} />)}
+                  {addDedCols.map((col)  => <col key={`cad_${col.key}`} style={{ width: COL_W.addDeduct }} />)}
+                  <col style={{ width: COL_W.statutoryPfEsi }} />{/* Emp PF */}
+                  <col style={{ width: COL_W.statutoryPfEsi }} />{/* Emp ESI */}
+                  <col style={{ width: COL_W.statutoryPt }} />{/* PT */}
+                  <col style={{ width: COL_W.summary }} />{/* Gross */}
+                  <col style={{ width: COL_W.summary }} />{/* Total Deductions */}
+                  <col style={{ width: COL_W.summary }} />{/* Net Pay */}
+                </colgroup>
+
                 {/* ── GROUP HEADER ROW ── */}
                 <thead>
                   <tr>
                     {/* Employee — frozen */}
-                    <th rowSpan={2} style={thSt({ position: "sticky", top: 0, left: 0, zIndex: 6, background: GROUP_COLORS.employee.bg, color: GROUP_COLORS.employee.text, minWidth: 220, verticalAlign: "middle" })}>
+                    <th rowSpan={2} style={thSt({ position: "sticky", top: 0, left: 0, zIndex: 6, background: GROUP_COLORS.employee.bg, color: GROUP_COLORS.employee.text, verticalAlign: "middle" })}>
                       Employee
                     </th>
 
@@ -931,13 +974,13 @@ const PayrollBulkEditor = () => {
                       <th key={col.key} style={thSt({
                         background: GROUP_COLORS.addEarning.bg,
                         color: GROUP_COLORS.addEarning.text,
-                        top: 36, textAlign: "right", minWidth: 110,
+                        top: 36, textAlign: "right",
                         borderLeft: i === 0 ? `2px solid ${GROUP_COLORS.addEarning.border}` : undefined,
                       })}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
                           {col.label}
                           <button onClick={() => handleRemoveAdjCol(col)}
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 12, padding: 0, lineHeight: 1 }}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 12, padding: 0, lineHeight: 1, flexShrink: 0 }}
                             title="Remove column">×</button>
                         </div>
                       </th>
@@ -953,13 +996,13 @@ const PayrollBulkEditor = () => {
                       <th key={col.key} style={thSt({
                         background: GROUP_COLORS.addDeduct.bg,
                         color: GROUP_COLORS.addDeduct.text,
-                        top: 36, textAlign: "right", minWidth: 110,
+                        top: 36, textAlign: "right",
                         borderLeft: i === 0 ? `2px solid ${GROUP_COLORS.addDeduct.border}` : undefined,
                       })}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
                           {col.label}
                           <button onClick={() => handleRemoveAdjCol(col)}
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 12, padding: 0, lineHeight: 1 }}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 12, padding: 0, lineHeight: 1, flexShrink: 0 }}
                             title="Remove column">×</button>
                         </div>
                       </th>
@@ -997,7 +1040,6 @@ const PayrollBulkEditor = () => {
                           position: "sticky", left: 0, zIndex: 2,
                           background: rowBg,
                           boxShadow: "2px 0 4px -2px rgba(0,0,0,0.08)",
-                          minWidth: 220,
                         }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <div style={{
@@ -1028,7 +1070,7 @@ const PayrollBulkEditor = () => {
                           row._isPayslip ? row.present_days         : "—",
                           row._isPayslip ? row.approved_leave_days  : "—",
                         ].map((val, i) => (
-                          <td key={i} style={{ ...cellSt, textAlign: "right", background: i < 4 ? "#fffdf5" : "transparent", color: "#92400e" }}>
+                          <td key={i} style={{ ...cellSt, textAlign: "right", background: "#fffdf5", color: "#92400e" }}>
                             {val}
                           </td>
                         ))}
@@ -1164,6 +1206,27 @@ const PayrollBulkEditor = () => {
           )}
         </CardBody>
       </Card>
+
+      {/* ── Legend (moved below the grid) ── */}
+      <div className="d-flex flex-wrap align-items-center gap-4 mt-2 mb-2 px-1" style={{ fontSize: 11, color: "#888" }}>
+        {[
+          { bg: "#fffbeb", border: "#fcd34d", label: "Attendance" },
+          { bg: "#f0fdf4", border: "#86efac", label: "Earnings" },
+          { bg: "#ecfdf5", border: "#6ee7b7", label: "Add. Earnings" },
+          { bg: "#fff5f5", border: "#fca5a5", label: "Deductions" },
+          { bg: "#fff0f0", border: "#f87171", label: "Add. Deductions" },
+          { bg: "#eff6ff", border: "#93c5fd", label: "Statutory (read-only)" },
+        ].map((l) => (
+          <span key={l.label} className="d-flex align-items-center gap-1">
+            <span style={{ display: "inline-block", width: 10, height: 10, background: l.bg, border: `1px solid ${l.border}`, borderRadius: 2 }} />
+            {l.label}
+          </span>
+        ))}
+        <span className="ms-auto" style={{ color: "#aaa" }}>
+          <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#f59e0b", marginRight: 4 }} />
+          Amber dot = unsaved edit · Click salary/adjustment cells to edit · Click LOP to open Attendance &amp; Regularization
+        </span>
+      </div>
 
       {/* ── Regularization modal — reuses the existing EmployeeRegularization
           component as-is. It saves immediately per change (its own internal

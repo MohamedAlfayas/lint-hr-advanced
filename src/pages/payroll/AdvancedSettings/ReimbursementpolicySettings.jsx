@@ -6,6 +6,8 @@ import {
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 
+import { required, min, range, runChecks } from "./validators";
+
 // ─── Helpers (identical pattern to other policy settings) ─────────────────────
 
 const SectionLabel = ({ children }) => (
@@ -76,13 +78,26 @@ const ReimbursementPolicySettings = () => {
   useEffect(() => { fetchData(); }, []);
 
   const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
-  const handleToggle = (field)        => setForm((prev) => ({ ...prev, [field]: !prev[field] }));
+  const handleToggle = (field) =>
+    setForm((prev) => {
+      const next = { ...prev, [field]: !prev[field] };
+      if (field === "payout_with_salary" && !next.payout_with_salary) {
+        next.include_reimbursement_in_ctc = false;
+      }
+      return next;
+    });
+
+  const validate = () => {
+    const checks = [
+      required("Effective date", form.effective_date),
+      min("Submission window days", form.claim_submission_window_days, 1),
+      min("Auto-approve below amount", form.auto_approve_below_amount, 0),
+    ];
+    return runChecks(checks, toast);
+  };
 
   const handleSave = () => {
-    if (!form.effective_date) {
-      toast.error("Effective date is required");
-      return;
-    }
+    if (!validate()) return;
     setLoading(true);
     const isUpdate = !!form?.id;
     Api({
@@ -237,9 +252,13 @@ const ReimbursementPolicySettings = () => {
             {isEditing ? (
               <Input
                 type="number"
-                min="1"
+                min="1" max="365"
                 value={form.claim_submission_window_days || 30}
-                onChange={(e) => handleChange("claim_submission_window_days", parseInt(e.target.value))}
+                onChange={(e) => {
+                  let val = parseInt(e.target.value) || 1;
+                  val = Math.max(1, Math.min(365, val));
+                  handleChange("claim_submission_window_days", val);
+                }}
                 style={{ width: 100 }}
               />
             ) : (
@@ -273,10 +292,13 @@ const ReimbursementPolicySettings = () => {
               <div className="d-flex align-items-center gap-2">
                 <Input
                   type="number"
-                  min="0"
-                  step="0.01"
+                  min="0" step="0.01"
                   value={form.auto_approve_below_amount || "0.00"}
-                  onChange={(e) => handleChange("auto_approve_below_amount", e.target.value)}
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    if (val !== "" && Number(val) < 0) val = "0";
+                    handleChange("auto_approve_below_amount", val);
+                  }}
                   style={{ width: 140 }}
                 />
                 <small className="text-muted">0 = always require approval</small>
@@ -343,6 +365,7 @@ const ReimbursementPolicySettings = () => {
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.include_reimbursement_in_ctc}
+                  disabled={!form.payout_with_salary}
                   onChange={() => handleToggle("include_reimbursement_in_ctc")}
                 />
               </div>
