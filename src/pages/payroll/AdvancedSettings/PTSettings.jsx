@@ -93,6 +93,28 @@ const PTSettings = () => {
   const [slabModalOpen, setSlabModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
 
+  const [togglingId, setTogglingId] = useState(null);
+
+  const handleToggleActive = (item) => {
+    setTogglingId(item.id);
+    Api({
+      method: "PATCH",
+      url: "payroll/pt-settings/",
+      data: { id: item.id, is_active: !item.is_active },
+    })
+      .then((res) => {
+        const updated = res?.data?.data;
+        if (updated) {
+          dispatch(setPTSettings(
+            ptSettings.map((p) => (p.id === updated.id ? updated : p))
+          ));
+          toast.success(res?.data?.message || "Status updated");
+        }
+      })
+      .catch((err) => toast.error(err?.response?.data?.message || "Failed to update status"))
+      .finally(() => setTogglingId(null));
+  };
+
   const openSlabModal = (item) => {
     setSelectedItem(item);
     setSlabModalOpen(true);
@@ -184,7 +206,8 @@ const PTSettings = () => {
                         type="checkbox"
                         className="form-check-input"
                         checked={!!item?.is_active}
-                        readOnly
+                        disabled={togglingId === item.id}
+                        onChange={() => handleToggleActive(item)}
                       />
                       <Label className="form-check-label">
                         {item?.is_active ? "Active" : "Inactive"}

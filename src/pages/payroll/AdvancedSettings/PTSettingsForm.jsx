@@ -40,6 +40,7 @@ const PTSettingsForm = () => {
     state: "",
     deduction_cycle: "monthly",
     slab_basis: "monthly",
+    is_active: true,
   });
   const [tableData, setTableData] = useState([createRow()]);
 
@@ -47,7 +48,13 @@ const PTSettingsForm = () => {
 
   useEffect(() => {
     if (!formObj || !formObj.id) {
-      setForm({ id: 0, state: "", deduction_cycle: "monthly", slab_basis: "monthly" });
+      setForm({
+        id: formObj.id,
+        state: formObj.state || "",
+        deduction_cycle: formObj.deduction_cycle || "monthly",
+        slab_basis: formObj.slab_basis || "monthly",
+        is_active: formObj.is_active ?? true,
+      });
       setTableData([createRow()]);
       return;
     }
@@ -173,6 +180,7 @@ const PTSettingsForm = () => {
       state: form.state,
       deduction_cycle: form.deduction_cycle,
       slab_basis: form.slab_basis,
+      is_active: form.is_active,
       slabs: tableData.map((r) => ({
         start: Number(r.start),
         end: Number(r.end),
