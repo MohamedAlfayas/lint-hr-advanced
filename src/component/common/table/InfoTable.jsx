@@ -2412,60 +2412,30 @@ const InfoTable = ({
                         })
 
                         // Search Filter
-
                         .filter((d) => {
-                         
                           if (!search?.trim()) return true;
 
-                          // return Object.values(d).some((value) => {
-                          //   if (typeof value === "string") {
-                          //     return value
-                          //       .toLowerCase()
-                          //       .includes(search.toLowerCase());
-                          //   }
+                          const searchText = search.toLowerCase();
 
-                          //   if (typeof value === "number") {
-                          //     return String(value).includes(search);
-                          //   }
+                          const nameMatch =
+                            d?.name?.toString().toLowerCase().includes(searchText) || false;
 
-                          //   return false;
-                          // });
-                          return Object.entries(d).some(([key, value]) => {
+                          const descriptionMatch =
+                            d?.description?.toString().toLowerCase().includes(searchText) || false;
 
-                            // Ignore ID fields
-                            if (
-                              key === "id" ||
-                              key.endsWith("_id") ||
-                              key === "created_by" ||
-                              key === "updated_by" ||
-                              key === "work_schedule_id_list"
-                            ) {
-                              return false;
-                            }
+                          const formattedDate = d?.date
+                            ? dayjs(d.date).format("DD-MM-YYYY")
+                            : "";
 
-                            // if (value == null) return false;
+                          const normalizedDate = formattedDate.replace(/[-/]/g, "");
+                          const normalizedSearch = search.replace(/[-/]/g, "");
 
-                            // return String(value)
-                            //   .toLowerCase()
-                            //   .includes(search.toLowerCase());
-                            const matched = String(value)
-                              .toLowerCase()
-                              .includes(search.toLowerCase());
+                          const dateMatch =
+                            formattedDate.includes(search) ||
+                            normalizedDate.includes(normalizedSearch);
 
-                            if (matched) {
-                              console.log(
-                                "Holiday:",
-                                d.name,
-                                "Matched Key:",
-                                key,
-                                "Matched Value:",
-                                value
-                              );
-                            }
-
-                            return matched;
-                          });
-                        }) || []
+                          return nameMatch || descriptionMatch || dateMatch;
+                        })||[]
                     }
                     isPagination={true}
                     isGlobalFilter={true}
