@@ -29,7 +29,7 @@ import {
 } from "reactstrap";
 
 import Select from "react-select";
-
+import dayjs from "dayjs";
 import TableContainer from "../../../component/common/table/TableContainer";
 import DeleteModal from "../../../component/common/modal/DeleteModal";
 import Loader from "../../../component/common/loader/Loader";
@@ -2385,21 +2385,85 @@ const InfoTable = ({
                         // ─────────────────────────────
                         // Search Filter
                         // ─────────────────────────────
+
+                            // Year + Month Filter
+                        .filter((obj) => {
+                          const selectedYear =
+                            attendance_approval_table_filter_keys?.year;
+
+                          const selectedMonth =
+                            attendance_approval_table_filter_keys?.month;
+
+                          // No year selected -> show all
+                          if (!selectedYear) return true;
+
+                          const holidayDate = dayjs(obj.date);
+
+                          const yearMatch =
+                            holidayDate.year().toString() === selectedYear;
+
+                          const monthMatch =
+                            selectedMonth === 0 ||
+                            selectedMonth === undefined ||
+                            selectedMonth === null ||
+                            holidayDate.month() + 1 === selectedMonth;
+
+                          return yearMatch && monthMatch;
+                        })
+
+                        // Search Filter
+
                         .filter((d) => {
+                         
                           if (!search?.trim()) return true;
 
-                          return Object.values(d).some((value) => {
-                            if (typeof value === "string") {
-                              return value
-                                .toLowerCase()
-                                .includes(search.toLowerCase());
+                          // return Object.values(d).some((value) => {
+                          //   if (typeof value === "string") {
+                          //     return value
+                          //       .toLowerCase()
+                          //       .includes(search.toLowerCase());
+                          //   }
+
+                          //   if (typeof value === "number") {
+                          //     return String(value).includes(search);
+                          //   }
+
+                          //   return false;
+                          // });
+                          return Object.entries(d).some(([key, value]) => {
+
+                            // Ignore ID fields
+                            if (
+                              key === "id" ||
+                              key.endsWith("_id") ||
+                              key === "created_by" ||
+                              key === "updated_by" ||
+                              key === "work_schedule_id_list"
+                            ) {
+                              return false;
                             }
 
-                            if (typeof value === "number") {
-                              return String(value).includes(search);
+                            // if (value == null) return false;
+
+                            // return String(value)
+                            //   .toLowerCase()
+                            //   .includes(search.toLowerCase());
+                            const matched = String(value)
+                              .toLowerCase()
+                              .includes(search.toLowerCase());
+
+                            if (matched) {
+                              console.log(
+                                "Holiday:",
+                                d.name,
+                                "Matched Key:",
+                                key,
+                                "Matched Value:",
+                                value
+                              );
                             }
 
-                            return false;
+                            return matched;
                           });
                         }) || []
                     }
