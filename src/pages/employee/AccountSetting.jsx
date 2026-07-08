@@ -82,6 +82,7 @@ const AccountSettings = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
 
   const [employeeObj, setEmployeeObj] = useState({});
+  console.log("employeesss", employeeObj);
 
   const employee_data = GetLocalStorageData("employee");
   const branch_options = GetLocalStorageData("branch") || [];
@@ -127,8 +128,15 @@ const AccountSettings = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Guard: on hard refresh Redux resets, so account_settings_data can be
+    // {} or undefined. Bail out until it's actually populated.
+    if (!account_settings_data || !Object.keys(account_settings_data).length) {
+      return;
+    }
+
     setEmployeeObj({
       ...account_settings_data,
+      role_id: account_settings_data?.role?.id,
       dob: ConvertISODateFormat(account_settings_data.dob),
       joining_date: ConvertISODateFormat(account_settings_data.joining_date),
     });
@@ -139,8 +147,8 @@ const AccountSettings = () => {
       ),
     );
 
-    (account_settings_data?.primary_department_id_list).length
-      ? GetReportingManager(account_settings_data?.primary_department_id_list)
+    account_settings_data?.primary_department_id_list?.length
+      ? GetReportingManager(account_settings_data.primary_department_id_list)
       : setReportingManagerOptions([]);
 
     if (
@@ -148,11 +156,12 @@ const AccountSettings = () => {
       account_settings_data.country_code !== null &&
       account_settings_data.country_code !== undefined
     ) {
-      setContactCountry(
-        CountryList.find(
-          (d) => d.countryCode === account_settings_data.country_code,
-        ),
+      const matchedCountry = CountryList.find(
+        (d) => d.countryCode === account_settings_data.country_code,
       );
+      if (matchedCountry) {
+        setContactCountry(matchedCountry);
+      }
     }
   }, [account_settings_data]);
   const handleInputChange = (e) => {
@@ -376,7 +385,9 @@ const AccountSettings = () => {
       let root_department_id = !!root_department && root_department.id;
 
       if (
-        !(values?.primary_department_id_list).includes(root_department_id) &&
+        !(values?.primary_department_id_list || []).includes(
+          root_department_id,
+        ) &&
         values?.reporting_manager_id === 0
       ) {
         toast.error("Please Select Reporting Manager");
@@ -387,7 +398,10 @@ const AccountSettings = () => {
         employeeImage !== null &&
           form_data.append("profile", employeeImage, employeeImage.name);
         Object.entries(employeeObj).map((key, value) => {
-          if (key[0] === "cf_values") {
+          if (
+            key[0] === "cf_values" ||
+            key[0] === "allowed_attendance_methods"
+          ) {
             form_data.append(key[0], JSON.stringify(key[1]));
           } else {
             form_data.append(key[0], key[1]);
