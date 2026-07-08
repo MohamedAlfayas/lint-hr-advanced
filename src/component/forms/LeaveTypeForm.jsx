@@ -86,10 +86,12 @@ const LeaveTypeForm = () => {
 
   const handleRoleChange = (obj) => {
     setSelectedRoles(obj);
+    const roles = obj.map((d) => d.id);
     setLeaveTypeData({
       ...leaveTypeData,
-      role_id: obj.map((d) => d.id),
+      role_id: roles,
     });
+    FormikForm.setFieldValue("role_id", roles);
   };
 
   const handleWSChange = (obj) => {
@@ -111,10 +113,32 @@ const LeaveTypeForm = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === "name") {
-      const textOnly = value.replace(/[^a-zA-Z\s]/g, "");
+      const textOnly = value.replace(/[^a-zA-Z0-9\s.,?!"'_\-()&:;/\\]/g,
+      "");
+     
       setLeaveTypeData({ ...leaveTypeData, [name]: textOnly });
-    } else {
+      FormikForm.setFieldValue(name, textOnly);
+    } 
+    
+    else if (name === "description") {
+      const textOnly = value
+        .replace(/[^a-zA-Z0-9\s.,?!"'_\-()&:;/\\]/g, ""); 
+
+      setLeaveTypeData({ ...leaveTypeData, [name]: textOnly });
+      FormikForm.setFieldValue(name, textOnly);
+      if (textOnly.length > 200) {
+        FormikForm.setFieldError(
+          "description",
+          "Description is too long. Please keep it within 200 characters."
+        );
+      } else {
+        FormikForm.setFieldError("description", undefined);
+      }
+    }
+
+    else {
       setLeaveTypeData({ ...leaveTypeData, [name]: value });
+      FormikForm.setFieldValue(name, value);
     }
   };
   const handleInputChangeLeaveCount = (e) => {
@@ -151,14 +175,32 @@ const LeaveTypeForm = () => {
       name: Yup.string()
         .required("Please Enter Leave Type Name")
         .trim()
-        .matches(/^[a-zA-Z\s]+$/, "Name must contain letters only")
-        .min(2, "Name must be at least 2 characters"),
+        .matches(
+          /^[a-zA-Z0-9\s.,?!"'_\-()&:;/\\]+$/,
+          "Name can contain only alphabets, numbers, spaces, and . , ? ! \" ' - _ ( ) & : ; / \\"
+        )
+        .min(2, "Name must be at least 2 characters")
+        .max(150, "Leave Type Name is too long. Maximum 150 characters allowed."),
       genders: Yup.array()
         .required("Please Select Gender")
         .min(1, "Please Select Gender"),
       ws_id: Yup.array()
         .required("Please Select Work Schedeule")
         .min(1, "Please Select Work Schedeule"),
+      role_id: Yup.array()
+        .required("Please Select Applicable Role")
+        .min(1, "Please Select Applicable Role"),
+      description: Yup.string()
+        .trim()
+        .matches(
+          /^[a-zA-Z0-9\s.,!?'"_\-()&:;/\\]*$/,
+          "Description can contain only alphabets, numbers, spaces, and . , ! ? \" ' - _ ( ) & : ; / \\"
+        )
+        .max(
+          200,
+          "Description is too long. Please keep it within 200 characters."
+        ),
+      
     }),
     onSubmit: async (values) => {
       dispatch(setLoaderVisible(true));
@@ -231,16 +273,16 @@ const LeaveTypeForm = () => {
                       placeholder="Casual"
                       value={leaveTypeData.name || ""}
                       onChange={handleInputChange}
+                      // maxLength={150}
                       invalid={
-                        FormikForm.touched.name && FormikForm.errors.name
+                        // FormikForm.touched.name && FormikForm.errors.name
+                        FormikForm.errors.name
                           ? true
                           : false
                       }
                     />
-                    {!FormikForm.touched.name && !FormikForm.errors.name && (
-                      <i className="ri-chat-new-line" />
-                    )}
-                    {FormikForm.touched.name && FormikForm.errors.name ? (
+                    
+                    {FormikForm.errors.name ? (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.name}
                       </FormFeedback>
@@ -316,7 +358,7 @@ const LeaveTypeForm = () => {
                         name="allowed_count"
                         id="lt_days_allow"
                         className="form-control"
-                        placeholder="Year"
+                        placeholder="Enter the number of leave days allowed in a year"
                         value={leaveTypeData.allowed_count ?? 0}
                         onFocus={() => {
                           if (!leaveTypeData.allowed_count) {
@@ -342,13 +384,18 @@ const LeaveTypeForm = () => {
                             e.key === "-" ||
                             e.key === "e" ||
                             e.key === "E" ||
-                            e.key === "+"
+                            e.key === "+" ||
+                            e.key === "."
                           ) {
                             e.preventDefault();
                           }
                         }}
                         onChange={(e) => {
                           const val = e.target.value;
+                            // Allow only digits
+                          if (!/^\d*$/.test(val)) {
+                            return;
+                          }
                           if (val === "") {
                             setLeaveTypeData({
                               ...leaveTypeData,
@@ -382,7 +429,7 @@ const LeaveTypeForm = () => {
                         }}
                         invalid={daysCountError ? true : false}
                       />
-                      <i className="ri-calendar-2-line"></i>
+                      {/* <i className="ri-calendar-2-line"></i> */}
                     </div>
                     {daysCountError ? (
                       <FormFeedback type="invalid" style={{ display: "block" }}>
@@ -438,7 +485,8 @@ const LeaveTypeForm = () => {
                             e.key === "-" ||
                             e.key === "e" ||
                             e.key === "E" ||
-                            e.key === "+"
+                            e.key === "+" ||
+                            e.key === "."
                           ) {
                             e.preventDefault();
                           }
@@ -616,7 +664,7 @@ const LeaveTypeForm = () => {
                 <div>
                   <Label className="form-label">Applicable For Role*</Label>
 
-                  <Select
+                  {/* <Select
                     isMulti
                     options={role_options || []}
                     className="basic-multi-select"
@@ -626,7 +674,42 @@ const LeaveTypeForm = () => {
                     closeMenuOnSelect={false}
                   />
                 </div>
-                <div className="form-text mb-3">Select applicable roles.</div>
+                <div className="form-text mb-3">Select applicable roles.</div> */}
+                    <Select
+                      name="role_id"
+                      isMulti
+                      options={role_options || []}
+                      className="basic-multi-select"
+                      classNamePrefix="lc-select"
+                      value={selectedRoles || []}
+                      onChange={handleRoleChange}
+                      onBlur={() => FormikForm.setFieldTouched("role_id", true)}
+                      closeMenuOnSelect={false}
+                      styles={{
+                        control: (provided, state) => ({
+                          ...provided,
+                          borderColor:
+                            !state.isFocused &&
+                            FormikForm.touched.role_id &&
+                            FormikForm.errors.role_id
+                              ? "red"
+                              : provided.borderColor,
+                        }),
+                      }}
+                    />
+
+                    {FormikForm.touched.role_id && FormikForm.errors.role_id ? (
+                      <div className="lc_form_error_text">
+                        {FormikForm.errors.role_id}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {!FormikForm.errors.role_id && (
+                    <div className="form-text mb-3">
+                      Select applicable roles.
+                    </div>
+                  )}
               </Col>
 
               <Col md={12} lg={12} xxl={12}>
@@ -885,9 +968,19 @@ const LeaveTypeForm = () => {
                     className="form-control"
                     id="lt_desc"
                     name="description"
-                    value={leaveTypeData.description}
+                    value={leaveTypeData.description || ""}
                     onChange={handleInputChange}
+                    invalid={!!FormikForm.errors.description}
                   />
+                  {FormikForm.errors.description ? (
+                    <FormFeedback type="invalid">
+                      {FormikForm.errors.description}
+                    </FormFeedback>
+                  ) : (
+                    <div className="form-text">
+                      Description (Optional).
+                    </div>
+                  )}
                 </div>
               </Col>
               <Col lg={12}>
