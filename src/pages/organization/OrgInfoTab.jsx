@@ -113,6 +113,10 @@ const validateWebsite = (value) => {
   if (/\s/.test(website)) {
     return false;
   }
+    // Reject dangerous chars
+  if (/[<>"'\\;]/.test(website)) {
+    return false;
+  }
 
   // Reject consecutive dots
   if (website.includes("..")) {
@@ -123,8 +127,9 @@ const validateWebsite = (value) => {
     return false;
   }
 
-  const regex = /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}(:\d{1,5})?(\/.*)?$/i;
-
+  
+  const regex =
+    /^(https?:\/\/)?(([a-z0-9]+(-[a-z0-9]+)*)\.)+[a-z]{2,}(:\d{1,5})?(\/[a-z0-9\-._~%!$&'()*+,;=:@/]*)?(\?[a-z0-9\-._~%!$&'()*+,;=:@/?]*)?(#[a-z0-9\-._~%!$&'()*+,;=:@/?]*)?$/i;
   // return regex.test(website);
   if (!regex.test(website)) {
     return false;
@@ -134,7 +139,9 @@ const validateWebsite = (value) => {
   const hostname = website
     .replace(/^https?:\/\//, "")
     .split("/")[0]
-    .split(":")[0];
+    .split(":")[0]
+    .split("?")[0]
+    .split("#")[0];
 
   const parts = hostname.split(".");
 
@@ -414,7 +421,8 @@ const OrgInfoTab = () => {
                           onChange={(e) => {
                             const value = e.target.value
                               .toLowerCase()
-                              .replace(/[^a-z0-9:/.-]/g, "");
+                              // .replace(/[^a-z0-9:/.-]/g, "")
+                              .replace(/[^a-z0-9:/?&=._#-]/gi, "");
 
                             setField("website", value);
                             console.log(value.length);
