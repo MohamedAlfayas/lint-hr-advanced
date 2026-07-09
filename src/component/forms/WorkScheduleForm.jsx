@@ -356,7 +356,15 @@ const WorkScheduleForm = () => {
     enableReinitialize: true,
     initialValues: workScheduleData,
     validationSchema: Yup.object({
-      name: Yup.string().trim().required("Please Enter Work Schedule Name"),
+      name: Yup.string()
+        .trim()
+        .matches(
+          /^[A-Za-z0-9\s.,'_\-()&:;/]+$/,
+          "Only alphabets, numbers, spaces and . , ' - _ ( ) & : ; / are allowed",
+        )
+        .min(2, "Work Schedule Name must be at least 2 characters")
+        .max(50, "Work Schedule Name must not exceed 50 characters")
+        .required("Please Enter Work Schedule Name"),
     }),
     onSubmit: async (values) => {
       const filteredWorkdays = values.workday.filter((workday) => {
@@ -471,6 +479,7 @@ const WorkScheduleForm = () => {
                           name="name"
                           className="form-control"
                           id="ws_name"
+                          maxLength={50}
                           placeholder="Enter Work Schedule Name"
                           value={workScheduleData.name || ""}
                           onChange={(e) =>

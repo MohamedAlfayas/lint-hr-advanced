@@ -43,6 +43,7 @@ import {
   ConvertToISODateTimeFormat,
 } from "../../common/js/ConvertDateTimeFormat";
 import { setLeaveTypeForCurrentEmployee } from "../../redux/reducers/ChildReducer/LeaveTypeReducer";
+import { setHoliday } from "../../redux/reducers/ChildReducer/HolidayReducer";
 
 dayjs.extend(customParseFormat);
 
@@ -142,6 +143,10 @@ const checkPermissionAllowed = (leaveTypeObj, requestedStart, requestedEnd) => {
 const ApplyLeaveForm = () => {
   const dispatch = useDispatch();
   const [leaveapplyObj, setLeaveApplyObj] = useState({});
+
+  useEffect(() => {
+    dispatch(setHoliday(GetLocalStorageData("holiday")));
+  }, []);
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
 
   const { RangePicker } = DatePicker;
@@ -175,12 +180,40 @@ const ApplyLeaveForm = () => {
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
   const profileData = GetLocalStorageData("my_profile") || [];
-  const holidayData = GetLocalStorageData("holiday") || [];
 
-  console.log("workScheduleData:", workScheduleData);
-  console.log("profileData:", profileData);
-  console.log("holidayData:", holidayData);
-  console.log("profileData.work_schedule_id:", profileData?.work_schedule_id);
+  const { holiday_data } = useSelector((state) => state.HolidayReducer);
+  const holidayData = holiday_data || [];
+
+  const { leave_application_data } = useSelector(
+    (state) => state.LeaveApplyReducer,
+  );
+
+  const appliedDates = useMemo(() => {
+    const dates = [];
+    (leave_application_data || []).forEach((app) => {
+      if (app.is_deleted) return;
+      if (Array.isArray(app.in_between_dates) && app.in_between_dates.length) {
+        app.in_between_dates.forEach((d) => dates.push(d));
+      } else if (app.start) {
+        dates.push(dayjs(app.start).format("YYYY-MM-DD"));
+      }
+    });
+    return dates;
+  }, [leave_application_data]);
+
+  const holidayISODates = useMemo(() => {
+    return (holidayData || []).map((h) => h?.date).filter(Boolean);
+  }, [holidayData]);
+
+  const getDateCellStyle = (currentISO) => {
+    if (holidayISODates.includes(currentISO)) {
+      return { backgroundColor: "#fff3cd", color: "#856404" }; // yellow = holiday
+    }
+    if (appliedDates.includes(currentISO)) {
+      return { backgroundColor: "#f8d7da", color: "#842029" }; // red = already applied
+    }
+    return null;
+  };
 
   const { leave_type_for_current_employee } = useSelector(
     (state) => state.LeaveTypeReducer,
@@ -425,7 +458,9 @@ const ApplyLeaveForm = () => {
     const intermediateDates = generateIntermediaryDates() || [];
     const ValidDays = intermediateDates.filter(
       (d) =>
-        !WeekOffDays.includes(new Date(d).getDay()) && !HolidayDays.includes(d),
+        !WeekOffDays.includes(new Date(d).getDay()) &&
+        !HolidayDays.includes(d) &&
+        !appliedDates.includes(d),
     );
 
     setInBetweenDays(ValidDays);
@@ -444,12 +479,24 @@ const ApplyLeaveForm = () => {
   };
 
   const disabledDate = (current) => {
+    if (!current) return false;
+
+    const minDate = dayjs("1900-01-01", "YYYY-MM-DD");
+    const maxDate = dayjs().add(1, "year");
+
+    if (current < minDate.startOf("day") || current > maxDate.endOf("day")) {
+      return true;
+    }
+
     const dayOfWeek = current.day();
+    const currentISO = current.format("YYYY-MM-DD");
+
     return (
       WeekOffDays.includes(dayOfWeek) ||
       HolidayDays.map((d) => ConvertDateFormat(d)).includes(
         current.format("DD-MM-YYYY"),
-      )
+      ) ||
+      appliedDates.includes(currentISO)
     );
   };
 
@@ -459,7 +506,7 @@ const ApplyLeaveForm = () => {
     if (name === "reason") {
       const filteredValue = value
         .replace(/^\s+/, "")
-        .replace(/[^A-Za-z0-9\s.,\-\/()&:]/g, "");
+        .replace(/[^A-Za-z0-9\s.,!?'"\-_()&:;\/\n\r]/g, "");
 
       setLeaveApplyObj({
         ...leaveapplyObj,
@@ -682,8 +729,8 @@ const ApplyLeaveForm = () => {
         .min(2, "Reason must be at least 2 characters")
         .max(500, "Reason cannot exceed 500 characters")
         .matches(
-          /^[A-Za-z0-9\s.,\-\/()&:]+$/,
-          "Only alphabets, numbers, spaces and . , - / ( ) & : are allowed",
+          /^[A-Za-z0-9\s.,!?'"\-_()&:;\/]+$/,
+          "Only alphabets, numbers, spaces and standard punctuation are allowed",
         )
         .test(
           "not-empty-space",
@@ -887,6 +934,28 @@ const ApplyLeaveForm = () => {
                               format={DateFormat}
                               placeholder="Start Date"
                               disabledDate={disabledDate}
+                              inputReadOnly={true}
+                              cellRender={(current, info) => {
+                                if (info.type !== "date" || !current?.format) {
+                                  return info.originNode;
+                                }
+                                const currentISO = current.format("YYYY-MM-DD");
+                                const cellStyle = getDateCellStyle(currentISO);
+                                if (cellStyle) {
+                                  return (
+                                    <div
+                                      className="ant-picker-cell-inner"
+                                      style={{
+                                        ...cellStyle,
+                                        borderRadius: "4px",
+                                      }}
+                                    >
+                                      {current.date()}
+                                    </div>
+                                  );
+                                }
+                                return info.originNode;
+                              }}
                               style={{ width: "100%" }}
                               value={
                                 leaveapplyObj?.start
@@ -954,6 +1023,29 @@ const ApplyLeaveForm = () => {
                               name="comp_off_work_date"
                               format={DateFormat}
                               placeholder="Select Work Date"
+                              disabledDate={disabledDate}
+                              inputReadOnly={true}
+                              cellRender={(current, info) => {
+                                if (info.type !== "date" || !current?.format) {
+                                  return info.originNode;
+                                }
+                                const currentISO = current.format("YYYY-MM-DD");
+                                const cellStyle = getDateCellStyle(currentISO);
+                                if (cellStyle) {
+                                  return (
+                                    <div
+                                      className="ant-picker-cell-inner"
+                                      style={{
+                                        ...cellStyle,
+                                        borderRadius: "4px",
+                                      }}
+                                    >
+                                      {current.date()}
+                                    </div>
+                                  );
+                                }
+                                return info.originNode;
+                              }}
                               style={{ width: "100%" }}
                               value={compOffWorkDate}
                               onChange={(date, dateStr) => {
@@ -1026,6 +1118,28 @@ const ApplyLeaveForm = () => {
                             format={DateFormat}
                             placeholder={["Start Date", "End Date"]}
                             disabledDate={disabledDate}
+                            inputReadOnly={true}
+                            cellRender={(current, info) => {
+                              if (info.type !== "date" || !current?.format) {
+                                return info.originNode;
+                              }
+                              const currentISO = current.format("YYYY-MM-DD");
+                              const cellStyle = getDateCellStyle(currentISO);
+                              if (cellStyle) {
+                                return (
+                                  <div
+                                    className="ant-picker-cell-inner"
+                                    style={{
+                                      ...cellStyle,
+                                      borderRadius: "4px",
+                                    }}
+                                  >
+                                    {current.date()}
+                                  </div>
+                                );
+                              }
+                              return info.originNode;
+                            }}
                             onChange={handleMultiDayChange}
                             value={
                               !!leaveapplyObj?.start && !!leaveapplyObj?.end
@@ -1257,6 +1371,26 @@ const ApplyLeaveForm = () => {
                           format: "HH:mm",
                         }}
                         format={DateTimeFormat}
+                        disabledDate={disabledDate}
+                        inputReadOnly={true}
+                        cellRender={(current, info) => {
+                          if (info.type !== "date" || !current?.format) {
+                            return info.originNode;
+                          }
+                          const currentISO = current.format("YYYY-MM-DD");
+                          const cellStyle = getDateCellStyle(currentISO);
+                          if (cellStyle) {
+                            return (
+                              <div
+                                className="ant-picker-cell-inner"
+                                style={{ ...cellStyle, borderRadius: "4px" }}
+                              >
+                                {current.date()}
+                              </div>
+                            );
+                          }
+                          return info.originNode;
+                        }}
                         onChange={handleFromDateChange}
                         value={
                           !!leaveapplyObj?.start
@@ -1283,6 +1417,26 @@ const ApplyLeaveForm = () => {
                           format: "HH:mm",
                         }}
                         format={DateTimeFormat}
+                        disabledDate={disabledDate}
+                        inputReadOnly={true}
+                        cellRender={(current, info) => {
+                          if (info.type !== "date" || !current?.format) {
+                            return info.originNode;
+                          }
+                          const currentISO = current.format("YYYY-MM-DD");
+                          const cellStyle = getDateCellStyle(currentISO);
+                          if (cellStyle) {
+                            return (
+                              <div
+                                className="ant-picker-cell-inner"
+                                style={{ ...cellStyle, borderRadius: "4px" }}
+                              >
+                                {current.date()}
+                              </div>
+                            );
+                          }
+                          return info.originNode;
+                        }}
                         onChange={handleToDateChange}
                         value={
                           !!leaveapplyObj?.end
