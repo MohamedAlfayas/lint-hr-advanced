@@ -229,8 +229,19 @@ const OrgInfoTab = () => {
           /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/,
           "Enter a valid email address",
         ),
-      about: Yup.string().trim().required("Please enter company overview"),
-      address: Yup.string().trim().required("Please enter address"),
+      about: Yup.string().trim().required("Please enter company overview")
+        .matches(
+          /^[a-zA-Z0-9\s\n.,!?'"\-_()&:;/]+$/,
+          "Company overview can contain only letters, numbers, spaces, line breaks, and . , ! ? ' \" - _ ( ) & : ;"
+        ),
+      address: Yup.string()
+        .required("Please enter address")
+        .max(300, "Address must not exceed 300 characters")
+        .matches(
+          /^[a-zA-Z0-9\s.,\-#/'&]+$/,
+          "Address can contain only letters, numbers, spaces, and . , - # / ' &"
+        ),
+      
       country: Yup.string().required("Please select country"),
       state: Yup.string().required("Please select state"),
       city: Yup.string()
@@ -556,7 +567,16 @@ const OrgInfoTab = () => {
                         className="form-control"
                         rows="3"
                         value={v.about || ""}
-                        onChange={(e) => setField("about", e.target.value)}
+                        // onChange={(e) => setField("about", e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value
+                            .replace(/^\s+/, "") // remove leading spaces                 
+                            .replace(
+                              /[^a-zA-Z0-9\s\n.,!?'"\-_()&:;/]/g,
+                              ""
+                            );
+                          setField("about", value);
+                        }}
                         onBlur={() => FormikForm.setFieldTouched("about", true)}
                         invalid={isInvalid("about")}
                       />
@@ -580,7 +600,14 @@ const OrgInfoTab = () => {
                         className="form-control"
                         rows="2"
                         value={v.address || ""}
-                        onChange={(e) => setField("address", e.target.value)}
+                        // onChange={(e) => setField("address", e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value
+                            .replace(/^\s+/, "") // remove leading spaces only
+                            .replace(/[^a-zA-Z0-9\s.,\-#/'&]/g, "");
+
+                          setField("address", value);
+                        }}
                         onBlur={() =>
                           FormikForm.setFieldTouched("address", true)
                         }
