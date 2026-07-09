@@ -644,7 +644,7 @@ const PayrollBulkEditor = () => {
       setSaving(false);
     }
 
-    if (fail > 0) toast.warning(`Saved with ${fail} error(s). Refreshing...`);
+    if (fail > 0) toast.error(`Failed with ${fail} error(s). Refreshing...`);
     else toast.success(`Saved ${dirtyEmpIds.length} employee(s). Refreshing...`);
     setTimeout(() => load(), 600);
   };
