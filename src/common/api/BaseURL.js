@@ -4,7 +4,7 @@ export const getBaseUrlFromDomain = () => {
   );
 
 
-  let base_url = "http://192.168.0.26:8000/";
+  let base_url = "http://localhost:8000/";
 
 
   if (MULTIDB_ENABLED !== 0) {

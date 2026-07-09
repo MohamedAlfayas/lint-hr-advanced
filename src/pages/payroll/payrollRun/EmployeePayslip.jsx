@@ -8,9 +8,9 @@ import { Document, Page, Text, View, StyleSheet, pdf, Image } from "@react-pdf/r
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
-import PayslipStatusCell from "./PayslipStatusCell"; 
+import PayslipStatusCell from "./PayslipStatusCell";
 import PayslipBulkStatusBar from "./PayslipBulkStatusBar";
-import * as XLSX from "xlsx";
+import ExcelJs from "exceljs";
 
 const fmtDateTime = (val) => {
   if (!val) return "—";
@@ -462,54 +462,170 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
     });
   }, [payslipData, search, selectedDepartment]);
 
-  // ── Excel export — now INSIDE the component so it can read state ──
-  const handleExportExcel = () => {
+  // ── Excel export — colored ExcelJS workbook, applied to the currently filtered rows ──
+  const handleExportExcel = async () => {
     if (!filteredPayslipData.length) {
       toast.warning("No payslips to export.");
       return;
     }
 
-    const rows = filteredPayslipData.map((row) => {
-      const base = {
-        "Employee":     row.employee_name,
-        "Emp ID":       row.emp_id,
-        "Department":   row.department || "",
-        "Pay Period":   row.pay_period || "",
-        "Payable Days": row.payable_days,
-        "LOP Days":     row.lop_days,
-        "Regularized":  row.is_regularized ? `Yes (${row.regularized_days_count})` : "No",
-      };
-
-      dynamicEarnings.forEach((earn) => {
-        base[earn] = row.earnings?.[earn] != null ? Number(row.earnings[earn]) : "";
-      });
-
-      base["Gross Earnings"] = Number(row.gross_earnings || 0);
-
-      dynamicDeductions.forEach((ded) => {
-        base[ded] = row.deductions?.[ded] != null ? Number(row.deductions[ded]) : "";
-      });
-
-      base["Total Deductions"] = Number(row.total_deductions || 0);
-      base["Net Pay"]          = Number(row.net_pay || 0);
-      base["Based On"]         = (row.based_on || "CTC").toUpperCase();
-      return base;
+    const workbook = new ExcelJs.Workbook();
+    const sheet = workbook.addWorksheet("Payslips", {
+      views: [{ state: "frozen", xSplit: 2, ySplit: 1 }], // freeze header row + first 2 cols
     });
+    sheet.properties.defaultRowHeight = 20;
 
+    // ── Column definitions ──
+    const staticStart = [
+      "Employee",
+      "Emp ID",
+      "Department",
+      "Pay Period",
+      "Payable Days",
+      "LOP Days",
+      "Regularized",
+    ];
     const header = [
-      "Employee", "Emp ID", "Department", "Pay Period",
-      "Payable Days", "LOP Days", "Regularized",
-      ...dynamicEarnings, "Gross Earnings",
-      ...dynamicDeductions, "Total Deductions",
-      "Net Pay", "Based On",
+      ...staticStart,
+      ...dynamicEarnings,
+      "Gross Earnings",
+      ...dynamicDeductions,
+      "Total Deductions",
+      "Net Pay",
+      "Based On",
     ];
 
-    const ws = XLSX.utils.json_to_sheet(rows, { header });
-    ws["!cols"] = header.map((h) => ({ wch: Math.max(h.length + 2, 12) }));
+    // Column index ranges for group fills (1-based)
+    const earnStart = staticStart.length + 1; // first earning col
+    const earnEnd = earnStart + dynamicEarnings.length; // includes Gross
+    const dedStart = earnEnd + 1; // first deduction col
+    const dedEnd = dedStart + dynamicDeductions.length; // includes Total Deductions
+    const netCol = dedEnd + 1; // Net Pay col
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Payslips");
-    XLSX.writeFile(wb, `Payslips_Run_${payrollRunId}.xlsx`);
+    // ── Header row ──
+    const headerRow = sheet.addRow(header);
+    headerRow.font = { bold: true, color: { argb: "FFFFFF" } };
+    headerRow.eachCell((cell, col) => {
+      let fill = "1F6FEB"; // blue default
+      if (col >= earnStart && col <= earnEnd)
+        fill = "0AB39C"; // earnings green
+      else if (col >= dedStart && col <= dedEnd)
+        fill = "C53030"; // deductions red
+      else if (col === netCol) fill = "0A8F7E"; // net pay
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: fill },
+      };
+      cell.alignment = {
+        horizontal: "center",
+        vertical: "middle",
+        wrapText: true,
+      };
+    });
+
+    // ── Data rows ──
+    filteredPayslipData.forEach((row) => {
+      const netPay = Number(row.net_pay || 0);
+      const values = [
+        row.employee_name,
+        row.emp_id,
+        row.department || "",
+        row.pay_period || "",
+        row.payable_days,
+        row.lop_days,
+        row.is_regularized ? `Yes (${row.regularized_days_count})` : "No",
+        ...dynamicEarnings.map((e) =>
+          row.earnings?.[e] != null ? Number(row.earnings[e]) : "",
+        ),
+        Number(row.gross_earnings || 0),
+        ...dynamicDeductions.map((d) =>
+          row.deductions?.[d] != null ? Number(row.deductions[d]) : "",
+        ),
+        Number(row.total_deductions || 0),
+        netPay,
+        (row.based_on || "CTC").toUpperCase(),
+      ];
+
+      const dataRow = sheet.addRow(values);
+
+      dataRow.eachCell((cell, col) => {
+        cell.alignment = {
+          horizontal: col === 1 ? "left" : "center",
+          vertical: "middle",
+        };
+
+        // number formatting for money columns
+        if (col >= earnStart && col <= dedEnd) {
+          cell.numFmt = "#,##0.00";
+        }
+        // group tint fills
+        if (col >= earnStart && col <= earnEnd) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "E6F9F4" },
+          };
+        } else if (col >= dedStart && col <= dedEnd) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FDECEC" },
+          };
+        }
+        // net pay styling
+        if (col === netCol) {
+          cell.numFmt = "#,##0.00";
+          cell.font = {
+            bold: true,
+            color: { argb: netPay < 0 ? "C53030" : "0A8F7E" },
+          };
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "D8F3EA" },
+          };
+        }
+      });
+    });
+
+    // ── Borders on all cells ──
+    sheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+      });
+    });
+
+    // ── Auto column widths ──
+    sheet.columns.forEach((column, i) => {
+      let maxLength = header[i] ? header[i].length : 10;
+      column.eachCell({ includeEmpty: true }, (cell) => {
+        const len = cell.value != null ? cell.value.toString().length : 0;
+        maxLength = Math.max(maxLength, len);
+      });
+      column.width = Math.max(maxLength + 2, 12);
+    });
+
+    // ── Download ──
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    const rawPeriod = filteredPayslipData[0]?.pay_period || `Run_${payrollRunId}`;
+    const safePeriod = rawPeriod.replace(/\s+/g, "_").replace(/[^\w-]/g, "");
+
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `Payslips_${safePeriod}.xlsx`;
+    anchor.click();
+    window.URL.revokeObjectURL(url);
     toast.success("Excel exported!");
   };
 
