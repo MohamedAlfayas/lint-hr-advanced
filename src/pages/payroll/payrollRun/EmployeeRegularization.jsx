@@ -170,7 +170,7 @@ const EmployeeAttendanceEdit = ({ employeeId, employeeName, month, year, onSaved
         onDone && onDone();
       })
       .catch((err) => {
-        toast.error(err?.response?.data?.error_message || "Failed to save regularization.");
+        toast.error(err?.response?.data?.error_message || err?.response?.data?.detail || "Failed to save regularization.");
         onFail && onFail();
       });
   };

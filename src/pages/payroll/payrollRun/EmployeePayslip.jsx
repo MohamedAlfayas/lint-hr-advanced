@@ -8,6 +8,8 @@ import { Document, Page, Text, View, StyleSheet, pdf, Image } from "@react-pdf/r
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
+import PayslipStatusCell from "./PayslipStatusCell"; 
+import PayslipBulkStatusBar from "./PayslipBulkStatusBar";
 import * as XLSX from "xlsx";
 
 const fmtDateTime = (val) => {
@@ -340,6 +342,39 @@ const PayslipPDF = ({ slip, companyName, companyLogo, allowDecimal }) => {
   );
 };
 
+// ─── react-select styling — matches Bootstrap's .form-control (search box) ──
+// so the department filter sits flush with the search input instead of
+// looking taller / differently bordered like the raw react-select default.
+const deptSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: 38,
+    height: 38,
+    fontSize: 13,
+    borderRadius: 4,
+    borderColor: state.isFocused ? "#0ab39c" : "#ced4da",
+    boxShadow: state.isFocused ? "0 0 0 0.15rem rgba(10,179,156,0.25)" : "none",
+    "&:hover": { borderColor: state.isFocused ? "#0ab39c" : "#adb5bd" },
+  }),
+  valueContainer: (base) => ({
+    ...base,
+    height: 36,
+    padding: "0 10px",
+  }),
+  input: (base) => ({ ...base, margin: 0, padding: 0 }),
+  indicatorsContainer: (base) => ({ ...base, height: 36 }),
+  indicatorSeparator: () => ({ display: "none" }),
+  placeholder: (base) => ({ ...base, fontSize: 13, color: "#6c757d" }),
+  singleValue: (base) => ({ ...base, fontSize: 13 }),
+  menu: (base) => ({ ...base, fontSize: 13, zIndex: 10 }),
+  option: (base, state) => ({
+    ...base,
+    fontSize: 13,
+    backgroundColor: state.isSelected ? "#0ab39c" : state.isFocused ? "#e6f7f4" : "#fff",
+    color: state.isSelected ? "#fff" : "#1a1a1a",
+  }),
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refreshKey = 0 }) => {
   const [loading, setLoading]                     = useState(false);
@@ -350,6 +385,9 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
   const [modalOpen, setModalOpen]                 = useState(false);
   const [downloading, setDownloading]             = useState(false);
   const [companyLogo, setCompanyLogo] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const toggleSelect = (id) =>
+    setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
 
   // ── Filters ──
   const [search, setSearch] = useState("");
@@ -532,22 +570,31 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
             <Button color="success" size="sm" onClick={handleExportExcel} disabled={!filteredPayslipData.length}>
               <i className="ri-file-excel-2-line align-middle me-1"></i> Export Excel
             </Button>
+            {selectedIds.length > 0 && (
+              <div className="d-flex align-items-center" style={{ height: 38 }}>
+                <PayslipBulkStatusBar
+                  selectedIds={selectedIds}
+                  onDone={() => { setSelectedIds([]); fetchPayslips(); }}
+                />
+              </div>
+            )}
           </div>
         </CardHeader>
 
-        {/* ── Filters — name search + department, side by side, minimal spacing ── */}
-        <div className="px-3 py-2 border-bottom d-flex align-items-center gap-2 flex-wrap flex-shrink-0">
-          <div className="search-box" style={{ width: 240 }}>
+        {/* ── Filters — name search + department, side by side, aligned heights ── */}
+        <div className="px-3 py-2 border-bottom d-flex align-items-center gap-3 flex-wrap flex-shrink-0">
+          <div className="search-box" style={{ width: 240, height: 38 }}>
             <Input
               type="search"
               className="form-control search"
+              style={{ height: 38, fontSize: 13 }}
               placeholder="Search employee name or ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             <i className="ri-search-line search-icon"></i>
           </div>
-          <div style={{ width: 200 }}>
+          <div style={{ width: 220 }}>
             <Select
               options={departmentOptions}
               value={selectedDepartment}
@@ -555,21 +602,54 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
               isClearable
               placeholder="Filter by department..."
               classNamePrefix="select2-selection"
+              styles={deptSelectStyles}
             />
           </div>
+          {selectedDepartment && (
+            <Button
+              color="link"
+              size="sm"
+              className="text-muted p-0 text-decoration-none align-self-center"
+              style={{ fontSize: 12, lineHeight: "38px" }}
+              onClick={() => setSelectedDepartment(null)}
+            >
+              Clear department
+            </Button>
+          )}
         </div>
 
         <CardBody className="p-0 flex-grow-1" style={{ minHeight: 0 }}>
+          <style>{`
+            .payslip-table-wrap table.table-nowrap th,
+            .payslip-table-wrap table.table-nowrap td {
+              border: none;
+              border-bottom: 1px solid #dfe3e8;
+            }
+            .payslip-table-wrap table.table-nowrap thead th {
+              border-bottom: 1px solid #c9ced4;
+            }
+            .payslip-table-wrap table.table-nowrap tbody tr:hover td {
+              background-color: #fafbfc;
+            }
+          `}</style>
           <div
-            className="table-responsive"
+            className="table-responsive payslip-table-wrap"
             style={{ height: "100%", overflow: "auto", position: "relative" }}
           >
             <Table
-              className="table-bordered align-middle table-nowrap mb-0"
-              style={{ fontSize: 13, borderCollapse: "separate", borderSpacing: 0 }}
+              className="align-middle table-nowrap mb-0"
+              style={{ fontSize: 13, borderCollapse: "collapse", borderSpacing: 0 }}
             >
               <thead className="text-muted text-uppercase" style={{ fontSize: 11 }}>
                 <tr>
+                  <th className="text-center" style={{ width: 44, position:"sticky", top:0, zIndex:4, background:"#f8f9fa" }}>
+                    <input
+                      type="checkbox"
+                      style={{ width: 15, height: 15, cursor: "pointer" }}
+                      checked={selectedIds.length === filteredPayslipData.length && filteredPayslipData.length > 0}
+                      onChange={(e) => setSelectedIds(e.target.checked ? filteredPayslipData.map(r=>r.id) : [])}
+                    />
+                  </th>
                   <th style={{ position:"sticky", top:0, left:0, zIndex:4, background:"#f8f9fa", minWidth:200 }}>
                     Employee
                   </th>
@@ -609,6 +689,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
                   const netPay = parseFloat(row.net_pay || 0);
                   return (
                     <tr key={row.id || index}>
+                      <td className="text-center"><input type="checkbox" style={{ width: 15, height: 15, cursor: "pointer" }} checked={selectedIds.includes(row.id)} onChange={() => toggleSelect(row.id)} /></td>
                       <td
                         className="ps-3"
                         style={{ position:"sticky", left:0, zIndex:1, background:"#fff", boxShadow:"2px 0 4px -2px rgba(0,0,0,0.15)" }}
@@ -631,7 +712,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
                             </div>
                           )}
                           <div>
-                            <p className="mb-0 fw-medium" style={{ fontSize:13 }}>{row.employee_name}</p>
+                            <p className="mb-0" style={{ fontSize:13, fontWeight:500, color:"#344054" }}>{row.employee_name}</p>
                             <p className="mb-0 text-muted" style={{ fontSize:11 }}>
                               {row.emp_id}
                               {row.department && (
@@ -678,9 +759,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
                       </td>
 
                       <td className="text-center">
-                        <Badge color={row.status === "draft" ? "warning" : "success"} className="fs-11">
-                          {row.status}
-                        </Badge>
+                        <PayslipStatusCell payslip={row} onChanged={fetchPayslips} />
                       </td>
 
                       <td

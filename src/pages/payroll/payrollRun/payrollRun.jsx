@@ -18,6 +18,7 @@ import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import PayrollRunModal from "./payrollRunModal";
 import PayrollRunDetails from "./payrollRunDetails";
+import RunStatusActions from "./RunStatusActions";
 
 const MONTH_NAMES = [
   "",
@@ -61,21 +62,6 @@ const getMonthName = (month) => {
   if (month === null || month === undefined || month === "") return "";
   if (isNaN(month)) return String(month);
   return MONTH_NAMES[parseInt(month, 10)] || String(month);
-};
-
-const getStatusColor = (status) => {
-  switch (String(status).toLowerCase()) {
-    case "draft":
-      return "warning";
-    case "processed":
-      return "primary";
-    case "approved":
-      return "success";
-    case "paid":
-      return "dark";
-    default:
-      return "secondary";
-  }
 };
 
 const PayrollRun = () => {
@@ -226,15 +212,7 @@ const PayrollRun = () => {
                           {getMonthName(row.month) || row.month}
                         </td>
                         <td>{row.year}</td>
-                        <td>
-                          <Badge
-                            color={getStatusColor(row.status)}
-                            pill
-                            style={{ padding: "4px 10px" }}
-                          >
-                            {row.status}
-                          </Badge>
-                        </td>
+                        <td><RunStatusActions run={row} onChanged={fetchData} size="sm" /></td>
                         <td>{fmtDateTime(row.processed_at) || "—"}</td>
                         <td className="text-end">
                           <Button

@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
 import {
-  Modal, ModalHeader, ModalBody, ModalFooter, Row, Col, Button, Badge,
+  Row, Col, Button, Badge,
   Table, Spinner, Nav, NavItem, NavLink, TabContent, TabPane,
 } from "reactstrap";
-import Select from "react-select";
 import SimpleBar from "simplebar-react";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import EmployeePayslip from "./EmployeePayslip";
 import EmployeeRegularization from "./EmployeeRegularization";
+import RunStatusActions from "./RunStatusActions";
 
 const employees = GetLocalStorageData("employee") || [];
 
@@ -63,6 +63,8 @@ const getStatusColor = (status) => {
   }
 };
 
+// `isOpen` / `toggle` are kept as props for drop-in compatibility with
+// existing callers (toggle is used to close/exit the full-screen page).
 const PayrollRunDetails = ({ isOpen, toggle, data }) => {
   const [activeTab, setActiveTab]       = useState("overview");
   const [payslips, setPayslips]         = useState([]);
@@ -104,7 +106,17 @@ const PayrollRunDetails = ({ isOpen, toggle, data }) => {
     }
   }, [isOpen, data?.id]);
 
-  if (!data) return null;
+  // Lock body scroll while the full-screen page is open (same behaviour a
+  // Modal would have given us for free).
+  useEffect(() => {
+    if (isOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = prevOverflow; };
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !data) return null;
 
   const totalNetPay     = payslips.reduce((s, p) => s + parseFloat(p.net_pay         || 0), 0);
   const totalGross      = payslips.reduce((s, p) => s + parseFloat(p.gross_earnings  || 0), 0);
@@ -128,20 +140,37 @@ const PayrollRunDetails = ({ isOpen, toggle, data }) => {
     ? payslips.find((p) => String(p.employee) === String(selectedRegEmp.value))
     : null;
 
-  const TABS = ["overview", "payslips"];
+  const TABS = ["overview", "payslips", "bonus & gratuity"];
 
   return (
-    <Modal isOpen={isOpen} toggle={toggle} centered size="xl">
-      <ModalHeader toggle={toggle} className="bg-light p-3">
-        Payroll Run — {MONTH_NAMES[data.month]} {data.year}
-        <Badge color={getStatusColor(data.status)} className="ms-2" style={{ fontSize: 11 }}>
-          {data.status}
-        </Badge>
-      </ModalHeader>
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1040,
+        background: "#fff",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* ── Header ── */}
+      <div className="d-flex align-items-center justify-content-between bg-light border-bottom p-3 flex-shrink-0">
+        <div className="d-flex align-items-center">
+          <Button color="link" className="text-dark p-0 me-3" onClick={toggle} title="Close">
+            <i className="ri-arrow-left-line fs-4"></i>
+          </Button>
+          <span className="fw-semibold fs-5">
+            Payroll Run — {MONTH_NAMES[data.month]} {data.year}
+          </span>
+          <span className="ms-2"><RunStatusActions run={data} onChanged={() => {}} /></span>
+        </div>
+        <Button close onClick={toggle} aria-label="Close" />
+      </div>
 
-      <ModalBody
-        className="p-0 d-flex flex-column"
-        style={{ height: "80vh", maxHeight: "80vh", minHeight: 0 }}
+      {/* ── Body ── */}
+      <div
+        className="d-flex flex-column flex-grow-1"
+        style={{ minHeight: 0, overflow: "hidden" }}
       >
         {/* ── Tabs ── */}
         <Nav tabs className="px-4 pt-3 bg-light border-bottom flex-shrink-0">
@@ -154,6 +183,8 @@ const PayrollRunDetails = ({ isOpen, toggle, data }) => {
               >
                 {tab === "regularization"
                   ? <><i className="ri-calendar-check-line align-middle me-1"></i>Regularization</>
+                  : tab === "bonus & gratuity"
+                  ? <><i className="ri-award-line align-middle me-1"></i>Bonus &amp; Gratuity</>
                   : tab.charAt(0).toUpperCase() + tab.slice(1)}
               </NavLink>
             </NavItem>
@@ -304,12 +335,13 @@ const PayrollRunDetails = ({ isOpen, toggle, data }) => {
           )}
 
         </TabContent>
-      </ModalBody>
+      </div>
 
-      <ModalFooter className="bg-light p-3">
+      {/* ── Footer ── */}
+      <div className="d-flex justify-content-end bg-light border-top p-3 flex-shrink-0">
         <Button color="secondary" size="sm" onClick={toggle}>Close</Button>
-      </ModalFooter>
-    </Modal>
+      </div>
+    </div>
   );
 };
 
