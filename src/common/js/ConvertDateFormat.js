@@ -1,18 +1,19 @@
 import dayjs from "dayjs";
 
 export const ConvertDateFormat = (inputDate) => {
-  // Assuming inputDate is in the 'dd-mm-yyyy' format
+  // Handle undefined, null, or empty values
+  if (!inputDate || typeof inputDate !== "string") {
+    return "-";
+  }
+
   const parts = inputDate.split("-");
+
   if (parts.length === 3) {
     const [year, month, day] = parts;
-    // Create a new Date object using the parts and format it to 'yyyy-mm-dd'
-    const convertedDate = `${day}-${month}-${year}`;
-    // Use toISOString() to get the date in 'yyyy-mm-dd' format
-    return convertedDate;
-  } else {
-    // If the input format is invalid, return the original string
-    return inputDate;
+    return `${day}-${month}-${year}`;
   }
+
+  return inputDate;
 };
 export const convertHolidayDateFormat = (dateString) => {
   const [year, month, day] = dateString.split("-");
@@ -28,8 +29,6 @@ export const ConvertDayNameFromISO = (start) => {
 
 export const ConvertISODateFormat = (dateString) => {
   const originalDate = new Date(String(dateString));
-
-  
 
   // Get the components of the date
   const year = originalDate.getFullYear();
@@ -70,14 +69,18 @@ export const convertFromToDateFormat = (originalDate) => {
 export const previousDateFormat = (dateString) => {
   // Create a Date object from the provided dateString
   const originalDate = new Date(dateString);
-  
+
   // Subtract 18 years from the original date
-  const newDate = new Date(originalDate.getFullYear() - 18, originalDate.getMonth(), originalDate.getDate());
+  const newDate = new Date(
+    originalDate.getFullYear() - 18,
+    originalDate.getMonth(),
+    originalDate.getDate(),
+  );
 
   // Convert the new date to the desired format (assuming ISO format for now)
-  const isoDate = newDate.toISOString().split('T')[0]; // Extracting date portion
+  const isoDate = newDate.toISOString().split("T")[0]; // Extracting date portion
 
-  console.log("isoDate",isoDate);
+  console.log("isoDate", isoDate);
 
   return isoDate;
 };
@@ -99,7 +102,7 @@ export const timeConvert = (decimalHours) => {
   const hours = Math.floor(decimalHours);
   const minutes = (decimalHours - hours) * 60;
   const formattedTime = `${String(hours).padStart(2, "0")}:${String(
-    minutes
+    minutes,
   ).padStart(2, "0")}`;
   return formattedTime;
 };
