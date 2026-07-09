@@ -113,6 +113,10 @@ import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSel
 import TableSkeleton from "../skeleton/TableSkeloton";
 import { DeleteApi } from "../../../common/api/DeleteApi";
 import { editLeaveApplication } from "../../../redux/reducers/ChildReducer/LeaveApplyReducer";
+import {
+  editHoliday,
+  removeHoliday,
+} from "../../../redux/reducers/ChildReducer/HolidayReducer";
 import { RemoveLocalStorageData } from "../../../meta/RemoveLocalStorageData";
 defineElement(loadAnimation);
 
@@ -848,6 +852,45 @@ const InfoTable = ({
       toast.error("Something went wrong");
     }
   };
+  const handleHolidayDelete = async (orderData) => {
+    const result = await Swal.fire({
+      title: "Delete Holiday",
+      text: "Are you sure you want to delete this Holiday?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const Api = await DeleteApi(`holiday/delete/${orderData.id}`);
+
+      console.log("DELETE RESPONSE:", Api);
+
+      if (Api?.status === 200) {
+        dispatch(removeHoliday(orderData.id));
+        RemoveLocalStorageData("holiday");
+
+        toast.success(Api?.data?.message || "Holiday deleted successfully");
+
+        await Swal.fire({
+          title: "Deleted!",
+          text: Api?.data?.message || "Holiday deleted successfully.",
+          icon: "success",
+          confirmButtonColor: "#0AB39C",
+        });
+      } else {
+        toast.error("Delete failed");
+      }
+    } catch (error) {
+      console.error("DELETE ERROR:", error);
+
+      toast.error(error?.response?.data?.message || "Something went wrong");
+    }
+  };
 
   const handleTypeFilterChange = (event) => {
     setTypeFilter(event.target.value);
@@ -1273,6 +1316,30 @@ const InfoTable = ({
                 </li>
               )}
             </ul>
+          );
+        } else if (formname === holiday_component_name) {
+          return (
+            <>
+              <li className="list-inline-item edit">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-primary d-inline-block edit-item-btn"
+                  onClick={() => handleCreateAndUpdate(orderData.id, orderData)}
+                >
+                  <i className="ri-pencil-fill fs-16"></i>
+                </Link>
+              </li>
+
+              <li className="list-inline-item delete">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-danger d-inline-block delete-item-btn"
+                  onClick={() => handleHolidayDelete(orderData)}
+                >
+                  <i className="ri-delete-bin-5-fill fs-16"></i>
+                </Link>
+              </li>
+            </>
           );
         } else if (
           formname === project_component_name ||
@@ -2386,7 +2453,7 @@ const InfoTable = ({
                         // Search Filter
                         // ─────────────────────────────
 
-                            // Year + Month Filter
+                        // Year + Month Filter
                         .filter((obj) => {
                           const selectedYear =
                             attendance_approval_table_filter_keys?.year;
@@ -2418,16 +2485,25 @@ const InfoTable = ({
                           const searchText = search.toLowerCase();
 
                           const nameMatch =
-                            d?.name?.toString().toLowerCase().includes(searchText) || false;
+                            d?.name
+                              ?.toString()
+                              .toLowerCase()
+                              .includes(searchText) || false;
 
                           const descriptionMatch =
-                            d?.description?.toString().toLowerCase().includes(searchText) || false;
+                            d?.description
+                              ?.toString()
+                              .toLowerCase()
+                              .includes(searchText) || false;
 
                           const formattedDate = d?.date
                             ? dayjs(d.date).format("DD-MM-YYYY")
                             : "";
 
-                          const normalizedDate = formattedDate.replace(/[-/]/g, "");
+                          const normalizedDate = formattedDate.replace(
+                            /[-/]/g,
+                            "",
+                          );
                           const normalizedSearch = search.replace(/[-/]/g, "");
 
                           const dateMatch =
@@ -2435,7 +2511,7 @@ const InfoTable = ({
                             normalizedDate.includes(normalizedSearch);
 
                           return nameMatch || descriptionMatch || dateMatch;
-                        })||[]
+                        }) || []
                     }
                     isPagination={true}
                     isGlobalFilter={true}
