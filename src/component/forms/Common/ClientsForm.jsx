@@ -399,10 +399,11 @@ const ClientForm = () => {
         ),
       gst_number: Yup.string()
         .matches(
-          /^\d{2}[A-Z0-9]{5}[A-Z0-9]{4}\d{1}\d{1}[A-Z0-9]{2}$/,
-          "Enter a valid 15-character GST Number (e.g. 27AABFR5055K1Z0)",
+          /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][A-Z0-9]Z[A-Z0-9]$/,
+          "Enter a valid GST Number (e.g. 27AABFR5055K1Z0)",
         )
-        .length(15, "GST Number must be exactly 15 characters"),
+        .length(15, "GST Number must be exactly 15 characters")
+        .nullable(),
       address: Yup.string().trim().required("Address is required"),
     }),
     onSubmit: async () => {

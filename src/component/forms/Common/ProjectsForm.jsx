@@ -114,6 +114,8 @@ const ProjectForm = () => {
           ...prev,
           [name]: value,
         }));
+
+        FormikForm.setFieldValue(name, value);
       }
       return;
     }
@@ -122,6 +124,8 @@ const ProjectForm = () => {
       ...prev,
       [name]: value,
     }));
+
+    FormikForm.setFieldValue(name, value);
   };
 
   // ================= CLIENT PROJECT CHECK =================
@@ -296,7 +300,7 @@ const ProjectForm = () => {
                     placeholder="Project Title"
                     value={projectData.title || ""}
                     onChange={handleInputChange}
-                    onBlur={FormikForm.handleBlur}
+                    onBlur={() => FormikForm.setFieldTouched("title", true)}
                     invalid={
                       FormikForm.touched.title && FormikForm.errors.title
                         ? true
