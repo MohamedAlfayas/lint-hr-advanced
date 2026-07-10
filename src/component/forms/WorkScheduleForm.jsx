@@ -26,6 +26,7 @@ import {
   hourOptions,
   minuteOptions,
   graceBreakMinuteOptions,
+  maxBreakHourOptions,
   graceHourOptions,
   week_list,
 } from "../../common/constant/Constants";
@@ -364,7 +365,24 @@ const WorkScheduleForm = () => {
         )
         .min(2, "Work Schedule Name must be at least 2 characters")
         .max(50, "Work Schedule Name must not exceed 50 characters")
-        .required("Please Enter Work Schedule Name"),
+        .required("Please Enter Work Schedule Name")
+        .test(
+          "not-only-spaces",
+          "Please Enter Work Schedule Name",
+          (value) => !value || value.trim().length > 0,
+        ),
+      description: Yup.string()
+        .trim()
+        .max(200, "Description must not exceed 200 characters")
+        .matches(
+          /^[A-Za-z0-9\s.,!?'"\-_()&:;/]*$/,
+          "Only alphabets, numbers, spaces and . , ! ? ' \" - _ ( ) & : ; / are allowed",
+        )
+        .test(
+          "not-only-spaces",
+          "Description cannot contain only spaces",
+          (value) => !value || value.trim().length > 0,
+        ),
     }),
     onSubmit: async (values) => {
       const filteredWorkdays = values.workday.filter((workday) => {
@@ -383,6 +401,8 @@ const WorkScheduleForm = () => {
         toast.error("WorkSchedule Hour Can't Be Zero");
       } else if (values.type == 2 && values.fullday_work_duration == 0) {
         toast.error("WorkSchedule Hour Can't Be Zero");
+      } else if (values.type == 2 && filteredDayon.length === 0) {
+        toast.error("Please select at least one working day");
       } else {
         toggleArrowTab(activeArrowTab + 1);
         dispatch(setLoaderVisible(true));
@@ -506,16 +526,33 @@ const WorkScheduleForm = () => {
                         </Label>
                         <Input
                           type="textarea"
+                          name="description"
                           className="form-control"
                           id="ws_desc"
+                          maxLength={200}
                           value={workScheduleData.description || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setWorkScheduleData({
                               ...workScheduleData,
                               description: e.target.value,
-                            })
+                            });
+
+                            FormikForm.setFieldValue(
+                              "description",
+                              e.target.value,
+                            );
+                          }}
+                          invalid={
+                            FormikForm.touched.description &&
+                            FormikForm.errors.description
+                              ? true
+                              : false
                           }
                         />
+
+                        <FormFeedback type="invalid">
+                          {FormikForm.errors.description}
+                        </FormFeedback>
                       </div>
                     </Col>
                     <Col md={3} lg={3} xxl={3}>
@@ -821,8 +858,8 @@ const WorkScheduleForm = () => {
                                     id="maximum_break_hr"
                                     name="maximum_break_hr"
                                     placeholder="00"
-                                    options={graceHourOptions}
-                                    value={graceHourOptions.find(
+                                    options={maxBreakHourOptions}
+                                    value={maxBreakHourOptions.find(
                                       (option) =>
                                         option.value ===
                                         String(
@@ -1221,13 +1258,27 @@ const WorkScheduleForm = () => {
                                   24:00 Hrs
                                 </span>
                               ) : (
-                                <span className="mb-2 text-success">
-                                  {workScheduleData.fullday_work_duration >
-                                    workday.total_work_duration ||
-                                  workScheduleData.fullday_work_duration <
-                                    workday.total_work_duration ? (
-                                    <span className="mb-2 text-danger">
-                                      {`${String(
+                                <>
+                                  <span className="mb-2 text-success">
+                                    {workScheduleData.fullday_work_duration >
+                                      workday.total_work_duration ||
+                                    workday.total_work_duration >
+                                      workScheduleData.fullday_work_duration ? (
+                                      <span className="mb-2 text-danger">
+                                        {`${String(
+                                          Math.floor(
+                                            workday.total_work_duration / 3600,
+                                          ),
+                                        ).padStart(2, "0")}:${String(
+                                          Math.floor(
+                                            (workday.total_work_duration %
+                                              3600) /
+                                              60,
+                                          ),
+                                        ).padStart(2, "0")} Hrs`}
+                                      </span>
+                                    ) : (
+                                      `${String(
                                         Math.floor(
                                           workday.total_work_duration / 3600,
                                         ),
@@ -1236,21 +1287,35 @@ const WorkScheduleForm = () => {
                                           (workday.total_work_duration % 3600) /
                                             60,
                                         ),
-                                      ).padStart(2, "0")} Hrs`}
-                                    </span>
-                                  ) : (
-                                    `${String(
-                                      Math.floor(
-                                        workday.total_work_duration / 3600,
-                                      ),
-                                    ).padStart(2, "0")}:${String(
-                                      Math.floor(
-                                        (workday.total_work_duration % 3600) /
-                                          60,
-                                      ),
-                                    ).padStart(2, "0")} Hrs`
+                                      ).padStart(2, "0")} Hrs`
+                                    )}
+                                  </span>
+
+                                  {workScheduleData.fullday_work_duration >
+                                    workday.total_work_duration && (
+                                    <div
+                                      className="text-warning"
+                                      style={{
+                                        fontSize: "11px",
+                                        marginTop: "2px",
+                                      }}
+                                    >
+                                      ⚠️ Shift is less than Full Day duration
+                                    </div>
                                   )}
-                                </span>
+                                  {workday.total_work_duration >
+                                    workScheduleData.fullday_work_duration && (
+                                    <div
+                                      className="text-warning"
+                                      style={{
+                                        fontSize: "11px",
+                                        marginTop: "2px",
+                                      }}
+                                    >
+                                      ⚠️ Shift exceeds Full Day duration
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </span>
                           </th>

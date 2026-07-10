@@ -2119,7 +2119,7 @@ export const custom_field_input_types = [
 ];
 export const custom_field_module_lists = [
   { id: "employee", label: "Employee", value: "employee" },
-  { id: "organization", label: "Organization", value: "organization" },
+  // { id: "organization", label: "Organization", value: "organization" },
 ];
 
 export const hourOptions = Array.from({ length: 24 }, (_, i) => ({
@@ -2132,19 +2132,25 @@ export const minuteOptions = Array.from({ length: 6 }, (_, i) => ({
   value: (i * 10).toString().padStart(2, "0"),
 }));
 
-export const graceBreakMinuteOptions = Array.from({ length: 12 }, (_, i) => ({
-  label: (i * 5).toString().padStart(2, "0"),
-  value: (i * 5).toString().padStart(2, "0"),
-}));
+// export const graceBreakMinuteOptions = Array.from({ length: 12 }, (_, i) => ({
+//   label: (i * 5).toString().padStart(2, "0"),
+//   value: (i * 5).toString().padStart(2, "0"),
+// }));
+
+export const maxBreakHourOptions = hourOptions.filter(
+  (option) => Number(option.value) <= 2,
+);
 
 export const graceHourOptions = hourOptions.filter(
-  (option) => Number(option.value) <= 3,
+  (option) => Number(option.value) <= 1,
 );
 
 export const AllMinuteOptions = Array.from({ length: 60 }, (_, i) => ({
   label: i.toString().padStart(2, "0"),
   value: i.toString().padStart(2, "0"),
 }));
+
+export const graceBreakMinuteOptions = AllMinuteOptions;
 
 export const late_entry_display = {
   class: "warning",

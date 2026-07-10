@@ -168,7 +168,10 @@ const ProjectForm = () => {
     validationSchema: Yup.object({
       title: Yup.string()
         .trim()
-        .matches(/^[A-Za-z0-9._/\- ]+$/, "Please enter a valid project title.")
+        .matches(
+          /^[A-Za-z0-9 .,!?'"\-_()&:;]+$/,
+          "Please enter a valid project title.",
+        )
         .required("Please Enter the project title")
         .test(
           "not-only-spaces",
