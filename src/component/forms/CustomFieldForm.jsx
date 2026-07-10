@@ -51,6 +51,15 @@ const CustomFieldForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === "name") {
+      if (value.length > 100) return;
+
+      const regex = /^[A-Za-z0-9 .,&()'_-]*$/;
+
+      if (!regex.test(value)) return;
+    }
+
     setCustomFieldObj({
       ...customFieldObj,
       [name]: value,
@@ -69,7 +78,7 @@ const CustomFieldForm = () => {
 
   const removeRepeaterValue = (id) => {
     const updatedOptions = customFieldObj.options.filter(
-      (option) => option.id !== id
+      (option) => option.id !== id,
     );
     setCustomFieldObj({
       ...customFieldObj,
@@ -94,7 +103,14 @@ const CustomFieldForm = () => {
     enableReinitialize: true,
     initialValues: customFieldObj,
     validationSchema: Yup.object({
-      name: Yup.string().trim().required("Please Enter Display Name"),
+      name: Yup.string()
+        .trim()
+        .required("Please Enter Display Name")
+        .max(100, "Display Name cannot exceed 100 characters")
+        .matches(
+          /^[A-Za-z0-9 .,&()'_-]+$/,
+          "Only letters, numbers, spaces, ., ,, -, &, (, ), ', and _ are allowed",
+        ),
       type: Yup.string().required("Select Field Type"),
       applicable_for_modules: Yup.array()
         .required("Select Applicable For")
@@ -116,7 +132,7 @@ const CustomFieldForm = () => {
         const Api = await PostApi(
           "fields/custom-field/create/",
           customFieldObj,
-          false
+          false,
         );
         if (Api.status && Api.status === 200) {
           // customFieldObj.id === 0
@@ -196,7 +212,7 @@ const CustomFieldForm = () => {
                     value={
                       (customFieldObj.type &&
                         custom_field_input_types.find(
-                          (e) => e.value === customFieldObj.type
+                          (e) => e.value === customFieldObj.type,
                         )) ||
                       []
                     }
@@ -367,7 +383,7 @@ const CustomFieldForm = () => {
                     value={
                       customFieldObj.applicable_for_modules &&
                       custom_field_module_lists.filter((e) =>
-                        customFieldObj.applicable_for_modules.includes(e.value)
+                        customFieldObj.applicable_for_modules.includes(e.value),
                       )
                     }
                     onChange={(e) =>

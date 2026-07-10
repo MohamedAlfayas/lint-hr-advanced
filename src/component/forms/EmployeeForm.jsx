@@ -574,6 +574,23 @@ const EmployeeForm = () => {
       work_schedule_id: Yup.number()
         .required("Please select work schedule")
         .min(1, "Please select work schedule"),
+      cf_values: Yup.array().of(
+        Yup.object().shape({
+          value: Yup.mixed().when("is_required", {
+            is: true,
+            then: (schema) =>
+              schema.test(
+                "cf-required",
+                "This field is required",
+                (value) =>
+                  value !== undefined &&
+                  value !== null &&
+                  String(value).trim() !== "",
+              ),
+            otherwise: (schema) => schema.notRequired(),
+          }),
+        }),
+      ),
     }),
     onSubmit: async (values) => {
       values.first_name = values.first_name?.trim() || "";
@@ -1626,7 +1643,7 @@ const EmployeeForm = () => {
                     <Col lg={12} key={obj.id}>
                       <div className="mb-3">
                         <Label htmlFor={obj.input_name} className="form-label">
-                          {obj.name}
+                          {obj.name} {obj.is_required && <span>*</span>}
                         </Label>
                         {form_default_input_types.includes(obj.type) && (
                           <Fragment>
@@ -1639,10 +1656,26 @@ const EmployeeForm = () => {
                                 placeholder={`Enter ${obj.name}`}
                                 value={obj.value || ""}
                                 onChange={(e) => handleCFInputChange(e, obj.id)}
+                                invalid={
+                                  !!(
+                                    obj.is_required &&
+                                    FormikForm.submitCount > 0 &&
+                                    (!obj.value ||
+                                      String(obj.value).trim() === "")
+                                  )
+                                }
                               />
                               <i className="ri-user-2-line"></i>
                             </div>
-                            <div className="form-text">Enter {obj.name}</div>
+                            {obj.is_required &&
+                            FormikForm.submitCount > 0 &&
+                            (!obj.value || String(obj.value).trim() === "") ? (
+                              <div className="lc_form_error_text">
+                                This field is required
+                              </div>
+                            ) : (
+                              <div className="form-text">Enter {obj.name}</div>
+                            )}
                           </Fragment>
                         )}
                         {obj.type === form_file_type && (
@@ -1654,10 +1687,26 @@ const EmployeeForm = () => {
                                 id={obj.input_name}
                                 className="form-control"
                                 onChange={(e) => handleCFFileChange(e, obj.id)}
+                                invalid={
+                                  !!(
+                                    obj.is_required &&
+                                    FormikForm.submitCount > 0 &&
+                                    (!obj.value ||
+                                      String(obj.value).trim() === "")
+                                  )
+                                }
                               />
                               <i className="ri-user-2-line"></i>
                             </div>
-                            <div className="form-text">Choose {obj.name}</div>
+                            {obj.is_required &&
+                            FormikForm.submitCount > 0 &&
+                            (!obj.value || String(obj.value).trim() === "") ? (
+                              <div className="lc_form_error_text">
+                                This field is required
+                              </div>
+                            ) : (
+                              <div className="form-text">Choose {obj.name}</div>
+                            )}
                             {!!obj.value && obj.value !== "" && (
                               <Fragment>{obj.name} Uploaded</Fragment>
                             )}
@@ -1684,17 +1733,41 @@ const EmployeeForm = () => {
                           />
                         )}
                         {obj.type === form_select_type && (
-                          <Select
-                            name={obj.input_name}
-                            id={obj.input_name}
-                            options={obj.options}
-                            value={
-                              obj.options.find((d) => d.value === obj.value) ||
-                              []
-                            }
-                            onChange={(e) => handleCFSelectChange(e, obj.id)}
-                            placeholder={`Select ${obj.name}`}
-                          />
+                          <Fragment>
+                            <Select
+                              name={obj.input_name}
+                              id={obj.input_name}
+                              options={obj.options}
+                              styles={{
+                                control: (provided, state) => ({
+                                  ...provided,
+                                  borderColor:
+                                    !state.isFocused &&
+                                    obj.is_required &&
+                                    FormikForm.submitCount > 0 &&
+                                    (!obj.value ||
+                                      String(obj.value).trim() === "")
+                                      ? "red"
+                                      : provided.borderColor,
+                                }),
+                              }}
+                              value={
+                                obj.options.find(
+                                  (d) => d.value === obj.value,
+                                ) || []
+                              }
+                              onChange={(e) => handleCFSelectChange(e, obj.id)}
+                              placeholder={`Select ${obj.name}`}
+                            />
+                            {obj.is_required &&
+                              FormikForm.submitCount > 0 &&
+                              (!obj.value ||
+                                String(obj.value).trim() === "") && (
+                                <div className="lc_form_error_text">
+                                  This field is required
+                                </div>
+                              )}
+                          </Fragment>
                         )}
                       </div>
                     </Col>
