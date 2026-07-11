@@ -313,10 +313,22 @@ const BranchForm = () => {
     validationSchema: Yup.object({
       name: Yup.string()
         .trim()
-        .matches(/^[A-Za-z\s]+$/, "Location name should contain only letters")
-        .required("Please Enter Location Name"),
+        .matches(
+          /^[A-Za-z0-9.,&()'\-\s]+$/,
+          "Location Name can contain only letters, numbers, spaces, and . , - & ( ) '"
+        )
+        .required("Please Enter Location Name")
+        .min(1, "Location Name must be at least 1 character")
+        .max(100, "Location Name must not exceed 100 characters"),
 
-      address: Yup.string().trim().required("Please Enter Address"),
+      address: Yup.string()
+        .trim().required("Please Enter Address")
+         .matches(
+          /^[A-Za-z0-9\s.,\-#/'&]+$/,
+          "Address can contain only letters, numbers, spaces, and . , - # / ' &"
+        )
+        .min(1, "Address must be atleast 1 character")
+        .max(250, "Address must not exceed 250 characters"),
 
       country: Yup.string().required("Please Select Country"),
 
@@ -1012,11 +1024,12 @@ const BranchForm = () => {
                               placeholder="Enter Name"
                               value={lv.name || ""}
                               onChange={(ev) => {
-                                const val = ev.target.value.replace(
-                                  /[^a-zA-Z\s]/g,
-                                  "",
-                                );
-                                setLocField("name", val);
+                                const val = ev.target.value
+                                  .replace(/^\s+/, "") // remove leading spaces
+                                  .replace(/[^A-Za-z0-9.,&()'\-\s]/g, "");
+                                LocationFormikForm.setFieldValue("name", val, true);
+                                LocationFormikForm.setFieldTouched("name", true, false);
+                                // setLocField("name", val);
                               }}
                               onBlur={() =>
                                 LocationFormikForm.setFieldTouched("name", true)
@@ -1057,9 +1070,14 @@ const BranchForm = () => {
                             name="address"
                             rows="2"
                             value={lv.address || ""}
-                            onChange={(ev) =>
-                              setLocField("address", ev.target.value)
-                            }
+                            onChange={(ev) => {
+                              const val = ev.target.value
+                                .replace(/^\s+/, "")
+                                .replace(/[^A-Za-z0-9\s.,\-#/'&]/g, "");
+
+                              LocationFormikForm.setFieldValue("address", val, true);
+                              LocationFormikForm.setFieldTouched("address", true, false);
+                            }}
                             onBlur={() =>
                               LocationFormikForm.setFieldTouched(
                                 "address",
