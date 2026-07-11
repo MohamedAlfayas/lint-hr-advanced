@@ -34,7 +34,7 @@ import * as Yup from "yup";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
 import { toast } from "react-toastify";
-import { DatePicker, Space, TimePicker } from "antd";
+import { DatePicker, Space, TimePicker, Tooltip } from "antd";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { DateFormat, DateTimeFormat } from "../../common/constant/Constants";
@@ -57,7 +57,6 @@ const getShiftTimings = (workScheduleData, profileData) => {
   );
   if (!thisEmpWS) return null;
 
-  // Try common field names – adjust to your actual API shape
   const shiftStart =
     thisEmpWS.shift_start_time ||
     thisEmpWS.start_time ||
@@ -71,12 +70,11 @@ const getShiftTimings = (workScheduleData, profileData) => {
   const startH = parseInt(shiftStart.split(":")[0], 10);
   const endH = parseInt(shiftEnd.split(":")[0], 10);
 
-  // Night shift: end hour is numerically less than start hour → crosses midnight
   const crossesMidnight = endH < startH || endH === startH;
 
   return {
-    shiftStart, // "HH:mm"
-    shiftEnd, // "HH:mm"
+    shiftStart,
+    shiftEnd,
     crossesMidnight,
   };
 };
@@ -84,12 +82,6 @@ const getShiftTimings = (workScheduleData, profileData) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: given a date string (YYYY-MM-DD) + shift info,
 // compute half-day boundaries that respect night-shift crossing midnight.
-//
-//   First half  → shiftStart … midpoint
-//   Second half → midpoint   … shiftEnd (possibly next day)
-//
-// Returns { firstHalfStart, firstHalfEnd, secondHalfStart, secondHalfEnd }
-// all as dayjs objects so callers can format freely.
 // ─────────────────────────────────────────────────────────────────────────────
 const computeHalfDayBoundaries = (dateStr, shiftInfo) => {
   if (!shiftInfo || !dateStr) return null;
@@ -106,7 +98,6 @@ const computeHalfDayBoundaries = (dateStr, shiftInfo) => {
     .minute(parseInt(shiftEnd.split(":")[1], 10))
     .second(0);
 
-  // If night shift, end is on the NEXT calendar day
   if (crossesMidnight) {
     endDT = endDT.add(1, "day");
   }
@@ -116,20 +107,17 @@ const computeHalfDayBoundaries = (dateStr, shiftInfo) => {
   const midpointDT = startDT.add(halfMinutes, "minute");
 
   return {
-    firstHalfStart: startDT, // shift start
-    firstHalfEnd: midpointDT, // midpoint
-    secondHalfStart: midpointDT, // midpoint
-    secondHalfEnd: endDT, // shift end (possibly next day)
+    firstHalfStart: startDT,
+    firstHalfEnd: midpointDT,
+    secondHalfStart: midpointDT,
+    secondHalfEnd: endDT,
   };
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: check whether a permission/time-off request is allowed
-// (plug your real permission rules here)
 // ─────────────────────────────────────────────────────────────────────────────
 const checkPermissionAllowed = (leaveTypeObj, requestedStart, requestedEnd) => {
-  // Example rule: permission unit leaves must be within shift hours
-  // Return { allowed: bool, reason: string }
   if (!requestedStart || !requestedEnd) return { allowed: true };
   if (dayjs(requestedEnd).isBefore(dayjs(requestedStart))) {
     return { allowed: false, reason: "End time cannot be before start time." };
@@ -171,11 +159,9 @@ const ApplyLeaveForm = () => {
   const [compOffWorkDate, setCompOffWorkDate] = useState(null);
   const [compOffDateError, setCompOffDateError] = useState("");
 
-  // Half-day & permission times stored as dayjs objects (null when unset)
   const [halfDayStartTime, setHalfDayStartTime] = useState(null);
   const [halfDayEndTime, setHalfDayEndTime] = useState(null);
 
-  // Computed half-day boundaries for the selected date
   const [halfDayBoundaries, setHalfDayBoundaries] = useState(null);
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
@@ -188,29 +174,59 @@ const ApplyLeaveForm = () => {
     (state) => state.LeaveApplyReducer,
   );
 
-  const appliedDates = useMemo(() => {
-    const dates = [];
+  // ── Applied-leave lookup: date -> label (e.g. leave type name) ───────────
+  const appliedLeaveMap = useMemo(() => {
+    const map = {};
     (leave_application_data || []).forEach((app) => {
+      console.log("leave_application_data", leave_application_data);
+
       if (app.is_deleted) return;
+      const leaveLabel =
+        app.leave_type_name ||
+        app.leave_type?.name ||
+        app.leave_type_obj?.name ||
+        "Applied Leave";
+
       if (Array.isArray(app.in_between_dates) && app.in_between_dates.length) {
-        app.in_between_dates.forEach((d) => dates.push(d));
+        app.in_between_dates.forEach((d) => {
+          map[d] = leaveLabel;
+        });
       } else if (app.start) {
-        dates.push(dayjs(app.start).format("YYYY-MM-DD"));
+        map[dayjs(app.start).format("YYYY-MM-DD")] = leaveLabel;
       }
     });
-    return dates;
+    return map;
   }, [leave_application_data]);
 
-  const holidayISODates = useMemo(() => {
-    return (holidayData || []).map((h) => h?.date).filter(Boolean);
+  const appliedDates = useMemo(
+    () => Object.keys(appliedLeaveMap),
+    [appliedLeaveMap],
+  );
+
+  // ── Holiday lookup: date -> holiday name ──────────────────────────────────
+  const holidayMap = useMemo(() => {
+    const map = {};
+    (holidayData || []).forEach((h) => {
+      if (h?.date) map[h.date] = h.name?.trim() || "Holiday";
+    });
+    return map;
   }, [holidayData]);
 
-  const getDateCellStyle = (currentISO) => {
-    if (holidayISODates.includes(currentISO)) {
-      return { backgroundColor: "#fff3cd", color: "#856404" }; // yellow = holiday
+  // Returns { style, tooltip } for a given ISO date, or null if no highlight needed
+  const getDateCellInfo = (currentISO) => {
+    if (holidayMap[currentISO]) {
+      return {
+        style: { backgroundColor: "#fff3cd", color: "#856404" }, // yellow = holiday
+        tooltip: holidayMap[currentISO],
+      };
     }
-    if (appliedDates.includes(currentISO)) {
-      return { backgroundColor: "#f8d7da", color: "#842029" }; // red = already applied
+    if (appliedLeaveMap[currentISO]) {
+      console.log(appliedLeaveMap, "appliedLeaveMap");
+
+      return {
+        style: { backgroundColor: "#f8d7da", color: "#842029" }, // red = already applied
+        tooltip: appliedLeaveMap[currentISO],
+      };
     }
     return null;
   };
@@ -219,7 +235,6 @@ const ApplyLeaveForm = () => {
     (state) => state.LeaveTypeReducer,
   );
 
-  // Build select options
   const leaveTypeOptions = leave_type_for_current_employee.map((item) => ({
     value: item.leave_type.id,
     label: item.leave_type.name,
@@ -228,7 +243,6 @@ const ApplyLeaveForm = () => {
     full_obj: item,
   }));
 
-  // ── Shift info derived once ──────────────────────────────────────────────
   const shiftInfo = useMemo(
     () => getShiftTimings(workScheduleData, profileData),
     [], // eslint-disable-line
@@ -248,7 +262,6 @@ const ApplyLeaveForm = () => {
       }));
   }, [holidayData, profileData]);
 
-  // ── Recompute half-day boundaries whenever the selected date changes ─────
   useEffect(() => {
     const dateStr = leaveapplyObj?.start
       ? dayjs(leaveapplyObj.start).format("YYYY-MM-DD")
@@ -260,7 +273,6 @@ const ApplyLeaveForm = () => {
     }
   }, [leaveapplyObj?.start, shiftInfo]);
 
-  // ── Populate form when editing ───────────────────────────────────────────
   useEffect(
     () => {
       if (!!form_obj) {
@@ -314,7 +326,6 @@ const ApplyLeaveForm = () => {
         }
         setCompOffDateError("");
 
-        // Restore half-day times on edit — stored as dayjs objects
         if (form_obj?.day_type === 2 && form_obj.unit === leave_type_day_unit) {
           if (form_obj.start) setHalfDayStartTime(dayjs(form_obj.start));
           if (form_obj.end) setHalfDayEndTime(dayjs(form_obj.end));
@@ -340,7 +351,6 @@ const ApplyLeaveForm = () => {
     restrictedHolidayOptions,
   ); // eslint-disable-line
 
-  // ── Leave type change ────────────────────────────────────────────────────
   const handleLeaveTypeChange = (selectedOption) => {
     if (!selectedOption) return;
     const fullRecord = selectedOption.full_obj;
@@ -431,7 +441,6 @@ const ApplyLeaveForm = () => {
     setDaysCount(1);
   };
 
-  // ── Multi-day range picker ───────────────────────────────────────────────
   const handleMultiDayChange = (dates, dateStrings, daysCount) => {
     let startDate =
       !dateStrings[0] || dateStrings[0] === "" ? null : dateStrings[0];
@@ -524,12 +533,10 @@ const ApplyLeaveForm = () => {
     }
   };
 
-  // ── Day-type change (Full / Half) ────────────────────────────────────────
   const handleDayType = (e) => {
     const value = e?.value || null;
     const updatedDaysCount = value === 1 ? 1 : value === 2 ? 0.5 : 0;
 
-    // Reset half-day times and auto-populate from shift if switching to half-day
     setHalfDayStartTime(null);
     setHalfDayEndTime(null);
     setTimeError("");
@@ -544,7 +551,6 @@ const ApplyLeaveForm = () => {
     setDaysCount(updatedDaysCount);
   };
 
-  // ── Hour-unit DatePicker (with datetime) ─────────────────────────────────
   useEffect(() => {
     if (toDate && fromDate) {
       const [fromDateDay, fromDateMonth, fromDateYear, fromDateTime] =
@@ -610,7 +616,6 @@ const ApplyLeaveForm = () => {
         : endDate - startDate;
 
     const hours = diffInMilliseconds / (1000 * 60 * 60);
-    // Round to nearest minute (no 30-min snapping here)
     const totalMinutes = Math.round(hours * 60);
     const roundedHours = Math.floor(totalMinutes / 60);
     const remainingMinutes = totalMinutes % 60;
@@ -627,17 +632,12 @@ const ApplyLeaveForm = () => {
     }));
   };
 
-  // ── Half-day time change handlers ────────────────────────────────────────
-  // FIX: minuteStep removed (set to 1) → any time is selectable.
-  // FIX: night-shift aware — end time may be on the next calendar day.
-
   const handleHalfDayStartTimeChange = (time) => {
     if (!time) {
       setHalfDayStartTime(null);
       setHalfDayEndTime(null);
       return;
     }
-    // Combine with the leave date to get a full datetime
     const datePart = leaveapplyObj?.start
       ? dayjs(leaveapplyObj.start).format("YYYY-MM-DD")
       : dayjs().format("YYYY-MM-DD");
@@ -647,12 +647,8 @@ const ApplyLeaveForm = () => {
       "YYYY-MM-DD HH:mm",
     );
 
-    // Night shift: if the chosen start hour is >= shift start on the same day but
-    // we're in night shift, keep same day. If chosen hour is early morning (after
-    // midnight) it could be the next day — the user sees the calendar date they
-    // picked so we always anchor to datePart for start.
     setHalfDayStartTime(startDT);
-    setHalfDayEndTime(null); // reset end whenever start changes
+    setHalfDayEndTime(null);
     setTimeError("");
   };
 
@@ -665,11 +661,8 @@ const ApplyLeaveForm = () => {
       "YYYY-MM-DD HH:mm",
     );
 
-    // Night-shift fix: if end time is numerically before start time on the
-    // SAME calendar day, the shift crosses midnight → end is on the next day.
     if (endDT.isBefore(halfDayStartTime) || endDT.isSame(halfDayStartTime)) {
       if (shiftInfo?.crossesMidnight) {
-        // Advance to next calendar day
         endDT = endDT.add(1, "day");
       } else {
         setTimeError("End time cannot be before or equal to start time.");
@@ -677,7 +670,6 @@ const ApplyLeaveForm = () => {
       }
     }
 
-    // Permission check
     const permCheck = checkPermissionAllowed(
       selectedLeaveTypeObj,
       halfDayStartTime,
@@ -692,7 +684,6 @@ const ApplyLeaveForm = () => {
     setHalfDayEndTime(endDT);
   };
 
-  // ── Compute total half-day hours (handles cross-midnight) ────────────────
   const computedHalfDayHours = useMemo(() => {
     if (!halfDayStartTime || !halfDayEndTime) return "0.00";
     const diffMinutes = halfDayEndTime.diff(halfDayStartTime, "minute");
@@ -702,7 +693,6 @@ const ApplyLeaveForm = () => {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   }, [halfDayStartTime, halfDayEndTime]);
 
-  // ── Shift boundary display helpers ───────────────────────────────────────
   const shiftBoundaryHint = useMemo(() => {
     if (!shiftInfo) return null;
     const label = shiftInfo.crossesMidnight
@@ -711,11 +701,9 @@ const ApplyLeaveForm = () => {
     return label;
   }, [shiftInfo]);
 
-  // ── Derive unit ──────────────────────────────────────────────────────────
   const currentUnit =
     selectedLeaveTypeObj?.leave_type?.unit || selectedLeaveTypeObj?.unit;
 
-  // ── Formik ───────────────────────────────────────────────────────────────
   const FormikForm = useFormik({
     enableReinitialize: true,
     initialValues: leaveapplyObj,
@@ -727,7 +715,7 @@ const ApplyLeaveForm = () => {
         .trim()
         .required("Reason is required")
         .min(2, "Reason must be at least 2 characters")
-        .max(500, "Reason cannot exceed 500 characters")
+        .max(250, "Reason cannot exceed 250 characters")
         .matches(
           /^[A-Za-z0-9\s.,!?'"\-_()&:;\/]+$/,
           "Only alphabets, numbers, spaces and standard punctuation are allowed",
@@ -745,7 +733,6 @@ const ApplyLeaveForm = () => {
         toast.error("Please select the Work Date for Comp-Off leave");
         return;
       }
-      // ── Half-day validation ──
       if (values.day_type === 2) {
         if (!halfDayStartTime) {
           toast.error("Please select Start Time");
@@ -761,7 +748,6 @@ const ApplyLeaveForm = () => {
         }
       }
 
-      // Build final object — store times in ISO format (YYYY-MM-DD HH:mm:00)
       const finalLeaveObj = {
         ...values,
         ...(isCompOffLeave && {
@@ -791,12 +777,6 @@ const ApplyLeaveForm = () => {
         dispatch(setLoaderVisible(false));
         return;
       }
-
-      // if (finalLeaveObj.requested_leave_count > leaveBalanceCount) {
-      //   toast.error("Selected Leave Exceeds Balance Leave");
-      //   dispatch(setLoaderVisible(false));
-      //   return;
-      // }
 
       try {
         const ApiRes = await PostApi(
@@ -940,18 +920,21 @@ const ApplyLeaveForm = () => {
                                   return info.originNode;
                                 }
                                 const currentISO = current.format("YYYY-MM-DD");
-                                const cellStyle = getDateCellStyle(currentISO);
-                                if (cellStyle) {
+                                const cellInfo = getDateCellInfo(currentISO);
+                                if (cellInfo) {
                                   return (
-                                    <div
-                                      className="ant-picker-cell-inner"
-                                      style={{
-                                        ...cellStyle,
-                                        borderRadius: "4px",
-                                      }}
-                                    >
-                                      {current.date()}
-                                    </div>
+                                    <Tooltip title={cellInfo.tooltip}>
+                                      <div
+                                        className="ant-picker-cell-inner"
+                                        style={{
+                                          ...cellInfo.style,
+                                          borderRadius: "4px",
+                                          pointerEvents: "auto", // ← re-enables hover even though the disabled <td> ancestor has pointer-events: none
+                                        }}
+                                      >
+                                        {current.date()}
+                                      </div>
+                                    </Tooltip>
                                   );
                                 }
                                 return info.originNode;
@@ -984,7 +967,6 @@ const ApplyLeaveForm = () => {
                                   in_between_dates: isoDate ? [isoDate] : [],
                                 }));
                                 setDaysCount(isoDate ? 1 : "");
-                                // NEW: reset dependent fields when start date changes
                                 setCompOffWorkDate(null);
                                 setCompOffDateError("");
                               }}
@@ -1015,7 +997,6 @@ const ApplyLeaveForm = () => {
                           End Date auto-selects same as Start Date
                         </div>
 
-                        {/* NEW: Work Date shows only after Start Date is selected */}
                         {leaveapplyObj?.start && (
                           <>
                             <Label className="form-label">Work Date</Label>
@@ -1030,18 +1011,20 @@ const ApplyLeaveForm = () => {
                                   return info.originNode;
                                 }
                                 const currentISO = current.format("YYYY-MM-DD");
-                                const cellStyle = getDateCellStyle(currentISO);
-                                if (cellStyle) {
+                                const cellInfo = getDateCellInfo(currentISO);
+                                if (cellInfo) {
                                   return (
-                                    <div
-                                      className="ant-picker-cell-inner"
-                                      style={{
-                                        ...cellStyle,
-                                        borderRadius: "4px",
-                                      }}
-                                    >
-                                      {current.date()}
-                                    </div>
+                                    <Tooltip title={cellInfo.tooltip}>
+                                      <div
+                                        className="ant-picker-cell-inner"
+                                        style={{
+                                          ...cellInfo.style,
+                                          borderRadius: "4px",
+                                        }}
+                                      >
+                                        {current.date()}
+                                      </div>
+                                    </Tooltip>
                                   );
                                 }
                                 return info.originNode;
@@ -1070,7 +1053,6 @@ const ApplyLeaveForm = () => {
                           </>
                         )}
 
-                        {/* NEW: Day Type shows only after Work Date is selected */}
                         {leaveapplyObj?.start && compOffWorkDate && (
                           <div className="input-group mt-3">
                             <Col lg={12}>
@@ -1124,18 +1106,20 @@ const ApplyLeaveForm = () => {
                                 return info.originNode;
                               }
                               const currentISO = current.format("YYYY-MM-DD");
-                              const cellStyle = getDateCellStyle(currentISO);
-                              if (cellStyle) {
+                              const cellInfo = getDateCellInfo(currentISO);
+                              if (cellInfo) {
                                 return (
-                                  <div
-                                    className="ant-picker-cell-inner"
-                                    style={{
-                                      ...cellStyle,
-                                      borderRadius: "4px",
-                                    }}
-                                  >
-                                    {current.date()}
-                                  </div>
+                                  <Tooltip title={cellInfo.tooltip}>
+                                    <div
+                                      className="ant-picker-cell-inner"
+                                      style={{
+                                        ...cellInfo.style,
+                                        borderRadius: "4px",
+                                      }}
+                                    >
+                                      {current.date()}
+                                    </div>
+                                  </Tooltip>
                                 );
                               }
                               return info.originNode;
@@ -1216,7 +1200,6 @@ const ApplyLeaveForm = () => {
               {leaveapplyObj?.day_type === 2 && (
                 <Col lg={12}>
                   <div className="row mt-3 align-items-end">
-                    {/* Shift hint */}
                     {shiftBoundaryHint && (
                       <Col md={12} className="mb-2">
                         <small className="text-muted">
@@ -1226,7 +1209,6 @@ const ApplyLeaveForm = () => {
                       </Col>
                     )}
 
-                    {/* Half-day boundary quick-select buttons */}
                     {halfDayBoundaries && (
                       <Col md={12} className="mb-3">
                         <Label className="form-label d-block">
@@ -1272,7 +1254,6 @@ const ApplyLeaveForm = () => {
                       </Col>
                     )}
 
-                    {/* Start Time — ANY time (minuteStep={1}, no restriction) */}
                     <Col md={4}>
                       <Label className="form-label">Start Time</Label>
                       <TimePicker
@@ -1287,7 +1268,6 @@ const ApplyLeaveForm = () => {
                       />
                     </Col>
 
-                    {/* End Time — ANY time, night-shift aware */}
                     <Col md={4}>
                       <Label className="form-label">
                         End Time
@@ -1300,8 +1280,7 @@ const ApplyLeaveForm = () => {
                       <TimePicker
                         value={
                           halfDayEndTime
-                            ? // Show only the time portion even if day rolled over
-                              dayjs(halfDayEndTime.format("HH:mm"), "HH:mm")
+                            ? dayjs(halfDayEndTime.format("HH:mm"), "HH:mm")
                             : null
                         }
                         format="HH:mm"
@@ -1315,7 +1294,6 @@ const ApplyLeaveForm = () => {
                       />
                     </Col>
 
-                    {/* Total Hours */}
                     <Col md={3}>
                       <Label className="form-label">Total Hours</Label>
                       <span className="form-control text-center">
@@ -1329,14 +1307,12 @@ const ApplyLeaveForm = () => {
                       </span>
                     </Col>
 
-                    {/* Time error */}
                     {timeError && (
                       <Col md={12}>
                         <div className="text-danger mt-2">{timeError}</div>
                       </Col>
                     )}
 
-                    {/* Shift boundary info (detailed) */}
                     {halfDayBoundaries && (
                       <Col md={12} className="mt-2">
                         <small className="text-muted">
@@ -1378,15 +1354,20 @@ const ApplyLeaveForm = () => {
                             return info.originNode;
                           }
                           const currentISO = current.format("YYYY-MM-DD");
-                          const cellStyle = getDateCellStyle(currentISO);
-                          if (cellStyle) {
+                          const cellInfo = getDateCellInfo(currentISO);
+                          if (cellInfo) {
                             return (
-                              <div
-                                className="ant-picker-cell-inner"
-                                style={{ ...cellStyle, borderRadius: "4px" }}
-                              >
-                                {current.date()}
-                              </div>
+                              <Tooltip title={cellInfo.tooltip}>
+                                <div
+                                  className="ant-picker-cell-inner"
+                                  style={{
+                                    ...cellInfo.style,
+                                    borderRadius: "4px",
+                                  }}
+                                >
+                                  {current.date()}
+                                </div>
+                              </Tooltip>
                             );
                           }
                           return info.originNode;
@@ -1424,15 +1405,20 @@ const ApplyLeaveForm = () => {
                             return info.originNode;
                           }
                           const currentISO = current.format("YYYY-MM-DD");
-                          const cellStyle = getDateCellStyle(currentISO);
-                          if (cellStyle) {
+                          const cellInfo = getDateCellInfo(currentISO);
+                          if (cellInfo) {
                             return (
-                              <div
-                                className="ant-picker-cell-inner"
-                                style={{ ...cellStyle, borderRadius: "4px" }}
-                              >
-                                {current.date()}
-                              </div>
+                              <Tooltip title={cellInfo.tooltip}>
+                                <div
+                                  className="ant-picker-cell-inner"
+                                  style={{
+                                    ...cellInfo.style,
+                                    borderRadius: "4px",
+                                  }}
+                                >
+                                  {current.date()}
+                                </div>
+                              </Tooltip>
                             );
                           }
                           return info.originNode;
