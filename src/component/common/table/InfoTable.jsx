@@ -117,6 +117,7 @@ import {
   editHoliday,
   removeHoliday,
 } from "../../../redux/reducers/ChildReducer/HolidayReducer";
+import { removeLeaveType } from "../../../redux/reducers/ChildReducer/LeaveTypeReducer";
 import { RemoveLocalStorageData } from "../../../meta/RemoveLocalStorageData";
 defineElement(loadAnimation);
 
@@ -892,6 +893,55 @@ const InfoTable = ({
     }
   };
 
+  const handleLeaveTypeDelete = async (leaveTypeData) => {
+    const result = await Swal.fire({
+      title: "Delete Leave Type",
+      text: "Are you sure you want to delete this Leave Type?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const Api = await DeleteApi(
+        `leave/leave_type/delete/${leaveTypeData.id}`
+      );
+
+      console.log("DELETE RESPONSE:", Api);
+
+      if (Api?.status === 200) {
+        // Update Redux store if applicable
+        dispatch(removeLeaveType(leaveTypeData.id));
+
+        // Clear cached data if applicable
+        RemoveLocalStorageData("leave_type");
+
+        toast.success(
+          Api?.data?.message || "Leave Type deleted successfully"
+        );
+
+        await Swal.fire({
+          title: "Deleted!",
+          text: Api?.data?.message || "Leave Type deleted successfully.",
+          icon: "success",
+          confirmButtonColor: "#0AB39C",
+        });
+      } else {
+        toast.error("Delete failed");
+      }
+    } catch (error) {
+      console.error("DELETE ERROR:", error);
+
+      toast.error(
+        error?.response?.data?.message || "Something went wrong"
+      );
+    }
+  };
+
   const handleTypeFilterChange = (event) => {
     setTypeFilter(event.target.value);
   };
@@ -1341,7 +1391,33 @@ const InfoTable = ({
               </li>
             </>
           );
-        } else if (
+        } 
+        else if (formname === leave_type_component_name) {
+          return (
+            <>
+              <li className="list-inline-item edit">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-primary d-inline-block edit-item-btn"
+                  onClick={() => handleCreateAndUpdate(orderData.id, orderData)}
+                >
+                  <i className="ri-pencil-fill fs-16"></i>
+                </Link>
+              </li>
+
+              <li className="list-inline-item delete">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-danger d-inline-block delete-item-btn"
+                  onClick={() => handleLeaveTypeDelete(orderData)}
+                >
+                  <i className="ri-delete-bin-5-fill fs-16"></i>
+                </Link>
+              </li>
+            </>
+          );
+        }
+        else if (
           formname === project_component_name ||
           formname === client_component_name ||
           formname === task_list_component_name
@@ -2193,7 +2269,8 @@ const InfoTable = ({
                         )} */}
                           {formname &&
                             formname !== attendance_pending_table &&
-                            formname !== leave_pending_table && (
+                            formname !== leave_pending_table && 
+                            formname !== custom_field_component_name && (
                               <button
                                 type="button"
                                 className="btn btn-info"
@@ -2205,12 +2282,12 @@ const InfoTable = ({
                             )}{" "}
                           {isMultiDeleteButton && (
                             <div>
-                              <button
+                              {/* <button
                                 className="btn btn-soft-danger"
                                 onClick={() => setDeleteModalMulti(true)}
                               >
                                 <i className="ri-delete-bin-2-line"></i>
-                              </button>{" "}
+                              </button>{" "} */}
                               {/* {formname === leave_approval_component_name && (
                             <>
                               <button
@@ -2386,132 +2463,310 @@ const InfoTable = ({
                 {isLoading ? (
                   <TableSkeleton />
                 ) : dataList.length ? (
+                  // <TableContainer
+                  //   columns={tableColumn}
+                  //   data={
+                  //     dataList
+                  //       ?.filter((obj) => {
+                  //         return Object.entries(table_filter_keys || {}).every(
+                  //           ([key, value]) => {
+                  //             // ─────────────────────────────
+                  //             // Skip Empty Filters
+                  //             // ─────────────────────────────
+                  //             if (
+                  //               value === 0 ||
+                  //               value === null ||
+                  //               value === undefined ||
+                  //               value === "" ||
+                  //               (Array.isArray(value) && value.length === 0)
+                  //             ) {
+                  //               return true;
+                  //             }
+
+                  //             // ─────────────────────────────
+                  //             // Multi Select Array Filter
+                  //             // collaborator_id
+                  //             // ─────────────────────────────
+                  //             if (Array.isArray(value)) {
+                  //               const taskValues =
+                  //                 obj?.collaborators_id_list ||
+                  //                 obj?.[key] ||
+                  //                 [];
+
+                  //               return value.some((id) =>
+                  //                 taskValues
+                  //                   .map((v) => Number(v))
+                  //                   .includes(Number(id)),
+                  //               );
+                  //             }
+
+                  //             // ─────────────────────────────
+                  //             // Nested Object ID
+                  //             // role_id → role.id
+                  //             // ─────────────────────────────
+                  //             if (key.endsWith("_id")) {
+                  //               const objectKey = key.replace("_id", "");
+
+                  //               if (
+                  //                 obj?.[objectKey] &&
+                  //                 typeof obj[objectKey] === "object" &&
+                  //                 "id" in obj[objectKey]
+                  //               ) {
+                  //                 return (
+                  //                   Number(obj[objectKey].id) === Number(value)
+                  //                 );
+                  //               }
+                  //             }
+
+                  //             // ─────────────────────────────
+                  //             // Direct Compare
+                  //             // ─────────────────────────────
+                  //             return Number(obj?.[key]) === Number(value);
+                  //           },
+                  //         );
+                  //       })
+
+                  //       // ─────────────────────────────
+                  //       // Search Filter
+                  //       // ─────────────────────────────
+
+                  //       // Year + Month Filter
+                  //       .filter((obj) => {
+                  //         const selectedYear =
+                  //           attendance_approval_table_filter_keys?.year;
+
+                  //         const selectedMonth =
+                  //           attendance_approval_table_filter_keys?.month;
+
+                  //         // No year selected -> show all
+                  //         if (!selectedYear) return true;
+
+                  //         const holidayDate = dayjs(obj.date);
+
+                  //         const yearMatch =
+                  //           holidayDate.year().toString() === selectedYear;
+
+                  //         const monthMatch =
+                  //           selectedMonth === 0 ||
+                  //           selectedMonth === undefined ||
+                  //           selectedMonth === null ||
+                  //           holidayDate.month() + 1 === selectedMonth;
+
+                  //         return yearMatch && monthMatch;
+                  //       })
+
+                  //       // Search Filter
+                  //       .filter((d) => {
+                  //         if (!search?.trim()) return true;
+
+                  //         const searchText = search.toLowerCase();
+
+                  //         const nameMatch =
+                  //           d?.name
+                  //             ?.toString()
+                  //             .toLowerCase()
+                  //             .includes(searchText) || false;
+
+                  //         const descriptionMatch =
+                  //           d?.description
+                  //             ?.toString()
+                  //             .toLowerCase()
+                  //             .includes(searchText) || false;
+
+                  //         const formattedDate = d?.date
+                  //           ? dayjs(d.date).format("DD-MM-YYYY")
+                  //           : "";
+
+                  //         const normalizedDate = formattedDate.replace(
+                  //           /[-/]/g,
+                  //           "",
+                  //         );
+                  //         const normalizedSearch = search.replace(/[-/]/g, "");
+
+                  //         const dateMatch =
+                  //           formattedDate.includes(search) ||
+                  //           normalizedDate.includes(normalizedSearch);
+
+                  //         return nameMatch || descriptionMatch || dateMatch;
+                  //       }) || []
+                  //   }
+                  //   isPagination={true}
+                  //   isGlobalFilter={true}
+                  //   formname={formname}
+                  //   customPageSize={50}
+                  //   divClass="table-responsive table-card"
+                  //   tableClass="align-middle table-nowrap"
+                  //   theadClass="table-light text-muted"
+                  //   handleDataClick={handleDataClicks}
+                  //   isDataFilter={true}
+                  //   SearchPlaceholder="Search for data ID, customer, data status or something..."
+                  //   showInfo={true}
+                  // />
+
                   <TableContainer
                     columns={tableColumn}
                     data={
-                      dataList
-                        ?.filter((obj) => {
-                          return Object.entries(table_filter_keys || {}).every(
-                            ([key, value]) => {
-                              // ─────────────────────────────
-                              // Skip Empty Filters
-                              // ─────────────────────────────
-                              if (
-                                value === 0 ||
-                                value === null ||
-                                value === undefined ||
-                                value === "" ||
-                                (Array.isArray(value) && value.length === 0)
-                              ) {
-                                return true;
-                              }
+                    dataList
+                    ?.filter((obj) => {
+                    return Object.entries(table_filter_keys || {}).every(
+                    ([key, value]) => {
+                    // ─────────────────────────────
+                    // Skip Empty Filters
+                    // ─────────────────────────────
+                    if (
+                    value === 0 ||
+                    value === null ||
+                    value === undefined ||
+                    value === "" ||
+                    (Array.isArray(value) && value.length === 0)
+                    ) {
+                    return true;
+                    }
 
-                              // ─────────────────────────────
-                              // Multi Select Array Filter
-                              // collaborator_id
-                              // ─────────────────────────────
-                              if (Array.isArray(value)) {
-                                const taskValues =
-                                  obj?.collaborators_id_list ||
-                                  obj?.[key] ||
-                                  [];
+                    // ─────────────────────────────
+                    // Multi Select Array Filter
+                    // collaborator_id
+                    // ─────────────────────────────
+                    if (Array.isArray(value)) {
+                    const taskValues =
+                    obj?.collaborators_id_list ||
+                    obj?.[key] ||
+                    [];
 
-                                return value.some((id) =>
-                                  taskValues
-                                    .map((v) => Number(v))
-                                    .includes(Number(id)),
-                                );
-                              }
+                    return value.some((id) =>
+                    taskValues
+                    .map((v) => Number(v))
+                    .includes(Number(id)),
+                    );
+                    }
 
-                              // ─────────────────────────────
-                              // Nested Object ID
-                              // role_id → role.id
-                              // ─────────────────────────────
-                              if (key.endsWith("_id")) {
-                                const objectKey = key.replace("_id", "");
+                    // ─────────────────────────────
+                    // Nested Object ID
+                    // role_id → role.id
+                    // ─────────────────────────────
+                    if (key.endsWith("_id")) {
+                    const objectKey = key.replace("_id", "");
 
-                                if (
-                                  obj?.[objectKey] &&
-                                  typeof obj[objectKey] === "object" &&
-                                  "id" in obj[objectKey]
-                                ) {
-                                  return (
-                                    Number(obj[objectKey].id) === Number(value)
-                                  );
-                                }
-                              }
+                    if (
+                    obj?.[objectKey] &&
+                    typeof obj[objectKey] === "object" &&
+                    "id" in obj[objectKey]
+                    ) {
+                    return (
+                    Number(obj[objectKey].id) === Number(value)
+                    );
+                    }
+                    }
 
-                              // ─────────────────────────────
-                              // Direct Compare
-                              // ─────────────────────────────
-                              return Number(obj?.[key]) === Number(value);
-                            },
-                          );
-                        })
+                    // ─────────────────────────────
+                    // Direct Compare
+                    // ─────────────────────────────
+                    return Number(obj?.[key]) === Number(value);
+                    },
+                    );
+                    })
 
-                        // ─────────────────────────────
-                        // Search Filter
-                        // ─────────────────────────────
+                    // ─────────────────────────────
+                    // Search Filter
+                    // ─────────────────────────────
 
-                        // Year + Month Filter
-                        .filter((obj) => {
-                          const selectedYear =
-                            attendance_approval_table_filter_keys?.year;
+                    // Year + Month Filter
+                    .filter((obj) => {
+                    const selectedYear =
+                    attendance_approval_table_filter_keys?.year;
 
-                          const selectedMonth =
-                            attendance_approval_table_filter_keys?.month;
+                    const selectedMonth =
+                    attendance_approval_table_filter_keys?.month;
 
-                          // No year selected -> show all
-                          if (!selectedYear) return true;
+                    // No year selected -> show all
+                    if (!selectedYear) return true;
 
-                          const holidayDate = dayjs(obj.date);
+                    const holidayDate = dayjs(obj.date);
 
-                          const yearMatch =
-                            holidayDate.year().toString() === selectedYear;
+                    const yearMatch =
+                    holidayDate.year().toString() === selectedYear;
 
-                          const monthMatch =
-                            selectedMonth === 0 ||
-                            selectedMonth === undefined ||
-                            selectedMonth === null ||
-                            holidayDate.month() + 1 === selectedMonth;
+                    const monthMatch =
+                    selectedMonth === 0 ||
+                    selectedMonth === undefined ||
+                    selectedMonth === null ||
+                    holidayDate.month() + 1 === selectedMonth;
 
-                          return yearMatch && monthMatch;
-                        })
+                    return yearMatch && monthMatch;
+                    })
 
-                        // Search Filter
-                        .filter((d) => {
-                          if (!search?.trim()) return true;
+                    // Search Filter
 
-                          const searchText = search.toLowerCase();
+                    .filter((d) => {
 
-                          const nameMatch =
-                            d?.name
-                              ?.toString()
-                              .toLowerCase()
-                              .includes(searchText) || false;
+                    if (!search?.trim()) return true;
 
-                          const descriptionMatch =
-                            d?.description
-                              ?.toString()
-                              .toLowerCase()
-                              .includes(searchText) || false;
+                    // return Object.values(d).some((value) => {
+                    // if (typeof value === "string") {
+                    // return value
+                    // .toLowerCase()
+                    // .includes(search.toLowerCase());
+                    // }
 
-                          const formattedDate = d?.date
-                            ? dayjs(d.date).format("DD-MM-YYYY")
-                            : "";
+                    // if (typeof value === "number") {
+                    // return String(value).includes(search);
+                    // }
 
-                          const normalizedDate = formattedDate.replace(
-                            /[-/]/g,
-                            "",
-                          );
-                          const normalizedSearch = search.replace(/[-/]/g, "");
+                    // return false;
+                    // });
+                    return Object.entries(d).some(([key, value]) => {
 
-                          const dateMatch =
-                            formattedDate.includes(search) ||
-                            normalizedDate.includes(normalizedSearch);
+                    // Ignore ID fields
+                    if (
+                    key === "id" ||
+                    key.endsWith("_id") ||
+                    key === "created_by" ||
+                    key === "updated_by" ||
+                    key === "work_schedule_id_list"
+                    ) {
+                    return false;
+                    }
 
-                          return nameMatch || descriptionMatch || dateMatch;
-                        }) || []
+                    if (value == null) return false;
+
+                    let searchValue = String(value);
+
+                    if (key === "date") {
+                    const formattedDate = dayjs(value).format("DD-MM-YYYY");
+
+                    const normalizedDate = formattedDate.replace(/[-/]/g, "");
+                    const normalizedSearch = search.replace(/[-/]/g, "");
+
+                    const matched =
+                    formattedDate.toLowerCase().includes(search.toLowerCase()) ||
+                    normalizedDate.includes(normalizedSearch);
+
+                    return matched;
+                    }
+
+                    // if (value == null) return false;
+
+                    // return String(value)
+                    // .toLowerCase()
+                    // .includes(search.toLowerCase());
+                    const matched = searchValue
+                    .toLowerCase()
+                    .includes(search.toLowerCase());
+
+                    if (matched) {
+                    console.log(
+                    "Holiday:",
+                    d.name,
+                    "Matched Key:",
+                    key,
+                    "Matched Value:",
+                    value
+                    );
+                    }
+
+                    return matched;
+                    });
+                    }) || []
                     }
                     isPagination={true}
                     isGlobalFilter={true}
@@ -2524,7 +2779,7 @@ const InfoTable = ({
                     isDataFilter={true}
                     SearchPlaceholder="Search for data ID, customer, data status or something..."
                     showInfo={true}
-                  />
+                    />
                 ) : (
                   <div
                     style={{

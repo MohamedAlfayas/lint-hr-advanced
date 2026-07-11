@@ -133,15 +133,32 @@ const BranchForm = () => {
     validationSchema: Yup.object({
       name: Yup.string()
         .trim()
-        .matches(/^[A-Za-z\s]+$/, "Branch name should contain only letters")
-        .required("Please Enter Branch Name"),
+        .matches(
+          /^[A-Za-z0-9.,&()'\-\s]+$/,
+          "Branch Name can contain only letters, numbers, spaces, and . , - & ( ) '"
+        )
+        .required("Please Enter Branch Name")
+        .min(2, "Branch Name must be at least 2 characters")
+        .max(100, "Branch Name must not exceed 100 characters"),
       country: Yup.string().required("Please select country"),
       state: Yup.string().required("Please select state"),
-      address: Yup.string().trim().required("Please enter address"),
+      address: Yup.string()
+        .trim()
+        .required("Please enter address")
+        .matches(
+          /^[A-Za-z0-9\s.,\-#/'&]+$/,
+          "Address can contain only letters, numbers, spaces, and . , - # / ' &"
+        )
+        .max(250, "Address must not exceed 250 characters"),
       city: Yup.string()
         .trim()
         .required("Please enter city")
-        .matches(/^[a-zA-Z\s]+$/, "City must contain letters only"),
+        .matches(
+          /^[A-Za-z\s.'-]+$/,
+          "City can contain only letters, spaces, . - and '"
+        )
+        .min(1, "City must be at least 1 character")
+        .max(100, "City must not exceed 100 characters"),
       pincode: Yup.string()
         .trim()
         .matches(/^[0-9]+$/, "Pincode should contain only numbers")
@@ -152,6 +169,13 @@ const BranchForm = () => {
         .required("Please Enter Phone Number")
         .matches(/^[0-9]+$/, "Phone number must contain digits only")
         .length(10, "Phone number must be 10 digits"),
+
+      about: Yup.string()
+        .matches(
+          /^[a-zA-Z0-9\s\n.,!?'"\-_()&:;/]*$/,
+          "Company Overview can contain only letters, numbers, spaces, line breaks, and . , ! ? ' \" - _ ( ) & : ; /"
+        ),
+
       contact_email: Yup.string()
         .trim()
         .required("Please enter email")
@@ -218,6 +242,22 @@ const BranchForm = () => {
     const { name, value } = e.target;
 
     FormikForm.setFieldValue(name, value.replace(/[^a-zA-Z\s]/g, ""));
+  };
+
+  const handleCityChange = (e) => {
+    const value = e.target.value
+      .replace(/^\s+/, "") // remove leading spaces
+      .replace(/[^A-Za-z\s.'-]/g, "");
+
+    FormikForm.setFieldValue("city", value);
+  };
+
+  const handleBranchNameChange = (e) => {
+    const value = e.target.value
+      .replace(/^[ ]+/g, "") // remove leading spaces
+      .replace(/[^A-Za-z0-9.,&()'|\-\s]/g, "");
+
+    FormikForm.setFieldValue("name", value);
   };
 
   const handleBranchCountryChange = (e) => {
@@ -494,7 +534,7 @@ const BranchForm = () => {
                         innerRef={inputRef}
                         placeholder="New Branch"
                         value={v.name || ""}
-                        onChange={handleTextOnly}
+                        onChange={handleBranchNameChange}
                         onBlur={() => FormikForm.setFieldTouched("name", true)}
                         invalid={isInvalid("name")}
                       />
@@ -601,7 +641,14 @@ const BranchForm = () => {
                       name="address"
                       rows="2"
                       value={v.address || ""}
-                      onChange={(ev) => setField("address", ev.target.value)}
+                      // onChange={(ev) => setField("address", ev.target.value)}
+                      onChange={(ev) => {
+                        const value = ev.target.value
+                          .replace(/^\s+/, "") // remove leading spaces
+                          .replace(/[^A-Za-z0-9\s.,\-#/'&]/g, "");
+
+                        setField("address", value);
+                      }}
                       onBlur={() => FormikForm.setFieldTouched("address", true)}
                       invalid={isInvalid("address")}
                     />
@@ -626,7 +673,7 @@ const BranchForm = () => {
                         name="city"
                         placeholder="City"
                         value={v.city || ""}
-                        onChange={handleTextOnly}
+                        onChange={handleCityChange}
                         onBlur={() => FormikForm.setFieldTouched("city", true)}
                         invalid={isInvalid("city")}
                       />
@@ -799,7 +846,14 @@ const BranchForm = () => {
                       name="about"
                       rows="3"
                       value={v.about || ""}
-                      onChange={(ev) => setField("about", ev.target.value)}
+                      // onChange={(ev) => setField("about", ev.target.value)}
+                      onChange={(ev) => {
+                        const value = ev.target.value
+                          .replace(/^\s+/, "") // remove leading spaces only
+                          .replace(/[^a-zA-Z0-9\s\n.,!?'"\-_()&:;/]/g, "");
+
+                        setField("about", value);
+                      }}
                     />
                     <div className="form-text">Company overview.</div>
                   </Col>

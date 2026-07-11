@@ -75,6 +75,7 @@ const allowedTlds = [
   "dev",
   "ai",
   "io",
+  "co",
 
   // ccTLDs
   "in",

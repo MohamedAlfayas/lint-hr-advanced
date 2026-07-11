@@ -956,6 +956,38 @@ const LeaveTypeForm = () => {
                       </div>
                     </Col>
                   )}
+                  {leaveTypeData.id > 0 && (
+                    <Col md={12}>
+                      <div>
+                        <Label
+                          htmlFor="leave_type_status"
+                          className="form-label"
+                        >
+                          Status
+                        </Label>
+
+                        <div className="mb-2">
+                          <div
+                            className="form-check form-switch form-switch-md form-switch-success"
+                            dir="ltr"
+                          >
+                            <Input
+                              type="checkbox"
+                              className="form-check-input form-switch-md"
+                              id="leave_type_status"
+                              checked={leaveTypeData.status || false}
+                              onChange={(e) =>
+                                setLeaveTypeData({
+                                  ...leaveTypeData,
+                                  status: e.target.checked,
+                                })
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </Col>
+                  )}
                 </>
               )}
               <Col md={12} lg={12} xxl={12}>
