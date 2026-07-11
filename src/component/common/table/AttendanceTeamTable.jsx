@@ -269,7 +269,7 @@ const AttendanceTeamTable = () => {
                   let holiday_name =
                     holiday_data.find(
                       (d) => d.id === rowData.workday_data[index].holiday_id,
-                    ).name || "";
+                    )?.name || "Holiday";
                   result_text = holiday_name;
                   result_text_color = "green";
                 } else if (rowData.workday_data[index].is_week_off === true) {
