@@ -92,7 +92,24 @@ const LocationGroupForm = () => {
       description: form_obj?.description || "",
     },
     validationSchema: Yup.object({
-      name: Yup.string().required("Please enter a location group name"),
+      name: Yup.string()
+        .matches(
+          /^[A-Za-z0-9\s.,&()'-]+$/,
+          "Location group name can contain only letters, numbers, spaces, ., ,, -, &, (, ) and '",
+        )
+        .max(100, "Location group name cannot exceed 100 characters")
+        .required("Please enter a location group name")
+        .test(
+          "not-only-spaces",
+          "Please enter a location group name",
+          (value) => !value || value.trim().length > 0,
+        ),
+      description: Yup.string()
+        .matches(
+          /^[A-Za-z0-9\s.,!?'"\-_()&:;/]+$/,
+          "Description contains invalid characters",
+        )
+        .max(200, "Description cannot exceed 200 characters"),
     }),
     onSubmit: async (values) => {
       dispatch(setLoaderVisible(true));
@@ -148,18 +165,45 @@ const LocationGroupForm = () => {
     enableReinitialize: true,
     initialValues: locationObj,
     validationSchema: Yup.object({
-      name: Yup.string().required("Please Enter Location Name"),
-      address: Yup.string().required("Please Enter Address"),
+      name: Yup.string()
+        .matches(
+          /^[A-Za-z0-9\s.,&()'-]+$/,
+          "Location name can contain only letters, numbers, spaces, ., ,, -, &, (, ) and '",
+        )
+        .max(100, "Location name cannot exceed 100 characters")
+        .required("Please Enter Location Name")
+        .test(
+          "not-only-spaces",
+          "Please Enter Location Name",
+          (value) => !value || value.trim().length > 0,
+        ),
+      address: Yup.string()
+        .trim()
+        .matches(
+          /^[A-Za-z0-9\s.,\-#/'&]+$/,
+          "Address can contain only letters, numbers, spaces, ., ,, -, #, /, ' and &",
+        )
+        .max(200, "Address cannot exceed 200 characters")
+        .required("Please Enter Address"),
       country: Yup.string().required("Please Select Country"),
       state: Yup.string().required("Please Select State"),
       city: Yup.string()
-        .required("Please Enter City")
-        .matches(/^[a-zA-Z\s]+$/, "City must contain letters only"),
+        .trim()
+        .matches(
+          /^[A-Za-z\s.'-]+$/,
+          "City can contain only letters, spaces, dots, hyphens and apostrophes",
+        )
+        .max(100, "City cannot exceed 100 characters")
+        .required("Please Enter City"),
       pincode: Yup.string()
-        .required("Please Enter Pincode")
-        .matches(/^[0-9]+$/, "Pincode must contain digits only"),
+        .trim()
+        .matches(/^[0-9]+$/, "Pincode should contain only numbers")
+        .length(6, "Please Enter Valid 6 Digit Pincode")
+        .required("Please Enter Pincode"),
       timezone: Yup.string().required("Please Select Time Zone"),
-      accurate_address: Yup.string().required("Please Enter Accurate Address"),
+      accurate_address: Yup.string()
+        .trim()
+        .required("Please Enter Accurate Address"),
     }),
 
     onSubmit: async (values) => {
@@ -331,16 +375,66 @@ const LocationGroupForm = () => {
     setLocationStateOptions(found?.states || []);
   };
 
+  const handleLocationTextOnly = (e) => {
+    const { name, value } = e.target;
+
+    setLocField(name, value.replace(/[^a-zA-Z\s\-_]/g, ""));
+  };
+
+  const handleCityChange = (e) => {
+    const { value } = e.target;
+
+    setLocField("city", value.replace(/[^A-Za-z\s.'-]/g, "").slice(0, 100));
+  };
+
+  const handleAddressChange = (e) => {
+    const { value } = e.target;
+
+    setLocField(
+      "address",
+      value.replace(/[^A-Za-z0-9\s.,\-#/'&]/g, "").slice(0, 200),
+    );
+  };
+
+  const handleLocationNameChange = (e) => {
+    const { value } = e.target;
+
+    setLocField(
+      "name",
+      value.replace(/[^A-Za-z0-9\s.,&()'-]/g, "").slice(0, 100),
+    );
+  };
+
+  const handleLocationGroupNameChange = (e) => {
+    const { value } = e.target;
+
+    formik.setFieldValue(
+      "name",
+      value.replace(/[^A-Za-z0-9\s.,&()'-]/g, "").slice(0, 100),
+    );
+  };
+
   const handleLocationImageUpdate = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (readerEvent) => {
-        setLocField("image_url", readerEvent.target.result); // base64 preview
-      };
-      reader.readAsDataURL(file);
-      setLocField("image", file); // keep real File for FormData
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only JPG, JPEG, PNG and WEBP image files are allowed.");
+      e.target.value = "";
+      return;
     }
+
+    const reader = new FileReader();
+
+    reader.onload = (readerEvent) => {
+      setLocField("image", file);
+      setLocField("image_url", readerEvent.target.result);
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const handleAddClick = () => {
@@ -388,7 +482,7 @@ const LocationGroupForm = () => {
                 innerRef={inputRef}
                 placeholder="e.g. Chennai Offices"
                 value={formik.values.name}
-                onChange={formik.handleChange}
+                onChange={handleLocationGroupNameChange}
                 onBlur={formik.handleBlur}
                 invalid={formik.touched.name && !!formik.errors.name}
               />
@@ -410,7 +504,17 @@ const LocationGroupForm = () => {
               rows="3"
               placeholder="e.g. All branches in Chennai region"
               value={formik.values.description}
-              onChange={formik.handleChange}
+              onChange={(e) => {
+                const value = e.target.value
+                  .replace(/[^A-Za-z0-9\s.,!?'"\-_()&:;/]/g, "")
+                  .slice(0, 200);
+
+                formik.setFieldValue("description", value);
+              }}
+              onBlur={formik.handleBlur}
+              invalid={
+                formik.touched.description && !!formik.errors.description
+              }
             />
           </Col>
 
@@ -500,7 +604,7 @@ const LocationGroupForm = () => {
                     name="name"
                     placeholder="Enter Location Name"
                     value={lv.name || ""}
-                    onChange={(ev) => setLocField("name", ev.target.value)}
+                    onChange={handleLocationNameChange}
                     onBlur={() => locationFormik.setFieldTouched("name", true)}
                     invalid={isLocInvalid("name")}
                   />
@@ -534,7 +638,7 @@ const LocationGroupForm = () => {
                   name="address"
                   rows="2"
                   value={lv.address || ""}
-                  onChange={(ev) => setLocField("address", ev.target.value)}
+                  onChange={handleAddressChange}
                   onBlur={() => locationFormik.setFieldTouched("address", true)}
                   invalid={isLocInvalid("address")}
                 />
@@ -625,10 +729,7 @@ const LocationGroupForm = () => {
                     name="city"
                     placeholder="City"
                     value={lv.city || ""}
-                    onChange={(ev) => {
-                      const val = ev.target.value.replace(/[^a-zA-Z\s]/g, "");
-                      setLocField("city", val);
-                    }}
+                    onChange={handleCityChange}
                     onBlur={() => locationFormik.setFieldTouched("city", true)}
                     invalid={isLocInvalid("city")}
                   />
@@ -656,8 +757,11 @@ const LocationGroupForm = () => {
                     inputMode="numeric"
                     value={lv.pincode || ""}
                     onChange={(ev) => {
-                      const val = ev.target.value.replace(/[^0-9]/g, "");
-                      setLocField("pincode", val);
+                      const value = ev.target.value
+                        .replace(/[^0-9]/g, "")
+                        .slice(0, 6);
+
+                      setLocField("pincode", value);
                     }}
                     onBlur={() =>
                       locationFormik.setFieldTouched("pincode", true)
@@ -685,7 +789,7 @@ const LocationGroupForm = () => {
                   type="file"
                   name="image"
                   id="loc_image"
-                  accept="image/*"
+                  accept=".jpg,.jpeg,.png,.webp"
                   className="form-control"
                   onChange={handleLocationImageUpdate}
                 />
