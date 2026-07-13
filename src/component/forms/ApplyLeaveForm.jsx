@@ -515,7 +515,7 @@ const ApplyLeaveForm = () => {
     if (name === "reason") {
       const filteredValue = value
         .replace(/^\s+/, "")
-        .replace(/[^A-Za-z0-9\s.,!?'"\-_()&:;\/\n\r]/g, "");
+        .replace(/[^A-Za-z0-9\s.,!?'"\-_()&:;]/g, "");
 
       setLeaveApplyObj({
         ...leaveapplyObj,
@@ -523,6 +523,20 @@ const ApplyLeaveForm = () => {
       });
 
       FormikForm.setFieldValue("reason", filteredValue);
+      FormikForm.setFieldTouched("reason", true, false);
+
+      if (filteredValue.length > 250) {
+        FormikForm.setFieldError(
+          "reason",
+          "Reason cannot exceed 250 characters.",
+        );
+      } else if (filteredValue.trim() === "") {
+        FormikForm.setFieldError("reason", "Reason is required");
+      } else {
+        FormikForm.setFieldError("reason", undefined);
+      }
+
+      return;
     } else {
       setLeaveApplyObj({
         ...leaveapplyObj,
@@ -717,8 +731,8 @@ const ApplyLeaveForm = () => {
         .min(2, "Reason must be at least 2 characters")
         .max(250, "Reason cannot exceed 250 characters")
         .matches(
-          /^[A-Za-z0-9\s.,!?'"\-_()&:;\/]+$/,
-          "Only alphabets, numbers, spaces and standard punctuation are allowed",
+          /^[A-Za-z0-9\s.,!?'"\-_()&:;]+$/,
+          "Only alphabets, numbers, spaces and . , ! ? ' \" - _ ( ) & : ; are allowed",
         )
         .test(
           "not-empty-space",
@@ -1467,7 +1481,7 @@ const ApplyLeaveForm = () => {
                   value={leaveapplyObj?.reason || ""}
                   onChange={handleInputChange}
                 />
-                {FormikForm.touched.reason && FormikForm.errors.reason ? (
+                {FormikForm.errors.reason ? (
                   <div className="lc_form_error_text">
                     {FormikForm.errors.reason}
                   </div>

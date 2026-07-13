@@ -365,7 +365,7 @@ const LocationGroupForm = () => {
   const lv = locationFormik.values;
   const le = locationFormik.errors;
   const lt = locationFormik.touched;
-  const isLocInvalid = (field) => !!(lt[field] && le[field]);
+  const isLocInvalid = (field) => !!le[field];
   const showLocHint = (field) => !le[field];
 
   const handleLocationCountryChange = (e) => {
@@ -382,36 +382,59 @@ const LocationGroupForm = () => {
   };
 
   const handleCityChange = (e) => {
-    const { value } = e.target;
+    const value = e.target.value.replace(/[^A-Za-z\s.'-]/g, "");
 
-    setLocField("city", value.replace(/[^A-Za-z\s.'-]/g, "").slice(0, 100));
+    setLocField("city", value);
+
+    if (value.length > 100) {
+      locationFormik.setFieldError("city", "City cannot exceed 100 characters");
+    } else {
+      locationFormik.setFieldError("city", undefined);
+    }
   };
 
   const handleAddressChange = (e) => {
-    const { value } = e.target;
+    const value = e.target.value.replace(/[^A-Za-z0-9\s.,\-#/'&]/g, "");
 
-    setLocField(
-      "address",
-      value.replace(/[^A-Za-z0-9\s.,\-#/'&]/g, "").slice(0, 200),
-    );
+    setLocField("address", value);
+
+    if (value.length > 200) {
+      locationFormik.setFieldError(
+        "address",
+        "Address cannot exceed 200 characters",
+      );
+    } else {
+      locationFormik.setFieldError("address", undefined);
+    }
   };
 
   const handleLocationNameChange = (e) => {
-    const { value } = e.target;
+    const value = e.target.value.replace(/[^A-Za-z0-9\s.,&()'-]/g, "");
 
-    setLocField(
-      "name",
-      value.replace(/[^A-Za-z0-9\s.,&()'-]/g, "").slice(0, 100),
-    );
+    setLocField("name", value);
+
+    if (value.length > 100) {
+      locationFormik.setFieldError(
+        "name",
+        "Location name cannot exceed 100 characters",
+      );
+    } else {
+      locationFormik.setFieldError("name", undefined);
+    }
   };
 
   const handleLocationGroupNameChange = (e) => {
-    const { value } = e.target;
+    const value = e.target.value.replace(/[^A-Za-z0-9\s.,&()'-]/g, "");
 
-    formik.setFieldValue(
-      "name",
-      value.replace(/[^A-Za-z0-9\s.,&()'-]/g, "").slice(0, 100),
-    );
+    formik.setFieldValue("name", value);
+    formik.setFieldTouched("name", true, false);
+
+    if (value.length > 100) {
+      formik.setFieldError(
+        "name",
+        "Location group name cannot exceed 100 characters",
+      );
+    }
   };
 
   const handleLocationImageUpdate = (e) => {
@@ -505,17 +528,29 @@ const LocationGroupForm = () => {
               placeholder="e.g. All branches in Chennai region"
               value={formik.values.description}
               onChange={(e) => {
-                const value = e.target.value
-                  .replace(/[^A-Za-z0-9\s.,!?'"\-_()&:;/]/g, "")
-                  .slice(0, 200);
+                const value = e.target.value.replace(
+                  /[^A-Za-z0-9\s.,!?'"\-_()&:;/]/g,
+                  "",
+                );
 
                 formik.setFieldValue("description", value);
+                formik.setFieldTouched("description", true, false);
+
+                if (value.length > 200) {
+                  formik.setFieldError(
+                    "description",
+                    "Description cannot exceed 200 characters",
+                  );
+                }
               }}
               onBlur={formik.handleBlur}
               invalid={
                 formik.touched.description && !!formik.errors.description
               }
             />
+            {formik.touched.description && formik.errors.description && (
+              <FormFeedback>{formik.errors.description}</FormFeedback>
+            )}
           </Col>
 
           {/* ── Locations Table — driven by Redux ── */}

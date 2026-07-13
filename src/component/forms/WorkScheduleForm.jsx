@@ -192,6 +192,56 @@ const WorkScheduleForm = () => {
     }));
   }, []);
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "name") {
+      const textOnly = value.replace(/[^a-zA-Z0-9\s.,'_\-()&:;/]/g, "");
+
+      setWorkScheduleData({
+        ...workScheduleData,
+        [name]: textOnly,
+      });
+
+      FormikForm.setFieldValue(name, textOnly);
+
+      FormikForm.setFieldTouched("name", true, false);
+
+      if (textOnly.length > 100) {
+        FormikForm.setFieldError(
+          "name",
+          "Work Schedule Name must not exceed 100 characters.",
+        );
+      } else if (textOnly.trim() === "") {
+        FormikForm.setFieldError("name", "Please Enter Work Schedule Name");
+      } else {
+        FormikForm.setFieldError("name", undefined);
+      }
+
+      return;
+    }
+
+    if (name === "description") {
+      const textOnly = value.replace(/[^a-zA-Z0-9\s.,?!"'_\-()&:;/\\]/g, "");
+
+      setWorkScheduleData({
+        ...workScheduleData,
+        [name]: textOnly,
+      });
+
+      FormikForm.setFieldValue(name, textOnly);
+
+      if (textOnly.length > 200) {
+        FormikForm.setFieldError(
+          "description",
+          "Description is too long. Please keep it within 200 characters.",
+        );
+      } else {
+        FormikForm.setFieldError("description", undefined);
+      }
+    }
+  };
+
   const handleDurationChange = (selectedHour, selectedMinute, name) => {
     console.log("selectedHour ==== ", selectedHour + ":" + selectedMinute);
 
@@ -363,8 +413,8 @@ const WorkScheduleForm = () => {
           /^[A-Za-z0-9\s.,'_\-()&:;/]+$/,
           "Only alphabets, numbers, spaces and . , ' - _ ( ) & : ; / are allowed",
         )
-        .min(2, "Work Schedule Name must be at least 2 characters")
-        .max(50, "Work Schedule Name must not exceed 50 characters")
+        .min(1, "Work Schedule Name must be at least 1 characters")
+        .max(100, "Work Schedule Name must not exceed 100 characters")
         .required("Please Enter Work Schedule Name")
         .test(
           "not-only-spaces",
@@ -492,27 +542,18 @@ const WorkScheduleForm = () => {
 
                       <div className="mb-3">
                         <Label className="form-label" htmlFor="ws_name">
-                          Name
+                          Name <spa>*</spa>
                         </Label>
                         <Input
                           type="text"
                           name="name"
                           className="form-control"
                           id="ws_name"
-                          maxLength={50}
                           placeholder="Enter Work Schedule Name"
                           value={workScheduleData.name || ""}
-                          onChange={(e) =>
-                            setWorkScheduleData({
-                              ...workScheduleData,
-                              name: e.target.value,
-                            })
-                          }
-                          invalid={
-                            FormikForm.touched.name && FormikForm.errors.name
-                              ? true
-                              : false
-                          }
+                          onChange={handleInputChange}
+                          invalid={!!FormikForm.errors.name}
+                          onBlur={FormikForm.handleBlur}
                         />
                         <FormFeedback type="invalid">
                           {FormikForm.errors.name}
@@ -529,30 +570,16 @@ const WorkScheduleForm = () => {
                           name="description"
                           className="form-control"
                           id="ws_desc"
-                          maxLength={200}
                           value={workScheduleData.description || ""}
-                          onChange={(e) => {
-                            setWorkScheduleData({
-                              ...workScheduleData,
-                              description: e.target.value,
-                            });
-
-                            FormikForm.setFieldValue(
-                              "description",
-                              e.target.value,
-                            );
-                          }}
-                          invalid={
-                            FormikForm.touched.description &&
-                            FormikForm.errors.description
-                              ? true
-                              : false
-                          }
+                          onChange={handleInputChange}
+                          invalid={!!FormikForm.errors.description}
                         />
 
-                        <FormFeedback type="invalid">
-                          {FormikForm.errors.description}
-                        </FormFeedback>
+                        {FormikForm.errors.description ? (
+                          <FormFeedback type="invalid">
+                            {FormikForm.errors.description}
+                          </FormFeedback>
+                        ) : null}
                       </div>
                     </Col>
                     <Col md={3} lg={3} xxl={3}>
@@ -1097,8 +1124,13 @@ const WorkScheduleForm = () => {
                           if (!validateDurations(workScheduleData)) return;
                           toggleArrowTab(activeArrowTab + 1);
                         } else {
-                          console.log("Validation errors:");
-                          toast.error("Please Enter Work Schedule");
+                          FormikForm.setTouched({
+                            name: true,
+                            description: true,
+                          });
+
+                          const firstError = Object.values(errors)[0];
+                          toast.error(firstError);
                         }
                       });
                     }}

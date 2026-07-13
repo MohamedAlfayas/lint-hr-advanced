@@ -120,6 +120,31 @@ const ProjectForm = () => {
       return;
     }
 
+    if (name === "title") {
+      const filteredValue = value.replace(/[^A-Za-z0-9\s.,!?'"\-_()&:;]/g, "");
+
+      setProjectData((prev) => ({
+        ...prev,
+        [name]: filteredValue,
+      }));
+
+      FormikForm.setFieldValue(name, filteredValue);
+      FormikForm.setFieldTouched("title", true, false);
+
+      if (filteredValue.length > 100) {
+        FormikForm.setFieldError(
+          "title",
+          "Project title must not exceed 100 characters.",
+        );
+      } else if (filteredValue.trim() === "") {
+        FormikForm.setFieldError("title", "Please Enter the project title");
+      } else {
+        FormikForm.setFieldError("title", undefined);
+      }
+
+      return;
+    }
+
     setProjectData((prev) => ({
       ...prev,
       [name]: value,
@@ -169,9 +194,10 @@ const ProjectForm = () => {
       title: Yup.string()
         .trim()
         .matches(
-          /^[A-Za-z0-9 .,!?'"\-_()&:;]+$/,
-          "Please enter a valid project title.",
+          /^[A-Za-z0-9\s.,!?'"\-_()&:;]+$/,
+          "Only alphabets, numbers, spaces and . , ! ? ' \" - _ ( ) & : ; are allowed",
         )
+        .max(100, "Project title must not exceed 100 characters.")
         .required("Please Enter the project title")
         .test(
           "not-only-spaces",
@@ -304,14 +330,10 @@ const ProjectForm = () => {
                     value={projectData.title || ""}
                     onChange={handleInputChange}
                     onBlur={() => FormikForm.setFieldTouched("title", true)}
-                    invalid={
-                      FormikForm.touched.title && FormikForm.errors.title
-                        ? true
-                        : false
-                    }
+                    invalid={FormikForm.errors.title ? true : false}
                   />
 
-                  {FormikForm.touched.title && FormikForm.errors.title && (
+                  {FormikForm.errors.title && (
                     <FormFeedback>{FormikForm.errors.title}</FormFeedback>
                   )}
                 </div>
