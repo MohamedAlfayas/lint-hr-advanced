@@ -245,14 +245,11 @@ const ComponentBreakdownTable = ({ components, onSaveOverride }) => {
 };
 
 // ─── Salary Modal ─────────────────────────────────────────────────────────────
-const SalaryModal = ({
-  isOpen,
-  toggle,
-  employee,
-  structureOptions,
-  onSaved,
-}) => {
+const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeavePolicy, onSaved }) => {
   const isEdit = !!employee?.salary_id;
+  const [leave, setLeave] = useState({
+    monthly_credit: "", yearly_credit: "", max_carry_forward: "", pay_remaining: "",
+  });
 
   const [form, setForm] = useState({
     based_on: "ctc",
@@ -273,6 +270,13 @@ const SalaryModal = ({
 
   useEffect(() => {
     if (isOpen && employee) {
+      const lo = employee.leave_override || {};
+      setLeave({
+        monthly_credit: lo.monthly_credit ?? "",
+        yearly_credit: lo.yearly_credit ?? "",
+        max_carry_forward: lo.max_carry_forward ?? "",
+        pay_remaining: lo.pay_remaining == null ? "" : (lo.pay_remaining ? "yes" : "no"),
+      });
       setForm({
         based_on: employee.based_on || "ctc",
         salary_structure: employee.salary_structure_id
@@ -311,6 +315,12 @@ const SalaryModal = ({
         gross_amount: form.based_on === "gross" ? form.gross_amount : null,
         effective_date: form.effective_date,
         remarks: form.remarks,
+        leave_policy: {
+          monthly_credit: leave.monthly_credit === "" ? null : leave.monthly_credit,
+          yearly_credit: leave.yearly_credit === "" ? null : leave.yearly_credit,
+          max_carry_forward: leave.max_carry_forward === "" ? null : leave.max_carry_forward,
+          pay_remaining: leave.pay_remaining === "" ? null : leave.pay_remaining === "yes",
+        },
       };
       const saved = await saveEmployeeSalary(payload);
       // keep the breakdown in sync if the API returns recomputed components
@@ -482,6 +492,58 @@ const SalaryModal = ({
           )}
         </Row>
 
+        {companyLeavePolicy && (
+          <div className="border rounded overflow-hidden mb-4">
+            <div className="bg-light px-3 py-2 border-bottom d-flex align-items-center justify-content-between">
+              <span className="fw-semibold fs-13 text-dark">Leave Policy (per-employee override)</span>
+              <span className="fs-11 text-muted">Blank = company default</span>
+            </div>
+            <div className="p-3">
+              <Row className="g-3">
+                {companyLeavePolicy.credit_based ? (
+                  <Col md={6}>
+                    <Label className="form-label fw-medium">Monthly Credit (days)</Label>
+                    <Input type="number" step="0.01" min="0" value={leave.monthly_credit}
+                      placeholder={`Default: ${companyLeavePolicy.monthly_credit}`}
+                      onChange={(e) => setLeave((p) => ({ ...p, monthly_credit: e.target.value }))} />
+                  </Col>
+                ) : (
+                  <Col md={6}>
+                    <Label className="form-label fw-medium">Yearly Credit (days)</Label>
+                    <Input type="number" step="0.01" min="0" value={leave.yearly_credit}
+                      placeholder={`Default: ${companyLeavePolicy.yearly_credit}`}
+                      onChange={(e) => setLeave((p) => ({ ...p, yearly_credit: e.target.value }))} />
+                  </Col>
+                )}
+                {companyLeavePolicy.carry_forward && (
+                  <Col md={6}>
+                    <Label className="form-label fw-medium">Max Carry Forward (days)</Label>
+                    <Input type="number" step="0.01" min="0" value={leave.max_carry_forward}
+                      placeholder={`Default: ${companyLeavePolicy.max_carry_forward}`}
+                      onChange={(e) => setLeave((p) => ({ ...p, max_carry_forward: e.target.value }))} />
+                  </Col>
+                )}
+                <Col md={6}>
+                  <Label className="form-label fw-medium">Remainder</Label>
+                  <Select
+                    options={[
+                      { value: "", label: `Company default (${companyLeavePolicy.pay_remaining ? "Encash" : "Lapse"})` },
+                      { value: "yes", label: "Encash" },
+                      { value: "no", label: "Lapse" },
+                    ]}
+                    value={
+                      leave.pay_remaining === "" ? { value: "", label: `Company default (${companyLeavePolicy.pay_remaining ? "Encash" : "Lapse"})` }
+                      : leave.pay_remaining === "yes" ? { value: "yes", label: "Encash" } : { value: "no", label: "Lapse" }
+                    }
+                    onChange={(o) => setLeave((p) => ({ ...p, pay_remaining: o.value }))}
+                    classNamePrefix="select2-selection"
+                  />
+                </Col>
+              </Row>
+            </div>
+          </div>
+        )}
+
         {/* Component Breakdown */}
         <div className="border rounded overflow-hidden">
           <div className="bg-light px-3 py-2 border-bottom d-flex align-items-center justify-content-between">
@@ -561,6 +623,7 @@ const EmployeeSalary = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [fullscreen, setFullscreen] = useState(false);
+  const [companyLeavePolicy, setCompanyLeavePolicy] = useState(null);
 
   const departmentOptions = departments.map((d) => ({
     value: d.id,
@@ -581,6 +644,10 @@ const EmployeeSalary = () => {
       const res2 = await GetApi("/department/get/");
       const data2 = res2?.data?.data || [];
       setDepartments(Array.isArray(data2) ? data2 : []);
+
+      const res3 = await GetApi("/payroll/company-leave-policy/");
+      const clp = (res3?.data?.data || [])[0] || null;  // latest version
+      setCompanyLeavePolicy(clp);
     } catch (err) {
       console.error(err);
     } finally {
@@ -932,6 +999,7 @@ const EmployeeSalary = () => {
         toggle={() => setModalOpen(false)}
         employee={selectedEmployee}
         structureOptions={structureOptions}
+        companyLeavePolicy={companyLeavePolicy}
         onSaved={handleSaved}
       />
     </div>
