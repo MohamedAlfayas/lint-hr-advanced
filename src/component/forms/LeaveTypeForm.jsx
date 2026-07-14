@@ -66,6 +66,17 @@ const LeaveTypeForm = () => {
   const [daysCountError, setDaysCountError] = useState("");
   const [carryForwardError, setCarryForwardError] = useState("");
 
+  const canEditLeaveType = (field) => {
+    const isFrozen =
+      leaveTypeData?.id > 0 &&
+      [1, 2].includes(leaveTypeData?.type);
+
+    if (!isFrozen) return true;
+
+    return ["status", "save"].includes(field);
+  };
+  
+
   useEffect(() => {
     setLeaveTypeData(form_obj);
     setCurrentUnit(form_obj.unit);
@@ -85,6 +96,7 @@ const LeaveTypeForm = () => {
   }, [form_obj]);
 
   const handleRoleChange = (obj) => {
+    if (!canEditLeaveType("role")) return;
     setSelectedRoles(obj);
     const roles = obj.map((d) => d.id);
     setLeaveTypeData({
@@ -95,6 +107,7 @@ const LeaveTypeForm = () => {
   };
 
   const handleWSChange = (obj) => {
+    if (!canEditLeaveType("ws")) return;
     setSelectedWS(obj);
     setLeaveTypeData({
       ...leaveTypeData,
@@ -103,6 +116,7 @@ const LeaveTypeForm = () => {
   };
 
   const handleGenderChange = (obj) => {
+    if (!canEditLeaveType("gender")) return;
     setSelectedGenders(obj);
     setLeaveTypeData({
       ...leaveTypeData,
@@ -111,6 +125,7 @@ const LeaveTypeForm = () => {
   };
 
   const handleInputChange = (e) => {
+    if (!canEditLeaveType("name")) return;
     const { name, value } = e.target;
     if (name === "name") {
       const textOnly = value.replace(/[^a-zA-Z0-9\s.,?!"'_\-()&:;/\\]/g,
@@ -142,6 +157,7 @@ const LeaveTypeForm = () => {
     }
   };
   const handleInputChangeLeaveCount = (e) => {
+    if (!canEditLeaveType("count")) return;
     const { name, value } = e.target;
     const numericText = value.replace(/[^0-9]/g, "");
 
@@ -152,6 +168,7 @@ const LeaveTypeForm = () => {
   };
 
   const handleUnitChange = (e) => {
+    if (!canEditLeaveType("unit")) return;
     let newLeaveTypeData = {
       ...leaveTypeData,
       unit: e,
@@ -168,45 +185,83 @@ const LeaveTypeForm = () => {
     setCurrentUnit(e);
   };
 
+  const frozen =
+  leaveTypeData?.id > 0 &&
+  [1, 2].includes(leaveTypeData?.type);
+
+  const frozenSelectStyles = {
+    multiValue: (provided) => ({
+      ...provided,
+      backgroundColor: frozen ? "#000" : provided.backgroundColor,
+    }),
+
+    multiValueLabel: (provided) => ({
+      ...provided,
+      color: frozen ? "#fff" : provided.color,
+    }),
+
+    multiValueRemove: (provided) => ({
+      ...provided,
+      color: frozen ? "#fff" : provided.color,
+    }),
+  };
+
   const FormikForm = useFormik({
     enableReinitialize: true,
     initialValues: leaveTypeData,
-    validationSchema: Yup.object({
-      name: Yup.string()
-        .required("Please Enter Leave Type Name")
-        .trim()
-        .matches(
-          /^[a-zA-Z0-9\s.,?!"'_\-()&:;/\\]+$/,
-          "Name can contain only alphabets, numbers, spaces, and . , ? ! \" ' - _ ( ) & : ; / \\"
-        )
-        .min(2, "Name must be at least 2 characters")
-        .max(150, "Leave Type Name is too long. Maximum 150 characters allowed."),
-      genders: Yup.array()
-        .required("Please Select Gender")
-        .min(1, "Please Select Gender"),
-      ws_id: Yup.array()
-        .required("Please Select Work Schedeule")
-        .min(1, "Please Select Work Schedeule"),
-      role_id: Yup.array()
-        .required("Please Select Applicable Role")
-        .min(1, "Please Select Applicable Role"),
-      description: Yup.string()
-        .trim()
-        .matches(
-          /^[a-zA-Z0-9\s.,!?'"_\-()&:;/\\]*$/,
-          "Description can contain only alphabets, numbers, spaces, and . , ! ? \" ' - _ ( ) & : ; / \\"
-        )
-        .max(
-          200,
-          "Description is too long. Please keep it within 200 characters."
-        ),
-      
-    }),
+    validationSchema: frozen
+    ? Yup.object().shape({})
+    :Yup.object({
+    name: frozen
+      ? Yup.string()
+      : Yup.string()
+          .required("Please Enter Leave Type Name")
+          .trim()
+          .matches(
+            /^[a-zA-Z0-9\s.,?!"'_\-()&:;/\\]+$/,
+            "Name can contain only alphabets, numbers, spaces, and . , ? ! \" ' - _ ( ) & : ; / \\"
+          )
+          .min(2, "Name must be at least 2 characters")
+          .max(
+            150,
+            "Leave Type Name is too long. Maximum 150 characters allowed."
+          ),
+
+    genders: frozen
+      ? Yup.array()
+      : Yup.array()
+          .required("Please Select Gender")
+          .min(1, "Please Select Gender"),
+
+    ws_id: frozen
+      ? Yup.array()
+      : Yup.array()
+          .required("Please Select Work Schedule")
+          .min(1, "Please Select Work Schedule"),
+
+    role_id: frozen
+      ? Yup.array()
+          : Yup.array()
+          .required("Please Select Applicable Role")
+          .min(1, "Please Select Applicable Role"),
+
+    description: Yup.string()
+      .trim()
+      .matches(
+        /^[a-zA-Z0-9\s.,!?'"_\-()&:;/\\]*$/,
+        "Description can contain only alphabets, numbers, spaces, and . , ! ? \" ' - _ ( ) & : ; / \\"
+      )
+      .max(
+        200,
+        "Description is too long. Please keep it within 200 characters."
+      ),
+  }),
     onSubmit: async (values) => {
       dispatch(setLoaderVisible(true));
-      if (values.allowed_count === 0) {
-        toast.error("Leave Days Must not be 0");
-      } else if (values.allowed_count > 365) {
+      // if (values.allowed_count === 0) {
+      //   toast.error("Leave Days Must not be 0");
+      // } 
+      if (values.allowed_count > 365) {
         toast.error("Leave Days Count must not exceed 365");
       } else if (
         values.allowed_to_carry_forward &&
@@ -268,6 +323,7 @@ const LeaveTypeForm = () => {
                     <Input
                       type="text"
                       name="name"
+                      disabled={frozen}
                       id="last_namename"
                       className="form-control"
                       placeholder="Casual"
@@ -307,6 +363,7 @@ const LeaveTypeForm = () => {
                         id="lt_day"
                         name="Unit"
                         type="radio"
+                        disabled={frozen}
                         className="form-check-input"
                         checked={
                           leaveTypeData.unit && leaveTypeData.unit === 1
@@ -324,6 +381,7 @@ const LeaveTypeForm = () => {
                         id="lt_hour"
                         name="Unit"
                         type="radio"
+                        disabled={frozen}
                         className="form-check-input"
                         checked={
                           leaveTypeData.unit && leaveTypeData.unit === 2
@@ -360,6 +418,7 @@ const LeaveTypeForm = () => {
                         className="form-control"
                         placeholder="Enter the number of leave days allowed in a year"
                         value={leaveTypeData.allowed_count ?? 0}
+                        disabled={frozen}
                         onFocus={() => {
                           if (!leaveTypeData.allowed_count) {
                             setLeaveTypeData({
@@ -391,6 +450,7 @@ const LeaveTypeForm = () => {
                           }
                         }}
                         onChange={(e) => {
+                          if (!canEditLeaveType("count")) return;
                           const val = e.target.value;
                             // Allow only digits
                           if (!/^\d*$/.test(val)) {
@@ -492,6 +552,7 @@ const LeaveTypeForm = () => {
                           }
                         }}
                         onChange={(e) => {
+                         if (!canEditLeaveType("count")) return;
                           const val = e.target.value;
                           if (val === "") {
                             setLeaveTypeData({
@@ -559,6 +620,7 @@ const LeaveTypeForm = () => {
                           }
                         }}
                         onChange={(e) => {
+                          if (!canEditLeaveType("hour_allowed_in_day")) return;
                           const val = e.target.value;
                           if (val === "") {
                             setLeaveTypeData({
@@ -593,6 +655,7 @@ const LeaveTypeForm = () => {
                   <Select
                     isMulti={false}
                     options={leave_reset_options || []}
+                    isDisabled={frozen}
                     id="lt_reset"
                     className="basic-multi-select"
                     classNamePrefix="lc-select"
@@ -604,6 +667,7 @@ const LeaveTypeForm = () => {
                       []
                     }
                     onChange={(e) => {
+                      if (!canEditLeaveType("reset")) return;
                       setLeaveTypeData({
                         ...leaveTypeData,
                         reset_type: e.value,
@@ -626,9 +690,11 @@ const LeaveTypeForm = () => {
                     name="ws_id"
                     isMulti
                     options={ws_options || []}
+                    isDisabled={frozen}
                     className="basic-multi-select"
                     classNamePrefix="lc-select"
                     styles={{
+                      ...frozenSelectStyles,
                       control: (provided, state) => ({
                         ...provided,
                         borderColor:
@@ -637,7 +703,9 @@ const LeaveTypeForm = () => {
                           FormikForm.errors.ws_id
                             ? "red !important"
                             : provided.borderColor,
+                        backgroundColor: frozen ? "#f5f5f5" : provided.backgroundColor,
                       }),
+                      
                     }}
                     value={selectedWS || []}
                     onChange={handleWSChange}
@@ -679,6 +747,7 @@ const LeaveTypeForm = () => {
                       name="role_id"
                       isMulti
                       options={role_options || []}
+                      isDisabled={frozen}
                       className="basic-multi-select"
                       classNamePrefix="lc-select"
                       value={selectedRoles || []}
@@ -686,6 +755,7 @@ const LeaveTypeForm = () => {
                       onBlur={() => FormikForm.setFieldTouched("role_id", true)}
                       closeMenuOnSelect={false}
                       styles={{
+                        ...frozenSelectStyles,
                         control: (provided, state) => ({
                           ...provided,
                           borderColor:
@@ -695,6 +765,7 @@ const LeaveTypeForm = () => {
                               ? "red"
                               : provided.borderColor,
                         }),
+                       
                       }}
                     />
 
@@ -721,9 +792,11 @@ const LeaveTypeForm = () => {
                     name="genders"
                     isMulti
                     options={gender_options || []}
+                    isDisabled={frozen}
                     className="basic-multi-select"
                     classNamePrefix="lc-select"
                     styles={{
+                      ...frozenSelectStyles,
                       control: (provided, state) => ({
                         ...provided,
                         borderColor:
@@ -733,6 +806,7 @@ const LeaveTypeForm = () => {
                             ? "red !important"
                             : provided.borderColor,
                       }),
+               
                     }}
                     value={selectedGenders || []}
                     onChange={handleGenderChange}
@@ -772,17 +846,20 @@ const LeaveTypeForm = () => {
                         >
                           <Input
                             type="checkbox"
+                            disabled={frozen}
                             className="form-check-input form-switch-md"
                             id="lt_weekend_between_leave"
                             checked={
                               leaveTypeData.weekend_between_leave || false
                             }
-                            onChange={(e) =>
+                            onChange={(e) =>{
+                              if (!canEditLeaveType("weekend")) return;
+
                               setLeaveTypeData({
                                 ...leaveTypeData,
                                 weekend_between_leave: e.target.checked,
                               })
-                            }
+                            }}
                           />
                         </div>
                       </div>
@@ -803,17 +880,19 @@ const LeaveTypeForm = () => {
                         >
                           <Input
                             type="checkbox"
+                            disabled={frozen}
                             className="form-check-input form-switch-md"
                             id="lt_holiday_between_leave"
                             checked={
                               leaveTypeData.holiday_between_leave || false
                             }
-                            onChange={(e) =>
+                            onChange={(e) =>{
+                              if (!canEditLeaveType("holiday")) return;
                               setLeaveTypeData({
                                 ...leaveTypeData,
                                 holiday_between_leave: e.target.checked,
                               })
-                            }
+                            }}
                           />
                         </div>
                       </div>
@@ -854,12 +933,14 @@ const LeaveTypeForm = () => {
                       <div className="form-check form-switch form-switch-md form-switch-success">
                         <Input
                           type="checkbox"
+                          disabled={frozen}
                           className="form-check-input form-switch-md"
                           id="lt_carry_forward"
                           checked={
                             leaveTypeData.allowed_to_carry_forward || false
                           }
-                          onChange={(e) =>
+                          onChange={(e) =>{
+                            if (!canEditLeaveType("carryForward")) return;
                             setLeaveTypeData({
                               ...leaveTypeData,
                               allowed_to_carry_forward: e.target.checked,
@@ -867,7 +948,7 @@ const LeaveTypeForm = () => {
                                 ? leaveTypeData.carry_forward_limit
                                 : 0,
                             })
-                          }
+                          }}
                         />
                       </div>
                     </div>
@@ -1015,6 +1096,7 @@ const LeaveTypeForm = () => {
                   )}
                 </div>
               </Col>
+              
               <Col lg={12}>
                 <div className="text-end">
                   <Button color="success" className="btn-label">
