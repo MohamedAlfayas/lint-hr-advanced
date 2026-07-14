@@ -1405,7 +1405,7 @@ const InfoTable = ({
                 </Link>
               </li>
 
-              <li className="list-inline-item delete">
+              {/* <li className="list-inline-item delete">
                 <Link
                   to="javascript:void(0)"
                   className="text-danger d-inline-block delete-item-btn"
@@ -1413,7 +1413,7 @@ const InfoTable = ({
                 >
                   <i className="ri-delete-bin-5-fill fs-16"></i>
                 </Link>
-              </li>
+              </li> */}
             </>
           );
         }
