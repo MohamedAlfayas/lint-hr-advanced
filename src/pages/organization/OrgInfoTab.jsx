@@ -365,10 +365,29 @@ const OrgInfoTab = () => {
     setField("cf_values", updated);
   };
 
-  function handleAcceptedFiles(file, logo_type) {
-    const chosenFile = Object.assign(file[0], {
-      preview: URL.createObjectURL(file[0]),
-      formattedSize: formatBytes(file[0].size),
+  function handleAcceptedFiles(files, logo_type) {
+    const file = files[0];
+
+    if (!file) return;
+
+    const allowedImageTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+    ];
+
+    if (!allowedImageTypes.includes(file.type)) {
+      toast.error("Only image files are allowed");
+      return;
+    }
+    // const chosenFile = Object.assign(file[0], {
+    //   preview: URL.createObjectURL(file[0]),
+    //   formattedSize: formatBytes(file[0].size),
+    // });
+    const chosenFile = Object.assign(file, {
+      preview: URL.createObjectURL(file),
+      formattedSize: formatBytes(file.size),
     });
     logo_type === "dark"
       ? setDarkLogoFile(chosenFile)
@@ -866,11 +885,28 @@ const OrgInfoTab = () => {
                       <Row>
                         <Col xxl={6} md={6}>
                           <Label className="form-label">Logo</Label>
-                          <Dropzone
+                          {/* <Dropzone
                             multiple={false}
                             onDrop={(acceptedFiles) =>
                               handleAcceptedFiles(acceptedFiles, "light")
                             }
+                          > */}
+
+                          <Dropzone
+                            multiple={false}
+                            accept={{
+                              "image/jpeg": [".jpeg", ".jpg"],
+                              "image/png": [".png"],
+                              "image/webp": [".webp"],
+                            }}
+                            onDrop={(acceptedFiles, fileRejections) => {
+                              if (fileRejections.length > 0) {
+                                toast.error("Only image files are allowed");
+                                return;
+                              }
+
+                              handleAcceptedFiles(acceptedFiles, "light");
+                            }}
                           >
                             {({ getRootProps }) => (
                               <div className="dropzone dz-clickable">

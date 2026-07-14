@@ -255,6 +255,8 @@ const ProjectForm = () => {
 
           client: isClientProject ? projectData.client : null,
         };
+        console.log("Project Status Before Save:", projectData.status);
+        console.log("Payload:", payload);
 
         if (isEdit) {
           payload.id = projectData.id;
@@ -266,18 +268,23 @@ const ProjectForm = () => {
 
         if (Api?.status === 200 || Api?.status === 201) {
           const responseData = Api?.data?.data;
+          console.log("API Response:", responseData);
+          console.log("Response Status:", responseData?.status);
 
           // ================= OLD DATA =================
-          const oldProjects = GetLocalStorageData("projects") || [];
+          const oldProjects = await GetLocalStorageData("projects") || [];
 
           let updatedProjects = [];
 
           // ================= EDIT =================
           if (isEdit) {
+            console.log("Edit Resonse - ",responseData);
+            console.log("Old Project - ",oldProjects)
             updatedProjects = oldProjects.map((item) =>
               Number(item.id) === Number(responseData.id) ? responseData : item,
             );
-            SetLocalStorage("projects", updatedProjects, 1);
+            
+            await SetLocalStorage("projects", updatedProjects, 1);
           }
 
           // ================= ADD =================
@@ -289,8 +296,10 @@ const ProjectForm = () => {
             updatedProjects = alreadyExists
               ? oldProjects
               : [...oldProjects, responseData];
-            SetLocalStorage("projects", updatedProjects, 1);
+            await SetLocalStorage("projects", updatedProjects, 1);
           }
+
+          console.log("Updated Projects after Edit:", updatedProjects);
 
           // ================= UPDATE REDUX =================
           dispatch(setProjects(updatedProjects));
@@ -519,6 +528,37 @@ const ProjectForm = () => {
                   )}
                 </div>
               </Col>
+
+              {/* STATUS - SHOW ONLY IN EDIT MODE */}
+              {projectData.id > 0 && (
+                <Col md={12}>
+                  <div>
+                    <Label htmlFor="project_status" className="form-label">
+                      Status
+                    </Label>
+
+                    <div className="mb-2">
+                      <div
+                        className="form-check form-switch form-switch-md form-switch-success"
+                        dir="ltr"
+                      >
+                        <Input
+                          type="checkbox"
+                          className="form-check-input form-switch-md"
+                          id="project_status"
+                          checked={projectData.status || false}
+                          onChange={(e) =>
+                            setProjectData((prev) => ({
+                              ...prev,
+                              status: e.target.checked,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </Col>
+              )}
 
               {/* SUBMIT */}
               <Col lg={12}>

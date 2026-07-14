@@ -1436,7 +1436,7 @@ const InfoTable = ({
                 </Link>
               </li>
 
-              <li className="list-inline-item">
+              {/* <li className="list-inline-item">
                 <Link
                   to="#"
                   className="text-danger d-inline-block remove-item-btn"
@@ -1444,7 +1444,7 @@ const InfoTable = ({
                 >
                   <i className="ri-delete-bin-5-fill fs-16"></i>
                 </Link>
-              </li>
+              </li> */}
             </>
           );
         } else if (formname && formname === employee_component_name) {
@@ -2270,7 +2270,8 @@ const InfoTable = ({
                           {formname &&
                             formname !== attendance_pending_table &&
                             formname !== leave_pending_table && 
-                            formname !== custom_field_component_name && (
+                            formname !== custom_field_component_name && 
+                              formname !== project_component_name && (
                               <button
                                 type="button"
                                 className="btn btn-info"

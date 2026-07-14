@@ -138,7 +138,7 @@ const BranchForm = () => {
           "Branch Name can contain only letters, numbers, spaces, and . , - & ( ) '"
         )
         .required("Please Enter Branch Name")
-        .min(2, "Branch Name must be at least 2 characters")
+        .min(1, "Branch Name must be at least 1 character")
         .max(100, "Branch Name must not exceed 100 characters"),
       country: Yup.string().required("Please select country"),
       state: Yup.string().required("Please select state"),
@@ -336,8 +336,13 @@ const BranchForm = () => {
 
       city: Yup.string()
         .trim()
-        .matches(/^[A-Za-z\s]+$/, "City should contain only letters")
-        .required("Please Enter City"),
+        .required("Please Enter City")
+        .matches(
+          /^[A-Za-z\s.'-]+$/,
+          "City can contain only letters, spaces, . - and '"
+        )
+        .min(1, "City must be at least 1 character")
+        .max(100, "City must not exceed 100 characters"),
 
       pincode: Yup.string()
         .trim()
@@ -1187,10 +1192,9 @@ const BranchForm = () => {
                               placeholder="City"
                               value={lv.city || ""}
                               onChange={(ev) => {
-                                const val = ev.target.value.replace(
-                                  /[^a-zA-Z\s]/g,
-                                  "",
-                                );
+                                const val = ev.target.value
+                                  .replace(/^\s+/, "") // remove leading spaces
+                                  .replace(/[^A-Za-z\s.'-]/g, "")
                                 setLocField("city", val);
                               }}
                               onBlur={() =>
@@ -1209,7 +1213,7 @@ const BranchForm = () => {
                           </div>
                           {showLocHint("city") && (
                             <div className="form-text">
-                              Enter city (letters only).
+                              Enter city (letters, spaces, . - and ' allowed).
                             </div>
                           )}
                         </Col>
