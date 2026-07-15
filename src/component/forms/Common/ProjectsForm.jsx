@@ -121,7 +121,7 @@ const ProjectForm = () => {
     }
 
     if (name === "title") {
-      const filteredValue = value.replace(/[^A-Za-z0-9\s.,!?'"\-_()&:;]/g, "");
+      const filteredValue = value.replace(/[^A-Za-z0-9\s.,!?'"\-_()&:;/]/g, "");
 
       setProjectData((prev) => ({
         ...prev,
@@ -194,8 +194,8 @@ const ProjectForm = () => {
       title: Yup.string()
         .trim()
         .matches(
-          /^[A-Za-z0-9\s.,!?'"\-_()&:;]+$/,
-          "Only alphabets, numbers, spaces and . , ! ? ' \" - _ ( ) & : ; are allowed",
+          /^[A-Za-z0-9\s.,!?'"\-_()&:;/]+$/,
+          "Please Enter the project title",
         )
         .max(100, "Project title must not exceed 100 characters.")
         .required("Please Enter the project title")
