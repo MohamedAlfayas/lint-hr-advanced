@@ -309,6 +309,8 @@ const BranchForm = () => {
 
   const LocationFormikForm = useFormik({
     enableReinitialize: true,
+    validateOnChange: true,
+    validateOnBlur: true,
     initialValues: branchLocationObj,
     validationSchema: Yup.object({
       name: Yup.string()
@@ -467,7 +469,8 @@ const BranchForm = () => {
 
   const setLocField = (name, value) => {
     setBranchLocationObj((prev) => ({ ...prev, [name]: value }));
-    LocationFormikForm.setFieldValue(name, value);
+    LocationFormikForm.setFieldValue(name, value, true);
+    LocationFormikForm.setFieldTouched(name, true, false);
   };
 
   const lv = LocationFormikForm.values;
@@ -1195,7 +1198,9 @@ const BranchForm = () => {
                                 const val = ev.target.value
                                   .replace(/^\s+/, "") // remove leading spaces
                                   .replace(/[^A-Za-z\s.'-]/g, "")
-                                setLocField("city", val);
+                                LocationFormikForm.setFieldValue("city", val, true);
+                                LocationFormikForm.setFieldTouched("city", true, false);
+                                // setLocField("city", val);
                               }}
                               onBlur={() =>
                                 LocationFormikForm.setFieldTouched("city", true)

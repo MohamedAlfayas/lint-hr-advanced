@@ -2271,6 +2271,7 @@ const InfoTable = ({
                             formname !== attendance_pending_table &&
                             formname !== leave_pending_table && 
                             formname !== custom_field_component_name && 
+                            formname !== leave_application_component_name &&
                               formname !== project_component_name && (
                               <button
                                 type="button"
