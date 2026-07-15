@@ -45,6 +45,7 @@
     "filepond-plugin-image-preview": "^4.6.11",
     "firebase": "^10.8.0",
     "formik": "^2.4.5",
+    "framer-motion": "^12.42.2",
     "google-maps-react": "^2.0.6",
     "gridjs": "^6.0.6",
     "gridjs-react": "^6.0.1",

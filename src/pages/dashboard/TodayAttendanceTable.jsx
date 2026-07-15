@@ -313,9 +313,17 @@ const TodayAttendanceTable = () => {
   const [departments, setDepartments] = useState([]);
   const [customStatuses, setCustomStatuses] = useState([]);
   const [attendanceData, setAttendanceData] = useState([]);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
-  const [selectedLocations, setSelectedLocations] = useState([]);
+
+  // ── Map modal state ──
+  const [mapEmployees, setMapEmployees] = useState([]);
+  const [mapSelectedEmpId, setMapSelectedEmpId] = useState(null);
+  const [mapSelectedEmpName, setMapSelectedEmpName] = useState("");
+  const [mapSelectedEmpProfileUrl, setMapSelectedEmpProfileUrl] =
+    useState(null);
+  const [mapSelectedDate, setMapSelectedDate] = useState(null); // ISO (YYYY-MM-DD) date to seed the map's date filter
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isMapFull, setIsMapFull] = useState(false);
+
   const [countIn, setCountIn] = useState(0);
   const [countNotCheckIn, setCountNotCheckIn] = useState(0);
   const [countLeave, setCountLeave] = useState(0);
@@ -538,9 +546,26 @@ const TodayAttendanceTable = () => {
 
   const showStatusFilter = activeTab === "1" || activeTab === "3";
 
+  // ✅ Opens the map modal seeded with every employee that has a usable route
+  // (≥2 location points) on the currently selected date. The map's own
+  // filter bar (department + employee) then lets the user switch between
+  // them without closing the modal. The table's currently selected
+  // dateFilter (DD-MM-YYYY) is converted to ISO (YYYY-MM-DD) and passed
+  // down as initialDate so the map opens on the SAME date the table is
+  // showing, instead of always defaulting to "today".
   const handleViewLocations = (row) => {
-    setSelectedEmployeeId(row.first_name);
-    setSelectedLocations(row.location_history || []);
+    const withLocations = attendanceData.filter(
+      (e) => Array.isArray(e.location_history) && e.location_history.length > 1,
+    );
+
+    const isoDate = ConvertISODateFormat(ConvertDateFormat(dateFilter));
+
+    setMapEmployees(withLocations);
+    setMapSelectedEmpId(row.emp_id);
+    setMapSelectedEmpName(row.first_name);
+    setMapSelectedEmpProfileUrl(row.profile_url || null);
+    setMapSelectedDate(isoDate);
+    setIsMapFull(false);
     setIsMapOpen(true);
   };
 
@@ -1369,43 +1394,168 @@ const TodayAttendanceTable = () => {
 
         {/* ── Map Modal ── */}
         <Modal
-          size="lg"
+          size={isMapFull ? undefined : "xl"}
+          fullscreen={isMapFull}
           isOpen={isMapOpen}
           toggle={() => setIsMapOpen(!isMapOpen)}
         >
-          <ModalHeader toggle={() => setIsMapOpen(false)}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontWeight: "600", fontSize: "18px" }}>
+          {/* Custom header (no default close btn) */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 16px",
+              borderBottom: "1px solid #e9ecef",
+            }}
+          >
+            {/* Left: back arrow */}
+            <button
+              onClick={() => setIsMapOpen(false)}
+              title="Back"
+              style={{
+                border: "none",
+                background: "transparent",
+                fontSize: "22px",
+                lineHeight: 1,
+                cursor: "pointer",
+                color: "#374151",
+                padding: "2px 6px",
+              }}
+            >
+              <i className="ri-arrow-left-line"></i>
+            </button>
+
+            {/* Middle: title */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                flex: 1,
+                marginLeft: "10px",
+              }}
+            >
+              <span style={{ fontWeight: 600, fontSize: "18px" }}>
                 Employee Location History
               </span>
-              <span
+            </div>
+
+            {/* Right: employee avatar + name, fullscreen toggle, close */}
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <div
                 style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
                   backgroundColor: "#e0f7fa",
                   color: "#00796b",
-                  padding: "4px 10px",
-                  borderRadius: "12px",
+                  padding: "3px 10px 3px 3px",
+                  borderRadius: "20px",
                   fontSize: "14px",
-                  fontWeight: "500",
+                  fontWeight: 500,
+                  marginRight: "6px",
                 }}
               >
-                {selectedEmployeeId}
-              </span>
+                {mapSelectedEmpProfileUrl ? (
+                  <img
+                    src={mapSelectedEmpProfileUrl}
+                    alt=""
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      flexShrink: 0,
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "50%",
+                      background: "#00796b",
+                      color: "#fff",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {(mapSelectedEmpName || "?").charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span>{mapSelectedEmpName}</span>
+              </div>
+
+              <button
+                onClick={() => setIsMapFull((f) => !f)}
+                title={isMapFull ? "Exit full view" : "Full view"}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  fontSize: "20px",
+                  lineHeight: 1,
+                  cursor: "pointer",
+                  color: "#374151",
+                  padding: "2px 6px",
+                }}
+              >
+                <i
+                  className={
+                    isMapFull ? "ri-fullscreen-exit-line" : "ri-fullscreen-line"
+                  }
+                ></i>
+              </button>
+
+              <button
+                onClick={() => setIsMapOpen(false)}
+                title="Close"
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  fontSize: "22px",
+                  lineHeight: 1,
+                  cursor: "pointer",
+                  color: "#374151",
+                  padding: "2px 6px",
+                }}
+              >
+                <i className="ri-close-line"></i>
+              </button>
             </div>
-          </ModalHeader>
+          </div>
 
           <ModalBody
             style={{
-              height: "75vh",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              flexDirection: "column",
+              height: isMapFull ? "calc(100vh - 58px)" : "78vh",
+              padding: 0,
             }}
           >
-            {selectedLocations && selectedLocations.length > 1 ? (
-              <UsersClusterMapAll locations={selectedLocations} />
+            {mapEmployees && mapEmployees.length > 0 ? (
+              <UsersClusterMapAll
+                employees={mapEmployees}
+                initialEmpId={mapSelectedEmpId}
+                initialDate={mapSelectedDate}
+                departments={departments.map((d) => d.name)}
+                onSelectEmployee={(emp) => {
+                  setMapSelectedEmpName(emp?.first_name || "");
+                  setMapSelectedEmpProfileUrl(emp?.profile_url || null);
+                }}
+              />
             ) : (
-              <>
+              <div
+                style={{
+                  height: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  flexDirection: "column",
+                }}
+              >
                 <Lottie options={defaultOptions} height={250} width={250} />
                 <p
                   style={{
@@ -1418,7 +1568,7 @@ const TodayAttendanceTable = () => {
                 >
                   No location history available
                 </p>
-              </>
+              </div>
             )}
           </ModalBody>
         </Modal>
