@@ -78,7 +78,18 @@ const LeaveTypeForm = () => {
   
 
   useEffect(() => {
-    setLeaveTypeData(form_obj);
+    // setLeaveTypeData(form_obj);
+    // setLeaveTypeData({
+    //   ...form_obj,
+    //   is_credit_based: form_obj?.is_credit_based ?? false,
+    //   monthly_allowed_count: form_obj?.monthly_allowed_count ?? 0,
+    // });
+    setLeaveTypeData({
+      ...form_obj,
+      is_credit_based: form_obj?.is_credit_based ?? false,
+      allowed_count: form_obj?.allowed_count || "",
+      monthly_allowed_count: form_obj?.monthly_allowed_count || "",
+    });
     setCurrentUnit(form_obj.unit);
 
     setSelectedWS(
@@ -176,7 +187,12 @@ const LeaveTypeForm = () => {
       allowed_count: 0,
     };
 
-    if (e === 2) {
+    if (e === leave_type_hour_unit) {
+      newLeaveTypeData.is_credit_based = false;
+    }
+
+    // if (e === 2) {
+    if (e === leave_type_hour_unit) {
       newLeaveTypeData["weekend_between_leave"] = true;
       newLeaveTypeData["holiday_between_leave"] = true;
     }
@@ -245,6 +261,15 @@ const LeaveTypeForm = () => {
           .required("Please Select Applicable Role")
           .min(1, "Please Select Applicable Role"),
 
+    // monthly_allowed_count: Yup.number().when([], {
+    //   is: () => leaveTypeData.is_credit_based,
+    //   then: (schema) =>
+    //     schema
+    //       .required("Please Enter Monthly Allowed Count")
+    //       .min(1, "Monthly Allowed Count must be at least 1"),
+    //   otherwise: (schema) => schema.nullable(),
+    // }),
+
     description: Yup.string()
       .trim()
       .matches(
@@ -261,19 +286,52 @@ const LeaveTypeForm = () => {
       // if (values.allowed_count === 0) {
       //   toast.error("Leave Days Must not be 0");
       // } 
-      if (values.allowed_count > 365) {
-        toast.error("Leave Days Count must not exceed 365");
+      // if (values.allowed_count > 365) {
+      //   toast.error("Leave Days Count must not exceed 365");
+      // }
+      if (
+        leaveTypeData.is_credit_based &&
+        leaveTypeData.monthly_allowed_count > 30
+      ) {
+        toast.error("Monthly Allowed Count must not exceed 30");
       } else if (
+        !leaveTypeData.is_credit_based &&
+        values.allowed_count > 365
+      ) {
+        toast.error("Leave Days Count must not exceed 365");
+      }
+      
+      else if (
         values.allowed_to_carry_forward &&
-        values.carry_forward_limit > values.allowed_count
+        // values.carry_forward_limit > values.allowed_count
+        values.carry_forward_limit >
+        (
+          leaveTypeData.is_credit_based
+            ? leaveTypeData.monthly_allowed_count
+            : values.allowed_count
+        )
       ) {
         toast.error("Carry Forward Limit must not exceed Leave Days Count");
       } else if (values.unit === 2 && values.hour_allowed_in_day === 0) {
         toast.error("Leave Hour Must not be 0");
       } else {
+        const payload = {
+          ...leaveTypeData,
+        };
+
+        if (leaveTypeData.is_credit_based) {
+          payload.monthly_allowed_count =
+            leaveTypeData.monthly_allowed_count;
+
+          payload.allowed_count = 0;
+        } else {
+          payload.monthly_allowed_count = 0;
+        }
+
         const Api = await PostApi(
           "/leave/leave_type/create/",
-          leaveTypeData,
+          // leaveTypeData,
+          payload,
           false,
         );
         if (Api.status && Api.status === 200) {
@@ -399,43 +457,169 @@ const LeaveTypeForm = () => {
                 <div id="passwordHelpBlock" className="form-text mb-3">
                   Select Leave Type Unit.
                 </div>
+               
               </Col>
+              {currentUnit === leave_type_day_unit && (
+                <Col md={12}>
+                  <Label className="form-label">
+                    Credit Based Leave
+                  </Label>
 
+                  <div className="mb-2">
+                    <div className="form-check form-switch form-switch-md form-switch-success">
+                      <Input
+                        type="checkbox"
+                        id="lt_credit_based"
+                        className="form-check-input form-switch-md"
+                        checked={leaveTypeData.is_credit_based || false}
+                        disabled={frozen}
+                        onChange={(e) => {
+                          setLeaveTypeData({
+                            ...leaveTypeData,
+                            is_credit_based: e.target.checked,
+                            monthly_allowed_count: e.target.checked
+                              ? leaveTypeData.monthly_allowed_count || 0
+                              : 0,
+                          });
+                        }}
+                      />
+                    </div>
+                  </div>
+                </Col>
+              )}
               {currentUnit && currentUnit === leave_type_day_unit && (
                 <Col md={12} lg={12} xxl={12}>
                   <div className="mb-3">
                     <Label htmlFor="lt_days_allow" className="form-label">
                       Leave Days Count{" "}
                       <small>
-                        <i>Allowed in a year</i>
+                        {/* <i>Allowed in a year</i> */}
+                            <i>
+                              {leaveTypeData.is_credit_based
+                                ? "Allowed in a month"
+                                : "Allowed in a year"}
+                            </i>
                       </small>
                     </Label>
+                    
+                    {/* {leaveTypeData.is_credit_based && (
+                    <Col md={12}>
+                      <div className="mb-3">
+                        <Label
+                          htmlFor="monthly_allowed_count"
+                          className="form-label"
+                        >
+                          Monthly Allowed Count
+                        </Label>
+
+                        <Input
+                          type="number"
+                          id="monthly_allowed_count"
+                          value={leaveTypeData.monthly_allowed_count ?? 0}
+                          disabled={frozen}
+                          onChange={(e) =>
+                            setLeaveTypeData({
+                              ...leaveTypeData,
+                              monthly_allowed_count:
+                                e.target.value === ""
+                                  ? ""
+                                  : parseInt(e.target.value, 10) || 0,
+                            })
+                          }
+                        />
+
+                        <div className="form-text">
+                          Enter leave credits allocated per month.
+                        </div>
+                      </div>
+                    </Col>
+                  )} */}
                     <div className="form-icon right">
                       <Input
                         type="number"
                         name="allowed_count"
                         id="lt_days_allow"
                         className="form-control"
-                        placeholder="Enter the number of leave days allowed in a year"
-                        value={leaveTypeData.allowed_count ?? 0}
+                        // placeholder="Enter the number of leave days allowed in a year"
+                        placeholder={
+                          leaveTypeData.is_credit_based
+                            ? "Enter the number of leave days allowed in a month"
+                            : "Enter the number of leave days allowed in a year"
+                        }
+                        // value={leaveTypeData.allowed_count ?? 0}
+                        value={
+                          leaveTypeData.is_credit_based
+                            ? (leaveTypeData.monthly_allowed_count || "")
+                            : (leaveTypeData.allowed_count || "")
+                        }
                         disabled={frozen}
+                        // onFocus={() => {
+                        //   // if (!leaveTypeData.allowed_count) 
+                        //   if (
+                        //       !(leaveTypeData.is_credit_based
+                        //         ? leaveTypeData.monthly_allowed_count
+                        //         : leaveTypeData.allowed_count)
+                        //     )
+                        //     {
+                        //     setLeaveTypeData({
+                        //       ...leaveTypeData,
+                        //       allowed_count: "",
+                        //     });
+                        //   }
+                        // }}
                         onFocus={() => {
-                          if (!leaveTypeData.allowed_count) {
-                            setLeaveTypeData({
-                              ...leaveTypeData,
-                              allowed_count: "",
-                            });
+                          if (leaveTypeData.is_credit_based) {
+                            if (
+                              leaveTypeData.monthly_allowed_count === 0
+                            ) {
+                              setLeaveTypeData({
+                                ...leaveTypeData,
+                                monthly_allowed_count: "",
+                              });
+                            }
+                          } else {
+                            if (
+                              leaveTypeData.allowed_count === 0
+                            ) {
+                              setLeaveTypeData({
+                                ...leaveTypeData,
+                                allowed_count: "",
+                              });
+                            }
                           }
                         }}
+                        // onBlur={() => {
+                        //   if (
+                        //     leaveTypeData.allowed_count === "" ||
+                        //     leaveTypeData.allowed_count === null
+                        //   ) {
+                        //     setLeaveTypeData({
+                        //       ...leaveTypeData,
+                        //       allowed_count: 0,
+                        //     });
+                        //   }
+                        // }}
                         onBlur={() => {
-                          if (
-                            leaveTypeData.allowed_count === "" ||
-                            leaveTypeData.allowed_count === null
-                          ) {
-                            setLeaveTypeData({
-                              ...leaveTypeData,
-                              allowed_count: 0,
-                            });
+                          if (leaveTypeData.is_credit_based) {
+                            if (
+                              leaveTypeData.monthly_allowed_count === "" ||
+                              leaveTypeData.monthly_allowed_count === null
+                            ) {
+                              setLeaveTypeData({
+                                ...leaveTypeData,
+                                monthly_allowed_count: 0,
+                              });
+                            }
+                          } else {
+                            if (
+                              leaveTypeData.allowed_count === "" ||
+                              leaveTypeData.allowed_count === null
+                            ) {
+                              setLeaveTypeData({
+                                ...leaveTypeData,
+                                allowed_count: 0,
+                              });
+                            }
                           }
                         }}
                         onKeyDown={(e) => {
@@ -456,31 +640,67 @@ const LeaveTypeForm = () => {
                           if (!/^\d*$/.test(val)) {
                             return;
                           }
+                          // if (val === "") {
+                          //   setLeaveTypeData({
+                          //     ...leaveTypeData,
+                          //     allowed_count: "",
+                          //   });
+                          //   setDaysCountError("");
+                          // }
                           if (val === "") {
                             setLeaveTypeData({
                               ...leaveTypeData,
-                              allowed_count: "",
+                              ...(leaveTypeData.is_credit_based
+                                ? { monthly_allowed_count: "" }
+                                : { allowed_count: "" }),
                             });
+
                             setDaysCountError("");
-                          } else {
+                            return;
+                          }
+                           else {
                             const parsed = parseInt(val, 10);
                             const safeVal =
                               isNaN(parsed) || parsed < 0 ? 0 : parsed;
 
-                            setDaysCountError(
-                              safeVal > 365
-                                ? "Leave Days Count must not exceed 365"
-                                : "",
-                            );
+                            // setDaysCountError(
+                            //   safeVal > 365
+                            //     ? "Leave Days Count must not exceed 365"
+                            //     : "",
+                            // );
 
-                            setLeaveTypeData({
-                              ...leaveTypeData,
-                              allowed_count: safeVal,
-                              carry_forward_limit:
-                                leaveTypeData.carry_forward_limit > safeVal
-                                  ? safeVal
-                                  : leaveTypeData.carry_forward_limit,
-                            });
+                            // setLeaveTypeData({
+                            //   ...leaveTypeData,
+                            //   allowed_count: safeVal,
+                            //   carry_forward_limit:
+                            //     leaveTypeData.carry_forward_limit > safeVal
+                            //       ? safeVal
+                            //       : leaveTypeData.carry_forward_limit,
+                            // });
+
+                            if (leaveTypeData.is_credit_based) {
+                              setDaysCountError(
+                                safeVal > 30
+                                  ? "Monthly Allowed Count must not exceed 30"
+                                  : ""
+                              );
+
+                              setLeaveTypeData({
+                                ...leaveTypeData,
+                                monthly_allowed_count: safeVal,
+                              });
+                            } else {
+                              setDaysCountError(
+                                safeVal > 365
+                                  ? "Leave Days Count must not exceed 365"
+                                  : ""
+                              );
+
+                              setLeaveTypeData({
+                                ...leaveTypeData,
+                                allowed_count: safeVal,
+                              });
+                            }
 
                             if (leaveTypeData.carry_forward_limit > safeVal) {
                               setCarryForwardError("");
