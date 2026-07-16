@@ -235,12 +235,43 @@ const ClientForm = () => {
   };
 
   const handleTextOnly = (e) => {
-    const { name, value } = e.target;
+    const { name } = e.target;
+    let value = e.target.value;
+
+    if (name === "name") {
+      value = value.replace(/[^A-Za-z0-9\s.,&()'-]/g, "");
+    } else if (name === "city") {
+      value = value.replace(/[^A-Za-z\s.'-]/g, "");
+    } else {
+      value = value.replace(/[^A-Za-z\s]/g, "");
+    }
 
     setClientData((prev) => ({
       ...prev,
-      [name]: value.replace(/[^a-zA-Z\s]/g, ""),
+      [name]: value,
     }));
+
+    FormikForm.setFieldValue(name, value);
+    FormikForm.setFieldTouched(name, true, false);
+
+    if (name === "name") {
+      if (value.length > 100) {
+        FormikForm.setFieldError(
+          "name",
+          "Client Name cannot exceed 100 characters",
+        );
+      } else {
+        FormikForm.setFieldError("name", undefined);
+      }
+    }
+
+    if (name === "city") {
+      if (value.length > 100) {
+        FormikForm.setFieldError("city", "City cannot exceed 100 characters");
+      } else {
+        FormikForm.setFieldError("city", undefined);
+      }
+    }
   };
 
   const handlePincodeOnly = (e) => {
@@ -270,11 +301,47 @@ const ClientForm = () => {
   };
 
   const handleLocationTextOnly = (e) => {
-    const { name, value } = e.target;
+    const { name } = e.target;
+
+    let value = e.target.value;
+
+    if (name === "city") {
+      value = value.replace(/[^A-Za-z\s.'-]/g, "");
+    } else if (name === "name") {
+      value = value.replace(/[^A-Za-z0-9\s.,&()'_-]/g, "");
+    } else {
+      value = value.replace(/[^a-zA-Z\s\-_]/g, "");
+    }
+
     setLocationObj((prev) => ({
       ...prev,
-      [name]: value.replace(/[^a-zA-Z\s\-_]/g, ""),
+      [name]: value,
     }));
+
+    locationFormik.setFieldValue(name, value);
+    locationFormik.setFieldTouched(name, true, false);
+
+    if (name === "city") {
+      if (value.length > 100) {
+        locationFormik.setFieldError(
+          "city",
+          "City cannot exceed 100 characters",
+        );
+      } else {
+        locationFormik.setFieldError("city", undefined);
+      }
+    }
+
+    if (name === "name") {
+      if (value.length > 100) {
+        locationFormik.setFieldError(
+          "name",
+          "Location Name cannot exceed 100 characters",
+        );
+      } else {
+        locationFormik.setFieldError("name", undefined);
+      }
+    }
   };
 
   const handleLocationCountryChange = (e) => {
@@ -371,16 +438,32 @@ const ClientForm = () => {
     validationSchema: Yup.object({
       name: Yup.string()
         .trim()
-        .matches(/^[A-Za-z\s]+$/, "Client name should contain only letters")
-        .required("Please Enter the Client name"),
+        .matches(
+          /^[A-Za-z0-9\s.,&()'-]+$/,
+          "Client name should contain only letters, numbers, spaces, periods (.), commas (,), hyphens (-), ampersands (&), parentheses ( ), or apostrophes (')",
+        )
+        .required("Please Enter the Client name")
+        .test(
+          "client-name-length",
+          "Client Name cannot exceed 100 characters",
+          (value) => !value || value.length <= 100,
+        ),
       phone_number: Yup.string()
         .required("Please Enter Phone Number")
         .matches(/^[0-9]+$/, "Phone number must contain digits only")
         .length(10, "Phone number must be 10 digits"),
       city: Yup.string()
         .trim()
-        .matches(/^[A-Za-z\s]+$/, "City should contain only letters")
-        .required("Please Enter City"),
+        .matches(
+          /^[A-Za-z\s.'-]+$/,
+          "City should contain only letters, spaces, periods (.), hyphens (-), or apostrophes (')",
+        )
+        .required("Please Enter City")
+        .test(
+          "city-length",
+          "City cannot exceed 100 characters",
+          (value) => !value || value.length <= 100,
+        ),
       state: Yup.string().required("Please Enter State"),
       country: Yup.string().required("Please Enter Country"),
       pincode: Yup.string()
@@ -390,12 +473,18 @@ const ClientForm = () => {
         .required("Please Enter Pincode"),
       website: Yup.string()
         .trim()
-        .required("Please enter website")
-        .max(500, "Website URL must not exceed 500 characters")
+        .test(
+          "website-length",
+          "Website URL must not exceed 500 characters",
+          (value) => !value || value.length <= 500,
+        )
         .test(
           "website-validation",
           "Enter a valid website URL with a supported domain extension",
-          (value) => validateWebsite(value),
+          (value) => {
+            if (!value || value.trim() === "") return true;
+            return validateWebsite(value);
+          },
         ),
       gst_number: Yup.string()
         .matches(
@@ -404,7 +493,18 @@ const ClientForm = () => {
         )
         .length(15, "GST Number must be exactly 15 characters")
         .nullable(),
-      address: Yup.string().trim().required("Address is required"),
+      address: Yup.string()
+        .trim()
+        .required("Address is required")
+        .matches(
+          /^[A-Za-z0-9\s.,\-#/'&]+$/,
+          "Address contains invalid characters",
+        )
+        .test(
+          "address-length",
+          "Address cannot exceed 250 characters",
+          (value) => !value || value.length <= 250,
+        ),
     }),
     onSubmit: async () => {
       dispatch(setLoaderVisible(true));
@@ -452,22 +552,35 @@ const ClientForm = () => {
     validationSchema: Yup.object({
       name: Yup.string()
         .matches(
-          /^[A-Za-z\s\-_]+$/,
-          "Location name should contain only letters, spaces, hyphens or underscores",
+          /^[A-Za-z0-9\s.,&()'_-]+$/,
+          "Location name should contain only letters, numbers, spaces, periods (.), commas (,), hyphens (-), ampersands (&), parentheses ( ), apostrophes ('), or underscores (_)",
         )
         .required("Please Enter Location Name")
         .test(
           "not-only-spaces",
           "Please Enter Location Name",
           (value) => !value || value.trim().length > 0,
+        )
+        .test(
+          "location-name-length",
+          "Location Name cannot exceed 100 characters",
+          (value) => !value || value.length <= 100,
         ),
       address: Yup.string().trim().required("Please Enter Address"),
       country: Yup.string().required("Please Select Country"),
       state: Yup.string().required("Please Select State"),
       city: Yup.string()
         .trim()
-        .matches(/^[A-Za-z\s]+$/, "City should contain only letters")
-        .required("Please Enter City"),
+        .matches(
+          /^[A-Za-z\s.'-]+$/,
+          "City should contain only letters, spaces, periods (.), hyphens (-), or apostrophes (')",
+        )
+        .required("Please Enter City")
+        .test(
+          "city-length",
+          "City cannot exceed 100 characters",
+          (value) => !value || value.length <= 100,
+        ),
       pincode: Yup.string()
         .trim()
         .matches(/^[0-9]+$/, "Pincode should contain only numbers")
@@ -476,7 +589,15 @@ const ClientForm = () => {
       timezone: Yup.string().required("Please Select Time Zone"),
       accurate_address: Yup.string()
         .trim()
-        .required("Please Enter Accurate Address"),
+        .matches(
+          /^[A-Za-z0-9\s.,\-#/']+$/,
+          "Accurate Address contains invalid characters",
+        )
+        .test(
+          "accurate-address-length",
+          "Accurate Address cannot exceed 200 characters",
+          (value) => !value || value.length <= 200,
+        ),
     }),
     onSubmit: async (values) => {
       dispatch(setLoaderVisible(true));
@@ -667,16 +788,12 @@ const ClientForm = () => {
                       placeholder="Client Name"
                       value={clientData.name || ""}
                       onChange={handleTextOnly}
-                      invalid={
-                        FormikForm.touched.name && FormikForm.errors.name
-                          ? true
-                          : false
-                      }
+                      invalid={!!FormikForm.errors.name}
                     />
                     {!FormikForm.touched.name && !FormikForm.errors.name && (
                       <i className="ri-building-line" />
                     )}
-                    {FormikForm.touched.name && FormikForm.errors.name ? (
+                    {FormikForm.errors.name ? (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.name}
                       </FormFeedback>
@@ -769,15 +886,33 @@ const ClientForm = () => {
                     className="form-control"
                     placeholder="Address"
                     value={clientData.address || ""}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(
+                        /[^A-Za-z0-9\s.,\-#/'&]/g,
+                        "",
+                      );
+
+                      setClientData((prev) => ({
+                        ...prev,
+                        address: value,
+                      }));
+
+                      FormikForm.setFieldValue("address", value);
+                      FormikForm.setFieldTouched("address", true, false);
+
+                      if (value.length > 250) {
+                        FormikForm.setFieldError(
+                          "address",
+                          "Address cannot exceed 250 characters",
+                        );
+                      } else {
+                        FormikForm.setFieldError("address", undefined);
+                      }
+                    }}
                     onBlur={() => FormikForm.setFieldTouched("address", true)}
-                    invalid={
-                      FormikForm.touched.address && FormikForm.errors.address
-                        ? true
-                        : false
-                    }
+                    invalid={!!FormikForm.errors.address}
                   />
-                  {FormikForm.touched.address && FormikForm.errors.address ? (
+                  {FormikForm.errors.address ? (
                     <FormFeedback type="invalid">
                       {FormikForm.errors.address}
                     </FormFeedback>
@@ -856,13 +991,9 @@ const ClientForm = () => {
                     value={clientData.city || ""}
                     onChange={handleTextOnly}
                     onBlur={() => FormikForm.setFieldTouched("city", true)}
-                    invalid={
-                      FormikForm.touched.city && FormikForm.errors.city
-                        ? true
-                        : false
-                    }
+                    invalid={!!FormikForm.errors.city}
                   />
-                  {FormikForm.touched.city && FormikForm.errors.city ? (
+                  {FormikForm.errors.city ? (
                     <FormFeedback type="invalid">
                       {FormikForm.errors.city}
                     </FormFeedback>
@@ -971,13 +1102,21 @@ const ClientForm = () => {
                           ...prev,
                           website: value,
                         }));
+
+                        FormikForm.setFieldValue("website", value);
+                        FormikForm.setFieldTouched("website", true, false);
+
+                        if (value.length > 500) {
+                          FormikForm.setFieldError(
+                            "website",
+                            "Website URL must not exceed 500 characters",
+                          );
+                        } else {
+                          FormikForm.setFieldError("website", undefined);
+                        }
                       }}
                       onBlur={() => FormikForm.setFieldTouched("website", true)}
-                      invalid={
-                        FormikForm.touched.website && FormikForm.errors.website
-                          ? true
-                          : false
-                      }
+                      invalid={!!FormikForm.errors.website}
                     />
 
                     {!FormikForm.touched.website &&
@@ -985,7 +1124,7 @@ const ClientForm = () => {
                         <i className="ri-global-line" />
                       )}
 
-                    {FormikForm.touched.website && FormikForm.errors.website ? (
+                    {FormikForm.errors.website ? (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.website}
                       </FormFeedback>
@@ -1131,7 +1270,9 @@ const ClientForm = () => {
             <Row className="gy-4">
               {/* Location Name */}
               <Col lg={12}>
-                <Label className="form-label">Location Name</Label>
+                <Label className="form-label">
+                  Location Name <span>*</span>
+                </Label>
                 <div className="form-icon right">
                   <Input
                     type="text"
@@ -1143,17 +1284,13 @@ const ClientForm = () => {
                     value={locationObj.name || ""}
                     onChange={handleLocationTextOnly}
                     onBlur={() => locationFormik.setFieldTouched("name", true)}
-                    invalid={
-                      locationFormik.touched.name && locationFormik.errors.name
-                        ? true
-                        : false
-                    }
+                    invalid={!!locationFormik.errors.name}
                   />
                   {!locationFormik.touched.name &&
                     !locationFormik.errors.name && (
                       <i className="ri-building-2-line" />
                     )}
-                  {locationFormik.touched.name && locationFormik.errors.name ? (
+                  {locationFormik.errors.name ? (
                     <FormFeedback type="invalid">
                       {locationFormik.errors.name}
                     </FormFeedback>
@@ -1173,7 +1310,9 @@ const ClientForm = () => {
 
               {/* Address */}
               <Col lg={12}>
-                <Label className="form-label">Address</Label>
+                <Label className="form-label">
+                  Address <span>*</span>
+                </Label>
                 <Input
                   type="textarea"
                   name="address"
@@ -1193,7 +1332,9 @@ const ClientForm = () => {
 
               {/* Country */}
               <Col lg={12}>
-                <Label className="form-label">Country</Label>
+                <Label className="form-label">
+                  Country <span>*</span>
+                </Label>
                 <Select
                   options={CountryListOptions}
                   value={
@@ -1213,7 +1354,9 @@ const ClientForm = () => {
 
               {/* State */}
               <Col lg={12}>
-                <Label className="form-label">State</Label>
+                <Label className="form-label">
+                  State <span>*</span>
+                </Label>
                 <Select
                   options={locationStateOptions}
                   value={
@@ -1233,7 +1376,9 @@ const ClientForm = () => {
 
               {/* City */}
               <Col lg={12}>
-                <Label className="form-label">City</Label>
+                <Label className="form-label">
+                  City <span>*</span>
+                </Label>
                 <div className="form-icon right">
                   <Input
                     type="text"
@@ -1241,25 +1386,23 @@ const ClientForm = () => {
                     placeholder="City"
                     value={locationObj.city || ""}
                     onChange={handleLocationTextOnly}
-                    invalid={
-                      locationFormik.touched.city &&
-                      !!locationFormik.errors.city
-                    }
+                    invalid={!!locationFormik.errors.city}
                   />
                   {!locationFormik.touched.city &&
                     !locationFormik.errors.city && (
                       <i className="ri-map-pin-line"></i>
                     )}
-                  {locationFormik.touched.city &&
-                    locationFormik.errors.city && (
-                      <FormFeedback>{locationFormik.errors.city}</FormFeedback>
-                    )}
+                  {locationFormik.errors.city && (
+                    <FormFeedback>{locationFormik.errors.city}</FormFeedback>
+                  )}
                 </div>
               </Col>
 
               {/* Pincode */}
               <Col lg={12}>
-                <Label className="form-label">Pincode</Label>
+                <Label className="form-label">
+                  Pincode <span>*</span>
+                </Label>
                 <div className="form-icon right">
                   <Input
                     type="text"

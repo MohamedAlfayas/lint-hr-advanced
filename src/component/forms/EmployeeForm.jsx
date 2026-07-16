@@ -99,7 +99,7 @@ const EmployeeForm = () => {
   // ── Location Modal State ──────────────────────────────────────────────────
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [locationToEdit, setLocationToEdit] = useState(null);
-  const isExistingEmployee = form_obj?.id && form_obj.id !== 0;
+  const isExistingEmployee = !!(form_obj?.id && form_obj.id !== 0);
 
   const handleAddLocationClick = () => {
     setLocationToEdit(null);
@@ -226,7 +226,23 @@ const EmployeeForm = () => {
   // ── Name input: strip numbers and special chars on change ─────────────────
   const handleNameInput = (e, field) => {
     const val = e.target.value.replace(/[^A-Za-z\s'-]/g, "");
-    setEmployeeObj({ ...employeeObj, [field]: val });
+
+    setEmployeeObj((prev) => ({
+      ...prev,
+      [field]: val,
+    }));
+
+    FormikForm.setFieldValue(field, val);
+    FormikForm.setFieldTouched(field, true, false);
+
+    if (val.length > 50) {
+      FormikForm.setFieldError(
+        field,
+        `${field === "first_name" ? "First" : "Last"} name cannot exceed 50 characters`,
+      );
+    } else {
+      FormikForm.setFieldError(field, undefined);
+    }
   };
 
   const handleProfileChange = (e) => {
@@ -439,12 +455,14 @@ const EmployeeForm = () => {
         .trim()
         .matches(
           /^[A-Z0-9_-]+$/,
-          "Employee ID must be uppercase letters, numbers, hyphens, or underscores only — no spaces.",
+          "Employee ID must contain only uppercase letters, numbers, hyphens (-), and underscores (_).",
         )
-        .required("Please enter employee ID"),
+        .required("Please enter employee ID")
+        .max(50, "Employee ID cannot exceed 50 characters"),
 
       first_name: Yup.string()
         .trim()
+        .required("Please enter first name")
         .nullable()
         .test(
           "first-name-validation",
@@ -455,18 +473,12 @@ const EmployeeForm = () => {
             return /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/.test(value);
           },
         )
-        .test(
-          "first-name-length",
-          "First name must be between 2 and 50 characters",
-          (value) => {
-            if (!value || value.trim() === "") return true;
-
-            return value.trim().length >= 2 && value.trim().length <= 50;
-          },
-        ),
+        .min(1, "Please enter first name")
+        .max(50, "First name cannot exceed 50 characters"),
 
       last_name: Yup.string()
         .trim()
+        .required("Please enter last name")
         .nullable()
         .test(
           "last-name-validation",
@@ -477,15 +489,8 @@ const EmployeeForm = () => {
             return /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/.test(value);
           },
         )
-        .test(
-          "last-name-length",
-          "Last name must be between 2 and 50 characters",
-          (value) => {
-            if (!value || value.trim() === "") return true;
-
-            return value.trim().length >= 2 && value.trim().length <= 50;
-          },
-        ),
+        .min(1, "Please enter last name")
+        .max(50, "Last name cannot exceed 50 characters"),
 
       email: Yup.string()
         .trim()
@@ -800,6 +805,7 @@ const EmployeeForm = () => {
                   </div>
                   <div className="form-icon right">
                     <Input
+                      autoFocus
                       type="text"
                       name="emp_id"
                       id="employeeid"
@@ -807,32 +813,41 @@ const EmployeeForm = () => {
                       placeholder="LC001"
                       value={employeeObj.emp_id || ""}
                       onChange={(e) => {
-                        // Strip lowercase and disallowed chars
                         const val = e.target.value
                           .toUpperCase()
                           .replace(/[^A-Z0-9_-]/g, "");
-                        setEmployeeObj({ ...employeeObj, emp_id: val });
+
+                        setEmployeeObj((prev) => ({
+                          ...prev,
+                          emp_id: val,
+                        }));
+
+                        FormikForm.setFieldValue("emp_id", val);
+                        FormikForm.setFieldTouched("emp_id", true, false);
+
+                        if (val.length > 50) {
+                          FormikForm.setFieldError(
+                            "emp_id",
+                            "Employee ID cannot exceed 50 characters",
+                          );
+                        } else {
+                          FormikForm.setFieldError("emp_id", undefined);
+                        }
                       }}
                       onBlur={() => FormikForm.setFieldTouched("emp_id", true)}
-                      invalid={
-                        !!(
-                          FormikForm.touched.emp_id && FormikForm.errors.emp_id
-                        )
-                      }
+                      invalid={!!FormikForm.errors.emp_id}
                     />
                     {!(
                       FormikForm.touched.emp_id && FormikForm.errors.emp_id
                     ) && <i className="ri-user-line"></i>}
-                    {FormikForm.touched.emp_id && FormikForm.errors.emp_id && (
+                    {FormikForm.errors.emp_id && (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.emp_id}
                       </FormFeedback>
                     )}
                   </div>
                   {!FormikForm.errors.emp_id && (
-                    <div className="form-text mb-3">
-                      Enter employee ID (uppercase letters, numbers, - _ only).
-                    </div>
+                    <div className="form-text mb-3">Enter employee ID</div>
                   )}
                 </div>
               </Col>
@@ -841,7 +856,7 @@ const EmployeeForm = () => {
               <Col md={6} lg={6} xxl={6}>
                 <div>
                   <Label htmlFor="first_name" className="form-label">
-                    First Name
+                    First Name <span>*</span>
                   </Label>
                   <div className="form-icon right">
                     <Input
@@ -855,23 +870,17 @@ const EmployeeForm = () => {
                       onBlur={() =>
                         FormikForm.setFieldTouched("first_name", true)
                       }
-                      invalid={
-                        !!(
-                          FormikForm.touched.first_name &&
-                          FormikForm.errors.first_name
-                        )
-                      }
+                      invalid={!!FormikForm.errors.first_name}
                     />
                     {!(
                       FormikForm.touched.first_name &&
                       FormikForm.errors.first_name
                     ) && <i className="ri-user-line"></i>}
-                    {FormikForm.touched.first_name &&
-                      FormikForm.errors.first_name && (
-                        <FormFeedback type="invalid">
-                          {FormikForm.errors.first_name}
-                        </FormFeedback>
-                      )}
+                    {FormikForm.errors.first_name && (
+                      <FormFeedback type="invalid">
+                        {FormikForm.errors.first_name}
+                      </FormFeedback>
+                    )}
                   </div>
                   {!FormikForm.errors.first_name && (
                     <div className="form-text mb-3">Enter first name.</div>
@@ -883,7 +892,7 @@ const EmployeeForm = () => {
               <Col md={6} lg={6} xxl={6}>
                 <div>
                   <Label htmlFor="last_name" className="form-label">
-                    Last Name
+                    Last Name <span>*</span>
                   </Label>
                   <div className="form-icon right">
                     <Input
@@ -897,23 +906,17 @@ const EmployeeForm = () => {
                       onBlur={() =>
                         FormikForm.setFieldTouched("last_name", true)
                       }
-                      invalid={
-                        !!(
-                          FormikForm.touched.last_name &&
-                          FormikForm.errors.last_name
-                        )
-                      }
+                      invalid={!!FormikForm.errors.last_name}
                     />
                     {!(
                       FormikForm.touched.last_name &&
                       FormikForm.errors.last_name
                     ) && <i className="ri-user-2-line"></i>}
-                    {FormikForm.touched.last_name &&
-                      FormikForm.errors.last_name && (
-                        <FormFeedback type="invalid">
-                          {FormikForm.errors.last_name}
-                        </FormFeedback>
-                      )}
+                    {FormikForm.errors.last_name && (
+                      <FormFeedback type="invalid">
+                        {FormikForm.errors.last_name}
+                      </FormFeedback>
+                    )}
                   </div>
                   {!FormikForm.errors.last_name && (
                     <div className="form-text mb-3">Enter last name.</div>
@@ -1460,7 +1463,7 @@ const EmployeeForm = () => {
               </Col>
 
               {/* ── ID Proof ─────────────────────────────────────────────── */}
-              {selectedFileName ? (
+              {/* {selectedFileName ? (
                 <table>
                   <thead>
                     <tr>
@@ -1499,7 +1502,7 @@ const EmployeeForm = () => {
               )}
               <div className="form-text mb-3">
                 {!selectedFileName && <p>Select ID proof.</p>}
-              </div>
+              </div> */}
 
               {/* ── Time Zone ────────────────────────────────────────────── */}
               <Col lg={12}>
