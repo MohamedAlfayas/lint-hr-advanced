@@ -34,8 +34,14 @@ const loaderOptions = {
 
 const indiaCenter = { lat: 22.3511148, lng: 78.6677428 };
 
-// Seconds to animate the entire route (lower = faster)
-const PLAYBACK_DURATION_SEC = 20;
+// Seconds to animate the entire route (lower = faster) at 1x speed
+const PLAYBACK_DURATION_SEC = 50;
+
+// Selectable playback speed multipliers, default is 1x
+const SPEED_OPTIONS = [0.5, 1, 1.5, 2];
+
+// Zoom level used while following the moving marker during playback
+const PLAYBACK_FOLLOW_ZOOM = 17;
 
 // Distance below which two consecutive points count as "waiting" (km)
 const WAIT_THRESHOLD_KM = 0.05;
@@ -254,6 +260,7 @@ const UsersClusterMapAll = ({
   const [progress, setProgress] = useState(0); // 0..1 along whole route
   const [movingPos, setMovingPos] = useState(null);
   const [currentLabel, setCurrentLabel] = useState("");
+  const [playbackSpeed, setPlaybackSpeed] = useState(1); // 0.5x / 1x / 1.5x / 2x, default 1x
 
   // Always-on "marching ants" flow along the route, independent of playback
   const [antOffset, setAntOffset] = useState(0);
@@ -632,10 +639,13 @@ const UsersClusterMapAll = ({
     startTimeRef.current = null;
     startProgressRef.current = progress >= 1 ? 0 : progress;
 
+    // Higher playbackSpeed = faster animation = shorter effective duration
+    const effectiveDurationSec = PLAYBACK_DURATION_SEC / playbackSpeed;
+
     const tick = (now) => {
       if (startTimeRef.current === null) startTimeRef.current = now;
       const elapsed = (now - startTimeRef.current) / 1000;
-      const delta = elapsed / PLAYBACK_DURATION_SEC;
+      const delta = elapsed / effectiveDurationSec;
       let next = startProgressRef.current + delta;
 
       if (next >= 1) {
@@ -654,7 +664,7 @@ const UsersClusterMapAll = ({
 
     rafRef.current = requestAnimationFrame(tick);
     return stopRaf;
-  }, [isPlaying]);
+  }, [isPlaying, playbackSpeed]);
 
   // ─── Always-on marching-ants flow along the route line ─────────
   useEffect(() => {
@@ -664,6 +674,28 @@ const UsersClusterMapAll = ({
     }, 60);
     return () => clearInterval(id);
   }, [path.length]);
+
+  // ─── Zoom in once, right when playback starts (not on every frame —
+  //     calling setZoom repeatedly mid-pan is what caused the "stuck"
+  //     stutter). Playback stopping/finishing doesn't zoom back out on
+  //     its own; "Full view" / reset handle that. ────────────────────
+  useEffect(() => {
+    if (isPlaying && mapRef.current) {
+      mapRef.current.setZoom(PLAYBACK_FOLLOW_ZOOM);
+    }
+  }, [isPlaying]);
+
+  // ─── While playing, keep the map centered on the moving marker for a
+  //     "close-up, following" travel view. Uses setCenter (immediate,
+  //     no built-in animation) instead of panTo — panTo starts its own
+  //     ~500ms animated pan on every call, and since movingPos updates
+  //     every animation frame (~60/sec) those pans stacked up and fought
+  //     each other, which is what made the view look stuck/jerky. ────
+  useEffect(() => {
+    if (isPlaying && movingPos && mapRef.current) {
+      mapRef.current.setCenter(movingPos);
+    }
+  }, [movingPos, isPlaying]);
 
   const handleScrub = (e) => {
     const t = parseFloat(e.target.value);
@@ -685,6 +717,7 @@ const UsersClusterMapAll = ({
     setIsPlaying(false);
     setProgress(0);
     applyProgress(0);
+    if (mapRef.current && path.length) fitToPath(mapRef.current, path);
   };
 
   // ─── Refresh → reset everything to initial full view ──────────
@@ -912,14 +945,15 @@ const UsersClusterMapAll = ({
                   }}
                   style={{
                     transform: "translate(-50%, -170%)",
-                    background: COLORS.travel,
-                    color: "#fff",
+                    background: "#ffffff",
+                    color: "#000000",
                     padding: "3px 10px",
                     borderRadius: "14px",
                     fontSize: "12px",
                     fontWeight: 600,
                     whiteSpace: "nowrap",
                     boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                    border: `1px solid ${COLORS.travel}`,
                   }}
                 >
                   {currentLabel}
@@ -1071,119 +1105,159 @@ const UsersClusterMapAll = ({
                 left: "50%",
                 transform: "translateX(-50%)",
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
-                gap: "12px",
+                gap: "8px",
                 background: "rgba(255,255,255,0.95)",
                 padding: "8px 14px",
-                borderRadius: "30px",
+                borderRadius: "22px",
                 boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
                 width: "min(75%, 520px)",
                 zIndex: 5,
               }}
             >
-              <motion.button
-                onClick={togglePlay}
-                whileTap={{ scale: 0.9 }}
-                style={{
-                  flexShrink: 0,
-                  width: "38px",
-                  height: "38px",
-                  borderRadius: "50%",
-                  border: "none",
-                  background: COLORS.travel,
-                  color: "#fff",
-                  fontSize: "16px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                title={isPlaying ? "Pause" : "Play"}
-              >
-                {isPlaying ? "❚❚" : "▶"}
-              </motion.button>
-
-              {/* Track with per-stop tick marks (chapter-style scrubber) */}
               <div
                 style={{
-                  flex: 1,
-                  position: "relative",
-                  height: "20px",
                   display: "flex",
                   alignItems: "center",
+                  gap: "12px",
+                  width: "100%",
                 }}
               >
+                <motion.button
+                  onClick={togglePlay}
+                  whileTap={{ scale: 0.9 }}
+                  style={{
+                    flexShrink: 0,
+                    width: "38px",
+                    height: "38px",
+                    borderRadius: "50%",
+                    border: "none",
+                    background: COLORS.travel,
+                    color: "#fff",
+                    fontSize: "16px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  title={isPlaying ? "Pause" : "Play"}
+                >
+                  {isPlaying ? "❚❚" : "▶"}
+                </motion.button>
+
+                {/* Track with per-stop tick marks (chapter-style scrubber) */}
                 <div
                   style={{
-                    position: "absolute",
-                    left: 0,
-                    right: 0,
-                    height: "3px",
-                    borderRadius: "3px",
-                    background: "#e5e7eb",
-                  }}
-                />
-                <motion.div
-                  animate={{ width: `${progress * 100}%` }}
-                  transition={{ duration: isPlaying ? 0 : 0.15 }}
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    height: "3px",
-                    borderRadius: "3px",
-                    background: COLORS.travel,
-                  }}
-                />
-                {path.length > 1 &&
-                  path.map((_, i) => (
-                    <span
-                      key={i}
-                      style={{
-                        position: "absolute",
-                        left: `${(i / (path.length - 1)) * 100}%`,
-                        width: "2px",
-                        height: "8px",
-                        background: "#ffffff",
-                        opacity: 0.9,
-                        transform: "translateX(-1px)",
-                        pointerEvents: "none",
-                      }}
-                    />
-                  ))}
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.001}
-                  value={progress}
-                  onChange={handleScrub}
-                  style={{
+                    flex: 1,
                     position: "relative",
-                    width: "100%",
-                    cursor: "pointer",
-                    accentColor: COLORS.travel,
-                    background: "transparent",
+                    height: "20px",
+                    display: "flex",
+                    alignItems: "center",
                   }}
-                />
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      right: 0,
+                      height: "3px",
+                      borderRadius: "3px",
+                      background: "#e5e7eb",
+                    }}
+                  />
+                  <motion.div
+                    animate={{ width: `${progress * 100}%` }}
+                    transition={{ duration: isPlaying ? 0 : 0.15 }}
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      height: "3px",
+                      borderRadius: "3px",
+                      background: COLORS.travel,
+                    }}
+                  />
+                  {path.length > 1 &&
+                    path.map((_, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          position: "absolute",
+                          left: `${(i / (path.length - 1)) * 100}%`,
+                          width: "2px",
+                          height: "8px",
+                          background: "#ffffff",
+                          opacity: 0.9,
+                          transform: "translateX(-1px)",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    ))}
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.001}
+                    value={progress}
+                    onChange={handleScrub}
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      cursor: "pointer",
+                      accentColor: COLORS.travel,
+                      background: "transparent",
+                    }}
+                  />
+                </div>
+
+                <button
+                  onClick={handleReset}
+                  style={{
+                    flexShrink: 0,
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "50%",
+                    border: "none",
+                    background: "#e5e7eb",
+                    color: "#374151",
+                    fontSize: "15px",
+                    cursor: "pointer",
+                  }}
+                  title="Reset"
+                >
+                  ⟲
+                </button>
               </div>
 
-              <button
-                onClick={handleReset}
+              {/* Speed selector — 0.5x / 1x / 1.5x / 2x, default 1x */}
+              <div
                 style={{
-                  flexShrink: 0,
-                  width: "34px",
-                  height: "34px",
-                  borderRadius: "50%",
-                  border: "none",
-                  background: "#e5e7eb",
-                  color: "#374151",
-                  fontSize: "15px",
-                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
                 }}
-                title="Reset"
               >
-                ⟲
-              </button>
+                {SPEED_OPTIONS.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setPlaybackSpeed(s)}
+                    style={{
+                      border: "none",
+                      borderRadius: "10px",
+                      padding: "3px 9px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      background:
+                        playbackSpeed === s ? COLORS.travel : "#e5e7eb",
+                      color: playbackSpeed === s ? "#fff" : "#374151",
+                    }}
+                    title={`${s}x speed`}
+                  >
+                    {s}x
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

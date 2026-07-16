@@ -63,7 +63,11 @@ const ApprovalFilter = ({ formname }) => {
     (data) => data.ApprovalFilterReducer,
   );
 
-  const PendingLeave = leave_approval_data.filter((d) => d.status === 1).length;
+  console.log("leave_approval_data", leave_approval_data);
+
+  const PendingLeave = leave_approval_data.filter(
+    (d) => d.status === 1 || d.status === 4,
+  ).length;
 
   const [activeTab, setActiveTab] = useState("1");
   const toggleTab = (tab) => {
@@ -75,6 +79,7 @@ const ApprovalFilter = ({ formname }) => {
   const AttendancePending = attendance_approval_data.filter(
     (d) => d.hr_status === 3,
   ).length;
+  console.log("pend", attendance_approval_data);
 
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
   const employee_options = useMemo(
