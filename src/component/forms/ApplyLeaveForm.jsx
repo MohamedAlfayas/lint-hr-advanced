@@ -216,7 +216,7 @@ const ApplyLeaveForm = () => {
   const getDateCellInfo = (currentISO) => {
     if (holidayMap[currentISO]) {
       return {
-        style: { backgroundColor: "#fff3cd", color: "#856404" }, // yellow = holiday
+        style: { backgroundColor: "#23bba6", color: "#fff" }, // yellow = holiday
         tooltip: holidayMap[currentISO],
       };
     }
@@ -224,7 +224,7 @@ const ApplyLeaveForm = () => {
       console.log(appliedLeaveMap, "appliedLeaveMap");
 
       return {
-        style: { backgroundColor: "#f8d7da", color: "#842029" }, // red = already applied
+        style: { backgroundColor: "#FF9800", color: "#fff" }, // red = already applied
         tooltip: appliedLeaveMap[currentISO],
       };
     }
@@ -506,6 +506,25 @@ const ApplyLeaveForm = () => {
         current.format("DD-MM-YYYY"),
       ) ||
       appliedDates.includes(currentISO)
+    );
+  };
+
+  const disabledDateForCompOff = (current) => {
+    if (!current) return false;
+
+    const minDate = dayjs("1900-01-01", "YYYY-MM-DD");
+    const maxDate = dayjs().add(1, "year");
+
+    if (current < minDate.startOf("day") || current > maxDate.endOf("day")) {
+      return true;
+    }
+
+    const dayOfWeek = current.day();
+    const currentISO = current.format("YYYY-MM-DD");
+
+    return (
+      WeekOffDays.includes(dayOfWeek) || appliedDates.includes(currentISO)
+      // holidays NOT included here, so holidays remain selectable
     );
   };
 
@@ -834,7 +853,7 @@ const ApplyLeaveForm = () => {
               {/* ── Leave Type ── */}
               <Col lg={12}>
                 <div className="mb-3">
-                  <Label>Type *</Label>
+                  <Label>Leave Type *</Label>
                   <Select
                     name="leave_type_id"
                     isMulti={false}
@@ -920,7 +939,9 @@ const ApplyLeaveForm = () => {
                   <Col lg={12}>
                     {isCompOffLeave ? (
                       <>
-                        <Label className="form-label">Select Date</Label>
+                        <Label className="form-label">
+                          Date Leave Start Date / Leave End Date{" "}
+                        </Label>
                         <div className="row g-2 mb-3">
                           <Col md={6}>
                             <DatePicker
@@ -1013,12 +1034,14 @@ const ApplyLeaveForm = () => {
 
                         {leaveapplyObj?.start && (
                           <>
-                            <Label className="form-label">Work Date</Label>
+                            <Label className="form-label">
+                              Work Date (Comp-Off Day)
+                            </Label>
                             <DatePicker
                               name="comp_off_work_date"
                               format={DateFormat}
                               placeholder="Select Work Date"
-                              disabledDate={disabledDate}
+                              disabledDate={disabledDateForCompOff}
                               inputReadOnly={true}
                               cellRender={(current, info) => {
                                 if (info.type !== "date" || !current?.format) {
@@ -1070,9 +1093,7 @@ const ApplyLeaveForm = () => {
                         {leaveapplyObj?.start && compOffWorkDate && (
                           <div className="input-group mt-3">
                             <Col lg={12}>
-                              <Label className="form-label">
-                                Select Day Type
-                              </Label>
+                              <Label className="form-label">Day Duration</Label>
                             </Col>
                             <Col lg={6}>
                               <Select
@@ -1173,9 +1194,7 @@ const ApplyLeaveForm = () => {
                         {(daysCount === 1 || daysCount === 0.5) && (
                           <div className="input-group mt-3">
                             <Col lg={12}>
-                              <Label className="form-label">
-                                Select Day Type
-                              </Label>
+                              <Label className="form-label">Day Duration</Label>
                             </Col>
                             <Col lg={6}>
                               <Select

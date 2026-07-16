@@ -2010,6 +2010,7 @@ export const IndiaStates = [
   { id: "Rajasthan", label: "Rajasthan", value: "Rajasthan" },
   { id: "Sikkim", label: "Sikkim", value: "Sikkim" },
   { id: "Tamil Nadu", label: "Tamil Nadu", value: "Tamil Nadu" },
+  { id: "Telangana", label: "Telangana", value: "Telangana" },
   { id: "Tripura", label: "Tripura", value: "Tripura" },
   { id: "Uttar Pradesh", label: "Uttar Pradesh", value: "Uttar Pradesh" },
   { id: "Uttaranchal", label: "Uttaranchal", value: "Uttaranchal" },

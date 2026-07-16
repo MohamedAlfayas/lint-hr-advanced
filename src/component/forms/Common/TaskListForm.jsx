@@ -68,6 +68,7 @@ const defaultTaskData = {
   task_priority: null,
   start_time: "",
   end_time: "",
+  status: true,
 };
 
 // ─── Build employee option object (normalised shape) ─────────────────────────
@@ -258,6 +259,7 @@ const TaskListForm = () => {
           task_priority: taskData.task_priority || null,
           start_time: taskData.start_time || null,
           end_time: taskData.end_time || null,
+          status: taskData.status,
         };
 
         if (isEdit) payload.id = taskData.id;
@@ -366,6 +368,8 @@ const TaskListForm = () => {
 
   const showProject = taskData.related_to === "project";
   const showClient = taskData.related_to === "client";
+
+  console.log("Task_List ", taskData);
 
   return (
     <React.Fragment>
@@ -800,6 +804,39 @@ const TaskListForm = () => {
                   )}
                 </div>
               </Col>
+
+              {/* STATUS - SHOW ONLY IN EDIT MODE */}
+              {taskData.id > 0 && (
+                <Col md={12}>
+                  <div className="mb-3">
+                    <Label htmlFor="task_status_toggle" className="form-label">
+                      Status
+                    </Label>
+
+                    <div
+                      className="form-check form-switch form-switch-md form-switch-success"
+                      dir="ltr"
+                    >
+                      <Input
+                        type="checkbox"
+                        id="task_status_toggle"
+                        className="form-check-input"
+                        checked={taskData.status || false}
+                        onChange={(e) =>
+                          setTaskData((prev) => ({
+                            ...prev,
+                            status: e.target.checked,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="form-text">
+                      {taskData.status ? "Active" : "Inactive"}
+                    </div>
+                  </div>
+                </Col>
+              )}
 
               {/* ── Submit ────────────────────────────────────────────── */}
               <Col lg={12}>
