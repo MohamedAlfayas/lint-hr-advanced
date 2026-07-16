@@ -62,8 +62,32 @@ const StatusForm = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    const inputValue =
-      name === "name" ? value.replace(/[^a-zA-Z\s\-_]/g, "") : value;
+    // const inputValue =
+    //   name === "name" ? value.replace(/[^a-zA-Z\s\-_]/g, "") : value;
+
+    let inputValue = value;
+
+    if (name === "name") {
+      inputValue = value.replace(/[^a-zA-Z\s\-_]/g, "");
+    }
+
+    if (name === "description") {
+      inputValue = value
+      .replace(/^\s+/, "")
+      .replace(
+        /[^a-zA-Z0-9\s.,!?'"_\-()&:;/]/g,
+        ""
+      );
+
+      if (inputValue.length > 200) {
+        FormikForm.setFieldError(
+          "description",
+          "Description is too long. Please keep it within 200 characters."
+        );
+      } else {
+        FormikForm.setFieldError("description", undefined);
+      }
+    }
 
     setStatusData((prev) => ({
       ...prev,
@@ -95,6 +119,17 @@ const StatusForm = () => {
           "Please Enter the status name",
           (value) => !value || value.trim().length > 0,
         ),
+
+      description: Yup.string()
+        .trim()
+        .matches(
+          /^[a-zA-Z0-9\s.,!?'"_\-()&:;/]*$/,
+          "Description can contain only alphabets, numbers, spaces, and . , ! ? \" ' - _ ( ) & : ; /"
+        )
+        .max(
+          200,
+          "Description is too long. Please keep it within 200 characters."
+        ),
     }),
 
     // ================= SUBMIT =================
@@ -106,6 +141,19 @@ const StatusForm = () => {
         FormikForm.setFieldError("name", "Please Enter the status name");
         return;
       }
+
+      if (
+        statusData.description &&
+        statusData.description.length > 200
+      ) {
+        FormikForm.setFieldTouched("description", true);
+        FormikForm.setFieldError(
+          "description",
+          "Description is too long. Please keep it within 200 characters."
+        );
+        return;
+      }
+
       dispatch(setLoaderVisible(true));
 
       try {
@@ -257,11 +305,52 @@ const StatusForm = () => {
                     type="textarea"
                     name="description"
                     className="form-control"
-                    value={statusData.description}
+                    value={statusData.description || ""}
                     onChange={handleInputChange}
+                    invalid={!!FormikForm.errors.description}
                   />
+                  {FormikForm.errors.description ? (
+                    <FormFeedback type="invalid">
+                      {FormikForm.errors.description}
+                    </FormFeedback>
+                  ) : (
+                    <div className="form-text">
+                      Description (Optional).
+                    </div>
+                  )}
+
                 </div>
               </Col>
+
+              {statusData?.id > 0 && (
+              <Col md={12}>
+                <div>
+                  <Label htmlFor="status_toggle" className="form-label">
+                    Status
+                  </Label>
+
+                  <div className="mb-2">
+                    <div
+                      className="form-check form-switch form-switch-md form-switch-success"
+                      dir="ltr"
+                    >
+                      <Input
+                        type="checkbox"
+                        className="form-check-input form-switch-md"
+                        id="status_toggle"
+                        checked={statusData.status || false}
+                        onChange={(e) =>
+                          setStatusData((prev) => ({
+                            ...prev,
+                            status: e.target.checked,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              </Col>
+            )}
 
               {/* SAVE */}
               <Col lg={12}>

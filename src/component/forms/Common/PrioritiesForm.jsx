@@ -32,9 +32,40 @@ const PrioritiesForm = () => {
     }
   }, [form_obj]);
 
+  // const handleInputChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setPrioritiesData((prev) => ({ ...prev, [name]: value }));
+  // };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setPrioritiesData((prev) => ({ ...prev, [name]: value }));
+
+    let inputValue = value;
+
+    if (name === "description") {
+      inputValue = value
+      .replace(/^\s+/, "")
+      .replace(
+        /[^a-zA-Z0-9\s.,!?'"_\-()&:;/]/g,
+        ""
+      );
+
+      if (inputValue.length > 200) {
+        FormikForm.setFieldError(
+          "description",
+          "Description is too long. Please keep it within 200 characters."
+        );
+      } else {
+        FormikForm.setFieldError("description", undefined);
+      }
+    }
+
+    setPrioritiesData((prev) => ({
+      ...prev,
+      [name]: inputValue,
+    }));
+
+    FormikForm.setFieldValue(name, inputValue);
   };
 
   // ================= FORMIK =================
@@ -43,12 +74,35 @@ const PrioritiesForm = () => {
     initialValues: prioritiesData,
     validationSchema: Yup.object({
       name: Yup.string().required("Please Enter Priority Name"),
+      description: Yup.string()
+        .trim()
+        .matches(
+          /^[a-zA-Z0-9\s.,!?'"_\-()&:;/]*$/,
+          "Description can contain only alphabets, numbers, spaces, and . , ! ? \" ' - _ ( ) & : ; /"
+        )
+        .max(
+          200,
+          "Description is too long. Please keep it within 200 characters."
+        ),
     }),
 
     onSubmit: async () => {
+      // Description validation
+      if (
+        prioritiesData.description &&
+        prioritiesData.description.length > 200
+      ) {
+        FormikForm.setFieldTouched("description", true);
+        FormikForm.setFieldError(
+          "description",
+          "Description is too long. Please keep it within 200 characters."
+        );
+        return;
+      }
       dispatch(setLoaderVisible(true));
 
       try {
+        
         const isEdit = prioritiesData?.id && prioritiesData.id !== 0;
 
         // ── API call ────────────────────────────────────────────────
@@ -190,9 +244,50 @@ const PrioritiesForm = () => {
                     name="description"
                     value={prioritiesData.description || ""}
                     onChange={handleInputChange}
+                    invalid={!!FormikForm.errors.description}
                   />
+                  {FormikForm.errors.description ? (
+                    <FormFeedback type="invalid">
+                      {FormikForm.errors.description}
+                    </FormFeedback>
+                  ) : (
+                    <div className="form-text">
+                      Description (Optional).
+                    </div>
+                  )}
                 </div>
               </Col>
+
+
+              {prioritiesData?.id > 0 && (
+                <Col md={12}>
+                  <div>
+                    <Label htmlFor="priority_status" className="form-label">
+                      Status
+                    </Label>
+
+                    <div className="mb-2">
+                      <div
+                        className="form-check form-switch form-switch-md form-switch-success"
+                        dir="ltr"
+                      >
+                        <Input
+                          type="checkbox"
+                          className="form-check-input form-switch-md"
+                          id="priority_status"
+                          checked={prioritiesData.status || false}
+                          onChange={(e) =>
+                            setPrioritiesData((prev) => ({
+                              ...prev,
+                              status: e.target.checked,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </Col>
+              )}
 
               {/* ── Submit ────────────────────────────────────────── */}
               <Col lg={12}>

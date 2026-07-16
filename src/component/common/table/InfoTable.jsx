@@ -77,6 +77,8 @@ import {
   task_list_component_name,
   project_component_name,
   client_component_name,
+  status_component_name,
+  priorities_component_name,
 } from "../../../common/constant/Constants";
 import { removeProject } from "../../../redux/reducers/ChildReducer/ProjectsReducer";
 import { removeClient } from "../../../redux/reducers/ChildReducer/ClientReducer";
@@ -1414,6 +1416,8 @@ const InfoTable = ({
         } else if (
           formname === project_component_name ||
           formname === client_component_name ||
+          formname === status_component_name ||
+          formname === priorities_component_name ||
           formname === task_list_component_name
         ) {
           const rowData = cellProps.row.original;
@@ -2266,6 +2270,8 @@ const InfoTable = ({
                             formname !== leave_pending_table && 
                             formname !== custom_field_component_name && 
                             formname !== leave_application_component_name &&
+                            formname !== priorities_component_name &&
+                            formname !== status_component_name &&
                               formname !== project_component_name && (
                               <button
                                 type="button"
