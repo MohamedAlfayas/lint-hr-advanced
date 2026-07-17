@@ -1562,34 +1562,32 @@ const InfoTable = ({
   const firstEffectExecutedRef = useRef(false);
   useEffect(() => {
     const profile_data = JSON.parse(
-      localStorage.getItem("lint_hr_profile_data"),
+      localStorage.getItem("lint_hr_profile_data") || "{}",
     );
+
+    const permissionList = profile_data.permission_list || [];
+
     if (
       formname === leave_approval_component_name ||
-      attendance_approval_component_name
+      formname === attendance_approval_component_name
     ) {
       setShowAllLeaveApprovalBtn(
-        profile_data.permission_list.includes(
-          APPROVE_REJECT_HIERARCHY_LEAVE_ACCESS_KEY,
-        ),
+        permissionList.includes(APPROVE_REJECT_HIERARCHY_LEAVE_ACCESS_KEY),
       );
+
       setShowTeamLeaveApprovalBtn(
-        profile_data.permission_list.includes(
-          APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
-        ),
+        permissionList.includes(APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY),
       );
 
       setShowAllAttendanceApprovalBtn(
-        profile_data.permission_list.includes(
-          APPROVE_REJECT_HIERARCHY_ATTENDANCE_ACCESS_KEY,
-        ),
+        permissionList.includes(APPROVE_REJECT_HIERARCHY_ATTENDANCE_ACCESS_KEY),
       );
+
       setShowTeamAttendanceApprovalBtn(
-        profile_data.permission_list.includes(
-          APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
-        ),
+        permissionList.includes(APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY),
       );
     }
+
     firstEffectExecutedRef.current = true;
     CheckCreateAccess(profile_data, formname);
     CheckEditAccess(profile_data, formname);
@@ -2267,12 +2265,12 @@ const InfoTable = ({
                         )} */}
                           {formname &&
                             formname !== attendance_pending_table &&
-                            formname !== leave_pending_table && 
-                            formname !== custom_field_component_name && 
+                            formname !== leave_pending_table &&
+                            formname !== custom_field_component_name &&
                             formname !== leave_application_component_name &&
                             formname !== priorities_component_name &&
                             formname !== status_component_name &&
-                              formname !== project_component_name && (
+                            formname !== project_component_name && (
                               <button
                                 type="button"
                                 className="btn btn-info"
