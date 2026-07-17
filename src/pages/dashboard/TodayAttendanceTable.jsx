@@ -316,6 +316,9 @@ const TodayAttendanceTable = () => {
 
   // ── Map modal state ──
   const [mapEmployees, setMapEmployees] = useState([]);
+
+  console.log("employee", mapEmployees);
+
   const [mapSelectedEmpId, setMapSelectedEmpId] = useState(null);
   const [mapSelectedEmpName, setMapSelectedEmpName] = useState("");
   const [mapSelectedEmpProfileUrl, setMapSelectedEmpProfileUrl] =
@@ -560,7 +563,7 @@ const TodayAttendanceTable = () => {
 
     const isoDate = ConvertISODateFormat(ConvertDateFormat(dateFilter));
 
-    setMapEmployees(withLocations);
+    setMapEmployees(attendanceData);
     setMapSelectedEmpId(row.emp_id);
     setMapSelectedEmpName(row.first_name);
     setMapSelectedEmpProfileUrl(row.profile_url || null);
