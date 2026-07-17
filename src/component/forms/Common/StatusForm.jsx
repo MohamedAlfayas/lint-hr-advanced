@@ -68,7 +68,22 @@ const StatusForm = () => {
     let inputValue = value;
 
     if (name === "name") {
-      inputValue = value.replace(/[^a-zA-Z\s\-_]/g, "");
+      inputValue = value
+        .replace(/^\s+/, "")
+        .replace(/[^a-zA-Z0-9\s.,\-&()']/g, "");
+
+      if (inputValue.length > 50) {
+        FormikForm.setFieldError(
+          "name",
+          "Status name is too long. Please keep it within 50 characters."
+        );
+      } else {
+        FormikForm.setFieldError("name", undefined);
+      }
+    }
+
+    if (name === "color") {
+      inputValue = value.replace(/^\s+/, "");
     }
 
     if (name === "description") {
@@ -110,15 +125,24 @@ const StatusForm = () => {
     validationSchema: Yup.object({
       name: Yup.string()
         .matches(
-          /^[A-Za-z\s\-_]+$/,
-          "Status name should contain only letters, spaces, hyphens or underscores",
+          /^[a-zA-Z0-9\s.,\-&()']+$/,
+          "Status name can only contain letters, numbers, spaces, and . , - & ( ) '"
         )
         .required("Please Enter the status name")
+        .min(1, "Please Enter the status name")
+        .max(50, "Status name is too long. Please keep it within 50 characters.")
         .test(
           "not-only-spaces",
           "Please Enter the status name",
           (value) => !value || value.trim().length > 0,
         ),
+
+      
+      color: Yup.string()
+        .trim()
+        .required("Please enter a value or select a color.")
+        .max(25, "Color value must not exceed 25 characters."),
+        
 
       description: Yup.string()
         .trim()
@@ -142,6 +166,15 @@ const StatusForm = () => {
         return;
       }
 
+      if (trimmedName.length > 50) {
+        FormikForm.setFieldTouched("name", true);
+        FormikForm.setFieldError(
+          "name",
+          "Status name is too long. Please keep it within 50 characters."
+        );
+        return;
+      }
+
       if (
         statusData.description &&
         statusData.description.length > 200
@@ -150,6 +183,24 @@ const StatusForm = () => {
         FormikForm.setFieldError(
           "description",
           "Description is too long. Please keep it within 200 characters."
+        );
+        return;
+      }
+
+      if (!statusData.color?.trim()) {
+        FormikForm.setFieldTouched("color", true);
+        FormikForm.setFieldError(
+          "color",
+          "Please enter a value or select a color."
+        );
+        return;
+      }
+
+      if (statusData.color.length > 25) {
+        FormikForm.setFieldTouched("color", true);
+        FormikForm.setFieldError(
+          "color",
+          "Color value must not exceed 25 characters."
         );
         return;
       }
@@ -247,7 +298,8 @@ const StatusForm = () => {
                     onChange={handleInputChange}
                     onBlur={FormikForm.handleBlur}
                     invalid={
-                      FormikForm.touched.name && !!FormikForm.errors.name
+                      // FormikForm.touched.name &&
+                       !!FormikForm.errors.name
                     }
                   />
 
@@ -288,11 +340,28 @@ const StatusForm = () => {
                       placeholder="e.g. lightgreen or #90ee90"
                       value={statusData.color || ""}
                       onChange={handleInputChange}
+                      onBlur={FormikForm.handleBlur}
+                      invalid={
+                        // FormikForm.touched.color &&
+                        !!FormikForm.errors.color
+                      }
                     />
+                    
                   </div>
-                  <div className="form-text">
-                    Pick or type a color name / hex code.
-                  </div>
+                  {/* <div className="form-text">
+                    Pick or type a color name / hex code. Invalid values will default to black (#000000).
+                  </div> */}
+
+                  {FormikForm.errors.color ? (
+                    <FormFeedback type="invalid" style={{ display: "block" }}>
+                      {FormikForm.errors.color}
+                    </FormFeedback>
+                  ) : (
+                    <div className="form-text">
+                      Pick or type a color name / hex code. Invalid values will default to black (#000000).
+                    </div>
+                  )}
+
                 </div>
               </Col>
 

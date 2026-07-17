@@ -23,12 +23,25 @@ const PrioritiesForm = () => {
   const dispatch = useDispatch();
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
 
-  const [prioritiesData, setPrioritiesData] = useState({});
+  const [prioritiesData, setPrioritiesData] = useState({
+      id: 0,
+      name: "",
+      color: "#000000",
+      description: "",
+      status: true,
+  });
 
   // ================= SYNC form_obj INTO LOCAL STATE =================
   useEffect(() => {
     if (form_obj) {
-      setPrioritiesData(form_obj);
+      // setPrioritiesData(form_obj);
+          setPrioritiesData({
+      id: form_obj.id || 0,
+      name: form_obj.name || "",
+      color: form_obj.color || "#000000",
+      description: form_obj.description || "",
+      status: form_obj.status !== undefined ? form_obj.status : true,
+    });
     }
   }, [form_obj]);
 
@@ -41,6 +54,33 @@ const PrioritiesForm = () => {
     const { name, value } = e.target;
 
     let inputValue = value;
+
+    if (name === "name") {
+      inputValue = value
+        .replace(/^\s+/, "")
+        .replace(/[^a-zA-Z0-9\s.,\-&()']/g, "");
+
+      if (inputValue.length > 50) {
+        FormikForm.setFieldError(
+          "name",
+          "Status name is too long. Please keep it within 50 characters."
+        );
+      } else {
+        FormikForm.setFieldError("name", undefined);
+      }
+    }
+
+    if (name === "color") {
+      inputValue = value
+      .replace(/^\s+/, "")
+      .replace(/[^a-zA-Z0-9\s.,\-&()']/g, "");
+      if (inputValue.length > 50) {
+      FormikForm.setFieldError(
+        "name",
+        "Priority name is too long. Please keep it within 50 characters."
+      );
+    }
+    }
 
     if (name === "description") {
       inputValue = value
@@ -66,6 +106,9 @@ const PrioritiesForm = () => {
     }));
 
     FormikForm.setFieldValue(name, inputValue);
+    if (FormikForm.touched[name]) {
+      FormikForm.validateField(name);
+    }
   };
 
   // ================= FORMIK =================
@@ -73,7 +116,27 @@ const PrioritiesForm = () => {
     enableReinitialize: true,
     initialValues: prioritiesData,
     validationSchema: Yup.object({
-      name: Yup.string().required("Please Enter Priority Name"),
+      // name: Yup.string().required("Please Enter Priority Name"),
+
+      name: Yup.string()
+        .matches(
+          /^[a-zA-Z0-9\s.,\-&()']+$/,
+          "Priority name can only contain letters, numbers, spaces, and . , - & ( ) '"
+        )
+        .required("Please Enter Priority Name")
+        .min(1, "Please Enter Priority Name")
+        .max(50, "Priority name is too long. Please keep it within 50 characters.")
+        .test(
+          "not-only-spaces",
+          "Please Enter Priority Name",
+          (value) => !value || value.trim().length > 0,
+        ),
+
+      color: Yup.string()
+        .trim()
+        .required("Please enter a value or select a color.")
+        .max(25, "Color value must not exceed 25 characters."),
+
       description: Yup.string()
         .trim()
         .matches(
@@ -87,6 +150,41 @@ const PrioritiesForm = () => {
     }),
 
     onSubmit: async () => {
+
+      const trimmedName = prioritiesData.name?.trim();
+
+      if (!trimmedName) {
+        FormikForm.setFieldTouched("name", true);
+        FormikForm.setFieldError("name", "Please Enter Priority Name");
+        return;
+      }
+
+      if (trimmedName.length > 50) {
+        FormikForm.setFieldTouched("name", true);
+        FormikForm.setFieldError(
+          "name",
+          "Priority name is too long. Please keep it within 50 characters."
+        );
+        return;
+      }
+
+      if (!prioritiesData.color?.trim()) {
+        FormikForm.setFieldTouched("color", true);
+        FormikForm.setFieldError(
+          "color",
+          "Please enter a value or select a color."
+        );
+        return;
+      }
+
+      if (prioritiesData.color.length > 25) {
+        FormikForm.setFieldTouched("color", true);
+        FormikForm.setFieldError(
+          "color",
+          "Color value must not exceed 25 characters."
+        );
+        return;
+      }
       // Description validation
       if (
         prioritiesData.description &&
@@ -169,16 +267,13 @@ const PrioritiesForm = () => {
                       placeholder="Priority Name"
                       value={prioritiesData.name || ""}
                       onChange={handleInputChange}
-                      invalid={
-                        FormikForm.touched.name && FormikForm.errors.name
-                          ? true
-                          : false
-                      }
+                      onBlur={FormikForm.handleBlur}
+                      invalid={!!FormikForm.errors.name}
                     />
-                    {!FormikForm.touched.name && !FormikForm.errors.name && (
+                    {!FormikForm.errors.name && (
                       <i className="ri-flag-line" />
                     )}
-                    {FormikForm.touched.name && FormikForm.errors.name ? (
+                    {FormikForm.errors.name ? (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.name}
                       </FormFeedback>
@@ -223,11 +318,24 @@ const PrioritiesForm = () => {
                       placeholder="e.g. lightgreen or #90ee90"
                       value={prioritiesData.color || ""}
                       onChange={handleInputChange}
+                      onBlur={FormikForm.handleBlur}
+                      invalid={!!FormikForm.errors.color}
                     />
                   </div>
-                  <div className="form-text">
-                    Pick or type a color name / hex code.
-                  </div>
+                  {/* <div className="form-text">
+                    Pick or type a color name / hex code. Invalid values will default to black (#000000).
+                  </div> */}
+
+                  {FormikForm.errors.color ? (
+                    <FormFeedback type="invalid" style={{ display: "block" }}>
+                      {FormikForm.errors.color}
+                    </FormFeedback>
+                  ) : (
+                    <div className="form-text">
+                      Pick or type a color name / hex code. Invalid values will default to black (#000000).
+                    </div>
+                  )}
+
                 </div>
               </Col>
 
