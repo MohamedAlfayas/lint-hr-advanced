@@ -872,54 +872,6 @@ const ClientForm = () => {
                 </div>
               </Col>
 
-              {/* ── Address ── */}
-
-              <Col md={12} lg={12} xxl={12}>
-                <div className="mb-3">
-                  <Label htmlFor="address" className="form-label">
-                    Address *
-                  </Label>
-                  <Input
-                    type="textarea"
-                    name="address"
-                    id="address"
-                    className="form-control"
-                    placeholder="Address"
-                    value={clientData.address || ""}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(
-                        /[^A-Za-z0-9\s.,\-#/'&]/g,
-                        "",
-                      );
-
-                      setClientData((prev) => ({
-                        ...prev,
-                        address: value,
-                      }));
-
-                      FormikForm.setFieldValue("address", value);
-                      FormikForm.setFieldTouched("address", true, false);
-
-                      if (value.length > 250) {
-                        FormikForm.setFieldError(
-                          "address",
-                          "Address cannot exceed 250 characters",
-                        );
-                      } else {
-                        FormikForm.setFieldError("address", undefined);
-                      }
-                    }}
-                    onBlur={() => FormikForm.setFieldTouched("address", true)}
-                    invalid={!!FormikForm.errors.address}
-                  />
-                  {FormikForm.errors.address ? (
-                    <FormFeedback type="invalid">
-                      {FormikForm.errors.address}
-                    </FormFeedback>
-                  ) : null}
-                </div>
-              </Col>
-
               {/* ── Contry / State ── */}
               <Col md={6} lg={6} xxl={6}>
                 <div className="mb-3">
@@ -976,7 +928,55 @@ const ClientForm = () => {
                 </div>
               </Col>
 
-              {/* ── city / Country code ── */}
+              {/* ── Address ── */}
+
+              <Col md={12} lg={12} xxl={12}>
+                <div className="mb-3">
+                  <Label htmlFor="address" className="form-label">
+                    Address *
+                  </Label>
+                  <Input
+                    type="textarea"
+                    name="address"
+                    id="address"
+                    className="form-control"
+                    placeholder="Address"
+                    value={clientData.address || ""}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(
+                        /[^A-Za-z0-9\s.,\-#/'&]/g,
+                        "",
+                      );
+
+                      setClientData((prev) => ({
+                        ...prev,
+                        address: value,
+                      }));
+
+                      FormikForm.setFieldValue("address", value);
+                      FormikForm.setFieldTouched("address", true, false);
+
+                      if (value.length > 250) {
+                        FormikForm.setFieldError(
+                          "address",
+                          "Address cannot exceed 250 characters",
+                        );
+                      } else {
+                        FormikForm.setFieldError("address", undefined);
+                      }
+                    }}
+                    onBlur={() => FormikForm.setFieldTouched("address", true)}
+                    invalid={!!FormikForm.errors.address}
+                  />
+                  {FormikForm.errors.address ? (
+                    <FormFeedback type="invalid">
+                      {FormikForm.errors.address}
+                    </FormFeedback>
+                  ) : null}
+                </div>
+              </Col>
+
+              {/* ── city / pincode ── */}
               <Col md={6} lg={6} xxl={6}>
                 <div className="mb-3">
                   <Label htmlFor="city" className="form-label">
@@ -1000,24 +1000,7 @@ const ClientForm = () => {
                   ) : null}
                 </div>
               </Col>
-              <Col md={6} lg={6} xxl={6}>
-                <div className="mb-3">
-                  <Label htmlFor="country_code" className="form-label">
-                    Country Code
-                  </Label>
-                  <Input
-                    type="text"
-                    name="country_code"
-                    id="country_code"
-                    className="form-control"
-                    placeholder="e.g. IN"
-                    value={clientData.country_code || ""}
-                    readOnly
-                  />
-                </div>
-              </Col>
 
-              {/* ── pincode / Phone ── */}
               <Col md={6} lg={6} xxl={6}>
                 <div className="mb-3">
                   <Label htmlFor="pincode" className="form-label">
@@ -1045,6 +1028,24 @@ const ClientForm = () => {
                       {FormikForm.errors.pincode}
                     </FormFeedback>
                   ) : null}
+                </div>
+              </Col>
+
+              {/* ── country / Phone ── */}
+              <Col md={6} lg={6} xxl={6}>
+                <div className="mb-3">
+                  <Label htmlFor="country_code" className="form-label">
+                    Country Code
+                  </Label>
+                  <Input
+                    type="text"
+                    name="country_code"
+                    id="country_code"
+                    className="form-control"
+                    placeholder="e.g. IN"
+                    value={clientData.country_code || ""}
+                    readOnly
+                  />
                 </div>
               </Col>
               <Col md={6} lg={6} xxl={6}>

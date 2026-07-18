@@ -29,6 +29,7 @@ const HolidayReducer = createSlice({
       };
     },
     removeHoliday: (state, action) => {
+      console.log("Remove Holiday - ", action.payload);
       return {
         ...state,
         holiday_data: state.holiday_data.filter(
