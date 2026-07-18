@@ -224,7 +224,7 @@ const ApplyLeaveForm = () => {
       console.log(appliedLeaveMap, "appliedLeaveMap");
 
       return {
-        style: { backgroundColor: "#FF9800", color: "#fff" }, // red = already applied
+        style: { backgroundColor: "#405189", color: "#fff" }, // red = already applied
         tooltip: appliedLeaveMap[currentISO],
       };
     }
@@ -1035,7 +1035,7 @@ const ApplyLeaveForm = () => {
                         {leaveapplyObj?.start && (
                           <>
                             <Label className="form-label">
-                              Work Date (Comp-Off Day)
+                              Worked On (Comp-Off Day)
                             </Label>
                             <DatePicker
                               name="comp_off_work_date"

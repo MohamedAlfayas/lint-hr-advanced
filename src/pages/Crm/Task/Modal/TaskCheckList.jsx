@@ -28,6 +28,8 @@ const TaskChecklist = ({
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItemText, setNewItemText] = useState("");
 
+  const [checklistError, setChecklistError] = useState("");
+
   // drag states
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -62,6 +64,11 @@ const TaskChecklist = ({
   const handleAddItem = async () => {
     if (!newItemText.trim()) return;
 
+    if (newItemText.length > 100) {
+      setChecklistError("Checklist cannot exceed 100 characters");
+      return;
+    }
+
     try {
       const payload = {
         task: taskId,
@@ -85,6 +92,7 @@ const TaskChecklist = ({
       toast.success(response?.data?.message || "Checklist Added");
 
       setNewItemText("");
+      setChecklistError("");
       setShowAddForm(false);
     } catch (error) {
       console.log(error);
@@ -381,10 +389,25 @@ const TaskChecklist = ({
           <div className="p-2">
             <input
               type="text"
-              className="form-control form-control-sm"
+              className={`form-control form-control-sm ${
+                checklistError ? "is-invalid" : ""
+              }`}
               placeholder="Add item"
               value={newItemText}
-              onChange={(e) => setNewItemText(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.replace(
+                  /[^A-Za-z0-9\s.,&()'-]/g,
+                  "",
+                );
+
+                setNewItemText(value);
+
+                if (value.length > 100) {
+                  setChecklistError("Checklist cannot exceed 100 characters");
+                } else {
+                  setChecklistError("");
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleAddItem();
                 if (e.key === "Escape") setShowAddForm(false);
@@ -392,6 +415,9 @@ const TaskChecklist = ({
               autoFocus
               style={{ fontSize: "0.85rem" }}
             />
+            {checklistError && (
+              <div className="invalid-feedback d-block">{checklistError}</div>
+            )}
           </div>
 
           <div className="d-flex gap-2 px-2 pb-2">
@@ -399,7 +425,7 @@ const TaskChecklist = ({
               type="button"
               className="btn btn-primary btn-sm"
               onClick={handleAddItem}
-              disabled={!newItemText.trim()}
+              disabled={!newItemText.trim() || !!checklistError}
             >
               Add
             </button>

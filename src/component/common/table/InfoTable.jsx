@@ -875,7 +875,7 @@ const InfoTable = ({
 
       if (Api?.status === 200) {
         dispatch(removeHoliday(orderData.id));
-        RemoveLocalStorageData("holiday");
+        RemoveLocalStorageData("holiday", orderData.id);
 
         toast.success(Api?.data?.message || "Holiday deleted successfully");
 
@@ -1562,32 +1562,34 @@ const InfoTable = ({
   const firstEffectExecutedRef = useRef(false);
   useEffect(() => {
     const profile_data = JSON.parse(
-      localStorage.getItem("lint_hr_profile_data") || "{}",
+      localStorage.getItem("lint_hr_profile_data"),
     );
-
-    const permissionList = profile_data.permission_list || [];
-
     if (
       formname === leave_approval_component_name ||
-      formname === attendance_approval_component_name
+      attendance_approval_component_name
     ) {
       setShowAllLeaveApprovalBtn(
-        permissionList.includes(APPROVE_REJECT_HIERARCHY_LEAVE_ACCESS_KEY),
+        profile_data.permission_list.includes(
+          APPROVE_REJECT_HIERARCHY_LEAVE_ACCESS_KEY,
+        ),
       );
-
       setShowTeamLeaveApprovalBtn(
-        permissionList.includes(APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY),
+        profile_data.permission_list.includes(
+          APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
+        ),
       );
 
       setShowAllAttendanceApprovalBtn(
-        permissionList.includes(APPROVE_REJECT_HIERARCHY_ATTENDANCE_ACCESS_KEY),
+        profile_data.permission_list.includes(
+          APPROVE_REJECT_HIERARCHY_ATTENDANCE_ACCESS_KEY,
+        ),
       );
-
       setShowTeamAttendanceApprovalBtn(
-        permissionList.includes(APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY),
+        profile_data.permission_list.includes(
+          APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
+        ),
       );
     }
-
     firstEffectExecutedRef.current = true;
     CheckCreateAccess(profile_data, formname);
     CheckEditAccess(profile_data, formname);
@@ -2270,7 +2272,8 @@ const InfoTable = ({
                             formname !== leave_application_component_name &&
                             formname !== priorities_component_name &&
                             formname !== status_component_name &&
-                            formname !== project_component_name && (
+                            formname !== project_component_name &&
+                            formname !== task_list_component_name && (
                               <button
                                 type="button"
                                 className="btn btn-info"

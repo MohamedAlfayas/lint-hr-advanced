@@ -526,3 +526,6 @@ body .rs-table-row-header .rs-table-cell {
 .form-icon.right .form-control {
   padding-right: 3rem !important;
 }
+.jodit-status-bar a.jodit-status-bar-link {
+  display: none;
+}
