@@ -127,6 +127,7 @@ const ProjectForm = () => {
         ...prev,
         [name]: filteredValue,
       }));
+      
 
       FormikForm.setFieldValue(name, filteredValue);
       FormikForm.setFieldTouched("title", true, false);
@@ -141,6 +142,21 @@ const ProjectForm = () => {
       } else {
         FormikForm.setFieldError("title", undefined);
       }
+
+      return;
+    }
+
+    if (name === "description") {
+      const filteredValue = value
+      .replace(/^\s+/, "")
+      .replace(/[^A-Za-z0-9\s.,\-#\/'&():;?!]/g, "");
+
+      setProjectData((prev) => ({
+        ...prev,
+        description: filteredValue,
+      }));
+
+      FormikForm.setFieldValue("description", filteredValue);
 
       return;
     }
@@ -222,12 +238,13 @@ const ProjectForm = () => {
         .min(0, "Price cannot be negative")
         .max(5000000000, "Price cannot exceed 500 Crores (5,000,000,000.00)")
         .nullable(),
+      
       description: Yup.string()
-        .test(
-          "not-only-spaces",
-          "Please enter a valid description",
-          (value) => !value || value.trim().length > 0,
+        .matches(
+          /^[A-Za-z0-9\s.,\-#\/'&():;?!]*$/,
+          "Description contains invalid characters"
         )
+        .max(1500, "Description must not exceed 1500 characters.")
         .nullable(),
     }),
 
@@ -427,19 +444,18 @@ const ProjectForm = () => {
                     placeholder="Project Description"
                     value={projectData.description || ""}
                     onChange={handleInputChange}
-                    invalid={
-                      FormikForm.touched.description &&
-                      FormikForm.errors.description
-                        ? true
-                        : false
-                    }
+                    invalid={!!FormikForm.errors.description}
                   />
-                  {FormikForm.touched.description &&
-                    FormikForm.errors.description && (
-                      <FormFeedback>
-                        {FormikForm.errors.description}
-                      </FormFeedback>
-                    )}
+                  {FormikForm.errors.description ? (
+                    <FormFeedback type="invalid">
+                      {FormikForm.errors.description}
+                    </FormFeedback>
+                  ) : (
+                    <div className="form-text">
+                      Description (Optional).{" "}
+                      {(projectData.description || "").length}/1500
+                    </div>
+                  )}
                 </div>
               </Col>
 
