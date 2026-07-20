@@ -109,6 +109,72 @@ export const CLIENT_VIEW_ACCESS_KEY = "f48a12c7-8f95-4a64-93de-0f1a52d96e21";
 export const CREATE_CLIENT_ACCESS_KEY = "2de6f781-6a3d-46d2-a2e7-4e9c0e5f7b93";
 export const EDIT_CLIENT_ACCESS_KEY = "c31b8a9f-54d2-4a9d-b0f4-8d76e3c912ab";
 
+// Projects
+
+export const PROJECT_VIEW_ACCESS_KEY = "7d2c9f41-3e8b-4f72-9c5a-1b64e8d3f2a7"
+export const CREATE_PROJECT_ACCESS_KEY = "b81f6d2a-5c94-4a73-a9e1-6f3d2c7b8e45"
+export const EDIT_PROJECT_ACCESS_KEY = "4e9a1c76-8d35-42bf-b7c2-9f1e5d3a6b84"
+
+
+// Task
+
+export const CREATE_TASK_ACCESS_KEY = "1c7d9e54-6b2f-4a81-b3e7-9d5f2a6c8b14"
+export const EDIT_TASK_ACCESS_KEY = "7a3f1c92-5d8e-4b67-a9c1-2e6d4f8b3c75"
+
+// Task Settings
+
+export const TASK_SETTINGS_VIEW_ACCESS_KEY = "c4a9d2e7-6f31-4b8c-9a52-1e7d3f6b8c24"
+export const CREATE_TASK_SETTINGS_ACCESS_KEY = "8f2d7c41-5b9e-4d73-a6c1-3e9f2b7d5a18"
+export const EDIT_TASK_SETTINGS_ACCESS_KEY = "2d7e5b91-8c34-4fa6-b1e9-6a3d7c2f5b84"
+
+// Attendance Configuration
+export const ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY =
+  "7f4b9c2d-8e31-4a6f-b5d2-1c8e7a3f9d24";
+
+export const UPDATE_ATTENDANCE_CONFIGURATION_ACCESS_KEY =
+  "3c8f1a7d-5e2b-4d9c-a6f1-8b3e7d2c5a25";
+
+// Payroll
+export const PAYROLL_VIEW_ACCESS_KEY =
+  "9d7f6f2a-6d1e-4f4a-9b82-2b8f1f0c7e11";
+
+export const CREATE_PAYROLL_ACCESS_KEY =
+  "3a4d9f88-c0f5-4d8d-b6e7-7f5d9a3c2b12";
+
+export const EDIT_PAYROLL_ACCESS_KEY =
+  "b1e6c4d7-8f29-4e8b-a1c3-5d7f9b2e4a13";
+
+// Roles
+export const ROLES_VIEW_ACCESS_KEY =
+  "f2a8d1c7-5b9e-4c6f-a2d1-8e3b7f4c5d14";
+
+export const CREATE_ROLES_ACCESS_KEY =
+  "7c3e9b2d-1f8a-4d5c-b7e9-2a6f8c1d3e15";
+
+export const EDIT_ROLES_ACCESS_KEY =
+  "4e7d2a9c-8b1f-4c3d-a5e7-9f2c6b1d8a16";
+
+// Forms
+export const FORMS_VIEW_ACCESS_KEY =
+  "a8d3c7f1-2e9b-4d6a-b1f8-3c7e9d2a4b17";
+
+export const CREATE_FORMS_ACCESS_KEY =
+  "6f1b8d3c-7a2e-4c9d-b5f1-8d3a7c2e9b18";
+
+export const EDIT_FORMS_ACCESS_KEY =
+  "2c9e7a1d-4f8b-4d3c-a6e2-7b1f9d3c5a19";
+
+// Location Group
+export const LOCATION_GROUP_VIEW_ACCESS_KEY =
+  "d7a2c9e4-1b8f-4c6d-a3e7-5f2b9d1c8a20";
+
+export const CREATE_LOCATION_GROUP_ACCESS_KEY =
+  "8b4d1f7c-2a9e-4d5c-b8f3-1e7a2c9d6b21";
+
+export const EDIT_LOCATION_GROUP_ACCESS_KEY =
+  "5e9c2a7d-8f1b-4c3d-a4e8-2d7b1f9c6a22";
+
+
 export const default_roles_list = [
   {
     id: 1,
@@ -116,28 +182,28 @@ export const default_roles_list = [
     priority: 1,
     note: "",
     permission: [
-      {
-        id: 101,
-        role_uuid: CONFIGURATION_VIEW_ACCESS_KEY,
-        dependency_for_uuid_list: [
-          COMPANY_PROFILE_VIEW_ACCESS_KEY,
-          UPDATE_COMPANY_PROFILE_ACCESS_KEY,
-          DEPARTMENT_VIEW_ACCESS_KEY,
-          CREATE_DEPARTMENT_ACCESS_KEY,
-          EDIT_DEPARTMENT_ACCESS_KEY,
-          BRANCH_VIEW_ACCESS_KEY,
-          CREATE_BRANCH_ACCESS_KEY,
-          EDIT_BRANCH_ACCESS_KEY,
-          CUSTOM_FIELD_VIEW_ACCESS_KEY,
-          CREATE_CUSTOM_FIELD_ACCESS_KEY,
-          EDIT_CUSTOM_FIELD_ACCESS_KEY,
-        ],
-        notes: "User Can View Configuration",
-        element: "per_configuration_view",
-        dependency_to_element_list: [],
-        checked: false,
-        disabled: false,
-      },
+      // {
+      //   id: 101,
+      //   role_uuid: CONFIGURATION_VIEW_ACCESS_KEY,
+      //   dependency_for_uuid_list: [
+      //     COMPANY_PROFILE_VIEW_ACCESS_KEY,
+      //     UPDATE_COMPANY_PROFILE_ACCESS_KEY,
+      //     DEPARTMENT_VIEW_ACCESS_KEY,
+      //     CREATE_DEPARTMENT_ACCESS_KEY,
+      //     EDIT_DEPARTMENT_ACCESS_KEY,
+      //     BRANCH_VIEW_ACCESS_KEY,
+      //     CREATE_BRANCH_ACCESS_KEY,
+      //     EDIT_BRANCH_ACCESS_KEY,
+      //     CUSTOM_FIELD_VIEW_ACCESS_KEY,
+      //     CREATE_CUSTOM_FIELD_ACCESS_KEY,
+      //     EDIT_CUSTOM_FIELD_ACCESS_KEY,
+      //   ],
+      //   notes: "User Can View Configuration",
+      //   element: "per_configuration_view",
+      //   dependency_to_element_list: [],
+      //   checked: false,
+      //   disabled: false,
+      // },
       {
         id: 102,
         role_uuid: COMPANY_PROFILE_VIEW_ACCESS_KEY,
@@ -542,4 +608,296 @@ export const default_roles_list = [
       },
     ],
   },
+  {
+        "id": 6,
+        "name": "Projects",
+        "priority": 6,
+        "note": "",
+        "permission": [
+            {
+                "id": 601,
+                "role_uuid": PROJECT_VIEW_ACCESS_KEY,
+                "dependency_for_uuid_list": [CREATE_PROJECT_ACCESS_KEY, EDIT_PROJECT_ACCESS_KEY],
+                "notes": "User Can View Projects",
+                "element": "per_project_view",
+                "dependency_to_element_list": [],
+                "checked": false,
+                "disabled": false,
+            },
+            {
+                "id": 602,
+                "role_uuid": CREATE_PROJECT_ACCESS_KEY,
+                "dependency_for_uuid_list": [],
+                "notes": "User Can Create Projects",
+                "element": "per_create_project",
+                "dependency_to_element_list": ["per_project_view"],
+                "checked": false,
+                "disabled": false,
+            },
+            {
+                "id": 603,
+                "role_uuid": EDIT_PROJECT_ACCESS_KEY,
+                "dependency_for_uuid_list": [],
+                "notes": "User Can Edit Projects",
+                "element": "per_edit_project",
+                "dependency_to_element_list": ["per_project_view"],
+                "checked": false,
+                "disabled": false,
+            },
+        ],
+    },
+    {
+        "id": 7,
+        "name": "Task",
+        "priority": 7,
+        "note": "",
+        "permission": [
+            {
+                "id": 701,
+                "role_uuid": CREATE_TASK_ACCESS_KEY,
+                "dependency_for_uuid_list": [],
+                "notes": "User Can Create Task",
+                "element": "per_create_task",
+                "dependency_to_element_list": [],
+                "checked": false,
+                "disabled": false,
+            },
+            {
+                "id": 702,
+                "role_uuid": EDIT_TASK_ACCESS_KEY,
+                "dependency_for_uuid_list": [],
+                "notes": "User Can Edit Task",
+                "element": "per_edit_task",
+                "dependency_to_element_list": [],
+                "checked": false,
+                "disabled": false,
+            },
+            {
+                "id": 703,
+                "role_uuid": TASK_SETTINGS_VIEW_ACCESS_KEY,
+                "dependency_for_uuid_list": [CREATE_TASK_SETTINGS_ACCESS_KEY, EDIT_TASK_SETTINGS_ACCESS_KEY],
+                "notes": "User Can View Task Status",
+                "element": "per_task_status_view",
+                "dependency_to_element_list": [],
+                "checked": false,
+                "disabled": false,
+            },
+            {
+                "id": 704,
+                "role_uuid": CREATE_TASK_SETTINGS_ACCESS_KEY,
+                "dependency_for_uuid_list": [],
+                "notes": "User Can Create Task Status",
+                "element": "per_create_task_status",
+                "dependency_to_element_list": ["per_task_status_view"],
+                "checked": false,
+                "disabled": false,
+            },
+            {
+                "id": 705,
+                "role_uuid": EDIT_TASK_SETTINGS_ACCESS_KEY,
+                "dependency_for_uuid_list": [],
+                "notes": "User Can Edit Task Status",
+                "element": "per_edit_task_status",
+                "dependency_to_element_list": ["per_task_status_view"],
+                "checked": false,
+                "disabled": false,
+            },
+        ],
+    },
+  {
+    id: 8,
+    name: "Payroll",
+    priority: 8,
+    note: "",
+    permission: [
+      {
+        id: 801,
+        role_uuid: PAYROLL_VIEW_ACCESS_KEY,
+        dependency_for_uuid_list: [
+          CREATE_PAYROLL_ACCESS_KEY,
+          EDIT_PAYROLL_ACCESS_KEY,
+        ],
+        notes: "User Can View Payroll",
+        element: "per_payroll_view",
+        dependency_to_element_list: [],
+        checked: false,
+        disabled: false,
+      },
+      {
+        id: 802,
+        role_uuid: CREATE_PAYROLL_ACCESS_KEY,
+        dependency_for_uuid_list: [],
+        notes: "User Can Create Payroll",
+        element: "per_payroll_create",
+        dependency_to_element_list: ["per_payroll_view"],
+        checked: false,
+        disabled: false,
+      },
+      {
+        id: 803,
+        role_uuid: EDIT_PAYROLL_ACCESS_KEY,
+        dependency_for_uuid_list: [],
+        notes: "User Can Edit Payroll",
+        element: "per_payroll_update",
+        dependency_to_element_list: ["per_payroll_view"],
+        checked: false,
+        disabled: false,
+      },
+    ],
+  },
+  {
+    id: 9,
+    name: "Roles",
+    priority: 9,
+    note: "",
+    permission: [
+      {
+        id: 901,
+        role_uuid: ROLES_VIEW_ACCESS_KEY,
+        dependency_for_uuid_list: [
+          CREATE_ROLES_ACCESS_KEY,
+          EDIT_ROLES_ACCESS_KEY,
+        ],
+        notes: "User Can View Roles",
+        element: "per_roles_view",
+        dependency_to_element_list: [],
+        checked: false,
+        disabled: false,
+      },
+      {
+        id: 902,
+        role_uuid: CREATE_ROLES_ACCESS_KEY,
+        dependency_for_uuid_list: [],
+        notes: "User Can Create Roles",
+        element: "per_roles_create",
+        dependency_to_element_list: ["per_roles_view"],
+        checked: false,
+        disabled: false,
+      },
+      {
+        id: 903,
+        role_uuid: EDIT_ROLES_ACCESS_KEY,
+        dependency_for_uuid_list: [],
+        notes: "User Can Edit Roles",
+        element: "per_roles_update",
+        dependency_to_element_list: ["per_roles_view"],
+        checked: false,
+        disabled: false,
+      },
+    ],
+  },
+  {
+    id: 10,
+    name: "Forms",
+    priority: 10,
+    note: "",
+    permission: [
+      {
+        id: 1001,
+        role_uuid: FORMS_VIEW_ACCESS_KEY,
+        dependency_for_uuid_list: [
+          CREATE_FORMS_ACCESS_KEY,
+          EDIT_FORMS_ACCESS_KEY,
+        ],
+        notes: "User Can View Forms",
+        element: "per_forms_view",
+        dependency_to_element_list: [],
+        checked: false,
+        disabled: false,
+      },
+      {
+        id: 1002,
+        role_uuid: CREATE_FORMS_ACCESS_KEY,
+        dependency_for_uuid_list: [],
+        notes: "User Can Create Forms",
+        element: "per_forms_create",
+        dependency_to_element_list: ["per_forms_view"],
+        checked: false,
+        disabled: false,
+      },
+      {
+        id: 1003,
+        role_uuid: EDIT_FORMS_ACCESS_KEY,
+        dependency_for_uuid_list: [],
+        notes: "User Can Edit Forms",
+        element: "per_forms_update",
+        dependency_to_element_list: ["per_forms_view"],
+        checked: false,
+        disabled: false,
+      },
+    ],
+  },
+  {
+    id: 11,
+    name: "Location Group",
+    priority: 11,
+    note: "",
+    permission: [
+      {
+        id: 1101,
+        role_uuid: LOCATION_GROUP_VIEW_ACCESS_KEY,
+        dependency_for_uuid_list: [
+          CREATE_LOCATION_GROUP_ACCESS_KEY,
+          EDIT_LOCATION_GROUP_ACCESS_KEY,
+        ],
+        notes: "User Can View Location Group",
+        element: "per_location_group_view",
+        dependency_to_element_list: [],
+        checked: false,
+        disabled: false,
+      },
+      {
+        id: 1102,
+        role_uuid: CREATE_LOCATION_GROUP_ACCESS_KEY,
+        dependency_for_uuid_list: [],
+        notes: "User Can Create Location Group",
+        element: "per_location_group_create",
+        dependency_to_element_list: ["per_location_group_view"],
+        checked: false,
+        disabled: false,
+      },
+      {
+        id: 1103,
+        role_uuid: EDIT_LOCATION_GROUP_ACCESS_KEY,
+        dependency_for_uuid_list: [],
+        notes: "User Can Edit Location Group",
+        element: "per_location_group_update",
+        dependency_to_element_list: ["per_location_group_view"],
+        checked: false,
+        disabled: false,
+      },
+    ],
+  },
+  {
+    id: 12,
+    name: "Attendance Configuration",
+    priority: 12,
+    note: "",
+    permission: [
+      {
+        id: 1201,
+        role_uuid: ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY,
+        dependency_for_uuid_list: [
+          UPDATE_ATTENDANCE_CONFIGURATION_ACCESS_KEY,
+        ],
+        notes: "User Can View Attendance Configuration",
+        element: "per_attendance_configuration_view",
+        dependency_to_element_list: [],
+        checked: false,
+        disabled: false,
+      },
+      {
+        id: 1202,
+        role_uuid: UPDATE_ATTENDANCE_CONFIGURATION_ACCESS_KEY,
+        dependency_for_uuid_list: [],
+        notes: "User Can Update Attendance Configuration",
+        element: "per_attendance_configuration_update",
+        dependency_to_element_list: [
+          "per_attendance_configuration_view",
+        ],
+        checked: false,
+        disabled: false,
+      },
+    ],
+  }
 ];
