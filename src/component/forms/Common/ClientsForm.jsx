@@ -407,13 +407,19 @@ const ClientForm = () => {
   const handleCountryChange = (e) => {
     setClientData((prev) => ({
       ...prev,
-      country: e.value,
-      country_code: e.countryCode,
+      country: e?.value || "",
+      country_code: e?.countryCode || "",
       state: "",
     }));
 
+    FormikForm.setFieldValue("country", e?.value || "");
+    FormikForm.setFieldTouched("country", true, false);
+
+    FormikForm.setFieldValue("state", "");
+    FormikForm.setFieldTouched("state", false, false);
+
     setStateListOptions(
-      CountryListOptions.find((d) => d.value === e.value)?.states || [],
+      CountryListOptions.find((d) => d.value === e?.value)?.states || [],
     );
   };
 
@@ -430,6 +436,13 @@ const ClientForm = () => {
   };
 
   const handleModalClose = () => setModalOpen(false);
+
+  const handleStatusToggle = (e) => {
+    setClientData((prev) => ({
+      ...prev,
+      status: e.target.checked,
+    }));
+  };
 
   // ─── Main client formik ───────────────────────────────────────────────────
   const FormikForm = useFormik({
@@ -502,8 +515,8 @@ const ClientForm = () => {
         )
         .test(
           "address-length",
-          "Address cannot exceed 250 characters",
-          (value) => !value || value.length <= 250,
+          "Address cannot exceed 300 characters",
+          (value) => !value || value.length <= 300,
         ),
     }),
     onSubmit: async () => {
@@ -821,6 +834,12 @@ const ClientForm = () => {
                     className="basic-single-select"
                     classNamePrefix="lc-select"
                     placeholder="Select Owner"
+                    noOptionsMessage={() => "No options"}
+                    filterOption={(option, inputValue) =>
+                      option.label
+                        .toLowerCase()
+                        .includes(inputValue.toLowerCase())
+                    }
                     styles={selectStyles(
                       FormikForm.touched.owner,
                       FormikForm.errors.owner,
@@ -853,6 +872,12 @@ const ClientForm = () => {
                     className="basic-multi-select"
                     classNamePrefix="lc-select"
                     placeholder="Select Managers"
+                    noOptionsMessage={() => "No options"}
+                    filterOption={(option, inputValue) =>
+                      option.label
+                        .toLowerCase()
+                        .includes(inputValue.toLowerCase())
+                    }
                     styles={selectStyles(
                       FormikForm.touched.manager_id_list,
                       FormikForm.errors.manager_id_list,
@@ -883,6 +908,11 @@ const ClientForm = () => {
                     name="country"
                     isMulti={false}
                     options={CountryListOptions}
+                    styles={selectStyles(
+                      FormikForm.touched.country,
+                      FormikForm.errors.country,
+                    )}
+                    onBlur={() => FormikForm.setFieldTouched("country", true)}
                     value={
                       CountryListOptions.find(
                         (d) => d.value === clientData.country,
@@ -890,11 +920,11 @@ const ClientForm = () => {
                     }
                     onChange={handleCountryChange}
                   />
-                  {FormikForm.touched.country && FormikForm.errors.country ? (
-                    <FormFeedback type="invalid">
+                  {FormikForm.touched.country && FormikForm.errors.country && (
+                    <div className="lc_form_error_text">
                       {FormikForm.errors.country}
-                    </FormFeedback>
-                  ) : null}
+                    </div>
+                  )}
                 </div>
               </Col>
 
@@ -908,23 +938,31 @@ const ClientForm = () => {
                     name="state"
                     isMulti={false}
                     options={stateListOptions}
+                    styles={selectStyles(
+                      FormikForm.touched.state,
+                      FormikForm.errors.state,
+                    )}
+                    onBlur={() => FormikForm.setFieldTouched("state", true)}
                     value={
                       stateListOptions.find(
                         (d) => d.value === clientData.state,
                       ) || null
                     }
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setClientData((prev) => ({
                         ...prev,
-                        state: e.value,
-                      }))
-                    }
+                        state: e?.value || "",
+                      }));
+
+                      FormikForm.setFieldValue("state", e?.value || "");
+                      FormikForm.setFieldTouched("state", true, false);
+                    }}
                   />
-                  {FormikForm.touched.state && FormikForm.errors.state ? (
-                    <FormFeedback type="invalid">
+                  {FormikForm.touched.state && FormikForm.errors.state && (
+                    <div className="lc_form_error_text">
                       {FormikForm.errors.state}
-                    </FormFeedback>
-                  ) : null}
+                    </div>
+                  )}
                 </div>
               </Col>
 
@@ -956,10 +994,10 @@ const ClientForm = () => {
                       FormikForm.setFieldValue("address", value);
                       FormikForm.setFieldTouched("address", true, false);
 
-                      if (value.length > 250) {
+                      if (value.length > 300) {
                         FormikForm.setFieldError(
                           "address",
-                          "Address cannot exceed 250 characters",
+                          "Address cannot exceed 300 characters",
                         );
                       } else {
                         FormikForm.setFieldError("address", undefined);
@@ -1187,6 +1225,39 @@ const ClientForm = () => {
                   ) : null}
                 </div>
               </Col>
+
+              {/* STATUS - SHOW ONLY IN EDIT MODE */}
+              {isEdit && (
+                <Col md={12}>
+                  <div className="mb-3">
+                    <Label htmlFor="status_toggle" className="form-label">
+                      Status
+                    </Label>
+
+                    <div
+                      className="form-check form-switch form-switch-md form-switch-success"
+                      dir="ltr"
+                    >
+                      <Input
+                        type="checkbox"
+                        id="status_toggle"
+                        className="form-check-input"
+                        checked={clientData.status || false}
+                        onChange={(e) =>
+                          setClientData((prev) => ({
+                            ...prev,
+                            status: e.target.checked,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="form-text">
+                      {clientData.status ? "Active" : "Inactive"}
+                    </div>
+                  </div>
+                </Col>
+              )}
 
               {/* ── Locations Table (edit mode only) ── */}
               {isEdit && entityLocations.length > 0 && (
