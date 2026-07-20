@@ -119,6 +119,7 @@ const Clients = () => {
       website: "",
       vat_number: "",
       gst_number: "",
+      status: true,
     };
   }, []);
 

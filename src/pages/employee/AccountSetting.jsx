@@ -275,6 +275,11 @@ const AccountSettings = () => {
     });
   };
 
+  const handleNumberOnly = (e, field) => {
+    const val = e.target.value.replace(/[^0-9]/g, "");
+    updateProfileData(field, val.slice(0, 10));
+  };
+
   const handleFileUpload = (e, name) => {
     const file = e.target.files[0];
 
@@ -378,7 +383,10 @@ const AccountSettings = () => {
         .required("Select Gender")
         .min(1, "Please Select Gender"),
       dob: Yup.string().trim().required("Please Select Date"),
-      contact_number: Yup.string().required("Please Enter Phone Number"),
+      contact_number: Yup.string()
+        .required("Please Enter Phone Number")
+        .matches(/^[0-9]+$/, "Phone number must contain digits only")
+        .length(10, "Phone number must be 10 digits"),
     }),
     onSubmit: async (values) => {
       let root_department = dep_options.find((d) => d.is_root === true);
@@ -956,7 +964,7 @@ const AccountSettings = () => {
                                   </span>
                                 </DropdownToggle>
                                 <Input
-                                  type="number"
+                                  type="text"
                                   name="contact_number"
                                   className="form-control rounded-end flag-input"
                                   styles={{
@@ -971,26 +979,45 @@ const AccountSettings = () => {
                                     }),
                                   }}
                                   placeholder="Enter number"
+                                  inputMode="numeric"
                                   value={employeeObj.contact_number || ""}
-                                  onChange={(e) =>
-                                    updateProfileData(
+                                  maxLength={10}
+                                  onChange={(e) => {
+                                    handleNumberOnly(e, "contact_number");
+
+                                    const value = e.target.value
+                                      .replace(/[^0-9]/g, "")
+                                      .slice(0, 10);
+
+                                    FormikForm.setFieldValue(
                                       "contact_number",
-                                      e.target.value,
-                                    )
-                                  }
-                                  invalid={
-                                    FormikForm.touched.contact_number &&
-                                    FormikForm.errors.contact_number
-                                      ? true
-                                      : false
-                                  }
+                                      value,
+                                    );
+                                    FormikForm.setFieldTouched(
+                                      "contact_number",
+                                      true,
+                                      false,
+                                    );
+
+                                    if (value.length !== 10) {
+                                      FormikForm.setFieldError(
+                                        "contact_number",
+                                        "Phone number must be 10 digits",
+                                      );
+                                    } else {
+                                      FormikForm.setFieldError(
+                                        "contact_number",
+                                        undefined,
+                                      );
+                                    }
+                                  }}
+                                  invalid={!!FormikForm.errors.contact_number}
                                 />
-                                {FormikForm.touched.contact_number &&
-                                FormikForm.errors.contact_number ? (
+                                {FormikForm.errors.contact_number && (
                                   <FormFeedback type="invalid">
                                     {FormikForm.errors.contact_number}
                                   </FormFeedback>
-                                ) : null}
+                                )}
                                 <DropdownMenu
                                   as="ul"
                                   className="list-unstyled w-100 dropdown-menu-list mb-0"

@@ -2273,7 +2273,8 @@ const InfoTable = ({
                             formname !== priorities_component_name &&
                             formname !== status_component_name &&
                             formname !== project_component_name &&
-                            formname !== task_list_component_name && (
+                            formname !== task_list_component_name &&
+                            formname !== client_component_name && (
                               <button
                                 type="button"
                                 className="btn btn-info"
