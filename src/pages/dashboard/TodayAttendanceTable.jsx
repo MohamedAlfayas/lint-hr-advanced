@@ -34,6 +34,10 @@ import UsersClusterMapAll from "./useClusterMapAll";
 import SkletonDashboard from "../../component/common/skeleton/SkletonDashboard";
 import SimpleBar from "simplebar-react";
 import "simplebar-react/dist/simplebar.min.css";
+import {
+  connectWebSocket,
+  disconnectWebSocket,
+} from "./LocationWebSocket/WebSocket";
 
 dayjs.extend(customParseFormat);
 
@@ -571,6 +575,16 @@ const TodayAttendanceTable = () => {
     setIsMapFull(false);
     setIsMapOpen(true);
   };
+
+  // connect when modal opens with a selected employee, disconnect on close/unmount
+  useEffect(() => {
+    if (isMapOpen && mapSelectedEmpId) {
+      connectWebSocket(mapSelectedEmpId);
+    }
+    return () => {
+      disconnectWebSocket();
+    };
+  }, [isMapOpen, mapSelectedEmpId]);
 
   const formatTime = (timeString) => {
     if (!timeString) return "-";

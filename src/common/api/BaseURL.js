@@ -3,7 +3,11 @@ export const getBaseUrlFromDomain = () => {
     process.env.REACT_APP_MULTIDB_ENABLED || "0",
   );
 
+<<<<<<< HEAD
   let base_url = "http://192.168.0.37:8000/";
+=======
+  let base_url = "http://192.168.0.12:8000/";
+>>>>>>> mohamed-alfayas
 
   if (MULTIDB_ENABLED !== 0) {
     const hostname = window.location.hostname;
@@ -29,3 +33,10 @@ export const BaseURL = getBaseUrlFromDomain();
 // export const BaseURL = "https://dev.linthr.com/";
 //export const BaseURL = "http://192.168.1.14:8000/";
 export const ProductionBaseURL = "http://62.72.59.29:8000";
+export const getWsUrlFromDomain = () => {
+  const httpUrl = getBaseUrlFromDomain(); // reuse same subdomain/local logic
+  const wsUrl = httpUrl.replace(/^http/, "ws").replace(/\/$/, "");
+  return `${wsUrl}/ws/tracking/`;
+};
+
+export const WsBaseURL = getWsUrlFromDomain();
