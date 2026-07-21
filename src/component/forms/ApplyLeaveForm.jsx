@@ -52,9 +52,15 @@ dayjs.extend(customParseFormat);
 // Returns { shiftStart: "HH:mm", shiftEnd: "HH:mm", crossesMidnight: bool }
 // ─────────────────────────────────────────────────────────────────────────────
 const getShiftTimings = (workScheduleData, profileData) => {
-  const thisEmpWS = workScheduleData?.find(
+  if (!Array.isArray(workScheduleData)) {
+    console.error("workScheduleData is not an array:", workScheduleData);
+    return null;
+  }
+
+  const thisEmpWS = workScheduleData.find(
     (val) => val.id === profileData?.work_schedule_id,
   );
+
   if (!thisEmpWS) return null;
 
   const shiftStart =
@@ -62,6 +68,7 @@ const getShiftTimings = (workScheduleData, profileData) => {
     thisEmpWS.start_time ||
     thisEmpWS.from_time ||
     null;
+
   const shiftEnd =
     thisEmpWS.shift_end_time || thisEmpWS.end_time || thisEmpWS.to_time || null;
 
@@ -70,12 +77,10 @@ const getShiftTimings = (workScheduleData, profileData) => {
   const startH = parseInt(shiftStart.split(":")[0], 10);
   const endH = parseInt(shiftEnd.split(":")[0], 10);
 
-  const crossesMidnight = endH < startH || endH === startH;
-
   return {
     shiftStart,
     shiftEnd,
-    crossesMidnight,
+    crossesMidnight: endH <= startH,
   };
 };
 

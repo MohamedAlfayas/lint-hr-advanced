@@ -410,11 +410,21 @@ const Employee = () => {
       filterable: false,
       accessor: (obj) => {
         const WorkSchedule = GetLocalStorageData("work_schedule");
-        let workscheduleData = WorkSchedule
-          ? WorkSchedule.filter((data) => obj.work_schedule_id === data.id)
-          : [];
+
+        // Ensure WorkSchedule is always an array
+        const workScheduleList = Array.isArray(WorkSchedule)
+          ? WorkSchedule
+          : Array.isArray(WorkSchedule?.data)
+            ? WorkSchedule.data
+            : [];
+
+        const workscheduleData = workScheduleList.filter(
+          (data) => data.id === obj.work_schedule_id,
+        );
+
         const workdayData =
-          workscheduleData.length > 0 ? workscheduleData[0].workday : [];
+          workscheduleData.length > 0 ? workscheduleData[0].workday || [] : [];
+
         const days = [
           { id: 1, name: "M", desc: "Monday" },
           { id: 2, name: "T", desc: "Tuesday" },
@@ -424,10 +434,11 @@ const Employee = () => {
           { id: 6, name: "S", desc: "Saturday" },
           { id: 7, name: "S", desc: "Sunday" },
         ];
-        let timings = [];
-        const ws_rowId = workscheduleData.find(
-          (d) => d.id === obj.work_schedule_id,
-        );
+
+        const timings = [];
+
+        const ws_rowId =
+          workscheduleData.find((d) => d.id === obj.work_schedule_id) || {};
 
         for (let i = 0; i < days.length; i++) {
           for (let j = 0; j < workdayData.length; j++) {
@@ -435,7 +446,7 @@ const Employee = () => {
               days[i].desc.toLowerCase() === workdayData[j].s_day.toLowerCase()
             ) {
               timings.push({
-                ws_id: ws_rowId.id,
+                ws_id: ws_rowId?.id,
                 id: days[i].id,
                 name: workdayData[j].s_day,
                 s_hr: workdayData[j].s_hr,
@@ -448,29 +459,34 @@ const Employee = () => {
           }
         }
 
-        let htmltag = days.map((day, i) => {
-          let thisDayTimeObj = timings.find((timing) => timing.id === day.id);
+        const htmltag = days.map((day) => {
+          const thisDayTimeObj = timings.find((timing) => timing.id === day.id);
+
+          const tooltipId = `t_${ws_rowId?.id || 0}_${day.id}`;
 
           return (
             <React.Fragment key={day.id}>
               <span
                 className={
-                  !!thisDayTimeObj && thisDayTimeObj.is_day_on === true
+                  thisDayTimeObj?.is_day_on
                     ? "fw-bold me-1"
                     : "fw-normal fw-lighter me-1"
                 }
-                id={`t_${thisDayTimeObj?.ws_id}_${thisDayTimeObj?.id}`}
+                id={tooltipId}
               >
                 {day.name}
               </span>
+
               <UncontrolledTooltip
                 className="lc_tooltip"
                 placement="top"
-                target={`t_${thisDayTimeObj?.ws_id}_${thisDayTimeObj?.id}`}
+                target={tooltipId}
               >
-                {thisDayTimeObj?.name}{" "}
-                {!!thisDayTimeObj && thisDayTimeObj.is_day_on === true && (
+                {thisDayTimeObj?.name || day.desc}
+
+                {thisDayTimeObj?.is_day_on && (
                   <>
+                    <br />
                     {`${thisDayTimeObj.s_hr}:${thisDayTimeObj.s_min} - ${thisDayTimeObj.e_hr}:${thisDayTimeObj.e_min}`}
                   </>
                 )}
@@ -478,14 +494,19 @@ const Employee = () => {
             </React.Fragment>
           );
         });
+
         return (
           <>
-            {workscheduleData.map((d) => (
-              <div key={d.id}>
-                {d.name}
-                <div>{htmltag}</div>
-              </div>
-            ))}
+            {workscheduleData.length > 0 ? (
+              workscheduleData.map((d) => (
+                <div key={d.id}>
+                  {d.name}
+                  <div>{htmltag}</div>
+                </div>
+              ))
+            ) : (
+              <div>-</div>
+            )}
           </>
         );
       },

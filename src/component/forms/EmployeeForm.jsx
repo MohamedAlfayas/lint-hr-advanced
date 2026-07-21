@@ -843,7 +843,11 @@ const EmployeeForm = () => {
                         }
                       }}
                       onBlur={() => FormikForm.setFieldTouched("emp_id", true)}
-                      invalid={!!FormikForm.errors.emp_id}
+                      invalid={
+                        !!(
+                          FormikForm.touched.emp_id && FormikForm.errors.emp_id
+                        )
+                      }
                     />
                     {!(
                       FormikForm.touched.emp_id && FormikForm.errors.emp_id
@@ -878,7 +882,12 @@ const EmployeeForm = () => {
                       onBlur={() =>
                         FormikForm.setFieldTouched("first_name", true)
                       }
-                      invalid={!!FormikForm.errors.first_name}
+                      invalid={
+                        !!(
+                          FormikForm.touched.first_name &&
+                          FormikForm.errors.first_name
+                        )
+                      }
                     />
                     {!(
                       FormikForm.touched.first_name &&
@@ -914,7 +923,12 @@ const EmployeeForm = () => {
                       onBlur={() =>
                         FormikForm.setFieldTouched("last_name", true)
                       }
-                      invalid={!!FormikForm.errors.last_name}
+                      invalid={
+                        !!(
+                          FormikForm.touched.last_name &&
+                          FormikForm.errors.last_name
+                        )
+                      }
                     />
                     {!(
                       FormikForm.touched.last_name &&
