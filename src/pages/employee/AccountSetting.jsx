@@ -114,6 +114,132 @@ const AccountSettings = () => {
   const [joining_date, setJoinDate] = useState([]);
   const [activeTab, setActiveTab] = useState("1");
   const [profileObj, setProfileObj] = useState({});
+
+  const [experienceList, setExperienceList] = useState([]);
+
+  const emptyExperienceForm = {
+    id: null,
+    job_title: "",
+    company_name: "",
+    from_date: "",
+    to_date: "",
+    is_present: false,
+    description: "",
+  };
+
+  const [experienceForm, setExperienceForm] = useState(emptyExperienceForm);
+  const [showExperienceForm, setShowExperienceForm] = useState(false);
+  const [isEditingExperience, setIsEditingExperience] = useState(false);
+  const [experienceFormErrors, setExperienceFormErrors] = useState({});
+
+  const experienceValidationSchema = Yup.object({
+    job_title: Yup.string()
+      .trim()
+      .required("Please Enter Job Title")
+      .matches(/^[A-Za-z0-9.,&()'\-\s]+$/, "Please Enter Job Title")
+      .max(100, "Job Title must not exceed 100 characters"),
+    company_name: Yup.string()
+      .trim()
+      .required("Please Enter Company Name")
+      .matches(/^[A-Za-z0-9.,&()'\-\s]+$/, "Please Enter Company Name")
+      .max(100, "Company Name must not exceed 100 characters"),
+    from_date: Yup.string().trim().required("Please Select From Date"),
+  });
+
+  const getExperienceDuration = (from_date, to_date, is_present) => {
+    if (!from_date) return "";
+    const start = dayjs(from_date);
+    const end = is_present ? dayjs() : dayjs(to_date || dayjs());
+    let years = end.diff(start, "year");
+    start.add(years, "year");
+    let months = end.diff(start.add(years, "year"), "month");
+    if (months < 0) months = 0;
+    let text = "";
+    if (years > 0) text += `${years} Year${years > 1 ? "s" : ""} `;
+    if (months > 0) text += `${months} Month${months > 1 ? "s" : ""}`;
+    return text.trim() || "0 Months";
+  };
+
+  const handleExperienceInputChange = (e) => {
+    const { name, value } = e.target;
+    setExperienceForm({ ...experienceForm, [name]: value });
+  };
+
+  const handleExperienceFromDateChange = (date, dateStr) => {
+    setExperienceForm({
+      ...experienceForm,
+      from_date: date ? dayjs(date).format("YYYY-MM-DD") : "",
+    });
+  };
+
+  const handleExperienceToDateChange = (date, dateStr) => {
+    setExperienceForm({
+      ...experienceForm,
+      to_date: date ? dayjs(date).format("YYYY-MM-DD") : "",
+    });
+  };
+
+  const handleExperiencePresentToggle = (e) => {
+    setExperienceForm({
+      ...experienceForm,
+      is_present: e.target.checked,
+      to_date: e.target.checked ? "" : experienceForm.to_date,
+    });
+  };
+
+  const handleAddExperienceClick = () => {
+    setExperienceForm(emptyExperienceForm);
+    setIsEditingExperience(false);
+    setShowExperienceForm(true);
+  };
+
+  const handleEditExperience = (exp) => {
+    setExperienceForm(exp);
+    setIsEditingExperience(true);
+    setShowExperienceForm(true);
+  };
+
+  const handleDeleteExperience = (id) => {
+    setExperienceList(experienceList.filter((exp) => exp.id !== id));
+  };
+
+  const handleCancelExperienceForm = () => {
+    setExperienceForm(emptyExperienceForm);
+    setExperienceFormErrors({});
+    setIsEditingExperience(false);
+    setShowExperienceForm(false);
+  };
+
+  const handleSaveExperience = async () => {
+    try {
+      await experienceValidationSchema.validate(experienceForm, {
+        abortEarly: false,
+      });
+      setExperienceFormErrors({});
+    } catch (validationError) {
+      const errors = {};
+      validationError.inner.forEach((err) => {
+        errors[err.path] = err.message;
+      });
+      setExperienceFormErrors(errors);
+      return;
+    }
+
+    if (isEditingExperience) {
+      setExperienceList(
+        experienceList.map((exp) =>
+          exp.id === experienceForm.id ? experienceForm : exp,
+        ),
+      );
+    } else {
+      setExperienceList([
+        { ...experienceForm, id: Date.now() },
+        ...experienceList,
+      ]);
+    }
+    handleCancelExperienceForm();
+  };
+
   const [showPassword1, setShowPassword1] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
   const [showPassword3, setShowPassword3] = useState(false);
@@ -1765,173 +1891,352 @@ const AccountSettings = () => {
                     </TabPane>
 
                     <TabPane tabId="3">
-                      <form>
-                        <div id="newlink">
-                          <div id="1">
-                            <Row>
-                              <Col xxl={12} sm={12} lg={12}>
-                                <div className="mb-3">
-                                  <Label
-                                    htmlFor="jobTitle"
-                                    className="form-label"
-                                  >
-                                    Job Title
-                                  </Label>
-                                  <Input
-                                    type="text"
-                                    className="form-control"
-                                    id="jobTitle"
-                                    placeholder="Job title"
-                                    defaultValue="Lead Designer / Developer"
-                                  />
-                                </div>
-                              </Col>
+                      <div className="d-flex align-items-center mb-4">
+                        <div className="flex-grow-1">
+                          <h5 className="card-title mb-1">Experience</h5>
+                          <p className="text-muted mb-0">
+                            Your career journey in our company
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <Button
+                            color="success"
+                            onClick={handleAddExperienceClick}
+                          >
+                            <i className="ri-add-line align-bottom me-1"></i>{" "}
+                            Add Experience
+                          </Button>
+                        </div>
+                      </div>
 
-                              <Col xxl={6} sm={6} lg={6}>
-                                <div className="mb-3">
-                                  <Label
-                                    htmlFor="companyName"
-                                    className="form-label"
-                                  >
-                                    Company Name
-                                  </Label>
-                                  <Input
-                                    type="text"
-                                    className="form-control"
-                                    id="companyName"
-                                    placeholder="Company name"
-                                    defaultValue="Themesbrand"
-                                  />
-                                </div>
-                              </Col>
-
-                              <Col xxl={6} sm={6} lg={6}>
-                                <div className="mb-3">
-                                  <label
-                                    htmlFor="experienceYear"
-                                    className="form-label"
-                                  >
-                                    Experience Years
-                                  </label>
-                                  <Row>
-                                    <Col lg={5}>
-                                      <select
-                                        className="form-control"
-                                        data-choices
-                                        data-choices-search-false
-                                        name="experienceYear"
-                                        id="experienceYear"
-                                      >
-                                        <option defaultValue="">
-                                          Select years
-                                        </option>
-                                        <option value="Choice 1">2001</option>
-                                        <option value="Choice 2">2002</option>
-                                        <option value="Choice 3">2003</option>
-                                        <option value="Choice 4">2004</option>
-                                        <option value="Choice 5">2005</option>
-                                        <option value="Choice 6">2006</option>
-                                        <option value="Choice 7">2007</option>
-                                        <option value="Choice 8">2008</option>
-                                        <option value="Choice 9">2009</option>
-                                        <option value="Choice 10">2010</option>
-                                        <option value="Choice 11">2011</option>
-                                        <option value="Choice 12">2012</option>
-                                        <option value="Choice 13">2013</option>
-                                        <option value="Choice 14">2014</option>
-                                        <option value="Choice 15">2015</option>
-                                        <option value="Choice 16">2016</option>
-                                        <option value="Choice 17">2017</option>
-                                        <option value="Choice 18">2018</option>
-                                        <option value="Choice 19">2019</option>
-                                        <option value="Choice 20">2020</option>
-                                        <option value="Choice 21">2021</option>
-                                        <option value="Choice 22">2022</option>
-                                      </select>
-                                    </Col>
-
-                                    <div className="col-auto align-self-center">
-                                      to
-                                    </div>
-
-                                    <Col xxl={5} sm={5} lg={5}>
-                                      <select
-                                        className="form-control"
-                                        data-choices
-                                        data-choices-search-false
-                                        name="choices-single-default2"
-                                      >
-                                        <option defaultValue="">
-                                          Select years
-                                        </option>
-                                        <option value="Choice 1">2001</option>
-                                        <option value="Choice 2">2002</option>
-                                        <option value="Choice 3">2003</option>
-                                        <option value="Choice 4">2004</option>
-                                        <option value="Choice 5">2005</option>
-                                        <option value="Choice 6">2006</option>
-                                        <option value="Choice 7">2007</option>
-                                        <option value="Choice 8">2008</option>
-                                        <option value="Choice 9">2009</option>
-                                        <option value="Choice 10">2010</option>
-                                        <option value="Choice 11">2011</option>
-                                        <option value="Choice 12">2012</option>
-                                        <option value="Choice 13">2013</option>
-                                        <option value="Choice 14">2014</option>
-                                        <option value="Choice 15">2015</option>
-                                        <option value="Choice 16">2016</option>
-                                        <option value="Choice 17">2017</option>
-                                        <option value="Choice 18">2018</option>
-                                        <option value="Choice 19">2019</option>
-                                        <option value="Choice 20">2020</option>
-                                        <option value="Choice 21">2021</option>
-                                        <option value="Choice 22">2022</option>
-                                      </select>
-                                    </Col>
-                                  </Row>
-                                </div>
-                              </Col>
-
-                              <Col xxl={12} sm={12} lg={12}>
-                                <div className="mb-3">
-                                  <Label
-                                    htmlFor="jobDescription"
-                                    className="form-label"
-                                  >
-                                    Job Description
-                                  </Label>
-                                  <Input
-                                    type="teaxtarea"
-                                    className="form-control"
-                                    id="jobDescription"
-                                    rows="3"
-                                    placeholder="Enter description"
-                                    defaultValue="You always want to make sure that your fonts work well together and try to limit the number of fonts you use to three or less. Experiment and play around with the fonts that you already have in the software you're working with reputable font websites."
-                                  />
-                                </div>
-                              </Col>
-
-                              <div className="hstack gap-2 justify-content-end">
-                                <Link className="btn btn-success" to="#">
-                                  Delete
-                                </Link>
+                      <div className="d-flex">
+                        <div
+                          className="position-relative me-3"
+                          style={{ width: "16px" }}
+                        >
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: "7px",
+                              top: "22px",
+                              bottom: "22px",
+                              width: "2px",
+                              background: "#dcdcdc",
+                            }}
+                          ></div>
+                          <div
+                            className="d-flex flex-column"
+                            style={{ gap: "0" }}
+                          >
+                            {experienceList.map((exp) => (
+                              <div
+                                key={exp.id}
+                                className="d-flex align-items-center justify-content-center"
+                                style={{
+                                  height: "144px",
+                                  position: "relative",
+                                  zIndex: 1,
+                                }}
+                              >
+                                <div
+                                  className="bg-primary"
+                                  style={{
+                                    width: "11px",
+                                    height: "11px",
+                                    transform: "rotate(45deg)",
+                                  }}
+                                ></div>
                               </div>
-                            </Row>
+                            ))}
+                            <div
+                              className="d-flex align-items-center justify-content-center bg-white"
+                              style={{
+                                height: "20px",
+                                position: "relative",
+                                zIndex: 1,
+                              }}
+                            >
+                              <div
+                                className="border border-secondary bg-white"
+                                style={{
+                                  width: "10px",
+                                  height: "10px",
+                                  transform: "rotate(45deg)",
+                                }}
+                              ></div>
+                            </div>
                           </div>
                         </div>
-                        <div id="newForm" style={{ display: "none" }}></div>
 
-                        <Col xxl={12} sm={12} lg={12}>
-                          <div className="hstack gap-2">
-                            <button type="submit" className="btn btn-success">
-                              Update
-                            </button>
-                            <Link to="#" className="btn btn-primary">
-                              Add New
-                            </Link>
+                        <div className="flex-grow-1">
+                          {experienceList.map((exp) => (
+                            <Card key={exp.id} className="border mb-3">
+                              <CardBody className="d-flex">
+                                <div className="flex-shrink-0 me-3">
+                                  <div
+                                    className="avatar-sm rounded-circle bg-light d-flex align-items-center justify-content-center"
+                                    style={{ width: "45px", height: "45px" }}
+                                  >
+                                    <i className="ri-briefcase-line fs-18"></i>
+                                  </div>
+                                </div>
+                                <div className="flex-grow-1">
+                                  <h6 className="mb-1">
+                                    {exp.job_title}
+                                    {exp.is_present && (
+                                      <span className="badge bg-light text-dark ms-2 fw-normal">
+                                        Current
+                                      </span>
+                                    )}
+                                  </h6>
+                                  <p className="text-muted mb-1">
+                                    <i className="ri-building-line me-1"></i>
+                                    {exp.company_name}
+                                  </p>
+                                  <p className="text-muted mb-2 fs-13">
+                                    <i className="ri-calendar-line me-1"></i>
+                                    {dayjs(exp.from_date).format(
+                                      "MMM YYYY",
+                                    )} -{" "}
+                                    {exp.is_present
+                                      ? "Present"
+                                      : exp.to_date
+                                        ? dayjs(exp.to_date).format("MMM YYYY")
+                                        : ""}
+                                    <span className="badge bg-light text-dark ms-2 fw-normal">
+                                      {getExperienceDuration(
+                                        exp.from_date,
+                                        exp.to_date,
+                                        exp.is_present,
+                                      )}
+                                    </span>
+                                  </p>
+                                  {exp.description && (
+                                    <p className="text-muted mb-0 fs-13">
+                                      {exp.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex-shrink-0 d-flex align-items-start gap-3">
+                                  <Link
+                                    to="#"
+                                    className="text-success"
+                                    onClick={() => handleEditExperience(exp)}
+                                  >
+                                    <i className="ri-pencil-line align-bottom me-1"></i>
+                                    Edit
+                                  </Link>
+                                  <Link
+                                    to="#"
+                                    className="text-danger"
+                                    onClick={() =>
+                                      handleDeleteExperience(exp.id)
+                                    }
+                                  >
+                                    <i className="ri-delete-bin-line align-bottom me-1"></i>
+                                    Delete
+                                  </Link>
+                                </div>
+                              </CardBody>
+                            </Card>
+                          ))}
+                          <div className="text-muted fs-13">
+                            <i className="ri-flag-line me-1"></i>
+                            Joined the company
                           </div>
-                        </Col>
-                      </form>
+                        </div>
+                      </div>
+
+                      {showExperienceForm && (
+                        <Card className="border mt-4">
+                          <CardHeader className="bg-light">
+                            <h6 className="mb-0">
+                              <i className="ri-edit-2-line align-bottom me-1"></i>{" "}
+                              Add / Edit Experience
+                            </h6>
+                            <p className="text-muted mb-0 fs-13">
+                              Enter experience details
+                            </p>
+                          </CardHeader>
+                          <CardBody>
+                            <Row className="g-3">
+                              <Col md={6}>
+                                <Label className="form-label">
+                                  Job Title <span>*</span>
+                                </Label>
+                                <Input
+                                  type="text"
+                                  name="job_title"
+                                  placeholder="Enter job title"
+                                  value={experienceForm.job_title}
+                                  onChange={(e) => {
+                                    const value = e.target.value
+                                      .replace(/^[ ]+/, "")
+                                      .replace(/[^A-Za-z0-9.,&()'\-\s]/g, "");
+
+                                    setExperienceForm({
+                                      ...experienceForm,
+                                      job_title: value,
+                                    });
+
+                                    if (value.length > 100) {
+                                      setExperienceFormErrors((prev) => ({
+                                        ...prev,
+                                        job_title:
+                                          "Job Title must not exceed 100 characters",
+                                      }));
+                                    } else {
+                                      setExperienceFormErrors((prev) => ({
+                                        ...prev,
+                                        job_title: "",
+                                      }));
+                                    }
+                                  }}
+                                  autoComplete="off"
+                                  invalid={!!experienceFormErrors.job_title}
+                                />
+                                {experienceFormErrors.job_title && (
+                                  <div className="lc_form_error_text">
+                                    {experienceFormErrors.job_title}
+                                  </div>
+                                )}
+                              </Col>
+                              <Col md={6}>
+                                <Label className="form-label">
+                                  Company Name <span>*</span>
+                                </Label>
+                                <Input
+                                  type="text"
+                                  name="company_name"
+                                  placeholder="Enter company name"
+                                  value={experienceForm.company_name}
+                                  onChange={(e) => {
+                                    const value = e.target.value
+                                      .replace(/^[ ]+/, "")
+                                      .replace(/[^A-Za-z0-9.,&()'\-\s]/g, "");
+
+                                    setExperienceForm({
+                                      ...experienceForm,
+                                      company_name: value,
+                                    });
+
+                                    if (value.length > 100) {
+                                      setExperienceFormErrors((prev) => ({
+                                        ...prev,
+                                        company_name:
+                                          "Company Name must not exceed 100 characters",
+                                      }));
+                                    } else {
+                                      setExperienceFormErrors((prev) => ({
+                                        ...prev,
+                                        company_name: "",
+                                      }));
+                                    }
+                                  }}
+                                  autoComplete="off"
+                                  invalid={!!experienceFormErrors.company_name}
+                                />
+                                {experienceFormErrors.company_name && (
+                                  <div className="lc_form_error_text">
+                                    {experienceFormErrors.company_name}
+                                  </div>
+                                )}
+                              </Col>
+                              <Col md={6}>
+                                <Label className="form-label">
+                                  From Date <span>*</span>
+                                </Label>
+                                <DatePicker
+                                  className="form-control"
+                                  placeholder="Select start date"
+                                  format="DD-MM-YYYY"
+                                  value={
+                                    experienceForm.from_date
+                                      ? dayjs(experienceForm.from_date)
+                                      : null
+                                  }
+                                  onChange={handleExperienceFromDateChange}
+                                  style={{ width: "100%" }}
+                                  status={
+                                    experienceFormErrors.from_date
+                                      ? "error"
+                                      : ""
+                                  }
+                                />
+                                {experienceFormErrors.from_date && (
+                                  <div className="lc_form_error_text">
+                                    {experienceFormErrors.from_date}
+                                  </div>
+                                )}
+                              </Col>
+                              <Col md={6}>
+                                <Label className="form-label">To Date</Label>
+                                <div className="d-flex align-items-center gap-2">
+                                  <DatePicker
+                                    className="form-control"
+                                    placeholder="Select end date"
+                                    format="DD-MM-YYYY"
+                                    disabled={experienceForm.is_present}
+                                    value={
+                                      experienceForm.to_date
+                                        ? dayjs(experienceForm.to_date)
+                                        : null
+                                    }
+                                    onChange={handleExperienceToDateChange}
+                                    style={{ width: "100%" }}
+                                  />
+                                  <div className="form-check text-nowrap">
+                                    <Input
+                                      type="checkbox"
+                                      className="form-check-input"
+                                      id="is_present"
+                                      checked={experienceForm.is_present}
+                                      onChange={handleExperiencePresentToggle}
+                                    />
+                                    <Label
+                                      className="form-check-label"
+                                      htmlFor="is_present"
+                                    >
+                                      Present
+                                    </Label>
+                                  </div>
+                                </div>
+                              </Col>
+                              <Col md={12}>
+                                <Label className="form-label">
+                                  Job Description
+                                </Label>
+                                <Input
+                                  type="textarea"
+                                  name="description"
+                                  rows="3"
+                                  placeholder="Describe your role, responsibilities and achievements..."
+                                  value={experienceForm.description}
+                                  onChange={handleExperienceInputChange}
+                                  autoComplete="off"
+                                />
+                              </Col>
+                              <Col md={12}>
+                                <div className="hstack gap-2">
+                                  <Button
+                                    color="success"
+                                    onClick={handleSaveExperience}
+                                  >
+                                    <i className="ri-save-line align-bottom me-1"></i>{" "}
+                                    {isEditingExperience ? "Update" : "Save"}
+                                  </Button>
+                                  <Button
+                                    color="light"
+                                    onClick={handleCancelExperienceForm}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </Col>
+                            </Row>
+                          </CardBody>
+                        </Card>
+                      )}
                     </TabPane>
 
                     <TabPane tabId="4">
@@ -2142,6 +2447,7 @@ const AccountSettings = () => {
                             placeholder="Enter your password"
                             defaultValue="make@321654987"
                             style={{ maxWidth: "265px" }}
+                            autoComplete="new-password"
                           />
                         </div>
                         <div className="hstack gap-2 mt-3">

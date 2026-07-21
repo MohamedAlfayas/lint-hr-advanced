@@ -515,8 +515,8 @@ const ClientForm = () => {
         )
         .test(
           "address-length",
-          "Address cannot exceed 300 characters",
-          (value) => !value || value.length <= 300,
+          "Address cannot exceed 250 characters",
+          (value) => !value || value.length <= 250,
         ),
     }),
     onSubmit: async () => {
@@ -994,10 +994,10 @@ const ClientForm = () => {
                       FormikForm.setFieldValue("address", value);
                       FormikForm.setFieldTouched("address", true, false);
 
-                      if (value.length > 300) {
+                      if (value.length > 250) {
                         FormikForm.setFieldError(
                           "address",
-                          "Address cannot exceed 300 characters",
+                          "Address cannot exceed 250 characters",
                         );
                       } else {
                         FormikForm.setFieldError("address", undefined);
