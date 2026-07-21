@@ -94,7 +94,7 @@ const EmployeeForm = () => {
   const [selectedFileName4, setSelectedFileName4] = React.useState("");
   const [selectedFileName5, setSelectedFileName5] = React.useState("");
   const [errors, setErrors] = useState("");
-  const inputRef = useRef();
+  const inputRef = useRef(null);
 
   // ── Location Modal State ──────────────────────────────────────────────────
   const [locationModalOpen, setLocationModalOpen] = useState(false);
@@ -217,6 +217,14 @@ const EmployeeForm = () => {
     showFile4NameIfSelected();
     showFile5NameIfSelected();
   }, [form_obj]);
+
+  useEffect(() => {
+    if (employeeObj?.id === 0) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [employeeObj?.id]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -805,7 +813,7 @@ const EmployeeForm = () => {
                   </div>
                   <div className="form-icon right">
                     <Input
-                      autoFocus
+                      innerRef={inputRef}
                       type="text"
                       name="emp_id"
                       id="employeeid"

@@ -65,8 +65,14 @@ const ApprovalFilter = ({ formname }) => {
 
   console.log("leave_approval_data", leave_approval_data);
 
+  // const PendingLeave = leave_approval_data.filter(
+  //   (d) => d.status === 1 || d.status === 4,
+  // ).length;
+
   const PendingLeave = leave_approval_data.filter(
-    (d) => d.status === 1 || d.status === 4,
+    (d) =>
+      (d.status === 1 || d.status === 4) &&
+      d.leave_cancellation_details?.status !== 2,
   ).length;
 
   const [activeTab, setActiveTab] = useState("1");
