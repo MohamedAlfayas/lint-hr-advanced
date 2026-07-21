@@ -579,7 +579,14 @@ const ClientForm = () => {
           "Location Name cannot exceed 100 characters",
           (value) => !value || value.length <= 100,
         ),
-      address: Yup.string().trim().required("Please Enter Address"),
+      address: Yup.string()
+        .trim()
+        .required("Please Enter Address")
+        .matches(
+          /^[A-Za-z0-9\s.,\-#/'&]+$/,
+          "Address should contain only letters, numbers, spaces, periods (.), commas (,), hyphens (-), hash (#), slash (/), apostrophes ('), and ampersands (&)",
+        )
+        .max(250, "Address cannot exceed 250 characters"),
       country: Yup.string().required("Please Select Country"),
       state: Yup.string().required("Please Select State"),
       city: Yup.string()
@@ -1390,16 +1397,34 @@ const ClientForm = () => {
                   name="address"
                   rows="2"
                   value={locationObj.address || ""}
-                  onChange={updateLocationObj}
-                  invalid={
-                    locationFormik.touched.address &&
-                    !!locationFormik.errors.address
-                  }
+                  onChange={(e) => {
+                    const value = e.target.value.replace(
+                      /[^A-Za-z0-9\s.,\-#/'&]/g,
+                      "",
+                    );
+
+                    setLocationObj((prev) => ({
+                      ...prev,
+                      address: value,
+                    }));
+
+                    locationFormik.setFieldValue("address", value);
+                    locationFormik.setFieldTouched("address", true, false);
+
+                    if (value.length > 250) {
+                      locationFormik.setFieldError(
+                        "address",
+                        "Address cannot exceed 250 characters",
+                      );
+                    } else {
+                      locationFormik.setFieldError("address", undefined);
+                    }
+                  }}
+                  invalid={!!locationFormik.errors.address}
                 />
-                {locationFormik.touched.address &&
-                  locationFormik.errors.address && (
-                    <FormFeedback>{locationFormik.errors.address}</FormFeedback>
-                  )}
+                {locationFormik.errors.address && (
+                  <FormFeedback>{locationFormik.errors.address}</FormFeedback>
+                )}
               </Col>
 
               {/* Country */}

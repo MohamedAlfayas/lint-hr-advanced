@@ -53,17 +53,29 @@ const CustomFieldForm = () => {
     const { name, value } = e.target;
 
     if (name === "name") {
-      if (value.length > 100) return;
-
       const regex = /^[A-Za-z0-9 .,&()'_-]*$/;
 
       if (!regex.test(value)) return;
     }
 
-    setCustomFieldObj({
-      ...customFieldObj,
+    setCustomFieldObj((prev) => ({
+      ...prev,
       [name]: value,
-    });
+    }));
+
+    FormikForm.setFieldValue(name, value);
+    FormikForm.setFieldTouched(name, true, false);
+
+    if (name === "name") {
+      if (value.length > 100) {
+        FormikForm.setFieldError(
+          "name",
+          "Display Name cannot exceed 100 characters",
+        );
+      } else {
+        FormikForm.setFieldError("name", undefined);
+      }
+    }
   };
   const addRepeaterValue = () => {
     const newId = customFieldObj.options.length
@@ -175,13 +187,9 @@ const CustomFieldForm = () => {
                   placeholder="Display Name"
                   value={customFieldObj.name || ""}
                   onChange={handleInputChange}
-                  invalid={
-                    FormikForm.touched.name && FormikForm.errors.name
-                      ? true
-                      : false
-                  }
+                  invalid={!!FormikForm.errors.name}
                 />
-                {FormikForm.touched.name && FormikForm.errors.name ? (
+                {FormikForm.errors.name ? (
                   <FormFeedback type="invalid">
                     {FormikForm.errors.name}
                   </FormFeedback>

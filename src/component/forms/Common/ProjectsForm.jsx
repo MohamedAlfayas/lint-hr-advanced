@@ -103,7 +103,7 @@ const ProjectForm = () => {
   }, [form_obj]);
 
   // ================= INPUT CHANGE =================
-  const MAX_PRICE = 5000000000;
+  const MAX_PRICE = 100000000000;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -220,7 +220,7 @@ const ProjectForm = () => {
       deadline: Yup.string().nullable(),
       price: Yup.number()
         .min(0, "Price cannot be negative")
-        .max(5000000000, "Price cannot exceed 500 Crores (5,000,000,000.00)")
+        .max(100000000000, "Price cannot exceed 100000000000.00")
         .nullable(),
       description: Yup.string()
         .test(
@@ -272,18 +272,18 @@ const ProjectForm = () => {
           console.log("Response Status:", responseData?.status);
 
           // ================= OLD DATA =================
-          const oldProjects = await GetLocalStorageData("projects") || [];
+          const oldProjects = (await GetLocalStorageData("projects")) || [];
 
           let updatedProjects = [];
 
           // ================= EDIT =================
           if (isEdit) {
-            console.log("Edit Resonse - ",responseData);
-            console.log("Old Project - ",oldProjects)
+            console.log("Edit Resonse - ", responseData);
+            console.log("Old Project - ", oldProjects);
             updatedProjects = oldProjects.map((item) =>
               Number(item.id) === Number(responseData.id) ? responseData : item,
             );
-            
+
             await SetLocalStorage("projects", updatedProjects, 1);
           }
 
@@ -507,7 +507,7 @@ const ProjectForm = () => {
                     className="form-control"
                     placeholder="0.00"
                     min={0}
-                    max={5000000000}
+                    max={100000000000}
                     onKeyDown={(e) => {
                       if (e.key === "-" || e.key === "e" || e.key === "E") {
                         e.preventDefault();
