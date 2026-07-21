@@ -49,6 +49,12 @@ const WAIT_THRESHOLD_KM = 0.05;
 // ISO (YYYY-MM-DD) format used throughout for the date filter's internal value
 const ISO_DATE_FORMAT = "YYYY-MM-DD";
 
+// ── Timeline panel sizing (responsive instead of a fixed px width) ──
+// clamp(min, preferred, max): scales continuously with viewport width
+// instead of jumping straight to the max at a fixed breakpoint, so wide
+// screens actually get visibly more room instead of stalling at 420px.
+const TIMELINE_WIDTH_CLAMP = "clamp(300px, 26vw, 640px)";
+
 // ─── Distance helper (km) ───────────────────────────────────────
 const haversine = (a, b) => {
   const R = 6371;
@@ -95,7 +101,7 @@ const compactDatePickerStyle = {
   width: "100%",
 };
 
-// ─── react-select styles to match the reactstrap look (compact, 340px column) ──
+// ─── react-select styles to match the reactstrap look (compact, responsive column) ──
 const rsSelectStyles = {
   control: (base, state) => ({
     ...base,
@@ -209,6 +215,81 @@ const injectStyles = () => {
     }
     .ucma-tl-filterbar .ant-picker input {
       font-size: 12px;
+    }
+    .ucma-vslider {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+    }
+    .ucma-vslider::-webkit-slider-runnable-track {
+      background: transparent;
+      height: 3px;
+    }
+    .ucma-vslider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #2563eb;
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.45);
+      cursor: pointer;
+      margin-top: -6.5px;
+    }
+    .ucma-vslider::-moz-range-track {
+      background: transparent;
+      height: 3px;
+      border: none;
+    }
+    .ucma-vslider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #2563eb;
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.45);
+      cursor: pointer;
+    }
+    /* Playback panel: empty space between controls lets clicks fall through
+       to whatever is underneath (e.g. the native Map/Satellite toggle) —
+       only the actual controls themselves are clickable. */
+    .ucma-playback-panel {
+      pointer-events: none;
+    }
+    .ucma-playback-panel > * {
+      pointer-events: auto;
+    }
+    @media (max-width: 480px), (max-height: 480px) {
+      .ucma-playback-panel {
+        left: 10px !important;
+        top: 64px !important;
+        gap: 10px !important;
+      }
+      .ucma-playback-rail {
+        height: 110px !important;
+      }
+      .ucma-playback-play {
+        width: 34px !important;
+        height: 34px !important;
+        font-size: 14px !important;
+      }
+      .ucma-playback-reset {
+        width: 24px !important;
+        height: 24px !important;
+        font-size: 11px !important;
+      }
+      .ucma-playback-speedbtn {
+        width: 30px !important;
+        font-size: 10px !important;
+        padding: 3px 0 !important;
+      }
+    }
+    @media (max-width: 380px) {
+      .ucma-tl-card {
+        padding: 5px 7px !important;
+        border-radius: 8px !important;
+      }
     }
   `;
   document.head.appendChild(tag);
@@ -337,7 +418,6 @@ const UsersClusterMapAll = ({
   // Sorted newest-first so "today"/most-recent naturally sits at the top.
   const dateOptions = useMemo(() => {
     const raw = activeEmployee?.location_history || [];
-    console.log("rawww", raw);
 
     const set = new Set();
     raw.forEach((loc) => {
@@ -744,6 +824,8 @@ const UsersClusterMapAll = ({
     }
   };
 
+  // "Full view" — fits the whole route back in frame. Lives as a map
+  // overlay control now (moved out of the timeline panel header).
   const resetView = () => {
     setIsPlaying(false);
     setProgress(0);
@@ -808,9 +890,17 @@ const UsersClusterMapAll = ({
         width: "100%",
       }}
     >
-      <div style={{ display: "flex", flex: 1, minHeight: 0, width: "100%" }}>
-        {/* ── MAP (left, full height) ── */}
-        <div style={{ flex: "1 1 auto", minWidth: 0, position: "relative" }}>
+      <div
+        style={{
+          display: "flex",
+          flex: 1,
+          minHeight: 0,
+          width: "100%",
+          flexWrap: "nowrap",
+        }}
+      >
+        {/* ── MAP (left, full height, grows/shrinks with the window) ── */}
+        <div style={{ flex: "1 1 0%", minWidth: 0, position: "relative" }}>
           <GoogleMap
             mapContainerStyle={{ width: "100%", height: "100%" }}
             center={path.length ? path[0] : indiaCenter}
@@ -819,6 +909,7 @@ const UsersClusterMapAll = ({
               streetViewControl: false,
               fullscreenControl: false,
               mapTypeControl: true,
+              rotateControl: true,
             }}
           >
             {/* Faint full-route track, always visible underneath */}
@@ -1054,6 +1145,58 @@ const UsersClusterMapAll = ({
             </div>
           )}
 
+          {/* ── Map overlay controls, top-left: Refresh + Full view ──
+              Moved out of the timeline panel so they sit on the map itself. ── */}
+          {path.length > 0 && (
+            <div
+              style={{
+                position: "absolute",
+                top: "12px",
+                right: "12px",
+                display: "flex",
+                gap: "6px",
+                zIndex: 5,
+              }}
+            >
+              <button
+                onClick={handleRefresh}
+                style={{
+                  border: "none",
+                  background: "rgba(255,255,255,0.95)",
+                  color: "#334155",
+                  borderRadius: "8px",
+                  padding: "6px 10px",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+                title="Refresh"
+              >
+                <i className="ri-refresh-line"></i>
+              </button>
+              <button
+                onClick={resetView}
+                style={{
+                  border: "none",
+                  background: "rgba(255,255,255,0.95)",
+                  color: "#334155",
+                  borderRadius: "8px",
+                  padding: "6px 12px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                }}
+                title="Fit whole route in view"
+              >
+                Full view
+              </button>
+            </div>
+          )}
+
           {/* ── Live distance-covered readout, top-right, while playing/scrubbed ── */}
           <AnimatePresence>
             {path.length > 1 && (isPlaying || progress > 0) && (
@@ -1063,7 +1206,7 @@ const UsersClusterMapAll = ({
                 exit={{ opacity: 0, scale: 0.9 }}
                 style={{
                   position: "absolute",
-                  top: "12px",
+                  top: "56px",
                   right: "12px",
                   background: "rgba(255,255,255,0.95)",
                   padding: "6px 14px",
@@ -1096,161 +1239,175 @@ const UsersClusterMapAll = ({
             )}
           </AnimatePresence>
 
-          {/* ── Playback controls ── */}
+          {/* ── Playback controls — vertical panel, left side of the map:
+              vertical duration/progress line on top, play/resume button,
+              reset, then the speed limit buttons (0.5x/1x/1.5x/2x) stacked
+              below, all in one column. ── */}
           {path.length > 1 && (
             <div
+              className="ucma-playback-panel"
               style={{
                 position: "absolute",
-                bottom: "16px",
-                left: "50%",
-                transform: "translateX(-50%)",
+                left: "20px",
+                top: "68px",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: "8px",
-                background: "rgba(255,255,255,0.95)",
-                padding: "8px 14px",
-                borderRadius: "22px",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
-                width: "min(75%, 520px)",
+                gap: "16px",
                 zIndex: 5,
+                // no card background — each control floats on its own
               }}
             >
+              {/* Vertical duration line with per-stop tick marks —
+                  a slim glowing rail so it stays visible over any map color,
+                  no boxed background around it. */}
               <div
+                className="ucma-playback-rail"
                 style={{
+                  position: "relative",
+                  height: "150px",
+                  width: "20px",
                   display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  width: "100%",
+                  justifyContent: "center",
+                  filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.35))",
                 }}
               >
-                <motion.button
-                  onClick={togglePlay}
-                  whileTap={{ scale: 0.9 }}
-                  style={{
-                    flexShrink: 0,
-                    width: "38px",
-                    height: "38px",
-                    borderRadius: "50%",
-                    border: "none",
-                    background: COLORS.travel,
-                    color: "#fff",
-                    fontSize: "16px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                  title={isPlaying ? "Pause" : "Play"}
-                >
-                  {isPlaying ? "❚❚" : "▶"}
-                </motion.button>
-
-                {/* Track with per-stop tick marks (chapter-style scrubber) */}
                 <div
                   style={{
-                    flex: 1,
-                    position: "relative",
-                    height: "20px",
-                    display: "flex",
-                    alignItems: "center",
+                    position: "absolute",
+                    top: 0,
+                    bottom: 0,
+                    width: "4px",
+                    borderRadius: "4px",
+                    background: "rgba(255,255,255,0.85)",
                   }}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      right: 0,
-                      height: "3px",
-                      borderRadius: "3px",
-                      background: "#e5e7eb",
-                    }}
-                  />
-                  <motion.div
-                    animate={{ width: `${progress * 100}%` }}
-                    transition={{ duration: isPlaying ? 0 : 0.15 }}
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      height: "3px",
-                      borderRadius: "3px",
-                      background: COLORS.travel,
-                    }}
-                  />
-                  {path.length > 1 &&
-                    path.map((_, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          position: "absolute",
-                          left: `${(i / (path.length - 1)) * 100}%`,
-                          width: "2px",
-                          height: "8px",
-                          background: "#ffffff",
-                          opacity: 0.9,
-                          transform: "translateX(-1px)",
-                          pointerEvents: "none",
-                        }}
-                      />
-                    ))}
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.001}
-                    value={progress}
-                    onChange={handleScrub}
-                    style={{
-                      position: "relative",
-                      width: "100%",
-                      cursor: "pointer",
-                      accentColor: COLORS.travel,
-                      background: "transparent",
-                    }}
-                  />
-                </div>
-
-                <button
-                  onClick={handleReset}
+                />
+                <motion.div
+                  animate={{ height: `${progress * 100}%` }}
+                  transition={{ duration: isPlaying ? 0 : 0.15 }}
                   style={{
-                    flexShrink: 0,
-                    width: "34px",
-                    height: "34px",
-                    borderRadius: "50%",
-                    border: "none",
-                    background: "#e5e7eb",
-                    color: "#374151",
-                    fontSize: "15px",
+                    position: "absolute",
+                    bottom: 0,
+                    width: "4px",
+                    borderRadius: "4px",
+                    background: COLORS.travel,
+                  }}
+                />
+                {path.length > 1 &&
+                  path.map((_, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        position: "absolute",
+                        bottom: `${(i / (path.length - 1)) * 100}%`,
+                        width: "10px",
+                        height: "2px",
+                        background: "#ffffff",
+                        transform: "translateY(1px)",
+                        pointerEvents: "none",
+                      }}
+                    />
+                  ))}
+                {/* Rotated range input — custom thumb via .ucma-vslider (see injected CSS),
+                    track itself stays transparent so only our own rail shows. */}
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.001}
+                  value={progress}
+                  onChange={handleScrub}
+                  className="ucma-vslider"
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    width: "150px",
+                    height: "20px",
+                    transform: "translate(-50%, -50%) rotate(-90deg)",
                     cursor: "pointer",
                   }}
-                  title="Reset"
-                >
-                  ⟲
-                </button>
+                />
               </div>
 
-              {/* Speed selector — 0.5x / 1x / 1.5x / 2x, default 1x */}
+              {/* Play / Resume toggle — floats directly on the map, own shadow */}
+              <motion.button
+                onClick={togglePlay}
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.06 }}
+                className="ucma-playback-play"
+                style={{
+                  flexShrink: 0,
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  border: "none",
+                  background: COLORS.travel,
+                  color: "#fff",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 3px 10px rgba(37,99,235,0.5)",
+                }}
+                title={isPlaying ? "Pause" : progress > 0 ? "Resume" : "Play"}
+              >
+                {isPlaying ? "❚❚" : "▶"}
+              </motion.button>
+
+              {/* Reset */}
+              <button
+                onClick={handleReset}
+                className="ucma-playback-reset"
+                style={{
+                  flexShrink: 0,
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "50%",
+                  border: "none",
+                  background: "rgba(255,255,255,0.95)",
+                  color: "#374151",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                }}
+                title="Reset"
+              >
+                ⟲
+              </button>
+
+              {/* Speed selector — 0.5x / 1x / 1.5x / 2x, stacked chips, default 1x */}
               <div
                 style={{
                   display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
-                  gap: "4px",
+                  gap: "6px",
                 }}
               >
                 {SPEED_OPTIONS.map((s) => (
                   <button
                     key={s}
                     onClick={() => setPlaybackSpeed(s)}
+                    className="ucma-playback-speedbtn"
                     style={{
                       border: "none",
                       borderRadius: "10px",
-                      padding: "3px 9px",
+                      padding: "4px 0",
                       fontSize: "11px",
                       fontWeight: 700,
                       cursor: "pointer",
+                      width: "36px",
                       background:
-                        playbackSpeed === s ? COLORS.travel : "#e5e7eb",
+                        playbackSpeed === s
+                          ? COLORS.travel
+                          : "rgba(255,255,255,0.95)",
                       color: playbackSpeed === s ? "#fff" : "#374151",
+                      boxShadow:
+                        playbackSpeed === s
+                          ? "0 2px 8px rgba(37,99,235,0.5)"
+                          : "0 2px 6px rgba(0,0,0,0.25)",
                     }}
                     title={`${s}x speed`}
                   >
@@ -1262,11 +1419,13 @@ const UsersClusterMapAll = ({
           )}
         </div>
 
-        {/* ── TIMELINE (right) — filters right-aligned above it, then zigzag spine ── */}
+        {/* ── TIMELINE (right) — now a responsive % width (clamped) instead of a
+            fixed 340px, so it scales with the actual screen width. Filters
+            right-aligned above it, then zigzag spine. ── */}
         <div
           style={{
-            flex: "0 0 340px",
-            width: "340px",
+            flex: `0 0 ${TIMELINE_WIDTH_CLAMP}`,
+            width: TIMELINE_WIDTH_CLAMP,
             borderLeft: "1px solid #e5e7eb",
             display: "flex",
             flexDirection: "column",
@@ -1376,7 +1535,7 @@ const UsersClusterMapAll = ({
             </div>
           </div>
 
-          {/* Header */}
+          {/* Header — Full view / Refresh removed from here, now live as map overlay controls */}
           <div
             style={{
               padding: "12px 16px",
@@ -1401,40 +1560,6 @@ const UsersClusterMapAll = ({
                 </span>
               )}
             </span>
-            <div style={{ display: "flex", gap: "6px" }}>
-              <button
-                onClick={handleRefresh}
-                style={{
-                  border: "none",
-                  background: "#f1f5f9",
-                  color: "#334155",
-                  borderRadius: "6px",
-                  padding: "4px 8px",
-                  fontSize: "13px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                }}
-                title="Refresh"
-              >
-                <i className="ri-refresh-line"></i>
-              </button>
-              <button
-                onClick={resetView}
-                style={{
-                  border: "none",
-                  background: "#f1f5f9",
-                  color: "#334155",
-                  borderRadius: "6px",
-                  padding: "4px 10px",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                }}
-              >
-                Full view
-              </button>
-            </div>
           </div>
 
           {/* Trip summary */}
@@ -1573,9 +1698,11 @@ const UsersClusterMapAll = ({
                     onClick={() => handleTimelineClick(p, i)}
                     animate={{ scale: isActive ? 1.04 : 1 }}
                     transition={{ duration: 0.18 }}
+                    className="ucma-tl-card"
                     style={{
                       cursor: "pointer",
-                      maxWidth: "138px",
+                      width: "100%",
+                      maxWidth: "220px",
                       textAlign: onLeft ? "right" : "left",
                       background: isActive ? "#eff6ff" : "#f8fafc",
                       border: `1px solid ${isActive ? COLORS.travel : "#eef0f3"}`,
@@ -1644,7 +1771,7 @@ const UsersClusterMapAll = ({
                     transition={{ duration: 0.25 }}
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 32px 1fr",
+                      gridTemplateColumns: "minmax(0,1fr) 32px minmax(0,1fr)",
                       alignItems: "start",
                       minHeight: "64px",
                     }}
@@ -1655,6 +1782,7 @@ const UsersClusterMapAll = ({
                         display: "flex",
                         justifyContent: "flex-end",
                         paddingRight: "8px",
+                        minWidth: 0,
                       }}
                     >
                       {onLeft && card}
@@ -1697,6 +1825,7 @@ const UsersClusterMapAll = ({
                         display: "flex",
                         justifyContent: "flex-start",
                         paddingLeft: "8px",
+                        minWidth: 0,
                       }}
                     >
                       {!onLeft && card}
