@@ -529,3 +529,75 @@ body .rs-table-row-header .rs-table-cell {
 .jodit-status-bar a.jodit-status-bar-link {
   display: none;
 }
+.org-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-top: 3px solid #0ab39c;
+  border-radius: 10px;
+  padding: 14px 16px;
+  min-width: 200px;
+  min-height: 150px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.org-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  display: block;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.org-card-subtitle {
+  font-size: 11px;
+  color: #0ab39c;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.org-card-bottom {
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.org-card-count-badge {
+  background: #e1f5ee;
+  border-radius: 8px;
+  padding: 6px 12px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 70px;
+}
+
+.org-card-count-number {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f6e56;
+  line-height: 1.1;
+}
+
+.org-card-count-label {
+  font-size: 9px;
+  color: #0f6e56;
+  font-weight: 500;
+}
+
+.org-card-eye {
+  padding: 0;
+}
+
+.p-organizationchart-line-down,
+.p-organizationchart-line-left,
+.p-organizationchart-line-top {
+  border-color: #0ab39c !important;
+}
+.org-card-edit {
+  padding: 0;
+}

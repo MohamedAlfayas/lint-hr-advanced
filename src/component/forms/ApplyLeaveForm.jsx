@@ -169,7 +169,12 @@ const ApplyLeaveForm = () => {
 
   const [halfDayBoundaries, setHalfDayBoundaries] = useState(null);
 
-  const workScheduleData = GetLocalStorageData("work_schedule") || [];
+  const rawWorkScheduleData = GetLocalStorageData("work_schedule");
+  const workScheduleData = Array.isArray(rawWorkScheduleData)
+    ? rawWorkScheduleData
+    : rawWorkScheduleData
+      ? [rawWorkScheduleData]
+      : [];
   const profileData = GetLocalStorageData("my_profile") || [];
 
   const { holiday_data } = useSelector((state) => state.HolidayReducer);

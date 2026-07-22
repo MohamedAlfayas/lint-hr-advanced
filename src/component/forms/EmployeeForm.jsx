@@ -843,15 +843,11 @@ const EmployeeForm = () => {
                         }
                       }}
                       onBlur={() => FormikForm.setFieldTouched("emp_id", true)}
-                      invalid={
-                        !!(
-                          FormikForm.touched.emp_id && FormikForm.errors.emp_id
-                        )
-                      }
+                      invalid={!!FormikForm.errors.emp_id}
                     />
-                    {!(
-                      FormikForm.touched.emp_id && FormikForm.errors.emp_id
-                    ) && <i className="ri-user-line"></i>}
+                    {!FormikForm.errors.emp_id && (
+                      <i className="ri-user-line"></i>
+                    )}
                     {FormikForm.errors.emp_id && (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.emp_id}
@@ -882,17 +878,11 @@ const EmployeeForm = () => {
                       onBlur={() =>
                         FormikForm.setFieldTouched("first_name", true)
                       }
-                      invalid={
-                        !!(
-                          FormikForm.touched.first_name &&
-                          FormikForm.errors.first_name
-                        )
-                      }
+                      invalid={!!FormikForm.errors.first_name}
                     />
-                    {!(
-                      FormikForm.touched.first_name &&
-                      FormikForm.errors.first_name
-                    ) && <i className="ri-user-line"></i>}
+                    {!FormikForm.errors.first_name && (
+                      <i className="ri-user-line"></i>
+                    )}
                     {FormikForm.errors.first_name && (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.first_name}
@@ -923,17 +913,11 @@ const EmployeeForm = () => {
                       onBlur={() =>
                         FormikForm.setFieldTouched("last_name", true)
                       }
-                      invalid={
-                        !!(
-                          FormikForm.touched.last_name &&
-                          FormikForm.errors.last_name
-                        )
-                      }
+                      invalid={!!FormikForm.errors.last_name}
                     />
-                    {!(
-                      FormikForm.touched.last_name &&
-                      FormikForm.errors.last_name
-                    ) && <i className="ri-user-2-line"></i>}
+                    {!FormikForm.errors.last_name && (
+                      <i className="ri-user-2-line"></i>
+                    )}
                     {FormikForm.errors.last_name && (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.last_name}

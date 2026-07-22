@@ -965,6 +965,36 @@ const WorkScheduleForm = () => {
                               </div>
                             </div>
                           </Col>
+
+                          {workScheduleData.id > 0 && (
+                            <Col lg={12} className="mt-3">
+                              <div className="mb-3">
+                                <Label className="form-label">Status</Label>
+
+                                <div
+                                  className="form-check form-switch form-switch-md form-switch-success"
+                                  dir="ltr"
+                                >
+                                  <Input
+                                    type="checkbox"
+                                    checked={workScheduleData.status || false}
+                                    onChange={(e) =>
+                                      setWorkScheduleData((prev) => ({
+                                        ...prev,
+                                        status: e.target.checked,
+                                      }))
+                                    }
+                                  />
+                                </div>
+
+                                <div className="form-text">
+                                  {workScheduleData.status
+                                    ? "Active"
+                                    : "Inactive"}
+                                </div>
+                              </div>
+                            </Col>
+                          )}
                         </div>
                       )) || (
                         <Row className="mb-2">
