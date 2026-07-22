@@ -1784,7 +1784,7 @@ export const leave_types_options = [
 
 export const leave_reset_options = [
   { id: 1, label: "January To December", value: 1 },
-  { id: 2, label: "April To May", value: 2 },
+  { id: 2, label: "April To March", value: 2 },
 ];
 
 export const hr_status_options = [

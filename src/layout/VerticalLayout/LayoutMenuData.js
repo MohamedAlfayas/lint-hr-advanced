@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
+  EMPLOYEE_VIEW_ACCESS_KEY,
   VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
@@ -217,6 +218,7 @@ const Navdata = () => {
         link: "/employee",
         parentId: "baseUi",
         perm: [
+          EMPLOYEE_VIEW_ACCESS_KEY,
           VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
           VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
         ],
@@ -394,6 +396,24 @@ const Navdata = () => {
     } else if (!!profile_data && !!profile_data.permission_list) {
       let updated_menu = [];
       menuList.map((route) => {
+        const hasEmployeePermission =
+  Array.isArray(route?.perm) &&
+  route.perm.some((d) =>{
+    console.log("d =", d);
+    return profile_data?.permission_list.includes(d)
+  
+    });
+
+const isAllPermission =
+  typeof route?.perm === "string" &&
+  route?.perm === "all";
+
+const isHeader = route.isHeader === true;
+
+console.log("Route:", route.label);
+console.log("hasEmployeePermission:", hasEmployeePermission);
+console.log("isAllPermission:", isAllPermission);
+console.log("isHeader:", isHeader);
         if (
           (Array.isArray(route?.perm) &&
             (route?.perm).some((d) =>

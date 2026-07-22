@@ -234,7 +234,7 @@ const PrioritiesForm = () => {
           dispatch(toggleRSBView(false));
         } else {
           toast.error(
-            Api?.data?.message || Api?.data?.detail || "Something went wrong",
+            Api?.data?.message || Api?.data?.detail || "Priority name already exists, so you cannot create a duplicate priority.",
           );
         }
       } catch (error) {

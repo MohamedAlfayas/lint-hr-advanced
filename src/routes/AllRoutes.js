@@ -3,6 +3,7 @@ import React, { lazy } from "react";
 import AccountSettings from "../pages/employee/AccountSetting";
 import ApprovalFilter from "../component/common/tableFilter/ApprovalFilter";
 import {
+  EMPLOYEE_VIEW_ACCESS_KEY,
   VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
   VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
@@ -99,7 +100,7 @@ const privateRoutes = [
   {
     path: "/employee",
     component: <Employee />,
-    perm: [VIEW_TEAM_EMPLOYEE_ACCESS_KEY, VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY],
+    perm: [EMPLOYEE_VIEW_ACCESS_KEY,VIEW_TEAM_EMPLOYEE_ACCESS_KEY, VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY],
   },
   {
     path: "/employee/view/:id",

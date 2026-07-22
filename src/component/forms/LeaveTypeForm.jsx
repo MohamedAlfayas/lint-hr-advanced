@@ -270,6 +270,31 @@ const LeaveTypeForm = () => {
     //   otherwise: (schema) => schema.nullable(),
     // }),
 
+
+    allowed_count: Yup.number().when("unit", {
+      is: leave_type_hour_unit,
+      then: (schema) =>
+        schema
+          .nullable()
+          .max(
+            8760,
+            "Leave Hour Allowed in a Year must not exceed 8760"
+          ),
+      otherwise: (schema) => schema.nullable(),
+    }),
+
+    hour_allowed_in_day: Yup.number().when("unit", {
+      is: leave_type_hour_unit,
+      then: (schema) =>
+        schema
+          .nullable()
+          .max(
+            24,
+            "Leave Hour Allowed in a Day must not exceed 24"
+          ),
+      otherwise: (schema) => schema.nullable(),
+    }),
+
     description: Yup.string()
       .trim()
       .matches(
@@ -741,6 +766,7 @@ const LeaveTypeForm = () => {
                         className="form-control"
                         placeholder="Year"
                         value={leaveTypeData.allowed_count ?? 0}
+                        invalid={!!FormikForm.errors.allowed_count}
                         onFocus={() => {
                           if (!leaveTypeData.allowed_count) {
                             setLeaveTypeData({
@@ -771,29 +797,51 @@ const LeaveTypeForm = () => {
                             e.preventDefault();
                           }
                         }}
+                        // onChange={(e) => {
+                        //  if (!canEditLeaveType("count")) return;
+                        //   const val = e.target.value;
+                        //   if (val === "") {
+                        //     setLeaveTypeData({
+                        //       ...leaveTypeData,
+                        //       allowed_count: "",
+                        //     });
+                        //   } else {
+                        //     const parsed = parseInt(val, 10);
+                        //     setLeaveTypeData({
+                        //       ...leaveTypeData,
+                        //       allowed_count:
+                        //         isNaN(parsed) || parsed < 0 ? 0 : parsed,
+                        //     });
+                        //   }
+                        // }}
                         onChange={(e) => {
-                         if (!canEditLeaveType("count")) return;
+                          if (!canEditLeaveType("count")) return;
+
                           const val = e.target.value;
-                          if (val === "") {
-                            setLeaveTypeData({
-                              ...leaveTypeData,
-                              allowed_count: "",
-                            });
-                          } else {
-                            const parsed = parseInt(val, 10);
-                            setLeaveTypeData({
-                              ...leaveTypeData,
-                              allowed_count:
-                                isNaN(parsed) || parsed < 0 ? 0 : parsed,
-                            });
-                          }
+
+                          const parsed =
+                            val === "" ? "" : Math.max(0, parseInt(val, 10) || 0);
+
+                          setLeaveTypeData({
+                            ...leaveTypeData,
+                            allowed_count: parsed,
+                          });
+
+                          FormikForm.setFieldValue("allowed_count", parsed);
+                          FormikForm.validateField("allowed_count");
                         }}
                       />
-                      <i className="ri-time-line"></i>
+                      {/* <i className="ri-time-line"></i> */}
                     </div>
+                    {FormikForm.errors.allowed_count ? (
+                      <FormFeedback type="invalid" style={{ display: "block" }}>
+                        {FormikForm.errors.allowed_count}
+                      </FormFeedback>
+                    ) : (
                     <div id="passwordHelpBlock" className="form-text">
                       Please Enter Leave Hour Allowed in a year.
                     </div>
+                    )}
                   </div>
                   <div className="mb-3">
                     <Label htmlFor="lt_hour_allow_day" className="form-label">
@@ -810,6 +858,7 @@ const LeaveTypeForm = () => {
                         className="form-control"
                         placeholder="Day"
                         value={leaveTypeData.hour_allowed_in_day ?? 0}
+                        invalid={!!FormikForm.errors.hour_allowed_in_day}
                         onFocus={() => {
                           if (!leaveTypeData.hour_allowed_in_day) {
                             setLeaveTypeData({
@@ -839,29 +888,51 @@ const LeaveTypeForm = () => {
                             e.preventDefault();
                           }
                         }}
+                        // onChange={(e) => {
+                        //   if (!canEditLeaveType("hour_allowed_in_day")) return;
+                        //   const val = e.target.value;
+                        //   if (val === "") {
+                        //     setLeaveTypeData({
+                        //       ...leaveTypeData,
+                        //       hour_allowed_in_day: "",
+                        //     });
+                        //   } else {
+                        //     const parsed = parseInt(val, 10);
+                        //     setLeaveTypeData({
+                        //       ...leaveTypeData,
+                        //       hour_allowed_in_day:
+                        //         isNaN(parsed) || parsed < 0 ? 0 : parsed,
+                        //     });
+                        //   }
+                        // }}
                         onChange={(e) => {
                           if (!canEditLeaveType("hour_allowed_in_day")) return;
+
                           const val = e.target.value;
-                          if (val === "") {
-                            setLeaveTypeData({
-                              ...leaveTypeData,
-                              hour_allowed_in_day: "",
-                            });
-                          } else {
-                            const parsed = parseInt(val, 10);
-                            setLeaveTypeData({
-                              ...leaveTypeData,
-                              hour_allowed_in_day:
-                                isNaN(parsed) || parsed < 0 ? 0 : parsed,
-                            });
-                          }
+
+                          const parsed =
+                            val === "" ? "" : Math.max(0, parseInt(val, 10) || 0);
+
+                          setLeaveTypeData({
+                            ...leaveTypeData,
+                            hour_allowed_in_day: parsed,
+                          });
+
+                          FormikForm.setFieldValue("hour_allowed_in_day", parsed);
+                          FormikForm.validateField("hour_allowed_in_day");
                         }}
                       />
-                      <i className="ri-time-line"></i>
+                      {/* <i className="ri-time-line"></i> */}
                     </div>
+                    {FormikForm.errors.hour_allowed_in_day ? (
+                      <FormFeedback type="invalid" style={{ display: "block" }}>
+                        {FormikForm.errors.hour_allowed_in_day}
+                      </FormFeedback>
+                    ) : (
                     <div id="passwordHelpBlock" className="form-text">
                       Please Enter Leave Hour Allowed in a day.
                     </div>
+                    )}
                   </div>
                 </Col>
               )}

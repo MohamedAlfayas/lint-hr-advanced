@@ -265,7 +265,7 @@ const StatusForm = () => {
           toast.error(
             response?.data?.message ||
               response?.data?.detail ||
-              "Something went wrong",
+              "Status name already exists, so you cannot create a duplicate status.",
           );
         }
       } catch (error) {
