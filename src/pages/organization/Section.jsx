@@ -446,11 +446,11 @@ const Section = () => {
               <Roles />
             </TabPane>
             ) || null}
-            {permissions.forms && (
+            {/* {permissions.forms && (
             <TabPane tabId="8">
               <CustomFormTable />
             </TabPane>
-            ) || null}
+            ) || null} */}
             {permissions.locationGroup && (
             <TabPane tabId="9">
               <LocationGroup />

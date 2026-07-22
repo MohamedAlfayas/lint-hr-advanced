@@ -41,6 +41,9 @@ export const EDIT_CUSTOM_FIELD_ACCESS_KEY =
 
 // Employee
 
+export const EMPLOYEE_VIEW_ACCESS_KEY =
+  "a196c41a-5ecb-40c2-ace9-02b5f4819b29";
+
 export const CREATE_EMPLOYEE_ACCESS_KEY =
   "26c44a29-9b81-45cf-84ab-6d9f22a0b8a7";
 
@@ -352,6 +355,21 @@ export const default_roles_list = [
     priority: 2,
     note: "",
     permission: [
+      {
+        id: 201,
+        role_uuid: EMPLOYEE_VIEW_ACCESS_KEY,
+        dependency_for_uuid_list: [
+          CREATE_EMPLOYEE_ACCESS_KEY,
+          EDIT_EMPLOYEE_ACCESS_KEY,
+          VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
+          VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
+        ],
+        notes: "User Can View Employee",
+        element: "per_employee_view",
+        dependency_to_element_list: [],
+        checked: false,
+        disabled: false,
+      },
       {
         id: 202,
         role_uuid: CREATE_EMPLOYEE_ACCESS_KEY,

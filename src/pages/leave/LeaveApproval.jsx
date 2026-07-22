@@ -265,7 +265,21 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
       Header: "Reason",
       filterable: false,
       id: "reason",
-      accessor: (obj) => <b>{obj.reason}</b>,
+      // accessor: (obj) => <b>{obj.reason}</b>,
+      accessor: (obj) => {
+        if (obj.comp_off_work_date) {
+          return (
+            <div>
+              <div>
+                <b>Comp-Off</b>
+              </div>
+              <div>{convertDate(obj.comp_off_work_date)}</div>
+            </div>
+          );
+        }
+
+        return <b>{obj.reason}</b>;
+      },
     },
     {
       Header: () => (
