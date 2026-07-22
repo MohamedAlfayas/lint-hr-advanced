@@ -7,6 +7,9 @@ export const connectWebSocket = (employeeId) => {
   console.log("🚀 connectWebSocket() called");
   console.log("👤 Employee ID:", employeeId);
   console.log("🌐 WebSocket URL:", WsBaseURL);
+  console.log(employeeId);
+
+  if (socket && socket.readyState === window.WebSocket.OPEN) return;
 
   if (socket) {
     console.log("📡 Existing Socket State:", socket.readyState);
