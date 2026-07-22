@@ -69,10 +69,13 @@ const HolidayCalenderAPi = () => {
                     );
 
                     if (holiday) {
+                      dayElem.style.boxSizing = "border-box";
                       dayElem.style.background = "#405189";
+                      dayElem.style.backgroundClip = "content-box";
                       dayElem.style.color = "#fff";
                       dayElem.style.borderRadius = "8%";
                       dayElem.style.fontWeight = "600";
+                      dayElem.style.padding = "0px";
                       dayElem.title = holiday.name;
                     }
                   },
