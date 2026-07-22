@@ -3,6 +3,8 @@ import { WsBaseURL } from "../../../common/api/BaseURL";
 let socket = null;
 
 export const connectWebSocket = (employeeId) => {
+  console.log(employeeId);
+
   if (socket && socket.readyState === window.WebSocket.OPEN) return;
 
   socket = new window.WebSocket(WsBaseURL);
