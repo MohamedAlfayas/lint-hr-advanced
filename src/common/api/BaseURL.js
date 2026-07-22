@@ -32,7 +32,7 @@ export const ProductionBaseURL = "http://62.72.59.29:8000";
 export const getWsUrlFromDomain = () => {
   const httpUrl = getBaseUrlFromDomain(); // reuse same subdomain/local logic
   const wsUrl = httpUrl.replace(/^http/, "ws").replace(/\/$/, "");
-  return "ws://lintcloud.vayulo.com/ws/tracking/";
+  return "wss://lintcloud.vayulo.com/ws/tracking/";
 };
 
 export const WsBaseURL = getWsUrlFromDomain();
