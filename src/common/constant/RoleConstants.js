@@ -393,7 +393,7 @@ export const default_roles_list = [
       {
         id: 204,
         role_uuid: VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
-        dependency_for_uuid_list: [],
+        dependency_for_uuid_list: [VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,],
         notes: "User Can View Team Employee",
         element: "per_team_employee_view",
         dependency_to_element_list: ["per_employee_view"],
@@ -406,7 +406,7 @@ export const default_roles_list = [
         dependency_for_uuid_list: [],
         notes: "User Can View Hierarchy Employee",
         element: "per_hierarchy_employee_view",
-        dependency_to_element_list: ["per_employee_view"],
+        dependency_to_element_list: ["per_employee_view", "per_team_employee_view",],
         checked: false,
         disabled: false,
       },
