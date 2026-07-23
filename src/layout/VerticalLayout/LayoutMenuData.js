@@ -4,6 +4,9 @@ import {
   EMPLOYEE_VIEW_ACCESS_KEY,
   VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
+  CLIENT_VIEW_ACCESS_KEY,
+  CREATE_CLIENT_ACCESS_KEY,
+  EDIT_CLIENT_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
 
 const Navdata = () => {
@@ -360,7 +363,12 @@ const Navdata = () => {
             label: "Clients",
             link: "/clients",
             parentId: "baseUi",
-            perm: "all",
+            // perm: "all",
+            perm: [
+                CLIENT_VIEW_ACCESS_KEY,
+                CREATE_CLIENT_ACCESS_KEY,
+                EDIT_CLIENT_ACCESS_KEY,
+            ]
           },
           {
             id: "projects",
