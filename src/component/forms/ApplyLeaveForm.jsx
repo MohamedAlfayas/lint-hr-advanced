@@ -190,6 +190,8 @@ const ApplyLeaveForm = () => {
     (leave_application_data || []).forEach((app) => {
       console.log("leave_application_data", leave_application_data);
 
+      if (app.status !== 2) return;
+
       if (app.is_deleted) return;
       const leaveLabel =
         app.leave_type_name ||
