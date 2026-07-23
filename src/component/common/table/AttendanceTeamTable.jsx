@@ -46,10 +46,23 @@ const AttendanceTeamTable = () => {
     setNotes_modal(!notes_modal);
   }
 
+  // const EmployeeCell = ({ rowData, dataKey, ...props }) => {
+  //   let at_employee_data = employee_data.find(function (i) {
+  //     return i.id == rowData.employee_id;
+  //   });
+  
   const EmployeeCell = ({ rowData, dataKey, ...props }) => {
-    let at_employee_data = employee_data.find(function (i) {
-      return i.id == rowData.employee_id;
-    });
+    const at_employee_data = (employee_data || []).find(
+      (i) => i.id == rowData.employee_id
+    );
+
+    if (!at_employee_data) {
+      return (
+        <Cell {...props}>
+          <span>Employee Not Found</span>
+        </Cell>
+      );
+    }
 
     let html_tag = at_employee_data.profile_url ? (
       <div className="d-flex gap-2 align-items-center">
@@ -110,11 +123,17 @@ const AttendanceTeamTable = () => {
   };
 
   const DepartmentCell = ({ rowData, dataKey, ...props }) => {
-    let thisDepartment = DepartmentData
-      ? DepartmentData.filter((data) =>
-          rowData.primary_department_id_list.includes(data.id),
-        )
-      : [];
+    // let thisDepartment = DepartmentData
+    //   ? DepartmentData.filter((data) =>
+    //       rowData.primary_department_id_list.includes(data.id),
+    //     )
+    //   : [];
+    const departmentIds = rowData?.primary_department_id_list || [];
+
+    const thisDepartment = (DepartmentData || []).filter((data) =>
+      departmentIds.includes(data.id)
+    );
+
 
     let firstDep_name = thisDepartment?.length ? thisDepartment[0].name : "";
 
@@ -246,8 +265,10 @@ const AttendanceTeamTable = () => {
   ];
 
   const dynamicColumns =
-    team_attendance_report_data.length > 0
-      ? team_attendance_report_data[0].workday_data.map((day, index) => (
+    // team_attendance_report_data.length > 0
+    //   ? team_attendance_report_data[0].workday_data.map
+    (team_attendance_report_data || []).length > 0
+      ? (team_attendance_report_data[0]?.workday_data || []).map((day, index) => (
           <Column key={`dynamic_${index}`} width={100} align="center">
             <HeaderCell>
               {" "}
@@ -337,7 +358,7 @@ const AttendanceTeamTable = () => {
     <Fragment>
       <Table
         height={400}
-        data={team_attendance_report_data}
+        data={team_attendance_report_data || []}
         rowHeight={60}
         autoHeight={true}
         loading={loading}
