@@ -84,7 +84,8 @@ import { removeProject } from "../../../redux/reducers/ChildReducer/ProjectsRedu
 import { removeClient } from "../../../redux/reducers/ChildReducer/ClientReducer";
 import { removeTask } from "../../../redux/reducers/ChildReducer/TaskReducer";
 import {
-  
+  CREATE_CLIENT_ACCESS_KEY,
+  EDIT_CLIENT_ACCESS_KEY,
   CREATE_EMPLOYEE_ACCESS_KEY,
   CREATE_CUSTOM_FIELD_ACCESS_KEY,
   EDIT_EMPLOYEE_ACCESS_KEY,
@@ -1647,6 +1648,12 @@ const InfoTable = ({
   ]);
 
   const CheckCreateAccess = (profile_data, thisFormName) => {
+    console.log("Form Name:", thisFormName);
+    console.log("Permissions:", profile_data.permission_list);
+    console.log(
+      "Has Create Client:",
+      profile_data.permission_list.includes(CREATE_CLIENT_ACCESS_KEY)
+    );
     if (
       !!profile_data &&
       !!profile_data.is_admin &&
@@ -1663,11 +1670,21 @@ const InfoTable = ({
           (thisFormName === custom_field_component_name &&
             profile_data.permission_list.includes(
               CREATE_CUSTOM_FIELD_ACCESS_KEY,
+            )) ||
+          
+          (thisFormName === client_component_name &&
+            profile_data.permission_list.includes(
+              CREATE_CLIENT_ACCESS_KEY
             ))
         ) {
+          console.log("Create Access Granted");
           setShowCreateBtn(true);
         } else if (thisFormName === leave_application_component_name) {
+          console.log("Leave Application Access Granted");
           setShowCreateBtn(true);
+        } else {
+          console.log("Create Access Denied");
+          setShowCreateBtn(false);
         }
       }
     } else {
@@ -1688,12 +1705,18 @@ const InfoTable = ({
           (thisFormName === employee_component_name &&
             profile_data.permission_list.includes(EDIT_EMPLOYEE_ACCESS_KEY)) ||
           (thisFormName === custom_field_component_name &&
-            profile_data.permission_list.includes(EDIT_CUSTOM_FIELD_ACCESS_KEY))
+            profile_data.permission_list.includes(EDIT_CUSTOM_FIELD_ACCESS_KEY)) ||
+          (thisFormName === client_component_name &&
+          profile_data.permission_list.includes(
+            EDIT_CLIENT_ACCESS_KEY
+          ))
         ) {
           setShowEditBtn(true);
         } else if (thisFormName === leave_application_component_name) {
           setShowEditBtn(true);
-        }
+        } else {
+          setShowEditBtn(false);
+      }
       }
     } else {
       setShowEditBtn(false);

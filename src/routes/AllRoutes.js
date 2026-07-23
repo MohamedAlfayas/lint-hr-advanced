@@ -12,6 +12,9 @@ import {
   VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
   VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
   CUSTOM_FIELD_VIEW_ACCESS_KEY,
+  CLIENT_VIEW_ACCESS_KEY,
+  CREATE_CLIENT_ACCESS_KEY,
+  EDIT_CLIENT_ACCESS_KEY,
 } from "../common/constant/RoleConstants";
 import Status from "../pages/Task/Status/Status";
 import Priorities from "../pages/Task/Priorities/Priorities";
@@ -181,7 +184,16 @@ const privateRoutes = [
   { path: "/priorities", component: <Priorities />, perm: "all" },
   { path: "/contact-group", component: <ContactGroup />, perm: "all" },
   { path: "/contacts", component: <Contacts />, perm: "all" },
-  { path: "/clients", component: <Clients />, perm: "all" },
+  { 
+    path: "/clients", 
+    component: <Clients />, 
+    // perm: "all"
+    perm: [
+      CLIENT_VIEW_ACCESS_KEY,
+      CREATE_CLIENT_ACCESS_KEY,
+      EDIT_CLIENT_ACCESS_KEY,
+    ]
+  },
   { path: "/projects", component: <Projects />, perm: "all" },
   { path: "/tasks", component: <TaskTab />, perm: "all" },
   {
