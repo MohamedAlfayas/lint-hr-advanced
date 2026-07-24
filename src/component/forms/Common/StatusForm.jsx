@@ -75,7 +75,7 @@ const StatusForm = () => {
       if (inputValue.length > 50) {
         FormikForm.setFieldError(
           "name",
-          "Status name is too long. Please keep it within 50 characters."
+          "Status name is too long. Please keep it within 50 characters.",
         );
       } else {
         FormikForm.setFieldError("name", undefined);
@@ -88,16 +88,13 @@ const StatusForm = () => {
 
     if (name === "description") {
       inputValue = value
-      .replace(/^\s+/, "")
-      .replace(
-        /[^a-zA-Z0-9\s.,!?'"_\-()&:;/]/g,
-        ""
-      );
+        .replace(/^\s+/, "")
+        .replace(/[^a-zA-Z0-9\s.,!?'"_\-()&:;/]/g, "");
 
       if (inputValue.length > 200) {
         FormikForm.setFieldError(
           "description",
-          "Description is too long. Please keep it within 200 characters."
+          "Description is too long. Please keep it within 200 characters.",
         );
       } else {
         FormikForm.setFieldError("description", undefined);
@@ -126,33 +123,34 @@ const StatusForm = () => {
       name: Yup.string()
         .matches(
           /^[a-zA-Z0-9\s.,\-&()']+$/,
-          "Status name can only contain letters, numbers, spaces, and . , - & ( ) '"
+          "Status name can only contain letters, numbers, spaces, and . , - & ( ) '",
         )
         .required("Please Enter the status name")
         .min(1, "Please Enter the status name")
-        .max(50, "Status name is too long. Please keep it within 50 characters.")
+        .max(
+          50,
+          "Status name is too long. Please keep it within 50 characters.",
+        )
         .test(
           "not-only-spaces",
           "Please Enter the status name",
           (value) => !value || value.trim().length > 0,
         ),
 
-      
       color: Yup.string()
         .trim()
         .required("Please enter a value or select a color.")
         .max(25, "Color value must not exceed 25 characters."),
-        
 
       description: Yup.string()
         .trim()
         .matches(
           /^[a-zA-Z0-9\s.,!?'"_\-()&:;/]*$/,
-          "Description can contain only alphabets, numbers, spaces, and . , ! ? \" ' - _ ( ) & : ; /"
+          "Description can contain only alphabets, numbers, spaces, and . , ! ? \" ' - _ ( ) & : ; /",
         )
         .max(
           200,
-          "Description is too long. Please keep it within 200 characters."
+          "Description is too long. Please keep it within 200 characters.",
         ),
     }),
 
@@ -170,19 +168,16 @@ const StatusForm = () => {
         FormikForm.setFieldTouched("name", true);
         FormikForm.setFieldError(
           "name",
-          "Status name is too long. Please keep it within 50 characters."
+          "Status name is too long. Please keep it within 50 characters.",
         );
         return;
       }
 
-      if (
-        statusData.description &&
-        statusData.description.length > 200
-      ) {
+      if (statusData.description && statusData.description.length > 200) {
         FormikForm.setFieldTouched("description", true);
         FormikForm.setFieldError(
           "description",
-          "Description is too long. Please keep it within 200 characters."
+          "Description is too long. Please keep it within 200 characters.",
         );
         return;
       }
@@ -191,7 +186,7 @@ const StatusForm = () => {
         FormikForm.setFieldTouched("color", true);
         FormikForm.setFieldError(
           "color",
-          "Please enter a value or select a color."
+          "Please enter a value or select a color.",
         );
         return;
       }
@@ -200,7 +195,7 @@ const StatusForm = () => {
         FormikForm.setFieldTouched("color", true);
         FormikForm.setFieldError(
           "color",
-          "Color value must not exceed 25 characters."
+          "Color value must not exceed 25 characters.",
         );
         return;
       }
@@ -299,7 +294,7 @@ const StatusForm = () => {
                     onBlur={FormikForm.handleBlur}
                     invalid={
                       // FormikForm.touched.name &&
-                       !!FormikForm.errors.name
+                      !!FormikForm.errors.name
                     }
                   />
 
@@ -346,7 +341,6 @@ const StatusForm = () => {
                         !!FormikForm.errors.color
                       }
                     />
-                    
                   </div>
                   {/* <div className="form-text">
                     Pick or type a color name / hex code. Invalid values will default to black (#000000).
@@ -358,10 +352,10 @@ const StatusForm = () => {
                     </FormFeedback>
                   ) : (
                     <div className="form-text">
-                      Pick or type a color name / hex code. Invalid values will default to black (#000000).
+                      Pick or type a color name / hex code. Invalid values will
+                      default to black (#000000).
                     </div>
                   )}
-
                 </div>
               </Col>
 
@@ -383,43 +377,40 @@ const StatusForm = () => {
                       {FormikForm.errors.description}
                     </FormFeedback>
                   ) : (
-                    <div className="form-text">
-                      Description (Optional).
-                    </div>
+                    <div className="form-text">Description (Optional).</div>
                   )}
-
                 </div>
               </Col>
 
               {statusData?.id > 0 && (
-              <Col md={12}>
-                <div>
-                  <Label htmlFor="status_toggle" className="form-label">
-                    Status
-                  </Label>
+                <Col md={12}>
+                  <div>
+                    <Label htmlFor="status_toggle" className="form-label">
+                      Status
+                    </Label>
 
-                  <div className="mb-2">
-                    <div
-                      className="form-check form-switch form-switch-md form-switch-success"
-                      dir="ltr"
-                    >
-                      <Input
-                        type="checkbox"
-                        className="form-check-input form-switch-md"
-                        id="status_toggle"
-                        checked={statusData.status || false}
-                        onChange={(e) =>
-                          setStatusData((prev) => ({
-                            ...prev,
-                            status: e.target.checked,
-                          }))
-                        }
-                      />
+                    <div className="mb-2">
+                      <div
+                        className="form-check form-switch form-switch-md form-switch-success"
+                        dir="ltr"
+                      >
+                        <Input
+                          type="checkbox"
+                          className="form-check-input form-switch-md"
+                          id="status_toggle"
+                          checked={statusData.status || false}
+                          onChange={(e) =>
+                            setStatusData((prev) => ({
+                              ...prev,
+                              status: e.target.checked,
+                            }))
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Col>
-            )}
+                </Col>
+              )}
 
               {/* SAVE */}
               <Col lg={12}>

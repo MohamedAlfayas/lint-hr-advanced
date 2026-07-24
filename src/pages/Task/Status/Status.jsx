@@ -25,7 +25,6 @@ const Status = () => {
     dispatch(setStatus(localStatus));
   }, [dispatch]);
 
-
   const isValidColor = (color) => {
     const s = new Option().style;
     s.color = color;
@@ -43,9 +42,7 @@ const Status = () => {
             className="badge text-uppercase"
             style={{
               // backgroundColor: obj.color || "#6c757d",
-              backgroundColor: isValidColor(obj.color)
-                ? obj.color
-                : "#000000",
+              backgroundColor: isValidColor(obj.color) ? obj.color : "#000000",
               color: "#fff",
               padding: "6px 10px",
               fontSize: "11px",
