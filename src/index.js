@@ -10,6 +10,23 @@ import appstore from "./redux/store/appstore";
 
 const platform = process.env.REACT_APP_LC_PLATFORM || "local";
 
+if (platform != "local") {
+
+  // ✅ Init Sentry (latest API)
+  Sentry.init({
+    dsn: process.env.REACT_APP_SENTRY_DSN,
+
+    integrations: [
+      Sentry.browserTracingIntegration(), // ✅ modern replacement
+    ],
+
+    tracesSampleRate: 1.0, // 👉 change to 0.2 in production
+  });
+
+  // console.log = () => { };
+  // console.debug = () => { };
+  // console.info = () => { };
+}
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
