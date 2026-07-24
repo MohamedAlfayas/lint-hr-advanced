@@ -12,7 +12,6 @@ const platform = process.env.REACT_APP_LC_PLATFORM || "local";
 
 if (platform !== "local") {
 
-  // ✅ Init Sentry
   Sentry.init({
     dsn: process.env.REACT_APP_SENTRY_DSN,
 
@@ -20,24 +19,51 @@ if (platform !== "local") {
       Sentry.browserTracingIntegration(),
     ],
 
-    tracesSampleRate: 1.0, // 👉 change to 0.2 in production
+    tracesSampleRate: 1.0,
 
-    // Filter out ONLY Google Maps gen_204 telemetry errors
+    // 1️⃣ Block events originating from the Google Maps SDK bundle
+    denyUrls: [
+      /maps\.googleapis\.com/i,
+    ],
+
+    // 2️⃣ Filter out gen_204 network errors & unhandled rejections
     beforeSend(event, hint) {
       const error = hint?.originalException;
-      const errorString = JSON.stringify(event) + (error?.message || '') + (error?.stack || '');
+      
+      // Serialize everything in the error context to catch any variation of the URL
+      const fullContext = JSON.stringify({
+        eventMessage: event?.message,
+        exceptionValues: event?.exception?.values,
+        errorMsg: error?.message,
+        stack: error?.stack,
+      });
 
-      if (errorString.includes('gen_204') || errorString.includes('mapsjs/gen_204')) {
-        return null; // Drops this event completely
+      if (
+        fullContext.includes("gen_204") ||
+        fullContext.includes("mapsjs/gen_204") ||
+        fullContext.includes("ERR_BLOCKED_BY_CLIENT")
+      ) {
+        return null; // Drop event completely
       }
 
       return event;
     },
-  });
 
-  // console.log = () => { };
-  // console.debug = () => { };
-  // console.info = () => { };
+    // 3️⃣ Prevents Sentry from saving blocked gen_204 calls as breadcrumbs
+    beforeSendBreadcrumb(breadcrumb) {
+      if (
+        breadcrumb.category === "xhr" || 
+        breadcrumb.category === "fetch" || 
+        breadcrumb.category === "console"
+      ) {
+        const url = breadcrumb.data?.url || breadcrumb.message || "";
+        if (url.includes("gen_204") || url.includes("mapsjs/gen_204")) {
+          return null; // Drop breadcrumb
+        }
+      }
+      return breadcrumb;
+    },
+  });
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
@@ -52,5 +78,4 @@ root.render(
   </Provider>,
 );
 
-// Optional performance logging
 reportWebVitals();
