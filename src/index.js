@@ -10,17 +10,29 @@ import appstore from "./redux/store/appstore";
 
 const platform = process.env.REACT_APP_LC_PLATFORM || "local";
 
-if (platform != "local") {
+if (platform !== "local") {
 
-  // ✅ Init Sentry (latest API)
+  // ✅ Init Sentry
   Sentry.init({
     dsn: process.env.REACT_APP_SENTRY_DSN,
 
     integrations: [
-      Sentry.browserTracingIntegration(), // ✅ modern replacement
+      Sentry.browserTracingIntegration(),
     ],
 
     tracesSampleRate: 1.0, // 👉 change to 0.2 in production
+
+    // Filter out ONLY Google Maps gen_204 telemetry errors
+    beforeSend(event, hint) {
+      const error = hint?.originalException;
+      const errorString = JSON.stringify(event) + (error?.message || '') + (error?.stack || '');
+
+      if (errorString.includes('gen_204') || errorString.includes('mapsjs/gen_204')) {
+        return null; // Drops this event completely
+      }
+
+      return event;
+    },
   });
 
   // console.log = () => { };
