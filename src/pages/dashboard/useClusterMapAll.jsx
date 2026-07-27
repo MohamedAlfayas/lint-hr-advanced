@@ -386,7 +386,7 @@ const UsersClusterMapAll = ({
   const employeeSelectOptions = useMemo(
     () =>
       filteredEmployees.map((emp) => ({
-        value: emp.emp_id,
+        value: emp.employee_id,
         label: emp.first_name,
         department: emp.department,
         profile_url: emp.profile_url,
@@ -403,9 +403,9 @@ const UsersClusterMapAll = ({
   useEffect(() => {
     if (
       filteredEmployees.length &&
-      !filteredEmployees.some((e) => e.emp_id === selectedEmpId)
+      !filteredEmployees.some((e) => e.employee_id === selectedEmpId)
     ) {
-      setSelectedEmpId(filteredEmployees[0].emp_id);
+      setSelectedEmpId(filteredEmployees[0].employee_id);
     }
     if (filteredEmployees.length === 0) {
       setSelectedEmpId(null);
@@ -413,7 +413,8 @@ const UsersClusterMapAll = ({
   }, [deptFilter, filteredEmployees]);
 
   const activeEmployee = useMemo(
-    () => filteredEmployees.find((e) => e.emp_id === selectedEmpId) || null,
+    () =>
+      filteredEmployees.find((e) => e.employee_id === selectedEmpId) || null,
     [filteredEmployees, selectedEmpId],
   );
 
