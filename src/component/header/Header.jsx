@@ -235,7 +235,20 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
               style={{ paddingRight: show_attendance_timer ? "0px" : "15px" }}
             >
               {path_list_for_timer_hide.includes(location.pathname) ? null : (
-                <WebCheckInOut showTimer={true} hideTimer={hideTimer} />
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    minWidth: "280px",
+                    marginRight: "10px",
+                  }}
+                >
+                  <WebCheckInOut
+                    showTimer={true}
+                    hideTimer={hideTimer}
+                    layout="header"
+                  />
+                </div>
               )}
 
               {/* LanguageDropdown */}
