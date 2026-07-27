@@ -22,6 +22,7 @@ import BonusPolicySettings from "./BonusPolicySettings";
 import GratuityPolicySettings from "./GratuityPolicySettings";
 import ReimbursementPolicySettings from "./ReimbursementpolicySettings";
 import LeaveCreditPolicySettings from "./LeaveCreditPolicySettings";
+import IncomeTaxPolicySettings from "./IncomeTaxPolicySettings";
 const AdvancedSettingsTab = ({ onEarningAdd }) => {
   const [activeTab, setActiveTab] = useState("1");
 
@@ -157,6 +158,14 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
             </NavLink>
           </NavItem>
 
+          <NavItem>
+            <NavLink style={{ cursor: "pointer" }}
+              className={classnames({ active: activeTab === "13" })}
+              onClick={() => toggleTab("13")}>
+              Income Tax Policy
+            </NavLink>
+          </NavItem>
+
         </Nav>
 
         {/* Tab Content */}
@@ -207,6 +216,10 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
 
           <TabPane tabId="12">
             <ReimbursementPolicySettings/>
+          </TabPane>
+
+          <TabPane tabId="13">
+            <IncomeTaxPolicySettings/>
           </TabPane>
 
         </TabContent>
