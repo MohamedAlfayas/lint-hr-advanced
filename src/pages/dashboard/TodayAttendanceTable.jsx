@@ -34,10 +34,6 @@ import UsersClusterMapAll from "./useClusterMapAll";
 import SkletonDashboard from "../../component/common/skeleton/SkletonDashboard";
 import SimpleBar from "simplebar-react";
 import "simplebar-react/dist/simplebar.min.css";
-import {
-  connectWebSocket,
-  disconnectWebSocket,
-} from "./LocationWebSocket/WebSocket";
 
 dayjs.extend(customParseFormat);
 
@@ -318,12 +314,8 @@ const TodayAttendanceTable = () => {
   const [customStatuses, setCustomStatuses] = useState([]);
   const [attendanceData, setAttendanceData] = useState([]);
 
-  console.log("dat", attendanceData);
-
   // ── Map modal state ──
   const [mapEmployees, setMapEmployees] = useState([]);
-
-  console.log("employee", mapEmployees);
 
   const [mapSelectedEmpId, setMapSelectedEmpId] = useState(null);
   const [mapSelectedEmpName, setMapSelectedEmpName] = useState("");
@@ -418,8 +410,7 @@ const TodayAttendanceTable = () => {
           }
 
           return {
-            id: item.employee.id,
-            emp_id: item.employee.emp_id,
+            emp_id: item.employee.id,
             first_name: item.employee.first_name || "-",
             profile_url: item.employee.profile_url || null,
             email: item.employee.email || "-",
@@ -450,7 +441,6 @@ const TodayAttendanceTable = () => {
             isOnLeave: item.is_on_leave || false,
             checkInStatus: item.status || null,
             date: item.date,
-            location_history: item.location_history,
 
             progress:
               item.total_work_duration && item.total_time_worked
@@ -556,22 +546,25 @@ const TodayAttendanceTable = () => {
 
   const showStatusFilter = activeTab === "1" || activeTab === "3";
 
-  // ✅ Opens the map modal seeded with every employee that has a usable route
-  // (≥2 location points) on the currently selected date. The map's own
-  // filter bar (department + employee) then lets the user switch between
-  // them without closing the modal. The table's currently selected
-  // dateFilter (DD-MM-YYYY) is converted to ISO (YYYY-MM-DD) and passed
-  // down as initialDate so the map opens on the SAME date the table is
-  // showing, instead of always defaulting to "today".
+  // ✅ Opens the map modal seeded with the employees already loaded for the
+  // current table date. No extra API call needed here — the per-employee
+  // location history is fetched on demand inside UsersClusterMapAll via
+  // GET /attendance/get-location-tracking-data/{emp_id}?date=YYYY-MM-DD
+  // whenever the selected employee or date changes there. The table's
+  // currently selected dateFilter (DD-MM-YYYY) is converted to ISO
+  // (YYYY-MM-DD) and passed down as initialDate so the map opens on the
+  // SAME date the table is showing, instead of always defaulting to "today".
   const handleViewLocations = (row) => {
-    const withLocations = attendanceData.filter(
-      (e) => Array.isArray(e.location_history) && e.location_history.length > 1,
-    );
+    const formatted = attendanceData.map((item) => ({
+      emp_id: item.emp_id,
+      first_name: item.first_name,
+      profile_url: item.profile_url,
+      department: item.department,
+    }));
+    setMapEmployees(formatted);
 
     const isoDate = ConvertISODateFormat(ConvertDateFormat(dateFilter));
-
-    setMapEmployees(attendanceData);
-    setMapSelectedEmpId(row.id);
+    setMapSelectedEmpId(row.emp_id);
     setMapSelectedEmpName(row.first_name);
     setMapSelectedEmpProfileUrl(row.profile_url || null);
     setMapSelectedDate(isoDate);
@@ -579,15 +572,10 @@ const TodayAttendanceTable = () => {
     setIsMapOpen(true);
   };
 
-  // connect when modal opens with a selected employee, disconnect on close/unmount
-  useEffect(() => {
-    if (isMapOpen && mapSelectedEmpId) {
-      connectWebSocket(mapSelectedEmpId);
-    }
-    return () => {
-      disconnectWebSocket();
-    };
-  }, [isMapOpen, mapSelectedEmpId]);
+  // Note: live location tracking (websocket) is now connected inside
+  // UsersClusterMapAll, keyed to whichever employee is selected there —
+  // that follows the map's own employee dropdown, not just the row the
+  // modal was originally opened for.
 
   const formatTime = (timeString) => {
     if (!timeString) return "-";
