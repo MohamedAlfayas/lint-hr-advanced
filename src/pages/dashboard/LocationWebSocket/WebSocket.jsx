@@ -1,109 +1,101 @@
 import { WsBaseURL } from "../../../common/api/BaseURL";
 
 let socket = null;
+let currentEmployeeId = null;
 
-export const connectWebSocket = (employeeId) => {
-  console.log("========================================");
-  console.log("🚀 connectWebSocket() called");
-  console.log("👤 Employee ID:", employeeId);
-  console.log("🌐 WebSocket URL:", WsBaseURL);
-  console.log(employeeId);
+/**
+ * Opens (or reuses) a WebSocket "watch" connection for a given employee.
+ *
+ * @param {string|number} employeeId
+ * @param {Object} callbacks
+ * @param {Function} [callbacks.onOpen]    - called once the socket is open and the watch payload has been sent
+ * @param {Function} [callbacks.onMessage] - called with the parsed JSON payload for every incoming message
+ * @param {Function} [callbacks.onError]   - called with the raw error event
+ * @param {Function} [callbacks.onClose]   - called with the raw close event
+ */
+export const connectWebSocket = (
+  employeeId,
+  { onOpen, onMessage, onError, onClose } = {},
+) => {
+  if (!employeeId) return;
 
-  if (socket && socket.readyState === window.WebSocket.OPEN) return;
-
-  if (socket) {
-    console.log("📡 Existing Socket State:", socket.readyState);
-
-    switch (socket.readyState) {
-      case WebSocket.CONNECTING:
-        console.log("🟡 Socket is CONNECTING");
-        break;
-      case WebSocket.OPEN:
-        console.log("🟢 Socket is already OPEN");
-        return;
-      case WebSocket.CLOSING:
-        console.log("🟠 Socket is CLOSING");
-        break;
-      case WebSocket.CLOSED:
-        console.log("🔴 Socket is CLOSED");
-        break;
-      default:
-        console.log("❓ Unknown socket state");
-    }
+  // Already watching this exact employee on an open socket — nothing to do.
+  if (
+    socket &&
+    socket.readyState === WebSocket.OPEN &&
+    currentEmployeeId === employeeId
+  ) {
+    if (onOpen) onOpen();
+    return;
   }
 
-  console.log("🆕 Creating new WebSocket...");
+  // Different employee, or the existing socket isn't usable — tear it down
+  // first so we never end up watching the wrong employee on a stale socket.
+  if (socket) {
+    try {
+      socket.onopen = null;
+      socket.onmessage = null;
+      socket.onerror = null;
+      socket.onclose = null;
+      socket.close();
+    } catch (err) {
+      console.error("Error closing previous WebSocket:", err);
+    }
+    socket = null;
+  }
 
+  currentEmployeeId = employeeId;
   socket = new WebSocket(WsBaseURL);
 
-  console.log("📡 New WebSocket Object:", socket);
-
   socket.onopen = () => {
-    console.log("========================================");
-    console.log("✅ WebSocket Connected");
-    console.log("📡 Ready State:", socket.readyState);
-
     const payload = {
       action: "watch",
       employee_id: employeeId,
     };
-
-    console.log("📤 Sending Payload:", payload);
-
     socket.send(JSON.stringify(payload));
-
-    console.log("✅ Payload Sent");
+    if (onOpen) onOpen();
   };
 
   socket.onmessage = (event) => {
-    console.log("========================================");
-    console.log("📩 Raw Message Event:", event);
-    console.log("📩 Raw Data:", event.data);
-
+    let data;
     try {
-      const data = JSON.parse(event.data);
-      console.log("✅ Parsed Data:", data);
+      data = JSON.parse(event.data);
     } catch (err) {
-      console.error("❌ JSON Parse Error:", err);
+      console.error("WebSocket message parse error:", err, event.data);
+      return;
     }
+    if (onMessage) onMessage(data);
   };
 
   socket.onerror = (event) => {
-    console.log("========================================");
-    console.error("❌ WebSocket Error");
-    console.log("Event:", event);
-    console.log("Socket:", socket);
-
-    if (socket) {
-      console.log("ReadyState:", socket.readyState);
-      console.log("URL:", socket.url);
-      console.log("Protocol:", socket.protocol);
-      console.log("Buffered Amount:", socket.bufferedAmount);
-      console.log("Extensions:", socket.extensions);
-    }
+    console.error("WebSocket error:", event);
+    if (onError) onError(event);
   };
 
   socket.onclose = (event) => {
-    console.log("========================================");
-    console.warn("🔌 WebSocket Closed");
-    console.log("Code:", event.code);
-    console.log("Reason:", event.reason);
-    console.log("Was Clean:", event.wasClean);
-
-    socket = null;
+    // Only clear the shared references if this close event belongs to the
+    // socket/employee we still think is current (avoids a late close event
+    // for a superseded connection wiping out a newer one).
+    if (currentEmployeeId === employeeId) {
+      socket = null;
+      currentEmployeeId = null;
+    }
+    if (onClose) onClose(event);
   };
 };
 
 export const disconnectWebSocket = () => {
-  console.log("========================================");
-  console.log("🔌 disconnectWebSocket() called");
-
   if (socket) {
-    console.log("Closing Socket...");
-    socket.close();
+    try {
+      socket.onopen = null;
+      socket.onmessage = null;
+      socket.onerror = null;
+      socket.onclose = null;
+      socket.close();
+    } catch (err) {
+      console.error("Error closing WebSocket:", err);
+    }
     socket = null;
-    console.log("Socket Closed");
-  } else {
-    console.log("No socket to close");
+    currentEmployeeId = null;
   }
 };

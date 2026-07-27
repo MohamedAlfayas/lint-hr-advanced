@@ -1406,6 +1406,7 @@ const EmployeeForm = () => {
                     }}
                     value={
                       (employeeObj.work_schedule_id &&
+                        Array.isArray(ws_options) &&
                         ws_options.find(
                           (e) => e.id === employeeObj.work_schedule_id,
                         )) ||
