@@ -291,6 +291,14 @@ const Navdata = () => {
         ],
       },
       {
+        id: "reimbursement",
+        label: "Reimbursement",
+        link: "/my-reimbursements",
+        parentId: "baseUi",
+        perm: "all",
+        icon: "ri-wallet-3-line",
+      },
+      {
         id: "payroll",
         label: "Pay Roll",
         link: "/payroll",

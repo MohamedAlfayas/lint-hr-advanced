@@ -53,6 +53,7 @@ const transformPayslip = (item) => {
   (item.earnings   || []).forEach((c) => { earningsMap[c.component_name]   = c.final_amount; });
   (item.deductions || []).forEach((c) => { deductionsMap[c.component_name] = c.final_amount; });
 
+
   const empDetails = employees.find((e) => String(e.id) === String(item.employee));
 
   const employee_name =
