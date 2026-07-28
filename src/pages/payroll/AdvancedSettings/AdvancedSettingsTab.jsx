@@ -21,6 +21,8 @@ import OvertimePolicySettings from "./OvertimePolicySettings";
 import BonusPolicySettings from "./BonusPolicySettings";
 import GratuityPolicySettings from "./GratuityPolicySettings";
 import ReimbursementPolicySettings from "./ReimbursementpolicySettings";
+import LeaveCreditPolicySettings from "./LeaveCreditPolicySettings";
+import IncomeTaxPolicySettings from "./IncomeTaxPolicySettings";
 const AdvancedSettingsTab = ({ onEarningAdd }) => {
   const [activeTab, setActiveTab] = useState("1");
 
@@ -102,7 +104,7 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
               className={classnames({ active: activeTab === "7" })}
               onClick={() => toggleTab("7")}
             >
-              LOP Policy
+              Leave Credit Policy
             </NavLink>
           </NavItem>
 
@@ -112,7 +114,7 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
               className={classnames({ active: activeTab === "8" })}
               onClick={() => toggleTab("8")}
             >
-              Overtime Policy
+              LOP Policy
             </NavLink>
           </NavItem>
 
@@ -122,7 +124,7 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
               className={classnames({ active: activeTab === "9" })}
               onClick={() => toggleTab("9")}
             >
-              Bonus Policy
+              Overtime Policy
             </NavLink>
           </NavItem>
 
@@ -132,7 +134,7 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
               className={classnames({ active: activeTab === "10" })}
               onClick={() => toggleTab("10")}
             >
-              Gratuity Policy
+              Bonus Policy
             </NavLink>
           </NavItem>
 
@@ -142,7 +144,25 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
               className={classnames({ active: activeTab === "11" })}
               onClick={() => toggleTab("11")}
             >
+              Gratuity Policy
+            </NavLink>
+          </NavItem>
+
+          <NavItem>
+            <NavLink
+              style={{ cursor: "pointer" }}
+              className={classnames({ active: activeTab === "12" })}
+              onClick={() => toggleTab("12")}
+            >
               Reimbursement Policy
+            </NavLink>
+          </NavItem>
+
+          <NavItem>
+            <NavLink style={{ cursor: "pointer" }}
+              className={classnames({ active: activeTab === "13" })}
+              onClick={() => toggleTab("13")}>
+              Income Tax Policy
             </NavLink>
           </NavItem>
 
@@ -175,23 +195,31 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
           </TabPane>
 
           <TabPane tabId="7">
-            <LopPolicySettings />
+            <LeaveCreditPolicySettings />
           </TabPane>
 
           <TabPane tabId="8">
-            <OvertimePolicySettings />
+            <LopPolicySettings />
           </TabPane>
 
           <TabPane tabId="9">
-            <BonusPolicySettings />
+            <OvertimePolicySettings />
           </TabPane>
 
           <TabPane tabId="10">
-            <GratuityPolicySettings />
+            <BonusPolicySettings />
           </TabPane>
 
           <TabPane tabId="11">
+            <GratuityPolicySettings />
+          </TabPane>
+
+          <TabPane tabId="12">
             <ReimbursementPolicySettings/>
+          </TabPane>
+
+          <TabPane tabId="13">
+            <IncomeTaxPolicySettings/>
           </TabPane>
 
         </TabContent>

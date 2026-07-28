@@ -1,3 +1,4 @@
+// AttendancePolicySettings.jsx
 import React, { useEffect, useState } from "react";
 import {
   Card, CardHeader, CardBody, CardTitle, CardSubtitle,
@@ -6,7 +7,7 @@ import {
 import Select from "react-select";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
-import { required, range, day, min, runChecks } from "./validators";
+import { required, range, day, runChecks } from "./validators";
 
 const SALARY_METHOD_OPTIONS = [
   { value: "calendar_days", label: "Calendar Days" },
@@ -85,7 +86,7 @@ const AttendancePolicySettings = () => {
     }
     if (form.enable_late_mark_policy) {
       checks.push(range("Allowed late marks", form.late_mark_limit, 0, 31));
-      checks.push(min("Late mark penalty (LOP days)", form.late_mark_penalty_days, 0));
+      checks.push(range("Late mark penalty (LOP days)", form.late_mark_penalty_days, 0, 31));
     }
     return runChecks(checks, toast);
   };
@@ -136,6 +137,7 @@ const AttendancePolicySettings = () => {
   const isWorkingDays =
     (isEditing ? form?.salary_calculation_method : data?.salary_calculation_method)
     === "working_days";
+  const currentMethod = isEditing ? form?.salary_calculation_method : data?.salary_calculation_method;
 
   if (isEmpty && !isEditing) {
     return (
@@ -187,7 +189,6 @@ const AttendancePolicySettings = () => {
       </CardHeader>
 
       <CardBody className="p-4">
-        {/* Version history pills */}
         {!isEditing && records.length > 1 && (
           <div className="d-flex gap-2 flex-wrap mb-4">
             {records.map((r, i) => (
@@ -204,7 +205,6 @@ const AttendancePolicySettings = () => {
           </div>
         )}
 
-        {/* Status banner */}
         {!isEditing && (
           <div className={`alert d-flex align-items-center gap-2 py-2 px-3 mb-4 ${data.is_active ? "alert-success" : "alert-secondary"}`}>
             <i className={`fs-16 ${data.is_active ? "ri-checkbox-circle-fill" : "ri-close-circle-line"}`}></i>
@@ -215,7 +215,6 @@ const AttendancePolicySettings = () => {
           </div>
         )}
 
-        {/* General */}
         <SectionLabel>General</SectionLabel>
         <div className="border rounded mb-4">
           <SettingRow label="Effective Date">
@@ -244,11 +243,11 @@ const AttendancePolicySettings = () => {
                 value={SALARY_METHOD_OPTIONS.find(o => o.value === form.salary_calculation_method)}
                 onChange={(e) => {
                   handleChange("salary_calculation_method", e.value);
-
                   if (e.value === "working_days") {
                     handleChange("include_week_offs", false);
                     handleChange("include_holidays", false);
                   }
+                  if (e.value !== "fixed_days") handleChange("fixed_pay_days", null);
                 }}
                 styles={{ container: (p) => ({ ...p, width: 220 }) }}
               />
@@ -260,12 +259,53 @@ const AttendancePolicySettings = () => {
           </SettingRow>
         </div>
 
-        {/* Fixed Days (conditional) */}
-        {(isEditing ? form.salary_calculation_method : data.salary_calculation_method) === "fixed_days" && (
+        {currentMethod !== "fixed_days" && (
+          <>
+            <SectionLabel>Day Inclusions & Half Day</SectionLabel>
+            <div className="border rounded mb-4">
+              {[
+                ["include_week_offs", "Include Weekly Offs in Payable Days"],
+                ["include_holidays", "Include Holidays in Payable Days"],
+                ["mark_absent_if_no_attendance", "Mark Absent if No Attendance"],
+              ].map(([key, label], i, arr) => (
+                <SettingRow key={key} label={label} last={i === arr.length - 1}>
+                  {isEditing ? (
+                    <div className="form-check form-switch mb-0">
+                      <Input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={!!form[key]}
+                        disabled={isWorkingDays && ["include_week_offs", "include_holidays"].includes(key)}
+                        onChange={() => handleToggle(key)}
+                      />
+                    </div>
+                  ) : (
+                    <ViewToggle checked={!!data[key]} />
+                  )}
+                </SettingRow>
+              ))}
+              <SettingRow label="Half Day Value" last>
+                {isEditing ? (
+                  <Input type="number" step="0.01" min="0" max="1" value={form.half_day_value || ""}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (val !== "" && Number(val) > 1) val = "1";
+                      if (val !== "" && Number(val) < 0) val = "0";
+                      handleChange("half_day_value", val);
+                    }} style={{ width: 100 }} />
+                ) : (
+                  <Badge color="light" className="text-dark border" style={{ fontSize: 12 }}>{data.half_day_value || "—"}</Badge>
+                )}
+              </SettingRow>
+            </div>
+          </>
+        )}
+
+        {currentMethod === "fixed_days" && (
           <>
             <SectionLabel>Fixed Days</SectionLabel>
             <div className="border rounded mb-4">
-              <SettingRow label="Fixed Pay Days" last>
+              <SettingRow label="Fixed Pay Days">
                 {isEditing ? (
                   <Select
                     options={DAY_OPTIONS}
@@ -277,47 +317,23 @@ const AttendancePolicySettings = () => {
                   <span style={{ fontSize: 13 }}>{data.fixed_pay_days || "—"}</span>
                 )}
               </SettingRow>
+              <SettingRow label="Half Day Value" last>
+                {isEditing ? (
+                  <Input type="number" step="0.01" min="0" max="1" value={form.half_day_value || ""}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (val !== "" && Number(val) > 1) val = "1";
+                      if (val !== "" && Number(val) < 0) val = "0";
+                      handleChange("half_day_value", val);
+                    }} style={{ width: 100 }} />
+                ) : (
+                  <Badge color="light" className="text-dark border" style={{ fontSize: 12 }}>{data.half_day_value || "—"}</Badge>
+                )}
+              </SettingRow>
             </div>
           </>
         )}
 
-        {/* Inclusions */}
-        <SectionLabel>Day Inclusions & Half Day</SectionLabel>
-        <div className="border rounded mb-4">
-          {[
-            ["include_week_offs", "Include Weekly Offs in Payable Days"],
-            ["include_holidays", "Include Holidays in Payable Days"],
-            ["mark_absent_if_no_attendance", "Mark Absent if No Attendance"],
-          ].map(([key, label], i, arr) => (
-            <SettingRow key={key} label={label} last={i === arr.length - 1 && !isEditing}>
-              {isEditing ? (
-                <div className="form-check form-switch mb-0">
-                  <Input
-                    className="form-check-input"
-                    type="checkbox"
-                    checked={!!form[key]}
-                    disabled={
-                      isWorkingDays &&
-                      ["include_week_offs", "include_holidays"].includes(key)
-                    }
-                    onChange={() => handleToggle(key)}
-                  />
-                </div>
-              ) : (
-                <ViewToggle checked={!!data[key]} />
-              )}
-            </SettingRow>
-          ))}
-          <SettingRow label="Half Day Value" last>
-            {isEditing ? (
-              <Input type="number" step="0.01" min="0" max="1" value={form.half_day_value || ""} onChange={(e) => handleChange("half_day_value", e.target.value)} style={{ width: 100 }} />
-            ) : (
-              <Badge color="light" className="text-dark border" style={{ fontSize: 12 }}>{data.half_day_value || "—"}</Badge>
-            )}
-          </SettingRow>
-        </div>
-
-        {/* Late Mark */}
         <SectionLabel>Late Mark Policy</SectionLabel>
         <div className="border rounded mb-4">
           <SettingRow label="Enable Late Mark Policy">
@@ -334,14 +350,25 @@ const AttendancePolicySettings = () => {
             <>
               <SettingRow label="Allowed Late Marks">
                 {isEditing ? (
-                  <Input type="number" min="0" value={form.late_mark_limit || 0} onChange={(e) => handleChange("late_mark_limit", parseInt(e.target.value))} style={{ width: 100 }} />
+                  <Input type="number" min="0" max="31" value={form.late_mark_limit || 0}
+                    onChange={(e) => {
+                      let val = parseInt(e.target.value) || 0;
+                      val = Math.max(0, Math.min(31, val));
+                      handleChange("late_mark_limit", val);
+                    }} style={{ width: 100 }} />
                 ) : (
                   <span style={{ fontSize: 13 }}>{data.late_mark_limit ?? "—"}</span>
                 )}
               </SettingRow>
               <SettingRow label="Penalty (LOP Days)" last>
                 {isEditing ? (
-                  <Input type="number" step="0.01" min="0" value={form.late_mark_penalty_days || "0.00"} onChange={(e) => handleChange("late_mark_penalty_days", e.target.value)} style={{ width: 100 }} />
+                  <Input type="number" step="0.01" min="0" max="31" value={form.late_mark_penalty_days || "0.00"}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (val !== "" && Number(val) > 31) val = "31";
+                      if (val !== "" && Number(val) < 0) val = "0";
+                      handleChange("late_mark_penalty_days", val);
+                    }} style={{ width: 100 }} />
                 ) : (
                   <span style={{ fontSize: 13 }}>{data.late_mark_penalty_days ?? "—"}</span>
                 )}
@@ -353,7 +380,6 @@ const AttendancePolicySettings = () => {
           )}
         </div>
 
-        {/* Actions */}
         {isEditing && (
           <div className="d-flex justify-content-end gap-2 pt-2 border-top">
             <Button color="light" className="border" onClick={handleCancel} disabled={loading}>Cancel</Button>

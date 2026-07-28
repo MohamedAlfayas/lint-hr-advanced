@@ -15,7 +15,7 @@ import {
 import Select from "react-select";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
-import { required, percent, min, day, runChecks } from "./validators";
+import { required, percent, min, day, runChecks, range } from "./validators";
 
 const BONUS_BASIS_OPTIONS = [
   { value: "basic", label: "Basic Salary" },
@@ -114,7 +114,15 @@ const BonusPolicySettings = () => {
     setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleToggle = (field) =>
-    setForm((prev) => ({ ...prev, [field]: !prev[field] }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: !prev[field] };
+      if (field === "enable_performance_bonus" && next[field]) {
+        next.performance_bonus_calculation_basis = next.performance_bonus_calculation_basis || "basic";
+        next.performance_bonus_percentage = next.performance_bonus_percentage || "0";
+        next.performance_bonus_payout_frequency = next.performance_bonus_payout_frequency || "monthly";
+      }
+      return next;
+    });
 
   const validate = () => {
     const checks = [required("Effective date", form.effective_date)];
@@ -129,7 +137,7 @@ const BonusPolicySettings = () => {
         checks.push("Maximum bonus % must be ≥ Minimum bonus %");
       if (Number(form.statutory_calculation_ceiling) > Number(form.statutory_eligibility_ceiling))
         checks.push("Calculation ceiling cannot exceed eligibility ceiling");
-      checks.push(day("Minimum working days", form.minimum_working_days_for_eligibility));
+      checks.push(range("Minimum working days", form.minimum_working_days_for_eligibility, 0, 31));
     }
     if (form.enable_performance_bonus) {
       checks.push(required("Performance calculation basis", form.performance_bonus_calculation_basis));
@@ -362,13 +370,8 @@ const BonusPolicySettings = () => {
 
               <SettingRow label="Eligibility Ceiling">
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    value={form.statutory_eligibility_ceiling || ""}
-                    onChange={(e) =>
-                      handleChange("statutory_eligibility_ceiling", e.target.value)
-                    }
-                  />
+                  <Input type="number" min="1" value={form.statutory_eligibility_ceiling || ""}
+                    onChange={(e) => handleChange("statutory_eligibility_ceiling", Math.max(0, e.target.value))} />
                 ) : (
                   `₹ ${data.statutory_eligibility_ceiling}`
                 )}
@@ -376,13 +379,9 @@ const BonusPolicySettings = () => {
 
               <SettingRow label="Calculation Ceiling">
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    value={form.statutory_calculation_ceiling || ""}
-                    onChange={(e) =>
-                      handleChange("statutory_calculation_ceiling", e.target.value)
-                    }
-                  />
+                  <Input type="number" min="1" value={form.statutory_calculation_ceiling || ""}
+                     onChange={(e) => handleChange("statutory_calculation_ceiling", Math.max(0, e.target.value))} />
+
                 ) : (
                   `₹ ${data.statutory_calculation_ceiling}`
                 )}
@@ -390,14 +389,13 @@ const BonusPolicySettings = () => {
 
               <SettingRow label="Minimum Bonus %">
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.minimum_bonus_percentage || ""}
-                    onChange={(e) =>
-                      handleChange("minimum_bonus_percentage", e.target.value)
-                    }
-                  />
+                  <Input type="number" step="0.01" min="0" max="100" value={form.minimum_bonus_percentage || ""}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (val !== "" && Number(val) > 100) val = "100";
+                      if (val !== "" && Number(val) < 0) val = "0";
+                      handleChange("minimum_bonus_percentage", val);
+                    }} />
                 ) : (
                   `${data.minimum_bonus_percentage}%`
                 )}
@@ -405,14 +403,13 @@ const BonusPolicySettings = () => {
 
               <SettingRow label="Maximum Bonus %">
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.maximum_bonus_percentage || ""}
-                    onChange={(e) =>
-                      handleChange("maximum_bonus_percentage", e.target.value)
-                    }
-                  />
+                  <Input type="number" step="0.01" min="0" max="100" value={form.maximum_bonus_percentage || ""}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (val !== "" && Number(val) > 100) val = "100";
+                      if (val !== "" && Number(val) < 0) val = "0";
+                      handleChange("maximum_bonus_percentage", val);
+                    }} />
                 ) : (
                   `${data.maximum_bonus_percentage}%`
                 )}
@@ -420,16 +417,12 @@ const BonusPolicySettings = () => {
 
               <SettingRow label="Minimum Working Days" last>
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    value={form.minimum_working_days_for_eligibility || ""}
-                    onChange={(e) =>
-                      handleChange(
-                        "minimum_working_days_for_eligibility",
-                        parseInt(e.target.value)
-                      )
-                    }
-                  />
+                  <Input type="number" min="0" max="31" value={form.minimum_working_days_for_eligibility || ""}
+                    onChange={(e) => {
+                      let val = parseInt(e.target.value) || 0;
+                      val = Math.max(0, Math.min(31, val));
+                      handleChange("minimum_working_days_for_eligibility", val);
+                    }} />
                 ) : (
                   `${data.minimum_working_days_for_eligibility} Days`
                 )}
@@ -479,14 +472,13 @@ const BonusPolicySettings = () => {
 
               <SettingRow label="Bonus Percentage">
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.performance_bonus_percentage || ""}
-                    onChange={(e) =>
-                      handleChange("performance_bonus_percentage", e.target.value)
-                    }
-                  />
+                  <Input type="number" step="0.01" min="0" max="100" value={form.performance_bonus_percentage || ""}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (val !== "" && Number(val) > 100) val = "100";
+                      if (val !== "" && Number(val) < 0) val = "0";
+                      handleChange("performance_bonus_percentage", val);
+                    }} />
                 ) : (
                   <span>{data.performance_bonus_percentage ?? "—"}%</span>
                 )}

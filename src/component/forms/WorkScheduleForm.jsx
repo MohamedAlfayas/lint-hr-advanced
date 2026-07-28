@@ -26,6 +26,7 @@ import {
   hourOptions,
   minuteOptions,
   graceBreakMinuteOptions,
+  maxBreakHourOptions,
   graceHourOptions,
   week_list,
 } from "../../common/constant/Constants";
@@ -190,6 +191,56 @@ const WorkScheduleForm = () => {
       [name]: event.target.checked,
     }));
   }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "name") {
+      const textOnly = value.replace(/[^a-zA-Z0-9\s.,'_\-()&:;/]/g, "");
+
+      setWorkScheduleData({
+        ...workScheduleData,
+        [name]: textOnly,
+      });
+
+      FormikForm.setFieldValue(name, textOnly);
+
+      FormikForm.setFieldTouched("name", true, false);
+
+      if (textOnly.length > 100) {
+        FormikForm.setFieldError(
+          "name",
+          "Work Schedule Name must not exceed 100 characters.",
+        );
+      } else if (textOnly.trim() === "") {
+        FormikForm.setFieldError("name", "Please Enter Work Schedule Name");
+      } else {
+        FormikForm.setFieldError("name", undefined);
+      }
+
+      return;
+    }
+
+    if (name === "description") {
+      const textOnly = value.replace(/[^a-zA-Z0-9\s.,?!"'_\-()&:;/\\]/g, "");
+
+      setWorkScheduleData({
+        ...workScheduleData,
+        [name]: textOnly,
+      });
+
+      FormikForm.setFieldValue(name, textOnly);
+
+      if (textOnly.length > 200) {
+        FormikForm.setFieldError(
+          "description",
+          "Description is too long. Please keep it within 200 characters.",
+        );
+      } else {
+        FormikForm.setFieldError("description", undefined);
+      }
+    }
+  };
 
   const handleDurationChange = (selectedHour, selectedMinute, name) => {
     console.log("selectedHour ==== ", selectedHour + ":" + selectedMinute);
@@ -356,7 +407,32 @@ const WorkScheduleForm = () => {
     enableReinitialize: true,
     initialValues: workScheduleData,
     validationSchema: Yup.object({
-      name: Yup.string().trim().required("Please Enter Work Schedule Name"),
+      name: Yup.string()
+        .trim()
+        .matches(
+          /^[A-Za-z0-9\s.,'_\-()&:;/]+$/,
+          "Only alphabets, numbers, spaces and . , ' - _ ( ) & : ; / are allowed",
+        )
+        .min(1, "Work Schedule Name must be at least 1 characters")
+        .max(100, "Work Schedule Name must not exceed 100 characters")
+        .required("Please Enter Work Schedule Name")
+        .test(
+          "not-only-spaces",
+          "Please Enter Work Schedule Name",
+          (value) => !value || value.trim().length > 0,
+        ),
+      description: Yup.string()
+        .trim()
+        .max(200, "Description must not exceed 200 characters")
+        .matches(
+          /^[A-Za-z0-9\s.,!?'"\-_()&:;/]*$/,
+          "Only alphabets, numbers, spaces and . , ! ? ' \" - _ ( ) & : ; / are allowed",
+        )
+        .test(
+          "not-only-spaces",
+          "Description cannot contain only spaces",
+          (value) => !value || value.trim().length > 0,
+        ),
     }),
     onSubmit: async (values) => {
       const filteredWorkdays = values.workday.filter((workday) => {
@@ -375,6 +451,8 @@ const WorkScheduleForm = () => {
         toast.error("WorkSchedule Hour Can't Be Zero");
       } else if (values.type == 2 && values.fullday_work_duration == 0) {
         toast.error("WorkSchedule Hour Can't Be Zero");
+      } else if (values.type == 2 && filteredDayon.length === 0) {
+        toast.error("Please select at least one working day");
       } else {
         toggleArrowTab(activeArrowTab + 1);
         dispatch(setLoaderVisible(true));
@@ -464,7 +542,7 @@ const WorkScheduleForm = () => {
 
                       <div className="mb-3">
                         <Label className="form-label" htmlFor="ws_name">
-                          Name
+                          Name <spa>*</spa>
                         </Label>
                         <Input
                           type="text"
@@ -473,17 +551,9 @@ const WorkScheduleForm = () => {
                           id="ws_name"
                           placeholder="Enter Work Schedule Name"
                           value={workScheduleData.name || ""}
-                          onChange={(e) =>
-                            setWorkScheduleData({
-                              ...workScheduleData,
-                              name: e.target.value,
-                            })
-                          }
-                          invalid={
-                            FormikForm.touched.name && FormikForm.errors.name
-                              ? true
-                              : false
-                          }
+                          onChange={handleInputChange}
+                          invalid={!!FormikForm.errors.name}
+                          onBlur={FormikForm.handleBlur}
                         />
                         <FormFeedback type="invalid">
                           {FormikForm.errors.name}
@@ -497,16 +567,19 @@ const WorkScheduleForm = () => {
                         </Label>
                         <Input
                           type="textarea"
+                          name="description"
                           className="form-control"
                           id="ws_desc"
                           value={workScheduleData.description || ""}
-                          onChange={(e) =>
-                            setWorkScheduleData({
-                              ...workScheduleData,
-                              description: e.target.value,
-                            })
-                          }
+                          onChange={handleInputChange}
+                          invalid={!!FormikForm.errors.description}
                         />
+
+                        {FormikForm.errors.description ? (
+                          <FormFeedback type="invalid">
+                            {FormikForm.errors.description}
+                          </FormFeedback>
+                        ) : null}
                       </div>
                     </Col>
                     <Col md={3} lg={3} xxl={3}>
@@ -812,8 +885,8 @@ const WorkScheduleForm = () => {
                                     id="maximum_break_hr"
                                     name="maximum_break_hr"
                                     placeholder="00"
-                                    options={graceHourOptions}
-                                    value={graceHourOptions.find(
+                                    options={maxBreakHourOptions}
+                                    value={maxBreakHourOptions.find(
                                       (option) =>
                                         option.value ===
                                         String(
@@ -892,6 +965,36 @@ const WorkScheduleForm = () => {
                               </div>
                             </div>
                           </Col>
+
+                          {workScheduleData.id > 0 && (
+                            <Col lg={12} className="mt-3">
+                              <div className="mb-3">
+                                <Label className="form-label">Status</Label>
+
+                                <div
+                                  className="form-check form-switch form-switch-md form-switch-success"
+                                  dir="ltr"
+                                >
+                                  <Input
+                                    type="checkbox"
+                                    checked={workScheduleData.status || false}
+                                    onChange={(e) =>
+                                      setWorkScheduleData((prev) => ({
+                                        ...prev,
+                                        status: e.target.checked,
+                                      }))
+                                    }
+                                  />
+                                </div>
+
+                                <div className="form-text">
+                                  {workScheduleData.status
+                                    ? "Active"
+                                    : "Inactive"}
+                                </div>
+                              </div>
+                            </Col>
+                          )}
                         </div>
                       )) || (
                         <Row className="mb-2">
@@ -1051,8 +1154,13 @@ const WorkScheduleForm = () => {
                           if (!validateDurations(workScheduleData)) return;
                           toggleArrowTab(activeArrowTab + 1);
                         } else {
-                          console.log("Validation errors:");
-                          toast.error("Please Enter Work Schedule");
+                          FormikForm.setTouched({
+                            name: true,
+                            description: true,
+                          });
+
+                          const firstError = Object.values(errors)[0];
+                          toast.error(firstError);
                         }
                       });
                     }}
@@ -1212,13 +1320,27 @@ const WorkScheduleForm = () => {
                                   24:00 Hrs
                                 </span>
                               ) : (
-                                <span className="mb-2 text-success">
-                                  {workScheduleData.fullday_work_duration >
-                                    workday.total_work_duration ||
-                                  workScheduleData.fullday_work_duration <
-                                    workday.total_work_duration ? (
-                                    <span className="mb-2 text-danger">
-                                      {`${String(
+                                <>
+                                  <span className="mb-2 text-success">
+                                    {workScheduleData.fullday_work_duration >
+                                      workday.total_work_duration ||
+                                    workday.total_work_duration >
+                                      workScheduleData.fullday_work_duration ? (
+                                      <span className="mb-2 text-danger">
+                                        {`${String(
+                                          Math.floor(
+                                            workday.total_work_duration / 3600,
+                                          ),
+                                        ).padStart(2, "0")}:${String(
+                                          Math.floor(
+                                            (workday.total_work_duration %
+                                              3600) /
+                                              60,
+                                          ),
+                                        ).padStart(2, "0")} Hrs`}
+                                      </span>
+                                    ) : (
+                                      `${String(
                                         Math.floor(
                                           workday.total_work_duration / 3600,
                                         ),
@@ -1227,21 +1349,35 @@ const WorkScheduleForm = () => {
                                           (workday.total_work_duration % 3600) /
                                             60,
                                         ),
-                                      ).padStart(2, "0")} Hrs`}
-                                    </span>
-                                  ) : (
-                                    `${String(
-                                      Math.floor(
-                                        workday.total_work_duration / 3600,
-                                      ),
-                                    ).padStart(2, "0")}:${String(
-                                      Math.floor(
-                                        (workday.total_work_duration % 3600) /
-                                          60,
-                                      ),
-                                    ).padStart(2, "0")} Hrs`
+                                      ).padStart(2, "0")} Hrs`
+                                    )}
+                                  </span>
+
+                                  {workScheduleData.fullday_work_duration >
+                                    workday.total_work_duration && (
+                                    <div
+                                      className="text-warning"
+                                      style={{
+                                        fontSize: "11px",
+                                        marginTop: "2px",
+                                      }}
+                                    >
+                                      ⚠️ Shift is less than Full Day duration
+                                    </div>
                                   )}
-                                </span>
+                                  {workday.total_work_duration >
+                                    workScheduleData.fullday_work_duration && (
+                                    <div
+                                      className="text-warning"
+                                      style={{
+                                        fontSize: "11px",
+                                        marginTop: "2px",
+                                      }}
+                                    >
+                                      ⚠️ Shift exceeds Full Day duration
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </span>
                           </th>

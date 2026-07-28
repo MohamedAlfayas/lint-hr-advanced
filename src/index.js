@@ -23,9 +23,9 @@ if (platform != "local") {
     tracesSampleRate: 1.0, // 👉 change to 0.2 in production
   });
 
-  console.log = () => { };
-  console.debug = () => { };
-  console.info = () => { };
+  // console.log = () => { };
+  // console.debug = () => { };
+  // console.info = () => { };
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root"));

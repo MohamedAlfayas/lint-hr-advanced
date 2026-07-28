@@ -131,6 +131,10 @@ const TaskListFilter = () => {
       <Col md={2}>
         <Select
           id="assigned_to_filter"
+          noOptionsMessage={() => "No options"}
+          filterOption={(option, inputValue) =>
+            option.label.toLowerCase().includes(inputValue.toLowerCase())
+          }
           name="assigned_to_filter"
           isClearable
           components={{ Option: EmployeeDisplayInSelect }}
@@ -157,6 +161,10 @@ const TaskListFilter = () => {
       <Col md={2}>
         <AsyncSelect
           id="collaborator_filter"
+          noOptionsMessage={() => "No options"}
+          filterOption={(option, inputValue) =>
+            option.label.toLowerCase().includes(inputValue.toLowerCase())
+          }
           name="collaborator_filter"
           isMulti
           isClearable
@@ -169,9 +177,6 @@ const TaskListFilter = () => {
           getOptionValue={(option) => String(option.id)}
           getOptionLabel={(option) => option.label}
           value={selectedCollaborators}
-          noOptionsMessage={({ inputValue }) =>
-            inputValue ? "No employees found" : "Type to search"
-          }
           loadingMessage={() => "Searching..."}
           onChange={(selected) =>
             handleFilterChange(selected, "collaborator_id")
@@ -186,6 +191,10 @@ const TaskListFilter = () => {
       <Col md={2}>
         <Select
           id="task_status_filter"
+          noOptionsMessage={() => "No options"}
+          filterOption={(option, inputValue) =>
+            option.label.toLowerCase().includes(inputValue.toLowerCase())
+          }
           name="task_status_filter"
           isClearable
           innerRef={inputRef}
@@ -210,6 +219,10 @@ const TaskListFilter = () => {
       <Col md={2}>
         <Select
           id="task_priority_filter"
+          noOptionsMessage={() => "No options"}
+          filterOption={(option, inputValue) =>
+            option.label.toLowerCase().includes(inputValue.toLowerCase())
+          }
           name="task_priority_filter"
           isClearable
           innerRef={inputRef}

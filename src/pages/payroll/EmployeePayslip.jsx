@@ -63,7 +63,7 @@ const getYearOptions = (records) => {
   return years.map((y) => ({ value: y, label: String(y) }));
 };
 
-const EmployeePayslip = () => {
+const EmployeePayslip = ({ withTopPadding = true, employeeId = null }) => {
   const [employee, setEmployee] = useState(null);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -80,9 +80,10 @@ const EmployeePayslip = () => {
     setLoading(true);
     setError(null);
     try {
-      // GET /payroll/employee-payslip-list
-      // See payslipApi.requestResponse.md for the exact shape this expects.
-      const res = await GetApi("payroll/employee-payslip-list");
+      const url = employeeId
+        ? `payroll/employee-payslip-list-id/${employeeId}`
+        : "payroll/employee-payslip-list";
+      const res = await GetApi(url);
       const data = res?.data ?? res;
 
       const fetchedRecords = data?.data?.payslips ?? [];
@@ -101,7 +102,7 @@ const EmployeePayslip = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [employeeId]);
 
   useEffect(() => {
     fetchData();
@@ -125,13 +126,6 @@ const EmployeePayslip = () => {
 
   return (
     <React.Fragment>
-      <div className="mb-4">
-        <h3 className="fw-bold mb-1">Payslip</h3>
-        <p className="text-muted mb-0">
-          View and download your monthly payslips.
-        </p>
-      </div>
-
       {error && (
         <Alert color="danger" toggle={() => setError(null)}>
           {error}
@@ -139,95 +133,96 @@ const EmployeePayslip = () => {
       )}
 
       {/* Employee summary banner */}
-      <Card
-        className="border-0 mb-4"
-        style={{ backgroundColor: "#dff0fa", borderRadius: 14 }}
-      >
-        <CardBody className="p-4">
-          <Row className="align-items-center g-4">
-            <Col xs={12} md={6} className="d-flex align-items-center gap-3">
-              <span className="d-flex align-items-center justify-content-center rounded-circle bg-white flex-shrink-0">
-                <i
-                  className="ri-file-list-3-line text-primary"
-                  style={{ fontSize: 26 }}
-                ></i>
-              </span>
-              <div>
-                <h5 className="mb-1 fw-bold">
-                  {employee?.name ?? (loading ? "Loading..." : "—")}
-                </h5>
-                <p className="mb-0 text-muted">
-                  Emp ID:{" "}
-                  <span className="text-body fw-medium">
-                    {employee?.emp_id ?? "—"}
-                  </span>
-                </p>
-                <p className="mb-0 text-muted">
-                  Designation:{" "}
-                  <span className="text-primary fw-medium">
-                    {employee?.designation ?? "—"}
-                  </span>
-                </p>
-              </div>
-            </Col>
+      <div style={{ paddingTop: withTopPadding ? "70px" : "0px" }}>
+        <Card
+          className="border-0 mb-4"
+          style={{ backgroundColor: "#dff0fa", borderRadius: 10 }}
+        >
+          <CardBody className="p-4">
+            <Row className="align-items-center g-4">
+              <Col xs={12} md={6} className="d-flex align-items-center gap-3">
+                <span className="d-flex align-items-center justify-content-center rounded-circle bg-white flex-shrink-0">
+                  <i
+                    className="ri-file-list-3-line text-primary"
+                    style={{ fontSize: 26 }}
+                  ></i>
+                </span>
+                <div>
+                  <h5 className="mb-1 fw-bold">
+                    {employee?.name ?? (loading ? "Loading..." : "—")}
+                  </h5>
+                  <p className="mb-0 text-muted">
+                    Emp ID:{" "}
+                    <span className="text-body fw-medium">
+                      {employee?.emp_id ?? "—"}
+                    </span>
+                  </p>
+                  <p className="mb-0 text-muted">
+                    Designation:{" "}
+                    <span className="text-primary fw-medium">
+                      {employee?.designation ?? "—"}
+                    </span>
+                  </p>
+                </div>
+              </Col>
 
-            <Col md={4} className="border-start ps-4 d-none d-md-block">
-              <Label className="text-muted mb-1">Year</Label>
-              <Input
-                type="select"
-                bsSize="lm"
-                value={selectedYear}
-                disabled={yearOptions.length === 0}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                style={{ maxWidth: 180 }}
-              >
-                {yearOptions.length === 0 && <option value="">—</option>}
-                {yearOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </Input>
-            </Col>
+              <Col md={4} className="border-start ps-4 d-none d-md-block">
+                <Label className="text-muted mb-1">Year</Label>
+                <Input
+                  type="select"
+                  bsSize="lm"
+                  value={selectedYear}
+                  disabled={yearOptions.length === 0}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  style={{ maxWidth: 180 }}
+                >
+                  {yearOptions.length === 0 && <option value="">—</option>}
+                  {yearOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </Input>
+              </Col>
 
-            <Col xs={12} className="d-md-none">
-              <Label className="text-muted mb-1">Year</Label>
-              <Input
-                type="select"
-                bsSize="sm"
-                value={selectedYear}
-                disabled={yearOptions.length === 0}
-                onChange={(e) => setSelectedYear(e.target.value)}
-              >
-                {yearOptions.length === 0 && <option value="">—</option>}
-                {yearOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </Input>
-            </Col>
+              <Col xs={12} className="d-md-none">
+                <Label className="text-muted mb-1">Year</Label>
+                <Input
+                  type="select"
+                  bsSize="sm"
+                  value={selectedYear}
+                  disabled={yearOptions.length === 0}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                >
+                  {yearOptions.length === 0 && <option value="">—</option>}
+                  {yearOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </Input>
+              </Col>
 
-            <Col md={2} className="d-none d-lg-flex justify-content-end">
-              <span
-                className="d-flex align-items-center justify-content-center rounded-4"
-                style={{
-                  width: 64,
-                  height: 64,
-                  background: "linear-gradient(135deg, #7db8ff, #5d8eff)",
-                  boxShadow: "0 8px 20px rgba(93, 142, 255, 0.18)",
-                }}
-              >
-                <i
-                  className="ri-calendar-2-fill text-white"
-                  style={{ fontSize: "22px" }}
-                ></i>
-              </span>
-            </Col>
-          </Row>
-        </CardBody>
-      </Card>
-
+              <Col md={2} className="d-none d-lg-flex justify-content-end">
+                <span
+                  className="d-flex align-items-center justify-content-center rounded-4"
+                  style={{
+                    width: 64,
+                    height: 64,
+                    background: "linear-gradient(135deg, #7db8ff, #5d8eff)",
+                    boxShadow: "0 8px 20px rgba(93, 142, 255, 0.18)",
+                  }}
+                >
+                  <i
+                    className="ri-calendar-2-fill text-white"
+                    style={{ fontSize: "22px" }}
+                  ></i>
+                </span>
+              </Col>
+            </Row>
+          </CardBody>
+        </Card>
+      </div>
       {/* Payslip history */}
       <Card className="border shadow-none">
         <CardBody className="p-4">

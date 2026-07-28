@@ -3,6 +3,7 @@ import React, { lazy } from "react";
 import AccountSettings from "../pages/employee/AccountSetting";
 import ApprovalFilter from "../component/common/tableFilter/ApprovalFilter";
 import {
+  EMPLOYEE_VIEW_ACCESS_KEY,
   VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
   VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
@@ -11,6 +12,9 @@ import {
   VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
   VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
   CUSTOM_FIELD_VIEW_ACCESS_KEY,
+  CLIENT_VIEW_ACCESS_KEY,
+  CREATE_CLIENT_ACCESS_KEY,
+  EDIT_CLIENT_ACCESS_KEY,
 } from "../common/constant/RoleConstants";
 import Status from "../pages/Task/Status/Status";
 import Priorities from "../pages/Task/Priorities/Priorities";
@@ -58,6 +62,7 @@ const Employee = lazy(() => import("../pages/employee/Employee"));
 const EmployeeView = lazy(() => import("../pages/employee/EmployeeView"));
 const Roles = lazy(() => import("../pages/roles/Roles"));
 const WorkSchedule = lazy(() => import("../pages/workschedule/WorkSchedule"));
+const MyReimbursementsPage = lazy(()=> import("../pages/reimbursement/MyReimbursementsPage"))
 const Holidays = lazy(() => import("../pages/holidays/Holidays"));
 const LeaveType = lazy(() => import("../pages/leave/LeaveType"));
 const LeaveApproval = lazy(() => import("../pages/leave/LeaveApproval"));
@@ -99,7 +104,7 @@ const privateRoutes = [
   {
     path: "/employee",
     component: <Employee />,
-    perm: [VIEW_TEAM_EMPLOYEE_ACCESS_KEY, VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY],
+    perm: [EMPLOYEE_VIEW_ACCESS_KEY,VIEW_TEAM_EMPLOYEE_ACCESS_KEY, VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY],
   },
   {
     path: "/employee/view/:id",
@@ -109,6 +114,7 @@ const privateRoutes = [
   { path: "/roles", component: <Roles />, perm: [] },
   { path: "/workschedule", component: <WorkSchedule />, perm: [] },
   { path: "/holidays", component: <Holidays />, perm: "all" },
+  { path: "/my-reimbursements", component: <MyReimbursementsPage />, perm: "all" },
   { path: "/leavetype", component: <LeaveType />, perm: [] },
   { path: "/account-settings", component: <AccountSettings />, perm: "all" },
   {
@@ -180,7 +186,16 @@ const privateRoutes = [
   { path: "/priorities", component: <Priorities />, perm: "all" },
   { path: "/contact-group", component: <ContactGroup />, perm: "all" },
   { path: "/contacts", component: <Contacts />, perm: "all" },
-  { path: "/clients", component: <Clients />, perm: "all" },
+  { 
+    path: "/clients", 
+    component: <Clients />, 
+    // perm: "all"
+    perm: [
+      CLIENT_VIEW_ACCESS_KEY,
+      CREATE_CLIENT_ACCESS_KEY,
+      EDIT_CLIENT_ACCESS_KEY,
+    ]
+  },
   { path: "/projects", component: <Projects />, perm: "all" },
   { path: "/tasks", component: <TaskTab />, perm: "all" },
   {

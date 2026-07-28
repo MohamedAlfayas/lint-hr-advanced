@@ -47,6 +47,7 @@ import {
 } from "../../../redux/reducers/ChildReducer/ApprovalComponentReducer";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { setEmployeeTableFilterKeys } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
+import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
 
 dayjs.extend(customParseFormat);
 
@@ -62,7 +63,17 @@ const ApprovalFilter = ({ formname }) => {
     (data) => data.ApprovalFilterReducer,
   );
 
-  const PendingLeave = leave_approval_data.filter((d) => d.status === 1).length;
+  console.log("leave_approval_data", leave_approval_data);
+
+  // const PendingLeave = leave_approval_data.filter(
+  //   (d) => d.status === 1 || d.status === 4,
+  // ).length;
+
+  const PendingLeave = leave_approval_data.filter(
+    (d) =>
+      (d.status === 1 || d.status === 4) &&
+      d.leave_cancellation_details?.status !== 2,
+  ).length;
 
   const [activeTab, setActiveTab] = useState("1");
   const toggleTab = (tab) => {
@@ -74,8 +85,31 @@ const ApprovalFilter = ({ formname }) => {
   const AttendancePending = attendance_approval_data.filter(
     (d) => d.hr_status === 3,
   ).length;
+  console.log("pend", attendance_approval_data);
 
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+  const employee_options = useMemo(
+    () => GetLocalStorageData("employee") || [],
+    [],
+  );
+
+  // near your other useMemo option lists
+  const leave_type_options = useMemo(
+    () =>
+      (GetLocalStorageData("leave_types") || []).map((lt) => ({
+        value: lt.id,
+        label: lt.name,
+      })),
+    [],
+  );
+
+  const [selectedLeaveType, setSelectedLeaveType] = useState(null);
+
+  const handleLeaveTypeFilterChange = (selected) => {
+    setSelectedLeaveType(selected || null);
+  };
+
+  const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [showTeamAttendanceApproval, setShowTeamAttendanceApproval] =
     useState(false);
   const [showAllAttendanceApproval, setShowAllAttendanceApproval] =
@@ -110,10 +144,27 @@ const ApprovalFilter = ({ formname }) => {
     () =>
       (GetLocalStorageData("department") || []).map((d) => ({
         ...d,
-        id: Number(d.id), // ✅ normalize
+        id: Number(d.id),
       })),
     [],
   );
+
+  const handleEmployeeChange = (selected) => {
+    setSelectedEmployees(selected || []);
+  };
+
+  const handleEmployeeSearch = (option, inputValue) => {
+    const search = inputValue.trim();
+
+    if (!search) return true;
+    if (/^\d+$/.test(search)) {
+      return false;
+    }
+
+    return (option.label || option.data?.name || "")
+      .toLowerCase()
+      .includes(search.toLowerCase());
+  };
 
   useEffect(() => {
     if (
@@ -169,7 +220,6 @@ const ApprovalFilter = ({ formname }) => {
     firstEffectExecutedRef.current = true;
   }, []);
 
-  // ✅ Department filter change triggers API call
   useEffect(() => {
     if (!firstEffectExecutedRef.current) return;
 
@@ -194,7 +244,9 @@ const ApprovalFilter = ({ formname }) => {
     employeeType,
     filteredMonth,
     activeTab,
-    employee_table_filter_keys?.primary_department_id_list, // ✅ include here
+    selectedEmployees,
+    selectedLeaveType,
+    employee_table_filter_keys?.primary_department_id_list,
   ]);
 
   useEffect(() => {
@@ -219,10 +271,12 @@ const ApprovalFilter = ({ formname }) => {
     employeeType,
     filteredMonth,
     activeTab,
+    selectedEmployees,
     showAllAttendanceApproval,
     showTeamAttendanceApproval,
     showAllLeaveApproval,
     showTeamLeaveApproval,
+    selectedLeaveType,
   ]);
 
   useEffect(() => {
@@ -251,13 +305,22 @@ const ApprovalFilter = ({ formname }) => {
 
   let integerEmployeeType;
 
-  // ✅ Department param helper
+  const isLeaveApprovalActive =
+    activeTab === "2" ||
+    (!showAllAttendanceApproval && !showTeamAttendanceApproval && activeTab === "1");
+
   const getDepartmentParam = () => {
     const deptId = employee_table_filter_keys?.primary_department_id_list;
 
     if (deptId === null || deptId === undefined) return "";
 
     return `&primary_department_id_list=${Number(deptId)}`;
+  };
+
+  const getEmployeeParam = () => {
+    if (!selectedEmployees.length) return "";
+    const ids = selectedEmployees.map((e) => e.id ?? e.value).join(",");
+    return `&employee_id_list=${ids}`;
   };
 
   const applyDepartmentFilter = (data) => {
@@ -272,9 +335,37 @@ const ApprovalFilter = ({ formname }) => {
     );
   };
 
+  const getLeaveTypeParam = () => {
+    if (!selectedLeaveType) return "";
+    return `&leave_type_id=${selectedLeaveType.value}`;
+  };
+
+  const applyLeaveTypeFilter = (data) => {
+    if (!selectedLeaveType) return data;
+    return data.filter(
+      (item) =>
+        Number(item.leave_type_id ?? item.leave_type?.id) ===
+        Number(selectedLeaveType.value),
+    );
+  };
+
+  // ✅ client-side fallback filter (works even if backend ignores employee_id_list)
+  const applyEmployeeFilter = (data) => {
+    if (!selectedEmployees.length) return data;
+    const ids = selectedEmployees.map((e) => Number(e.id ?? e.value));
+    return data.filter((item) =>
+      ids.includes(
+        Number(item.employee_id ?? item.employee?.id ?? item.emp_id),
+      ),
+    );
+  };
+
   const handleLeaveFilter = async (type) => {
     const integerEmployeeType = parseInt(type, 10);
     const deptParam = getDepartmentParam();
+    const empParam = getEmployeeParam();
+    const leaveTypeParam = getLeaveTypeParam(); // ← add
+
 
     const baseUrl =
       "leave/get-leave-application-for-approval/?thisMonth=" +
@@ -283,10 +374,10 @@ const ApprovalFilter = ({ formname }) => {
 
     const url =
       !showAllLeaveApproval && showTeamLeaveApproval
-        ? baseUrl + "1" + deptParam
+        ? baseUrl + "1" + deptParam + empParam
         : showAllLeaveApproval && !showTeamLeaveApproval
-          ? baseUrl + "0" + deptParam
-          : baseUrl + type + deptParam;
+          ? baseUrl + "0" + deptParam + empParam
+          : baseUrl + type + deptParam + empParam;
 
     try {
       console.log("Leave API URL:", url);
@@ -295,8 +386,9 @@ const ApprovalFilter = ({ formname }) => {
 
       let data = response?.data?.data || [];
 
-      // ✅ enforce department filter
       data = applyDepartmentFilter(data);
+      data = applyEmployeeFilter(data);
+      data = applyLeaveTypeFilter(data); 
 
       dispatch(setApprovalEmployeeTypeFilter(integerEmployeeType));
       dispatch(setLeaveApproval(data));
@@ -306,9 +398,11 @@ const ApprovalFilter = ({ formname }) => {
       dispatch(setLoaderVisible(false));
     }
   };
+
   const handleAttendanceFilter = async (type) => {
     const integerEmployeeType = parseInt(type, 10);
     const deptParam = getDepartmentParam();
+    const empParam = getEmployeeParam();
 
     const baseUrl =
       "attendance/get-attendance-data-for-approval/?thisMonth=" +
@@ -317,10 +411,10 @@ const ApprovalFilter = ({ formname }) => {
 
     const url =
       !showAllAttendanceApproval && showTeamAttendanceApproval
-        ? baseUrl + "1" + deptParam
+        ? baseUrl + "1" + deptParam + empParam
         : showAllAttendanceApproval && !showTeamAttendanceApproval
-          ? baseUrl + "0" + deptParam
-          : baseUrl + type + deptParam;
+          ? baseUrl + "0" + deptParam + empParam
+          : baseUrl + type + deptParam + empParam;
 
     try {
       console.log("Attendance API URL:", url);
@@ -329,8 +423,8 @@ const ApprovalFilter = ({ formname }) => {
 
       let data = response?.data?.data || [];
 
-      // ✅ enforce department filter
       data = applyDepartmentFilter(data);
+      data = applyEmployeeFilter(data);
 
       dispatch(setApprovalEmployeeTypeFilter(integerEmployeeType));
       dispatch(setAttendanceApprovalData(data));
@@ -407,9 +501,27 @@ const ApprovalFilter = ({ formname }) => {
                           (d) => d.id === employeeType,
                         ) || employeeTypeOptions[1]
                       }
+                      filterOption={handleEmployeeSearch}
                     />
                   </Col>
                 ) : null}
+                <Col md={3}>
+                  <Select
+                    id="employee_multiselect"
+                    name="employee_multiselect"
+                    isClearable={true}
+                    isMulti={true}
+                    options={employee_options}
+                    getOptionLabel={(e) => e.name ?? e.label}
+                    getOptionValue={(e) => e.id ?? e.value}
+                    className="basic-multi-select"
+                    placeholder="Select Employees"
+                    onChange={handleEmployeeChange}
+                    components={{ Option: EmployeeDisplayInSelect }}
+                    value={selectedEmployees}
+                    filterOption={handleEmployeeSearch}
+                  />
+                </Col>
                 <Col md={3}>
                   <Select
                     id="department_filter"
@@ -434,8 +546,29 @@ const ApprovalFilter = ({ formname }) => {
                     onChange={(e) =>
                       handleFilterChange(e, "primary_department_id_list")
                     }
+                    filterOption={handleEmployeeSearch}
                   />
                 </Col>
+
+                {isLeaveApprovalActive && (showAllLeaveApproval || showTeamLeaveApproval) && (
+                  <Col md={3}>
+                    <Select
+                      id="leave_type_filter"
+                      name="leave_type_filter"
+                      isClearable
+                      isMulti={false}
+                      options={leave_type_options}
+                      className="basic-multi-select"
+                      placeholder="Select Leave Type"
+                      value={selectedLeaveType}
+                      onChange={handleLeaveTypeFilterChange}
+                      filterOption={(option, inputValue) =>
+                        option.label.toLowerCase().includes(inputValue.toLowerCase())
+                      }
+                    />
+                  </Col>
+                )}
+
                 <Col md={3}>
                   <div className="form-icon right">
                     <DatePicker

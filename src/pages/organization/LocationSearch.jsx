@@ -83,12 +83,24 @@ function LocationSearch({ locationObj, setLocationObj, LocationFormikForm }) {
 
   // ✅ Autocomplete search
   const handleLocationChange = (e) => {
-    const { value } = e.target;
+    let value = e.target.value.replace(/[^A-Za-z0-9\s.,\-#/']/g, "");
 
     setLocationObj({
       ...locationObj,
       accurate_address: value,
     });
+
+    LocationFormikForm.setFieldValue("accurate_address", value);
+    LocationFormikForm.setFieldTouched("accurate_address", true, false);
+
+    if (value.length > 200) {
+      LocationFormikForm.setFieldError(
+        "accurate_address",
+        "Accurate Address cannot exceed 200 characters",
+      );
+    } else {
+      LocationFormikForm.setFieldError("accurate_address", undefined);
+    }
 
     if (value.trim().length) {
       const autocomplete = new window.google.maps.places.AutocompleteService();
@@ -179,19 +191,13 @@ function LocationSearch({ locationObj, setLocationObj, LocationFormikForm }) {
               value={locationObj?.accurate_address || ""}
               ref={autocompleteRef}
               autoComplete="off"
-              invalid={
-                LocationFormikForm.touched.accurate_address &&
-                LocationFormikForm.errors.accurate_address
-                  ? true
-                  : false
-              }
+              invalid={!!LocationFormikForm.errors.accurate_address}
             />
             {!LocationFormikForm.touched.accurate_address &&
               !LocationFormikForm.errors.accurate_address && (
                 <i className="ri-map-pin-line"></i>
               )}
-            {LocationFormikForm.touched.accurate_address &&
-            LocationFormikForm.errors.accurate_address ? (
+            {LocationFormikForm.errors.accurate_address ? (
               <FormFeedback type="invalid">
                 {LocationFormikForm.errors.accurate_address}
               </FormFeedback>

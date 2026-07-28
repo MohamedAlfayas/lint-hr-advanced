@@ -533,7 +533,9 @@ const TaskKanban = ({ searchQuery = "" }) => {
   const draggedTask = useRef(null);
 
   // ── Build lookup maps from localStorage ──────────────────────────
-  const taskStatusList = GetLocalStorageData("task_status") || [];
+  const taskStatusList = (GetLocalStorageData("task_status") || []).filter(
+    (s) => s.status === true,
+  );
   const taskPriorityList = GetLocalStorageData("task_priority") || [];
   const employeeList = GetLocalStorageData("employee") || [];
 
@@ -561,7 +563,9 @@ const TaskKanban = ({ searchQuery = "" }) => {
   }, [dispatch]);
 
   // ── Filtering ─────────────────────────────────────────────────────
-  const filteredTasks = tasks.filter((t) => {
+  const activeTasks = tasks.filter((t) => t.status === true);
+
+  const filteredTasks = activeTasks.filter((t) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -690,12 +694,12 @@ const TaskKanban = ({ searchQuery = "" }) => {
   }
 
   // ── Stats ─────────────────────────────────────────────────────────
-  const totalTasks = tasks.length;
+  const totalTasks = activeTasks.length;
   const doneColumnId = columns[columns.length - 1]?.id;
-  const doneTasks = tasks.filter(
+  const doneTasks = activeTasks.filter(
     (t) => Number(t.task_status) === Number(doneColumnId),
   ).length;
-  const overdueTasks = tasks.filter(
+  const overdueTasks = activeTasks.filter(
     (t) =>
       isOverdue(t.end_time) && Number(t.task_status) !== Number(doneColumnId),
   ).length;

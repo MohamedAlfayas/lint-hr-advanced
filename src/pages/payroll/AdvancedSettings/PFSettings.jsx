@@ -6,6 +6,7 @@ import {
 import Select from "react-select";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
+import { required, range, percent, min, runChecks } from "./validators";
 
 const PF_CONTRIBUTION_TYPE_OPTIONS = [
   { value: "percentage", label: "Percentage" },
@@ -28,6 +29,8 @@ const SettingRow = ({ label, children, last = false }) => (
     </Col>
   </Row>
 );
+
+
 
 const ViewToggle = ({ checked, label }) => (
   <div className="d-flex align-items-center gap-2">
@@ -119,6 +122,27 @@ const PFSettings = () => {
       .finally(() => setLoading(false));
   };
 
+  const validate = () => {
+    const checks = [
+      required("Effective date", form.effective_date),
+      required("Contribution calculation type", form.pf_contribution_calculation_type),
+      min("Min monthly amount for PF eligibility", form.minimum_monthly_amount_for_pf_calculation, 0),
+      min("PF wage ceiling", form.pf_wage_ceiling, 0),
+    ];
+
+    if (form.pf_contribution_calculation_type === "percentage") {
+      checks.push(percent("Contribution value", form.pf_contribution_calculation_value));
+    } else {
+      checks.push(min("Contribution value", form.pf_contribution_calculation_value, 0));
+    }
+
+    if (!form.pf_contribution_calculation_based_on || form.pf_contribution_calculation_based_on.length === 0) {
+      checks.push("Contribution Based On requires at least one component");
+    }
+
+    return runChecks(checks, toast);
+  };
+
   const fetchSalaryComponents = () => {
     setComponentsLoading(true);
     Api({ method: "GET", url: "payroll/component/" })
@@ -146,6 +170,7 @@ const PFSettings = () => {
     setForm((prev) => ({ ...prev, [field]: !prev[field] }));
 
   const handleSave = () => {
+    if (!validate()) return;
     setLoading(true);
     Api({ method: "POST", url: "payroll/pf-settings/", data: form })
       .then((res) => {
@@ -367,7 +392,12 @@ const PFSettings = () => {
                 {isEditing ? (
                   <Input type="number" step="0.01"
                     value={form.pf_contribution_calculation_value || ""}
-                    onChange={(e) => handleChange("pf_contribution_calculation_value", e.target.value)}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (form.pf_contribution_calculation_type === "percentage" && val !== "" && Number(val) > 100) val = "100";
+                      if (val !== "" && Number(val) < 0) val = "0";
+                      handleChange("pf_contribution_calculation_value", val);
+                    }}
                     style={{ width: 180 }} />
                 ) : (
                   <span className="fw-semibold" style={{ fontSize: 13 }}>

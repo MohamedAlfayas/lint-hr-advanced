@@ -51,10 +51,31 @@ const CustomFieldForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setCustomFieldObj({
-      ...customFieldObj,
+
+    if (name === "name") {
+      const regex = /^[A-Za-z0-9 .,&()'_-]*$/;
+
+      if (!regex.test(value)) return;
+    }
+
+    setCustomFieldObj((prev) => ({
+      ...prev,
       [name]: value,
-    });
+    }));
+
+    FormikForm.setFieldValue(name, value);
+    FormikForm.setFieldTouched(name, true, false);
+
+    if (name === "name") {
+      if (value.length > 100) {
+        FormikForm.setFieldError(
+          "name",
+          "Display Name cannot exceed 100 characters",
+        );
+      } else {
+        FormikForm.setFieldError("name", undefined);
+      }
+    }
   };
   const addRepeaterValue = () => {
     const newId = customFieldObj.options.length
@@ -69,7 +90,7 @@ const CustomFieldForm = () => {
 
   const removeRepeaterValue = (id) => {
     const updatedOptions = customFieldObj.options.filter(
-      (option) => option.id !== id
+      (option) => option.id !== id,
     );
     setCustomFieldObj({
       ...customFieldObj,
@@ -94,7 +115,14 @@ const CustomFieldForm = () => {
     enableReinitialize: true,
     initialValues: customFieldObj,
     validationSchema: Yup.object({
-      name: Yup.string().trim().required("Please Enter Display Name"),
+      name: Yup.string()
+        .trim()
+        .required("Please Enter Display Name")
+        .max(100, "Display Name cannot exceed 100 characters")
+        .matches(
+          /^[A-Za-z0-9 .,&()'_-]+$/,
+          "Only letters, numbers, spaces, ., ,, -, &, (, ), ', and _ are allowed",
+        ),
       type: Yup.string().required("Select Field Type"),
       applicable_for_modules: Yup.array()
         .required("Select Applicable For")
@@ -116,7 +144,7 @@ const CustomFieldForm = () => {
         const Api = await PostApi(
           "fields/custom-field/create/",
           customFieldObj,
-          false
+          false,
         );
         if (Api.status && Api.status === 200) {
           // customFieldObj.id === 0
@@ -159,13 +187,9 @@ const CustomFieldForm = () => {
                   placeholder="Display Name"
                   value={customFieldObj.name || ""}
                   onChange={handleInputChange}
-                  invalid={
-                    FormikForm.touched.name && FormikForm.errors.name
-                      ? true
-                      : false
-                  }
+                  invalid={!!FormikForm.errors.name}
                 />
-                {FormikForm.touched.name && FormikForm.errors.name ? (
+                {FormikForm.errors.name ? (
                   <FormFeedback type="invalid">
                     {FormikForm.errors.name}
                   </FormFeedback>
@@ -196,7 +220,7 @@ const CustomFieldForm = () => {
                     value={
                       (customFieldObj.type &&
                         custom_field_input_types.find(
-                          (e) => e.value === customFieldObj.type
+                          (e) => e.value === customFieldObj.type,
                         )) ||
                       []
                     }
@@ -367,7 +391,7 @@ const CustomFieldForm = () => {
                     value={
                       customFieldObj.applicable_for_modules &&
                       custom_field_module_lists.filter((e) =>
-                        customFieldObj.applicable_for_modules.includes(e.value)
+                        customFieldObj.applicable_for_modules.includes(e.value),
                       )
                     }
                     onChange={(e) =>

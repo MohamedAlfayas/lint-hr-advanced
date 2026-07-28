@@ -1,8 +1,32 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Flatpickr from "react-flatpickr";
 import { Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { setHoliday } from "../../redux/reducers/ChildReducer/HolidayReducer";
 
 const HolidayCalenderAPi = () => {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(setHoliday(GetLocalStorageData("holiday")));
+  }, [dispatch]);
+
+  const { holiday_data } = useSelector((state) => state.HolidayReducer);
+
+  const holidays = holiday_data || [];
+
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+  const filteredHolidays = holidays.filter((item) => {
+    const holidayDate = new Date(item.date);
+    return (
+      holidayDate.getMonth() === currentMonth &&
+      holidayDate.getFullYear() === currentYear
+    );
+  });
+
   return (
     <React.Fragment>
       <div className="col-xxl-4 col-xl-4">
@@ -17,83 +41,74 @@ const HolidayCalenderAPi = () => {
                 options={{
                   dateFormat: "d M, Y",
                   inline: true,
+
+                  onMonthChange: (selectedDates, dateStr, instance) => {
+                    setCurrentMonth(instance.currentMonth);
+                    setCurrentYear(instance.currentYear);
+                  },
+
+                  onYearChange: (selectedDates, dateStr, instance) => {
+                    setCurrentMonth(instance.currentMonth);
+                    setCurrentYear(instance.currentYear);
+                  },
+
+                  onDayCreate: (dObj, dStr, fp, dayElem) => {
+                    const year = dayElem.dateObj.getFullYear();
+                    const month = String(
+                      dayElem.dateObj.getMonth() + 1,
+                    ).padStart(2, "0");
+                    const day = String(dayElem.dateObj.getDate()).padStart(
+                      2,
+                      "0",
+                    );
+
+                    const currentDate = `${year}-${month}-${day}`;
+
+                    const holiday = holidays.find(
+                      (item) => item.date === currentDate,
+                    );
+
+                    if (holiday) {
+                      dayElem.style.boxSizing = "border-box";
+                      dayElem.style.background = "#405189";
+                      dayElem.style.backgroundClip = "content-box";
+                      dayElem.style.color = "#fff";
+                      dayElem.style.borderRadius = "8%";
+                      dayElem.style.fontWeight = "600";
+                      dayElem.style.padding = "0px";
+                      dayElem.title = holiday.name;
+                    }
+                  },
                 }}
               />
             </div>
 
             <h6 className="text-uppercase fw-semibold mt-4 mb-3 text-muted">
-              Events:
+              Holidays
             </h6>
-            <div className="mini-stats-wid d-flex align-items-center mt-3">
-              <div className="flex-shrink-0 avatar-sm">
-                <span className="mini-stat-icon avatar-title rounded-circle text-success bg-success-subtle fs-4">
-                  09
-                </span>
-              </div>
-              <div className="flex-grow-1 ms-3">
-                <h6 className="mb-1">Development planning</h6>
-                <p className="text-muted mb-0">iTest Factory </p>
-              </div>
-              <div className="flex-shrink-0">
-                <p className="text-muted mb-0">
-                  9:20 <span className="text-uppercase">am</span>
-                </p>
-              </div>
-            </div>
-            <div className="mini-stats-wid d-flex align-items-center mt-3">
-              <div className="flex-shrink-0 avatar-sm">
-                <span className="mini-stat-icon avatar-title rounded-circle text-success bg-success-subtle fs-4">
-                  12
-                </span>
-              </div>
-              <div className="flex-grow-1 ms-3">
-                <h6 className="mb-1">Design new UI and check sales</h6>
-                <p className="text-muted mb-0">Meta4Systems</p>
-              </div>
-              <div className="flex-shrink-0">
-                <p className="text-muted mb-0">
-                  11:30 <span className="text-uppercase">am</span>
-                </p>
-              </div>
-            </div>
-            <div className="mini-stats-wid d-flex align-items-center mt-3">
-              <div className="flex-shrink-0 avatar-sm">
-                <span className="mini-stat-icon avatar-title rounded-circle text-success bg-success-subtle fs-4">
-                  25
-                </span>
-              </div>
-              <div className="flex-grow-1 ms-3">
-                <h6 className="mb-1">Weekly catch-up </h6>
-                <p className="text-muted mb-0">Nesta Technologies</p>
-              </div>
-              <div className="flex-shrink-0">
-                <p className="text-muted mb-0">
-                  02:00 <span className="text-uppercase">pm</span>
-                </p>
-              </div>
-            </div>
-            <div className="mini-stats-wid d-flex align-items-center mt-3">
-              <div className="flex-shrink-0 avatar-sm">
-                <span className="mini-stat-icon avatar-title rounded-circle text-success bg-success-subtle fs-4">
-                  27
-                </span>
-              </div>
-              <div className="flex-grow-1 ms-3">
-                <h6 className="mb-1">James Bangs (Client) Meeting</h6>
-                <p className="text-muted mb-0">Nesta Technologies</p>
-              </div>
-              <div className="flex-shrink-0">
-                <p className="text-muted mb-0">
-                  03:45 <span className="text-uppercase">pm</span>
-                </p>
-              </div>
-            </div>
 
-            <div className="mt-3 text-center">
-              <Link to="#" className="text-muted text-decoration-underline">
-                View all Events
-              </Link>
-            </div>
+            {filteredHolidays.length > 0 ? (
+              filteredHolidays.map((holiday) => (
+                <div
+                  key={holiday.id}
+                  className="mini-stats-wid d-flex align-items-center mt-3"
+                >
+                  <div className="flex-shrink-0 avatar-sm">
+                    <span className="mini-stat-icon avatar-title rounded-circle text-success bg-success-subtle fs-6">
+                      {new Date(holiday.date).getDate()}
+                    </span>
+                  </div>
+
+                  <div className="flex-grow-1 ms-3">
+                    <h6 className="mb-1">{holiday.name}</h6>
+
+                    <p className="text-muted mb-0">{holiday.date}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-muted">No Holidays Found</p>
+            )}
           </div>
         </div>
       </div>

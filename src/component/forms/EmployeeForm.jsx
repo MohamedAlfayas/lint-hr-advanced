@@ -94,12 +94,12 @@ const EmployeeForm = () => {
   const [selectedFileName4, setSelectedFileName4] = React.useState("");
   const [selectedFileName5, setSelectedFileName5] = React.useState("");
   const [errors, setErrors] = useState("");
-  const inputRef = useRef();
+  const inputRef = useRef(null);
 
   // ── Location Modal State ──────────────────────────────────────────────────
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [locationToEdit, setLocationToEdit] = useState(null);
-  const isExistingEmployee = form_obj?.id && form_obj.id !== 0;
+  const isExistingEmployee = !!(form_obj?.id && form_obj.id !== 0);
 
   const handleAddLocationClick = () => {
     setLocationToEdit(null);
@@ -119,25 +119,20 @@ const EmployeeForm = () => {
   // DOB: must be in the past (before today)
   // const disableDobDates = (current) => current && current >= today;
   const disableDobDates = (current) => {
-     return (
-    current &&
-    (
-      current.isBefore(minDobDate, "day") ||
-      current.isAfter(today, "day")
-    )
-  );
-};
+    return (
+      current &&
+      (current.isBefore(minDobDate, "day") || current.isAfter(today, "day"))
+    );
+  };
   // Joining date: from past up to 1 month in future
   // const disableJoiningDates = (current) => current && current > oneMonthLater;
   const disableJoiningDates = (current) => {
-  return (
-    current &&
-    (
-      current.isBefore(minJoiningDate, "day") ||
-      current.isAfter(maxJoiningDate, "day")
-    )
-  );
-};
+    return (
+      current &&
+      (current.isBefore(minJoiningDate, "day") ||
+        current.isAfter(maxJoiningDate, "day"))
+    );
+  };
 
   const showFileNameIfSelected = () => {
     const idProofUrl = form_obj.id_proof_url;
@@ -190,14 +185,16 @@ const EmployeeForm = () => {
     });
     console.log("form_obj.dob:", form_obj.dob);
     console.log("form_obj.joining_date:", form_obj.joining_date);
-    setDob(form_obj.dob ? ConvertDateFormat(ConvertISODateFormat(form_obj.dob)) : null);
+    setDob(
+      form_obj.dob
+        ? ConvertDateFormat(ConvertISODateFormat(form_obj.dob))
+        : null,
+    );
     console.log("form_obj:", form_obj);
     setJoinDate(
       form_obj.joining_date
-        ? ConvertDateFormat(
-            ConvertISODateFormat(form_obj.joining_date)
-          )
-        : null
+        ? ConvertDateFormat(ConvertISODateFormat(form_obj.joining_date))
+        : null,
     );
     form_obj?.primary_department_id_list?.length
       ? GetReportingManager(form_obj?.primary_department_id_list)
@@ -221,6 +218,14 @@ const EmployeeForm = () => {
     showFile5NameIfSelected();
   }, [form_obj]);
 
+  useEffect(() => {
+    if (employeeObj?.id === 0) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [employeeObj?.id]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEmployeeObj({ ...employeeObj, [name]: value });
@@ -228,11 +233,25 @@ const EmployeeForm = () => {
 
   // ── Name input: strip numbers and special chars on change ─────────────────
   const handleNameInput = (e, field) => {
-    const val = e.target.value.replace(/[^a-zA-Z\s]/g, "");
-    setEmployeeObj({ ...employeeObj, [field]: val });
+    const val = e.target.value.replace(/[^A-Za-z\s'-]/g, "");
+
+    setEmployeeObj((prev) => ({
+      ...prev,
+      [field]: val,
+    }));
+
+    FormikForm.setFieldValue(field, val);
+    FormikForm.setFieldTouched(field, true, false);
+
+    if (val.length > 50) {
+      FormikForm.setFieldError(
+        field,
+        `${field === "first_name" ? "First" : "Last"} name cannot exceed 50 characters`,
+      );
+    } else {
+      FormikForm.setFieldError(field, undefined);
+    }
   };
-
-
 
   const handleProfileChange = (e) => {
     const file = e.target.files[0];
@@ -333,8 +352,6 @@ const EmployeeForm = () => {
     );
     FormikForm.setFieldTouched("dob", true);
   };
-
-  
 
   const handleJoinDateChange = (selectedJoinDate, dateStr, instance) => {
     setJoinDate(dateStr);
@@ -446,29 +463,52 @@ const EmployeeForm = () => {
         .trim()
         .matches(
           /^[A-Z0-9_-]+$/,
-          "Employee ID must be uppercase letters, numbers, hyphens, or underscores only — no spaces.",
+          "Employee ID must contain only uppercase letters, numbers, hyphens (-), and underscores (_).",
         )
-        .required("Please enter employee ID"),
+        .required("Please enter employee ID")
+        .max(50, "Employee ID cannot exceed 50 characters"),
 
       first_name: Yup.string()
         .trim()
         .required("Please enter first name")
-        .matches(
-          /^[a-zA-Z\s]+$/,
-          "First name must contain letters only — no numbers or special characters",
-        ),
+        .nullable()
+        .test(
+          "first-name-validation",
+          "Only alphabets, spaces, hyphens (-), and apostrophes (') are allowed",
+          (value) => {
+            if (!value || value.trim() === "") return true;
+
+            return /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/.test(value);
+          },
+        )
+        .min(1, "Please enter first name")
+        .max(50, "First name cannot exceed 50 characters"),
 
       last_name: Yup.string()
         .trim()
         .required("Please enter last name")
-        .matches(
-          /^[a-zA-Z\s]+$/,
-          "Last name must contain letters only — no numbers or special characters",
-        ),
+        .nullable()
+        .test(
+          "last-name-validation",
+          "Only alphabets, spaces, hyphens (-), and apostrophes (') are allowed",
+          (value) => {
+            if (!value || value.trim() === "") return true;
+
+            return /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/.test(value);
+          },
+        )
+        .min(1, "Please enter last name")
+        .max(50, "Last name cannot exceed 50 characters"),
 
       email: Yup.string()
-        .email("Please enter a valid email")
-        .required("Please enter email"),
+        .trim()
+        .required("Please enter email")
+        .transform((value) => (value ? value.trim().toLowerCase() : value))
+        .max(254, "Email must not exceed 254 characters")
+        .matches(
+          /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/,
+          "Enter a valid email address",
+        ),
 
       gender: Yup.number()
         .required("Please select gender")
@@ -484,8 +524,8 @@ const EmployeeForm = () => {
             if (!value) return false;
             // return dayjs(value).isBefore(dayjs());
             return (
-            dayjs(value).isSame(dayjs(), "day") ||
-            dayjs(value).isBefore(dayjs(), "day")
+              dayjs(value).isSame(dayjs(), "day") ||
+              dayjs(value).isBefore(dayjs(), "day")
             );
           },
         ),
@@ -502,10 +542,8 @@ const EmployeeForm = () => {
             // return d.isBefore(dayjs().add(1, "month").add(1, "day"));
             return (
               d.isSame(dayjs("1900-01-01"), "day") ||
-              (
-                d.isAfter(dayjs("1900-01-01"), "day") &&
-                d.isBefore(dayjs().add(1, "year").add(1, "day"))
-              )
+              (d.isAfter(dayjs("1900-01-01"), "day") &&
+                d.isBefore(dayjs().add(1, "year").add(1, "day")))
             );
           },
         )
@@ -527,14 +565,13 @@ const EmployeeForm = () => {
               dojDate.isSame(minimumJoiningDate, "day") ||
               dojDate.isAfter(minimumJoiningDate, "day")
             );
-          }
+          },
         ),
 
       contact_number: Yup.string()
-        .required("Please enter phone number")
+        .required("Please Enter Phone Number")
         .matches(/^[0-9]+$/, "Phone number must contain digits only")
-        .min(7, "Phone number is too short")
-        .max(10, "Phone number is too long"),
+        .length(10, "Phone number must be 10 digits"),
 
       role_id: Yup.number()
         .required("Please select role")
@@ -550,8 +587,27 @@ const EmployeeForm = () => {
       work_schedule_id: Yup.number()
         .required("Please select work schedule")
         .min(1, "Please select work schedule"),
+      cf_values: Yup.array().of(
+        Yup.object().shape({
+          value: Yup.mixed().when("is_required", {
+            is: true,
+            then: (schema) =>
+              schema.test(
+                "cf-required",
+                "This field is required",
+                (value) =>
+                  value !== undefined &&
+                  value !== null &&
+                  String(value).trim() !== "",
+              ),
+            otherwise: (schema) => schema.notRequired(),
+          }),
+        }),
+      ),
     }),
     onSubmit: async (values) => {
+      values.first_name = values.first_name?.trim() || "";
+      values.last_name = values.last_name?.trim() || "";
       const hasAtLeastOneTrue = Object.values(
         values.allowed_attendance_methods,
       ).some((v) => v === true);
@@ -569,10 +625,7 @@ const EmployeeForm = () => {
     let root_department = dep_options.find((d) => d.is_root === true);
     let root_department_id = !!root_department && root_department.id;
 
-    if (
-      employeeImage &&
-      !employeeImage.type.startsWith("image/")
-    ) {
+    if (employeeImage && !employeeImage.type.startsWith("image/")) {
       toast.error("Only image files are allowed");
       return;
     }
@@ -673,14 +726,14 @@ const EmployeeForm = () => {
   };
 
   console.log("joining_date:", joining_date);
-console.log(
-  "dayjs value:",
-  joining_date ? dayjs(joining_date, DateFormat) : null
-);
-console.log(
-  "isValid:",
-  joining_date ? dayjs(joining_date, DateFormat).isValid() : null
-);
+  console.log(
+    "dayjs value:",
+    joining_date ? dayjs(joining_date, DateFormat) : null,
+  );
+  console.log(
+    "isValid:",
+    joining_date ? dayjs(joining_date, DateFormat).isValid() : null,
+  );
 
   return (
     <React.Fragment>
@@ -760,6 +813,7 @@ console.log(
                   </div>
                   <div className="form-icon right">
                     <Input
+                      innerRef={inputRef}
                       type="text"
                       name="emp_id"
                       id="employeeid"
@@ -767,32 +821,41 @@ console.log(
                       placeholder="LC001"
                       value={employeeObj.emp_id || ""}
                       onChange={(e) => {
-                        // Strip lowercase and disallowed chars
                         const val = e.target.value
                           .toUpperCase()
                           .replace(/[^A-Z0-9_-]/g, "");
-                        setEmployeeObj({ ...employeeObj, emp_id: val });
+
+                        setEmployeeObj((prev) => ({
+                          ...prev,
+                          emp_id: val,
+                        }));
+
+                        FormikForm.setFieldValue("emp_id", val);
+                        FormikForm.setFieldTouched("emp_id", true, false);
+
+                        if (val.length > 50) {
+                          FormikForm.setFieldError(
+                            "emp_id",
+                            "Employee ID cannot exceed 50 characters",
+                          );
+                        } else {
+                          FormikForm.setFieldError("emp_id", undefined);
+                        }
                       }}
                       onBlur={() => FormikForm.setFieldTouched("emp_id", true)}
-                      invalid={
-                        !!(
-                          FormikForm.touched.emp_id && FormikForm.errors.emp_id
-                        )
-                      }
+                      invalid={!!FormikForm.errors.emp_id}
                     />
-                    {!(
-                      FormikForm.touched.emp_id && FormikForm.errors.emp_id
-                    ) && <i className="ri-user-line"></i>}
-                    {FormikForm.touched.emp_id && FormikForm.errors.emp_id && (
+                    {!FormikForm.errors.emp_id && (
+                      <i className="ri-user-line"></i>
+                    )}
+                    {FormikForm.errors.emp_id && (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.emp_id}
                       </FormFeedback>
                     )}
                   </div>
                   {!FormikForm.errors.emp_id && (
-                    <div className="form-text mb-3">
-                      Enter employee ID (uppercase letters, numbers, - _ only).
-                    </div>
+                    <div className="form-text mb-3">Enter employee ID</div>
                   )}
                 </div>
               </Col>
@@ -815,28 +878,19 @@ console.log(
                       onBlur={() =>
                         FormikForm.setFieldTouched("first_name", true)
                       }
-                      invalid={
-                        !!(
-                          FormikForm.touched.first_name &&
-                          FormikForm.errors.first_name
-                        )
-                      }
+                      invalid={!!FormikForm.errors.first_name}
                     />
-                    {!(
-                      FormikForm.touched.first_name &&
-                      FormikForm.errors.first_name
-                    ) && <i className="ri-user-line"></i>}
-                    {FormikForm.touched.first_name &&
-                      FormikForm.errors.first_name && (
-                        <FormFeedback type="invalid">
-                          {FormikForm.errors.first_name}
-                        </FormFeedback>
-                      )}
+                    {!FormikForm.errors.first_name && (
+                      <i className="ri-user-line"></i>
+                    )}
+                    {FormikForm.errors.first_name && (
+                      <FormFeedback type="invalid">
+                        {FormikForm.errors.first_name}
+                      </FormFeedback>
+                    )}
                   </div>
                   {!FormikForm.errors.first_name && (
-                    <div className="form-text mb-3">
-                      Enter first name (letters only).
-                    </div>
+                    <div className="form-text mb-3">Enter first name.</div>
                   )}
                 </div>
               </Col>
@@ -859,28 +913,19 @@ console.log(
                       onBlur={() =>
                         FormikForm.setFieldTouched("last_name", true)
                       }
-                      invalid={
-                        !!(
-                          FormikForm.touched.last_name &&
-                          FormikForm.errors.last_name
-                        )
-                      }
+                      invalid={!!FormikForm.errors.last_name}
                     />
-                    {!(
-                      FormikForm.touched.last_name &&
-                      FormikForm.errors.last_name
-                    ) && <i className="ri-user-2-line"></i>}
-                    {FormikForm.touched.last_name &&
-                      FormikForm.errors.last_name && (
-                        <FormFeedback type="invalid">
-                          {FormikForm.errors.last_name}
-                        </FormFeedback>
-                      )}
+                    {!FormikForm.errors.last_name && (
+                      <i className="ri-user-2-line"></i>
+                    )}
+                    {FormikForm.errors.last_name && (
+                      <FormFeedback type="invalid">
+                        {FormikForm.errors.last_name}
+                      </FormFeedback>
+                    )}
                   </div>
                   {!FormikForm.errors.last_name && (
-                    <div className="form-text mb-3">
-                      Enter last name (letters only).
-                    </div>
+                    <div className="form-text mb-3">Enter last name.</div>
                   )}
                 </div>
               </Col>
@@ -898,8 +943,23 @@ console.log(
                       className="form-control"
                       placeholder="name@company.com"
                       value={employeeObj.email || ""}
-                      onChange={handleInputChange}
-                      onBlur={() => FormikForm.setFieldTouched("email", true)}
+                      onChange={(e) => {
+                        setEmployeeObj({
+                          ...employeeObj,
+                          email: e.target.value,
+                        });
+                      }}
+                      onBlur={(e) => {
+                        const value = e.target.value.trim().toLowerCase();
+
+                        setEmployeeObj({
+                          ...employeeObj,
+                          email: value,
+                        });
+
+                        FormikForm.setFieldValue("email", value);
+                        FormikForm.handleBlur(e);
+                      }}
                       invalid={
                         !!(FormikForm.touched.email && FormikForm.errors.email)
                       }
@@ -983,7 +1043,7 @@ console.log(
                     onChange={handleDateChange}
                     allowClear={false}
                     disabledDate={disableDobDates}
-                    inputReadOnly={true} 
+                    inputReadOnly={true}
                   />
                   {FormikForm.touched.dob && FormikForm.errors.dob && (
                     <div className="lc_form_error_text">
@@ -1032,11 +1092,12 @@ console.log(
                       placeholder="Enter number"
                       value={employeeObj.contact_number || ""}
                       onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9]/g, "");
-                        if (value.length <= 10) {
-                          updateProfileData("contact_number", value);
-                          FormikForm.setFieldValue("contact_number", value);
-                        }
+                        const value = e.target.value
+                          .replace(/[^0-9]/g, "")
+                          .slice(0, 10);
+
+                        updateProfileData("contact_number", value);
+                        FormikForm.setFieldValue("contact_number", value);
                       }}
                       onBlur={() =>
                         FormikForm.setFieldTouched("contact_number", true)
@@ -1104,7 +1165,7 @@ console.log(
                   </Dropdown>
                   {!FormikForm.errors.contact_number && (
                     <div className="form-text mb-3">
-                      Enter contact number (digits only).
+                      Enter contact number (10 digits only).
                     </div>
                   )}
                 </div>
@@ -1241,7 +1302,7 @@ console.log(
               <Col lg={12}>
                 <div>
                   <Label htmlFor="reporting_manager_id">
-                    Reporting Manager
+                    Reporting Manager <span>*</span>
                   </Label>
                   <Select
                     id="reporting_manager_id"
@@ -1345,6 +1406,7 @@ console.log(
                     }}
                     value={
                       (employeeObj.work_schedule_id &&
+                        Array.isArray(ws_options) &&
                         ws_options.find(
                           (e) => e.id === employeeObj.work_schedule_id,
                         )) ||
@@ -1391,7 +1453,7 @@ console.log(
                     allowClear={false}
                     onChange={handleJoinDateChange}
                     disabledDate={disableJoiningDates}
-                    inputReadOnly={true} 
+                    inputReadOnly={true}
                   />
                   {FormikForm.touched.joining_date &&
                     FormikForm.errors.joining_date && (
@@ -1408,7 +1470,7 @@ console.log(
               </Col>
 
               {/* ── ID Proof ─────────────────────────────────────────────── */}
-              {selectedFileName ? (
+              {/* {selectedFileName ? (
                 <table>
                   <thead>
                     <tr>
@@ -1447,7 +1509,7 @@ console.log(
               )}
               <div className="form-text mb-3">
                 {!selectedFileName && <p>Select ID proof.</p>}
-              </div>
+              </div> */}
 
               {/* ── Time Zone ────────────────────────────────────────────── */}
               <Col lg={12}>
@@ -1591,7 +1653,7 @@ console.log(
                     <Col lg={12} key={obj.id}>
                       <div className="mb-3">
                         <Label htmlFor={obj.input_name} className="form-label">
-                          {obj.name}
+                          {obj.name} {obj.is_required && <span>*</span>}
                         </Label>
                         {form_default_input_types.includes(obj.type) && (
                           <Fragment>
@@ -1604,10 +1666,26 @@ console.log(
                                 placeholder={`Enter ${obj.name}`}
                                 value={obj.value || ""}
                                 onChange={(e) => handleCFInputChange(e, obj.id)}
+                                invalid={
+                                  !!(
+                                    obj.is_required &&
+                                    FormikForm.submitCount > 0 &&
+                                    (!obj.value ||
+                                      String(obj.value).trim() === "")
+                                  )
+                                }
                               />
                               <i className="ri-user-2-line"></i>
                             </div>
-                            <div className="form-text">Enter {obj.name}</div>
+                            {obj.is_required &&
+                            FormikForm.submitCount > 0 &&
+                            (!obj.value || String(obj.value).trim() === "") ? (
+                              <div className="lc_form_error_text">
+                                This field is required
+                              </div>
+                            ) : (
+                              <div className="form-text">Enter {obj.name}</div>
+                            )}
                           </Fragment>
                         )}
                         {obj.type === form_file_type && (
@@ -1619,10 +1697,26 @@ console.log(
                                 id={obj.input_name}
                                 className="form-control"
                                 onChange={(e) => handleCFFileChange(e, obj.id)}
+                                invalid={
+                                  !!(
+                                    obj.is_required &&
+                                    FormikForm.submitCount > 0 &&
+                                    (!obj.value ||
+                                      String(obj.value).trim() === "")
+                                  )
+                                }
                               />
                               <i className="ri-user-2-line"></i>
                             </div>
-                            <div className="form-text">Choose {obj.name}</div>
+                            {obj.is_required &&
+                            FormikForm.submitCount > 0 &&
+                            (!obj.value || String(obj.value).trim() === "") ? (
+                              <div className="lc_form_error_text">
+                                This field is required
+                              </div>
+                            ) : (
+                              <div className="form-text">Choose {obj.name}</div>
+                            )}
                             {!!obj.value && obj.value !== "" && (
                               <Fragment>{obj.name} Uploaded</Fragment>
                             )}
@@ -1649,17 +1743,41 @@ console.log(
                           />
                         )}
                         {obj.type === form_select_type && (
-                          <Select
-                            name={obj.input_name}
-                            id={obj.input_name}
-                            options={obj.options}
-                            value={
-                              obj.options.find((d) => d.value === obj.value) ||
-                              []
-                            }
-                            onChange={(e) => handleCFSelectChange(e, obj.id)}
-                            placeholder={`Select ${obj.name}`}
-                          />
+                          <Fragment>
+                            <Select
+                              name={obj.input_name}
+                              id={obj.input_name}
+                              options={obj.options}
+                              styles={{
+                                control: (provided, state) => ({
+                                  ...provided,
+                                  borderColor:
+                                    !state.isFocused &&
+                                    obj.is_required &&
+                                    FormikForm.submitCount > 0 &&
+                                    (!obj.value ||
+                                      String(obj.value).trim() === "")
+                                      ? "red"
+                                      : provided.borderColor,
+                                }),
+                              }}
+                              value={
+                                obj.options.find(
+                                  (d) => d.value === obj.value,
+                                ) || []
+                              }
+                              onChange={(e) => handleCFSelectChange(e, obj.id)}
+                              placeholder={`Select ${obj.name}`}
+                            />
+                            {obj.is_required &&
+                              FormikForm.submitCount > 0 &&
+                              (!obj.value ||
+                                String(obj.value).trim() === "") && (
+                                <div className="lc_form_error_text">
+                                  This field is required
+                                </div>
+                              )}
+                          </Fragment>
                         )}
                       </div>
                     </Col>
@@ -1763,7 +1881,7 @@ console.log(
               )}
 
               {/* ── Save button for new employees ─────────────────────────── */}
-              {!isExistingEmployee && (
+              {/* {!isExistingEmployee && (
                 <Col lg={12}>
                   <div className="text-end mt-3">
                     <Button type="submit" color="success" className="btn-label">
@@ -1772,7 +1890,7 @@ console.log(
                     </Button>
                   </div>
                 </Col>
-              )}
+              )} */}
             </Row>
           </Form>
         </Col>

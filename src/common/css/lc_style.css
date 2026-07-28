@@ -6,7 +6,6 @@ body .rs-table-row-header .rs-table-cell {
   background-color: unset !important;
 }
 
-
 .label-lc {
   font-size: 14px;
   margin-bottom: 5px;
@@ -80,7 +79,6 @@ body .rs-table-row-header .rs-table-cell {
   transform: translateY(-50%);
 }
 .lc_attendance_style:nth-child(odd) .rs-table-column-group-cell > div {
-
   font-weight: bold;
 }
 .lc_attendance_style:nth-child(even) .rs-table-column-group-cell > div {
@@ -100,9 +98,8 @@ body .rs-table-row-header .rs-table-cell {
 .lc_multi_select .css-wsp0cs-MultiValueGeneric {
   color: white !important;
 }
-.lc-color{
+.lc-color {
   background-color: #e9ecef;
-
 }
 .lc-icon-hover {
   padding: 2px;
@@ -111,23 +108,22 @@ body .rs-table-row-header .rs-table-cell {
 }
 
 .lc-icon-hover:hover {
-  background-color: #0AB39C; 
+  background-color: #0ab39c;
 }
 .table-lc-import-xl {
-  width: auto; 
+  width: auto;
   border-collapse: collapse;
   margin-top: 10px;
   background-color: white;
-  
 }
 
-.table-lc-import-xl th, 
+.table-lc-import-xl th,
 .table-lc-import-xl td {
   border: 1px solid #ddd;
-  padding: 8px; 
+  padding: 8px;
   text-align: left;
   font-size: 14px;
-  white-space: nowrap; 
+  white-space: nowrap;
 }
 
 .table-lc-import-xl th {
@@ -146,9 +142,8 @@ body .rs-table-row-header .rs-table-cell {
 
 .table-container {
   max-width: 100%;
-  overflow-x: auto; 
+  overflow-x: auto;
 }
-
 
 /* Parent row alignment */
 .lc_dashboard_row {
@@ -215,7 +210,7 @@ body .rs-table-row-header .rs-table-cell {
   height: 60px;
   object-fit: cover;
   margin-bottom: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 /* Fallback circle (when no profile img) */
@@ -231,7 +226,7 @@ body .rs-table-row-header .rs-table-cell {
   font-size: 22px;
   font-weight: bold;
   margin: 0 auto 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 /* Name */
@@ -255,113 +250,141 @@ body .rs-table-row-header .rs-table-cell {
   color: #999;
 }
 
+
 /* === Main Card === */
 .lc-infowindow-card {
   margin: 0 !important;
   padding: 0 !important;
-  border-radius: 10px;
+  border-radius: 14px;
   background: #fff;
-  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px rgba(10, 30, 60, 0.18);
   overflow: hidden;
-  width: 260px;
+  width: 270px;
   font-family: "Inter", sans-serif;
 }
 
-/* === Header (Title + Close Button) === */
+/* === Header (gradient band) === */
 .lc-infowindow-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fff;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #0ab39c 0%, #0d6efd 100%);
 }
 
 .lc-infowindow-title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: #222;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #0a0909;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
-/* === Close Button === */
+/* .lc-infowindow-title::before {
+  content: "📍";
+  font-size: 13px;
+} */
+
 .lc-infowindow-close {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.25);
   border: none;
-  font-size: 18px;
-  color: #777;
-  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 14px;
   line-height: 1;
-  transition: color 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
 }
 
 .lc-infowindow-close:hover {
-  color: #000;
+  background: rgba(255, 255, 255, 0.45);
 }
 
 /* === List === */
 .lc-infowindow-list {
   list-style: none;
   margin: 0;
-  padding: 8px 10px 10px 10px;
-  max-height: 220px;
+  padding: 10px 12px 12px;
+  max-height: 240px;
   overflow-y: auto;
 }
 
 /* === Item === */
 .lc-infowindow-item {
-  margin-bottom: 8px;
-  background: #f9fafb;
-  border-radius: 8px;
-  padding: 8px;
+  background: #f7f9fc;
+  border: 1px solid #eef1f6;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.lc-infowindow-item + .lc-infowindow-item {
+  margin-top: 8px;
 }
 
 /* === User Info === */
 .lc-infowindow-user {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
 }
 
 .lc-infowindow-avatar,
 .lc-infowindow-avatar-placeholder {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   object-fit: cover;
-  background: #dbeafe;
-  color: #1d4ed8;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 15px;
+  color: #fff;
+  background: linear-gradient(135deg, #0ab39c, #0d6efd);
+  box-shadow: 0 0 0 3px #fff, 0 0 0 4px #d9e6ff;
 }
 
 /* === Details === */
 .lc-infowindow-details {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  font-size: 13px;
-  color: #333;
+  gap: 3px;
+  min-width: 0;
 }
 
 .lc-infowindow-name {
-  font-weight: 600;
-  font-size: 14px;
-  color: #111;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: #12203c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* === Icons === */
+.lc-infowindow-time,
+.lc-infowindow-address {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: #5b6b88;
+}
+
 .lc-infowindow-time i,
 .lc-infowindow-address i {
-  color: #3b82f6;
-  font-size: 14px;
-  margin-right: 4px;
+  color: #0ab39c;
+  font-size: 12px;
+  flex-shrink: 0;
 }
 
 /* === Remove default Google padding === */
@@ -370,11 +393,15 @@ body .rs-table-row-header .rs-table-cell {
   padding: 0 !important;
   margin: 0 !important;
 }
+
+.gm-ui-hover-effect {
+  display: none !important; /* hide default google close btn, use custom one */
+}
 /* COMMON sticky column style */
 .lc_sticky_col {
   position: sticky;
   background: #fff;
-  z-index: 50;               /* keeps above other columns */
+  z-index: 50; /* keeps above other columns */
 }
 
 /* First sticky column (checkbox) */
@@ -384,7 +411,7 @@ body .rs-table-row-header .rs-table-cell {
 
 /* Second sticky column (Action) */
 .lc_sticky_col_2 {
-  left: 60px;                /* adjust based on checkbox column width */
+  left: 60px; /* adjust based on checkbox column width */
 }
 
 /* Optional shadow for better look */
@@ -441,7 +468,7 @@ body .rs-table-row-header .rs-table-cell {
   width: 4px;
   top: 0;
   bottom: 0;
-  box-shadow: 3px 0 5px rgba(9, 9, 9, .08);
+  box-shadow: 3px 0 5px rgba(9, 9, 9, 0.08);
 }
 
 /* For responsive scroll container */
@@ -450,9 +477,8 @@ body .rs-table-row-header .rs-table-cell {
   width: 100%;
 } */
 /* Base skeleton animation */
-.lc-skelton-table{
+.lc-skelton-table {
   padding-top: 40px;
-
 }
 .skeleton {
   position: relative;
@@ -520,4 +546,90 @@ body .rs-table-row-header .rs-table-cell {
 
 .lc-select__multi-value__label {
   color: white !important;
+}
+.ant-picker-cell-disabled .ant-picker-cell-inner {
+  pointer-events: auto !important;
+}
+
+.ant-picker-cell-disabled::before {
+  background: transparent !important;
+}
+
+.form-icon.right .form-control {
+  padding-right: 3rem !important;
+}
+.jodit-status-bar a.jodit-status-bar-link {
+  display: none;
+}
+.org-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-top: 3px solid #0ab39c;
+  border-radius: 10px;
+  padding: 14px 16px;
+  min-width: 200px;
+  min-height: 150px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.org-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  display: block;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.org-card-subtitle {
+  font-size: 11px;
+  color: #0ab39c;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.org-card-bottom {
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.org-card-count-badge {
+  background: #e1f5ee;
+  border-radius: 8px;
+  padding: 6px 12px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 70px;
+}
+
+.org-card-count-number {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f6e56;
+  line-height: 1.1;
+}
+
+.org-card-count-label {
+  font-size: 9px;
+  color: #0f6e56;
+  font-weight: 500;
+}
+
+.org-card-eye {
+  padding: 0;
+}
+
+.p-organizationchart-line-down,
+.p-organizationchart-line-left,
+.p-organizationchart-line-top {
+  border-color: #0ab39c !important;
+}
+.org-card-edit {
+  padding: 0;
 }

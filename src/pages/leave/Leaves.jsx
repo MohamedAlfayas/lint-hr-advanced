@@ -60,8 +60,21 @@ const LeaveDashboard = () => {
   const { leave_application_data } = useSelector(
     (state) => state.LeaveApplyReducer,
   );
+
   const { leave_type_for_current_employee } = useSelector(
     (state) => state.LeaveTypeReducer,
+  );
+
+  // ── table display data ───────────────────────
+  // deleted + pending rows: reassign status so they DON'T match the Pending
+  // tab (option 1), but still appear under "All Datas". Badge still renders
+  // "Cancelled" because getStatusLabel checks is_deleted first.
+  const tableDisplayData = useMemo(
+    () =>
+      leave_application_data.map((e) =>
+        e.is_deleted === true && e.status === 1 ? { ...e, status: -1 } : e,
+      ),
+    [leave_application_data],
   );
 
   // ── deleted row style helper ─────────────────
@@ -177,6 +190,34 @@ const LeaveDashboard = () => {
       },
     },
     {
+      Header: "Work Date",
+      filterable: false,
+      id: "comp_off_work_date",
+      accessor: (obj) => {
+        if (!obj.comp_off_work_date) {
+          return <b style={getCellStyle(obj)}>—</b>;
+        }
+        const date = convertDate(
+          new Date(obj.comp_off_work_date).toDateString(),
+        );
+        return <b style={getCellStyle(obj)}>{date}</b>;
+      },
+    },
+    {
+      Header: "Holiday",
+      filterable: false,
+      id: "holiday_name",
+      accessor: (obj) => {
+        const globalData = GetLocalStorageData("holiday") || [];
+        const matchedHoliday = globalData.find(
+          (h) => h.date === (obj.start ? obj.start.split(" ")[0] : null),
+        );
+        return (
+          <b style={getCellStyle(obj)}>{matchedHoliday?.name?.trim() || "—"}</b>
+        );
+      },
+    },
+    {
       Header: "Total",
       filterable: false,
       id: "Total",
@@ -192,8 +233,6 @@ const LeaveDashboard = () => {
       ),
       id: "status",
       filterable: false,
-
-      // ✅ force cell center also
       Cell: ({ row }) => {
         const obj = row.original;
 
@@ -231,9 +270,9 @@ const LeaveDashboard = () => {
         return (
           <div
             style={{
-              width: "100%", // 🔥 important
+              width: "100%",
               display: "flex",
-              justifyContent: "center", // 🔥 force center
+              justifyContent: "center",
             }}
           >
             <div
@@ -245,7 +284,6 @@ const LeaveDashboard = () => {
                 gap: "25px",
               }}
             >
-              {/* DOTTED LINE */}
               <div
                 style={{
                   position: "absolute",
@@ -256,16 +294,12 @@ const LeaveDashboard = () => {
                   borderLeft: "2px dotted #ccc",
                 }}
               />
-
-              {/* LABEL */}
               <span
                 className={`badge text-uppercase bg-${color}-subtle text-${color}`}
                 style={{ zIndex: 1 }}
               >
                 {label}
               </span>
-
-              {/* CANCEL */}
               {cancelBadge && <div style={{ zIndex: 1 }}>{cancelBadge}</div>}
             </div>
           </div>
@@ -285,6 +319,7 @@ const LeaveDashboard = () => {
       status: 1,
       day_type: 1,
       in_between_dates: [],
+      comp_off_work_date: null,
     }),
     [],
   );
@@ -295,7 +330,9 @@ const LeaveDashboard = () => {
       option: 1,
       label: "Pending",
       count:
-        leave_application_data.filter((e) => e[filterKey] === 1).length || 0,
+        leave_application_data.filter(
+          (e) => e[filterKey] === 1 && e.is_deleted === false,
+        ).length || 0,
     },
     {
       option: 2,
@@ -332,7 +369,7 @@ const LeaveDashboard = () => {
             </Col>
             <InfoTable
               additionalColumn={additionalColumn}
-              tabledata={leave_application_data}
+              tabledata={tableDisplayData}
               formname={leave_application_component_name}
               initialFormObj={initialFormObj}
               filterKey={filterKey}
@@ -347,7 +384,6 @@ const LeaveDashboard = () => {
         </Container>
       </div>
 
-      {/* Change Leave Modal */}
       <LeaveChangeModal
         isOpen={changeModalOpen}
         onClose={closeChangeModal}
