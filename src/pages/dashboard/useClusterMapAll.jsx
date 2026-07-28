@@ -23,6 +23,10 @@ import Select from "react-select";
 import { DatePicker } from "antd";
 import dayjs from "dayjs";
 import { Api } from "../../common/api/Api";
+import {
+  connectWebSocket,
+  disconnectWebSocket,
+} from "./LocationWebSocket/WebSocket";
 import "../../common/css/lc_style.css";
 
 const loaderOptions = {
@@ -190,6 +194,16 @@ const injectStyles = () => {
       0%, 100% { opacity: 1; }
       50%      { opacity: 0.25; }
     }
+    @keyframes ucma-skeleton-pulse {
+      0%   { opacity: 0.55; }
+      50%  { opacity: 1; }
+      100% { opacity: 0.55; }
+    }
+    .ucma-skeleton {
+      background: #e2e8f0;
+      border-radius: 6px;
+      animation: ucma-skeleton-pulse 1.3s ease-in-out infinite;
+    }
     .ucma-scroll::-webkit-scrollbar { width: 5px; }
     .ucma-scroll::-webkit-scrollbar-track { background: transparent; }
     .ucma-scroll::-webkit-scrollbar-thumb {
@@ -298,15 +312,6 @@ const injectStyles = () => {
 const todayIsoIN = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
-// Same India-timezone ISO conversion used everywhere else in this file —
-// pulled out so the on-demand fetch cache can reuse it.
-const isoDateOf = (timestamp) =>
-  timestamp
-    ? new Date(timestamp).toLocaleDateString("en-CA", {
-        timeZone: "Asia/Kolkata",
-      })
-    : null;
-
 const UsersClusterMapAll = ({
   employees = [],
   initialEmpId = null,
@@ -325,16 +330,18 @@ const UsersClusterMapAll = ({
   // ── Employee / department / date filter state ──
   const [deptFilter, setDeptFilter] = useState("All");
   const [selectedEmpId, setSelectedEmpId] = useState(initialEmpId);
-  const [dateFilter, setDateFilter] = useState(""); // "" = all dates, else "YYYY-MM-DD"
+  const [dateFilter, setDateFilter] = useState(""); // "" = none picked yet, else "YYYY-MM-DD"
 
-  // The `employees` prop only carries ONE day's location_history (whatever
-  // day the parent table currently has loaded). Picking a different date in
-  // the calendar has nothing to filter locally, so we fetch that day's
-  // attendance/location data on demand and cache it here, keyed by ISO date.
-  // dayDataCache[date] = raw API response array for that date (or [] if
-  // fetched and empty), so we know not to re-fetch it.
-  const [dayDataCache, setDayDataCache] = useState({});
-  const [loadingDayData, setLoadingDayData] = useState(false);
+  // Per-employee, per-date location history fetched on demand from
+  // GET /attendance/get-location-tracking-data/{emp_id}?date=YYYY-MM-DD
+  // Cached by "empId::date" so switching back to a previously viewed
+  // employee/date combo doesn't re-fetch.
+  const [locationCache, setLocationCache] = useState({});
+  const [loadingLocations, setLoadingLocations] = useState(false);
+
+  // ── Live tracking (websocket) ──
+  const [liveLocation, setLiveLocation] = useState(null);
+  const [isLive, setIsLive] = useState(false);
 
   // Playback state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -358,7 +365,7 @@ const UsersClusterMapAll = ({
   useEffect(() => {
     setDeptFilter("All");
     setSelectedEmpId(initialEmpId ?? null);
-    setDayDataCache({});
+    setLocationCache({});
   }, [employees, initialEmpId]);
 
   // ─── Department options ────────────────────────────────────────
@@ -379,7 +386,7 @@ const UsersClusterMapAll = ({
   const employeeSelectOptions = useMemo(
     () =>
       filteredEmployees.map((emp) => ({
-        value: emp.emp_id,
+        value: emp.employee_id,
         label: emp.first_name,
         department: emp.department,
         profile_url: emp.profile_url,
@@ -396,9 +403,9 @@ const UsersClusterMapAll = ({
   useEffect(() => {
     if (
       filteredEmployees.length &&
-      !filteredEmployees.some((e) => e.emp_id === selectedEmpId)
+      !filteredEmployees.some((e) => e.employee_id === selectedEmpId)
     ) {
-      setSelectedEmpId(filteredEmployees[0].emp_id);
+      setSelectedEmpId(filteredEmployees[0].employee_id);
     }
     if (filteredEmployees.length === 0) {
       setSelectedEmpId(null);
@@ -406,7 +413,8 @@ const UsersClusterMapAll = ({
   }, [deptFilter, filteredEmployees]);
 
   const activeEmployee = useMemo(
-    () => filteredEmployees.find((e) => e.emp_id === selectedEmpId) || null,
+    () =>
+      filteredEmployees.find((e) => e.employee_id === selectedEmpId) || null,
     [filteredEmployees, selectedEmpId],
   );
 
@@ -414,107 +422,144 @@ const UsersClusterMapAll = ({
     if (onSelectEmployee) onSelectEmployee(activeEmployee);
   }, [activeEmployee]);
 
-  // ─── Distinct dates available for the active employee (for the date picker) ──
-  // Sorted newest-first so "today"/most-recent naturally sits at the top.
-  const dateOptions = useMemo(() => {
-    const raw = activeEmployee?.location_history || [];
-
-    const set = new Set();
-    raw.forEach((loc) => {
-      if (loc?.timestamp) {
-        const iso = new Date(loc.timestamp).toLocaleDateString("en-CA", {
-          timeZone: "Asia/Kolkata",
-        });
-        set.add(iso);
-      }
-    });
-    return [...set].sort().reverse();
-  }, [activeEmployee]);
-
-  // ─── Default the date filter whenever the employee (or its date options)
-  //     changes: prefer `initialDate` (the row the user clicked "View" on),
-  //     falling back to today, then to the most recent date that actually
-  //     has data for this employee. The user can still pick any earlier
-  //     date from the picker afterwards. ──────────────────────────────
+  // ─── Default the date filter whenever the selected employee changes:
+  //     prefer `initialDate` (the row the user clicked "View" on), falling
+  //     back to today. The user can still pick any other date from the
+  //     picker afterwards — every date is fetched on demand, so there's no
+  //     need to pre-know which dates have data. ──────────────────────────
   useEffect(() => {
-    if (dateOptions.length === 0) {
+    if (!selectedEmpId) {
       setDateFilter("");
       return;
     }
-    const preferred = initialDate || todayIsoIN();
-    setDateFilter(dateOptions.includes(preferred) ? preferred : dateOptions[0]);
-  }, [selectedEmpId, dateOptions, initialDate]);
+    setDateFilter(initialDate || todayIsoIN());
+  }, [selectedEmpId, initialDate]);
 
-  // ─── Location history for the active employee, filtered by date ───
-  // 1. Try the data already loaded for this employee (the day the parent
-  //    table currently has open).
-  // 2. If that day doesn't match, fall back to whatever we've fetched
-  //    on-demand for `dateFilter` in dayDataCache (see fetch effect below).
-  const activeLocations = useMemo(() => {
-    const raw = activeEmployee?.location_history || [];
-    if (!dateFilter) return raw;
-
-    const ownDayMatch = raw.filter(
-      (loc) => isoDateOf(loc?.timestamp) === dateFilter,
-    );
-    if (ownDayMatch.length > 0) return ownDayMatch;
-
-    const cachedDay = dayDataCache[dateFilter];
-    if (cachedDay && activeEmployee) {
-      const match = cachedDay.find(
-        (item) => item?.employee?.emp_id === activeEmployee.emp_id,
-      );
-      return match?.location_history || [];
-    }
-
-    return [];
-  }, [activeEmployee, dateFilter, dayDataCache]);
-
-  // ─── Fetch the selected date's data on demand if we don't already have it ──
-  // Uses the same `/attendance/get-attendance-status?date=` endpoint the
-  // parent table uses, then caches the full day's response so switching
-  // back to a previously-picked date doesn't re-fetch.
+  // ─── Fetch the selected employee + date's location history on demand ──
   useEffect(() => {
-    if (!dateFilter || !activeEmployee) return;
+    if (!selectedEmpId || !dateFilter) return;
 
-    const ownDayMatch = (activeEmployee.location_history || []).some(
-      (loc) => isoDateOf(loc?.timestamp) === dateFilter,
-    );
-    if (ownDayMatch) return; // already have it locally
-    if (dayDataCache[dateFilter]) return; // already fetched (even if empty)
+    const key = `${selectedEmpId}::${dateFilter}`;
+    if (locationCache[key]) return; // already fetched (even if empty)
 
     let cancelled = false;
 
-    const fetchDayData = async () => {
+    const fetchLocations = async () => {
       try {
-        setLoadingDayData(true);
+        setLoadingLocations(true);
         const response = await Api.get(
-          `/attendance/get-attendance-status?date=${dateFilter}`,
+          `/attendance/get-location-tracking-data/${selectedEmpId}?date=${dateFilter}`,
         );
+        const data = response?.data?.data;
         if (!cancelled) {
-          setDayDataCache((prev) => ({
+          setLocationCache((prev) => ({
             ...prev,
-            [dateFilter]: Array.isArray(response.data) ? response.data : [],
+            [key]: Array.isArray(data) ? data : [],
           }));
         }
       } catch (error) {
         console.error(
-          `Error fetching location history for ${dateFilter}:`,
+          `Error fetching location history for employee ${selectedEmpId} on ${dateFilter}:`,
           error,
         );
         if (!cancelled) {
-          setDayDataCache((prev) => ({ ...prev, [dateFilter]: [] }));
+          setLocationCache((prev) => ({ ...prev, [key]: [] }));
         }
       } finally {
-        if (!cancelled) setLoadingDayData(false);
+        if (!cancelled) setLoadingLocations(false);
       }
     };
 
-    fetchDayData();
+    fetchLocations();
     return () => {
       cancelled = true;
     };
-  }, [dateFilter, activeEmployee, dayDataCache]);
+  }, [selectedEmpId, dateFilter, locationCache]);
+
+  // ─── Location history for the active employee + selected date ─────
+  const activeLocations = useMemo(() => {
+    if (!selectedEmpId || !dateFilter) return [];
+    const key = `${selectedEmpId}::${dateFilter}`;
+    return locationCache[key] || [];
+  }, [selectedEmpId, dateFilter, locationCache]);
+
+  // Websocket payloads aren't guaranteed to use the same field name as the
+  // REST API for the time — try the common variants, and fall back to the
+  // moment it was received client-side so the point is never time-less.
+  const normalizeLiveLocation = (raw) => {
+    if (!raw) return raw;
+    const timestamp =
+      raw.timestamp ||
+      raw.time ||
+      raw.created_at ||
+      raw.updated_at ||
+      raw.ts ||
+      new Date().toISOString();
+    return { ...raw, timestamp };
+  };
+
+  // ─── Live tracking: connect to the watch socket for whichever employee
+  //     is currently selected (follows dropdown changes, not just the
+  //     employee the modal was opened for). On a successful connection we
+  //     also drop today's cached API data so the fetch effect above pulls
+  //     a fresh copy — the socket alone isn't treated as the source of
+  //     truth for the initial state. Every subsequent message is folded
+  //     into today's cache so the map + timeline update live, the same
+  //     way a fresh API fetch would render them. ─────────────────────────
+  useEffect(() => {
+    if (!selectedEmpId) {
+      disconnectWebSocket();
+      setIsLive(false);
+      setLiveLocation(null);
+      return;
+    }
+
+    setLiveLocation(null);
+    setIsLive(false);
+
+    connectWebSocket(selectedEmpId, {
+      onOpen: () => {
+        setIsLive(true);
+        const todayKey = `${selectedEmpId}::${todayIsoIN()}`;
+        setLocationCache((prev) => {
+          if (!(todayKey in prev)) return prev;
+          const next = { ...prev };
+          delete next[todayKey];
+          return next;
+        });
+      },
+      onMessage: (data) => {
+        if (!data || data.latitude == null || data.longitude == null) return;
+        const normalized = normalizeLiveLocation(data);
+        setLiveLocation(normalized);
+
+        // Only fold live points into TODAY's history — a different date
+        // being viewed shouldn't get contaminated with live data.
+        const todayKey = `${selectedEmpId}::${todayIsoIN()}`;
+        setLocationCache((prev) => {
+          const existing = prev[todayKey] || [];
+          return { ...prev, [todayKey]: [...existing, normalized] };
+        });
+      },
+      onClose: () => setIsLive(false),
+      onError: () => setIsLive(false),
+    });
+
+    return () => {
+      disconnectWebSocket();
+      setIsLive(false);
+    };
+  }, [selectedEmpId]);
+
+  // Live marker only makes sense while looking at today's route.
+  const isViewingToday = dateFilter === todayIsoIN();
+  const liveMarkerPos =
+    isViewingToday && liveLocation
+      ? {
+          lat: parseFloat(liveLocation.latitude) || 0,
+          lng: parseFloat(liveLocation.longitude) || 0,
+        }
+      : null;
 
   // ─── Build path + timeline data (from the active employee's route) ────
   useEffect(() => {
@@ -550,7 +595,7 @@ const UsersClusterMapAll = ({
 
         return {
           index: index + 1,
-          name: loc?.employee?.first_name || "",
+          name: activeEmployee?.first_name || "",
           lat: parseFloat(loc?.latitude) || 0,
           lng: parseFloat(loc?.longitude) || 0,
           address: cleanedAddress,
@@ -558,7 +603,7 @@ const UsersClusterMapAll = ({
           date: indianDate,
           battery: loc?.battery_percentage,
           outside: loc?.is_outside_range,
-          profile_url: loc?.employee?.profile_url,
+          profile_url: activeEmployee?.profile_url,
         };
       });
       setPath(processed);
@@ -571,7 +616,7 @@ const UsersClusterMapAll = ({
     setIsPlaying(false);
     setProgress(0);
     setMovingPos(null);
-  }, [activeLocations]);
+  }, [activeLocations, activeEmployee]);
 
   // ─── Trip summary: duration + total distance ──────────────────
   const summary = useMemo(() => {
@@ -812,6 +857,11 @@ const UsersClusterMapAll = ({
     if (mapRef.current) fitToPath(mapRef.current, path);
   };
 
+  // ─── Close the InfoWindow (default 'x' + our own custom close icon) ──
+  const handleCloseClick = () => {
+    setSelectedMarker(null);
+  };
+
   // ─── Timeline / marker click → pan + open info window + expand ─
   const handleTimelineClick = (p, i) => {
     setIsPlaying(false);
@@ -866,15 +916,15 @@ const UsersClusterMapAll = ({
   const handleDatePickerChange = (date) => {
     // Use the dayjs object and re-format to ISO ourselves — the second
     // arg antd gives us is formatted per the display `format` prop
-    // ("DD MMM YYYY"), which is NOT what dateFilter / dateOptions use
-    // internally (ISO "YYYY-MM-DD"). Storing the display string here was
-    // producing "Invalid Date" (shown as NaN) and breaking the match
-    // against location_history. null when cleared → falls back to "All Dates".
+    // ("DD MMM YYYY"), which is NOT what dateFilter uses internally
+    // (ISO "YYYY-MM-DD"). Storing the display string here was producing
+    // "Invalid Date" (shown as NaN) and breaking the fetch/cache key.
+    // null when cleared → falls back to no date selected.
     setDateFilter(date ? date.format(ISO_DATE_FORMAT) : "");
   };
 
   // Only future dates are blocked. Past dates that happen to have no
-  // location_history for this employee are still selectable — they just
+  // location history for this employee are still selectable — they just
   // render an empty timeline/"no data" state instead of being dead ends.
   const disabledDate = (current) => {
     if (!current) return false;
@@ -1021,6 +1071,64 @@ const UsersClusterMapAll = ({
               />
             )}
 
+            {/* Live marker — driven by the websocket, independent of playback */}
+            {liveMarkerPos && (
+              <>
+                <OverlayView
+                  position={liveMarkerPos}
+                  mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                >
+                  <div
+                    style={{
+                      width: "26px",
+                      height: "26px",
+                      borderRadius: "50%",
+                      background: "#22c55e",
+                      opacity: 0.5,
+                      transform: "translate(-50%, -50%)",
+                      animation: "ucma-ring 1.6s ease-out infinite",
+                    }}
+                  />
+                </OverlayView>
+                <Marker
+                  position={liveMarkerPos}
+                  zIndex={10000}
+                  icon={{
+                    path: window.google.maps.SymbolPath.CIRCLE,
+                    scale: 8,
+                    fillColor: "#22c55e",
+                    fillOpacity: 1,
+                    strokeWeight: 3,
+                    strokeColor: "#ffffff",
+                  }}
+                  onClick={() =>
+                    setSelectedMarker({
+                      lat: liveMarkerPos.lat,
+                      lng: liveMarkerPos.lng,
+                      count: 1,
+                      users: [
+                        {
+                          name: activeEmployee?.first_name || "",
+                          profile_url: activeEmployee?.profile_url,
+                          timestamp: liveLocation?.timestamp
+                            ? new Date(
+                                liveLocation.timestamp,
+                              ).toLocaleTimeString("en-IN", {
+                                timeZone: "Asia/Kolkata",
+                                hour12: true,
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "",
+                          address: liveLocation?.accurate_address || "",
+                        },
+                      ],
+                    })
+                  }
+                />
+              </>
+            )}
+
             {/* Floating timestamp chip above moving marker */}
             {movingPos && currentLabel && (
               <OverlayView
@@ -1055,13 +1163,38 @@ const UsersClusterMapAll = ({
             {selectedMarker && (
               <InfoWindow
                 position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
-                onCloseClick={() => setSelectedMarker(null)}
+                onCloseClick={handleCloseClick}
               >
                 <div className="lc-infowindow-card lc-infowindow-compact">
-                  <h6 className="lc-infowindow-title">
-                    📍 {selectedMarker.count} Record
-                    {selectedMarker.count > 1 ? "s" : ""}
-                  </h6>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "8px",
+                    }}
+                  >
+                    <h6 className="lc-infowindow-title" style={{ margin: 0 }}>
+                      📍 {selectedMarker.count} Record
+                      {selectedMarker.count > 1 ? "s" : ""}
+                    </h6>
+                    <button
+                      onClick={handleCloseClick}
+                      title="Close"
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        fontSize: "16px",
+                        lineHeight: 1,
+                        color: "#64748b",
+                        padding: "2px",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <i className="ri-close-line"></i>
+                    </button>
+                  </div>
                   <ul className="lc-infowindow-list">
                     {selectedMarker.users.map((user, i) => (
                       <li key={i} className="lc-infowindow-item">
@@ -1098,8 +1231,8 @@ const UsersClusterMapAll = ({
             )}
           </GoogleMap>
 
-          {/* ── Empty state: employee selected, date picked, but no data for it ── */}
-          {activeEmployee && dateFilter && path.length === 0 && (
+          {/* ── Loading state: employee/date selected, request in flight ── */}
+          {activeEmployee && dateFilter && loadingLocations && (
             <div
               style={{
                 position: "absolute",
@@ -1112,38 +1245,82 @@ const UsersClusterMapAll = ({
                 justifyContent: "center",
                 pointerEvents: "none",
                 zIndex: 4,
+                background: "rgba(255,255,255,0.6)",
               }}
             >
               <div
                 style={{
-                  background: "rgba(255,255,255,0.95)",
-                  padding: "14px 20px",
-                  borderRadius: "10px",
-                  boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
-                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "10px",
+                }}
+              >
+                <div
+                  className="ucma-skeleton"
+                  style={{
+                    width: "160px",
+                    height: "160px",
+                    borderRadius: "50%",
+                  }}
+                />
+                <div
+                  className="ucma-skeleton"
+                  style={{ width: "140px", height: "14px" }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* ── Empty state: employee selected, date picked, but no data for it ── */}
+          {activeEmployee &&
+            dateFilter &&
+            path.length === 0 &&
+            !loadingLocations && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  pointerEvents: "none",
+                  zIndex: 4,
                 }}
               >
                 <div
                   style={{
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: "#374151",
+                    background: "rgba(255,255,255,0.95)",
+                    padding: "14px 20px",
+                    borderRadius: "10px",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
+                    textAlign: "center",
                   }}
                 >
-                  No location data for this date
-                </div>
-                <div
-                  style={{
-                    fontSize: "11px",
-                    color: "#94a3b8",
-                    marginTop: "2px",
-                  }}
-                >
-                  Try another date from the calendar
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "#374151",
+                    }}
+                  >
+                    No location data for this date
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "#94a3b8",
+                      marginTop: "2px",
+                    }}
+                  >
+                    Try another date from the calendar
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* ── Map overlay controls, top-left: Refresh + Full view ──
               Moved out of the timeline panel so they sit on the map itself. ── */}
@@ -1503,10 +1680,10 @@ const UsersClusterMapAll = ({
               </div>
             </div>
 
-            {/* Date filter — real calendar picker instead of a plain dropdown.
-                Any past date (or today) is selectable, not just dates that
-                already have location data — picking a date with no history
-                simply renders an empty timeline instead of being blocked. */}
+            {/* Date filter — real calendar picker. Any past date (or today)
+                is selectable; picking a date with no history for this
+                employee simply renders an empty timeline instead of being
+                blocked, and triggers an on-demand fetch for that date. */}
             <div
               style={{
                 display: "flex",
@@ -1523,8 +1700,8 @@ const UsersClusterMapAll = ({
                 <DatePicker
                   value={datePickerValue}
                   format="DD MMM YYYY"
-                  allowClear
-                  placeholder="All Dates"
+                  allowClear={false}
+                  placeholder="Select date"
                   disabled={!activeEmployee}
                   disabledDate={disabledDate}
                   onChange={handleDatePickerChange}
@@ -1547,7 +1724,36 @@ const UsersClusterMapAll = ({
           >
             <span style={{ fontWeight: 600, fontSize: "14px" }}>
               Timeline ({path.length})
-              {loadingDayData && (
+              {isLive && isViewingToday && (
+                <span
+                  style={{
+                    marginLeft: "8px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    color: "#16a34a",
+                    background: "#dcfce7",
+                    borderRadius: "10px",
+                    padding: "2px 8px",
+                    verticalAlign: "middle",
+                  }}
+                >
+                  <span
+                    className="ucma-liveblink"
+                    style={{
+                      width: "6px",
+                      height: "6px",
+                      borderRadius: "50%",
+                      background: "#22c55e",
+                      display: "inline-block",
+                    }}
+                  />
+                  LIVE
+                </span>
+              )}
+              {loadingLocations && (
                 <span
                   style={{
                     marginLeft: "8px",
@@ -1631,7 +1837,7 @@ const UsersClusterMapAll = ({
                   letterSpacing: "0.5px",
                 }}
               >
-                CHECKINS
+                LOCATIONS
               </div>
             </div>
           </div>
@@ -1646,7 +1852,60 @@ const UsersClusterMapAll = ({
               padding: "14px 6px",
             }}
           >
-            {path.length === 0 && !loadingDayData && (
+            {loadingLocations && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "18px",
+                  padding: "4px 10px",
+                }}
+              >
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      justifyContent: i % 2 === 0 ? "flex-end" : "flex-start",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "70%",
+                        maxWidth: "200px",
+                        borderRadius: "10px",
+                        padding: "8px 10px",
+                        border: "1px solid #eef0f3",
+                        background: "#f8fafc",
+                      }}
+                    >
+                      <div
+                        className="ucma-skeleton"
+                        style={{
+                          width: "60%",
+                          height: "10px",
+                          marginBottom: "6px",
+                        }}
+                      />
+                      <div
+                        className="ucma-skeleton"
+                        style={{
+                          width: "40%",
+                          height: "8px",
+                          marginBottom: "8px",
+                        }}
+                      />
+                      <div
+                        className="ucma-skeleton"
+                        style={{ width: "90%", height: "8px" }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {path.length === 0 && !loadingLocations && (
               <div
                 style={{
                   textAlign: "center",
@@ -1658,7 +1917,12 @@ const UsersClusterMapAll = ({
                 No location history for this date
               </div>
             )}
-            <div style={{ position: "relative" }}>
+            <div
+              style={{
+                position: "relative",
+                display: loadingLocations ? "none" : "block",
+              }}
+            >
               {/* Base spine (grey) — spans full content height */}
               <div
                 style={{

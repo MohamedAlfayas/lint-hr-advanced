@@ -62,6 +62,7 @@ const Employee = lazy(() => import("../pages/employee/Employee"));
 const EmployeeView = lazy(() => import("../pages/employee/EmployeeView"));
 const Roles = lazy(() => import("../pages/roles/Roles"));
 const WorkSchedule = lazy(() => import("../pages/workschedule/WorkSchedule"));
+const MyReimbursementsPage = lazy(()=> import("../pages/reimbursement/MyReimbursementsPage"))
 const Holidays = lazy(() => import("../pages/holidays/Holidays"));
 const LeaveType = lazy(() => import("../pages/leave/LeaveType"));
 const LeaveApproval = lazy(() => import("../pages/leave/LeaveApproval"));
@@ -113,6 +114,7 @@ const privateRoutes = [
   { path: "/roles", component: <Roles />, perm: [] },
   { path: "/workschedule", component: <WorkSchedule />, perm: [] },
   { path: "/holidays", component: <Holidays />, perm: "all" },
+  { path: "/my-reimbursements", component: <MyReimbursementsPage />, perm: "all" },
   { path: "/leavetype", component: <LeaveType />, perm: [] },
   { path: "/account-settings", component: <AccountSettings />, perm: "all" },
   {

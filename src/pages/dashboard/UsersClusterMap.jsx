@@ -210,10 +210,35 @@ const UsersClusterMapGoogle = ({ locations }) => {
           onCloseClick={handleCloseClick}
         >
           <div className="lc-infowindow-card lc-infowindow-compact">
-            <h6 className="lc-infowindow-title">
-              📍 {selectedMarker.count} Record
-              {selectedMarker.count > 1 ? "s" : ""}
-            </h6>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "8px",
+              }}
+            >
+              <h6 className="lc-infowindow-title" style={{ margin: 0 }}>
+                📍 {selectedMarker.count} Record
+                {selectedMarker.count > 1 ? "s" : ""}
+              </h6>
+              <button
+                onClick={handleCloseClick}
+                title="Close"
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  lineHeight: 1,
+                  color: "#64748b",
+                  padding: "2px",
+                  flexShrink: 0,
+                }}
+              >
+                <i className="ri-close-line"></i>
+              </button>
+            </div>
 
             <ul className="lc-infowindow-list">
               {selectedMarker.users.map((user, i) => (

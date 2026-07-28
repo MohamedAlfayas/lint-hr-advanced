@@ -245,10 +245,15 @@ const ComponentBreakdownTable = ({ components, onSaveOverride }) => {
 };
 
 // ─── Salary Modal ─────────────────────────────────────────────────────────────
-const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeavePolicy, onSaved }) => {
+const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeavePolicy, taxPolicy, onSaved }) => {
   const isEdit = !!employee?.salary_id;
   const [leave, setLeave] = useState({
     monthly_credit: "", yearly_credit: "", max_carry_forward: "", pay_remaining: "",
+  });
+  // Per-employee income-tax declaration. regime "" = follow company default.
+  const [tax, setTax] = useState({
+    regime: "", invest_80c: "", invest_80ccd_1b: "", invest_80d: "",
+    invest_80tta: "", home_loan_interest: "", annual_rent_paid: "", is_metro: false,
   });
 
   const [form, setForm] = useState({
@@ -276,6 +281,14 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
         yearly_credit: lo.yearly_credit ?? "",
         max_carry_forward: lo.max_carry_forward ?? "",
         pay_remaining: lo.pay_remaining == null ? "" : (lo.pay_remaining ? "yes" : "no"),
+      });
+      const td = employee.tax_declaration || {};
+      setTax({
+        regime: td.regime ?? "",
+        invest_80c: td.invest_80c ?? "", invest_80ccd_1b: td.invest_80ccd_1b ?? "",
+        invest_80d: td.invest_80d ?? "", invest_80tta: td.invest_80tta ?? "",
+        home_loan_interest: td.home_loan_interest ?? "",
+        annual_rent_paid: td.annual_rent_paid ?? "", is_metro: !!td.is_metro,
       });
       setForm({
         based_on: employee.based_on || "ctc",
@@ -320,6 +333,16 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
           yearly_credit: leave.yearly_credit === "" ? null : leave.yearly_credit,
           max_carry_forward: leave.max_carry_forward === "" ? null : leave.max_carry_forward,
           pay_remaining: leave.pay_remaining === "" ? null : leave.pay_remaining === "yes",
+        },
+        tax_declaration: {
+          regime: tax.regime === "" ? null : tax.regime,
+          invest_80c: tax.invest_80c === "" ? 0 : tax.invest_80c,
+          invest_80ccd_1b: tax.invest_80ccd_1b === "" ? 0 : tax.invest_80ccd_1b,
+          invest_80d: tax.invest_80d === "" ? 0 : tax.invest_80d,
+          invest_80tta: tax.invest_80tta === "" ? 0 : tax.invest_80tta,
+          home_loan_interest: tax.home_loan_interest === "" ? 0 : tax.home_loan_interest,
+          annual_rent_paid: tax.annual_rent_paid === "" ? 0 : tax.annual_rent_paid,
+          is_metro: tax.is_metro,
         },
       };
       const saved = await saveEmployeeSalary(payload);
@@ -544,6 +567,73 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
           </div>
         )}
 
+        {/* Income Tax Declaration (per-employee) */}
+        {taxPolicy && (
+          <div className="border rounded overflow-hidden mb-4">
+            <div className="bg-light px-3 py-2 border-bottom d-flex align-items-center justify-content-between">
+              <span className="fw-semibold fs-13 text-dark">Income Tax Declaration</span>
+              <span className="fs-11 text-muted">Blank regime = company default ({taxPolicy.default_regime})</span>
+            </div>
+            <div className="p-3">
+              <Row className="g-3 align-items-end">
+                <Col md={4}>
+                  <Label className="form-label fw-medium">Tax Regime</Label>
+                  <Select
+                    options={[
+                      { value: "", label: `Company default (${taxPolicy.default_regime})` },
+                      { value: "new", label: "New Regime" },
+                      { value: "old", label: "Old Regime" },
+                    ]}
+                    value={
+                      tax.regime === "" ? { value: "", label: `Company default (${taxPolicy.default_regime})` }
+                      : tax.regime === "new" ? { value: "new", label: "New Regime" }
+                      : { value: "old", label: "Old Regime" }
+                    }
+                    onChange={(o) => setTax((p) => ({ ...p, regime: o.value }))}
+                    classNamePrefix="select2-selection"
+                  />
+                </Col>
+              </Row>
+
+              {/* Old-regime declarations only matter when the effective regime is old */}
+              {(tax.regime === "old" || (tax.regime === "" && taxPolicy.default_regime === "old")) && (
+                <>
+                  <div className="text-uppercase fw-semibold text-muted mt-4 mb-2" style={{ fontSize: 11, letterSpacing: ".8px" }}>
+                    Old-Regime Declarations (annual)
+                  </div>
+                  <Row className="g-3">
+                    {[
+                      ["invest_80c", "80C (max ₹1.5L)"],
+                      ["invest_80ccd_1b", "80CCD(1B) NPS (max ₹50k)"],
+                      ["invest_80d", "80D Health insurance"],
+                      ["invest_80tta", "80TTA Savings interest (max ₹10k)"],
+                      ["home_loan_interest", "Sec 24 Home-loan interest (max ₹2L)"],
+                      ["annual_rent_paid", "Annual rent paid (for HRA)"],
+                    ].map(([k, lbl]) => (
+                      <Col md={4} key={k}>
+                        <Label className="form-label fw-medium">{lbl}</Label>
+                        <Input type="number" min="0" value={tax[k]}
+                          onChange={(e) => setTax((p) => ({ ...p, [k]: e.target.value }))} />
+                      </Col>
+                    ))}
+                    <Col md={4} className="d-flex align-items-center">
+                      <div className="form-check form-switch mt-4">
+                        <Input className="form-check-input" type="checkbox" checked={tax.is_metro}
+                          onChange={() => setTax((p) => ({ ...p, is_metro: !p.is_metro }))} />
+                        <Label className="form-check-label ms-1" style={{ fontSize: 13 }}>Metro city (HRA 50%)</Label>
+                      </div>
+                    </Col>
+                  </Row>
+                  <div className="text-muted mt-2" style={{ fontSize: 11 }}>
+                    HRA exemption is computed from the employee's Basic & HRA components + rent above.
+                    Declared amounts are capped automatically by the company policy.
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Component Breakdown */}
         <div className="border rounded overflow-hidden">
           <div className="bg-light px-3 py-2 border-bottom d-flex align-items-center justify-content-between">
@@ -624,6 +714,7 @@ const EmployeeSalary = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [companyLeavePolicy, setCompanyLeavePolicy] = useState(null);
+  const [taxPolicy, setTaxPolicy] = useState(null);
 
   const departmentOptions = departments.map((d) => ({
     value: d.id,
@@ -648,6 +739,10 @@ const EmployeeSalary = () => {
       const res3 = await GetApi("/payroll/company-leave-policy/");
       const clp = (res3?.data?.data || [])[0] || null;  // latest version
       setCompanyLeavePolicy(clp);
+
+      const res4 = await GetApi("/payroll/income-tax-policy/");
+      const itp = (res4?.data?.data || [])[0] || null;  // latest version
+      setTaxPolicy(itp);
     } catch (err) {
       console.error(err);
     } finally {
@@ -1000,6 +1095,7 @@ const EmployeeSalary = () => {
         employee={selectedEmployee}
         structureOptions={structureOptions}
         companyLeavePolicy={companyLeavePolicy}
+        taxPolicy={taxPolicy}
         onSaved={handleSaved}
       />
     </div>

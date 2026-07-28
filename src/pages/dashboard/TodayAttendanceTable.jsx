@@ -318,8 +318,6 @@ const TodayAttendanceTable = () => {
   const [customStatuses, setCustomStatuses] = useState([]);
   const [attendanceData, setAttendanceData] = useState([]);
 
-  console.log("dat", attendanceData);
-
   // ── Map modal state ──
   const [mapEmployees, setMapEmployees] = useState([]);
 
@@ -418,8 +416,8 @@ const TodayAttendanceTable = () => {
           }
 
           return {
-            id: item.employee.id,
             emp_id: item.employee.emp_id,
+            employee_id: item.employee.id,
             first_name: item.employee.first_name || "-",
             profile_url: item.employee.profile_url || null,
             email: item.employee.email || "-",
@@ -571,7 +569,7 @@ const TodayAttendanceTable = () => {
     const isoDate = ConvertISODateFormat(ConvertDateFormat(dateFilter));
 
     setMapEmployees(attendanceData);
-    setMapSelectedEmpId(row.id);
+    setMapSelectedEmpId(row.employee_id);
     setMapSelectedEmpName(row.first_name);
     setMapSelectedEmpProfileUrl(row.profile_url || null);
     setMapSelectedDate(isoDate);
@@ -1108,7 +1106,7 @@ const TodayAttendanceTable = () => {
                       fontSize: "smaller",
                     }}
                   >
-                    #{row.emp_id}
+                    #{row.employee_id}
                   </span>
                 </h5>
 
