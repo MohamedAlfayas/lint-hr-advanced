@@ -61,7 +61,17 @@ const LeavePolicySettings = () => {
   useEffect(() => { fetchData(); }, []);
 
   const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
-  const handleToggle = (field) => setForm((prev) => ({ ...prev, [field]: !prev[field] }));
+  const handleToggle = (field) =>
+    setForm((prev) => {
+      const next = { ...prev, [field]: !prev[field] };
+      if (field === "allow_negative_leave_balance" && next[field]) {
+        next.convert_excess_leave_to_lop = false;
+      }
+      if (field === "convert_excess_leave_to_lop" && next[field]) {
+        next.allow_negative_leave_balance = false;
+      }
+      return next;
+    });
 
   const validate = () =>
     runChecks([required("Effective date", form.effective_date)], toast);
@@ -203,22 +213,26 @@ const LeavePolicySettings = () => {
 
         <SectionLabel>Leave Balance Rules</SectionLabel>
         <div className="border rounded mb-4">
-          {[
-            ["allow_negative_leave_balance", "Allow Negative Leave Balance"],
+          {[["allow_negative_leave_balance", "Allow Negative Leave Balance"],
             ["convert_excess_leave_to_lop", "Convert Excess Leave to LOP"],
             ["treat_absent_as_lop", "Treat Absent as LOP"],
-            ["unapproved_leave_as_lop", "Treat Unapproved Leave as LOP"],
-          ].map(([key, label], i, arr) => (
-            <SettingRow key={key} label={label} last={i === arr.length - 1}>
-              {isEditing ? (
-                <div className="form-check form-switch mb-0">
-                  <Input className="form-check-input" type="checkbox" checked={!!form[key]} onChange={() => handleToggle(key)} />
-                </div>
-              ) : (
-                <ViewToggle checked={!!data[key]} />
-              )}
-            </SettingRow>
-          ))}
+            ["unapproved_leave_as_lop", "Treat Unapproved Leave as LOP"]].map(([key, label], i, arr) => (
+              <SettingRow key={key} label={label} last={i === arr.length - 1}>
+                {isEditing ? (
+                  <div className="form-check form-switch mb-0">
+                    <Input className="form-check-input" type="checkbox"
+                      checked={!!form[key]}
+                      disabled={
+                        (key === "allow_negative_leave_balance" && form.convert_excess_leave_to_lop) ||
+                        (key === "convert_excess_leave_to_lop" && form.allow_negative_leave_balance)
+                      }
+                      onChange={() => handleToggle(key)} />
+                  </div>
+                ) : (
+                  <ViewToggle checked={!!data[key]} />
+                )}
+              </SettingRow>
+            ))}
         </div>
 
         {isEditing && (

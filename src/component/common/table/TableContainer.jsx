@@ -27,6 +27,7 @@ import {
   leave_pending_table,
   task_table,
   task_list_component_name,
+  status_component_name,
 } from "../../../common/constant/Constants";
 import LeaveApprovalFilter from "../tableFilter/LeaveApprovalFilter";
 import LeaveTypeFilter from "../tableFilter/LeaveTypeFilter";
@@ -80,11 +81,7 @@ const TableContainer = ({
         pageIndex: 0,
         pageSize: 25,
         selectedRowIds: 0,
-        sortBy: [
-          {
-            desc: true,
-          },
-        ],
+        sortBy: formname === status_component_name ? [] : [{ desc: true }],
       },
     },
     useGlobalFilter,

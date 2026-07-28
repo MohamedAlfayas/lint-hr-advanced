@@ -103,16 +103,61 @@ const ProjectForm = () => {
   }, [form_obj]);
 
   // ================= INPUT CHANGE =================
+  const MAX_PRICE = 100000000000;
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
     if (name === "price") {
-      if (value === "" || Number(value) >= 0) {
+      if (value === "" || (Number(value) >= 0 && Number(value) <= MAX_PRICE)) {
         setProjectData((prev) => ({
           ...prev,
           [name]: value,
         }));
+
+        FormikForm.setFieldValue(name, value);
       }
+      return;
+    }
+
+    if (name === "title") {
+      const filteredValue = value.replace(/[^A-Za-z0-9\s.,!?'"\-_()&:;/]/g, "");
+
+      setProjectData((prev) => ({
+        ...prev,
+        [name]: filteredValue,
+      }));
+      
+
+      FormikForm.setFieldValue(name, filteredValue);
+      FormikForm.setFieldTouched("title", true, false);
+
+      if (filteredValue.length > 100) {
+        FormikForm.setFieldError(
+          "title",
+          "Project title must not exceed 100 characters.",
+        );
+      } else if (filteredValue.trim() === "") {
+        FormikForm.setFieldError("title", "Please Enter the project title");
+      } else {
+        FormikForm.setFieldError("title", undefined);
+      }
+
+      return;
+    }
+
+    if (name === "description") {
+      const filteredValue = value
+      .replace(/^\s+/, "")
+      .replace(/[^A-Za-z0-9\s.,\-#\/'&():;?!]/g, "");
+
+      setProjectData((prev) => ({
+        ...prev,
+        description: filteredValue,
+      }));
+
+      FormikForm.setFieldValue("description", filteredValue);
+
       return;
     }
 
@@ -120,6 +165,8 @@ const ProjectForm = () => {
       ...prev,
       [name]: value,
     }));
+
+    FormikForm.setFieldValue(name, value);
   };
 
   // ================= CLIENT PROJECT CHECK =================
@@ -161,9 +208,18 @@ const ProjectForm = () => {
 
     validationSchema: Yup.object({
       title: Yup.string()
-        .trim("Please Enter the project title")
-        // .matches(/^[A-Za-z\s]+$/, "Project title should contain only letters")
-        .required("Please Enter the project title"),
+        .trim()
+        .matches(
+          /^[A-Za-z0-9\s.,!?'"\-_()&:;/]+$/,
+          "Please Enter the project title",
+        )
+        .max(100, "Project title must not exceed 100 characters.")
+        .required("Please Enter the project title")
+        .test(
+          "not-only-spaces",
+          "Please Enter the project title",
+          (value) => !value || value.trim().length > 0,
+        ),
 
       type: Yup.number().required("Please Select Project Type"),
 
@@ -178,13 +234,17 @@ const ProjectForm = () => {
       // Optional Fields
       start_date: Yup.string().nullable(),
       deadline: Yup.string().nullable(),
-      price: Yup.number().min(0, "Price cannot be negative").nullable(),
+      price: Yup.number()
+        .min(0, "Price cannot be negative")
+        .max(100000000000, "Price cannot exceed 100000000000.00")
+        .nullable(),
+      
       description: Yup.string()
-        .test(
-          "not-only-spaces",
-          "Please enter a valid description",
-          (value) => !value || value.trim().length > 0,
+        .matches(
+          /^[A-Za-z0-9\s.,\-#\/'&():;?!]*$/,
+          "Description contains invalid characters"
         )
+        .max(1500, "Description must not exceed 1500 characters.")
         .nullable(),
     }),
 
@@ -212,6 +272,8 @@ const ProjectForm = () => {
 
           client: isClientProject ? projectData.client : null,
         };
+        console.log("Project Status Before Save:", projectData.status);
+        console.log("Payload:", payload);
 
         if (isEdit) {
           payload.id = projectData.id;
@@ -223,18 +285,23 @@ const ProjectForm = () => {
 
         if (Api?.status === 200 || Api?.status === 201) {
           const responseData = Api?.data?.data;
+          console.log("API Response:", responseData);
+          console.log("Response Status:", responseData?.status);
 
           // ================= OLD DATA =================
-          const oldProjects = GetLocalStorageData("projects") || [];
+          const oldProjects = (await GetLocalStorageData("projects")) || [];
 
           let updatedProjects = [];
 
           // ================= EDIT =================
           if (isEdit) {
+            console.log("Edit Resonse - ", responseData);
+            console.log("Old Project - ", oldProjects);
             updatedProjects = oldProjects.map((item) =>
               Number(item.id) === Number(responseData.id) ? responseData : item,
             );
-            SetLocalStorage("projects", updatedProjects, 1);
+
+            await SetLocalStorage("projects", updatedProjects, 1);
           }
 
           // ================= ADD =================
@@ -246,8 +313,10 @@ const ProjectForm = () => {
             updatedProjects = alreadyExists
               ? oldProjects
               : [...oldProjects, responseData];
-            SetLocalStorage("projects", updatedProjects, 1);
+            await SetLocalStorage("projects", updatedProjects, 1);
           }
+
+          console.log("Updated Projects after Edit:", updatedProjects);
 
           // ================= UPDATE REDUX =================
           dispatch(setProjects(updatedProjects));
@@ -286,14 +355,11 @@ const ProjectForm = () => {
                     placeholder="Project Title"
                     value={projectData.title || ""}
                     onChange={handleInputChange}
-                    invalid={
-                      FormikForm.touched.title && FormikForm.errors.title
-                        ? true
-                        : false
-                    }
+                    onBlur={() => FormikForm.setFieldTouched("title", true)}
+                    invalid={FormikForm.errors.title ? true : false}
                   />
 
-                  {FormikForm.touched.title && FormikForm.errors.title && (
+                  {FormikForm.errors.title && (
                     <FormFeedback>{FormikForm.errors.title}</FormFeedback>
                   )}
                 </div>
@@ -378,19 +444,18 @@ const ProjectForm = () => {
                     placeholder="Project Description"
                     value={projectData.description || ""}
                     onChange={handleInputChange}
-                    invalid={
-                      FormikForm.touched.description &&
-                      FormikForm.errors.description
-                        ? true
-                        : false
-                    }
+                    invalid={!!FormikForm.errors.description}
                   />
-                  {FormikForm.touched.description &&
-                    FormikForm.errors.description && (
-                      <FormFeedback>
-                        {FormikForm.errors.description}
-                      </FormFeedback>
-                    )}
+                  {FormikForm.errors.description ? (
+                    <FormFeedback type="invalid">
+                      {FormikForm.errors.description}
+                    </FormFeedback>
+                  ) : (
+                    <div className="form-text">
+                      Description (Optional).{" "}
+                      {(projectData.description || "").length}/1500
+                    </div>
+                  )}
                 </div>
               </Col>
 
@@ -458,11 +523,13 @@ const ProjectForm = () => {
                     className="form-control"
                     placeholder="0.00"
                     min={0}
+                    max={100000000000}
                     onKeyDown={(e) => {
                       if (e.key === "-" || e.key === "e" || e.key === "E") {
                         e.preventDefault();
                       }
                     }}
+                    onBlur={() => FormikForm.setFieldTouched("price", true)}
                     value={projectData.price || ""}
                     onChange={handleInputChange}
                     invalid={
@@ -477,6 +544,37 @@ const ProjectForm = () => {
                   )}
                 </div>
               </Col>
+
+              {/* STATUS - SHOW ONLY IN EDIT MODE */}
+              {projectData.id > 0 && (
+                <Col md={12}>
+                  <div>
+                    <Label htmlFor="project_status" className="form-label">
+                      Status
+                    </Label>
+
+                    <div className="mb-2">
+                      <div
+                        className="form-check form-switch form-switch-md form-switch-success"
+                        dir="ltr"
+                      >
+                        <Input
+                          type="checkbox"
+                          className="form-check-input form-switch-md"
+                          id="project_status"
+                          checked={projectData.status || false}
+                          onChange={(e) =>
+                            setProjectData((prev) => ({
+                              ...prev,
+                              status: e.target.checked,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </Col>
+              )}
 
               {/* SUBMIT */}
               <Col lg={12}>

@@ -10,6 +10,8 @@ import {
 import {
   VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
   VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
+  VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
+  VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
 import { DatePicker } from "antd";
 import Select from "react-select";
@@ -54,23 +56,52 @@ const AttendanceFilter = () => {
 
   // 🔹 Permission-based filter
   useEffect(() => {
-    if (
-      profile_data.permission_list.includes(
-        VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
+    console.log("permission_list:", profile_data?.permission_list);
+
+    console.log(
+      "VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY:",
+      VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY
+    );
+
+    console.log(
+      "Has Permission:",
+      profile_data?.permission_list?.includes(
+        VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY
       )
-    ) {
-      setAttendanceViewFilter(attendance_type_options);
-    } else if (
-      profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)
-    ) {
-      setAttendanceViewFilter(
-        attendance_type_options.filter((d) => d.id !== "3"),
-      );
-    } else {
-      setAttendanceViewFilter(
-        attendance_type_options.filter((d) => d.id === "1"),
-      );
+    );
+    // if (
+    //   profile_data.permission_list.includes(
+    //     VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
+    //   )
+    // ) {
+    //   setAttendanceViewFilter(attendance_type_options);
+    // } else if (
+    //   profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)
+    // ) {
+    //   setAttendanceViewFilter(
+    //     attendance_type_options.filter((d) => d.id !== "3"),
+    //   );
+    // } else {
+    //   setAttendanceViewFilter(
+    //     attendance_type_options.filter((d) => d.id === "1"),
+    //   );
+    // }
+
+    const permissions = profile_data?.permission_list || [];
+
+    let allowedIds = ["1"];
+
+    if (permissions.includes(VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY)) {
+      allowedIds = ["1", "2", "3"];
+    } else if (permissions.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)) {
+      allowedIds = ["1", "2"];
     }
+    console.log("attendance_type_options =", attendance_type_options);
+    console.log("allowedIds =", allowedIds);
+    setAttendanceViewFilter(
+      attendance_type_options.filter((d) => allowedIds.includes(d.id))
+    );
+
   }, []);
 
   // 🔹 Load employees

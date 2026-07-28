@@ -11,7 +11,7 @@ const LeaveTypeFilter = () => {
   const dispatch = useDispatch();
 
   const { leave_type_table_filter_keys } = useSelector(
-    (state) => state.TableFilterReducer
+    (state) => state.TableFilterReducer,
   );
 
   const handleFilterChange = (e, name) => {
@@ -20,8 +20,22 @@ const LeaveTypeFilter = () => {
       setLeaveTypeTableFilterKeys({
         ...leave_type_table_filter_keys,
         [name]: val,
-      })
+      }),
     );
+  };
+
+  const handleLeaveTypeSearch = (option, inputValue) => {
+    const search = inputValue.trim();
+
+    if (!search) return true;
+
+    if (/^\d+$/.test(search)) {
+      return false;
+    }
+
+    return (option.label || option.data?.label || "")
+      .toLowerCase()
+      .includes(search.toLowerCase());
   };
 
   return (
@@ -35,11 +49,12 @@ const LeaveTypeFilter = () => {
           isMulti={false}
           options={leave_type_options || []}
           className="basic-multi-select"
+          filterOption={handleLeaveTypeSearch}
           placeholder="Select Leave Type"
           value={
             !!leave_type_table_filter_keys?.unit
               ? leave_type_options.find(
-                  (d) => d.id === leave_type_table_filter_keys?.unit
+                  (d) => d.id === leave_type_table_filter_keys?.unit,
                 )
               : []
           }

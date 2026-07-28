@@ -54,6 +54,109 @@ import { PostApi } from "../../common/api/PostApi";
 import { setCompanyDetail } from "../../redux/reducers/ChildReducer/CompanyReducer";
 import { CheckRoleAccess } from "../../common/js/CheckRoleAccess";
 
+const allowedTlds = [
+  // gTLDs
+  "com",
+  "org",
+  "net",
+  "edu",
+  "gov",
+  "mil",
+  "info",
+  "biz",
+  "name",
+  "pro",
+  "xyz",
+  "online",
+  "site",
+  "store",
+  "tech",
+  "app",
+  "dev",
+  "ai",
+  "io",
+  "co",
+
+  // ccTLDs
+  "in",
+  "us",
+  "uk",
+  "au",
+  "ca",
+  "de",
+  "fr",
+  "jp",
+  "cn",
+  "sg",
+  "ae",
+  "nz",
+  "pk",
+  "lk",
+];
+const validateWebsite = (value) => {
+  if (!value || !value.trim()) {
+    return false;
+  }
+
+  const website = value.trim().toLowerCase();
+
+  // Max length
+  if (website.length > 500) {
+    return false;
+  }
+
+  // Reject unsupported protocols
+  if (/^(ftp|smtp):\/\//i.test(website)) {
+    return false;
+  }
+
+  // Reject spaces
+  if (/\s/.test(website)) {
+    return false;
+  }
+    // Reject dangerous chars
+  if (/[<>"'\\;]/.test(website)) {
+    return false;
+  }
+
+  // Reject consecutive dots
+  if (website.includes("..")) {
+    return false;
+  }
+
+  if (/^(w|ww)\./i.test(website)) {
+    return false;
+  }
+
+  
+  const regex =
+    /^(https?:\/\/)?(([a-z0-9]+(-[a-z0-9]+)*)\.)+[a-z]{2,}(:\d{1,5})?(\/[a-z0-9\-._~%!$&'()*+,;=:@/]*)?(\?[a-z0-9\-._~%!$&'()*+,;=:@/?]*)?(#[a-z0-9\-._~%!$&'()*+,;=:@/?]*)?$/i;
+  // return regex.test(website);
+  if (!regex.test(website)) {
+    return false;
+  }
+
+  // Remove protocol and port
+  const hostname = website
+    .replace(/^https?:\/\//, "")
+    .split("/")[0]
+    .split(":")[0]
+    .split("?")[0]
+    .split("#")[0];
+
+  const parts = hostname.split(".");
+
+  // Handle domains like company.co.in
+  const lastTwo = parts.slice(-2).join(".");
+  const lastOne = parts[parts.length - 1];
+
+  const valid =
+    allowedTlds.includes(lastOne) ||
+    ["co.in", "gov.in", "edu.in"].includes(lastTwo);
+
+  return valid;
+};
+
 const OrgInfoTab = () => {
   const [stateListOptions, setStateListOptions] = useState([]);
   const [darkLogoFile, setDarkLogoFile] = useState(null);
@@ -108,20 +211,38 @@ const OrgInfoTab = () => {
       website: Yup.string()
         .trim()
         .required("Please enter website")
-        .matches(
-          /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+(\/[^\s]*)?$/,
-          "Enter a valid website URL",
+        .max(500, "Website URL must not exceed 500 characters")
+        .test(
+          "website-validation",
+          "Enter a valid website URL with a supported domain extension",
+          (value) => validateWebsite(value),
         ),
       contact_number: Yup.string()
         .required("Please enter phone number")
         .matches(/^[0-9]+$/, "Phone number must contain digits only")
-        .min(7, "Phone number is too short")
-        .max(10, "Phone number is too long"),
+        .length(10, "Phone number must be 10 digits"),
       contact_email: Yup.string()
+        .trim()
         .required("Please enter email")
-        .email("Enter a valid email address"),
-      about: Yup.string().trim().required("Please enter company overview"),
-      address: Yup.string().trim().required("Please enter address"),
+        .transform((value) => (value ? value.trim().toLowerCase() : value))
+        .max(254, "Email must not exceed 254 characters")
+        .matches(
+          /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/,
+          "Enter a valid email address",
+        ),
+      about: Yup.string().trim().required("Please enter company overview")
+        .matches(
+          /^[a-zA-Z0-9\s\n.,!?'"\-_()&:;/]+$/,
+          "Company overview can contain only letters, numbers, spaces, line breaks, and . , ! ? ' \" - _ ( ) & : ;"
+        ),
+      address: Yup.string()
+        .required("Please enter address")
+        .max(300, "Address must not exceed 300 characters")
+        .matches(
+          /^[a-zA-Z0-9\s.,\-#/'&]+$/,
+          "Address can contain only letters, numbers, spaces, and . , - # / ' &"
+        ),
+      
       country: Yup.string().required("Please select country"),
       state: Yup.string().required("Please select state"),
       city: Yup.string()
@@ -206,8 +327,8 @@ const OrgInfoTab = () => {
     FormikForm.setFieldValue(name, value);
   };
 
-  const handleNumberOnly = (e, field) => {
-    const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
+  const handleNumberOnly = (e, field, maxLength) => {
+    const val = e.target.value.replace(/[^0-9]/g, "").slice(0, maxLength);
     setField(field, val);
   };
 
@@ -244,10 +365,29 @@ const OrgInfoTab = () => {
     setField("cf_values", updated);
   };
 
-  function handleAcceptedFiles(file, logo_type) {
-    const chosenFile = Object.assign(file[0], {
-      preview: URL.createObjectURL(file[0]),
-      formattedSize: formatBytes(file[0].size),
+  function handleAcceptedFiles(files, logo_type) {
+    const file = files[0];
+
+    if (!file) return;
+
+    const allowedImageTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+    ];
+
+    if (!allowedImageTypes.includes(file.type)) {
+      toast.error("Only image files are allowed");
+      return;
+    }
+    // const chosenFile = Object.assign(file[0], {
+    //   preview: URL.createObjectURL(file[0]),
+    //   formattedSize: formatBytes(file[0].size),
+    // });
+    const chosenFile = Object.assign(file, {
+      preview: URL.createObjectURL(file),
+      formattedSize: formatBytes(file.size),
     });
     logo_type === "dark"
       ? setDarkLogoFile(chosenFile)
@@ -308,7 +448,16 @@ const OrgInfoTab = () => {
                           className="form-control form-control-icon"
                           placeholder="www.company.com"
                           value={v.website || ""}
-                          onChange={(e) => setField("website", e.target.value)}
+                          // onChange={(e) => setField("website", e.target.value)}
+                          onChange={(e) => {
+                            const value = e.target.value
+                              .toLowerCase()
+                              // .replace(/[^a-z0-9:/.-]/g, "")
+                              .replace(/[^a-z0-9:/?&=._#-]/gi, "");
+
+                            setField("website", value);
+                            console.log(value.length);
+                          }}
                           onBlur={() =>
                             FormikForm.setFieldTouched("website", true)
                           }
@@ -364,7 +513,7 @@ const OrgInfoTab = () => {
                             inputMode="numeric"
                             value={v.contact_number || ""}
                             onChange={(e) =>
-                              handleNumberOnly(e, "contact_number")
+                              handleNumberOnly(e, "contact_number", 10)
                             }
                             onBlur={() =>
                               FormikForm.setFieldTouched("contact_number", true)
@@ -398,12 +547,16 @@ const OrgInfoTab = () => {
                           className="form-control form-control-icon"
                           placeholder="user@company.com"
                           value={v.contact_email || ""}
-                          onChange={(ev) =>
-                            setField("contact_email", ev.target.value)
+                          onChange={(e) =>
+                            setField("contact_email", e.target.value.trim())
                           }
-                          onBlur={() =>
-                            FormikForm.setFieldTouched("contact_email", true)
-                          }
+                          onBlur={() => {
+                            FormikForm.setFieldTouched("contact_email", true);
+                            setField(
+                              "contact_email",
+                              (v.contact_email || "").trim().toLowerCase(),
+                            );
+                          }}
                           invalid={isInvalid("contact_email")}
                         />
                         {!isInvalid("contact_email") && (
@@ -434,7 +587,16 @@ const OrgInfoTab = () => {
                         className="form-control"
                         rows="3"
                         value={v.about || ""}
-                        onChange={(e) => setField("about", e.target.value)}
+                        // onChange={(e) => setField("about", e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value
+                            .replace(/^\s+/, "") // remove leading spaces                 
+                            .replace(
+                              /[^a-zA-Z0-9\s\n.,!?'"\-_()&:;/]/g,
+                              ""
+                            );
+                          setField("about", value);
+                        }}
                         onBlur={() => FormikForm.setFieldTouched("about", true)}
                         invalid={isInvalid("about")}
                       />
@@ -458,7 +620,14 @@ const OrgInfoTab = () => {
                         className="form-control"
                         rows="2"
                         value={v.address || ""}
-                        onChange={(e) => setField("address", e.target.value)}
+                        // onChange={(e) => setField("address", e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value
+                            .replace(/^\s+/, "") // remove leading spaces only
+                            .replace(/[^a-zA-Z0-9\s.,\-#/'&]/g, "");
+
+                          setField("address", value);
+                        }}
                         onBlur={() =>
                           FormikForm.setFieldTouched("address", true)
                         }
@@ -604,7 +773,7 @@ const OrgInfoTab = () => {
                           inputMode="numeric"
                           maxLength={6}
                           value={v.pincode || ""}
-                          onChange={(e) => handleNumberOnly(e, "pincode")}
+                          onChange={(e) => handleNumberOnly(e, "pincode", 6)}
                           onBlur={() =>
                             FormikForm.setFieldTouched("pincode", true)
                           }
@@ -621,7 +790,7 @@ const OrgInfoTab = () => {
                       </div>
                       {showHint("pincode") && (
                         <div className="form-text">
-                          Enter pincode (digits only).
+                          Enter pincode (6 digits only).
                         </div>
                       )}
                     </Col>
@@ -716,11 +885,28 @@ const OrgInfoTab = () => {
                       <Row>
                         <Col xxl={6} md={6}>
                           <Label className="form-label">Logo</Label>
-                          <Dropzone
+                          {/* <Dropzone
                             multiple={false}
                             onDrop={(acceptedFiles) =>
                               handleAcceptedFiles(acceptedFiles, "light")
                             }
+                          > */}
+
+                          <Dropzone
+                            multiple={false}
+                            accept={{
+                              "image/jpeg": [".jpeg", ".jpg"],
+                              "image/png": [".png"],
+                              "image/webp": [".webp"],
+                            }}
+                            onDrop={(acceptedFiles, fileRejections) => {
+                              if (fileRejections.length > 0) {
+                                toast.error("Only image files are allowed");
+                                return;
+                              }
+
+                              handleAcceptedFiles(acceptedFiles, "light");
+                            }}
                           >
                             {({ getRootProps }) => (
                               <div className="dropzone dz-clickable">

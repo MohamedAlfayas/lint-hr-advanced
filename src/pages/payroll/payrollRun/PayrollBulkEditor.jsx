@@ -26,6 +26,20 @@ const MONTHS = MONTH_NAMES.slice(1).map((name, i) => ({ label: name, value: i + 
 // Shared control height so every filter / action element in the toolbar lines up
 const CONTROL_HEIGHT = 42;
 
+// ─── Column width tokens (used by <colgroup> to lock table-layout: fixed) ──────
+const COL_W = {
+  employee: 220,
+  attendance: 95,
+  lop: 95,
+  earning: 130,
+  addEarning: 130,
+  deduction: 130,
+  addDeduct: 130,
+  statutoryPfEsi: 100,
+  statutoryPt: 90,
+  summary: 130,
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmt = (val) =>
@@ -62,10 +76,16 @@ const cellSt = {
   borderBottom: "1px solid #e9ecef",
 };
 
+// NOTE: whiteSpace changed from "nowrap" to "normal" (+ wordBreak) so that
+// long header labels wrap within their fixed-width column instead of forcing
+// the column wider than its <col> width — required for table-layout: fixed
+// to keep every header/body cell in a column perfectly aligned.
 const thSt = (extra = {}) => ({
   padding: "6px 8px",
   fontSize: 10.5,
-  whiteSpace: "nowrap",
+  whiteSpace: "normal",
+  wordBreak: "break-word",
+  lineHeight: 2.25,
   fontWeight: 700,
   textTransform: "uppercase",
   letterSpacing: "0.4px",
@@ -135,7 +155,6 @@ const EditCell = ({ value, origValue, onChange, readOnly = false, danger = false
         ...cellSt,
         background: bg,
         cursor: readOnly ? "default" : "text",
-        minWidth: 90,
         textAlign: "right",
       }}
     >
@@ -196,7 +215,7 @@ const GroupTh = ({ label, span, colorKey, borderLeft = false }) => {
 
 // ─── Sub header cell ──────────────────────────────────────────────────────────
 
-const SubTh = ({ label, colorKey, borderLeft = false, minWidth = 90, right = true }) => {
+const SubTh = ({ label, colorKey, borderLeft = false, right = true }) => {
   const c = GROUP_COLORS[colorKey];
   return (
     <th
@@ -207,7 +226,6 @@ const SubTh = ({ label, colorKey, borderLeft = false, minWidth = 90, right = tru
           top: 36,
           textAlign: right ? "right" : "left",
           borderLeft: borderLeft ? `2px solid ${c.border}` : undefined,
-          minWidth,
         }),
       }}
     >
@@ -243,14 +261,15 @@ const PayrollBulkEditor = () => {
   const [componentLookup, setComponentLookup] = useState({});
   // { key: string, label: string, type: "earning"|"deduction", reason: string }
   const [adjCols,    setAdjCols]    = useState([]);
-  const [adjForm,    setAdjForm]    = useState({ label: "", type: "earning", reason: "" });
-  const [adjPanelOpen, setAdjPanelOpen] = useState(false);
+  const [adjForm, setAdjForm] = useState({ label: "", type: "earning", reason: "", defaultAmount: "", applyTo: "all" });
+  const [adjModalOpen, setAdjModalOpen] = useState(false);
 
   // ── Existing payslip adjustments fetched from API (to pre-fill cells)
   const [existingAdjs, setExistingAdjs] = useState({}); // { empId: [{id, label, adjustment_type, amount}] }
 
   // ── Regularization modal — { employeeId, employeeName } | null
   const [regModal, setRegModal] = useState(null);
+  
 
   // ─── Load salary structures + master component list once ───────────────────
   useEffect(() => {
@@ -454,32 +473,89 @@ const PayrollBulkEditor = () => {
       toast.warning("An adjustment with this label and type already exists.");
       return;
     }
-    setAdjCols((prev) => [...prev, { key, label, type: adjForm.type, reason: adjForm.reason }]);
-    // Pre-fill 0 for all employees
+    const defaultAmt = safeNum(adjForm.defaultAmount);
+    const applyToAll = adjForm.applyTo === "all";
+    const selectedIds = adjForm.selectedStructures || [];
+
+    setAdjCols((prev) => [...prev, {
+      key, label, type: adjForm.type, reason: adjForm.reason,
+      defaultAmount: safeNum(adjForm.defaultAmount),
+      structureIds: adjForm.applyTo === "all" ? null : adjForm.selectedStructures,
+    }]);
+
     setEdits((prev) => {
       const next = { ...prev };
-      Object.keys(next).forEach((eid) => { next[eid] = { ...next[eid], [key]: 0 }; });
+      rows.forEach((row) => {
+        const eid = row._isPayslip ? row.employee : row.id;
+        const rowStructId = row._isPayslip ? row.salary_structure : row.salary_structure_id;
+        const applies = applyToAll || selectedIds.includes(String(rowStructId));
+        next[eid] = { ...next[eid], [key]: applies ? defaultAmt : 0 };
+      });
       return next;
     });
+
     setOrigEdits((prev) => {
       const next = { ...prev };
-      Object.keys(next).forEach((eid) => { next[eid] = { ...next[eid], [key]: 0 }; });
+      rows.forEach((row) => {
+        const eid = row._isPayslip ? row.employee : row.id;
+        next[eid] = { ...next[eid], [key]: 0 };
+      });
       return next;
     });
-    setAdjForm({ label: "", type: "earning", reason: "" });
+
+    setAdjForm({ label: "", type: "earning", reason: "", defaultAmount: "", applyTo: "all", selectedStructures: [] });
     toast.success(`Column "${label}" added to the sheet.`);
   };
 
-  const removeAdjCol = (key) => {
-    setAdjCols((prev) => prev.filter((c) => c.key !== key));
+  // Wraps handleAddAdjCol for the modal's primary button: validates first so
+  // the modal only closes on a successful add (duplicate labels stay open
+  // with the warning toast still visible).
+  const handleAddAdjColAndClose = () => {
+    const label = adjForm.label.trim();
+    if (!label) { toast.warning("Enter a label."); return; }
+    const key = `adj_${label}_${adjForm.type}`;
+    if (adjCols.find((c) => c.key === key)) {
+      toast.warning("An adjustment with this label and type already exists.");
+      return;
+    }
+    handleAddAdjCol();
+    setAdjModalOpen(false);
+  };
+
+  const removeAdjCol = async (col) => {
+    // Delete any already-saved adjustment rows for this label/type across all employees
+    const deletePromises = Object.entries(existingAdjs).flatMap(([eid, adjs]) => {
+      const match = adjs.find((a) => a.label === col.label && a.adjustment_type === col.type);
+      if (!match) return [];
+      return [
+        Api({
+          method: "DELETE",
+          url: "payroll/payslip-adjustment/",
+          data: { id: match.id },
+        }).catch(() => {
+          toast.error(`Failed to delete "${col.label}" for employee ${eid}`);
+        }),
+      ];
+    });
+
+    await Promise.all(deletePromises);
+
+    setAdjCols((prev) => prev.filter((c) => c.key !== col.key));
     setEdits((prev) => {
       const next = { ...prev };
-      Object.keys(next).forEach((eid) => { delete next[eid][key]; });
+      Object.keys(next).forEach((eid) => { delete next[eid][col.key]; });
       return next;
     });
     setOrigEdits((prev) => {
       const next = { ...prev };
-      Object.keys(next).forEach((eid) => { delete next[eid][key]; });
+      Object.keys(next).forEach((eid) => { delete next[eid][col.key]; });
+      return next;
+    });
+    setExistingAdjs((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((eid) => {
+        next[eid] = next[eid].filter((a) => !(a.label === col.label && a.adjustment_type === col.type));
+      });
       return next;
     });
   };
@@ -488,13 +564,12 @@ const PayrollBulkEditor = () => {
   const handleRemoveAdjCol = (col) => {
     confirmAction({
       title: "Remove this column?",
-      text: `"${col.label}" will be removed from the sheet for every employee. This does not delete anything already saved on the server.`,
+      text: `"${col.label}" will be permanently deleted for every employee who has it saved.`,
       confirmText: "Yes, remove",
     }).then((confirmed) => {
-      if (confirmed) removeAdjCol(col.key);
+      if (confirmed) removeAdjCol(col);
     });
   };
-
   // ─── Dirty detection ─────────────────────────────────────────────────────────
   const dirtyEmpIds = Object.keys(edits).filter((eid) => {
     const e = edits[eid] || {};
@@ -569,7 +644,7 @@ const PayrollBulkEditor = () => {
       setSaving(false);
     }
 
-    if (fail > 0) toast.warning(`Saved with ${fail} error(s). Refreshing...`);
+    if (fail > 0) toast.error(`Failed with ${fail} error(s). Refreshing...`);
     else toast.success(`Saved ${dirtyEmpIds.length} employee(s). Refreshing...`);
     setTimeout(() => load(), 600);
   };
@@ -743,105 +818,151 @@ const PayrollBulkEditor = () => {
         </CardBody>
       </Card>
 
-      {/* ── Adjustment column panel ── */}
-      <Card className="shadow-none border mb-3" style={{ borderLeft: "3px solid #6366f1 !important" }}>
-        <CardHeader
-          className="py-2 px-3 d-flex align-items-center justify-content-between"
-          style={{ cursor: "pointer", background: "#f5f3ff", borderBottom: adjPanelOpen ? "1px solid #e0e7ff" : "none" }}
-          onClick={() => setAdjPanelOpen((p) => !p)}
+      {/* ── Adjustment columns bar — compact strip showing active columns as
+          chips (removable inline) plus a button that opens the add-adjustment
+          modal. Replaces the old always-expandable panel so the grid below
+          doesn't get pushed down while the form is in use. ── */}
+      <Card className="shadow-none border mb-3" style={{ borderLeft: "3px solid #6366f1" }}>
+        <CardBody
+          className="d-flex align-items-center justify-content-between flex-wrap gap-3"
+          style={{ padding: "12px 18px" }}
         >
-          <div className="d-flex align-items-center gap-2">
-            <i className="ri-add-circle-line" style={{ fontSize: 16, color: "#6366f1" }}></i>
-            <span style={{ fontWeight: 700, fontSize: 13, color: "#4338ca" }}>Add Adjustment Column</span>
-            {adjCols.length > 0 && (
-              <Badge color="primary" pill style={{ fontSize: 10 }}>{adjCols.length} active</Badge>
-            )}
-          </div>
-          <i className={`ri-arrow-${adjPanelOpen ? "up" : "down"}-s-line`} style={{ color: "#6366f1", fontSize: 16 }}></i>
-        </CardHeader>
+          <div className="d-flex align-items-center flex-wrap gap-3">
+            <div className="d-flex align-items-center gap-2">
+              
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: "#3730a3", lineHeight: 1.2 }}>Adjustment Columns</div>
+                <div style={{ fontSize: 10.5, color: "#818cf8" }}>One-off earnings / deductions for this run</div>
+              </div>
+            </div>
 
-        {adjPanelOpen && (
-          <CardBody className="py-3 px-3">
-            <p className="text-muted mb-3" style={{ fontSize: 12 }}>
-              Adding a column here creates a new <strong>Additional Earnings</strong> or <strong>Additional Deductions</strong> column
-              visible for every employee. Enter the amount per-employee in the grid. Only employees where you enter a non-zero value will have that adjustment saved.
-            </p>
-
-            {/* Active adjustment columns */}
             {adjCols.length > 0 && (
-              <div className="mb-3 d-flex flex-wrap gap-2">
-                {adjCols.map((col) => (
-                  <div key={col.key} style={{
-                    display: "flex", alignItems: "center", gap: 6, padding: "4px 10px",
-                    borderRadius: 20, fontSize: 12, fontWeight: 600,
-                    background: col.type === "earning" ? "#f0fdf4" : "#fff5f5",
-                    border: `1px solid ${col.type === "earning" ? "#86efac" : "#fca5a5"}`,
-                    color: col.type === "earning" ? "#166534" : "#c53030",
-                  }}>
-                    <i className={`ri-${col.type === "earning" ? "arrow-up" : "arrow-down"}-line`}></i>
-                    {col.label}
-                    <button
-                      onClick={() => handleRemoveAdjCol(col)}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginLeft: 2, color: "#999", fontSize: 13, lineHeight: 1 }}
-                      title="Remove column"
-                    >×</button>
-                  </div>
-                ))}
+              <div className="d-flex flex-wrap gap-2">
+                {adjCols.map((col) => {
+                  const isEarn = col.type === "earning";
+                  const palette = isEarn ? GROUP_COLORS.earning : GROUP_COLORS.deduction;
+                  return (
+                    <div key={col.key} style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      padding: "4px 6px 4px 10px", borderRadius: 8,
+                      background: "#fff",
+                      border: `1px solid ${palette.border}`,
+                    }}>
+                      <i className={`ri-arrow-${isEarn ? "up" : "down"}-line`} style={{ fontSize: 11, color: palette.text }}></i>
+                      <span style={{ fontSize: 11.5, fontWeight: 700, color: "#334155" }}>{col.label}</span>
+                      <button
+                        onClick={() => handleRemoveAdjCol(col)}
+                        style={{
+                          background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 5,
+                          cursor: "pointer", width: 17, height: 17, display: "flex",
+                          alignItems: "center", justifyContent: "center", color: "#94a3b8",
+                          fontSize: 11, lineHeight: 1, flexShrink: 0,
+                        }}
+                        title="Remove column"
+                      >×</button>
+                    </div>
+                  );
+                })}
               </div>
             )}
+          </div>
 
-            {/* New column form */}
-            <Row className="g-2 align-items-end">
-              <Col sm={4}>
-                <Label style={{ fontSize: 12, fontWeight: 600 }}>Column Label</Label>
-                <Input bsSize="sm" value={adjForm.label}
-                  onChange={(e) => setAdjForm({ ...adjForm, label: e.target.value })}
-                  placeholder="e.g. Festival Bonus, Advance Recovery" />
-              </Col>
-              <Col sm={2}>
-                <Label style={{ fontSize: 12, fontWeight: 600 }}>Type</Label>
-                <Input type="select" bsSize="sm" value={adjForm.type}
-                  onChange={(e) => setAdjForm({ ...adjForm, type: e.target.value })}>
-                  <option value="earning">Earning (+)</option>
-                  <option value="deduction">Deduction (−)</option>
-                </Input>
-              </Col>
-              <Col sm={4}>
-                <Label style={{ fontSize: 12, fontWeight: 600 }}>Reason / Note (optional)</Label>
-                <Input bsSize="sm" value={adjForm.reason}
-                  onChange={(e) => setAdjForm({ ...adjForm, reason: e.target.value })}
-                  placeholder="e.g. Diwali bonus payout" />
-              </Col>
-              <Col sm={2}>
-                <Button color="primary" size="sm" className="w-100" onClick={handleAddAdjCol}>
-                  <i className="ri-add-line me-1"></i>Add Column
-                </Button>
-              </Col>
-            </Row>
-          </CardBody>
-        )}
+          <Button
+            color="primary" size="sm"
+            onClick={() => setAdjModalOpen(true)}
+            style={{ borderRadius: 7, fontWeight: 600, padding: "7px 16px", boxShadow: "0 2px 6px rgba(99,102,241,0.25)", flexShrink: 0 }}
+          >
+            <i className="ri-add-line me-1"></i>Add Adjustment
+          </Button>
+        </CardBody>
       </Card>
 
-      {/* ── Legend ── */}
-      <div className="d-flex flex-wrap align-items-center gap-4 mb-2 px-1" style={{ fontSize: 11, color: "#888" }}>
-        {[
-          { bg: "#fffbeb", border: "#fcd34d", label: "Attendance" },
-          { bg: "#f0fdf4", border: "#86efac", label: "Earnings" },
-          { bg: "#ecfdf5", border: "#6ee7b7", label: "Add. Earnings" },
-          { bg: "#fff5f5", border: "#fca5a5", label: "Deductions" },
-          { bg: "#fff0f0", border: "#f87171", label: "Add. Deductions" },
-          { bg: "#eff6ff", border: "#93c5fd", label: "Statutory (read-only)" },
-        ].map((l) => (
-          <span key={l.label} className="d-flex align-items-center gap-1">
-            <span style={{ display: "inline-block", width: 10, height: 10, background: l.bg, border: `1px solid ${l.border}`, borderRadius: 2 }} />
-            {l.label}
-          </span>
-        ))}
-        <span className="ms-auto" style={{ color: "#aaa" }}>
-          <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#f59e0b", marginRight: 4 }} />
-          Amber dot = unsaved edit · Click salary/adjustment cells to edit · Click LOP to open Attendance &amp; Regularization
-        </span>
-      </div>
+      {/* ── Add Adjustment modal ── */}
+      <Modal isOpen={adjModalOpen} toggle={() => setAdjModalOpen(false)} centered size="lg">
+        <ModalHeader toggle={() => setAdjModalOpen(false)} className="bg-light">
+          Add Adjustment Column
+        </ModalHeader>
+        <ModalBody>
+          <p className="mb-3 d-flex align-items-start gap-2" style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>
+            <i className="ri-information-line mt-1" style={{ color: "#a5b4fc", fontSize: 14, flexShrink: 0 }}></i>
+            <span>
+              Creates a new <strong style={{ color: "#166534" }}>Earnings</strong> or{" "}
+              <strong style={{ color: "#c53030" }}>Deductions</strong> column visible for every employee in the grid.
+              Enter the amount per employee there — only non-zero cells are saved.
+            </span>
+          </p>
+
+          <Row className="g-3">
+            <Col md={6}>
+              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Column Label</Label>
+              <Input bsSize="sm" value={adjForm.label}
+                onChange={(e) => setAdjForm({ ...adjForm, label: e.target.value })}
+                placeholder="e.g. Festival Bonus"
+                style={{ borderRadius: 7 }} />
+            </Col>
+            <Col md={6}>
+              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Type</Label>
+              <Input type="select" bsSize="sm" value={adjForm.type}
+                onChange={(e) => setAdjForm({ ...adjForm, type: e.target.value })}
+                style={{ borderRadius: 7 }}>
+                <option value="earning">▲ Earning</option>
+                <option value="deduction">▼ Deduction</option>
+              </Input>
+            </Col>
+
+            <Col md={6}>
+              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Default Amount</Label>
+              <Input type="number" min="0" bsSize="sm" value={adjForm.defaultAmount}
+                onChange={(e) => setAdjForm({ ...adjForm, defaultAmount: e.target.value })}
+                placeholder="0" style={{ borderRadius: 7 }} />
+            </Col>
+            <Col md={6}>
+              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Apply To</Label>
+              <Input type="select" bsSize="sm" value={adjForm.applyTo}
+                onChange={(e) => setAdjForm({ ...adjForm, applyTo: e.target.value, selectedStructures: [] })}
+                style={{ borderRadius: 7 }}>
+                <option value="all">All Structures</option>
+                <option value="specific">Specific</option>
+              </Input>
+            </Col>
+
+            {adjForm.applyTo === "specific" && (
+              <Col md={12}>
+                <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Select Structures</Label>
+                <Input type="select" multiple bsSize="sm"
+                  value={adjForm.selectedStructures || []}
+                  onChange={(e) => setAdjForm({
+                    ...adjForm,
+                    selectedStructures: Array.from(e.target.selectedOptions, (o) => o.value),
+                  })}
+                  style={{ height: 90, borderRadius: 7 }}
+                >
+                  {structures.map((s) => <option key={s.id} value={String(s.id)}>{s.name}</option>)}
+                </Input>
+              </Col>
+            )}
+
+            <Col md={12}>
+              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Reason (optional)</Label>
+              <Input bsSize="sm" value={adjForm.reason}
+                onChange={(e) => setAdjForm({ ...adjForm, reason: e.target.value })}
+                placeholder="Shown on the audit trail"
+                style={{ borderRadius: 7 }} />
+            </Col>
+          </Row>
+        </ModalBody>
+        <ModalFooter className="bg-light">
+          <Button color="secondary" outline size="sm" onClick={() => setAdjModalOpen(false)}>Cancel</Button>
+          <Button
+            color="primary" size="sm"
+            onClick={handleAddAdjColAndClose}
+            disabled={!adjForm.label.trim()}
+            style={{ fontWeight: 600 }}
+          >
+            <i className="ri-add-line me-1"></i>Add Column
+          </Button>
+        </ModalFooter>
+      </Modal>
 
       {/* ── Grid ── */}
       <Card className="shadow-none border">
@@ -878,12 +999,35 @@ const PayrollBulkEditor = () => {
             </div>
           ) : (
             <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: fullscreen ? "calc(100vh - 280px)" : "72vh" }}>
-              <table style={{ borderCollapse: "separate", borderSpacing: 0, width: "100%", fontSize: 12 }}>
+              <table style={{ borderCollapse: "separate", borderSpacing: 0, width: "100%", fontSize: 12, tableLayout: "fixed" }}>
+                {/* ── COLGROUP — locks every column to a fixed width shared
+                     by both header rows and every body row. This is what
+                     keeps headers aligned to their data columns regardless
+                     of scroll position, in both normal and fullscreen mode. ── */}
+                <colgroup>
+                  <col style={{ width: COL_W.employee }} />{/* Employee */}
+                  <col style={{ width: COL_W.attendance }} />{/* Total Days */}
+                  <col style={{ width: COL_W.attendance }} />{/* Payable Days */}
+                  <col style={{ width: COL_W.attendance }} />{/* Present */}
+                  <col style={{ width: COL_W.attendance }} />{/* Leaves */}
+                  <col style={{ width: COL_W.lop }} />{/* LOP Days */}
+                  {earnCols.map((col)    => <col key={`ce_${col.id}`}   style={{ width: COL_W.earning }} />)}
+                  {addEarnCols.map((col) => <col key={`cae_${col.key}`} style={{ width: COL_W.addEarning }} />)}
+                  {dedCols.map((col)     => <col key={`cd_${col.id}`}   style={{ width: COL_W.deduction }} />)}
+                  {addDedCols.map((col)  => <col key={`cad_${col.key}`} style={{ width: COL_W.addDeduct }} />)}
+                  <col style={{ width: COL_W.statutoryPfEsi }} />{/* Emp PF */}
+                  <col style={{ width: COL_W.statutoryPfEsi }} />{/* Emp ESI */}
+                  <col style={{ width: COL_W.statutoryPt }} />{/* PT */}
+                  <col style={{ width: COL_W.summary }} />{/* Gross */}
+                  <col style={{ width: COL_W.summary }} />{/* Total Deductions */}
+                  <col style={{ width: COL_W.summary }} />{/* Net Pay */}
+                </colgroup>
+
                 {/* ── GROUP HEADER ROW ── */}
                 <thead>
                   <tr>
                     {/* Employee — frozen */}
-                    <th rowSpan={2} style={thSt({ position: "sticky", top: 0, left: 0, zIndex: 6, background: GROUP_COLORS.employee.bg, color: GROUP_COLORS.employee.text, minWidth: 220, verticalAlign: "middle" })}>
+                    <th rowSpan={2} style={thSt({ position: "sticky", top: 0, left: 0, zIndex: 6, background: GROUP_COLORS.employee.bg, color: GROUP_COLORS.employee.text, verticalAlign: "middle" })}>
                       Employee
                     </th>
 
@@ -931,13 +1075,13 @@ const PayrollBulkEditor = () => {
                       <th key={col.key} style={thSt({
                         background: GROUP_COLORS.addEarning.bg,
                         color: GROUP_COLORS.addEarning.text,
-                        top: 36, textAlign: "right", minWidth: 110,
+                        top: 36, textAlign: "right",
                         borderLeft: i === 0 ? `2px solid ${GROUP_COLORS.addEarning.border}` : undefined,
                       })}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
                           {col.label}
                           <button onClick={() => handleRemoveAdjCol(col)}
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 12, padding: 0, lineHeight: 1 }}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 12, padding: 0, lineHeight: 1, flexShrink: 0 }}
                             title="Remove column">×</button>
                         </div>
                       </th>
@@ -953,13 +1097,13 @@ const PayrollBulkEditor = () => {
                       <th key={col.key} style={thSt({
                         background: GROUP_COLORS.addDeduct.bg,
                         color: GROUP_COLORS.addDeduct.text,
-                        top: 36, textAlign: "right", minWidth: 110,
+                        top: 36, textAlign: "right",
                         borderLeft: i === 0 ? `2px solid ${GROUP_COLORS.addDeduct.border}` : undefined,
                       })}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
                           {col.label}
                           <button onClick={() => handleRemoveAdjCol(col)}
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 12, padding: 0, lineHeight: 1 }}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 12, padding: 0, lineHeight: 1, flexShrink: 0 }}
                             title="Remove column">×</button>
                         </div>
                       </th>
@@ -997,7 +1141,6 @@ const PayrollBulkEditor = () => {
                           position: "sticky", left: 0, zIndex: 2,
                           background: rowBg,
                           boxShadow: "2px 0 4px -2px rgba(0,0,0,0.08)",
-                          minWidth: 220,
                         }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <div style={{
@@ -1028,7 +1171,7 @@ const PayrollBulkEditor = () => {
                           row._isPayslip ? row.present_days         : "—",
                           row._isPayslip ? row.approved_leave_days  : "—",
                         ].map((val, i) => (
-                          <td key={i} style={{ ...cellSt, textAlign: "right", background: i < 4 ? "#fffdf5" : "transparent", color: "#92400e" }}>
+                          <td key={i} style={{ ...cellSt, textAlign: "right", background: "#fffdf5", color: "#92400e" }}>
                             {val}
                           </td>
                         ))}
@@ -1164,6 +1307,27 @@ const PayrollBulkEditor = () => {
           )}
         </CardBody>
       </Card>
+
+      {/* ── Legend (moved below the grid) ── */}
+      <div className="d-flex flex-wrap align-items-center gap-4 mt-2 mb-2 px-1" style={{ fontSize: 11, color: "#888" }}>
+        {[
+          { bg: "#fffbeb", border: "#fcd34d", label: "Attendance" },
+          { bg: "#f0fdf4", border: "#86efac", label: "Earnings" },
+          { bg: "#ecfdf5", border: "#6ee7b7", label: "Add. Earnings" },
+          { bg: "#fff5f5", border: "#fca5a5", label: "Deductions" },
+          { bg: "#fff0f0", border: "#f87171", label: "Add. Deductions" },
+          { bg: "#eff6ff", border: "#93c5fd", label: "Statutory (read-only)" },
+        ].map((l) => (
+          <span key={l.label} className="d-flex align-items-center gap-1">
+            <span style={{ display: "inline-block", width: 10, height: 10, background: l.bg, border: `1px solid ${l.border}`, borderRadius: 2 }} />
+            {l.label}
+          </span>
+        ))}
+        <span className="ms-auto" style={{ color: "#aaa" }}>
+          <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#f59e0b", marginRight: 4 }} />
+          Amber dot = unsaved edit · Click salary/adjustment cells to edit · Click LOP to open Attendance &amp; Regularization
+        </span>
+      </div>
 
       {/* ── Regularization modal — reuses the existing EmployeeRegularization
           component as-is. It saves immediately per change (its own internal

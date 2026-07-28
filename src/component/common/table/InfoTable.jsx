@@ -29,7 +29,7 @@ import {
 } from "reactstrap";
 
 import Select from "react-select";
-
+import dayjs from "dayjs";
 import TableContainer from "../../../component/common/table/TableContainer";
 import DeleteModal from "../../../component/common/modal/DeleteModal";
 import Loader from "../../../component/common/loader/Loader";
@@ -77,11 +77,16 @@ import {
   task_list_component_name,
   project_component_name,
   client_component_name,
+  status_component_name,
+  priorities_component_name,
+  custom_status_form_component_name,
 } from "../../../common/constant/Constants";
 import { removeProject } from "../../../redux/reducers/ChildReducer/ProjectsReducer";
 import { removeClient } from "../../../redux/reducers/ChildReducer/ClientReducer";
 import { removeTask } from "../../../redux/reducers/ChildReducer/TaskReducer";
 import {
+  CREATE_CLIENT_ACCESS_KEY,
+  EDIT_CLIENT_ACCESS_KEY,
   CREATE_EMPLOYEE_ACCESS_KEY,
   CREATE_CUSTOM_FIELD_ACCESS_KEY,
   EDIT_EMPLOYEE_ACCESS_KEY,
@@ -113,7 +118,14 @@ import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSel
 import TableSkeleton from "../skeleton/TableSkeloton";
 import { DeleteApi } from "../../../common/api/DeleteApi";
 import { editLeaveApplication } from "../../../redux/reducers/ChildReducer/LeaveApplyReducer";
+import {
+  editHoliday,
+  removeHoliday,
+} from "../../../redux/reducers/ChildReducer/HolidayReducer";
+import { removeLeaveType } from "../../../redux/reducers/ChildReducer/LeaveTypeReducer";
 import { RemoveLocalStorageData } from "../../../meta/RemoveLocalStorageData";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { setStatus } from "../../../redux/reducers/ChildReducer/StatusReducer";
 defineElement(loadAnimation);
 
 const InfoTable = ({
@@ -173,7 +185,19 @@ const InfoTable = ({
         };
       })
     : [];
+  // ✅ Status table: id 1 always first, id 3 always last, rest by `order`
+  const sortedTableData = useMemo(() => {
+    if (formname !== status_component_name) return tabledata || [];
 
+    const list = tabledata || [];
+    const firstItem = list.filter((d) => d.id === 1);
+    const lastItem = list.filter((d) => d.id === 3);
+    const middle = list
+      .filter((d) => d.id !== 1 && d.id !== 3)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    return [...firstItem, ...middle, ...lastItem];
+  }, [tabledata, formname]);
   const [activeTab, setActiveTab] = useState(
     !!initialActiveTab ? initialActiveTab : 1,
   );
@@ -190,6 +214,8 @@ const InfoTable = ({
   const [showContainer, setShowContainer] = useState(false);
   const [selectedGroupIds, setSelectedGroupIds] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showReorderModal, setShowReorderModal] = useState(false);
+  const [reorderList, setReorderList] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -848,10 +874,135 @@ const InfoTable = ({
       toast.error("Something went wrong");
     }
   };
+  const handleHolidayDelete = async (orderData) => {
+    const result = await Swal.fire({
+      title: "Delete Holiday",
+      text: "Are you sure you want to delete this Holiday?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const Api = await DeleteApi(`holiday/delete/${orderData.id}`);
+
+      console.log("DELETE RESPONSE:", Api);
+
+      if (Api?.status === 200) {
+        dispatch(removeHoliday(orderData.id));
+        RemoveLocalStorageData("holiday", orderData.id);
+
+        toast.success(Api?.data?.message || "Holiday deleted successfully");
+
+        await Swal.fire({
+          title: "Deleted!",
+          text: Api?.data?.message || "Holiday deleted successfully.",
+          icon: "success",
+          confirmButtonColor: "#0AB39C",
+        });
+      } else {
+        toast.error("Delete failed");
+      }
+    } catch (error) {
+      console.error("DELETE ERROR:", error);
+
+      toast.error(error?.response?.data?.message || "Something went wrong");
+    }
+  };
+
+  const handleLeaveTypeDelete = async (leaveTypeData) => {
+    const result = await Swal.fire({
+      title: "Delete Leave Type",
+      text: "Are you sure you want to delete this Leave Type?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const Api = await DeleteApi(
+        `leave/leave_type/delete/${leaveTypeData.id}`,
+      );
+
+      console.log("DELETE RESPONSE:", Api);
+
+      if (Api?.status === 200) {
+        // Update Redux store if applicable
+        dispatch(removeLeaveType(leaveTypeData.id));
+
+        // Clear cached data if applicable
+        RemoveLocalStorageData("leave_type");
+
+        toast.success(Api?.data?.message || "Leave Type deleted successfully");
+
+        await Swal.fire({
+          title: "Deleted!",
+          text: Api?.data?.message || "Leave Type deleted successfully.",
+          icon: "success",
+          confirmButtonColor: "#0AB39C",
+        });
+      } else {
+        toast.error("Delete failed");
+      }
+    } catch (error) {
+      console.error("DELETE ERROR:", error);
+
+      toast.error(error?.response?.data?.message || "Something went wrong");
+    }
+  };
 
   const handleTypeFilterChange = (event) => {
     setTypeFilter(event.target.value);
   };
+
+  const handleReorderDragEnd = (result) => {
+    if (!result.destination) return;
+    const reordered = Array.from(reorderList);
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+    setReorderList(reordered);
+  };
+
+  const openReorderModal = () => {
+    const middle = [...(tabledata || [])]
+      .filter((d) => d.id !== 1 && d.id !== 3)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    setReorderList(middle);
+    setShowReorderModal(true);
+  };
+
+  const handleSaveReorder = async () => {
+    const order_payload = reorderList.map((obj, idx) => ({
+      id: obj.id,
+      order: idx + 1,
+    }));
+
+    const Api = await PostApi("task-status/reorder/", order_payload, false);
+
+    if (Api.status && Api.status === 200) {
+      const updatedFull = (tabledata || []).map((obj) => {
+        const found = order_payload.find((p) => p.id === obj.id);
+        return found ? { ...obj, order: found.order } : obj;
+      });
+      console.log("uppp", updatedFull);
+
+      dispatch(setStatus(updatedFull));
+      SetLocalStorage("task_status", updatedFull, 1);
+      toast.success(Api?.data?.message || "Order updated");
+      setShowReorderModal(false);
+    } else {
+      toast.error(Api?.data?.message || "Failed to update order");
+    }
+  };
+
   const handleActiveStatus = (orderData) => {
     let orderInfo = {
       text: orderData?.is_active === true ? "Deactivate" : "Activate",
@@ -1274,10 +1425,62 @@ const InfoTable = ({
               )}
             </ul>
           );
+        } else if (formname === holiday_component_name) {
+          return (
+            <>
+              <li className="list-inline-item edit">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-primary d-inline-block edit-item-btn"
+                  onClick={() => handleCreateAndUpdate(orderData.id, orderData)}
+                >
+                  <i className="ri-pencil-fill fs-16"></i>
+                </Link>
+              </li>
+
+              <li className="list-inline-item delete">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-danger d-inline-block delete-item-btn"
+                  onClick={() => handleHolidayDelete(orderData)}
+                >
+                  <i className="ri-delete-bin-5-fill fs-16"></i>
+                </Link>
+              </li>
+            </>
+          );
+        } else if (formname === leave_type_component_name) {
+          return (
+            <>
+              <li className="list-inline-item edit">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-primary d-inline-block edit-item-btn"
+                  onClick={() => handleCreateAndUpdate(orderData.id, orderData)}
+                >
+                  <i className="ri-pencil-fill fs-16"></i>
+                </Link>
+              </li>
+
+              {/* <li className="list-inline-item delete">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-danger d-inline-block delete-item-btn"
+                  onClick={() => handleLeaveTypeDelete(orderData)}
+                >
+                  <i className="ri-delete-bin-5-fill fs-16"></i>
+                </Link>
+              </li> */}
+            </>
+          );
         } else if (
           formname === project_component_name ||
           formname === client_component_name ||
-          formname === task_list_component_name
+          formname === status_component_name ||
+          formname === priorities_component_name ||
+          formname === task_list_component_name ||
+          formname === custom_status_form_component_name ||
+          formname === custom_field_component_name
         ) {
           const rowData = cellProps.row.original;
 
@@ -1293,7 +1496,7 @@ const InfoTable = ({
                 </Link>
               </li>
 
-              <li className="list-inline-item">
+              {/* <li className="list-inline-item">
                 <Link
                   to="#"
                   className="text-danger d-inline-block remove-item-btn"
@@ -1301,7 +1504,7 @@ const InfoTable = ({
                 >
                   <i className="ri-delete-bin-5-fill fs-16"></i>
                 </Link>
-              </li>
+              </li> */}
             </>
           );
         } else if (formname && formname === employee_component_name) {
@@ -1505,6 +1708,12 @@ const InfoTable = ({
   ]);
 
   const CheckCreateAccess = (profile_data, thisFormName) => {
+    console.log("Form Name:", thisFormName);
+    console.log("Permissions:", profile_data.permission_list);
+    console.log(
+      "Has Create Client:",
+      profile_data.permission_list.includes(CREATE_CLIENT_ACCESS_KEY),
+    );
     if (
       !!profile_data &&
       !!profile_data.is_admin &&
@@ -1521,11 +1730,18 @@ const InfoTable = ({
           (thisFormName === custom_field_component_name &&
             profile_data.permission_list.includes(
               CREATE_CUSTOM_FIELD_ACCESS_KEY,
-            ))
+            )) ||
+          (thisFormName === client_component_name &&
+            profile_data.permission_list.includes(CREATE_CLIENT_ACCESS_KEY))
         ) {
+          console.log("Create Access Granted");
           setShowCreateBtn(true);
         } else if (thisFormName === leave_application_component_name) {
+          console.log("Leave Application Access Granted");
           setShowCreateBtn(true);
+        } else {
+          console.log("Create Access Denied");
+          setShowCreateBtn(false);
         }
       }
     } else {
@@ -1546,11 +1762,17 @@ const InfoTable = ({
           (thisFormName === employee_component_name &&
             profile_data.permission_list.includes(EDIT_EMPLOYEE_ACCESS_KEY)) ||
           (thisFormName === custom_field_component_name &&
-            profile_data.permission_list.includes(EDIT_CUSTOM_FIELD_ACCESS_KEY))
+            profile_data.permission_list.includes(
+              EDIT_CUSTOM_FIELD_ACCESS_KEY,
+            )) ||
+          (thisFormName === client_component_name &&
+            profile_data.permission_list.includes(EDIT_CLIENT_ACCESS_KEY))
         ) {
           setShowEditBtn(true);
         } else if (thisFormName === leave_application_component_name) {
           setShowEditBtn(true);
+        } else {
+          setShowEditBtn(false);
         }
       }
     } else {
@@ -1573,12 +1795,11 @@ const InfoTable = ({
   }, [showEditBtn]);
 
   const toggleTab = (tab, type, condition) => {
-    console.log("TOGGLE TAB === ", tab, " Active TAB = ", activeTab);
     if (activeTab !== tab) {
       setActiveTab(tab);
-      let filteredDatas = [...tabledata];
+      let filteredDatas = [...sortedTableData];
       if (type !== "all") {
-        filteredDatas = [...tabledata].filter(
+        filteredDatas = [...sortedTableData].filter(
           (data) => data[filterKey] == type,
         );
       }
@@ -1599,14 +1820,14 @@ const InfoTable = ({
       }
       let filtered_table_data =
         type === "all"
-          ? [...tabledata]
-          : [...tabledata].filter((data) => data[filterKey] == type);
+          ? [...sortedTableData]
+          : [...sortedTableData].filter((data) => data[filterKey] == type);
 
       setDataList(filtered_table_data);
     } else {
       setDataList([]);
     }
-  }, [tabledata]);
+  }, [tabledata, sortedTableData]);
 
   const handleDataClicks = () => {
     setData("");
@@ -1973,6 +2194,33 @@ const InfoTable = ({
                               Create {formname.split("_").join(" ")}
                             </button>
                           )}{" "}
+                        {formname === status_component_name && (
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            id="reorder-btn"
+                            onClick={openReorderModal}
+                          >
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 16 16"
+                              fill="#fff"
+                              style={{
+                                marginRight: 6,
+                                verticalAlign: "middle",
+                              }}
+                            >
+                              <circle cx="5" cy="3" r="1.3" />
+                              <circle cx="11" cy="3" r="1.3" />
+                              <circle cx="5" cy="8" r="1.3" />
+                              <circle cx="11" cy="8" r="1.3" />
+                              <circle cx="5" cy="13" r="1.3" />
+                              <circle cx="11" cy="13" r="1.3" />
+                            </svg>
+                            Reorder
+                          </button>
+                        )}{" "}
                         <div className="d-flex gap-1 flex-wrap">
                           {formname &&
                             component_list_for_import_btn_access.includes(
@@ -2126,7 +2374,15 @@ const InfoTable = ({
                         )} */}
                           {formname &&
                             formname !== attendance_pending_table &&
-                            formname !== leave_pending_table && (
+                            formname !== leave_pending_table &&
+                            formname !== custom_field_component_name &&
+                            formname !== leave_application_component_name &&
+                            formname !== priorities_component_name &&
+                            formname !== status_component_name &&
+                            formname !== project_component_name &&
+                            formname !== task_list_component_name &&
+                            formname !== client_component_name &&
+                            formname !== custom_status_form_component_name && (
                               <button
                                 type="button"
                                 className="btn btn-info"
@@ -2138,12 +2394,12 @@ const InfoTable = ({
                             )}{" "}
                           {isMultiDeleteButton && (
                             <div>
-                              <button
+                              {/* <button
                                 className="btn btn-soft-danger"
                                 onClick={() => setDeleteModalMulti(true)}
                               >
                                 <i className="ri-delete-bin-2-line"></i>
-                              </button>{" "}
+                              </button>{" "} */}
                               {/* {formname === leave_approval_component_name && (
                             <>
                               <button
@@ -2319,6 +2575,146 @@ const InfoTable = ({
                 {isLoading ? (
                   <TableSkeleton />
                 ) : dataList.length ? (
+                  // <TableContainer
+                  //   columns={tableColumn}
+                  //   data={
+                  //     dataList
+                  //       ?.filter((obj) => {
+                  //         return Object.entries(table_filter_keys || {}).every(
+                  //           ([key, value]) => {
+                  //             // ─────────────────────────────
+                  //             // Skip Empty Filters
+                  //             // ─────────────────────────────
+                  //             if (
+                  //               value === 0 ||
+                  //               value === null ||
+                  //               value === undefined ||
+                  //               value === "" ||
+                  //               (Array.isArray(value) && value.length === 0)
+                  //             ) {
+                  //               return true;
+                  //             }
+
+                  //             // ─────────────────────────────
+                  //             // Multi Select Array Filter
+                  //             // collaborator_id
+                  //             // ─────────────────────────────
+                  //             if (Array.isArray(value)) {
+                  //               const taskValues =
+                  //                 obj?.collaborators_id_list ||
+                  //                 obj?.[key] ||
+                  //                 [];
+
+                  //               return value.some((id) =>
+                  //                 taskValues
+                  //                   .map((v) => Number(v))
+                  //                   .includes(Number(id)),
+                  //               );
+                  //             }
+
+                  //             // ─────────────────────────────
+                  //             // Nested Object ID
+                  //             // role_id → role.id
+                  //             // ─────────────────────────────
+                  //             if (key.endsWith("_id")) {
+                  //               const objectKey = key.replace("_id", "");
+
+                  //               if (
+                  //                 obj?.[objectKey] &&
+                  //                 typeof obj[objectKey] === "object" &&
+                  //                 "id" in obj[objectKey]
+                  //               ) {
+                  //                 return (
+                  //                   Number(obj[objectKey].id) === Number(value)
+                  //                 );
+                  //               }
+                  //             }
+
+                  //             // ─────────────────────────────
+                  //             // Direct Compare
+                  //             // ─────────────────────────────
+                  //             return Number(obj?.[key]) === Number(value);
+                  //           },
+                  //         );
+                  //       })
+
+                  //       // ─────────────────────────────
+                  //       // Search Filter
+                  //       // ─────────────────────────────
+
+                  //       // Year + Month Filter
+                  //       .filter((obj) => {
+                  //         const selectedYear =
+                  //           attendance_approval_table_filter_keys?.year;
+
+                  //         const selectedMonth =
+                  //           attendance_approval_table_filter_keys?.month;
+
+                  //         // No year selected -> show all
+                  //         if (!selectedYear) return true;
+
+                  //         const holidayDate = dayjs(obj.date);
+
+                  //         const yearMatch =
+                  //           holidayDate.year().toString() === selectedYear;
+
+                  //         const monthMatch =
+                  //           selectedMonth === 0 ||
+                  //           selectedMonth === undefined ||
+                  //           selectedMonth === null ||
+                  //           holidayDate.month() + 1 === selectedMonth;
+
+                  //         return yearMatch && monthMatch;
+                  //       })
+
+                  //       // Search Filter
+                  //       .filter((d) => {
+                  //         if (!search?.trim()) return true;
+
+                  //         const searchText = search.toLowerCase();
+
+                  //         const nameMatch =
+                  //           d?.name
+                  //             ?.toString()
+                  //             .toLowerCase()
+                  //             .includes(searchText) || false;
+
+                  //         const descriptionMatch =
+                  //           d?.description
+                  //             ?.toString()
+                  //             .toLowerCase()
+                  //             .includes(searchText) || false;
+
+                  //         const formattedDate = d?.date
+                  //           ? dayjs(d.date).format("DD-MM-YYYY")
+                  //           : "";
+
+                  //         const normalizedDate = formattedDate.replace(
+                  //           /[-/]/g,
+                  //           "",
+                  //         );
+                  //         const normalizedSearch = search.replace(/[-/]/g, "");
+
+                  //         const dateMatch =
+                  //           formattedDate.includes(search) ||
+                  //           normalizedDate.includes(normalizedSearch);
+
+                  //         return nameMatch || descriptionMatch || dateMatch;
+                  //       }) || []
+                  //   }
+                  //   isPagination={true}
+                  //   isGlobalFilter={true}
+                  //   formname={formname}
+                  //   customPageSize={50}
+                  //   divClass="table-responsive table-card"
+                  //   tableClass="align-middle table-nowrap"
+                  //   theadClass="table-light text-muted"
+                  //   handleDataClick={handleDataClicks}
+                  //   isDataFilter={true}
+                  //   SearchPlaceholder="Search for data ID, customer, data status or something..."
+                  //   showInfo={true}
+                  // />
+
                   <TableContainer
                     columns={tableColumn}
                     data={
@@ -2385,21 +2781,109 @@ const InfoTable = ({
                         // ─────────────────────────────
                         // Search Filter
                         // ─────────────────────────────
+
+                        // Year + Month Filter
+                        .filter((obj) => {
+                          const selectedYear =
+                            attendance_approval_table_filter_keys?.year;
+
+                          const selectedMonth =
+                            attendance_approval_table_filter_keys?.month;
+
+                          // No year selected -> show all
+                          if (!selectedYear) return true;
+
+                          const holidayDate = dayjs(obj.date);
+
+                          const yearMatch =
+                            holidayDate.year().toString() === selectedYear;
+
+                          const monthMatch =
+                            selectedMonth === 0 ||
+                            selectedMonth === undefined ||
+                            selectedMonth === null ||
+                            holidayDate.month() + 1 === selectedMonth;
+
+                          return yearMatch && monthMatch;
+                        })
+
+                        // Search Filter
+
                         .filter((d) => {
                           if (!search?.trim()) return true;
 
-                          return Object.values(d).some((value) => {
-                            if (typeof value === "string") {
-                              return value
-                                .toLowerCase()
-                                .includes(search.toLowerCase());
+                          // return Object.values(d).some((value) => {
+                          // if (typeof value === "string") {
+                          // return value
+                          // .toLowerCase()
+                          // .includes(search.toLowerCase());
+                          // }
+
+                          // if (typeof value === "number") {
+                          // return String(value).includes(search);
+                          // }
+
+                          // return false;
+                          // });
+                          return Object.entries(d).some(([key, value]) => {
+                            // Ignore ID fields
+                            if (
+                              key === "id" ||
+                              key.endsWith("_id") ||
+                              key === "created_by" ||
+                              key === "updated_by" ||
+                              key === "work_schedule_id_list"
+                            ) {
+                              return false;
                             }
 
-                            if (typeof value === "number") {
-                              return String(value).includes(search);
+                            if (value == null) return false;
+
+                            let searchValue = String(value);
+
+                            if (key === "date") {
+                              const formattedDate =
+                                dayjs(value).format("DD-MM-YYYY");
+
+                              const normalizedDate = formattedDate.replace(
+                                /[-/]/g,
+                                "",
+                              );
+                              const normalizedSearch = search.replace(
+                                /[-/]/g,
+                                "",
+                              );
+
+                              const matched =
+                                formattedDate
+                                  .toLowerCase()
+                                  .includes(search.toLowerCase()) ||
+                                normalizedDate.includes(normalizedSearch);
+
+                              return matched;
                             }
 
-                            return false;
+                            // if (value == null) return false;
+
+                            // return String(value)
+                            // .toLowerCase()
+                            // .includes(search.toLowerCase());
+                            const matched = searchValue
+                              .toLowerCase()
+                              .includes(search.toLowerCase());
+
+                            if (matched) {
+                              console.log(
+                                "Holiday:",
+                                d.name,
+                                "Matched Key:",
+                                key,
+                                "Matched Value:",
+                                value,
+                              );
+                            }
+
+                            return matched;
                           });
                         }) || []
                     }
@@ -2872,6 +3356,111 @@ const InfoTable = ({
                     </button>
                   </div>
                 </ModalBody>
+              </Modal>
+              <Modal
+                isOpen={showReorderModal}
+                toggle={() => setShowReorderModal(false)}
+                centered
+              >
+                <ModalHeader toggle={() => setShowReorderModal(false)}>
+                  Reorder Status
+                </ModalHeader>
+                <ModalBody>
+                  <div
+                    style={{
+                      maxHeight: "400px",
+                      overflowY: "auto",
+                      paddingRight: "6px",
+                    }}
+                  >
+                    <DragDropContext onDragEnd={handleReorderDragEnd}>
+                      <Droppable droppableId="reorder-status-list">
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                          >
+                            {reorderList.map((item, index) => (
+                              <Draggable
+                                key={item.id}
+                                draggableId={String(item.id)}
+                                index={index}
+                              >
+                                {(dragProvided, dragSnapshot) => (
+                                  <div
+                                    ref={dragProvided.innerRef}
+                                    {...dragProvided.draggableProps}
+                                    {...dragProvided.dragHandleProps}
+                                    style={{
+                                      ...dragProvided.draggableProps.style,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "10px",
+                                      padding: "10px 12px",
+                                      marginBottom: "8px",
+                                      borderRadius: "6px",
+                                      border: "1px solid #e3e3e3",
+                                      background: dragSnapshot.isDragging
+                                        ? "#f0f4ff"
+                                        : "#fff",
+                                      cursor: "grab",
+                                    }}
+                                  >
+                                    <svg
+                                      width="16"
+                                      height="16"
+                                      viewBox="0 0 16 16"
+                                      fill="#8a8a8a"
+                                    >
+                                      <circle cx="5" cy="3" r="1.3" />
+                                      <circle cx="11" cy="3" r="1.3" />
+                                      <circle cx="5" cy="8" r="1.3" />
+                                      <circle cx="11" cy="8" r="1.3" />
+                                      <circle cx="5" cy="13" r="1.3" />
+                                      <circle cx="11" cy="13" r="1.3" />
+                                    </svg>
+                                    <span
+                                      className="badge text-uppercase"
+                                      style={{
+                                        backgroundColor:
+                                          item.color && /^#/.test(item.color)
+                                            ? item.color
+                                            : "#000000",
+                                        color: "#fff",
+                                        padding: "6px 10px",
+                                        fontSize: "11px",
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      {item.name}
+                                    </span>
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
+                    </DragDropContext>
+                  </div>
+                </ModalBody>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-light"
+                    onClick={() => setShowReorderModal(false)}
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-success"
+                    onClick={handleSaveReorder}
+                  >
+                    Save
+                  </button>
+                </div>
               </Modal>
             </CardBody>
           </Card>

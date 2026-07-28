@@ -29,10 +29,23 @@ import SimpleBar from "simplebar-react";
 const EmployeeOverview = (props) => {
   SwiperCore.use([Autoplay]);
   const { profileObj } = props;
+  console.log("por", profileObj);
 
   const DepartmentData = GetLocalStorageData("department") || [];
   const RoleData = GetLocalStorageData("role") || [];
   const WorkScheduleData = GetLocalStorageData("work_schedule") || [];
+  const BranchData = GetLocalStorageData("branch") || [];
+
+  console.log("brData", BranchData);
+
+  const allBranches = BranchData.flatMap(
+    (org) => org.entity_location_details || [],
+  );
+
+  const branchNames = profileObj?.branch_id_list
+    ?.map((id) => allBranches.find((b) => b.id === id)?.name)
+    .filter(Boolean)
+    .join(", ");
 
   const [activityTab, setActivityTab] = useState("1");
   const toggleActivityTab = (tab) => {
@@ -96,7 +109,9 @@ const EmployeeOverview = (props) => {
                         <th className="ps-0" scope="row">
                           E-mail :
                         </th>
-                        <td className="text-muted">{profileObj?.email}</td>
+                        <td className="text-muted">
+                          {profileObj?.branch_id_list}
+                        </td>
                       </tr>
                       <tr>
                         <th className="ps-0" scope="row">
@@ -122,7 +137,7 @@ const EmployeeOverview = (props) => {
                         <th className="ps-0" scope="row">
                           Branch :
                         </th>
-                        <td className="text-muted">{profileObj?.email}</td>
+                        <td className="text-muted">{branchNames}</td>
                       </tr>
                       <tr>
                         <th className="ps-0" scope="row">

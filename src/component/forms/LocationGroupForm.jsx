@@ -19,14 +19,11 @@ import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { PostApi } from "../../common/api/PostApi";
 import { PutApi } from "../../common/api/PutApi";
-import { PatchApi } from "../../common/api/PatchApi";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import {
   addLocationGroup,
   editLocationGroup,
-  addEntityLocation,
-  editEntityLocation,
   setLocationGroup,
 } from "../../redux/reducers/ChildReducer/LocationGroupReducer";
 import { timzone_options } from "../../common/constant/Constants";
@@ -70,8 +67,6 @@ const LocationGroupForm = () => {
       )?.entity_location_details || [],
   );
 
-  console.log("Entity Location - ", entityLocations);
-
   const isEdit = parseInt(form_obj?.id) > 0;
 
   // ─── Location modal state ────────────────────────────────────────────────────
@@ -89,65 +84,6 @@ const LocationGroupForm = () => {
     setCountryListOptions(list);
   }, []);
 
-  useEffect(() => {
-    if (locationObj?.country) {
-      const found = CountryList.find(
-        (d) => d.countryName === locationObj.country,
-      );
-      setLocationStateOptions(found?.states || []);
-    }
-  }, [locationObj?.country]);
-
-  // ─── Helpers ─────────────────────────────────────────────────────────────────
-  const updateLocationObj = (e) => {
-    const { name, value } = e.target;
-    setLocationObj((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleLocationCountryChange = (e) => {
-    const found = CountryList.find((d) => d.countryName === e?.value);
-    setLocationObj((prev) => ({ ...prev, country: e?.value || "", state: "" }));
-    setLocationStateOptions(found?.states || []);
-  };
-
-  const handleLocationStateChange = (e) => {
-    setLocationObj((prev) => ({ ...prev, state: e?.value || "" }));
-  };
-
-  const handleLocationImageUpdate = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (readerEvent) => {
-        setLocationObj((prev) => ({
-          ...prev,
-          image: e.target.files[0],
-          image_url: readerEvent.target.result,
-        }));
-      };
-      reader.readAsDataURL(e.target.files[0]);
-    }
-  };
-
-  const handleAddClick = () => {
-    setLocationObj({
-      ...initialLocationObj,
-      type_id: form_obj?.id,
-      type: "location_group",
-    });
-    setModalOpen(true);
-  };
-
-  const handleEditLocation = (location) => {
-    setLocationObj({
-      ...location,
-      type_id: form_obj?.id,
-      type: "location_group",
-    });
-    setModalOpen(true);
-  };
-
-  const handleModalClose = () => setModalOpen(false);
-
   // ─── Main group formik ────────────────────────────────────────────────────────
   const formik = useFormik({
     enableReinitialize: true,
@@ -156,7 +92,24 @@ const LocationGroupForm = () => {
       description: form_obj?.description || "",
     },
     validationSchema: Yup.object({
-      name: Yup.string().required("Please enter a location group name"),
+      name: Yup.string()
+        .matches(
+          /^[A-Za-z0-9\s.,&()'-]+$/,
+          "Location group name can contain only letters, numbers, spaces, ., ,, -, &, (, ) and '",
+        )
+        .max(100, "Location group name cannot exceed 100 characters")
+        .required("Please enter a location group name")
+        .test(
+          "not-only-spaces",
+          "Please enter a location group name",
+          (value) => !value || value.trim().length > 0,
+        ),
+      description: Yup.string()
+        .matches(
+          /^[A-Za-z0-9\s.,!?'"\-_()&:;/]+$/,
+          "Description contains invalid characters",
+        )
+        .max(200, "Description cannot exceed 200 characters"),
     }),
     onSubmit: async (values) => {
       dispatch(setLoaderVisible(true));
@@ -207,19 +160,50 @@ const LocationGroupForm = () => {
     },
   });
 
-  // ─── Location formik ──────────────────────────────────────────────────────────
+  // ─── Location formik (Formik = single source of truth) ────────────────────────
   const locationFormik = useFormik({
     enableReinitialize: true,
     initialValues: locationObj,
     validationSchema: Yup.object({
-      name: Yup.string().required("Please Enter Location Name"),
-      address: Yup.string().required("Please Enter Address"),
+      name: Yup.string()
+        .matches(
+          /^[A-Za-z0-9\s.,&()'-]+$/,
+          "Location name can contain only letters, numbers, spaces, ., ,, -, &, (, ) and '",
+        )
+        .max(100, "Location name cannot exceed 100 characters")
+        .required("Please Enter Location Name")
+        .test(
+          "not-only-spaces",
+          "Please Enter Location Name",
+          (value) => !value || value.trim().length > 0,
+        ),
+      address: Yup.string()
+        .trim()
+        .matches(
+          /^[A-Za-z0-9\s.,\-#/'&]+$/,
+          "Address can contain only letters, numbers, spaces, ., ,, -, #, /, ' and &",
+        )
+        .max(200, "Address cannot exceed 200 characters")
+        .required("Please Enter Address"),
       country: Yup.string().required("Please Select Country"),
       state: Yup.string().required("Please Select State"),
-      city: Yup.string().required("Please Enter City"),
-      pincode: Yup.string().required("Please Enter Pincode"),
+      city: Yup.string()
+        .trim()
+        .matches(
+          /^[A-Za-z\s.'-]+$/,
+          "City can contain only letters, spaces, dots, hyphens and apostrophes",
+        )
+        .max(100, "City cannot exceed 100 characters")
+        .required("Please Enter City"),
+      pincode: Yup.string()
+        .trim()
+        .matches(/^[0-9]+$/, "Pincode should contain only numbers")
+        .length(6, "Please Enter Valid 6 Digit Pincode")
+        .required("Please Enter Pincode"),
       timezone: Yup.string().required("Please Select Time Zone"),
-      accurate_address: Yup.string().required("Please Enter Accurate Address"),
+      accurate_address: Yup.string()
+        .trim()
+        .required("Please Enter Accurate Address"),
     }),
 
     onSubmit: async (values) => {
@@ -253,99 +237,71 @@ const LocationGroupForm = () => {
 
         const isNewLocation = values.id === 0;
 
-        const payload = {
-          type: "location_group",
-          type_id: form_obj?.id,
-          name: values.name,
-          address: values.address,
-          city: values.city,
-          state: values.state,
-          country: values.country,
-          pincode: values.pincode,
-          timezone: values.timezone,
-          accurate_address: values.accurate_address,
-          radius_range: values.radius_range,
-          latitude: values.latitude,
-          longitude: values.longitude,
-          location_id: values.location_id || null,
-          map_data: map_data,
-        };
+        // ─── Build multipart FormData ─────────────────────────────────────────
+        const fd = new FormData();
+        fd.append("type", "location_group");
+        fd.append("type_id", form_obj?.id ?? "");
+        fd.append("name", values.name ?? "");
+        fd.append("address", values.address ?? "");
+        fd.append("city", values.city ?? "");
+        fd.append("state", values.state ?? "");
+        fd.append("country", values.country ?? "");
+        fd.append("pincode", values.pincode ?? "");
+        fd.append("timezone", values.timezone ?? "");
+        fd.append("accurate_address", values.accurate_address ?? "");
+        fd.append("radius_range", values.radius_range ?? "");
+        fd.append("latitude", values.latitude ?? "");
+        fd.append("longitude", values.longitude ?? "");
+        if (values.location_id) fd.append("location_id", values.location_id);
+        // nested object must be stringified for FormData
+        fd.append("map_data", JSON.stringify(map_data));
+
+        // Append the actual File ONLY when a new image was selected.
+        // Guarding with instanceof File avoids sending null/base64 and
+        // avoids overwriting an existing image on edit when unchanged.
+        if (values.image instanceof File) {
+          fd.append("image", values.image);
+        }
 
         let Api;
-
-        console.log("Location Payload - ", payload);
-
-        console.log("Location Payload - ", payload);
-
         if (isNewLocation) {
-          Api = await PostApi("location/entity-locations/", payload);
+          Api = await PostApi("location/add-entity-location/", fd, true);
         } else {
-          Api = await PutApi(
-            `location/entity-locations/${values.id}/`,
-            payload,
-          );
+          // Send id in body
+          fd.append("id", values.id);
+
+          Api = await PostApi("location/add-entity-location/", fd, true);
         }
 
         if ([200, 201].includes(Api?.status)) {
-          const response = Api?.data;
-          console.log("RES = ", response);
+          const response = Api?.data?.data ?? Api?.data;
           const localStorageLocationGroupData =
             GetLocalStorageData("location_groups");
-
-          // if (isNewLocation) {
-          //   dispatch(addEntityLocation(locationWithGroup));
-          // } else {
-          //   dispatch(editEntityLocation(locationWithGroup));
-          // }
 
           let updatedLocation = null;
 
           if (isNewLocation) {
-            console.log("Form Obj while add - ", form_obj);
-
             updatedLocation = localStorageLocationGroupData.map((d) => {
               if (d.id === values?.type_id) {
                 return {
                   ...d,
                   entity_location_details: [
-                    ...d.entity_location_details,
+                    ...(d.entity_location_details || []),
                     response,
                   ],
                 };
-              } else {
-                return d;
               }
+              return d;
             });
           } else {
-            console.log("Form Obj while edit - ", form_obj);
-            const existing_entity_location_details =
-              [...form_obj.entity_location_details] || [];
-            const new_entity_location_details =
-              existing_entity_location_details.map((d) => {
-                if (d.id === response.id) {
-                  return response;
-                } else {
-                  return d;
-                }
-              });
-
             updatedLocation = localStorageLocationGroupData.map((d) => {
               if (d.id === values?.type_id) {
-                let newLD = d.entity_location_details.map((loc) => {
-                  if (loc.id === response.id) {
-                    return response;
-                  } else {
-                    return loc;
-                  }
-                });
-
-                return {
-                  ...d,
-                  entity_location_details: newLD,
-                };
-              } else {
-                return d;
+                const newLD = (d.entity_location_details || []).map((loc) =>
+                  loc.id === response.id ? response : loc,
+                );
+                return { ...d, entity_location_details: newLD };
               }
+              return d;
             });
           }
 
@@ -368,7 +324,6 @@ const LocationGroupForm = () => {
           );
           setModalOpen(false);
         } else {
-          console.log("Error - ", Api);
           toast.error(
             Api?.data?.message ||
               Api?.data?.detail ||
@@ -388,17 +343,149 @@ const LocationGroupForm = () => {
     },
   });
 
+  // ─── Auto-focus first error ───────────────────────────────────────────────────
   useEffect(() => {
     if (
       locationFormik.submitCount > 0 &&
       Object.keys(locationFormik.errors).length > 0
     ) {
       const firstErrorField = Object.keys(locationFormik.errors)[0];
-      locationFormik.setFieldTouched(firstErrorField);
-      const errorField = document.querySelector(`[name=${firstErrorField}]`);
+      locationFormik.setFieldTouched(firstErrorField, true, false);
+      const errorField = document.querySelector(`[name="${firstErrorField}"]`);
       if (errorField) errorField.focus();
     }
-  }, [locationFormik.submitCount, locationFormik.errors]);
+  }, [locationFormik.submitCount]);
+
+  // ─── Location helpers (update BOTH state + Formik) ────────────────────────────
+  const setLocField = (name, value) => {
+    setLocationObj((prev) => ({ ...prev, [name]: value }));
+    locationFormik.setFieldValue(name, value);
+  };
+
+  const lv = locationFormik.values;
+  const le = locationFormik.errors;
+  const lt = locationFormik.touched;
+  const isLocInvalid = (field) => !!le[field];
+  const showLocHint = (field) => !le[field];
+
+  const handleLocationCountryChange = (e) => {
+    setLocField("country", e?.value || "");
+    setLocField("state", "");
+    const found = CountryList.find((d) => d.countryName === e?.value);
+    setLocationStateOptions(found?.states || []);
+  };
+
+  const handleLocationTextOnly = (e) => {
+    const { name, value } = e.target;
+
+    setLocField(name, value.replace(/[^a-zA-Z\s\-_]/g, ""));
+  };
+
+  const handleCityChange = (e) => {
+    const value = e.target.value.replace(/[^A-Za-z\s.'-]/g, "");
+
+    setLocField("city", value);
+
+    if (value.length > 100) {
+      locationFormik.setFieldError("city", "City cannot exceed 100 characters");
+    } else {
+      locationFormik.setFieldError("city", undefined);
+    }
+  };
+
+  const handleAddressChange = (e) => {
+    const value = e.target.value.replace(/[^A-Za-z0-9\s.,\-#/'&]/g, "");
+
+    setLocField("address", value);
+
+    if (value.length > 200) {
+      locationFormik.setFieldError(
+        "address",
+        "Address cannot exceed 200 characters",
+      );
+    } else {
+      locationFormik.setFieldError("address", undefined);
+    }
+  };
+
+  const handleLocationNameChange = (e) => {
+    const value = e.target.value.replace(/[^A-Za-z0-9\s.,&()'-]/g, "");
+
+    setLocField("name", value);
+
+    if (value.length > 100) {
+      locationFormik.setFieldError(
+        "name",
+        "Location name cannot exceed 100 characters",
+      );
+    } else {
+      locationFormik.setFieldError("name", undefined);
+    }
+  };
+
+  const handleLocationGroupNameChange = (e) => {
+    const value = e.target.value.replace(/[^A-Za-z0-9\s.,&()'-]/g, "");
+
+    formik.setFieldValue("name", value);
+    formik.setFieldTouched("name", true, false);
+
+    if (value.length > 100) {
+      formik.setFieldError(
+        "name",
+        "Location group name cannot exceed 100 characters",
+      );
+    }
+  };
+
+  const handleLocationImageUpdate = (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only JPG, JPEG, PNG and WEBP image files are allowed.");
+      e.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = (readerEvent) => {
+      setLocField("image", file);
+      setLocField("image_url", readerEvent.target.result);
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddClick = () => {
+    setLocationObj({
+      ...initialLocationObj,
+      type_id: form_obj?.id,
+      type: "location_group",
+    });
+    locationFormik.resetForm();
+    setLocationStateOptions([]);
+    setModalOpen(true);
+  };
+
+  const handleEditLocation = (location) => {
+    setLocationObj({
+      ...location,
+      type_id: form_obj?.id,
+      type: "location_group",
+      image: null, // reset File; existing image stays via image_url unless re-selected
+    });
+    if (location?.country) {
+      const found = CountryList.find((d) => d.countryName === location.country);
+      setLocationStateOptions(found?.states || []);
+    }
+    setModalOpen(true);
+  };
+
+  const handleModalClose = () => setModalOpen(false);
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -418,7 +505,7 @@ const LocationGroupForm = () => {
                 innerRef={inputRef}
                 placeholder="e.g. Chennai Offices"
                 value={formik.values.name}
-                onChange={formik.handleChange}
+                onChange={handleLocationGroupNameChange}
                 onBlur={formik.handleBlur}
                 invalid={formik.touched.name && !!formik.errors.name}
               />
@@ -440,8 +527,30 @@ const LocationGroupForm = () => {
               rows="3"
               placeholder="e.g. All branches in Chennai region"
               value={formik.values.description}
-              onChange={formik.handleChange}
+              onChange={(e) => {
+                const value = e.target.value.replace(
+                  /[^A-Za-z0-9\s.,!?'"\-_()&:;/]/g,
+                  "",
+                );
+
+                formik.setFieldValue("description", value);
+                formik.setFieldTouched("description", true, false);
+
+                if (value.length > 200) {
+                  formik.setFieldError(
+                    "description",
+                    "Description cannot exceed 200 characters",
+                  );
+                }
+              }}
+              onBlur={formik.handleBlur}
+              invalid={
+                formik.touched.description && !!formik.errors.description
+              }
             />
+            {formik.touched.description && formik.errors.description && (
+              <FormFeedback>{formik.errors.description}</FormFeedback>
+            )}
           </Col>
 
           {/* ── Locations Table — driven by Redux ── */}
@@ -465,9 +574,7 @@ const LocationGroupForm = () => {
                       <td>{location.radius_range} m</td>
                       <td>
                         <img
-                          src={
-                            location.image_url ? location.image_url : no_image
-                          }
+                          src={location.image_url || no_image}
                           alt="location"
                           style={{ height: "50px", objectFit: "cover" }}
                         />
@@ -515,36 +622,37 @@ const LocationGroupForm = () => {
       {/* ── Location Modal ── */}
       <Modal isOpen={modalOpen} toggle={handleModalClose} size="md">
         <ModalHeader toggle={handleModalClose}>
-          {locationObj.id === 0 ? "Add New Location" : "Edit Location"}
+          {lv.id === 0 ? "Add New Location" : "Edit Location"}
         </ModalHeader>
         <ModalBody>
-          <Form onSubmit={locationFormik.handleSubmit}>
+          <Form onSubmit={locationFormik.handleSubmit} noValidate>
             <Row className="gy-4">
               {/* Location Name */}
               <Col lg={12}>
-                <Label className="form-label">Location Name</Label>
+                <Label htmlFor="loc_name" className="form-label">
+                  Location Name <span>*</span>
+                </Label>
                 <div className="form-icon right">
                   <Input
                     type="text"
+                    id="loc_name"
                     name="name"
-                    innerRef={inputRef}
                     placeholder="Enter Location Name"
-                    value={locationObj.name || ""}
-                    onChange={updateLocationObj}
-                    invalid={
-                      locationFormik.touched.name &&
-                      !!locationFormik.errors.name
-                    }
+                    value={lv.name || ""}
+                    onChange={handleLocationNameChange}
+                    onBlur={() => locationFormik.setFieldTouched("name", true)}
+                    invalid={isLocInvalid("name")}
                   />
-                  {!locationFormik.touched.name &&
-                    !locationFormik.errors.name && (
-                      <i className="ri-building-2-line"></i>
-                    )}
-                  {locationFormik.touched.name &&
-                    locationFormik.errors.name && (
-                      <FormFeedback>{locationFormik.errors.name}</FormFeedback>
-                    )}
+                  {!isLocInvalid("name") && (
+                    <i className="ri-building-2-line"></i>
+                  )}
+                  {isLocInvalid("name") && (
+                    <FormFeedback>{le.name}</FormFeedback>
+                  )}
                 </div>
+                {showLocHint("name") && (
+                  <div className="form-text">Enter location name.</div>
+                )}
               </Col>
 
               {/* Map / Accurate Address Search */}
@@ -556,131 +664,173 @@ const LocationGroupForm = () => {
 
               {/* Address */}
               <Col lg={12}>
-                <Label className="form-label">Address</Label>
+                <Label htmlFor="loc_address" className="form-label">
+                  Address <span>*</span>
+                </Label>
                 <Input
                   type="textarea"
+                  id="loc_address"
                   name="address"
                   rows="2"
-                  value={locationObj.address || ""}
-                  onChange={updateLocationObj}
-                  invalid={
-                    locationFormik.touched.address &&
-                    !!locationFormik.errors.address
-                  }
+                  value={lv.address || ""}
+                  onChange={handleAddressChange}
+                  onBlur={() => locationFormik.setFieldTouched("address", true)}
+                  invalid={isLocInvalid("address")}
                 />
-                {locationFormik.touched.address &&
-                  locationFormik.errors.address && (
-                    <FormFeedback>{locationFormik.errors.address}</FormFeedback>
-                  )}
+                {isLocInvalid("address") && (
+                  <FormFeedback>{le.address}</FormFeedback>
+                )}
+                {showLocHint("address") && (
+                  <div className="form-text">Enter address.</div>
+                )}
               </Col>
 
               {/* Country */}
               <Col lg={12}>
-                <Label className="form-label">Country</Label>
+                <Label htmlFor="loc_country" className="form-label">
+                  Country <span>*</span>
+                </Label>
                 <Select
+                  id="loc_country"
                   options={CountryListOptions}
                   value={
-                    CountryListOptions.find(
-                      (d) => d.value === locationObj?.country,
-                    ) || null
+                    CountryListOptions.find((d) => d.value === lv.country) ||
+                    null
                   }
                   onChange={handleLocationCountryChange}
+                  onBlur={() => locationFormik.setFieldTouched("country", true)}
+                  styles={{
+                    control: (provided, state) => ({
+                      ...provided,
+                      borderColor:
+                        !state.isFocused && lt.country && le.country
+                          ? "red"
+                          : provided.borderColor,
+                    }),
+                  }}
                 />
-                {locationFormik.touched.country &&
-                  locationFormik.errors.country && (
-                    <div className="lc_form_error_text">
-                      {locationFormik.errors.country}
-                    </div>
-                  )}
+                {lt.country && le.country && (
+                  <div className="lc_form_error_text">{le.country}</div>
+                )}
+                {showLocHint("country") && (
+                  <div className="form-text">Select country.</div>
+                )}
               </Col>
 
               {/* State */}
               <Col lg={12}>
-                <Label className="form-label">State</Label>
+                <Label className="form-label">
+                  State <span>*</span>
+                </Label>
                 <Select
+                  name="state"
                   options={locationStateOptions}
                   value={
-                    locationStateOptions.find(
-                      (d) => d.value === locationObj?.state,
-                    ) || null
+                    locationStateOptions.find((d) => d.value === lv.state) ||
+                    null
                   }
-                  onChange={handleLocationStateChange}
+                  onChange={(opt) => {
+                    setLocField("state", opt?.value || "");
+                    locationFormik.setFieldTouched("state", true);
+                  }}
+                  onBlur={() => locationFormik.setFieldTouched("state", true)}
+                  styles={{
+                    control: (provided, state) => ({
+                      ...provided,
+                      borderColor:
+                        !state.isFocused && lt.state && le.state
+                          ? "red"
+                          : provided.borderColor,
+                    }),
+                  }}
                 />
-                {locationFormik.touched.state &&
-                  locationFormik.errors.state && (
-                    <div className="lc_form_error_text">
-                      {locationFormik.errors.state}
-                    </div>
-                  )}
+                {lt.state && le.state && (
+                  <div className="lc_form_error_text">{le.state}</div>
+                )}
+                {showLocHint("state") && (
+                  <div className="form-text">Select state.</div>
+                )}
               </Col>
 
               {/* City */}
               <Col lg={12}>
-                <Label className="form-label">City</Label>
+                <Label htmlFor="loc_city" className="form-label">
+                  City <span>*</span>
+                </Label>
                 <div className="form-icon right">
                   <Input
                     type="text"
+                    id="loc_city"
                     name="city"
                     placeholder="City"
-                    value={locationObj.city || ""}
-                    onChange={updateLocationObj}
-                    invalid={
-                      locationFormik.touched.city &&
-                      !!locationFormik.errors.city
-                    }
+                    value={lv.city || ""}
+                    onChange={handleCityChange}
+                    onBlur={() => locationFormik.setFieldTouched("city", true)}
+                    invalid={isLocInvalid("city")}
                   />
-                  {!locationFormik.touched.city &&
-                    !locationFormik.errors.city && (
-                      <i className="ri-map-pin-line"></i>
-                    )}
-                  {locationFormik.touched.city &&
-                    locationFormik.errors.city && (
-                      <FormFeedback>{locationFormik.errors.city}</FormFeedback>
-                    )}
+                  {!isLocInvalid("city") && <i className="ri-map-pin-line"></i>}
+                  {isLocInvalid("city") && (
+                    <FormFeedback>{le.city}</FormFeedback>
+                  )}
                 </div>
+                {showLocHint("city") && (
+                  <div className="form-text">Enter city (letters only).</div>
+                )}
               </Col>
 
               {/* Pincode */}
               <Col lg={12}>
-                <Label className="form-label">Pincode</Label>
+                <Label htmlFor="loc_pincode" className="form-label">
+                  Pincode <span>*</span>
+                </Label>
                 <div className="form-icon right">
                   <Input
-                    type="number"
+                    type="text"
+                    id="loc_pincode"
                     name="pincode"
                     placeholder="600001"
-                    value={locationObj.pincode || ""}
-                    onChange={updateLocationObj}
-                    invalid={
-                      locationFormik.touched.pincode &&
-                      !!locationFormik.errors.pincode
+                    inputMode="numeric"
+                    value={lv.pincode || ""}
+                    onChange={(ev) => {
+                      const value = ev.target.value
+                        .replace(/[^0-9]/g, "")
+                        .slice(0, 6);
+
+                      setLocField("pincode", value);
+                    }}
+                    onBlur={() =>
+                      locationFormik.setFieldTouched("pincode", true)
                     }
+                    invalid={isLocInvalid("pincode")}
                   />
-                  {!locationFormik.touched.pincode &&
-                    !locationFormik.errors.pincode && (
-                      <i className="ri-mail-line"></i>
-                    )}
-                  {locationFormik.touched.pincode &&
-                    locationFormik.errors.pincode && (
-                      <FormFeedback>
-                        {locationFormik.errors.pincode}
-                      </FormFeedback>
-                    )}
+                  {!isLocInvalid("pincode") && (
+                    <i className="ri-map-2-line"></i>
+                  )}
+                  {isLocInvalid("pincode") && (
+                    <FormFeedback>{le.pincode}</FormFeedback>
+                  )}
                 </div>
+                {showLocHint("pincode") && (
+                  <div className="form-text">Enter pincode (digits only).</div>
+                )}
               </Col>
 
               {/* Image */}
               <Col lg={12}>
-                <Label className="form-label">Image</Label>
+                <Label htmlFor="loc_image" className="form-label">
+                  Image
+                </Label>
                 <Input
                   type="file"
                   name="image"
-                  id="image"
+                  id="loc_image"
+                  accept=".jpg,.jpeg,.png,.webp"
                   className="form-control"
                   onChange={handleLocationImageUpdate}
                 />
-                {locationObj.image_url && (
+                {lv.image_url && (
                   <img
-                    src={locationObj.image_url}
+                    src={lv.image_url}
                     alt="preview"
                     className="mt-2"
                     style={{
@@ -690,43 +840,44 @@ const LocationGroupForm = () => {
                     }}
                   />
                 )}
+                <div className="form-text">Choose image.</div>
               </Col>
 
               {/* Timezone */}
               <Col lg={12}>
-                <Label className="form-label">Time Zone</Label>
+                <Label htmlFor="loc_timezone" className="form-label">
+                  Time Zone <span>*</span>
+                </Label>
                 <Select
                   name="timezone"
+                  id="loc_timezone"
+                  options={timzone_options}
+                  placeholder="Select a time zone"
                   value={
-                    locationObj.timezone
-                      ? timzone_options.find(
-                          (e) => e.value === locationObj.timezone,
-                        )
+                    lv.timezone
+                      ? timzone_options.find((opt) => opt.value === lv.timezone)
                       : null
                   }
                   styles={{
                     control: (provided, state) => ({
                       ...provided,
                       borderColor:
-                        !state.isFocused &&
-                        locationFormik.touched.timezone &&
-                        locationFormik.errors.timezone
+                        !state.isFocused && lt.timezone && le.timezone
                           ? "red"
                           : provided.borderColor,
                     }),
                   }}
-                  onChange={(e) =>
-                    setLocationObj((prev) => ({ ...prev, timezone: e.value }))
+                  onChange={(opt) => setLocField("timezone", opt.value)}
+                  onBlur={() =>
+                    locationFormik.setFieldTouched("timezone", true)
                   }
-                  options={timzone_options}
-                  placeholder="Select a time zone"
                 />
-                {locationFormik.touched.timezone &&
-                  locationFormik.errors.timezone && (
-                    <div className="lc_form_error_text">
-                      {locationFormik.errors.timezone}
-                    </div>
-                  )}
+                {lt.timezone && le.timezone && (
+                  <div className="lc_form_error_text">{le.timezone}</div>
+                )}
+                {showLocHint("timezone") && (
+                  <div className="form-text">Select time zone.</div>
+                )}
               </Col>
 
               {/* Modal Save */}

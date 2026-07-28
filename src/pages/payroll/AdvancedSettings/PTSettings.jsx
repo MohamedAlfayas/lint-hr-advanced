@@ -30,41 +30,43 @@ const SlabModal = ({ isOpen, toggle, item }) => {
   if (!item) return null;
   return (
     <Modal isOpen={isOpen} toggle={toggle} centered size="md">
-      <ModalHeader toggle={toggle}>
-        <span className="fs-16 fw-semibold">PT Tax Slabs</span>{" "}
-        <span className="text-muted fw-normal fs-15">— {formatState(item.state)}</span>
+      <ModalHeader toggle={toggle} className="border-bottom-0 pb-0">
+        <div>
+          <h5 className="mb-0 fw-semibold">{formatState(item.state)}</h5>
+          <span className="text-muted" style={{ fontSize: 13 }}>Professional Tax Slabs</span>
+        </div>
       </ModalHeader>
-      <ModalBody>
-        <Row className="gy-2 mb-3">
-          <Col sm={6}>
-            <p className="text-muted mb-1" style={{ fontSize: 13 }}>Deduction Cycle</p>
-            <h6 className="fs-15 mb-0">{formatCycle(item.deduction_cycle)}</h6>
-          </Col>
-          <Col sm={6}>
-            <p className="text-muted mb-1" style={{ fontSize: 13 }}>Slab Basis</p>
-            <h6 className="fs-15 mb-0">{formatCycle(item.slab_basis)}</h6>
-          </Col>
-        </Row>
+      <ModalBody className="pt-2">
+        <div className="d-flex gap-2 mb-3">
+          <span className="badge bg-primary-subtle text-primary px-3 py-2" style={{ fontSize: 12 }}>
+            <i className="ri-repeat-line me-1"></i>
+            {formatCycle(item.deduction_cycle)} Deduction
+          </span>
+          <span className="badge bg-info-subtle text-info px-3 py-2" style={{ fontSize: 12 }}>
+            <i className="ri-calculator-line me-1"></i>
+            {formatCycle(item.slab_basis)} Basis
+          </span>
+        </div>
 
         {item.slabs?.length > 0 ? (
-          <div className="table-responsive">
-            <table className="table table-sm table-bordered mb-0">
+          <div className="table-responsive border rounded">
+            <table className="table table-sm mb-0">
               <thead className="table-light">
                 <tr>
-                  <th style={{ fontSize: 14 }}>From (₹)</th>
-                  <th style={{ fontSize: 14 }}>To (₹)</th>
-                  <th style={{ fontSize: 14 }}>Amount (₹)</th>
+                  <th style={{ fontSize: 13 }}>Gross Range (₹)</th>
+                  <th style={{ fontSize: 13 }} className="text-end">PT Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {item.slabs.map((s, i) => (
                   <tr key={i}>
-                    <td style={{ fontSize: 14 }}>{s.start?.toLocaleString("en-IN")}</td>
-                    <td style={{ fontSize: 14 }}>
-                      {s.end >= 999999 ? "Above" : s.end?.toLocaleString("en-IN")}
+                    <td style={{ fontSize: 13 }}>
+                      {s.start?.toLocaleString("en-IN")} – {s.end == null || s.end >= 999999 ? "Above" : s.end.toLocaleString("en-IN")}
                     </td>
-                    <td style={{ fontSize: 14 }}>
-                      {s.amount === 0 ? "Nil" : `₹ ${s.amount?.toLocaleString("en-IN")}`}
+                    <td style={{ fontSize: 13 }} className="text-end fw-medium">
+                      {s.amount === 0
+                        ? <span className="text-success">Nil</span>
+                        : `₹${s.amount?.toLocaleString("en-IN")}`}
                     </td>
                   </tr>
                 ))}
@@ -72,9 +74,10 @@ const SlabModal = ({ isOpen, toggle, item }) => {
             </table>
           </div>
         ) : (
-          <p className="text-muted text-center py-3 fs-14">
+          <div className="text-center text-muted py-4" style={{ fontSize: 13 }}>
+            <i className="ri-file-list-3-line fs-24 d-block mb-2"></i>
             No slabs configured.
-          </p>
+          </div>
         )}
       </ModalBody>
     </Modal>
@@ -89,6 +92,28 @@ const PTSettings = () => {
 
   const [slabModalOpen, setSlabModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+
+  const [togglingId, setTogglingId] = useState(null);
+
+  const handleToggleActive = (item) => {
+    setTogglingId(item.id);
+    Api({
+      method: "PATCH",
+      url: "payroll/pt-settings/",
+      data: { id: item.id, is_active: !item.is_active },
+    })
+      .then((res) => {
+        const updated = res?.data?.data;
+        if (updated) {
+          dispatch(setPTSettings(
+            ptSettings.map((p) => (p.id === updated.id ? updated : p))
+          ));
+          toast.success(res?.data?.message || "Status updated");
+        }
+      })
+      .catch((err) => toast.error(err?.response?.data?.message || "Failed to update status"))
+      .finally(() => setTogglingId(null));
+  };
 
   const openSlabModal = (item) => {
     setSelectedItem(item);
@@ -181,7 +206,8 @@ const PTSettings = () => {
                         type="checkbox"
                         className="form-check-input"
                         checked={!!item?.is_active}
-                        readOnly
+                        disabled={togglingId === item.id}
+                        onChange={() => handleToggleActive(item)}
                       />
                       <Label className="form-check-label">
                         {item?.is_active ? "Active" : "Inactive"}

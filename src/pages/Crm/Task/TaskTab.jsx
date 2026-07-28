@@ -35,19 +35,21 @@ const TaskTab = () => {
           <CardBody>
             <Row className="g-2 align-items-center">
               {/* Search */}
-              <Col sm={4}>
-                <div className="search-box">
-                  <Input
-                    type="text"
-                    className="form-control"
-                    id="searchMemberList"
-                    placeholder="Search for task..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  <i className="ri-search-line search-icon"></i>
-                </div>
-              </Col>
+              {viewType === "grid" && (
+                <Col sm={4}>
+                  <div className="search-box">
+                    <Input
+                      type="text"
+                      className="form-control"
+                      id="searchMemberList"
+                      placeholder="Search for task..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <i className="ri-search-line search-icon"></i>
+                  </div>
+                </Col>
+              )}
 
               {/* Right Actions */}
               <Col sm="auto" className="ms-auto">

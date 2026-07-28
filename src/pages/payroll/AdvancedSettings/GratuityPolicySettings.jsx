@@ -114,7 +114,7 @@ const GratuityPolicySettings = () => {
     if (form.enable_gratuity) {
       checks.push(required("Calculation basis", form.calculation_basis));
       checks.push(day("Days in month", form.days_in_month_for_calculation));
-      checks.push(day("Days per year of service", form.days_per_year_of_service));
+      checks.push(range("Days per year of service", form.days_per_year_of_service, 1, 30));
       checks.push(range("Minimum years of service", form.minimum_years_of_service, 0, 50));
       checks.push(min("Maximum gratuity amount", form.maximum_gratuity_amount, 1));
     }
@@ -349,15 +349,18 @@ const GratuityPolicySettings = () => {
 
               <SettingRow label="Days In Month">
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    min="1"
-                    value={form.days_in_month_for_calculation ?? ""}
-                    onChange={(e) =>
-                      handleChange("days_in_month_for_calculation", parseInt(e.target.value))
-                    }
-                    style={{ width: 120 }}
-                  />
+                  <div>
+                    <Input type="number" min="1" max="31" value={form.days_in_month_for_calculation ?? ""}
+                      onChange={(e) => {
+                        let val = parseInt(e.target.value) || "";
+                        if (val > 31) val = 31;
+                        if (val < 1) val = 1;
+                        handleChange("days_in_month_for_calculation", val);
+                      }} style={{ width: 120 }} />
+                    {form.days_in_month_for_calculation !== 26 && (
+                      <small className="text-warning d-block mt-1">⚠ Statutory standard is 26 days</small>
+                    )}
+                  </div>
                 ) : (
                   <span>{data.days_in_month_for_calculation} Days</span>
                 )}
@@ -365,15 +368,18 @@ const GratuityPolicySettings = () => {
 
               <SettingRow label="Days Per Year Of Service">
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    min="1"
-                    value={form.days_per_year_of_service ?? ""}
-                    onChange={(e) =>
-                      handleChange("days_per_year_of_service", parseInt(e.target.value))
-                    }
-                    style={{ width: 120 }}
-                  />
+                  <div>
+                    <Input type="number" min="1" max="30" value={form.days_per_year_of_service ?? ""}
+                      onChange={(e) => {
+                        let val = parseInt(e.target.value) || "";
+                        if (val > 30) val = 30;
+                        if (val < 1) val = 1;
+                        handleChange("days_per_year_of_service", val);
+                      }} style={{ width: 120 }} />
+                    {form.days_per_year_of_service < 15 && (
+                      <small className="text-danger d-block mt-1">⚠ Below statutory minimum of 15 days</small>
+                    )}
+                  </div>
                 ) : (
                   <span>{data.days_per_year_of_service} Days</span>
                 )}
@@ -381,19 +387,20 @@ const GratuityPolicySettings = () => {
 
               <SettingRow label="Minimum Years Of Service">
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.minimum_years_of_service || ""}
-                    onChange={(e) =>
-                      handleChange("minimum_years_of_service", e.target.value)
-                    }
-                    style={{ width: 120 }}
-                  />
+                  <div>
+                    <Input type="number" step="0.01" min="0" max="50" value={form.minimum_years_of_service || ""}
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        if (val !== "" && Number(val) > 50) val = "50";
+                        if (val !== "" && Number(val) < 0) val = "0";
+                        handleChange("minimum_years_of_service", val);
+                      }} style={{ width: 120 }} />
+                    {Number(form.minimum_years_of_service) !== 5 && (
+                      <small className="text-warning d-block mt-1">⚠ Statutory minimum is 5 years</small>
+                    )}
+                  </div>
                 ) : (
-                  <Badge color="info" pill>
-                    {data.minimum_years_of_service} Years
-                  </Badge>
+                  <Badge color="info" pill>{data.minimum_years_of_service} Years</Badge>
                 )}
               </SettingRow>
 
@@ -414,15 +421,18 @@ const GratuityPolicySettings = () => {
 
               <SettingRow label="Maximum Gratuity Amount" last>
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.maximum_gratuity_amount || ""}
-                    onChange={(e) =>
-                      handleChange("maximum_gratuity_amount", e.target.value)
-                    }
-                    style={{ width: 180 }}
-                  />
+                  <div>
+                    <Input type="number" step="0.01" min="1" max="2000000" value={form.maximum_gratuity_amount || ""}
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        if (val !== "" && Number(val) > 2000000) val = "2000000";
+                        if (val !== "" && Number(val) < 0) val = "0";
+                        handleChange("maximum_gratuity_amount", val);
+                      }} style={{ width: 180 }} />
+                    {Number(form.maximum_gratuity_amount) > 2000000 && (
+                      <small className="text-danger d-block mt-1">⚠ Exceeds statutory cap of ₹20,00,000</small>
+                    )}
+                  </div>
                 ) : (
                   <Badge color="success" className="text-white">
                     ₹ {Number(data.maximum_gratuity_amount || 0).toLocaleString("en-IN")}

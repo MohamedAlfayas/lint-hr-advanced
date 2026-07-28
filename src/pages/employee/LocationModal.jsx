@@ -120,9 +120,55 @@ const LocationModal = ({
   }, [employeeLocationObj?.country]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const setLocField = (name, value) => {
+    setEmployeeLocationObj((prev) => ({ ...prev, [name]: value }));
+    LocationFormikForm.setFieldValue(name, value);
+  };
+
   const updateLocationEmployeeObj = (e) => {
     const { name, value } = e.target;
-    setEmployeeLocationObj((prev) => ({ ...prev, [name]: value }));
+    setLocField(name, value);
+  };
+
+  const handleLocationNameChange = (e) => {
+    const value = e.target.value.replace(/[^A-Za-z0-9\s.,&()'-]/g, "");
+    setLocField("name", value);
+    LocationFormikForm.setFieldTouched("name", true, false);
+    if (value.length > 100) {
+      LocationFormikForm.setFieldError(
+        "name",
+        "Location name cannot exceed 100 characters",
+      );
+    } else {
+      LocationFormikForm.setFieldError("name", undefined);
+    }
+  };
+
+  const handleAddressChange = (e) => {
+    const value = e.target.value.replace(/[^A-Za-z0-9\s.,\-#/'&]/g, "");
+    setLocField("address", value);
+    if (value.length > 200) {
+      LocationFormikForm.setFieldError(
+        "address",
+        "Address cannot exceed 200 characters",
+      );
+    } else {
+      LocationFormikForm.setFieldError("address", undefined);
+    }
+  };
+
+  const handleCityChange = (e) => {
+    const value = e.target.value.replace(/[^A-Za-z\s.'-]/g, "");
+    setLocField("city", value);
+    if (value.length > 100) {
+      LocationFormikForm.setFieldError(
+        "city",
+        "City cannot exceed 100 characters",
+      );
+    } else {
+      LocationFormikForm.setFieldError("city", undefined);
+    }
   };
 
   const handleLocationCountryChange = (e) => {
@@ -138,21 +184,39 @@ const LocationModal = ({
   const handleLocationStateChange = (e) => {
     setEmployeeLocationObj((prev) => ({ ...prev, state: e?.value || "" }));
   };
-
   const handleLocationImageUpdate = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (readerEvent) => {
-        setEmployeeLocationObj((prev) => ({
-          ...prev,
-          image: e.target.files[0],
-          image_url: readerEvent.target.result,
-        }));
-      };
-      reader.readAsDataURL(e.target.files[0]);
-    }
-  };
+    const file = e.target.files?.[0];
 
+    if (!file) return;
+
+    const allowedImageTypes = ["image/png", "image/jpeg", "image/webp"];
+
+    if (!allowedImageTypes.includes(file.type)) {
+      toast.error("Only PNG, JPG, JPEG and WEBP image formats are allowed.");
+
+      e.target.value = "";
+
+      setEmployeeLocationObj((prev) => ({
+        ...prev,
+        image: null,
+        image_url: null,
+      }));
+
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = (readerEvent) => {
+      setEmployeeLocationObj((prev) => ({
+        ...prev,
+        image: file,
+        image_url: readerEvent.target.result,
+      }));
+    };
+
+    reader.readAsDataURL(file);
+  };
   // ── Helper: sync location_details in localStorage for a given key ─────────
   const syncLocationDetailsToLocalStorage = (
     GlobalMetaData,
@@ -186,14 +250,37 @@ const LocationModal = ({
     enableReinitialize: true,
     initialValues: employeeLocationObj,
     validationSchema: Yup.object({
-      name: Yup.string().required("Please Enter Location Name"),
-      address: Yup.string().required("Please Enter Address"),
+      name: Yup.string()
+        .trim()
+        .matches(/^[A-Za-z0-9\s.,&()'-]+$/, "Please Enter Location Name")
+        .max(100, "Location name cannot exceed 100 characters")
+        .required("Please Enter Location Name")
+        .test(
+          "not-only-spaces",
+          "Please Enter Location Name",
+          (value) => !value || value.trim().length > 0,
+        ),
+      address: Yup.string()
+        .trim()
+        .matches(/^[A-Za-z0-9\s.,\-#/'&]+$/, "Please Enter Address")
+        .max(200, "Address cannot exceed 200 characters")
+        .required("Please Enter Address"),
       country: Yup.string().required("Please Select Country"),
       state: Yup.string().required("Please Select State"),
-      city: Yup.string().required("Please Enter City"),
-      pincode: Yup.string().required("Please Enter Pincode"),
+      city: Yup.string()
+        .trim()
+        .matches(/^[A-Za-z\s.'-]+$/, "Please Enter City")
+        .max(100, "City cannot exceed 100 characters")
+        .required("Please Enter City"),
+      pincode: Yup.string()
+        .trim()
+        .matches(/^[0-9]+$/, "Pincode should contain only numbers")
+        .length(6, "Please Enter Valid 6 Digit Pincode")
+        .required("Please Enter Pincode"),
       timezone: Yup.string().required("Please Select Time Zone"),
-      accurate_address: Yup.string().required("Please Enter Accurate Address"),
+      accurate_address: Yup.string()
+        .trim()
+        .required("Please Enter Accurate Address"),
     }),
 
     onSubmit: async (values) => {
@@ -428,15 +515,11 @@ const LocationModal = ({
                   innerRef={inputRef}
                   placeholder="Enter Location Name"
                   value={employeeLocationObj.name || ""}
-                  onChange={updateLocationEmployeeObj}
-                  invalid={f.touched.name && !!f.errors.name}
+                  onChange={handleLocationNameChange}
+                  invalid={!!f.errors.name}
                 />
-                {!f.touched.name && !f.errors.name && (
-                  <i className="ri-building-2-line" />
-                )}
-                {f.touched.name && f.errors.name && (
-                  <FormFeedback>{f.errors.name}</FormFeedback>
-                )}
+                {!f.errors.name && <i className="ri-building-2-line" />}
+                {f.errors.name && <FormFeedback>{f.errors.name}</FormFeedback>}
               </div>
             </Col>
 
@@ -456,10 +539,10 @@ const LocationModal = ({
                 name="address"
                 rows="2"
                 value={employeeLocationObj.address || ""}
-                onChange={updateLocationEmployeeObj}
-                invalid={f.touched.address && !!f.errors.address}
+                onChange={handleAddressChange}
+                invalid={!!f.errors.address}
               />
-              {f.touched.address && f.errors.address && (
+              {f.errors.address && (
                 <FormFeedback>{f.errors.address}</FormFeedback>
               )}
             </Col>
@@ -507,15 +590,11 @@ const LocationModal = ({
                   name="city"
                   placeholder="City"
                   value={employeeLocationObj.city || ""}
-                  onChange={updateLocationEmployeeObj}
-                  invalid={f.touched.city && !!f.errors.city}
+                  onChange={handleCityChange}
+                  invalid={!!f.errors.city}
                 />
-                {!f.touched.city && !f.errors.city && (
-                  <i className="ri-map-pin-line" />
-                )}
-                {f.touched.city && f.errors.city && (
-                  <FormFeedback>{f.errors.city}</FormFeedback>
-                )}
+                {!f.errors.city && <i className="ri-map-pin-line" />}
+                {f.errors.city && <FormFeedback>{f.errors.city}</FormFeedback>}
               </div>
             </Col>
 
@@ -524,17 +603,21 @@ const LocationModal = ({
               <Label className="form-label">Pincode</Label>
               <div className="form-icon right">
                 <Input
-                  type="number"
+                  type="text"
                   name="pincode"
                   placeholder="600001"
+                  inputMode="numeric"
                   value={employeeLocationObj.pincode || ""}
-                  onChange={updateLocationEmployeeObj}
-                  invalid={f.touched.pincode && !!f.errors.pincode}
+                  onChange={(e) => {
+                    const value = e.target.value
+                      .replace(/[^0-9]/g, "")
+                      .slice(0, 6);
+                    setLocField("pincode", value);
+                  }}
+                  invalid={!!f.errors.pincode}
                 />
-                {!f.touched.pincode && !f.errors.pincode && (
-                  <i className="ri-mail-line" />
-                )}
-                {f.touched.pincode && f.errors.pincode && (
+                {!f.errors.pincode && <i className="ri-mail-line" />}
+                {f.errors.pincode && (
                   <FormFeedback>{f.errors.pincode}</FormFeedback>
                 )}
               </div>
@@ -548,6 +631,7 @@ const LocationModal = ({
                 name="image"
                 id="image"
                 className="form-control"
+                accept=".png,.jpg,.jpeg,.webp"
                 onChange={handleLocationImageUpdate}
               />
               {employeeLocationObj.image_url && (

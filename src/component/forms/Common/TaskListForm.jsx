@@ -68,6 +68,7 @@ const defaultTaskData = {
   task_priority: null,
   start_time: "",
   end_time: "",
+  status: true,
 };
 
 // ─── Build employee option object (normalised shape) ─────────────────────────
@@ -190,7 +191,14 @@ const TaskListForm = () => {
   }, [form_obj]);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name } = e.target;
+    let value = e.target.value;
+
+    if (name === "title") {
+      value = value.replace(/[^A-Za-z0-9\s.,&()'-]/g, "");
+    } else if (name === "description") {
+      value = value.replace(/[^A-Za-z0-9\s.,!?'"\-_()&:;/]/g, "");
+    }
 
     setTaskData((prev) => ({
       ...prev,
@@ -198,6 +206,29 @@ const TaskListForm = () => {
     }));
 
     FormikForm.setFieldValue(name, value);
+    FormikForm.setFieldTouched(name, true, false);
+
+    if (name === "title") {
+      if (value.length > 100) {
+        FormikForm.setFieldError(
+          "title",
+          "Task Title cannot exceed 100 characters",
+        );
+      } else {
+        FormikForm.setFieldError("title", undefined);
+      }
+    }
+
+    if (name === "description") {
+      if (value.length > 500) {
+        FormikForm.setFieldError(
+          "description",
+          "Description cannot exceed 500 characters",
+        );
+      } else {
+        FormikForm.setFieldError("description", undefined);
+      }
+    }
 
     if (FormikForm.touched[name]) {
       FormikForm.validateField(name);
@@ -209,7 +240,18 @@ const TaskListForm = () => {
     enableReinitialize: true,
     initialValues: taskData,
     validationSchema: Yup.object({
-      title: Yup.string().trim().required("Please enter a valid task title."),
+      title: Yup.string()
+        .trim()
+        .matches(
+          /^[A-Za-z0-9\s.,&()'-]+$/,
+          "Task Title contains invalid characters",
+        )
+        .required("Please enter a valid task title.")
+        .test(
+          "task-title-length",
+          "Task Title cannot exceed 100 characters",
+          (value) => !value || value.length <= 100,
+        ),
       related_to: Yup.string().required("Please Select Related To"),
       assigned_to: Yup.number()
         .nullable()
@@ -217,6 +259,13 @@ const TaskListForm = () => {
       points: Yup.string()
         .required("Please Select Points")
         .oneOf(["1", "2", "3", "4", "5"], "Please Select a valid Points value"),
+      task_status: Yup.number()
+        .nullable()
+        .required("Please Select Task Status"),
+
+      task_priority: Yup.number()
+        .nullable()
+        .required("Please Select Task Priority"),
       end_time: Yup.string()
         .nullable()
         .test(
@@ -227,6 +276,17 @@ const TaskListForm = () => {
             if (!value || !start_time) return true;
             return new Date(value) >= new Date(start_time);
           },
+        ),
+      description: Yup.string()
+        .trim()
+        .matches(
+          /^[A-Za-z0-9\s.,!?'"\-_()&:;/]*$/,
+          "Description contains invalid characters",
+        )
+        .test(
+          "description-length",
+          "Description cannot exceed 500 characters",
+          (value) => !value || value.length <= 500,
         ),
     }),
 
@@ -258,6 +318,7 @@ const TaskListForm = () => {
           task_priority: taskData.task_priority || null,
           start_time: taskData.start_time || null,
           end_time: taskData.end_time || null,
+          status: taskData.status,
         };
 
         if (isEdit) payload.id = taskData.id;
@@ -367,6 +428,8 @@ const TaskListForm = () => {
   const showProject = taskData.related_to === "project";
   const showClient = taskData.related_to === "client";
 
+  console.log("Task_List ", taskData);
+
   return (
     <React.Fragment>
       <Row>
@@ -388,18 +451,16 @@ const TaskListForm = () => {
                       placeholder="Task Title"
                       value={taskData.title || ""}
                       onChange={handleInputChange}
-                      invalid={
-                        !!(FormikForm.touched.title && FormikForm.errors.title)
-                      }
+                      invalid={!!FormikForm.errors.title}
                     />
                     {!FormikForm.touched.title && !FormikForm.errors.title && (
                       <i className="ri-task-line" />
                     )}
-                    {FormikForm.touched.title && FormikForm.errors.title ? (
+                    {FormikForm.errors.title && (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.title}
                       </FormFeedback>
-                    ) : null}
+                    )}
                   </div>
                   {!FormikForm.errors.title && (
                     <div className="form-text">Enter Task Title.</div>
@@ -422,7 +483,17 @@ const TaskListForm = () => {
                     rows={3}
                     value={taskData.description || ""}
                     onChange={handleInputChange}
+                    invalid={!!FormikForm.errors.description}
                   />
+                  {FormikForm.errors.description ? (
+                    <FormFeedback type="invalid">
+                      {FormikForm.errors.description}
+                    </FormFeedback>
+                  ) : (
+                    <div className="form-text">
+                      Enter task description (optional).
+                    </div>
+                  )}
                 </div>
               </Col>
 
@@ -647,7 +718,7 @@ const TaskListForm = () => {
               <Col md={12}>
                 <div className="mb-3">
                   <Label htmlFor="task_status" className="form-label">
-                    Task Status
+                    Task Status <span>*</span>
                   </Label>
                   <Select
                     id="task_status"
@@ -658,16 +729,30 @@ const TaskListForm = () => {
                     classNamePrefix="lc-select"
                     placeholder="Select Status"
                     value={taskStatusValue}
+                    styles={selectStyles(
+                      FormikForm.touched.task_status,
+                      FormikForm.errors.task_status,
+                    )}
                     onChange={(selected) => {
                       setTaskData((prev) => ({
                         ...prev,
                         task_status: selected ? selected.id : null,
                       }));
+
+                      FormikForm.setFieldValue(
+                        "task_status",
+                        selected ? selected.id : null,
+                      );
                     }}
                   />
-                  <div className="form-text">
-                    Select current task status (optional).
-                  </div>
+                  {FormikForm.touched.task_status &&
+                  FormikForm.errors.task_status ? (
+                    <div className="text-danger small mt-1">
+                      {FormikForm.errors.task_status}
+                    </div>
+                  ) : (
+                    <div className="form-text">Select current task status.</div>
+                  )}
                 </div>
               </Col>
 
@@ -675,7 +760,7 @@ const TaskListForm = () => {
               <Col md={12}>
                 <div className="mb-3">
                   <Label htmlFor="task_priority" className="form-label">
-                    Task Priority
+                    Task Priority<span>*</span>
                   </Label>
                   <Select
                     id="task_priority"
@@ -686,16 +771,30 @@ const TaskListForm = () => {
                     classNamePrefix="lc-select"
                     placeholder="Select Priority"
                     value={taskPriorityValue}
+                    styles={selectStyles(
+                      FormikForm.touched.task_priority,
+                      FormikForm.errors.task_priority,
+                    )}
                     onChange={(selected) => {
                       setTaskData((prev) => ({
                         ...prev,
                         task_priority: selected ? selected.id : null,
                       }));
+
+                      FormikForm.setFieldValue(
+                        "task_priority",
+                        selected ? selected.id : null,
+                      );
                     }}
                   />
-                  <div className="form-text">
-                    Select task priority level (optional).
-                  </div>
+                  {FormikForm.touched.task_priority &&
+                  FormikForm.errors.task_priority ? (
+                    <div className="text-danger small mt-1">
+                      {FormikForm.errors.task_priority}
+                    </div>
+                  ) : (
+                    <div className="form-text">Select task priority level.</div>
+                  )}
                 </div>
               </Col>
 
@@ -800,6 +899,39 @@ const TaskListForm = () => {
                   )}
                 </div>
               </Col>
+
+              {/* STATUS - SHOW ONLY IN EDIT MODE */}
+              {taskData.id > 0 && (
+                <Col md={12}>
+                  <div className="mb-3">
+                    <Label htmlFor="task_status_toggle" className="form-label">
+                      Status
+                    </Label>
+
+                    <div
+                      className="form-check form-switch form-switch-md form-switch-success"
+                      dir="ltr"
+                    >
+                      <Input
+                        type="checkbox"
+                        id="task_status_toggle"
+                        className="form-check-input"
+                        checked={taskData.status || false}
+                        onChange={(e) =>
+                          setTaskData((prev) => ({
+                            ...prev,
+                            status: e.target.checked,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="form-text">
+                      {taskData.status ? "Active" : "Inactive"}
+                    </div>
+                  </div>
+                </Col>
+              )}
 
               {/* ── Submit ────────────────────────────────────────────── */}
               <Col lg={12}>

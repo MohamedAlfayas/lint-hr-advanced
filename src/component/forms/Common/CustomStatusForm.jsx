@@ -141,11 +141,21 @@ const CustomStatusForm = () => {
       is_break: form_obj?.is_break ?? false,
     },
     validationSchema: Yup.object({
-      name: Yup.string().required("Please Enter Status Name").min(2),
+      name: Yup.string()
+        .trim()
+        .matches(/^[A-Za-z\s]+$/, "Status name should contain only letters")
+        .min(2, "Status name must be at least 2 characters")
+        .required("Please Enter Status Name"),
       emoji: Yup.string().required("Please Select an Emoji"),
     }),
     onSubmit: HandleCustomStatusSaveAPI,
   });
+
+  const handleStatusNameChange = (e) => {
+    const { name, value } = e.target;
+
+    formik.setFieldValue(name, value.replace(/[^a-zA-Z\s]/g, ""));
+  };
 
   const handleEmojiClick = (emojiData) => {
     formik.setFieldValue("emoji", emojiData.emoji);
@@ -230,7 +240,7 @@ const CustomStatusForm = () => {
                 <Input
                   name="name"
                   value={formik.values.name}
-                  onChange={formik.handleChange}
+                  onChange={handleStatusNameChange}
                   onBlur={formik.handleBlur}
                   invalid={formik.touched.name && !!formik.errors.name}
                 />

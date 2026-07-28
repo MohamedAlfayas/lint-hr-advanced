@@ -69,7 +69,15 @@ const LeaveTypesWidgets = ({
           modules={[Autoplay, Mousewheel]}
           className="leaveTypeSlider"
         >
-          {(leaveTypeForEmployeeData || []).map((item, key) => {
+          {/* {(leaveTypeForEmployeeData || []).map((item, key) => { */}
+          {(leaveTypeForEmployeeData || [])
+            .filter(
+              (item) =>
+                !["Comp Off", "Restricted Leave"].includes(
+                  item?.leave_type?.name
+                )
+            )
+            .map((item, key) => {
             const allowed = item?.available_count || 0;
             const paidTaken = item?.paid_taken || 0;
             const unpaidTaken = item?.unpaid_taken || 0;

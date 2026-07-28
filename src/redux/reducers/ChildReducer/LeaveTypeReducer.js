@@ -32,10 +32,18 @@ const LeaveTypeReducer = createSlice({
                 ...state,
                 leave_type_for_current_employee: payload
             }
-        }
+        },
+        removeLeaveType: (state, action) => {
+            return {
+                ...state,
+                leave_type_data: state.leave_type_data.filter(
+                    obj => obj.id !== action.payload
+                )
+            };
+        },
     }
 });
 
-export const { setLeaveType, addLeaveType, editLeaveType, setLeaveTypeForCurrentEmployee } = LeaveTypeReducer.actions;
+export const { setLeaveType, addLeaveType, editLeaveType, setLeaveTypeForCurrentEmployee, removeLeaveType } = LeaveTypeReducer.actions;
 
 export default LeaveTypeReducer.reducer
