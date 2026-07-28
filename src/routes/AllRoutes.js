@@ -28,6 +28,7 @@ import ProjectOverviewTab from "../pages/Crm/Projects/ProjectOverviewTab";
 import ClientOverview from "../pages/Crm/Clients/ClientOverview";
 import ClientOverviewTab from "../pages/Crm/Clients/ClientOverviewTab";
 import LeaveReport from "../pages/attendance/LeaveReport";
+import AllEmployeeLocation from "../pages/dashboard/EmployeeMap/AllEmployeeLocation";
 
 // import Dashboard from "../pages/dashboard/Dashboard";
 // import Login from "../pages/auth/login/Login";
@@ -62,7 +63,9 @@ const Employee = lazy(() => import("../pages/employee/Employee"));
 const EmployeeView = lazy(() => import("../pages/employee/EmployeeView"));
 const Roles = lazy(() => import("../pages/roles/Roles"));
 const WorkSchedule = lazy(() => import("../pages/workschedule/WorkSchedule"));
-const MyReimbursementsPage = lazy(()=> import("../pages/reimbursement/MyReimbursementsPage"))
+const MyReimbursementsPage = lazy(
+  () => import("../pages/reimbursement/MyReimbursementsPage"),
+);
 const Holidays = lazy(() => import("../pages/holidays/Holidays"));
 const LeaveType = lazy(() => import("../pages/leave/LeaveType"));
 const LeaveApproval = lazy(() => import("../pages/leave/LeaveApproval"));
@@ -104,7 +107,11 @@ const privateRoutes = [
   {
     path: "/employee",
     component: <Employee />,
-    perm: [EMPLOYEE_VIEW_ACCESS_KEY,VIEW_TEAM_EMPLOYEE_ACCESS_KEY, VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY],
+    perm: [
+      EMPLOYEE_VIEW_ACCESS_KEY,
+      VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
+      VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
+    ],
   },
   {
     path: "/employee/view/:id",
@@ -114,7 +121,11 @@ const privateRoutes = [
   { path: "/roles", component: <Roles />, perm: [] },
   { path: "/workschedule", component: <WorkSchedule />, perm: [] },
   { path: "/holidays", component: <Holidays />, perm: "all" },
-  { path: "/my-reimbursements", component: <MyReimbursementsPage />, perm: "all" },
+  {
+    path: "/my-reimbursements",
+    component: <MyReimbursementsPage />,
+    perm: "all",
+  },
   { path: "/leavetype", component: <LeaveType />, perm: [] },
   { path: "/account-settings", component: <AccountSettings />, perm: "all" },
   {
@@ -186,15 +197,15 @@ const privateRoutes = [
   { path: "/priorities", component: <Priorities />, perm: "all" },
   { path: "/contact-group", component: <ContactGroup />, perm: "all" },
   { path: "/contacts", component: <Contacts />, perm: "all" },
-  { 
-    path: "/clients", 
-    component: <Clients />, 
+  {
+    path: "/clients",
+    component: <Clients />,
     // perm: "all"
     perm: [
       CLIENT_VIEW_ACCESS_KEY,
       CREATE_CLIENT_ACCESS_KEY,
       EDIT_CLIENT_ACCESS_KEY,
-    ]
+    ],
   },
   { path: "/projects", component: <Projects />, perm: "all" },
   { path: "/tasks", component: <TaskTab />, perm: "all" },
@@ -211,6 +222,11 @@ const privateRoutes = [
   {
     path: "/client-overview/:id",
     component: <ClientOverviewTab />,
+    perm: "all",
+  },
+  {
+    path: "/employee-locations",
+    component: <AllEmployeeLocation />,
     perm: "all",
   },
 ];
