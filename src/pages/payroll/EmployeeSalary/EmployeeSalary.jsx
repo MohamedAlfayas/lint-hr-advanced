@@ -273,6 +273,15 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
     { value: "gross", label: "Gross Salary" },
   ];
 
+  // Escapes the scrollable ModalBody's clipping context so react-select
+  // menus float above later content (Leave Policy / Tax Declaration cards)
+  // instead of rendering hidden behind them.
+  const selectPortalProps = {
+    menuPortalTarget: document.body,
+    menuPosition: "fixed",
+    styles: { menuPortal: (base) => ({ ...base, zIndex: 9999 }) },
+  };
+
   useEffect(() => {
     if (isOpen && employee) {
       const lo = employee.leave_override || {};
@@ -427,6 +436,7 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
               }
               placeholder="Select structure..."
               classNamePrefix="select2-selection"
+              {...selectPortalProps}
             />
           </Col>
 
@@ -441,6 +451,7 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
                 setForm((p) => ({ ...p, based_on: val.value }))
               }
               classNamePrefix="select2-selection"
+              {...selectPortalProps}
             />
           </Col>
 
@@ -560,6 +571,7 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
                     }
                     onChange={(o) => setLeave((p) => ({ ...p, pay_remaining: o.value }))}
                     classNamePrefix="select2-selection"
+                    {...selectPortalProps}
                   />
                 </Col>
               </Row>
@@ -591,6 +603,7 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
                     }
                     onChange={(o) => setTax((p) => ({ ...p, regime: o.value }))}
                     classNamePrefix="select2-selection"
+                    {...selectPortalProps}
                   />
                 </Col>
               </Row>
@@ -922,6 +935,9 @@ const EmployeeSalary = () => {
                 isClearable
                 placeholder="Filter by department..."
                 classNamePrefix="select2-selection"
+                menuPortalTarget={document.body}
+                menuPosition="fixed"
+                styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
               />
             </div>
           </div>
