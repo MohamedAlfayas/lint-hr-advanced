@@ -34,11 +34,24 @@ export const BaseURL = getBaseUrlFromDomain();
 // export const BaseURL = "https://dev.linthr.com/";
 //export const BaseURL = "http://192.168.1.14:8000/";
 export const ProductionBaseURL = "http://62.72.59.29:8000";
-export const getWsUrlFromDomain = () => {
-  const httpUrl = getBaseUrlFromDomain(); // reuse same platform/subdomain/local logic
-  // Handles both http:// -> ws:// and https:// -> wss:// in one pass, since
-  // the regex only consumes the leading "http" and leaves any trailing "s".
-  const wsUrl = httpUrl.replace(/^http/, "ws").replace(/\/$/, "");
-  return `${wsUrl}/ws/tracking/`;
+export const getWsUrlFromDomain = () => { 
+
+  const domain = window.location.hostname.split(".")[0];
+
+  if (
+    !!process.env.REACT_APP_LC_PLATFORM &&
+    process.env.REACT_APP_LC_PLATFORM === "local"
+  ) {
+    const httpUrl = getBaseUrlFromDomain();
+    const wsUrl = httpUrl.replace(/^http/, "ws").replace(/\/$/, "");
+    return `${wsUrl}/ws/tracking/`;
+  } else {
+    // Construct the base URL dynamically
+    if (!!domain) {
+      return `wss://${domain}.${process.env.REACT_APP_BASE_URL}/ws/tracking/`;
+    }
+  }
+
+  
 };
 export const WsBaseURL = getWsUrlFromDomain();
