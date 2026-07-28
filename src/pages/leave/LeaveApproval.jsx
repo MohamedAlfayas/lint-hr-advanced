@@ -258,28 +258,39 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
         const thisLeaveType = LeaveTypeData.find(
           (d) => d.id === obj.leave_type_id,
         );
-        return <React.Fragment>{thisLeaveType?.name}</React.Fragment>;
+        // return <React.Fragment>{thisLeaveType?.name}</React.Fragment>;
+        return (
+          <div>
+            <div>{thisLeaveType?.name}</div>
+
+            {obj.comp_off_work_date && (
+              <small className="text-muted">
+                {convertDate(obj.comp_off_work_date)}
+              </small>
+            )}
+          </div>
+        );
       },
     },
     {
       Header: "Reason",
       filterable: false,
       id: "reason",
-      // accessor: (obj) => <b>{obj.reason}</b>,
-      accessor: (obj) => {
-        if (obj.comp_off_work_date) {
-          return (
-            <div>
-              <div>
-                <b>Comp-Off</b>
-              </div>
-              <div>{convertDate(obj.comp_off_work_date)}</div>
-            </div>
-          );
-        }
+      accessor: (obj) => <b>{obj.reason}</b>,
+      // accessor: (obj) => {
+      //   if (obj.comp_off_work_date) {
+      //     return (
+      //       <div>
+      //         <div>
+      //           <b>Comp-Off</b>
+      //         </div>
+      //         <div>{convertDate(obj.comp_off_work_date)}</div>
+      //       </div>
+      //     );
+      //   }
 
-        return <b>{obj.reason}</b>;
-      },
+      //   return <b>{obj.reason}</b>;
+      // },
     },
     {
       Header: () => (

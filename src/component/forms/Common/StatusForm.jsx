@@ -263,9 +263,9 @@ const StatusForm = () => {
           dispatch(toggleRSBView(false));
         } else {
           toast.error(
-            response?.data?.message ||
+            response?.data?.error_message ||
               response?.data?.detail ||
-              "Status name already exists, so you cannot create a duplicate status.",
+              "Something went wrong!",
           );
         }
       } catch (error) {
