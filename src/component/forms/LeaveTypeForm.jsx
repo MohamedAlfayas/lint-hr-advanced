@@ -87,8 +87,8 @@ const LeaveTypeForm = () => {
     setLeaveTypeData({
       ...form_obj,
       is_credit_based: form_obj?.is_credit_based ?? false,
-      allowed_count: form_obj?.allowed_count || "",
-      monthly_allowed_count: form_obj?.monthly_allowed_count || "",
+      allowed_count: form_obj?.allowed_count || 0,
+      monthly_allowed_count: form_obj?.monthly_allowed_count || 0,
     });
     setCurrentUnit(form_obj.unit);
 
@@ -574,8 +574,8 @@ const LeaveTypeForm = () => {
                         // value={leaveTypeData.allowed_count ?? 0}
                         value={
                           leaveTypeData.is_credit_based
-                            ? (leaveTypeData.monthly_allowed_count || "")
-                            : (leaveTypeData.allowed_count || "")
+                            ? (leaveTypeData.monthly_allowed_count ?? "")
+                            : (leaveTypeData.allowed_count ?? "")
                         }
                         disabled={frozen}
                         // onFocus={() => {
