@@ -15,6 +15,12 @@ import {
   CLIENT_VIEW_ACCESS_KEY,
   CREATE_CLIENT_ACCESS_KEY,
   EDIT_CLIENT_ACCESS_KEY,
+  COMPANY_PROFILE_VIEW_ACCESS_KEY,
+  DEPARTMENT_VIEW_ACCESS_KEY,
+  BRANCH_VIEW_ACCESS_KEY,
+  ROLES_VIEW_ACCESS_KEY,
+  FORMS_VIEW_ACCESS_KEY,
+  LOCATION_GROUP_VIEW_ACCESS_KEY,
 } from "../common/constant/RoleConstants";
 import Status from "../pages/Task/Status/Status";
 import Priorities from "../pages/Task/Priorities/Priorities";
@@ -62,7 +68,7 @@ const Employee = lazy(() => import("../pages/employee/Employee"));
 const EmployeeView = lazy(() => import("../pages/employee/EmployeeView"));
 const Roles = lazy(() => import("../pages/roles/Roles"));
 const WorkSchedule = lazy(() => import("../pages/workschedule/WorkSchedule"));
-const MyReimbursementsPage = lazy(()=> import("../pages/reimbursement/MyReimbursementsPage"))
+const MyReimbursementsPage = lazy(() => import("../pages/reimbursement/MyReimbursementsPage"))
 const Holidays = lazy(() => import("../pages/holidays/Holidays"));
 const LeaveType = lazy(() => import("../pages/leave/LeaveType"));
 const LeaveApproval = lazy(() => import("../pages/leave/LeaveApproval"));
@@ -99,12 +105,21 @@ const privateRoutes = [
   {
     path: "/organization",
     component: <ProjectOverview />,
-    perm: ["dac690d1-6712-4aa6-9b4f-7d71bc4f8eb1"],
+    perm: [
+      COMPANY_PROFILE_VIEW_ACCESS_KEY,
+      DEPARTMENT_VIEW_ACCESS_KEY,
+      BRANCH_VIEW_ACCESS_KEY,
+      CUSTOM_FIELD_VIEW_ACCESS_KEY,
+      ROLES_VIEW_ACCESS_KEY,
+      FORMS_VIEW_ACCESS_KEY,
+      LOCATION_GROUP_VIEW_ACCESS_KEY,
+      
+    ],
   },
   {
     path: "/employee",
     component: <Employee />,
-    perm: [EMPLOYEE_VIEW_ACCESS_KEY,VIEW_TEAM_EMPLOYEE_ACCESS_KEY, VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY],
+    perm: [EMPLOYEE_VIEW_ACCESS_KEY, VIEW_TEAM_EMPLOYEE_ACCESS_KEY, VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY],
   },
   {
     path: "/employee/view/:id",
@@ -186,9 +201,9 @@ const privateRoutes = [
   { path: "/priorities", component: <Priorities />, perm: "all" },
   { path: "/contact-group", component: <ContactGroup />, perm: "all" },
   { path: "/contacts", component: <Contacts />, perm: "all" },
-  { 
-    path: "/clients", 
-    component: <Clients />, 
+  {
+    path: "/clients",
+    component: <Clients />,
     // perm: "all"
     perm: [
       CLIENT_VIEW_ACCESS_KEY,
