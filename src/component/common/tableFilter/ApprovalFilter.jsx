@@ -92,6 +92,23 @@ const ApprovalFilter = ({ formname }) => {
     () => GetLocalStorageData("employee") || [],
     [],
   );
+
+  // near your other useMemo option lists
+  const leave_type_options = useMemo(
+    () =>
+      (GetLocalStorageData("leave_types") || []).map((lt) => ({
+        value: lt.id,
+        label: lt.name,
+      })),
+    [],
+  );
+
+  const [selectedLeaveType, setSelectedLeaveType] = useState(null);
+
+  const handleLeaveTypeFilterChange = (selected) => {
+    setSelectedLeaveType(selected || null);
+  };
+
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [showTeamAttendanceApproval, setShowTeamAttendanceApproval] =
     useState(false);
@@ -228,6 +245,7 @@ const ApprovalFilter = ({ formname }) => {
     filteredMonth,
     activeTab,
     selectedEmployees,
+    selectedLeaveType,
     employee_table_filter_keys?.primary_department_id_list,
   ]);
 
@@ -258,6 +276,7 @@ const ApprovalFilter = ({ formname }) => {
     showTeamAttendanceApproval,
     showAllLeaveApproval,
     showTeamLeaveApproval,
+    selectedLeaveType,
   ]);
 
   useEffect(() => {
@@ -286,6 +305,10 @@ const ApprovalFilter = ({ formname }) => {
 
   let integerEmployeeType;
 
+  const isLeaveApprovalActive =
+    activeTab === "2" ||
+    (!showAllAttendanceApproval && !showTeamAttendanceApproval && activeTab === "1");
+
   const getDepartmentParam = () => {
     const deptId = employee_table_filter_keys?.primary_department_id_list;
 
@@ -312,6 +335,20 @@ const ApprovalFilter = ({ formname }) => {
     );
   };
 
+  const getLeaveTypeParam = () => {
+    if (!selectedLeaveType) return "";
+    return `&leave_type_id=${selectedLeaveType.value}`;
+  };
+
+  const applyLeaveTypeFilter = (data) => {
+    if (!selectedLeaveType) return data;
+    return data.filter(
+      (item) =>
+        Number(item.leave_type_id ?? item.leave_type?.id) ===
+        Number(selectedLeaveType.value),
+    );
+  };
+
   // ✅ client-side fallback filter (works even if backend ignores employee_id_list)
   const applyEmployeeFilter = (data) => {
     if (!selectedEmployees.length) return data;
@@ -327,6 +364,8 @@ const ApprovalFilter = ({ formname }) => {
     const integerEmployeeType = parseInt(type, 10);
     const deptParam = getDepartmentParam();
     const empParam = getEmployeeParam();
+    const leaveTypeParam = getLeaveTypeParam(); // ← add
+
 
     const baseUrl =
       "leave/get-leave-application-for-approval/?thisMonth=" +
@@ -349,6 +388,7 @@ const ApprovalFilter = ({ formname }) => {
 
       data = applyDepartmentFilter(data);
       data = applyEmployeeFilter(data);
+      data = applyLeaveTypeFilter(data); 
 
       dispatch(setApprovalEmployeeTypeFilter(integerEmployeeType));
       dispatch(setLeaveApproval(data));
@@ -509,6 +549,26 @@ const ApprovalFilter = ({ formname }) => {
                     filterOption={handleEmployeeSearch}
                   />
                 </Col>
+
+                {isLeaveApprovalActive && (showAllLeaveApproval || showTeamLeaveApproval) && (
+                  <Col md={3}>
+                    <Select
+                      id="leave_type_filter"
+                      name="leave_type_filter"
+                      isClearable
+                      isMulti={false}
+                      options={leave_type_options}
+                      className="basic-multi-select"
+                      placeholder="Select Leave Type"
+                      value={selectedLeaveType}
+                      onChange={handleLeaveTypeFilterChange}
+                      filterOption={(option, inputValue) =>
+                        option.label.toLowerCase().includes(inputValue.toLowerCase())
+                      }
+                    />
+                  </Col>
+                )}
+
                 <Col md={3}>
                   <div className="form-icon right">
                     <DatePicker
