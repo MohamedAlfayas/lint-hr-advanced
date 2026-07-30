@@ -218,6 +218,14 @@ const InfoTable = ({
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [reorderList, setReorderList] = useState([]);
 
+
+  const getValidColor = (color) => {
+    const option = new Option();
+    option.style.color = color;
+
+    return option.style.color ? color : "#000000";
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -3594,10 +3602,11 @@ const InfoTable = ({
                                     <span
                                       className="badge text-uppercase"
                                       style={{
-                                        backgroundColor:
-                                          item.color && /^#/.test(item.color)
-                                            ? item.color
-                                            : "#000000",
+                                        // backgroundColor:
+                                        //   item.color && /^#/.test(item.color)
+                                        //     ? item.color
+                                        //     : "#000000",
+                                        backgroundColor: getValidColor(item.color),
                                         color: "#fff",
                                         padding: "6px 10px",
                                         fontSize: "11px",

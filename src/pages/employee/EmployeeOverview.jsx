@@ -110,7 +110,7 @@ const EmployeeOverview = (props) => {
                           E-mail :
                         </th>
                         <td className="text-muted">
-                          {profileObj?.branch_id_list}
+                          {profileObj?.email || "-"}
                         </td>
                       </tr>
                       <tr>
