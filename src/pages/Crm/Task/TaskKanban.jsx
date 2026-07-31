@@ -82,7 +82,16 @@ function buildColumns(taskStatusList) {
   if (!Array.isArray(taskStatusList) || taskStatusList.length === 0) {
     return FALLBACK_COLUMNS;
   }
-  return taskStatusList.map((s, idx) => ({
+
+  const firstItem = taskStatusList.filter((s) => Number(s.id) === 1);
+  const lastItem = taskStatusList.filter((s) => Number(s.id) === 3);
+  const middleItems = taskStatusList
+    .filter((s) => Number(s.id) !== 1 && Number(s.id) !== 3)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  const sortedList = [...firstItem, ...middleItems, ...lastItem];
+
+  return sortedList.map((s, idx) => ({
     id: Number(s.id),
     title: s.title || s.name || `Status ${s.id}`,
     icon: STATUS_ICONS[idx % STATUS_ICONS.length],
@@ -531,6 +540,9 @@ const TaskKanban = ({ searchQuery = "" }) => {
   const [error, setError] = useState(null);
   const [updatingIds, setUpdatingIds] = useState(new Set());
   const draggedTask = useRef(null);
+  const boardScrollRef = useRef(null);
+  const isPanning = useRef(false);
+  const panStart = useRef({ x: 0, scrollLeft: 0 });
 
   // ── Build lookup maps from localStorage ──────────────────────────
   const taskStatusList = (GetLocalStorageData("task_status") || []).filter(
@@ -588,6 +600,37 @@ const TaskKanban = ({ searchQuery = "" }) => {
 
   function handleDragOver(e) {
     e.preventDefault();
+  }
+
+  // ── Click & drag to scroll (outside cards) ────────────────────────
+  function handlePanMouseDown(e) {
+    if (e.target.closest("[draggable='true']")) return;
+    if (e.button !== 0) return;
+    const rect = boardScrollRef.current.getBoundingClientRect();
+    const clickedOnScrollbar =
+      e.clientY > rect.bottom - 17 &&
+      boardScrollRef.current.scrollWidth > boardScrollRef.current.clientWidth;
+    if (clickedOnScrollbar) return;
+    isPanning.current = true;
+    panStart.current = {
+      x: e.pageX,
+      scrollLeft: boardScrollRef.current.scrollLeft,
+    };
+    boardScrollRef.current.style.cursor = "grabbing";
+  }
+
+  function handlePanMouseMove(e) {
+    if (!isPanning.current) return;
+    e.preventDefault();
+    const dx = e.pageX - panStart.current.x;
+    boardScrollRef.current.scrollLeft = panStart.current.scrollLeft - dx;
+  }
+
+  function handlePanMouseUp() {
+    isPanning.current = false;
+    if (boardScrollRef.current) {
+      boardScrollRef.current.style.cursor = "default";
+    }
   }
 
   async function handleDrop(e, targetColumnId) {
@@ -793,7 +836,15 @@ const TaskKanban = ({ searchQuery = "" }) => {
           <p className="text-muted mt-2 fs-14">Loading tasks…</p>
         </div>
       ) : (
-        <div className="kanban-scroll-wrapper" style={styles.boardWrapper}>
+        <div
+          className="kanban-scroll-wrapper"
+          style={styles.boardWrapper}
+          ref={boardScrollRef}
+          onMouseDown={handlePanMouseDown}
+          onMouseMove={handlePanMouseMove}
+          onMouseUp={handlePanMouseUp}
+          onMouseLeave={handlePanMouseUp}
+        >
           <div style={styles.boardInner}>
             {columns.map((col) => (
               <KanbanColumn

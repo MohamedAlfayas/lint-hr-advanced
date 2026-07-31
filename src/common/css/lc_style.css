@@ -250,7 +250,6 @@ body .rs-table-row-header .rs-table-cell {
   color: #999;
 }
 
-
 /* === Main Card === */
 .lc-infowindow-card {
   margin: 0 !important;
@@ -351,7 +350,9 @@ body .rs-table-row-header .rs-table-cell {
   font-size: 15px;
   color: #fff;
   background: linear-gradient(135deg, #0ab39c, #0d6efd);
-  box-shadow: 0 0 0 3px #fff, 0 0 0 4px #d9e6ff;
+  box-shadow:
+    0 0 0 3px #fff,
+    0 0 0 4px #d9e6ff;
 }
 
 /* === Details === */
@@ -632,4 +633,18 @@ body .rs-table-row-header .rs-table-cell {
 }
 .org-card-edit {
   padding: 0;
+}
+#old_password.is-invalid,
+#new_password.is-invalid,
+#confirm_password.is-invalid {
+  background-image: none !important;
+  padding-right: 40px !important;
+}
+.eye-icon {
+  position: absolute;
+  right: 12px;
+  top: 19px;
+  transform: translateY(-50%);
+  z-index: 3;
+  cursor: pointer;
 }

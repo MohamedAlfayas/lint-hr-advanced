@@ -1664,16 +1664,30 @@ const InfoTable = ({
         ) {
           const rowData = cellProps.row.original;
 
+          const isLockedStatusRow =
+            formname === status_component_name &&
+            (rowData.id === 1 || rowData.id === 3);
+
           return (
             <>
               <li className="list-inline-item edit">
-                <Link
-                  to="javascript:void(0)"
-                  className="text-primary d-inline-block edit-item-btn"
-                  onClick={() => handleCreateAndUpdate(rowData.id, rowData)}
-                >
-                  <i className="ri-pencil-fill fs-16"></i>
-                </Link>
+                {isLockedStatusRow ? (
+                  <span
+                    className="text-muted d-inline-block edit-item-btn"
+                    style={{ cursor: "not-allowed", opacity: 0.5 }}
+                    title="This status cannot be edited"
+                  >
+                    <i className="ri-pencil-fill fs-16"></i>
+                  </span>
+                ) : (
+                  <Link
+                    to="javascript:void(0)"
+                    className="text-primary d-inline-block edit-item-btn"
+                    onClick={() => handleCreateAndUpdate(rowData.id, rowData)}
+                  >
+                    <i className="ri-pencil-fill fs-16"></i>
+                  </Link>
+                )}
               </li>
 
               {/* <li className="list-inline-item">
