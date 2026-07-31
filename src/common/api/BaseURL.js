@@ -1,5 +1,5 @@
 const platform = process.env.REACT_APP_LC_PLATFORM || "local";
-const LOCAL_BASE_URL = "http://192.168.0.52:8000/";
+const LOCAL_BASE_URL = "http://192.168.0.64:8000/";
 export const getBaseUrlFromDomain = () => {
   // Local dev/testing (e.g. on a physical device pointed at your machine's
   // LAN IP) always talks to the fixed local server — skip hostname/subdomain
@@ -34,8 +34,7 @@ export const BaseURL = getBaseUrlFromDomain();
 // export const BaseURL = "https://dev.linthr.com/";
 //export const BaseURL = "http://192.168.1.14:8000/";
 export const ProductionBaseURL = "http://62.72.59.29:8000";
-export const getWsUrlFromDomain = () => { 
-
+export const getWsUrlFromDomain = () => {
   const domain = window.location.hostname.split(".")[0];
 
   if (
@@ -51,7 +50,5 @@ export const getWsUrlFromDomain = () => {
       return `wss://${domain}.${process.env.REACT_APP_BASE_URL}/ws/tracking/`;
     }
   }
-
-  
 };
 export const WsBaseURL = getWsUrlFromDomain();
