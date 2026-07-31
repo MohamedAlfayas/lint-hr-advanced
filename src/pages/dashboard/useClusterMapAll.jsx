@@ -47,6 +47,13 @@ const SPEED_OPTIONS = [0.5, 1, 1.5, 2];
 // Zoom level used while following the moving marker during playback
 const PLAYBACK_FOLLOW_ZOOM = 17;
 
+// Zoom level used when a timeline card/marker is clicked to focus on that
+// specific point. Kept separate from PLAYBACK_FOLLOW_ZOOM — a short route's
+// "Full view" fit can already land above 17, so reusing that value could
+// zoom OUT instead of in. This is only ever applied as a floor (see
+// handleTimelineClick), never lower than whatever the map is already at.
+const TIMELINE_FOCUS_ZOOM = 19;
+
 // Distance below which two consecutive points count as "waiting" (km)
 const WAIT_THRESHOLD_KM = 0.05;
 
@@ -70,6 +77,27 @@ const haversine = (a, b) => {
     Math.sin(dLat / 2) ** 2 +
     Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
   return 2 * R * Math.asin(Math.sqrt(h));
+};
+
+// ─── Prefer formatted_* fields (higher-precision/corrected coordinates &
+// address), fall back to the raw fields when formatted_* is absent ──────
+const getLat = (loc) =>
+  parseFloat(loc?.formatted_latitude ?? loc?.latitude) || 0;
+
+const getLng = (loc) =>
+  parseFloat(loc?.formatted_longitude ?? loc?.longitude) || 0;
+
+// `formatted_address` arrives as a Python-dict-repr string (single quotes,
+// None/True/False) — not valid JSON — so it can't be JSON.parse'd. Pull the
+// `formatted_address` key's value out with a regex instead. Falls back to
+// `accurate_address` if `formatted_address` is missing or unparseable.
+const extractFormattedAddress = (loc) => {
+  const raw = loc?.formatted_address;
+  if (typeof raw === "string" && raw.trim()) {
+    const match = raw.match(/'formatted_address':\s*'([^']*)'/);
+    if (match) return match[1];
+  }
+  return loc?.accurate_address || "";
 };
 
 // Original palette — unchanged
@@ -266,8 +294,8 @@ const injectStyles = () => {
       cursor: pointer;
     }
     /* Playback panel: empty space between controls lets clicks fall through
-       to whatever is underneath (e.g. the native Map/Satellite toggle) —
-       only the actual controls themselves are clickable. */
+       to whatever is underneath — only the actual controls themselves are
+       clickable. */
     .ucma-playback-panel {
       pointer-events: none;
     }
@@ -278,6 +306,7 @@ const injectStyles = () => {
       .ucma-playback-panel {
         left: 10px !important;
         top: 64px !important;
+        transform: none !important;
         gap: 10px !important;
       }
       .ucma-playback-rail {
@@ -360,6 +389,25 @@ const UsersClusterMapAll = ({
   useEffect(() => {
     injectStyles();
   }, []);
+
+  // ─── Stable map options object. This must NOT be recreated on every
+  //     render — the marching-ants effect ticks `antOffset` every 60ms,
+  //     which re-renders this component constantly. If `options` were an
+  //     inline object literal, react-google-maps/api would call
+  //     map.setOptions(...) on every one of those re-renders, which was
+  //     fighting the native Map/Satellite control's own internal click
+  //     handling and made it look like satellite toggle didn't apply
+  //     immediately. Memoizing keeps the object referentially stable so
+  //     setOptions is only called when something here actually changes. ──
+  const mapOptions = useMemo(
+    () => ({
+      streetViewControl: false,
+      fullscreenControl: false,
+      mapTypeControl: true,
+      rotateControl: true,
+    }),
+    [],
+  );
 
   // ─── Reset filters whenever a new employee list is handed in (modal reopened) ──
   useEffect(() => {
@@ -529,6 +577,8 @@ const UsersClusterMapAll = ({
         });
       },
       onMessage: (data) => {
+        console.log("liveeeee dataaaa", data);
+
         if (!data || data.latitude == null || data.longitude == null) return;
         const normalized = normalizeLiveLocation(data);
         setLiveLocation(normalized);
@@ -556,8 +606,8 @@ const UsersClusterMapAll = ({
   const liveMarkerPos =
     isViewingToday && liveLocation
       ? {
-          lat: parseFloat(liveLocation.latitude) || 0,
-          lng: parseFloat(liveLocation.longitude) || 0,
+          lat: getLat(liveLocation),
+          lng: getLng(liveLocation),
         }
       : null;
 
@@ -583,21 +633,22 @@ const UsersClusterMapAll = ({
           });
         }
 
+        const addressSource = extractFormattedAddress(loc);
         let cleanedAddress = "";
-        if (loc?.accurate_address) {
-          const parts = loc.accurate_address.split(",");
+        if (addressSource) {
+          const parts = addressSource.split(",");
           if (parts.length > 1 && parts[0].trim().match(/^[A-Z0-9+]+$/)) {
             cleanedAddress = parts.slice(1).join(",").trim();
           } else {
-            cleanedAddress = loc.accurate_address.trim();
+            cleanedAddress = addressSource.trim();
           }
         }
 
         return {
           index: index + 1,
           name: activeEmployee?.first_name || "",
-          lat: parseFloat(loc?.latitude) || 0,
-          lng: parseFloat(loc?.longitude) || 0,
+          lat: getLat(loc),
+          lng: getLng(loc),
           address: cleanedAddress,
           timestamp: indianTime,
           date: indianDate,
@@ -676,6 +727,25 @@ const UsersClusterMapAll = ({
     },
     [path, fitToPath],
   );
+
+  // ─── Re-fit / re-trigger the map whenever the browser (or the modal
+  //     wrapping this component) dispatches a "resize" event. Google Maps
+  //     only measures its container size at creation time — if that
+  //     container was still 0×0 or mid-animation (e.g. a reactstrap Modal
+  //     still fading in) when the map first mounted, the tiles never
+  //     recover on their own. `google.maps.event.trigger(map, "resize")`
+  //     forces Google to re-measure, and re-running fitToPath keeps the
+  //     route centered afterwards — same effect as clicking "Full view". ──
+  useEffect(() => {
+    const handleResize = () => {
+      if (mapRef.current && window.google) {
+        window.google.maps.event.trigger(mapRef.current, "resize");
+        if (path.length > 0) fitToPath(mapRef.current, path);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [path, fitToPath]);
 
   // ─── Interpolate position + label from a 0..1 progress value ──
   const computeFromProgress = useCallback(
@@ -828,6 +898,13 @@ const UsersClusterMapAll = ({
     applyProgress(t);
   };
 
+  // ─── Pause playback the instant the user grabs the duration rail,
+  //     whether via mouse or touch, so scrubbing never fights the
+  //     animation loop for control of `progress`. ─────────────────
+  const pauseForScrub = () => {
+    if (isPlaying) setIsPlaying(false);
+  };
+
   const togglePlay = () => {
     if (path.length < 2) return;
     setSelectedMarker(null);
@@ -862,15 +939,24 @@ const UsersClusterMapAll = ({
     setSelectedMarker(null);
   };
 
-  // ─── Timeline / marker click → pan + open info window + expand ─
+  // ─── Timeline / marker click → pan + zoom in on that point's location,
+  //     open its info window, and expand its card. Also stops any running
+  //     playback and clears scrub progress so the zoomed-in view isn't
+  //     immediately overridden by the playback effects. Map type (road /
+  //     satellite) is left untouched here — that's controlled solely by
+  //     the native Map/Satellite control now, independent of timeline
+  //     clicks. ─────────────────────────────────────────────────────────
   const handleTimelineClick = (p, i) => {
     setIsPlaying(false);
+    setProgress(0);
+    setMovingPos(null);
     setActiveIndex(i);
     setExpandedIndex((cur) => (cur === i ? null : i));
     setSelectedMarker({ lat: p.lat, lng: p.lng, count: 1, users: [p] });
     if (mapRef.current) {
+      const currentZoom = mapRef.current.getZoom() || 0;
       mapRef.current.panTo({ lat: p.lat, lng: p.lng });
-      mapRef.current.setZoom(16);
+      mapRef.current.setZoom(Math.max(currentZoom, TIMELINE_FOCUS_ZOOM));
     }
   };
 
@@ -955,12 +1041,7 @@ const UsersClusterMapAll = ({
             mapContainerStyle={{ width: "100%", height: "100%" }}
             center={path.length ? path[0] : indiaCenter}
             onLoad={onMapLoad}
-            options={{
-              streetViewControl: false,
-              fullscreenControl: false,
-              mapTypeControl: true,
-              rotateControl: true,
-            }}
+            options={mapOptions}
           >
             {/* Faint full-route track, always visible underneath */}
             {path.length > 1 && (
@@ -1120,7 +1201,7 @@ const UsersClusterMapAll = ({
                                 minute: "2-digit",
                               })
                             : "",
-                          address: liveLocation?.accurate_address || "",
+                          address: extractFormattedAddress(liveLocation),
                         },
                       ],
                     })
@@ -1361,15 +1442,17 @@ const UsersClusterMapAll = ({
                   background: "rgba(255,255,255,0.95)",
                   color: "#334155",
                   borderRadius: "8px",
-                  padding: "6px 12px",
-                  fontSize: "12px",
-                  fontWeight: 600,
+                  padding: "6px 10px",
+                  fontSize: "13px",
                   cursor: "pointer",
                   boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
                 }}
-                title="Fit whole route in view"
+                title="Full view"
               >
-                Full view
+                <i className="ri-focus-3-line"></i>
               </button>
             </div>
           )}
@@ -1416,17 +1499,20 @@ const UsersClusterMapAll = ({
             )}
           </AnimatePresence>
 
-          {/* ── Playback controls — vertical panel, left side of the map:
-              vertical duration/progress line on top, play/resume button,
-              reset, then the speed limit buttons (0.5x/1x/1.5x/2x) stacked
-              below, all in one column. ── */}
+          {/* ── Playback controls — vertical panel, left side of the map.
+              Positioned as a vertically-centered floating column
+              (top:50% + translateY(-50%)) instead of a fixed pixel offset,
+              so it stays centered on the map regardless of viewport height;
+              the mobile media query (see injected CSS) resets the transform
+              and pins it to the top-left on small screens instead. ── */}
           {path.length > 1 && (
             <div
               className="ucma-playback-panel"
               style={{
                 position: "absolute",
                 left: "20px",
-                top: "68px",
+                top: "50%",
+                transform: "translateY(-50%)",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -1486,7 +1572,10 @@ const UsersClusterMapAll = ({
                     />
                   ))}
                 {/* Rotated range input — custom thumb via .ucma-vslider (see injected CSS),
-                    track itself stays transparent so only our own rail shows. */}
+                    track itself stays transparent so only our own rail shows.
+                    onMouseDown/onTouchStart pause any running playback the
+                    instant the user grabs the thumb, before the drag starts
+                    changing `progress`, so scrubbing never fights the RAF loop. */}
                 <input
                   type="range"
                   min={0}
@@ -1494,6 +1583,8 @@ const UsersClusterMapAll = ({
                   step={0.001}
                   value={progress}
                   onChange={handleScrub}
+                  onMouseDown={pauseForScrub}
+                  onTouchStart={pauseForScrub}
                   className="ucma-vslider"
                   style={{
                     position: "absolute",

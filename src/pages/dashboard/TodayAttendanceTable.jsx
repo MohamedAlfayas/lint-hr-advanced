@@ -321,8 +321,6 @@ const TodayAttendanceTable = () => {
   // ── Map modal state ──
   const [mapEmployees, setMapEmployees] = useState([]);
 
-  console.log("employee", mapEmployees);
-
   const [mapSelectedEmpId, setMapSelectedEmpId] = useState(null);
   const [mapSelectedEmpName, setMapSelectedEmpName] = useState("");
   const [mapSelectedEmpProfileUrl, setMapSelectedEmpProfileUrl] =
@@ -554,18 +552,13 @@ const TodayAttendanceTable = () => {
 
   const showStatusFilter = activeTab === "1" || activeTab === "3";
 
-  // ✅ Opens the map modal seeded with every employee that has a usable route
-  // (≥2 location points) on the currently selected date. The map's own
+  // ✅ Opens the map modal seeded with every employee. The map's own
   // filter bar (department + employee) then lets the user switch between
   // them without closing the modal. The table's currently selected
   // dateFilter (DD-MM-YYYY) is converted to ISO (YYYY-MM-DD) and passed
   // down as initialDate so the map opens on the SAME date the table is
   // showing, instead of always defaulting to "today".
   const handleViewLocations = (row) => {
-    const withLocations = attendanceData.filter(
-      (e) => Array.isArray(e.location_history) && e.location_history.length > 1,
-    );
-
     const isoDate = ConvertISODateFormat(ConvertDateFormat(dateFilter));
 
     setMapEmployees(attendanceData);
@@ -573,7 +566,7 @@ const TodayAttendanceTable = () => {
     setMapSelectedEmpName(row.first_name);
     setMapSelectedEmpProfileUrl(row.profile_url || null);
     setMapSelectedDate(isoDate);
-    setIsMapFull(false);
+    setIsMapFull(true);
     setIsMapOpen(true);
   };
 
@@ -1106,7 +1099,7 @@ const TodayAttendanceTable = () => {
                       fontSize: "smaller",
                     }}
                   >
-                    #{row.employee_id}
+                    #{row.emp_id}
                   </span>
                 </h5>
 
@@ -1416,6 +1409,17 @@ const TodayAttendanceTable = () => {
           fullscreen={isMapFull}
           isOpen={isMapOpen}
           toggle={() => setIsMapOpen(!isMapOpen)}
+          onOpened={() => {
+            // Google Maps sizes itself off its container's dimensions at the
+            // moment it's created. If that happens while the reactstrap
+            // Modal is still animating in (container is 0-size / mid-fade),
+            // the map renders blank and never self-corrects. Firing a
+            // resize once the modal has FULLY opened lets the map component
+            // (which listens for "resize") trigger Google's own resize
+            // event and re-fit the route — the same thing "Full view"
+            // does manually.
+            window.dispatchEvent(new Event("resize"));
+          }}
         >
           {/* Custom header (no default close btn) */}
           <div
@@ -1509,7 +1513,7 @@ const TodayAttendanceTable = () => {
                 <span>{mapSelectedEmpName}</span>
               </div>
 
-              <button
+              {/* <button
                 onClick={() => setIsMapFull((f) => !f)}
                 title={isMapFull ? "Exit full view" : "Full view"}
                 style={{
@@ -1527,7 +1531,7 @@ const TodayAttendanceTable = () => {
                     isMapFull ? "ri-fullscreen-exit-line" : "ri-fullscreen-line"
                   }
                 ></i>
-              </button>
+              </button> */}
 
               <button
                 onClick={() => setIsMapOpen(false)}
