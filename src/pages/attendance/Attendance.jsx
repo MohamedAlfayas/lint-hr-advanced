@@ -46,15 +46,26 @@ const AttendanceDashboard = () => {
     (state) => state.ClockReducer.show_attendance_timer,
   );
 
-  const department_data = GetLocalStorageData("department");
+  // const department_data = GetLocalStorageData("department");
+  const department_data = GetLocalStorageData("department") || [];
+  console.log("department_data =", department_data);
+  console.log("profile_data =", profile_data);
 
   const [hideTimer, setHideTimer] = useState(false);
 
-  const emp_department = profile_data.primary_department_id_list
-    ? department_data.filter((d) =>
-        (profile_data?.primary_department_id_list).includes(d.id),
-      )
-    : [];
+  // const emp_department = profile_data.primary_department_id_list
+  //   ? department_data.filter((d) =>
+  //       (profile_data?.primary_department_id_list).includes(d.id),
+  //     )
+  //   : [];
+
+  const emp_department =
+    Array.isArray(department_data) &&
+    Array.isArray(profile_data?.primary_department_id_list)
+      ? department_data.filter((d) =>
+          profile_data.primary_department_id_list.includes(d.id)
+        )
+      : [];
 
   useEffect(() => {
     dispatch(setLoaderVisible(true));
@@ -78,8 +89,15 @@ const AttendanceDashboard = () => {
         ResetLoaderVisible();
       });
 
-    if (profile_data.length > 0) {
-      const isMobileCheckinAllowed = profile_data.can_web_checkin || false;
+    // if (profile_data.length > 0) {
+    //   const isMobileCheckinAllowed = profile_data.can_web_checkin || false;
+
+    //   setHideTimer(isMobileCheckinAllowed);
+    // }
+
+    if (profile_data?.id) {
+      const isMobileCheckinAllowed =
+        profile_data?.can_web_checkin || false;
 
       setHideTimer(isMobileCheckinAllowed);
     }

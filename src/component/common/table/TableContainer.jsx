@@ -152,7 +152,7 @@ const TableContainer = ({
               </select>
             </Col>
           )}
-          <CardBody className="border border-dashed border-end-0 border-start-0">
+          <CardBody className="border border-dashed border-end-0 border-start-0 py-1">
             <Row>
               {formname === attendance_pending_table ? null : formname ===
                 attendance_approval_component_name ? null : formname ===

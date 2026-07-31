@@ -7,6 +7,15 @@ import {
   CLIENT_VIEW_ACCESS_KEY,
   CREATE_CLIENT_ACCESS_KEY,
   EDIT_CLIENT_ACCESS_KEY,
+  COMPANY_PROFILE_VIEW_ACCESS_KEY,
+  UPDATE_COMPANY_PROFILE_ACCESS_KEY,
+  DEPARTMENT_VIEW_ACCESS_KEY,
+  CREATE_DEPARTMENT_ACCESS_KEY,
+  BRANCH_VIEW_ACCESS_KEY,
+  CUSTOM_FIELD_VIEW_ACCESS_KEY,
+  ROLES_VIEW_ACCESS_KEY,
+  FORMS_VIEW_ACCESS_KEY,
+  LOCATION_GROUP_VIEW_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
 
 const Navdata = () => {
@@ -343,7 +352,15 @@ const Navdata = () => {
         icon: "ri-settings-3-line",
         link: "/organization",
         parentId: "baseUi",
-        perm: ["dac690d1-6712-4aa6-9b4f-7d71bc4f8eb1"],
+        perm: [
+          COMPANY_PROFILE_VIEW_ACCESS_KEY,
+          DEPARTMENT_VIEW_ACCESS_KEY,
+          BRANCH_VIEW_ACCESS_KEY,
+          CUSTOM_FIELD_VIEW_ACCESS_KEY,
+          ROLES_VIEW_ACCESS_KEY,
+          FORMS_VIEW_ACCESS_KEY,
+          LOCATION_GROUP_VIEW_ACCESS_KEY
+        ],
         click: function (e) {
           e.preventDefault();
           setIsBaseUi(!isBaseUi);

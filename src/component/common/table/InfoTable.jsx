@@ -61,6 +61,7 @@ import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { GetCustomField } from "../../../common/js/GetCustomField";
 import { SweetAlert } from "../sweetAlert/SweetAlert";
 import Swal from "sweetalert2";
+import * as Yup from "yup";
 import "../../../common/./css/lc_style.css";
 import { ExportSampleData } from "../../../common/js/ExportSampleData";
 import {
@@ -216,6 +217,14 @@ const InfoTable = ({
   const [isLoading, setIsLoading] = useState(true);
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [reorderList, setReorderList] = useState([]);
+
+
+  const getValidColor = (color) => {
+    const option = new Option();
+    option.style.color = color;
+
+    return option.style.color ? color : "#000000";
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -1123,129 +1132,300 @@ const InfoTable = ({
     }
   };
 
+  const resetPasswordValidationSchema = Yup.object({
+    admin_password: Yup.string().required("Please enter Admin Password"),
+    new_password: Yup.string()
+      .min(8, "Minimum 8 characters required")
+      .max(20, "Maximum 20 characters allowed")
+      .matches(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*]).*$/,
+        "Must include uppercase, lowercase, number & special character",
+      )
+      .required("New Password is required"),
+    confirm_password: Yup.string()
+      .oneOf([Yup.ref("new_password")], "Passwords do not match")
+      .required("Please Confirm Password"),
+  });
+
   const handleResetPassword = (orderData) => {
     const profile_data = JSON.parse(
-      localStorage.getItem("lint_hr_profile_data"),
+      localStorage.getItem("lint_hr_profile_data") || "{}",
     );
 
-    const first_name =
-      Object.keys(profile_data).length > 0 ? profile_data.first_name : "";
-    const last_name =
-      Object.keys(profile_data).length > 0 ? profile_data.last_name : "";
+    const first_name = profile_data?.first_name || "";
+    const last_name = profile_data?.last_name || "";
 
     Swal.fire({
       title: "Reset Password",
       html: `
-        <form id="resetPasswordForm">
-        <div class="position-relative">
-        <label for="adminPassword" class="label-lc">Admin Password (${first_name} ${last_name})</label>
-        <div class="input-group">
-          <input type="password" id="adminPassword" class="form-control swal2-input" placeholder="Enter Admin Password" required>
-        </div>
-      </div>
-      <label for="newPassword" class="label-lc">New Password (${orderData.first_name} ${orderData.last_name})</label>
-      <div class="input-group">
-        <input type="password" id="newPassword" class="form-control swal2-input" placeholder="Enter New Password" required>
-      </div>
-      <label for="confirmPassword" class="label-lc">Confirm Password (${orderData.first_name} ${orderData.last_name})</label>
-      <div class="input-group">
-        <input type="password" id="confirmPassword" class="form-control swal2-input" placeholder="Enter Confirm Password" required>    
+      <style>
+        .label-lc {
+          display: block;
+          text-align: left;
+          width: 90%;
+          margin: 8px auto 10px;
+          font-weight: 500;
+        }
 
-      </div>
-      
-      
-        </form>
-      `,
+        .password-wrapper {
+          position: relative;
+          width: 90%;
+          margin: 0 auto 5px;
+        }
+
+        .password-wrapper .swal2-input {
+          width: 100% !important;
+          margin: 0 !important;
+          padding-right: 45px !important;
+          box-sizing: border-box;
+        }
+
+        .password-toggle {
+          position: absolute;
+          top: 50%;
+          right: 15px;
+          transform: translateY(-50%);
+          cursor: pointer;
+          z-index: 9999;
+          color: #6c757d;
+          font-size: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .error-message {
+          color: #f06548;
+          font-size: 12px;
+          text-align: left;
+          min-height: 18px;
+          width: 90%;
+          margin: 2px auto 8px;
+        }
+      </style>
+
+      <form id="resetPasswordForm">
+        <label class="label-lc">
+          Admin Password (${first_name} ${last_name})
+        </label>
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="adminPassword"
+            class="swal2-input"
+            placeholder="Enter Admin Password"
+          />
+          <span class="password-toggle" data-target="adminPassword">
+             <i class="las la-eye"></i>
+          </span>
+        </div>
+        <div id="adminPasswordError" class="error-message"></div>
+
+        <label class="label-lc">
+          New Password (${orderData.first_name || ""} ${orderData.last_name || ""})
+        </label>
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="newPassword"
+            class="swal2-input"
+            placeholder="Enter New Password"
+          />
+          <span class="password-toggle" data-target="newPassword">
+             <i class="las la-eye"></i>
+          </span>
+        </div>
+        <div id="newPasswordError" class="error-message"></div>
+
+        <label class="label-lc">
+          Confirm Password (${orderData.first_name || ""} ${orderData.last_name || ""})
+        </label>
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="confirmPassword"
+            class="swal2-input"
+            placeholder="Enter Confirm Password"
+          />
+          <span class="password-toggle" data-target="confirmPassword">
+            <i class="las la-eye"></i>
+          </span>
+        </div>
+        <div id="confirmPasswordError" class="error-message"></div>
+      </form>
+    `,
       icon: false,
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#f06548",
       confirmButtonText: "Reset Password",
-      preConfirm: () => {
-        const adminPasswordInput = document.getElementById("adminPassword");
-        const adminPasswordValue = adminPasswordInput.value.trim();
-        const newPasswordInput = document.getElementById("newPassword");
-        const newPasswordValue = newPasswordInput.value.trim();
-        const confirmPasswordInput = document.getElementById("confirmPassword");
-        const confirmPasswordValue = confirmPasswordInput.value.trim();
-        const pattern =
-          /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
-        if (!adminPasswordValue) {
-          Swal.showValidationMessage("Please enter Admin Password");
-          return false;
-        }
-        if (!newPasswordValue) {
-          Swal.showValidationMessage("Please enter New Password");
-          return false;
-        }
-        if (!confirmPasswordValue) {
-          Swal.showValidationMessage("Please enter Confirm Password");
-          return false;
-        }
-        if (!pattern.test(newPasswordValue)) {
-          Swal.showValidationMessage(
-            "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
+
+      preConfirm: async () => {
+        const adminPasswordValue = document
+          .getElementById("adminPassword")
+          .value.trim();
+        const newPasswordValue = document
+          .getElementById("newPassword")
+          .value.trim();
+        const confirmPasswordValue = document
+          .getElementById("confirmPassword")
+          .value.trim();
+
+        const adminPasswordError =
+          document.getElementById("adminPasswordError");
+        const newPasswordError = document.getElementById("newPasswordError");
+        const confirmPasswordError = document.getElementById(
+          "confirmPasswordError",
+        );
+
+        // Reset previous error messages
+        adminPasswordError.textContent = "";
+        newPasswordError.textContent = "";
+        confirmPasswordError.textContent = "";
+
+        let isValid = true;
+
+        // Validate all fields on submit
+        try {
+          await resetPasswordValidationSchema.validate(
+            {
+              admin_password: adminPasswordValue,
+              new_password: newPasswordValue,
+              confirm_password: confirmPasswordValue,
+            },
+            { abortEarly: false },
           );
+        } catch (err) {
+          isValid = false;
+          if (err.inner) {
+            err.inner.forEach((error) => {
+              if (error.path === "admin_password")
+                adminPasswordError.textContent = error.message;
+              if (error.path === "new_password")
+                newPasswordError.textContent = error.message;
+              if (error.path === "confirm_password")
+                confirmPasswordError.textContent = error.message;
+            });
+          }
+        }
+
+        if (!isValid) {
           return false;
         }
-        const adminPassword = document.getElementById("adminPassword");
-        const newPassword = document.getElementById("newPassword").value;
-        const confirmPassword =
-          document.getElementById("confirmPassword").value;
 
-        if (newPassword !== confirmPassword) {
-          Swal.showValidationMessage("Passwords do not match");
+        const data = {
+          admin_password: adminPasswordValue,
+          emp_uuid: orderData.emp_uuid,
+          new_password: newPasswordValue,
+          confirm_password: confirmPasswordValue,
+        };
+
+        try {
+          const Api = await PostApi("employee/reset-password/", data, false);
+
+          if (Api.status && Api.status === 200) {
+            return {
+              adminPassword: adminPasswordValue,
+              newPassword: newPasswordValue,
+              confirmPassword: confirmPasswordValue,
+              apiResponse: Api,
+            };
+          } else {
+            toast.error(
+              Api?.data?.message ||
+                Api?.data?.detail ||
+                "Reset Password Failed",
+            );
+            return false;
+          }
+        } catch (error) {
+          toast.error("Something went wrong. Please try again.");
+          return false;
         }
-
-        return { adminPassword, newPassword, confirmPassword };
       },
+
       didOpen: () => {
-        // Add event listener to the eye buttons for each password input
-        const passwordToggleButtons =
-          document.querySelectorAll(".password-toggle");
-        passwordToggleButtons.forEach((button) => {
-          button.addEventListener("click", () => {
-            const passwordInput = button.previousElementSibling;
-            togglePasswordVisibility(passwordInput);
-          });
+        document.querySelectorAll(".password-toggle").forEach((button) => {
+          button.onclick = () => {
+            const input = document.getElementById(button.dataset.target);
+            if (input.type === "password") {
+              input.type = "text";
+              button.innerHTML = '<i class="las la-eye-slash"></i>';
+            } else {
+              input.type = "password";
+              button.innerHTML = '<i class="las la-eye"></i>';
+            }
+          };
         });
 
-        // Focus on the Admin Password input field
         const adminPasswordInput = document.getElementById("adminPassword");
-        if (adminPasswordInput) {
-          adminPasswordInput.focus();
-        }
+        const newPasswordInput = document.getElementById("newPassword");
+        const confirmPasswordInput = document.getElementById("confirmPassword");
+
+        const adminPasswordError =
+          document.getElementById("adminPasswordError");
+        const newPasswordError = document.getElementById("newPasswordError");
+        const confirmPasswordError = document.getElementById(
+          "confirmPasswordError",
+        );
+
+        const validateField = async (fieldName, values, errorElement) => {
+          try {
+            await resetPasswordValidationSchema.validateAt(fieldName, values);
+            errorElement.textContent = "";
+          } catch (err) {
+            errorElement.textContent = err.message;
+          }
+        };
+
+        // Realtime validation
+        adminPasswordInput.addEventListener("input", () => {
+          validateField(
+            "admin_password",
+            { admin_password: adminPasswordInput.value },
+            adminPasswordError,
+          );
+        });
+
+        newPasswordInput.addEventListener("input", () => {
+          const values = {
+            admin_password: adminPasswordInput.value,
+            new_password: newPasswordInput.value,
+            confirm_password: confirmPasswordInput.value,
+          };
+
+          validateField("new_password", values, newPasswordError);
+
+          if (confirmPasswordInput.value) {
+            validateField("confirm_password", values, confirmPasswordError);
+          }
+        });
+
+        confirmPasswordInput.addEventListener("input", () => {
+          validateField(
+            "confirm_password",
+            {
+              admin_password: adminPasswordInput.value,
+              new_password: newPasswordInput.value,
+              confirm_password: confirmPasswordInput.value,
+            },
+            confirmPasswordError,
+          );
+        });
+
+        adminPasswordInput.focus();
       },
     }).then(async (result) => {
       if (result.isConfirmed) {
-        const { adminPassword, newPassword, confirmPassword } = result.value;
-        const data = {
-          admin_password: adminPassword.value,
-          emp_uuid: orderData.emp_uuid,
-          new_password: newPassword,
-          confirm_password: confirmPassword,
-        };
-
-        const Api = await PostApi("employee/reset-password/", data, false);
-        if (Api.status && Api.status === 200) {
-          Swal.fire(
-            "Password Reset!",
+        Swal.fire(
+          "Password Reset!",
+          result.value?.apiResponse?.data?.message ||
             "Password has been reset successfully.",
-            "success",
-          );
-        } else {
-          toast.error(Api?.data?.message);
-        }
+          "success",
+        );
       }
     });
   };
-  function togglePasswordVisibility(passwordInput) {
-    if (passwordInput.type === "password") {
-      passwordInput.type = "text";
-    } else {
-      passwordInput.type = "password";
-    }
-  }
   // Column
   const initialColumns = [
     {
@@ -3422,10 +3602,11 @@ const InfoTable = ({
                                     <span
                                       className="badge text-uppercase"
                                       style={{
-                                        backgroundColor:
-                                          item.color && /^#/.test(item.color)
-                                            ? item.color
-                                            : "#000000",
+                                        // backgroundColor:
+                                        //   item.color && /^#/.test(item.color)
+                                        //     ? item.color
+                                        //     : "#000000",
+                                        backgroundColor: getValidColor(item.color),
                                         color: "#fff",
                                         padding: "6px 10px",
                                         fontSize: "11px",

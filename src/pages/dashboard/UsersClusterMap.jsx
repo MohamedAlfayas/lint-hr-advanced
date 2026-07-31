@@ -11,8 +11,8 @@ import "../../common/css/lc_style.css";
 
 // ✅ Map Container Style
 const containerStyle = {
-  width: "105%",
-  height: "95%",
+  width: "100%",
+  height: "100%",
   borderRadius: "6px",
   boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
 };

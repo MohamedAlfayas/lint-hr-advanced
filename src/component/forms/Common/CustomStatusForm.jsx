@@ -143,8 +143,9 @@ const CustomStatusForm = () => {
     validationSchema: Yup.object({
       name: Yup.string()
         .trim()
-        .matches(/^[A-Za-z\s]+$/, "Status name should contain only letters")
-        .min(2, "Status name must be at least 2 characters")
+        .matches(/^[A-Za-z0-9\s.,&()'-]+$/, "Please Enter Status Name")
+        .min(1, "Please Enter Status Name")
+        .max(50, "Status name cannot exceed 50 characters")
         .required("Please Enter Status Name"),
       emoji: Yup.string().required("Please Select an Emoji"),
     }),
@@ -154,7 +155,16 @@ const CustomStatusForm = () => {
   const handleStatusNameChange = (e) => {
     const { name, value } = e.target;
 
-    formik.setFieldValue(name, value.replace(/[^a-zA-Z\s]/g, ""));
+    const val = value.replace(/[^A-Za-z0-9\s.,&()'-]/g, "");
+
+    formik.setFieldValue(name, val);
+    formik.setFieldTouched(name, true, false);
+
+    if (val.length > 50) {
+      formik.setFieldError(name, "Status name cannot exceed 50 characters");
+    } else {
+      formik.setFieldError(name, undefined);
+    }
   };
 
   const handleEmojiClick = (emojiData) => {
@@ -241,8 +251,8 @@ const CustomStatusForm = () => {
                   name="name"
                   value={formik.values.name}
                   onChange={handleStatusNameChange}
-                  onBlur={formik.handleBlur}
-                  invalid={formik.touched.name && !!formik.errors.name}
+                  onBlur={() => formik.setFieldTouched("name", true)}
+                  invalid={!!formik.errors.name}
                 />
                 <FormFeedback>{formik.errors.name}</FormFeedback>
               </FormGroup>
