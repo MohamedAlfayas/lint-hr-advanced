@@ -502,8 +502,8 @@ const ApplyLeaveForm = () => {
   const disabledDate = (current) => {
     if (!current) return false;
 
-    const minDate = dayjs().startOf("day").subtract(30, "day");
-    const maxDate = dayjs().startOf("day").add(30, "day");
+    const minDate = dayjs().startOf("day").subtract(60, "day");
+    const maxDate = dayjs().startOf("day").add(60, "day");
 
     if (current < minDate.startOf("day") || current > maxDate.endOf("day")) {
       return true;
@@ -524,8 +524,8 @@ const ApplyLeaveForm = () => {
   const disabledDateForCompOff = (current) => {
     if (!current) return false;
 
-    const minDate = dayjs().startOf("day").subtract(30, "day");
-    const maxDate = dayjs().startOf("day").add(30, "day");
+    const minDate = dayjs().startOf("day").subtract(60, "day");
+    const maxDate = dayjs().startOf("day").add(60, "day");
 
     if (current < minDate.startOf("day") || current > maxDate.endOf("day")) {
       return true;
