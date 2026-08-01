@@ -457,6 +457,8 @@ const EmployeeForm = () => {
 
   const FormikForm = useFormik({
     enableReinitialize: true,
+    validateOnChange: true,
+    validateOnBlur: true,
     initialValues: employeeObj,
     validationSchema: Yup.object({
       emp_id: Yup.string()
@@ -504,7 +506,7 @@ const EmployeeForm = () => {
         .trim()
         .required("Please enter email")
         .transform((value) => (value ? value.trim().toLowerCase() : value))
-        .max(254, "Email must not exceed 254 characters")
+        .max(50, "Email must not exceed 50 characters")
         .matches(
           /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/,
           "Enter a valid email address",
@@ -944,10 +946,21 @@ const EmployeeForm = () => {
                       placeholder="name@company.com"
                       value={employeeObj.email || ""}
                       onChange={(e) => {
+                        // setEmployeeObj({
+                        //   ...employeeObj,
+                        //   email: e.target.value,
+                        // });
+
+                        const value = e.target.value;
+
                         setEmployeeObj({
                           ...employeeObj,
-                          email: e.target.value,
+                          email: value,
                         });
+
+                        FormikForm.setFieldValue("email", value, true);
+                        FormikForm.setFieldTouched("email", true, false);
+
                       }}
                       onBlur={(e) => {
                         const value = e.target.value.trim().toLowerCase();
@@ -961,13 +974,20 @@ const EmployeeForm = () => {
                         FormikForm.handleBlur(e);
                       }}
                       invalid={
-                        !!(FormikForm.touched.email && FormikForm.errors.email)
+                        !!FormikForm.errors.email
+                        // !!(
+                        //   // FormikForm.touched.email && 
+                        //   FormikForm.errors.email)
                       }
                     />
-                    {!(FormikForm.touched.email && FormikForm.errors.email) && (
+                    {!(
+                      // FormikForm.touched.email && 
+                      FormikForm.errors.email) && (
                       <i className="ri-at-line"></i>
                     )}
-                    {FormikForm.touched.email && FormikForm.errors.email && (
+                    {
+                    // FormikForm.touched.email && 
+                    FormikForm.errors.email && (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.email}
                       </FormFeedback>

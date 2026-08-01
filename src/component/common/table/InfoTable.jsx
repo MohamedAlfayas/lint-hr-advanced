@@ -68,6 +68,7 @@ import {
   attendance_approval_component_name,
   component_list_for_import_btn_access,
   employee_component_name,
+  work_schedule_component_name,
   holiday_component_name,
   leave_approval_component_name,
   leave_type_component_name,
@@ -392,7 +393,7 @@ const InfoTable = ({
     let content =
       formname === leave_approval_component_name ||
       formname === leave_pending_table
-        ? `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To <strong style='color:#7066e0'>  ${employee_first_name}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `
+        ? `<span>Are You Sure to <strong style='color:green'>Accept </strong> ${orderData.leave_type_name} To <strong style='color:#7066e0'>  ${employee_first_name}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `
         : orderData.is_present === false
           ? `<span>Oops, <strong style='color:#7066e0'>${employee_first_name}</strong> didn't show up on <strong style='color:grey'>${format(
               new Date(orderData.date),
@@ -551,7 +552,7 @@ const InfoTable = ({
     let content =
       formname === leave_approval_component_name ||
       formname === leave_pending_table
-        ? `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To <strong style='color:#7066e0'> ${employee_first_name} </strong> on ${orderData.start} to  ${orderData.end} </span>`
+        ? `<span>Are You Sure to <strong style='color:red'>Reject</strong> ${orderData.leave_type_name} To <strong style='color:#7066e0'> ${employee_first_name} </strong> on ${orderData.start} to  ${orderData.end} </span>`
         : `<span>Confirm Action : <strong style='color:red'>Reject</strong> pending status and mark <strong style='color:#7066e0'>  ${employee_first_name}</strong>  as absent on   <strong style='color:grey'>${format(
             new Date(orderData.date),
             "dd MMM, yyyy",
@@ -1660,7 +1661,8 @@ const InfoTable = ({
           formname === priorities_component_name ||
           formname === task_list_component_name ||
           formname === custom_status_form_component_name ||
-          formname === custom_field_component_name
+          formname === custom_field_component_name ||
+          formname === work_schedule_component_name
         ) {
           const rowData = cellProps.row.original;
 
@@ -1735,7 +1737,7 @@ const InfoTable = ({
                   <i className="ri-pencil-fill fs-16"></i>
                 </Link>
               </li>
-              <li className="list-inline-item">
+              {/* <li className="list-inline-item">
                 <Link
                   to="#"
                   className="text-danger d-inline-block remove-item-btn"
@@ -1745,10 +1747,28 @@ const InfoTable = ({
                 >
                   <i className="ri-delete-bin-5-fill fs-16"></i>
                 </Link>
+              </li> */}
+            </ul>
+          );
+        }else if (formname === work_schedule_component_name) {
+          return (
+            <ul className="list-inline hstack gap-2 mb-0">
+              <li className="list-inline-item edit">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-primary d-inline-block edit-item-btn"
+                  onClick={() => {
+                    handleCreateAndUpdate(orderData.id, orderData);
+                  }}
+                >
+                  <i className="ri-pencil-fill fs-16"></i>
+                </Link>
               </li>
             </ul>
           );
-        } else {
+        }
+        
+        else {
           return (
             <ul className="list-inline hstack gap-2 mb-0">
               {orderData.status === 2 ||

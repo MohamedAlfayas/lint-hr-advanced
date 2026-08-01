@@ -60,15 +60,35 @@ const Login = () => {
   const validation = useFormik({
     // enableReinitialize : use this flag when initial values needs to be changed
     enableReinitialize: true,
+    validateOnChange: true,
+    validateOnBlur: true,
 
     initialValues: {
       email: userLogin.email || "",
       password: userLogin.password || "",
     },
     validate,
+    // validationSchema: Yup.object({
+    //   email: Yup.string().trim().required("Please Enter Your Email"),
+    //   password: Yup.string().trim().required("Please Enter Your Password"),
+    // }),
     validationSchema: Yup.object({
-      email: Yup.string().trim().required("Please Enter Your Email"),
-      password: Yup.string().trim().required("Please Enter Your Password"),
+      email: Yup.string()
+        .trim()
+        .required("Please Enter Your Email")
+        .transform((value) =>
+          value ? value.trim().toLowerCase() : value
+        )
+        .max(50, "Email must not exceed 50 characters")
+        .matches(
+          /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*)+$/,
+          "Enter a valid email address"
+        ),
+      password: Yup.string()
+        .trim()
+        .required("Please Enter Your Password")
+        .max(20, "Password must not exceed 20 characters")
+        .min(8,"Password must be at least 8 characters long")
     }),
     onSubmit: (values) => {
       dispatch(setLoaderVisible(true));
@@ -256,18 +276,25 @@ const Login = () => {
                               name="email"
                               className="form-control"
                               placeholder="Enter email"
-                              type="email"
+                              type="text"
                               onChange={validation.handleChange}
-                              onBlur={validation.handleBlur}
+                              // onBlur={validation.handleBlur}
+                              onBlur={(e) => {
+                                const value = e.target.value.trim().toLowerCase();
+
+                                validation.setFieldValue("email", value);
+                                validation.handleBlur(e);
+                              }}
                               value={validation.values.email || ""}
                               invalid={
-                                validation.touched.email &&
+                                // validation.touched.email &&
                                 validation.errors.email
                                   ? true
                                   : false
                               }
                             />
-                            {validation.touched.email &&
+                            {
+                            // validation.touched.email &&
                             validation.errors.email ? (
                               <FormFeedback type="invalid">
                                 {validation.errors.email}
@@ -300,13 +327,14 @@ const Login = () => {
                                 onChange={validation.handleChange}
                                 onBlur={validation.handleBlur}
                                 invalid={
-                                  validation.touched.password &&
+                                  // validation.touched.password &&
                                   validation.errors.password
                                     ? true
                                     : false
                                 }
                               />
-                              {validation.touched.password &&
+                              {
+                              // validation.touched.password &&
                               validation.errors.password ? (
                                 <FormFeedback type="invalid">
                                   {validation.errors.password}
