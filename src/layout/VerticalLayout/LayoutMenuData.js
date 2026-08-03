@@ -344,6 +344,13 @@ const Navdata = () => {
             parentId: "baseUi",
             perm: "all",
           },
+          {
+            id: "breakreport",
+            label: "Break Report",
+            link: "/breakreport",
+            parentId: "baseUi",
+            perm: "all",
+          },
         ],
       },
       {
@@ -359,7 +366,7 @@ const Navdata = () => {
           CUSTOM_FIELD_VIEW_ACCESS_KEY,
           ROLES_VIEW_ACCESS_KEY,
           FORMS_VIEW_ACCESS_KEY,
-          LOCATION_GROUP_VIEW_ACCESS_KEY
+          LOCATION_GROUP_VIEW_ACCESS_KEY,
         ],
         click: function (e) {
           e.preventDefault();
@@ -390,10 +397,10 @@ const Navdata = () => {
             parentId: "baseUi",
             // perm: "all",
             perm: [
-                CLIENT_VIEW_ACCESS_KEY,
-                CREATE_CLIENT_ACCESS_KEY,
-                EDIT_CLIENT_ACCESS_KEY,
-            ]
+              CLIENT_VIEW_ACCESS_KEY,
+              CREATE_CLIENT_ACCESS_KEY,
+              EDIT_CLIENT_ACCESS_KEY,
+            ],
           },
           {
             id: "projects",
@@ -430,23 +437,21 @@ const Navdata = () => {
       let updated_menu = [];
       menuList.map((route) => {
         const hasEmployeePermission =
-  Array.isArray(route?.perm) &&
-  route.perm.some((d) =>{
-    console.log("d =", d);
-    return profile_data?.permission_list.includes(d)
-  
-    });
+          Array.isArray(route?.perm) &&
+          route.perm.some((d) => {
+            console.log("d =", d);
+            return profile_data?.permission_list.includes(d);
+          });
 
-const isAllPermission =
-  typeof route?.perm === "string" &&
-  route?.perm === "all";
+        const isAllPermission =
+          typeof route?.perm === "string" && route?.perm === "all";
 
-const isHeader = route.isHeader === true;
+        const isHeader = route.isHeader === true;
 
-console.log("Route:", route.label);
-console.log("hasEmployeePermission:", hasEmployeePermission);
-console.log("isAllPermission:", isAllPermission);
-console.log("isHeader:", isHeader);
+        console.log("Route:", route.label);
+        console.log("hasEmployeePermission:", hasEmployeePermission);
+        console.log("isAllPermission:", isAllPermission);
+        console.log("isHeader:", isHeader);
         if (
           (Array.isArray(route?.perm) &&
             (route?.perm).some((d) =>
