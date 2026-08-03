@@ -393,6 +393,7 @@ body .rs-table-row-header .rs-table-cell {
 .gm-style-iw-d {
   padding: 0 !important;
   margin: 0 !important;
+  max-width: 285px !important;
 }
 
 .gm-ui-hover-effect {

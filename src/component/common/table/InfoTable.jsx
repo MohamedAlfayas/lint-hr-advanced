@@ -219,7 +219,6 @@ const InfoTable = ({
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [reorderList, setReorderList] = useState([]);
 
-
   const getValidColor = (color) => {
     const option = new Option();
     option.style.color = color;
@@ -3640,7 +3639,9 @@ const InfoTable = ({
                                         //   item.color && /^#/.test(item.color)
                                         //     ? item.color
                                         //     : "#000000",
-                                        backgroundColor: getValidColor(item.color),
+                                        backgroundColor: getValidColor(
+                                          item.color,
+                                        ),
                                         color: "#fff",
                                         padding: "6px 10px",
                                         fontSize: "11px",

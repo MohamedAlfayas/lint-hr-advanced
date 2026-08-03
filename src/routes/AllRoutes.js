@@ -35,6 +35,7 @@ import ClientOverview from "../pages/Crm/Clients/ClientOverview";
 import ClientOverviewTab from "../pages/Crm/Clients/ClientOverviewTab";
 import LeaveReport from "../pages/attendance/LeaveReport";
 import AllEmployeeLocation from "../pages/dashboard/EmployeeMap/AllEmployeeLocation";
+import BreakReport from "../pages/attendance/BreakReport";
 
 // import Dashboard from "../pages/dashboard/Dashboard";
 // import Login from "../pages/auth/login/Login";
@@ -69,7 +70,9 @@ const Employee = lazy(() => import("../pages/employee/Employee"));
 const EmployeeView = lazy(() => import("../pages/employee/EmployeeView"));
 const Roles = lazy(() => import("../pages/roles/Roles"));
 const WorkSchedule = lazy(() => import("../pages/workschedule/WorkSchedule"));
-const MyReimbursementsPage = lazy(() => import("../pages/reimbursement/MyReimbursementsPage"))
+const MyReimbursementsPage = lazy(
+  () => import("../pages/reimbursement/MyReimbursementsPage"),
+);
 const Holidays = lazy(() => import("../pages/holidays/Holidays"));
 const LeaveType = lazy(() => import("../pages/leave/LeaveType"));
 const LeaveApproval = lazy(() => import("../pages/leave/LeaveApproval"));
@@ -114,13 +117,16 @@ const privateRoutes = [
       ROLES_VIEW_ACCESS_KEY,
       FORMS_VIEW_ACCESS_KEY,
       LOCATION_GROUP_VIEW_ACCESS_KEY,
-      
     ],
   },
   {
     path: "/employee",
     component: <Employee />,
-    perm: [EMPLOYEE_VIEW_ACCESS_KEY, VIEW_TEAM_EMPLOYEE_ACCESS_KEY, VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY],
+    perm: [
+      EMPLOYEE_VIEW_ACCESS_KEY,
+      VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
+      VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
+    ],
   },
   {
     path: "/employee/view/:id",
@@ -176,6 +182,11 @@ const privateRoutes = [
   {
     path: "/leavereport",
     component: <LeaveReport />,
+    perm: [CAN_VIEW_REPORT_ACCESS_KEY],
+  },
+  {
+    path: "/breakreport",
+    component: <BreakReport />,
     perm: [CAN_VIEW_REPORT_ACCESS_KEY],
   },
   {
