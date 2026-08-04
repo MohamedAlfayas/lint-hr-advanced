@@ -94,6 +94,11 @@ const EmployeeForm = () => {
   const [selectedFileName4, setSelectedFileName4] = React.useState("");
   const [selectedFileName5, setSelectedFileName5] = React.useState("");
   const [errors, setErrors] = useState("");
+  const [nameTouched, setNameTouched] = useState({
+    first_name: false,
+    last_name: false,
+  });
+  const [emailTouched, setEmailTouched] = useState(false);
   const inputRef = useRef(null);
 
   // ── Location Modal State ──────────────────────────────────────────────────
@@ -216,6 +221,9 @@ const EmployeeForm = () => {
     showFile3NameIfSelected();
     showFile4NameIfSelected();
     showFile5NameIfSelected();
+
+    setNameTouched({ first_name: false, last_name: false });
+    setEmailTouched(false);
   }, [form_obj]);
 
   useEffect(() => {
@@ -239,6 +247,8 @@ const EmployeeForm = () => {
       ...prev,
       [field]: val,
     }));
+
+    setNameTouched((prev) => ({ ...prev, [field]: true }));
 
     FormikForm.setFieldValue(field, val);
     FormikForm.setFieldTouched(field, true, false);
@@ -457,8 +467,6 @@ const EmployeeForm = () => {
 
   const FormikForm = useFormik({
     enableReinitialize: true,
-    validateOnChange: true,
-    validateOnBlur: true,
     initialValues: employeeObj,
     validationSchema: Yup.object({
       emp_id: Yup.string()
@@ -506,7 +514,7 @@ const EmployeeForm = () => {
         .trim()
         .required("Please enter email")
         .transform((value) => (value ? value.trim().toLowerCase() : value))
-        .max(50, "Email must not exceed 50 characters")
+        .max(254, "Email must not exceed 254 characters")
         .matches(
           /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/,
           "Enter a valid email address",
@@ -589,6 +597,25 @@ const EmployeeForm = () => {
       work_schedule_id: Yup.number()
         .required("Please select work schedule")
         .min(1, "Please select work schedule"),
+
+      reporting_manager_id: Yup.number()
+        .nullable()
+        .test(
+          "reporting-manager-required",
+          "Please select reporting manager",
+          function (value) {
+            // mirror your HandleEmployeeSaveAPI rule: only required
+            // if primary dept isn't the root department
+            return !!value; // or your conditional logic if you want it optional for root dept
+          }
+        ),
+      allowed_attendance_methods: Yup.object()
+        .test(
+          "at-least-one-method",
+          "Please select at least one attendance method",
+          (value) =>
+            !!value && Object.values(value).some((v) => v === true),
+        ),
       cf_values: Yup.array().of(
         Yup.object().shape({
           value: Yup.mixed().when("is_required", {
@@ -877,23 +904,40 @@ const EmployeeForm = () => {
                       placeholder="Elon"
                       value={employeeObj.first_name || ""}
                       onChange={(e) => handleNameInput(e, "first_name")}
-                      onBlur={() =>
-                        FormikForm.setFieldTouched("first_name", true)
+                      onBlur={() => {
+                        FormikForm.setFieldTouched("first_name", true);
+                        setNameTouched((prev) => ({
+                          ...prev,
+                          first_name: true,
+                        }));
+                      }}
+                      invalid={
+                        // !!(
+                        //   nameTouched.first_name && FormikForm.errors.first_name
+                        // )
+                        !!((nameTouched.first_name || FormikForm.submitCount > 0) &&
+                          FormikForm.errors.first_name)
                       }
-                      invalid={!!FormikForm.errors.first_name}
                     />
-                    {!FormikForm.errors.first_name && (
-                      <i className="ri-user-line"></i>
-                    )}
-                    {FormikForm.errors.first_name && (
+                    {!(
+                      // nameTouched.first_name && FormikForm.errors.first_name
+                      (nameTouched.first_name || FormikForm.submitCount > 0) &&
+                        FormikForm.errors.first_name
+                    ) && <i className="ri-user-line"></i>}
+                    {/* {nameTouched.first_name && FormikForm.errors.first_name && ( */}
+                    {(nameTouched.first_name || FormikForm.submitCount > 0) &&
+                      FormikForm.errors.first_name && (
+
                       <FormFeedback type="invalid">
                         {FormikForm.errors.first_name}
                       </FormFeedback>
                     )}
                   </div>
-                  {!FormikForm.errors.first_name && (
-                    <div className="form-text mb-3">Enter first name.</div>
-                  )}
+                  {!(
+                    // nameTouched.first_name && FormikForm.errors.first_name
+                      (nameTouched.first_name || FormikForm.submitCount > 0) &&
+                        FormikForm.errors.first_name
+                  ) && <div className="form-text mb-3">Enter first name.</div>}
                 </div>
               </Col>
 
@@ -912,21 +956,37 @@ const EmployeeForm = () => {
                       placeholder="Musk"
                       value={employeeObj.last_name || ""}
                       onChange={(e) => handleNameInput(e, "last_name")}
-                      onBlur={() =>
-                        FormikForm.setFieldTouched("last_name", true)
+                      onBlur={() => {
+                        FormikForm.setFieldTouched("last_name", true);
+                        setNameTouched((prev) => ({
+                          ...prev,
+                          last_name: true,
+                        }));
+                      }}
+                      invalid={
+                        // !!(nameTouched.last_name && FormikForm.errors.last_name)
+                         !!((nameTouched.last_name || FormikForm.submitCount > 0) &&
+                          FormikForm.errors.last_name)
                       }
-                      invalid={!!FormikForm.errors.last_name}
                     />
-                    {!FormikForm.errors.last_name && (
-                      <i className="ri-user-2-line"></i>
-                    )}
-                    {FormikForm.errors.last_name && (
+                    {!(
+                      // nameTouched.last_name && FormikForm.errors.last_name
+                      (nameTouched.last_name || FormikForm.submitCount > 0) &&
+                        FormikForm.errors.last_name
+                    ) && <i className="ri-user-2-line"></i>}
+                    {/* {nameTouched.last_name && FormikForm.errors.last_name && ( */}
+                    {(nameTouched.last_name || FormikForm.submitCount > 0) &&
+                      FormikForm.errors.last_name && (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.last_name}
                       </FormFeedback>
                     )}
                   </div>
-                  {!FormikForm.errors.last_name && (
+                  {!(
+                    // nameTouched.last_name && FormikForm.errors.last_name
+                      (nameTouched.last_name || FormikForm.submitCount > 0) &&
+                      FormikForm.errors.last_name
+                  )  && (
                     <div className="form-text mb-3">Enter last name.</div>
                   )}
                 </div>
@@ -946,56 +1006,56 @@ const EmployeeForm = () => {
                       placeholder="name@company.com"
                       value={employeeObj.email || ""}
                       onChange={(e) => {
-                        // setEmployeeObj({
-                        //   ...employeeObj,
-                        //   email: e.target.value,
-                        // });
+                      const value = e.target.value;
 
-                        const value = e.target.value;
+                      setEmployeeObj({
+                      ...employeeObj,
+                      email: value,
+                      });
 
-                        setEmployeeObj({
-                          ...employeeObj,
-                          email: value,
-                        });
-
-                        FormikForm.setFieldValue("email", value, true);
-                        FormikForm.setFieldTouched("email", true, false);
-
+                      setEmailTouched(true);
+                      FormikForm.setFieldValue("email", value);
+                      FormikForm.setFieldTouched("email", true, false);
                       }}
                       onBlur={(e) => {
-                        const value = e.target.value.trim().toLowerCase();
+                      const value = e.target.value.trim().toLowerCase();
 
-                        setEmployeeObj({
-                          ...employeeObj,
-                          email: value,
-                        });
+                      setEmployeeObj({
+                      ...employeeObj,
+                      email: value,
+                      });
 
-                        FormikForm.setFieldValue("email", value);
-                        FormikForm.handleBlur(e);
+                      setEmailTouched(true);
+                      FormikForm.setFieldValue("email", value);
+                      FormikForm.handleBlur(e);
                       }}
                       invalid={
-                        !!FormikForm.errors.email
-                        // !!(
-                        //   // FormikForm.touched.email && 
-                        //   FormikForm.errors.email)
+                        // !!(emailTouched && FormikForm.errors.email)
+                          !!((emailTouched || FormikForm.submitCount > 0) &&
+                          FormikForm.errors.email)
                       }
-                    />
-                    {!(
-                      // FormikForm.touched.email && 
-                      FormikForm.errors.email) && (
+                      />
+                      {
+                      // !(emailTouched && FormikForm.errors.email)
+                      !(emailTouched || FormikForm.submitCount > 0) && FormikForm.errors.email
+                       && 
                       <i className="ri-at-line"></i>
-                    )}
-                    {
-                    // FormikForm.touched.email && 
-                    FormikForm.errors.email && (
+                      }
+                      {/* {emailTouched && FormikForm.errors.email && ( */}
+                       {(emailTouched || FormikForm.submitCount > 0) &&
+                      FormikForm.errors.email && (
                       <FormFeedback type="invalid">
-                        {FormikForm.errors.email}
+                      {FormikForm.errors.email}
                       </FormFeedback>
-                    )}
-                  </div>
-                  {!FormikForm.errors.email && (
-                    <div className="form-text mb-3">Enter email.</div>
-                  )}
+                      )}
+                      </div>
+                      {!(
+                        // emailTouched && FormikForm.errors.email
+                          (emailTouched || FormikForm.submitCount > 0) &&
+                          FormikForm.errors.email
+                      ) && (
+                      <div className="form-text mb-3">Enter email.</div>
+                      )}
                 </div>
               </Col>
 
@@ -1333,6 +1393,17 @@ const EmployeeForm = () => {
                     components={{ Option: EmployeeDisplayInSelect }}
                     className="basic-multi-select"
                     classNamePrefix="lc-select"
+                     styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          FormikForm.touched.reporting_manager_id &&
+                          FormikForm.errors.reporting_manager_id
+                            ? "red"
+                            : provided.borderColor,
+                      }),
+                    }}
                     value={
                       (employeeObj.reporting_manager_id &&
                         reportingManagerOptions.find(
@@ -1340,17 +1411,35 @@ const EmployeeForm = () => {
                         )) ||
                       null
                     }
-                    onChange={(selectedOption) => {
-                      setEmployeeObj({
-                        ...employeeObj,
-                        reporting_manager_id: selectedOption
-                          ? selectedOption.id
-                          : null,
-                      });
-                    }}
-                  />
+                  //   onChange={(selectedOption) => {
+                  //     setEmployeeObj({
+                  //       ...employeeObj,
+                  //       reporting_manager_id: selectedOption
+                  //         ? selectedOption.id
+                  //         : null,
+                  //     });
+                  //   }}
+                  // />
+                  onChange={(selectedOption) => {
+                    const val = selectedOption ? selectedOption.id : 0;
+                    setEmployeeObj({ ...employeeObj, reporting_manager_id: val });
+                    FormikForm.setFieldValue("reporting_manager_id", val);
+                    FormikForm.setFieldTouched("reporting_manager_id", true);
+                  }}
+                  onBlur={() => FormikForm.setFieldTouched("reporting_manager_id", true)}
+                />
+                {FormikForm.touched.reporting_manager_id &&
+                  FormikForm.errors.reporting_manager_id && (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.reporting_manager_id}
+                    </div>
+                )}
                 </div>
-                <div className="form-text mb-3">Select reporting manager.</div>
+                {!(
+                  (FormikForm.touched.reporting_manager_id || FormikForm.submitCount > 0) &&
+                  FormikForm.errors.reporting_manager_id
+                )&&
+                <div className="form-text mb-3">Select reporting manager.</div>}
               </Col>
 
               {/* ── Role ─────────────────────────────────────────────────── */}
@@ -1657,6 +1746,12 @@ const EmployeeForm = () => {
                       </div>
                     ))}
                   </div>
+                  {FormikForm.submitCount > 0 &&
+                    FormikForm.errors.allowed_attendance_methods && (
+                      <div className="lc_form_error_text">
+                        {FormikForm.errors.allowed_attendance_methods}
+                      </div>
+                  )}
                   {errors && (
                     <div style={{ color: "red", marginTop: "4px" }}>
                       {errors}
