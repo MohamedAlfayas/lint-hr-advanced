@@ -36,12 +36,12 @@ export const BaseURL = getBaseUrlFromDomain();
 export const ProductionBaseURL = "http://62.72.59.29:8000";
 export const getWsUrlFromDomain = () => {
   const domain = window.location.hostname.split(".")[0];
-
+  const token = JSON.parse(localStorage.getItem("lint_hr_token"));
   if (
     !!process.env.REACT_APP_LC_PLATFORM &&
     process.env.REACT_APP_LC_PLATFORM === "local"
   ) {
-    const token = JSON.parse(localStorage.getItem("lint_hr_token"));
+    
     const httpUrl = getBaseUrlFromDomain();
     const wsUrl = httpUrl.replace(/^http/, "ws").replace(/\/$/, "");
     return `${wsUrl}/ws/tracking/?token=${token?.access}`;
