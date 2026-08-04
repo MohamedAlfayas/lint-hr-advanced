@@ -47,9 +47,15 @@ body .rs-table-row-header .rs-table-cell {
 .lc_form_error_text {
   width: 100%;
   margin-top: 0.25rem;
+  margin-bottom: 1rem;
   font-size: 0.875em;
   color: var(--vz-form-invalid-color);
 }
+
+.invalid-feedback {
+  padding-bottom: 1rem;
+}
+
 .custom-select-medium {
   /* padding: 0.375rem 0.75rem;   */
   height: 2rem;
