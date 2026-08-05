@@ -100,7 +100,8 @@ const EmployeeForm = () => {
   });
   const [emailTouched, setEmailTouched] = useState(false);
   const inputRef = useRef(null);
-
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const fieldRefs = useRef({});
   // ── Location Modal State ──────────────────────────────────────────────────
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [locationToEdit, setLocationToEdit] = useState(null);
@@ -224,6 +225,7 @@ const EmployeeForm = () => {
 
     setNameTouched({ first_name: false, last_name: false });
     setEmailTouched(false);
+    setHasAttemptedSubmit(false);
   }, [form_obj]);
 
   useEffect(() => {
@@ -360,7 +362,7 @@ const EmployeeForm = () => {
       "dob",
       ConvertISODateFormat(ConvertDateFormat(dateStr)),
     );
-    FormikForm.setFieldTouched("dob", true);
+    // FormikForm.setFieldTouched("dob", true);
   };
 
   const handleJoinDateChange = (selectedJoinDate, dateStr, instance) => {
@@ -514,10 +516,10 @@ const EmployeeForm = () => {
         .trim()
         .required("Please enter email")
         .transform((value) => (value ? value.trim().toLowerCase() : value))
-        .max(254, "Email must not exceed 254 characters")
+        .max(50, "Email must not exceed 50 characters")
         .matches(
-          /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/,
-          "Enter a valid email address",
+          /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,13}$/,
+          "Enter a valid email address.",
         ),
 
       gender: Yup.number()
@@ -703,17 +705,37 @@ const EmployeeForm = () => {
     }
   };
 
+  // useEffect(() => {
+  //   if (
+  //     hasAttemptedSubmit &&
+  //     Object.keys(FormikForm.errors).length > 0
+  //   ) {
+  //     const firstErrorField = Object.keys(FormikForm.errors)[0];
+  //     FormikForm.setFieldTouched(firstErrorField, true, false);
+  //     const errorField = document.querySelector(`[name="${firstErrorField}"]`);
+  //     if (errorField) errorField.focus();
+  //   }
+  // }, [FormikForm.errors, hasAttemptedSubmit]);
+
   useEffect(() => {
+    // if (hasAttemptedSubmit && Object.keys(FormikForm.errors).length > 0)
     if (
-      FormikForm.submitCount > 0 &&
-      Object.keys(FormikForm.errors).length > 0
-    ) {
+        hasAttemptedSubmit &&
+        FormikForm.submitCount > 0 &&
+        Object.keys(FormikForm.errors).length > 0
+      ) 
+      {
       const firstErrorField = Object.keys(FormikForm.errors)[0];
       FormikForm.setFieldTouched(firstErrorField, true, false);
-      const errorField = document.querySelector(`[name="${firstErrorField}"]`);
-      if (errorField) errorField.focus();
+
+      const node = fieldRefs.current[firstErrorField];
+      if (node) {
+        node.scrollIntoView({ behavior: "smooth", block: "center" });
+        const focusable = node.querySelector("input, select, textarea");
+        if (focusable) focusable.focus();
+      }
     }
-  }, [FormikForm.submitCount]);
+  }, [FormikForm.errors, hasAttemptedSubmit]);
 
   const [showRMModal, setShowRMModal] = useState(false);
   const onRMModalCloseClick = () => setShowRMModal(false);
@@ -768,8 +790,58 @@ const EmployeeForm = () => {
     <React.Fragment>
       <Row>
         <Col>
+          {/* <Form
+            // onSubmit={FormikForm.handleSubmit}
+            onSubmit={(e) => {
+              setHasAttemptedSubmit(true);
+              FormikForm.handleSubmit(e);
+            }}
+            noValidate
+            action="javascript:void(0)"
+          > */}
           <Form
-            onSubmit={FormikForm.handleSubmit}
+            onSubmit={async (e) => {
+              e.preventDefault();
+
+              setHasAttemptedSubmit(true);
+
+              // Touch all fields so Formik validates every required field
+              const touchedFields = {};
+
+              Object.keys(FormikForm.initialValues).forEach((key) => {
+                touchedFields[key] = true;
+              });
+
+              FormikForm.setTouched(touchedFields, true);
+
+              // Wait until validation completes
+              const errors = await FormikForm.validateForm();
+
+              if (Object.keys(errors).length > 0) {
+                const firstErrorField = Object.keys(errors)[0];
+
+                requestAnimationFrame(() => {
+                  const node = fieldRefs.current[firstErrorField];
+
+                  if (!node) return;
+
+                  node.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                  });
+
+                  const input = node.querySelector(
+                    "input, textarea, select"
+                  );
+
+                  input?.focus();
+                });
+
+                return;
+              }
+
+              FormikForm.handleSubmit();
+            }}
             noValidate
             action="javascript:void(0)"
           >
@@ -807,7 +879,7 @@ const EmployeeForm = () => {
             <Row>
               {/* ── Employee ID ──────────────────────────────────────────── */}
               <Col md={12} lg={12} xxl={12}>
-                <div>
+                <div  ref={(el) => (fieldRefs.current.emp_id = el)}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <Label
                       htmlFor="employeeid"
@@ -871,27 +943,49 @@ const EmployeeForm = () => {
                           FormikForm.setFieldError("emp_id", undefined);
                         }
                       }}
-                      onBlur={() => FormikForm.setFieldTouched("emp_id", true)}
-                      invalid={!!FormikForm.errors.emp_id}
+                      // onBlur={() => FormikForm.setFieldTouched("emp_id", true)}
+                      onBlur={() => {
+                        if (employeeObj.emp_id && employeeObj.emp_id.trim() !== "") {
+                          FormikForm.setFieldTouched("emp_id", true);
+                        }
+                      }}
+                      invalid={
+                        // !!FormikForm.errors.emp_id
+                        !!((FormikForm.touched.emp_id || hasAttemptedSubmit) &&
+                          FormikForm.errors.emp_id)
+                      }
                     />
-                    {!FormikForm.errors.emp_id && (
+                    {
+                    // !FormikForm.errors.emp_id && (
+                      !(
+                        (FormikForm.touched.emp_id || hasAttemptedSubmit) &&
+                        FormikForm.errors.emp_id
+                      ) &&
                       <i className="ri-user-line"></i>
-                    )}
-                    {FormikForm.errors.emp_id && (
+                    }
+                    {
+                    // FormikForm.errors.emp_id && (
+                    (FormikForm.touched.emp_id || hasAttemptedSubmit) &&
+                      FormikForm.errors.emp_id && (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.emp_id}
                       </FormFeedback>
                     )}
                   </div>
-                  {!FormikForm.errors.emp_id && (
+                  {
+                  // !FormikForm.errors.emp_id && (
+                  !(
+                      (FormikForm.touched.emp_id || hasAttemptedSubmit) &&
+                      FormikForm.errors.emp_id
+                    ) && 
                     <div className="form-text mb-3">Enter employee ID</div>
-                  )}
+                  }
                 </div>
               </Col>
 
               {/* ── First Name ───────────────────────────────────────────── */}
               <Col md={6} lg={6} xxl={6}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.first_name = el)}>
                   <Label htmlFor="first_name" className="form-label">
                     First Name <span>*</span>
                   </Label>
@@ -905,27 +999,29 @@ const EmployeeForm = () => {
                       value={employeeObj.first_name || ""}
                       onChange={(e) => handleNameInput(e, "first_name")}
                       onBlur={() => {
-                        FormikForm.setFieldTouched("first_name", true);
-                        setNameTouched((prev) => ({
-                          ...prev,
-                          first_name: true,
-                        }));
+                        if (employeeObj.first_name && employeeObj.first_name.trim() !== "") {
+                          FormikForm.setFieldTouched("first_name", true);
+                          setNameTouched((prev) => ({
+                            ...prev,
+                            first_name: true,
+                          }));
+                        }
                       }}
                       invalid={
                         // !!(
                         //   nameTouched.first_name && FormikForm.errors.first_name
                         // )
-                        !!((nameTouched.first_name || FormikForm.submitCount > 0) &&
+                        !!((nameTouched.first_name || hasAttemptedSubmit) &&
                           FormikForm.errors.first_name)
                       }
                     />
                     {!(
                       // nameTouched.first_name && FormikForm.errors.first_name
-                      (nameTouched.first_name || FormikForm.submitCount > 0) &&
+                      (nameTouched.first_name || hasAttemptedSubmit) &&
                         FormikForm.errors.first_name
                     ) && <i className="ri-user-line"></i>}
                     {/* {nameTouched.first_name && FormikForm.errors.first_name && ( */}
-                    {(nameTouched.first_name || FormikForm.submitCount > 0) &&
+                    {(nameTouched.first_name || hasAttemptedSubmit) &&
                       FormikForm.errors.first_name && (
 
                       <FormFeedback type="invalid">
@@ -935,7 +1031,7 @@ const EmployeeForm = () => {
                   </div>
                   {!(
                     // nameTouched.first_name && FormikForm.errors.first_name
-                      (nameTouched.first_name || FormikForm.submitCount > 0) &&
+                      (nameTouched.first_name || hasAttemptedSubmit) &&
                         FormikForm.errors.first_name
                   ) && <div className="form-text mb-3">Enter first name.</div>}
                 </div>
@@ -943,7 +1039,7 @@ const EmployeeForm = () => {
 
               {/* ── Last Name ────────────────────────────────────────────── */}
               <Col md={6} lg={6} xxl={6}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.last_name = el)}>
                   <Label htmlFor="last_name" className="form-label">
                     Last Name <span>*</span>
                   </Label>
@@ -957,25 +1053,27 @@ const EmployeeForm = () => {
                       value={employeeObj.last_name || ""}
                       onChange={(e) => handleNameInput(e, "last_name")}
                       onBlur={() => {
-                        FormikForm.setFieldTouched("last_name", true);
-                        setNameTouched((prev) => ({
-                          ...prev,
-                          last_name: true,
-                        }));
+                          if (employeeObj.last_name && employeeObj.last_name.trim() !== "") {
+                            FormikForm.setFieldTouched("last_name", true);
+                            setNameTouched((prev) => ({
+                              ...prev,
+                              last_name: true,
+                            }));
+                          }
                       }}
                       invalid={
                         // !!(nameTouched.last_name && FormikForm.errors.last_name)
-                         !!((nameTouched.last_name || FormikForm.submitCount > 0) &&
+                         !!((nameTouched.last_name || hasAttemptedSubmit) &&
                           FormikForm.errors.last_name)
                       }
                     />
                     {!(
                       // nameTouched.last_name && FormikForm.errors.last_name
-                      (nameTouched.last_name || FormikForm.submitCount > 0) &&
+                      (nameTouched.last_name || hasAttemptedSubmit) &&
                         FormikForm.errors.last_name
                     ) && <i className="ri-user-2-line"></i>}
                     {/* {nameTouched.last_name && FormikForm.errors.last_name && ( */}
-                    {(nameTouched.last_name || FormikForm.submitCount > 0) &&
+                    {(nameTouched.last_name || hasAttemptedSubmit) &&
                       FormikForm.errors.last_name && (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.last_name}
@@ -984,7 +1082,7 @@ const EmployeeForm = () => {
                   </div>
                   {!(
                     // nameTouched.last_name && FormikForm.errors.last_name
-                      (nameTouched.last_name || FormikForm.submitCount > 0) &&
+                      (nameTouched.last_name || hasAttemptedSubmit) &&
                       FormikForm.errors.last_name
                   )  && (
                     <div className="form-text mb-3">Enter last name.</div>
@@ -994,7 +1092,7 @@ const EmployeeForm = () => {
 
               {/* ── Email ────────────────────────────────────────────────── */}
               <Col md={12} lg={12} xxl={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.email = el)}>
                   <Label htmlFor="emailid" className="form-label">
                     Email <span>*</span>
                   </Label>
@@ -1025,24 +1123,28 @@ const EmployeeForm = () => {
                       email: value,
                       });
 
-                      setEmailTouched(true);
+                     
                       FormikForm.setFieldValue("email", value);
                       FormikForm.handleBlur(e);
+
+                      if (value !== "") {
+                        setEmailTouched(true);
+                      }
                       }}
                       invalid={
                         // !!(emailTouched && FormikForm.errors.email)
-                          !!((emailTouched || FormikForm.submitCount > 0) &&
+                          !!((emailTouched || hasAttemptedSubmit) &&
                           FormikForm.errors.email)
                       }
                       />
                       {
                       // !(emailTouched && FormikForm.errors.email)
-                      !(emailTouched || FormikForm.submitCount > 0) && FormikForm.errors.email
+                      !((emailTouched || hasAttemptedSubmit) && FormikForm.errors.email)
                        && 
                       <i className="ri-at-line"></i>
                       }
                       {/* {emailTouched && FormikForm.errors.email && ( */}
-                       {(emailTouched || FormikForm.submitCount > 0) &&
+                       {(emailTouched || hasAttemptedSubmit) &&
                       FormikForm.errors.email && (
                       <FormFeedback type="invalid">
                       {FormikForm.errors.email}
@@ -1051,17 +1153,17 @@ const EmployeeForm = () => {
                       </div>
                       {!(
                         // emailTouched && FormikForm.errors.email
-                          (emailTouched || FormikForm.submitCount > 0) &&
+                          (emailTouched || hasAttemptedSubmit) &&
                           FormikForm.errors.email
-                      ) && (
+                      ) && 
                       <div className="form-text mb-3">Enter email.</div>
-                      )}
+                      }
                 </div>
               </Col>
 
               {/* ── Gender ───────────────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.gender = el)}>
                   <Label htmlFor="gender" className="form-label">
                     Gender <span>*</span>
                   </Label>
@@ -1076,7 +1178,8 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.gender &&
+                          // FormikForm.touched.gender &&
+                          (FormikForm.touched.gender || hasAttemptedSubmit) &&
                           FormikForm.errors.gender
                             ? "red"
                             : provided.borderColor,
@@ -1090,31 +1193,41 @@ const EmployeeForm = () => {
                       []
                     }
                     onChange={(e) => {
+                      console.log("Gender Selected:", e);
+                      console.log("Gender Value:", e.value, typeof e.value);
+
                       setEmployeeObj({ ...employeeObj, gender: e.value });
                       FormikForm.setFieldValue("gender", e.value);
-                      FormikForm.setFieldTouched("gender", true);
+                      // FormikForm.setFieldTouched("gender", true);
                     }}
-                    onBlur={() => FormikForm.setFieldTouched("gender", true)}
+                    // onBlur={() => FormikForm.setFieldTouched("gender", true)}
+                    onBlur={() => {
+                      if (employeeObj.gender) {
+                        FormikForm.setFieldTouched("gender", true);
+                      }
+                    }}
                   />
-                  {FormikForm.touched.gender && FormikForm.errors.gender && (
+                  {(FormikForm.touched.gender || hasAttemptedSubmit) && FormikForm.errors.gender && (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.gender}
                     </div>
                   )}
-                  {!FormikForm.errors.gender && (
+                  {!(
+                    (FormikForm.touched.gender || hasAttemptedSubmit) &&
+                    FormikForm.errors.gender )&& 
                     <div className="form-text mb-3">Select gender.</div>
-                  )}
+                  }
                 </div>
               </Col>
 
               {/* ── DOB ──────────────────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.dob = el)}>
                   <Label htmlFor="dob" className="form-label">
                     Date of Birth <span>*</span>
                   </Label>
                   <DatePicker
-                    className={`form-control${FormikForm.touched.dob && FormikForm.errors.dob ? " border-danger" : ""}`}
+                    className={`form-control${(FormikForm.touched.dob || hasAttemptedSubmit) && FormikForm.errors.dob ? " border-danger" : ""}`}
                     placeholder="DD-MM-YYYY"
                     id="dob"
                     name="dob"
@@ -1125,12 +1238,14 @@ const EmployeeForm = () => {
                     disabledDate={disableDobDates}
                     inputReadOnly={true}
                   />
-                  {FormikForm.touched.dob && FormikForm.errors.dob && (
+                  {(FormikForm.touched.dob || hasAttemptedSubmit) && FormikForm.errors.dob && (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.dob}
                     </div>
                   )}
-                  {!FormikForm.errors.dob && (
+                  {!(
+                  (FormikForm.touched.dob || hasAttemptedSubmit) &&
+                  FormikForm.errors.dob) && (
                     <div className="form-text mb-3">
                       Select a valid date of birth.
                     </div>
@@ -1140,7 +1255,7 @@ const EmployeeForm = () => {
 
               {/* ── Contact Number ───────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.contact_number = el)}>
                   <Label className="form-label">
                     Contact Number <span>*</span>
                   </Label>
@@ -1179,17 +1294,18 @@ const EmployeeForm = () => {
                         updateProfileData("contact_number", value);
                         FormikForm.setFieldValue("contact_number", value);
                       }}
-                      onBlur={() =>
-                        FormikForm.setFieldTouched("contact_number", true)
+                      onBlur={() =>{
+                        // FormikForm.setFieldTouched("contact_number", true)
+                        if (employeeObj.contact_number && employeeObj.contact_number.trim() !== "") {
+                          FormikForm.setFieldTouched("contact_number", true);
                       }
+                    }}
                       invalid={
-                        !!(
-                          FormikForm.touched.contact_number &&
-                          FormikForm.errors.contact_number
-                        )
+                        !!((FormikForm.touched.contact_number || hasAttemptedSubmit) &&
+                          FormikForm.errors.contact_number)
                       }
                     />
-                    {FormikForm.touched.contact_number &&
+                    {(FormikForm.touched.contact_number || hasAttemptedSubmit) &&
                       FormikForm.errors.contact_number && (
                         <FormFeedback type="invalid">
                           {FormikForm.errors.contact_number}
@@ -1243,7 +1359,11 @@ const EmployeeForm = () => {
                       </SimpleBar>
                     </DropdownMenu>
                   </Dropdown>
-                  {!FormikForm.errors.contact_number && (
+                  {
+                    !(
+                        (FormikForm.touched.contact_number || hasAttemptedSubmit) &&
+                        FormikForm.errors.contact_number
+                      ) && (
                     <div className="form-text mb-3">
                       Enter contact number (10 digits only).
                     </div>
@@ -1253,7 +1373,7 @@ const EmployeeForm = () => {
 
               {/* ── Branch ───────────────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.branch_id_list = el)}>
                   <Label htmlFor="branch" className="form-label">
                     Branch <span>*</span>
                   </Label>
@@ -1270,7 +1390,7 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.branch_id_list &&
+                          (FormikForm.touched.branch_id_list  || hasAttemptedSubmit)  &&
                           FormikForm.errors.branch_id_list
                             ? "red"
                             : provided.borderColor,
@@ -1290,27 +1410,31 @@ const EmployeeForm = () => {
                         "branch_id_list",
                         e.map((d) => d.value),
                       );
-                      FormikForm.setFieldTouched("branch_id_list", true);
+                      // FormikForm.setFieldTouched("branch_id_list", true);
                     }}
-                    onBlur={() =>
-                      FormikForm.setFieldTouched("branch_id_list", true)
-                    }
+                    onBlur={() =>{
+                      if (employeeObj.branch_id_list && employeeObj.branch_id_list.length > 0) {
+                        FormikForm.setFieldTouched("branch_id_list", true);
+                      }
+                    }}
                   />
-                  {FormikForm.touched.branch_id_list &&
+                  {(FormikForm.touched.branch_id_list || hasAttemptedSubmit) &&
                     FormikForm.errors.branch_id_list && (
                       <div className="lc_form_error_text">
                         {FormikForm.errors.branch_id_list}
                       </div>
                     )}
-                  {!FormikForm.errors.branch_id_list && (
+                  {!(
+                    (FormikForm.touched.branch_id_list || hasAttemptedSubmit) &&
+                    FormikForm.errors.branch_id_list ) && 
                     <div className="form-text mb-3">Select branch.</div>
-                  )}
+                  }
                 </div>
               </Col>
 
               {/* ── Primary Department ───────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.primary_department_id_list = el)}>
                   <Label
                     htmlFor="primary_department_id_list"
                     className="form-label"
@@ -1330,7 +1454,7 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.primary_department_id_list &&
+                          (FormikForm.touched.primary_department_id_list  || hasAttemptedSubmit)&&
                           FormikForm.errors.primary_department_id_list
                             ? "red"
                             : provided.borderColor,
@@ -1352,35 +1476,44 @@ const EmployeeForm = () => {
                         "primary_department_id_list",
                         e.map((d) => d.id),
                       );
-                      FormikForm.setFieldTouched(
-                        "primary_department_id_list",
-                        true,
-                      );
+                      // FormikForm.setFieldTouched(
+                      //   "primary_department_id_list",
+                      //   true,
+                      // );
                     }}
-                    onBlur={() =>
-                      FormikForm.setFieldTouched(
+                    onBlur={() =>{
+                        if (
+                            employeeObj.primary_department_id_list &&
+                            employeeObj.primary_department_id_list.length > 0
+                          )
+                       {
+                         FormikForm.setFieldTouched(
                         "primary_department_id_list",
                         true,
                       )
+                      }
+                    } 
                     }
                   />
-                  {FormikForm.touched.primary_department_id_list &&
+                  {(FormikForm.touched.primary_department_id_list  || hasAttemptedSubmit)  &&
                     FormikForm.errors.primary_department_id_list && (
                       <div className="lc_form_error_text">
                         {FormikForm.errors.primary_department_id_list}
                       </div>
                     )}
-                  {!FormikForm.errors.primary_department_id_list && (
+                  {!(
+                  (FormikForm.touched.primary_department_id_list || hasAttemptedSubmit) &&
+                  FormikForm.errors.primary_department_id_list ) && 
                     <div className="form-text mb-3">
                       Select primary department.
                     </div>
-                  )}
+                  }
                 </div>
               </Col>
 
               {/* ── Reporting Manager ────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.reporting_manager_id = el)}>
                   <Label htmlFor="reporting_manager_id">
                     Reporting Manager <span>*</span>
                   </Label>
@@ -1398,7 +1531,7 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.reporting_manager_id &&
+                          (FormikForm.touched.reporting_manager_id || hasAttemptedSubmit) &&
                           FormikForm.errors.reporting_manager_id
                             ? "red"
                             : provided.borderColor,
@@ -1424,11 +1557,14 @@ const EmployeeForm = () => {
                     const val = selectedOption ? selectedOption.id : 0;
                     setEmployeeObj({ ...employeeObj, reporting_manager_id: val });
                     FormikForm.setFieldValue("reporting_manager_id", val);
-                    FormikForm.setFieldTouched("reporting_manager_id", true);
+                    // FormikForm.setFieldTouched("reporting_manager_id", true);
                   }}
-                  onBlur={() => FormikForm.setFieldTouched("reporting_manager_id", true)}
+                  onBlur={() => {
+                    if (employeeObj.reporting_manager_id) {
+                      FormikForm.setFieldTouched("reporting_manager_id", true)}
+                  }}
                 />
-                {FormikForm.touched.reporting_manager_id &&
+                {(FormikForm.touched.reporting_manager_id || hasAttemptedSubmit) &&
                   FormikForm.errors.reporting_manager_id && (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.reporting_manager_id}
@@ -1436,7 +1572,7 @@ const EmployeeForm = () => {
                 )}
                 </div>
                 {!(
-                  (FormikForm.touched.reporting_manager_id || FormikForm.submitCount > 0) &&
+                  (FormikForm.touched.reporting_manager_id || hasAttemptedSubmit) &&
                   FormikForm.errors.reporting_manager_id
                 )&&
                 <div className="form-text mb-3">Select reporting manager.</div>}
@@ -1444,7 +1580,7 @@ const EmployeeForm = () => {
 
               {/* ── Role ─────────────────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.role_id = el)}>
                   <Label htmlFor="role_id" className="form-label">
                     Role <span>*</span>
                   </Label>
@@ -1459,7 +1595,7 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.role_id &&
+                          (FormikForm.touched.role_id || hasAttemptedSubmit)&&
                           FormikForm.errors.role_id
                             ? "red"
                             : provided.borderColor,
@@ -1475,24 +1611,32 @@ const EmployeeForm = () => {
                     onChange={(e) => {
                       setEmployeeObj({ ...employeeObj, role_id: e.id });
                       FormikForm.setFieldValue("role_id", e.id);
-                      FormikForm.setFieldTouched("role_id", true);
+                      // FormikForm.setFieldTouched("role_id", true);
                     }}
-                    onBlur={() => FormikForm.setFieldTouched("role_id", true)}
+                    onBlur={() =>
+                      {
+                        if (employeeObj.role_id) {
+                          FormikForm.setFieldTouched("role_id", true);
+                        }
+                      } }
                   />
-                  {FormikForm.touched.role_id && FormikForm.errors.role_id && (
+                  {(FormikForm.touched.role_id || hasAttemptedSubmit) && FormikForm.errors.role_id && (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.role_id}
                     </div>
                   )}
-                  {!FormikForm.errors.role_id && (
+                  {
+                  !(
+                  (FormikForm.touched.role_id || hasAttemptedSubmit) &&
+                  FormikForm.errors.role_id ) && 
                     <div className="form-text mb-3">Select role.</div>
-                  )}
+                  }
                 </div>
               </Col>
 
               {/* ── Work Schedule ────────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.work_schedule_id = el)}>
                   <Label htmlFor="empWs" className="form-label">
                     Work Schedule <span>*</span>
                   </Label>
@@ -1507,7 +1651,7 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.work_schedule_id &&
+                          (FormikForm.touched.work_schedule_id || hasAttemptedSubmit) &&
                           FormikForm.errors.work_schedule_id
                             ? "red"
                             : provided.borderColor,
@@ -1527,32 +1671,38 @@ const EmployeeForm = () => {
                         work_schedule_id: e.id,
                       });
                       FormikForm.setFieldValue("work_schedule_id", e.id);
-                      FormikForm.setFieldTouched("work_schedule_id", true);
+                      // FormikForm.setFieldTouched("work_schedule_id", true);
                     }}
                     onBlur={() =>
-                      FormikForm.setFieldTouched("work_schedule_id", true)
+                      {
+                        if (employeeObj.work_schedule_id) {
+                          FormikForm.setFieldTouched("work_schedule_id", true);
+                        }
+                      }
                     }
                   />
-                  {FormikForm.touched.work_schedule_id &&
+                  {(FormikForm.touched.work_schedule_id || hasAttemptedSubmit) &&
                     FormikForm.errors.work_schedule_id && (
                       <div className="lc_form_error_text">
                         {FormikForm.errors.work_schedule_id}
                       </div>
                     )}
-                  {!FormikForm.errors.work_schedule_id && (
+                  {!(
+                  (FormikForm.touched.work_schedule_id || hasAttemptedSubmit) &&
+                  FormikForm.errors.work_schedule_id ) && 
                     <div className="form-text mb-3">Select work schedule.</div>
-                  )}
+                  }
                 </div>
               </Col>
 
               {/* ── Joining Date ─────────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.joining_date = el)}>
                   <Label htmlFor="joining_date" className="form-label">
                     Joining Date <span>*</span>
                   </Label>
                   <DatePicker
-                    className={`form-control${FormikForm.touched.joining_date && FormikForm.errors.joining_date ? " border-danger" : ""}`}
+                    className={`form-control${(FormikForm.touched.joining_date || hasAttemptedSubmit) && FormikForm.errors.joining_date ? " border-danger" : ""}`}
                     id="joining_date"
                     name="joining_date"
                     value={
@@ -1564,13 +1714,16 @@ const EmployeeForm = () => {
                     disabledDate={disableJoiningDates}
                     inputReadOnly={true}
                   />
-                  {FormikForm.touched.joining_date &&
+                  {(FormikForm.touched.joining_date || hasAttemptedSubmit) &&
                     FormikForm.errors.joining_date && (
                       <div className="lc_form_error_text">
                         {FormikForm.errors.joining_date}
                       </div>
                     )}
-                  {!FormikForm.errors.joining_date && (
+                  {!(
+                    (FormikForm.touched.joining_date || hasAttemptedSubmit) &&
+                    FormikForm.errors.joining_date
+                  ) && (
                     <div className="form-text mb-3">
                       Select a valid joining date (up to 1 year in the future).
                     </div>
@@ -1698,7 +1851,7 @@ const EmployeeForm = () => {
 
               {/* ── Attendance Methods ───────────────────────────────────── */}
               <Col md={12} lg={12} xxl={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.allowed_attendance_methods = el)}>
                   <Label htmlFor="auth_types" className="form-label">
                     Allowed Attendance Methods <span>*</span>
                   </Label>
@@ -1746,7 +1899,7 @@ const EmployeeForm = () => {
                       </div>
                     ))}
                   </div>
-                  {FormikForm.submitCount > 0 &&
+                  {hasAttemptedSubmit &&
                     FormikForm.errors.allowed_attendance_methods && (
                       <div className="lc_form_error_text">
                         {FormikForm.errors.allowed_attendance_methods}
@@ -1784,7 +1937,7 @@ const EmployeeForm = () => {
                                 invalid={
                                   !!(
                                     obj.is_required &&
-                                    FormikForm.submitCount > 0 &&
+                                    hasAttemptedSubmit &&
                                     (!obj.value ||
                                       String(obj.value).trim() === "")
                                   )
@@ -1793,7 +1946,7 @@ const EmployeeForm = () => {
                               <i className="ri-user-2-line"></i>
                             </div>
                             {obj.is_required &&
-                            FormikForm.submitCount > 0 &&
+                            hasAttemptedSubmit &&
                             (!obj.value || String(obj.value).trim() === "") ? (
                               <div className="lc_form_error_text">
                                 This field is required
@@ -1815,7 +1968,7 @@ const EmployeeForm = () => {
                                 invalid={
                                   !!(
                                     obj.is_required &&
-                                    FormikForm.submitCount > 0 &&
+                                    hasAttemptedSubmit &&
                                     (!obj.value ||
                                       String(obj.value).trim() === "")
                                   )
@@ -1824,7 +1977,7 @@ const EmployeeForm = () => {
                               <i className="ri-user-2-line"></i>
                             </div>
                             {obj.is_required &&
-                            FormikForm.submitCount > 0 &&
+                            hasAttemptedSubmit &&
                             (!obj.value || String(obj.value).trim() === "") ? (
                               <div className="lc_form_error_text">
                                 This field is required
@@ -1869,7 +2022,7 @@ const EmployeeForm = () => {
                                   borderColor:
                                     !state.isFocused &&
                                     obj.is_required &&
-                                    FormikForm.submitCount > 0 &&
+                                    hasAttemptedSubmit &&
                                     (!obj.value ||
                                       String(obj.value).trim() === "")
                                       ? "red"
@@ -1885,7 +2038,7 @@ const EmployeeForm = () => {
                               placeholder={`Select ${obj.name}`}
                             />
                             {obj.is_required &&
-                              FormikForm.submitCount > 0 &&
+                              hasAttemptedSubmit &&
                               (!obj.value ||
                                 String(obj.value).trim() === "") && (
                                 <div className="lc_form_error_text">
