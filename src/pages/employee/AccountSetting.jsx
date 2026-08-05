@@ -1663,6 +1663,11 @@ const AccountSettings = () => {
                                   type={showPassword1 ? "text" : "password"}
                                   className="form-control"
                                   placeholder="Enter current password"
+                                  onKeyDown={(e) => {
+                                    if (e.key === " ") {
+                                      e.preventDefault();
+                                    }
+                                  }}
                                   onChange={(e) => {
                                     const value = e.target.value;
 
@@ -1681,10 +1686,54 @@ const AccountSettings = () => {
                                       true,
                                       false,
                                     );
-                                    FormikFormPassword.setFieldError(
-                                      "old_password",
-                                      undefined,
-                                    );
+                                    if (!value) {
+                                      FormikFormPassword.setFieldError(
+                                        "old_password",
+                                        "Old Password is required",
+                                      );
+                                    } else {
+                                      FormikFormPassword.setFieldError(
+                                        "old_password",
+                                        undefined,
+                                      );
+                                    }
+
+                                    // Re-check new_password against updated old_password
+                                    if (changePassword.new_password) {
+                                      const strongPasswordRegex =
+                                        /^(?=\S*$)(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*]).*$/;
+                                      const newPassVal =
+                                        changePassword.new_password;
+
+                                      if (newPassVal.length > 20) {
+                                        FormikFormPassword.setFieldError(
+                                          "new_password",
+                                          "Maximum 20 characters allowed",
+                                        );
+                                      } else if (newPassVal.length < 8) {
+                                        FormikFormPassword.setFieldError(
+                                          "new_password",
+                                          "Minimum 8 characters required",
+                                        );
+                                      } else if (
+                                        !strongPasswordRegex.test(newPassVal)
+                                      ) {
+                                        FormikFormPassword.setFieldError(
+                                          "new_password",
+                                          "Must include uppercase, lowercase, number & special character",
+                                        );
+                                      } else if (newPassVal === value) {
+                                        FormikFormPassword.setFieldError(
+                                          "new_password",
+                                          "New Password must be different from Old Password",
+                                        );
+                                      } else {
+                                        FormikFormPassword.setFieldError(
+                                          "new_password",
+                                          undefined,
+                                        );
+                                      }
+                                    }
                                   }}
                                   value={changePassword.old_password || ""}
                                   invalid={
@@ -1733,6 +1782,11 @@ const AccountSettings = () => {
                                   type={showPassword2 ? "text" : "password"}
                                   className="form-control"
                                   placeholder="Enter new password"
+                                  onKeyDown={(e) => {
+                                    if (e.key === " ") {
+                                      e.preventDefault();
+                                    }
+                                  }}
                                   onChange={(e) => {
                                     const value = e.target.value;
 
@@ -1755,7 +1809,12 @@ const AccountSettings = () => {
                                     const strongPasswordRegex =
                                       /^(?=\S*$)(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*]).*$/;
 
-                                    if (value.length > 20) {
+                                    if (!value) {
+                                      FormikFormPassword.setFieldError(
+                                        "new_password",
+                                        "New Password is required",
+                                      );
+                                    } else if (value.length > 20) {
                                       FormikFormPassword.setFieldError(
                                         "new_password",
                                         "Maximum 20 characters allowed",
@@ -1784,6 +1843,32 @@ const AccountSettings = () => {
                                         "new_password",
                                         undefined,
                                       );
+                                    }
+
+                                    // Re-check confirm_password against updated new_password
+                                    if (changePassword.confirm_password) {
+                                      if (
+                                        changePassword.confirm_password.length >
+                                        20
+                                      ) {
+                                        FormikFormPassword.setFieldError(
+                                          "confirm_password",
+                                          "Maximum 20 characters allowed",
+                                        );
+                                      } else if (
+                                        changePassword.confirm_password !==
+                                        value
+                                      ) {
+                                        FormikFormPassword.setFieldError(
+                                          "confirm_password",
+                                          "Passwords must match",
+                                        );
+                                      } else {
+                                        FormikFormPassword.setFieldError(
+                                          "confirm_password",
+                                          undefined,
+                                        );
+                                      }
                                     }
                                   }}
                                   value={changePassword.new_password || ""}
@@ -1830,6 +1915,11 @@ const AccountSettings = () => {
                                   type={showPassword3 ? "text" : "password"}
                                   className="form-control"
                                   placeholder="Confirm password"
+                                  onKeyDown={(e) => {
+                                    if (e.key === " ") {
+                                      e.preventDefault();
+                                    }
+                                  }}
                                   onChange={(e) => {
                                     const value = e.target.value;
 
@@ -1849,7 +1939,12 @@ const AccountSettings = () => {
                                       false,
                                     );
 
-                                    if (value.length > 20) {
+                                    if (!value) {
+                                      FormikFormPassword.setFieldError(
+                                        "confirm_password",
+                                        "Confirm Password is required",
+                                      );
+                                    } else if (value.length > 20) {
                                       FormikFormPassword.setFieldError(
                                         "confirm_password",
                                         "Maximum 20 characters allowed",
