@@ -610,13 +610,13 @@ const ClientForm = () => {
       accurate_address: Yup.string()
         .trim()
         .matches(
-          /^[A-Za-z0-9\s.,\-#/']+$/,
+          /^[A-Za-z0-9\s.,\-#/'&]+$/,
           "Accurate Address contains invalid characters",
         )
         .test(
           "accurate-address-length",
-          "Accurate Address cannot exceed 200 characters",
-          (value) => !value || value.length <= 200,
+          "Accurate Address cannot exceed 250 characters",
+          (value) => !value || value.length <= 250,
         ),
     }),
     onSubmit: async (values) => {
