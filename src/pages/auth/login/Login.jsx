@@ -79,16 +79,19 @@ const Login = () => {
         .transform((value) =>
           value ? value.trim().toLowerCase() : value
         )
-        .max(50, "Email must not exceed 50 characters")
+        // .max(50, "Email must not exceed 50 characters")
+        .max(50, "Enter a valid email address")
         .matches(
-          /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*)+$/,
+          // /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*)+$/,
+          /^(?!.*\.\.)([a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*)@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,13}$/,
           "Enter a valid email address"
         ),
       password: Yup.string()
         .trim()
         .required("Please Enter Your Password")
-        .max(20, "Password must not exceed 20 characters")
-        .min(8,"Password must be at least 8 characters long")
+
+        // .max(20, "Password must not exceed 20 characters")
+        // .min(8,"Password must be at least 8 characters long")
     }),
     onSubmit: (values) => {
       dispatch(setLoaderVisible(true));
@@ -186,50 +189,115 @@ const Login = () => {
             dispatch(setLoaderVisible(false));
           }, 1000);
         })
+        // .catch((err) => {
+        //   dispatch(setLoaderVisible(false));
+        //   toast.error(err?.response?.data?.message);
+        // });
         .catch((err) => {
           dispatch(setLoaderVisible(false));
-          toast.error(err?.response?.data?.message);
+
+          const errorMessage =
+            err?.response?.data?.message ||
+            "Invalid Email or Password";
+
+          toast.error(errorMessage);
         });
     },
   });
 
   document.title = `Login | ${MetaTitle || "Lint HR"}`;
 
+  // useEffect(() => {
+  //   const domain = window.location.hostname.split(".")[0];
+  //   if (!!domain) {
+  //     let validate_domain_url = "";
+
+  //     if (
+  //       !!process.env.REACT_APP_LC_PLATFORM &&
+  //       process.env.REACT_APP_LC_PLATFORM === "local"
+  //     ) {
+  //       validate_domain_url = `${getBaseUrlFromDomain()}api/auth/validate-domain/`;
+  //     } else {
+  //       validate_domain_url = `https://${domain}.${process.env.REACT_APP_BASE_URL}/api/auth/validate-domain/`;
+  //     }
+
+  //     axios({
+  //       method: "POST",
+  //       url: validate_domain_url,
+  //       data: {
+  //         domain: domain,
+  //       },
+  //     })
+  //       .then((res) => {
+  //         // window.location.href = "/dashboard";
+  //       })
+  //       .catch((error) => {
+  //         console.log("Validate Domain Error - ", error);
+  //         if (!!error?.response && error.response.status === 404) {
+  //           window.location.href = "/auth/workspace";
+  //         } else {
+  //           toast?.error(error?.response?.data?.message);
+  //         }
+  //       });
+  //   }
+  // }, []);
+
   useEffect(() => {
     const domain = window.location.hostname.split(".")[0];
-    if (!!domain) {
-      let validate_domain_url = "";
 
-      if (
-        !!process.env.REACT_APP_LC_PLATFORM &&
-        process.env.REACT_APP_LC_PLATFORM === "local"
-      ) {
-        validate_domain_url = `${getBaseUrlFromDomain()}api/auth/validate-domain/`;
-      } else {
-        validate_domain_url = `https://${domain}.${process.env.REACT_APP_BASE_URL}/api/auth/validate-domain/`;
-      }
+    const domainRegex = /^[a-zA-Z0-9-]+$/;
 
-      axios({
-        method: "POST",
-        url: validate_domain_url,
-        data: {
-          domain: domain,
-        },
-      })
-        .then((res) => {
-          // window.location.href = "/dashboard";
-        })
-        .catch((error) => {
-          console.log("Validate Domain Error - ", error);
-          if (!!error?.response && error.response.status === 404) {
-            window.location.href = "/auth/workspace";
-          } else {
-            toast?.error(error?.response?.data?.message);
-          }
-        });
+    if (!domain || domain.length < 1) {
+      toast.error("Domain is required");
+      return;
     }
-  }, []);
 
+    if (!domainRegex.test(domain)) {
+      toast.error(
+        "Domain can contain only letters, numbers and hyphens (-)"
+      );
+      return;
+    }
+
+    if (domain.startsWith("-") || domain.endsWith("-")) {
+      toast.error(
+        "Domain cannot start or end with a hyphen (-)"
+      );
+      return;
+    }
+
+    let validate_domain_url = "";
+
+    if (
+      !!process.env.REACT_APP_LC_PLATFORM &&
+      process.env.REACT_APP_LC_PLATFORM === "local"
+    ) {
+      validate_domain_url = `${getBaseUrlFromDomain()}api/auth/validate-domain/`;
+    } else {
+      validate_domain_url = `https://${domain}.${process.env.REACT_APP_BASE_URL}/api/auth/validate-domain/`;
+    }
+
+    axios({
+      method: "POST",
+      url: validate_domain_url,
+      data: {
+        domain,
+      },
+    })
+      .then((res) => {})
+      .catch((error) => {
+        console.log("Validate Domain Error - ", error);
+
+        if (
+          !!error?.response &&
+          error.response.status === 404
+        ) {
+          window.location.href = "/auth/workspace";
+        } else {
+          toast.error(error?.response?.data?.message);
+        }
+      });
+  }, []);
   return (
     <React.Fragment>
       {showLoader === false ? (
