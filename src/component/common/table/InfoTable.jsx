@@ -1020,8 +1020,20 @@ const InfoTable = ({
       confirmButtonColor: `${orderInfo?.confirmBtnColor}`,
       cancelButtonColor: "#3085d6",
       confirmButtonText: `Yes, ${orderInfo?.text}`,
+      // On deactivation, capture the last working day so payroll still pays
+      // this employee for the month they worked. Optional — can be left blank.
+      ...(orderData?.is_active === true
+        ? {
+            input: "date",
+            inputLabel: "Last working day (optional)",
+            inputValue: new Date().toISOString().slice(0, 10),
+            inputAttributes: { max: new Date().toISOString().slice(0, 10) },
+          }
+        : {}),
     }).then(async (result) => {
       if (result.isConfirmed) {
+        orderInfo.lastWorkingDay =
+          orderData?.is_active === true ? (result.value || null) : null;
         setActiveInactiveAPIOrderData(orderData);
         setActiveInactiveAPIOrderInfo(orderInfo);
         ActivateOrDeactivate(orderData, orderInfo);
@@ -1059,6 +1071,7 @@ const InfoTable = ({
     const payload = {
       emp_uuid: orderData?.emp_uuid,
       status: orderInfo?.statusCode,
+      last_working_day: orderInfo?.lastWorkingDay || null,
     };
 
     const Api = await PostApi(

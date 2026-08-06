@@ -100,6 +100,8 @@ const EmployeeForm = () => {
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [locationToEdit, setLocationToEdit] = useState(null);
   const isExistingEmployee = !!(form_obj?.id && form_obj.id !== 0);
+  const [defaultProbationMonths, setDefaultProbationMonths] = useState(0);
+  const [probation_end_date, setProbationEndDate] = useState(null);
 
   const handleAddLocationClick = () => {
     setLocationToEdit(null);
@@ -182,7 +184,14 @@ const EmployeeForm = () => {
       dob: ConvertISODateFormat(form_obj.dob),
       joining_date: ConvertISODateFormat(form_obj.joining_date),
       role_id: this_role_id,
+      employment_type: form_obj.employment_type || 2,
+      probation_end_date: ConvertISODateFormat(form_obj.probation_end_date),
     });
+    setProbationEndDate(
+      form_obj.probation_end_date
+        ? ConvertDateFormat(ConvertISODateFormat(form_obj.probation_end_date))
+        : null,
+    );
     console.log("form_obj.dob:", form_obj.dob);
     console.log("form_obj.joining_date:", form_obj.joining_date);
     setDob(
@@ -225,6 +234,18 @@ const EmployeeForm = () => {
       }, 100);
     }
   }, [employeeObj?.id]);
+
+  // Load the active probation policy default (for auto-filling end date).
+  useEffect(() => {
+    Api({ method: "GET", url: "payroll/probation-policy/" })
+      .then((res) => {
+        const latest = (res?.data?.data || [])[0];
+        setDefaultProbationMonths(
+          latest ? (latest.default_probation_months || 0) : 0,
+        );
+      })
+      .catch(() => setDefaultProbationMonths(0));
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -351,6 +372,50 @@ const EmployeeForm = () => {
       ConvertISODateFormat(ConvertDateFormat(dateStr)),
     );
     FormikForm.setFieldTouched("dob", true);
+  };
+
+  const handleEmploymentTypeChange = (e) => {
+    const val = parseInt(e.target.value, 10);
+    setEmployeeObj((prev) => ({ ...prev, employment_type: val }));
+    // Switching to Full Time clears the probation end date.
+    if (val === 2) {
+      setProbationEndDate(null);
+      setEmployeeObj((prev) => ({ ...prev, probation_end_date: "" }));
+      return;
+    }
+    // Switching to Probation: auto-fill end = joining + default months (if empty).
+    // Parse the joining date from the DISPLAY state using DateFormat (same safe
+    // pattern the picker binding uses at lines ~786/1505). Do NOT use
+    // employeeObj.joining_date with bare dayjs() — that value is in the app ISO
+    // format and dayjs misparses it, swapping month/day (May-04 + 3mo produced
+    // 2026-04-08 instead of 2026-08-04).
+    if (val === 1 && !probation_end_date && joining_date && defaultProbationMonths) {
+      const joinDayjs = dayjs(joining_date, DateFormat);
+      if (joinDayjs.isValid()) {
+        const endObj = joinDayjs.add(defaultProbationMonths, "month");
+        const endDisplay = endObj.format(DateFormat);     // for the picker
+        const endIso = endObj.format("YYYY-MM-DD");         // for the backend
+        // Do NOT round-trip through ConvertISODateFormat/ConvertDateFormat:
+        // that path goes YYYY-MM-DD -> DD-MM-YYYY -> new Date() misparses as
+        // MM-DD-YYYY and swaps month/day (Aug-04 -> Apr-08). dayjs formats the
+        // real date object directly.
+        setProbationEndDate(endDisplay);
+        setEmployeeObj((prev) => ({ ...prev, probation_end_date: endIso }));
+        FormikForm.setFieldValue("probation_end_date", endIso);
+      }
+    }
+  };
+
+  const handleProbationEndDateChange = (d, dateStr) => {
+    setProbationEndDate(dateStr);   // display string, in DateFormat
+    // dateStr is in DateFormat -> parse with dayjs, emit YYYY-MM-DD for backend.
+    // Avoids ConvertISODateFormat(ConvertDateFormat(...)) which swaps month/day.
+    const iso = dayjs(dateStr, DateFormat).isValid()
+      ? dayjs(dateStr, DateFormat).format("YYYY-MM-DD")
+      : "";
+    setEmployeeObj((prev) => ({ ...prev, probation_end_date: iso }));
+    FormikForm.setFieldValue("probation_end_date", iso);
+    FormikForm.setFieldTouched("probation_end_date", true);
   };
 
   const handleJoinDateChange = (selectedJoinDate, dateStr, instance) => {
@@ -613,6 +678,12 @@ const EmployeeForm = () => {
       ).some((v) => v === true);
       if (!hasAtLeastOneTrue) {
         setErrors("Please select at least one attendance method!");
+        return;
+      } else if (
+        Number(employeeObj?.employment_type) === 1 &&
+        !employeeObj?.probation_end_date
+      ) {
+        toast.error("Probation employees require an end date.");
         return;
       } else {
         setErrors("");
@@ -1468,6 +1539,55 @@ const EmployeeForm = () => {
                   )}
                 </div>
               </Col>
+
+              {/* ── Employment Type ──────────────────────────────────────── */}
+              <Col lg={12}>
+                <div className="mb-3">
+                  <Label htmlFor="employment_type" className="form-label">
+                    Employment Type <span>*</span>
+                  </Label>
+                  <select
+                    className="form-control"
+                    id="employment_type"
+                    name="employment_type"
+                    value={employeeObj?.employment_type || 2}
+                    onChange={handleEmploymentTypeChange}
+                  >
+                    <option value={1}>Probation</option>
+                    <option value={2}>Full Time</option>
+                  </select>
+                </div>
+              </Col>
+
+              {/* ── Probation End Date (only when Probation) ─────────────── */}
+              {Number(employeeObj?.employment_type) === 1 && (
+                <Col lg={12}>
+                  <div>
+                    <Label htmlFor="probation_end_date" className="form-label">
+                      Probation End Date <span>*</span>
+                    </Label>
+                    <DatePicker
+                      className="form-control"
+                      id="probation_end_date"
+                      name="probation_end_date"
+                      value={
+                        probation_end_date
+                          ? dayjs(probation_end_date, DateFormat)
+                          : null
+                      }
+                      format={DateFormat}
+                      allowClear={false}
+                      onChange={handleProbationEndDateChange}
+                      inputReadOnly={true}
+                    />
+                    <div className="form-text mb-3">
+                      {defaultProbationMonths
+                        ? `Auto-filled to ${defaultProbationMonths} month(s) from joining; adjust if needed.`
+                        : "No probation policy configured — please set the end date manually."}
+                    </div>
+                  </div>
+                </Col>
+              )}
 
               {/* ── ID Proof ─────────────────────────────────────────────── */}
               {/* {selectedFileName ? (
