@@ -107,11 +107,17 @@ const AsignCustomFormTable = () => {
 
   // ================= CUSTOM FORM ID -> NAME LOOKUP =================
   const customFormMap = useMemo(() => {
-    return customForms.reduce((acc, f) => {
-      acc[f.id] = f.name;
+    const forms = GetLocalStorageData(CUSTOM_FORM_STORAGE_KEY) || [];
+
+    return forms.reduce((acc, form) => {
+      if (form?.id !== undefined && form?.id !== null) {
+        acc[String(form.id)] =
+          form.name || form.label || form.title || `#${form.id}`;
+      }
+
       return acc;
     }, {});
-  }, [customForms]);
+  }, []);
 
   // ================= EMPLOYEE ID -> NAME LOOKUP =================
   const employeeMap = useMemo(() => {
@@ -156,11 +162,22 @@ const AsignCustomFormTable = () => {
         filterable: false,
 
         Cell: ({ row }) => {
-          const id = row.original.custom_form;
-          return <b>{customFormMap[id] || `#${id}`}</b>;
+          const customFormId = row.original?.custom_form;
+
+          if (
+            customFormId === undefined ||
+            customFormId === null ||
+            customFormId === 0 ||
+            customFormId === "0"
+          ) {
+            return "-";
+          }
+
+          return (
+            <b>{customFormMap[String(customFormId)] || `#${customFormId}`}</b>
+          );
         },
       },
-
       {
         Header: "Custom Status",
         id: "custom_status",
