@@ -1,5 +1,5 @@
 const platform = process.env.REACT_APP_LC_PLATFORM || "local";
-const LOCAL_BASE_URL = "http://192.168.0.20:8000/";
+const LOCAL_BASE_URL = "http://192.168.0.64:8000/";
 export const getBaseUrlFromDomain = () => {
   // Local dev/testing (e.g. on a physical device pointed at your machine's
   // LAN IP) always talks to the fixed local server — skip hostname/subdomain
@@ -41,7 +41,6 @@ export const getWsUrlFromDomain = () => {
     !!process.env.REACT_APP_LC_PLATFORM &&
     process.env.REACT_APP_LC_PLATFORM === "local"
   ) {
-    
     const httpUrl = getBaseUrlFromDomain();
     const wsUrl = httpUrl.replace(/^http/, "ws").replace(/\/$/, "");
     return `${wsUrl}/ws/tracking/?token=${token?.access}`;

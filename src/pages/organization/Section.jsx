@@ -38,6 +38,7 @@ import {
   FORMS_VIEW_ACCESS_KEY,
   LOCATION_GROUP_VIEW_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
+import CustomFormConfig from "../CustomFormConfig/CustomFormConfig";
 
 const Section = () => {
   // const [departmentView, SetDepartmentView] = useState(false);
@@ -434,7 +435,7 @@ const Section = () => {
               null}
             {(permissions.forms && (
               <TabPane tabId="8">
-                <CustomFormTable />
+                <CustomFormConfig />
               </TabPane>
             )) ||
               null}
