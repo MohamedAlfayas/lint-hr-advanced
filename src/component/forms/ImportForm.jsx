@@ -86,16 +86,8 @@ const FIELD_RULES = {
     validate: (v) => /^[12]$/.test(String(v).trim()),
     msg: "must be 1 or 2",
   },
-  primary_department_id_list: {
-    required: false,
-    validate: (v) => ID_LIST_RE.test(String(v).trim()),
-    msg: "must look like [1] or [1,2]",
-  },
-  branch_id_list: {
-    required: false,
-    validate: (v) => ID_LIST_RE.test(String(v).trim()),
-    msg: "must look like [1] or [1,2]",
-  },
+  branch: { required: false },
+  primary_department: { required: false },
   role: { required: false, validate: isInt, msg: "must be a number" },
   work_schedule: { required: false, validate: isInt, msg: "must be a number" },
   reporting_manager: {
@@ -112,12 +104,17 @@ const FIELD_RULES = {
     validate: isBool,
     msg: "must be TRUE or FALSE",
   },
-  is_manager: {
+  allow_check_in_out_outside_the_range: {
     required: false,
     validate: isBool,
     msg: "must be TRUE or FALSE",
   },
   outside_range_notes_required: {
+    required: false,
+    validate: isBool,
+    msg: "must be TRUE or FALSE",
+  },
+  allow_web_check_in_out: {
     required: false,
     validate: isBool,
     msg: "must be TRUE or FALSE",

@@ -20,17 +20,14 @@ export const employeeCSVHeaders = [
   { label: "profile_timezone", key: "profile_timezone" },
   { label: "is_active", key: "is_active" },
   {
-    label: "allow_check_in/out_outside_the_range",
+    label: "allow_check_in_out_outside_the_range",
     key: "allow_check_in_out_outside_the_range",
   },
   {
     label: "outside_range_notes_required",
     key: "outside_range_notes_required",
   },
-  {
-    label: "allow_web_check_in/out",
-    key: "allow_web_check_in_out",
-  },
+  { label: "allow_web_check_in_out", key: "allow_web_check_in_out" },
 ];
 
 export const employeeSampleData = [
