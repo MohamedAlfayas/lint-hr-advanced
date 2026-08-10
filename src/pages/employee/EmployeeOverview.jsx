@@ -5,6 +5,9 @@ import SimpleBar from "simplebar-react";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { gender_options } from "../../common/constant/Constants";
 
+import Lottie from "react-lottie";
+import noDataFound from "../auth/loader/animation/no-data.json"; // adjust path to wherever you place the file
+
 const EmployeeOverview = (props) => {
   const { profileObj, payrollObj, tasksLink, employeeTasks = [] } = props;
 
@@ -43,6 +46,13 @@ const EmployeeOverview = (props) => {
     WorkScheduleData.find(
       (w) => w.id === profileObj?.work_schedule_id
     )?.name || "";
+
+  const noDataOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: noDataFound,
+    rendererSettings: { preserveAspectRatio: "xMidYMid slice" },
+  };
 
   const detailRows = [
     { icon: "ri-slideshow-2-line", label: "Employee ID", value: profileObj?.emp_id },
@@ -337,9 +347,10 @@ const EmployeeOverview = (props) => {
                   className="d-flex align-items-center justify-content-center"
                   style={{ height: "260px" }}
                 >
-                  <p className="text-muted text-center mb-0">
+                  <Lottie options={noDataOptions} height={160} width={160} />
+                  {/* <p className="text-muted text-center mb-0">
                     No tasks assigned yet.
-                  </p>
+                  </p> */}
                 </div>
               )}
             </SimpleBar>

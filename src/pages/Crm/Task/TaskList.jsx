@@ -138,6 +138,8 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
         Header: "Title",
         id: "title",
         filterable: false,
+        width: 280,        // fixed instead of auto
+        minWidth: 280,
         accessor: (obj) => {
           const plainDescription =
             obj.description?.replace(/<[^>]*>/g, "") || "";
@@ -175,7 +177,7 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
           }
 
           return (
-            <div>
+            <div style={{ minHeight: "36px" }}>
               <b
                 className="text-primary"
                 style={{ cursor: "pointer" }}
@@ -191,11 +193,13 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
                     fontSize: "13px",
                     color: "#6c757d",
                     marginTop: "4px",
+                    minHeight: "16px", 
+                    visibility: plainDescription ? "visible" : "hidden",
                   }}
                 >
                   {plainDescription.length > 60
                     ? `${plainDescription.substring(0, 60)}...`
-                    : plainDescription}
+                    : plainDescription || "placeholder"}
                 </div>
               )}
             </div>
