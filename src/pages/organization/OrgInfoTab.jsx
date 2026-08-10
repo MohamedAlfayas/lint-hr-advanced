@@ -280,6 +280,9 @@ const OrgInfoTab = () => {
       dispatch(setLoaderVisible(false));
       if (ApiRes.status && ApiRes.status === 200) {
         toast.success(ApiRes?.data?.message);
+        setDarkLogoFile(null);
+        setLightLogoFile(null);
+        GetCompanyProfileData();
       } else {
         toast.error(ApiRes?.data?.message || ApiRes?.data?.detail);
       }
@@ -426,7 +429,7 @@ const OrgInfoTab = () => {
   return (
     <React.Fragment>
       <Row>
-        <Col xl={9} lg={8}>
+        <Col xl={12} lg={8}>
           <Card>
             <CardBody>
               <h6 className="mb-3 fw-semibold text-uppercase">Company Info</h6>
@@ -924,7 +927,8 @@ const OrgInfoTab = () => {
                               </div>
                             )}
                           </Dropzone>
-                          {lightLogoFile && (
+                          {/* {lightLogoFile && ( */}
+                          {lightLogoFile ? (
                             <Card className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete">
                               <div className="p-2">
                                 <Row className="align-items-center">
@@ -952,8 +956,8 @@ const OrgInfoTab = () => {
                                 </Row>
                               </div>
                             </Card>
-                          )}
-                          {v.light_logo_image && (
+                          ):
+                          (v.light_logo_image && (
                             <div className="p-2 m-3">
                               <Row className="align-items-center">
                                 <Col className="col-auto">
@@ -966,6 +970,7 @@ const OrgInfoTab = () => {
                                 </Col>
                               </Row>
                             </div>
+                          )
                           )}
                         </Col>
                       </Row>
@@ -992,7 +997,7 @@ const OrgInfoTab = () => {
         </Col>
 
         {/* ── Right Sidebar ─────────────────────────────────────────────── */}
-        <Col xl={3} lg={4}>
+        {/* <Col xl={3} lg={4}>
           <Card>
             <CardBody>
               <h5 className="card-title mb-4">Skills</h5>
@@ -1215,7 +1220,7 @@ const OrgInfoTab = () => {
               </div>
             </CardBody>
           </Card>
-        </Col>
+        </Col> */}
       </Row>
     </React.Fragment>
   );

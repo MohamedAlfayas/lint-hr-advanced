@@ -37,6 +37,7 @@ import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/Employee
 import { setIndividualAttendanceReportData } from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
+import { GetApi } from "../../common/api/GetApi";
 import { toast } from "react-toastify";
 import { BuildAttendanceReportChart } from "../../common/js/BuildAttendanceReportChart";
 import EmployeeDocument from "./EmployeeDocument";
@@ -46,6 +47,16 @@ import {
 } from "../../common/constant/RoleConstants";
 import { useTable } from "react-table";
 import EmployeePayslip from "../payroll/EmployeePayslip";
+
+const MONTH_NAMES = [
+  "", "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+const getMonthName = (month) => {
+  if (month === null || month === undefined || month === "") return "";
+  if (isNaN(month)) return String(month);
+  return MONTH_NAMES[parseInt(month, 10)] || String(month);
+};
 
 const EmployeeView = () => {
   const { id } = useParams();
@@ -75,9 +86,6 @@ const EmployeeView = () => {
 
   useEffect(() => {
     if (profile_data && employeeAccountData) {
-      console.log("profile_data = ", profile_data);
-      console.log("employeeAccountData = ", employeeAccountData);
-
       if (profile_data?.id === employeeAccountData?.id) {
         setAccSettingsAccess(true);
       } else {
@@ -89,6 +97,8 @@ const EmployeeView = () => {
   const dispatch = useDispatch();
 
   const [profileObj, setProfileObj] = useState({});
+  const [payrollObj, setPayrollObj] = useState(null);
+  const [employeeTasks, setEmployeeTasks] = useState([]);
 
   const navigate = useNavigate();
 
@@ -106,6 +116,71 @@ const EmployeeView = () => {
     !!id && GetInitialApi(id);
   }, [id]);
 
+  const GetPayrollSummary = async (empId) => {
+    try {
+      const res = await GetApi(`payroll/employee-payslip-list-id/${empId}`);
+      const data = res?.data ?? res;
+      const payslips = data?.data?.payslips ?? [];
+
+      if (!payslips.length) {
+        setPayrollObj(null);
+        return;
+      }
+
+      const sorted = [...payslips].sort((a, b) => {
+        if (Number(b.year) !== Number(a.year))
+          return Number(b.year) - Number(a.year);
+        return Number(b.month) - Number(a.month);
+      });
+      const latest = sorted[0];
+
+      const currentYear = new Date().getFullYear();
+      const totalThisYear = payslips.filter(
+        (p) => Number(p.year) === currentYear,
+      ).length;
+
+      setPayrollObj({
+        latestNetSalary: latest?.net_pay ? `₹ ${latest.net_pay}` : "-",
+        latestPayMonth: `${getMonthName(latest?.month)} ${latest?.year || ""}`.trim(),
+        lastPayDate: latest?.pay_date || "-",
+        totalPayslips: totalThisYear,
+      });
+    } catch (err) {
+      console.error("Payroll summary fetch error:", err);
+      setPayrollObj(null);
+    }
+  };
+
+  const GetEmployeeTasks = async (empId) => {
+    try {
+      const response = await Api.get("/task/");
+      const allTasks = response?.data?.data || [];
+
+      const filtered = allTasks.filter((t) => {
+        const isAssignee = Number(t.assigned_to) === Number(empId);
+
+        const isCollaboratorViaDetails = Array.isArray(t.collaborator_details)
+          ? t.collaborator_details.some((c) => Number(c.id) === Number(empId))
+          : false;
+
+        const isCollaboratorViaIds = Array.isArray(t.collaborators_id_list)
+          ? t.collaborators_id_list.some((id) => Number(id) === Number(empId))
+          : false;
+
+        return isAssignee || isCollaboratorViaDetails || isCollaboratorViaIds;
+      });
+
+      const sorted = [...filtered].sort(
+        (a, b) => new Date(b.start_time || 0) - new Date(a.start_time || 0),
+      );
+
+      setEmployeeTasks(sorted.slice(0, 10));
+    } catch (error) {
+      console.log("Employee Task Fetch Error:", error);
+      setEmployeeTasks([]);
+    }
+  };
+
   const GetInitialApi = async (id) => {
     dispatch(setLoaderVisible(true));
     const EmployeeData = GetLocalStorageData("employee") || [];
@@ -118,6 +193,9 @@ const EmployeeView = () => {
         Object.keys(thisEmployeeData).length > 0
       ) {
         setProfileObj(thisEmployeeData);
+
+        GetPayrollSummary(thisEmployeeData.id);
+        GetEmployeeTasks(thisEmployeeData.id);
 
         const att_api_payload = {
           thisMonth: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
@@ -162,7 +240,6 @@ const EmployeeView = () => {
               dispatch(setLoaderVisible(false));
             });
         } else {
-          console.log("Att_Report_Api - ", Att_Report_Api?.data?.message);
           toast.error(
             Att_Report_Api?.data?.message || Att_Report_Api?.data?.detail,
           );
@@ -189,41 +266,35 @@ const EmployeeView = () => {
     <React.Fragment>
       <div className="page-content">
         <Container fluid>
-          <div className="profile-foreground position-relative mx-n4 mt-n4">
-            <div className="profile-wid-bg">
-              <img
-                src={
-                  profileObj.profile_url ? profileObj.profile_url : DummyUserImg
-                }
-                style={{ objectFit: "cover" }}
-                alt=""
-                className="profile-wid-img"
-              />
-            </div>
-          </div>
-          <div className="pt-4 mb-4 mb-lg-3 pb-lg-4">
-            <Row className="g-4">
-              <div className="col-auto">
-                <div className="avatar-lg">
+          <Card className="border-0 shadow-sm mb-2">
+            <CardBody className="p-3">
+              <Row className="align-items-center g-4">
+                <div
+                  className={`rounded-circle d-inline-flex align-items-center justify-content-center ${
+                    !profileObj.profile_url ? "avatar-outline" : ""
+                  }`}
+                  style={{
+                    width: "96px",
+                    height: "96px",
+                  }}
+                >
                   <img
-                    src={
-                      profileObj.profile_url
-                        ? profileObj.profile_url
-                        : DummyUserImg
-                    }
-                    style={{ objectFit: "cover" }}
-                    alt="Available"
-                    className="avatar-lg img-thumbnail rounded-circle mx-auto border-success"
+                    src={profileObj.profile_url ? profileObj.profile_url : DummyUserImg}
+                    style={{
+                      objectFit: "cover",
+                      width: "90px",
+                      height: "90px",
+                    }}
+                    alt=""
+                    className="rounded-circle"
                   />
                 </div>
-              </div>
 
-              <Col>
-                <div className="p-2">
-                  <h3 className="text-white mb-1">
+                <Col>
+                  <h3 className="text-dark fw-bold mb-1">
                     {profileObj?.first_name} {profileObj?.last_name}
                   </h3>
-                  <p className="text-white text-opacity-75">
+                  <p className="text-muted mb-2">
                     {profileObj?.role?.id
                       ? RoleData.length
                         ? RoleData.find((d) => d.id === profileObj?.role?.id)
@@ -241,134 +312,134 @@ const EmployeeView = () => {
                           .join(" / ")
                       : ""}
                   </p>
-                  <div className="hstack text-white-50 gap-1">
-                    <div className="me-2">
-                      <i className="ri-at-line me-1 text-white text-opacity-75 fs-16 align-middle"></i>
+                  <div className="hstack gap-4">
+                    <div>
+                      <i className="ri-at-line me-1 text-muted fs-16 align-middle"></i>
                       <Link
                         to={`mailto:${profileObj?.email || ""}`}
-                        className="link-light"
+                        className="text-dark text-decoration-none"
                       >
                         {profileObj?.email || ""}
-                      </Link>{" "}
+                      </Link>
                     </div>
                     <div>
-                      <i className="ri-phone-line me-1 text-white text-opacity-75 fs-16 align-middle"></i>
+                      <i className="ri-phone-line me-1 text-muted fs-16 align-middle"></i>
                       <Link
                         to={`tel:${profileObj?.contact_number || ""}`}
-                        className="link-light"
+                        className="text-dark text-decoration-none"
                       >
                         {profileObj?.contact_number || ""}
                       </Link>
                     </div>
                   </div>
+                </Col>
+
+                <div className="col-auto d-flex gap-2">
+                  {otherEmpViewAccess === true && (
+                    <Link
+                      to="/employee"
+                      className="btn btn-outline-primary btn-sm"
+                    >
+                      <i className="ri-arrow-left-line align-bottom"></i> Back
+                      to Employee
+                    </Link>
+                  )}
+                  {accSettingsAccess && (
+                    <Button
+                      className="btn btn-outline-success btn-sm"
+                      onClick={() => {
+                        dispatch(
+                          setEmployeeAccountSettingsData(employeeAccountData),
+                        );
+                        navigate(`/account-settings/`);
+                      }}
+                    >
+                      <i className="ri-edit-box-line align-bottom"></i>{" "}
+                      Account Settings
+                    </Button>
+                  )}
                 </div>
-              </Col>
-            </Row>
-          </div>
+              </Row>
+            </CardBody>
+          </Card>
 
           <Row>
             <Col lg={12}>
               <div>
                 <div className="d-flex">
                   <Nav
-                    pills
-                    className="animation-nav profile-nav gap-2 gap-lg-3 flex-grow-1"
+                    className="nav-tabs nav-tabs-custom nav-success gap-2 gap-lg-3 flex-grow-1"
                     role="tablist"
                   >
                     <NavItem className="fs-14">
-                      <Button
-                        className={classnames("nav-link", {
+                      <NavLink
+                        className={classnames("fw-semibold", {
                           active: activeTab === "1",
                         })}
-                        onClick={() => {
-                          toggleTab("1");
-                        }}
+                        onClick={() => toggleTab("1")}
+                        href="#"
                       >
                         <i className="ri-airplay-fill d-inline-block d-md-none"></i>{" "}
                         <span className="d-none d-md-inline-block">
                           Overview
                         </span>
-                      </Button>
+                      </NavLink>
                     </NavItem>
                     <NavItem className="fs-14">
-                      <Button
-                        className={classnames("nav-link", {
+                      <NavLink
+                        className={classnames("fw-semibold", {
                           active: activeTab === "2",
                         })}
-                        onClick={() => {
-                          toggleTab("2");
-                        }}
+                        onClick={() => toggleTab("2")}
+                        href="#"
                       >
                         <i className="ri-list-unordered d-inline-block d-md-none"></i>{" "}
                         <span className="d-none d-md-inline-block">
                           Attendance
                         </span>
-                      </Button>
+                      </NavLink>
                     </NavItem>
                     <NavItem className="fs-14">
-                      <Button
-                        className={classnames("nav-link", {
+                      <NavLink
+                        className={classnames("fw-semibold", {
                           active: activeTab === "3",
                         })}
-                        onClick={() => {
-                          toggleTab("3");
-                        }}
+                        onClick={() => toggleTab("3")}
+                        href="#"
                       >
                         <i className="ri-price-tag-line d-inline-block d-md-none"></i>{" "}
                         <span className="d-none d-md-inline-block">
                           Payroll
                         </span>
-                      </Button>
+                      </NavLink>
                     </NavItem>
                     <NavItem className="fs-14">
-                      <Button
-                        className={classnames("nav-link", {
+                      <NavLink
+                        className={classnames("fw-semibold", {
                           active: activeTab === "4",
                         })}
-                        onClick={() => {
-                          toggleTab("4");
-                        }}
+                        onClick={() => toggleTab("4")}
+                        href="#"
                       >
                         <i className="ri-folder-4-line d-inline-block d-md-none"></i>{" "}
                         <span className="d-none d-md-inline-block">
                           Documents
                         </span>
-                      </Button>
+                      </NavLink>
                     </NavItem>
                   </Nav>
-                  {otherEmpViewAccess === true && (
-                    <div className="flex-shrink-0">
-                      <Link to="/employee" className="btn w-sm btn-warning">
-                        <i className="ri-arrow-left-line align-bottom"></i> Back
-                        to Employee
-                      </Link>
-                    </div>
-                  )}
-                  {accSettingsAccess && (
-                    <div
-                      className="flex-shrink-0"
-                      style={{ marginLeft: "10px" }}
-                    >
-                      <Button
-                        className="btn btn-success"
-                        onClick={() => {
-                          dispatch(
-                            setEmployeeAccountSettingsData(employeeAccountData),
-                          );
-                          navigate(`/account-settings/`);
-                        }}
-                      >
-                        <i className="ri-edit-box-line align-bottom"></i>{" "}
-                        Account Settings
-                      </Button>
-                    </div>
-                  )}
                 </div>
 
-                <TabContent activeTab={activeTab} className="pt-4">
+                <TabContent activeTab={activeTab} className="pt-2">
                   {!!activeTab && activeTab === "1" && (
                     <TabPane tabId="1">
-                      <EmployeeOverview profileObj={profileObj} />
+                      <EmployeeOverview
+                        profileObj={profileObj}
+                        payrollObj={payrollObj}
+                        employeeTasks={employeeTasks}
+                        tasksLink="/tasks"
+                        onViewPayslips={() => toggleTab("3")}
+                      />
                     </TabPane>
                   )}
                   {!!activeTab && activeTab === "2" && (
