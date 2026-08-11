@@ -108,7 +108,7 @@ const EmployeeOverview = (props) => {
   };
 
   return (
-    <div>
+    <div className="mb-4">
       <Row className="align-items-stretch">
         {/* Left: Employee Details */}
         <Col xxl={5} lg={5} md={12} className="d-flex">

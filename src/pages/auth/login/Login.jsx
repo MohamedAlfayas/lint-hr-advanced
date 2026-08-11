@@ -75,7 +75,7 @@ const Login = () => {
     validationSchema: Yup.object({
       email: Yup.string()
         .trim()
-        .required("Please Enter Your Email")
+        // .required("Please Enter Your Email")
         .transform((value) =>
           value ? value.trim().toLowerCase() : value
         )
@@ -88,7 +88,7 @@ const Login = () => {
         ),
       password: Yup.string()
         .trim()
-        .required("Please Enter Your Password")
+        // .required("Please Enter Your Password")
 
         // .max(20, "Password must not exceed 20 characters")
         // .min(8,"Password must be at least 8 characters long")
@@ -408,14 +408,17 @@ const Login = () => {
                                   {validation.errors.password}
                                 </FormFeedback>
                               ) : null}
+                              {!validation.errors.password && (
                               <button
                                 className="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted"
                                 type="button"
                                 id="password-addon"
                                 onClick={() => setPasswordShow(!passwordShow)}
                               >
-                                <i className="ri-eye-fill align-middle"></i>
+                                {/* <i className="ri-eye-fill align-middle"></i> */}
+                                <i className={passwordShow ? "ri-eye-off-fill align-middle" : "ri-eye-fill align-middle"}></i>
                               </button>
+                              )}
                             </div>
                           </div>
 
@@ -435,13 +438,24 @@ const Login = () => {
                           </div> */}
 
                           <div className="mt-4">
-                            <Button
-                              color="success"
-                              className="btn btn-success w-100 text-center"
-                              type="submit"
+                            <span
+                              style={{
+                                display: "inline-block",
+                                width: "100%",
+                                cursor: !(validation.values.email && validation.values.password && validation.isValid)
+                                  ? "not-allowed"
+                                  : "pointer",
+                              }}
                             >
-                              Sign In
-                            </Button>
+                              <Button
+                                color="success"
+                                className="btn btn-success w-100 text-center"
+                                type="submit"
+                                disabled={!(validation.values.email && validation.values.password && validation.isValid)}
+                              >
+                                Sign In
+                              </Button>
+                            </span>
                           </div>
 
                           <div className="mt-3 text-center">
