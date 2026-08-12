@@ -75,7 +75,7 @@ const Login = () => {
     validationSchema: Yup.object({
       email: Yup.string()
         .trim()
-        // .required("Please Enter Your Email")
+        .required("Please Enter Your Email")
         .transform((value) =>
           value ? value.trim().toLowerCase() : value
         )
@@ -88,7 +88,7 @@ const Login = () => {
         ),
       password: Yup.string()
         .trim()
-        // .required("Please Enter Your Password")
+        .required("Please Enter Your Password")
 
         // .max(20, "Password must not exceed 20 characters")
         // .min(8,"Password must be at least 8 characters long")
@@ -355,14 +355,14 @@ const Login = () => {
                               }}
                               value={validation.values.email || ""}
                               invalid={
-                                // validation.touched.email &&
+                                validation.touched.email &&
                                 validation.errors.email
                                   ? true
                                   : false
                               }
                             />
                             {
-                            // validation.touched.email &&
+                            validation.touched.email &&
                             validation.errors.email ? (
                               <FormFeedback type="invalid">
                                 {validation.errors.email}
@@ -395,20 +395,20 @@ const Login = () => {
                                 onChange={validation.handleChange}
                                 onBlur={validation.handleBlur}
                                 invalid={
-                                  // validation.touched.password &&
+                                  validation.touched.password &&
                                   validation.errors.password
                                     ? true
                                     : false
                                 }
                               />
                               {
-                              // validation.touched.password &&
+                              validation.touched.password &&
                               validation.errors.password ? (
                                 <FormFeedback type="invalid">
                                   {validation.errors.password}
                                 </FormFeedback>
                               ) : null}
-                              {!validation.errors.password && (
+                              {!(validation.touched.password && validation.errors.password) && (
                               <button
                                 className="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted"
                                 type="button"
@@ -438,7 +438,7 @@ const Login = () => {
                           </div> */}
 
                           <div className="mt-4">
-                            <span
+                            {/* <span
                               style={{
                                 display: "inline-block",
                                 width: "100%",
@@ -446,16 +446,16 @@ const Login = () => {
                                   ? "not-allowed"
                                   : "pointer",
                               }}
-                            >
+                            > */}
                               <Button
                                 color="success"
                                 className="btn btn-success w-100 text-center"
                                 type="submit"
-                                disabled={!(validation.values.email && validation.values.password && validation.isValid)}
+                                // disabled={!(validation.values.email && validation.values.password && validation.isValid)}
                               >
                                 Sign In
                               </Button>
-                            </span>
+                            {/* </span> */}
                           </div>
 
                           <div className="mt-3 text-center">

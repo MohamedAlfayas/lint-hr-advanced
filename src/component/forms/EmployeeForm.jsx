@@ -99,6 +99,32 @@ const EmployeeForm = () => {
     last_name: false,
   });
   const [emailTouched, setEmailTouched] = useState(false);
+
+  const [lengthWarnings, setLengthWarnings] = useState({
+    emp_id: "",
+    first_name: "",
+    last_name: "",
+    email: "",
+  });
+
+  const MAX_LENGTHS = {
+    emp_id: 50,
+    first_name: 50,
+    last_name: 50,
+    email: 50,
+  };
+
+  const checkMaxLength = (field, rawValue) => {
+    const max = MAX_LENGTHS[field];
+    const msg =
+      rawValue.length > max
+        ? `${field
+            .replace("_", " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase())} cannot exceed ${max} characters`
+        : "";
+    setLengthWarnings((prev) => ({ ...prev, [field]: msg }));
+  };
+
   const inputRef = useRef(null);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const fieldRefs = useRef({});
@@ -251,18 +277,11 @@ const EmployeeForm = () => {
     }));
 
     setNameTouched((prev) => ({ ...prev, [field]: true }));
-
+    checkMaxLength(field, val);
     FormikForm.setFieldValue(field, val);
     FormikForm.setFieldTouched(field, true, false);
 
-    if (val.length > 50) {
-      FormikForm.setFieldError(
-        field,
-        `${field === "first_name" ? "First" : "Last"} name cannot exceed 50 characters`,
-      );
-    } else {
-      FormikForm.setFieldError(field, undefined);
-    }
+
   };
 
   const handleProfileChange = (e) => {
@@ -926,22 +945,17 @@ const EmployeeForm = () => {
                           .toUpperCase()
                           .replace(/[^A-Z0-9_-]/g, "");
 
+                       
                         setEmployeeObj((prev) => ({
                           ...prev,
                           emp_id: val,
                         }));
+                        checkMaxLength("emp_id", val);
 
                         FormikForm.setFieldValue("emp_id", val);
                         FormikForm.setFieldTouched("emp_id", true, false);
 
-                        if (val.length > 50) {
-                          FormikForm.setFieldError(
-                            "emp_id",
-                            "Employee ID cannot exceed 50 characters",
-                          );
-                        } else {
-                          FormikForm.setFieldError("emp_id", undefined);
-                        }
+                     
                       }}
                       // onBlur={() => FormikForm.setFieldTouched("emp_id", true)}
                       onBlur={() => {
@@ -966,10 +980,14 @@ const EmployeeForm = () => {
                     {
                     // FormikForm.errors.emp_id && (
                     (FormikForm.touched.emp_id || hasAttemptedSubmit) &&
-                      FormikForm.errors.emp_id && (
+                      FormikForm.errors.emp_id && 
+                      !lengthWarnings.emp_id &&(
                       <FormFeedback type="invalid">
                         {FormikForm.errors.emp_id}
                       </FormFeedback>
+                    )}
+                    {lengthWarnings.emp_id && (
+                      <div className="lc_form_error_text">{lengthWarnings.emp_id}</div>
                     )}
                   </div>
                   {
@@ -1022,11 +1040,15 @@ const EmployeeForm = () => {
                     ) && <i className="ri-user-line"></i>}
                     {/* {nameTouched.first_name && FormikForm.errors.first_name && ( */}
                     {(nameTouched.first_name || hasAttemptedSubmit) &&
-                      FormikForm.errors.first_name && (
+                      FormikForm.errors.first_name && 
+                      !lengthWarnings.first_name && (
 
                       <FormFeedback type="invalid">
                         {FormikForm.errors.first_name}
                       </FormFeedback>
+                    )}
+                    {lengthWarnings.first_name && (
+                      <div className="lc_form_error_text">{lengthWarnings.first_name}</div>
                     )}
                   </div>
                   {!(
@@ -1074,10 +1096,14 @@ const EmployeeForm = () => {
                     ) && <i className="ri-user-2-line"></i>}
                     {/* {nameTouched.last_name && FormikForm.errors.last_name && ( */}
                     {(nameTouched.last_name || hasAttemptedSubmit) &&
-                      FormikForm.errors.last_name && (
+                      FormikForm.errors.last_name &&
+                      !lengthWarnings.last_name && (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.last_name}
                       </FormFeedback>
+                    )}
+                    {lengthWarnings.last_name && (
+                      <div className="lc_form_error_text">{lengthWarnings.last_name}</div>
                     )}
                   </div>
                   {!(
@@ -1104,15 +1130,16 @@ const EmployeeForm = () => {
                       placeholder="name@company.com"
                       value={employeeObj.email || ""}
                       onChange={(e) => {
-                      const value = e.target.value;
-
+                      const val = e.target.value;
+                     
                       setEmployeeObj({
                       ...employeeObj,
-                      email: value,
+                      email: val,
                       });
 
                       setEmailTouched(true);
-                      FormikForm.setFieldValue("email", value);
+                      checkMaxLength("email", val);
+                      FormikForm.setFieldValue("email", val);
                       FormikForm.setFieldTouched("email", true, false);
                       }}
                       onBlur={(e) => {
@@ -1145,10 +1172,14 @@ const EmployeeForm = () => {
                       }
                       {/* {emailTouched && FormikForm.errors.email && ( */}
                        {(emailTouched || hasAttemptedSubmit) &&
-                      FormikForm.errors.email && (
+                      FormikForm.errors.email &&
+                      !lengthWarnings.email && (
                       <FormFeedback type="invalid">
                       {FormikForm.errors.email}
                       </FormFeedback>
+                      )}
+                      {lengthWarnings.email && (
+                        <div className="lc_form_error_text">{lengthWarnings.email}</div>
                       )}
                       </div>
                       {!(
