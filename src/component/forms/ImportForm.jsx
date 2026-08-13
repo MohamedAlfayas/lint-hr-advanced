@@ -40,7 +40,11 @@ const BOOL_VALUES = new Set(["true", "false", "1", "0", "yes", "no"]);
 const isInt = (v) => INT_RE.test(String(v).trim());
 const isBool = (v) => BOOL_VALUES.has(String(v).trim().toLowerCase());
 const isEmail = (v) => EMAIL_RE.test(String(v).trim());
-const isPhone = (v) => /^\d{7,15}$/.test(String(v).replace(/[\s-]/g, ""));
+const isPhone = (v) => /^\d{10}$/.test(String(v).replace(/[\s-]/g, ""));
+const isName = (v) => /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/.test(String(v).trim());
+const isTextOnly = (v) =>
+  /^[A-Za-z][A-Za-z0-9\s.'&/-]*$/.test(String(v).trim());
+const isEmpId = (v) => /^[A-Za-z0-9_-]+$/.test(String(v).trim());
 const isDate = (v) => {
   const s = String(v).trim();
   if (!DATE_RE.test(s)) return false;
@@ -81,15 +85,23 @@ const toISODate = (v) => {
 // One rule per column. `required` => cell must be non-empty.
 // `validate` => format check (only run when the cell is non-empty).
 const FIELD_RULES = {
-  emp_id: { required: true },
-  first_name: { required: true },
-  last_name: { required: true },
-  email: {
+  emp_id: {
     required: true,
-    validate: isEmail,
-    msg: "is not a valid email",
+    validate: isEmpId,
+    msg: "must be alphanumeric (letters, numbers, - or _ only)",
   },
-  password: { required: false },
+  first_name: {
+    required: true,
+    validate: isName,
+    msg: "must contain letters only (no numbers or symbols)",
+  },
+  last_name: {
+    required: true,
+    validate: isName,
+    msg: "must contain letters only (no numbers or symbols)",
+  },
+  email: { required: true, validate: isEmail, msg: "is not a valid email" },
+  password: { required: true },
   dob: {
     required: true,
     validate: isDate,
@@ -101,45 +113,66 @@ const FIELD_RULES = {
     msg: "must be a valid date (YYYY-MM-DD)",
   },
   country_code: {
-    required: false,
+    required: true,
     validate: (v) => COUNTRY_CODE_RE.test(String(v).trim()),
     msg: "must look like +91",
   },
   contact_number: {
-    required: false,
+    required: true,
     validate: isPhone,
-    msg: "must be a phone number (7–15 digits)",
+    msg: "must be a 10-digit phone number",
   },
   gender: {
-    required: false,
+    required: true,
     validate: (v) => /^(male|female|other)$/i.test(String(v).trim()),
     msg: "must be Male, Female, or Other",
   },
-  branch: { required: false },
-  primary_department: { required: false },
-  role: { required: false },
-  work_schedule: { required: false },
+  branch: {
+    required: true,
+    validate: isTextOnly,
+    msg: "must be text (letters, starting with a letter)",
+  },
+  primary_department: {
+    required: true,
+    validate: isTextOnly,
+    msg: "must be text (letters, starting with a letter)",
+  },
+  role: {
+    required: true,
+    validate: isTextOnly,
+    msg: "must be text (letters, starting with a letter)",
+  },
+  work_schedule: {
+    required: true,
+    validate: isTextOnly,
+    msg: "must be text (letters, starting with a letter)",
+  },
   reporting_manager: {
-    required: false,
+    required: true,
     validate: (v) => {
       const s = String(v).trim();
       return isEmail(s) || isInt(s);
     },
     msg: "must be an email or a numeric id",
   },
-  profile_timezone: { required: false },
-  is_active: {
-    required: false,
-    validate: isBool,
-    msg: "must be TRUE or FALSE",
+  profile_timezone: {
+    required: true,
+    validate: (v) => /^[A-Za-z]+\/[A-Za-z_]+$/.test(String(v).trim()),
+    msg: "must be a valid timezone (e.g. Asia/Kolkata)",
   },
+  is_active: { required: true, validate: isBool, msg: "must be TRUE or FALSE" },
   "allow_check_in/out_outside_the_range": {
-    required: false,
+    required: true,
     validate: isBool,
     msg: "must be TRUE or FALSE",
   },
   outside_range_notes_required: {
-    required: false,
+    required: true,
+    validate: isBool,
+    msg: "must be TRUE or FALSE",
+  },
+  "allow_web_check_in/out": {
+    required: true,
     validate: isBool,
     msg: "must be TRUE or FALSE",
   },

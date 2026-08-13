@@ -26,7 +26,7 @@ export const EmployeeDisplayInSelect = ({ innerProps, label, data }) => (
             className="first_letter"
             style={{ color: "white", fontWeight: "bold" }}
           >
-            {data.label.charAt(0)}
+            {(data?.label || label || "?").charAt(0)}
           </span>
         </div>
         <div
@@ -45,9 +45,6 @@ export const EmployeeDisplayInSelect = ({ innerProps, label, data }) => (
         </div>
       </>
     ) : (
-      // <div style={{ display: "flex", flexDirection: "column", marginRight: "10px" }}>
-      //   <div style={{ fontWeight: "bold" }}>{label}</div>
-      // </div>
       <>
         {data?.profile_url ? (
           <img
@@ -75,13 +72,13 @@ export const EmployeeDisplayInSelect = ({ innerProps, label, data }) => (
               marginLeft: "5px",
             }}
             data-bs-toggle="tooltip"
-            title={data.first_name}
+            title={data?.first_name || label}
           >
             <span
               className="first_letter"
               style={{ color: "white", fontWeight: "bold" }}
             >
-              {data.first_name.charAt(0)}
+              {(data?.first_name || label || "?").charAt(0)}
             </span>
           </div>
         )}
@@ -105,22 +102,11 @@ export const EmployeeDisplayInSelect = ({ innerProps, label, data }) => (
               {data?.primary_department_id_list
                 ? departmentData?.length
                   ? departmentData.find(
-                    (d) => d.id === data.primary_department_id_list[0]
-                  )?.name
+                      (d) => d.id === data.primary_department_id_list[0],
+                    )?.name
                   : ""
                 : ""}
             </span>
-            {/* {data?.emp_id && (
-              <span style={{ fontSize: "10px" }}>
-                {" "}
-                /{" "}
-                {data?.role_id
-                  ? RoleData?.length
-                    ? RoleData.find((d) => d.id === data?.role_id)?.name
-                    : ""
-                  : ""}
-              </span>
-            )} */}
           </div>
         </div>
       </>

@@ -1776,7 +1776,7 @@ const InfoTable = ({
               </li> */}
             </ul>
           );
-        }else if (formname === work_schedule_component_name) {
+        } else if (formname === work_schedule_component_name) {
           return (
             <ul className="list-inline hstack gap-2 mb-0">
               <li className="list-inline-item edit">
@@ -1792,9 +1792,7 @@ const InfoTable = ({
               </li>
             </ul>
           );
-        }
-        
-        else {
+        } else {
           return (
             <ul className="list-inline hstack gap-2 mb-0">
               {orderData.status === 2 ||
@@ -2110,6 +2108,7 @@ const InfoTable = ({
 
   const handleCreateAndUpdate = ($id, table_obj) => {
     console.log("table_obj === ", table_obj);
+    console.log("id === ", $id);
 
     let FormObj = {};
 

@@ -41,7 +41,6 @@ export const getWsUrlFromDomain = () => {
     !!process.env.REACT_APP_LC_PLATFORM &&
     process.env.REACT_APP_LC_PLATFORM === "local"
   ) {
-    
     const httpUrl = getBaseUrlFromDomain();
     const wsUrl = httpUrl.replace(/^http/, "ws").replace(/\/$/, "");
     return `${wsUrl}/ws/tracking/?token=${token?.access}`;

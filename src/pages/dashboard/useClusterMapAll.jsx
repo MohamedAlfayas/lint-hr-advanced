@@ -18,7 +18,14 @@ import {
   OverlayView,
 } from "@react-google-maps/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { Input } from "reactstrap";
+import {
+  Input,
+  Modal,
+  ModalHeader,
+  ModalBody,
+  Badge,
+  Button,
+} from "reactstrap";
 import Select from "react-select";
 import { DatePicker } from "antd";
 import dayjs from "dayjs";
@@ -28,6 +35,7 @@ import {
   disconnectWebSocket,
 } from "./LocationWebSocket/WebSocket";
 import "../../common/css/lc_style.css";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
 const loaderOptions = {
   id: "google-map-script",
@@ -59,6 +67,14 @@ const WAIT_THRESHOLD_KM = 0.05;
 
 // ISO (YYYY-MM-DD) format used throughout for the date filter's internal value
 const ISO_DATE_FORMAT = "YYYY-MM-DD";
+
+// localStorage keys that hold the org's custom-status and custom-form
+// master lists. Individual location / form_submission records only carry
+// numeric `custom_status` / `custom_form` IDs — the human-readable name
+// (and, for statuses, an icon) has to be resolved by matching against
+// these cached lists.
+const LS_CUSTOM_STATUSES_KEY = "custom_statuses";
+const LS_CUSTOM_FORM_KEY = "custom_form";
 
 // ── Timeline panel sizing (responsive instead of a fixed px width) ──
 // clamp(min, preferred, max): scales continuously with viewport width
@@ -100,7 +116,7 @@ const extractFormattedAddress = (loc) => {
   return loc?.accurate_address || "";
 };
 
-// Original palette — unchanged
+// Original palette — unchanged (form added for form-submission markers)
 const COLORS = {
   start: "#28a745",
   end: "#dc3545",
@@ -108,6 +124,62 @@ const COLORS = {
   travel: "#2563eb",
   route: "#1a73e8",
   moving: "#ff9800",
+  form: "#7c3aed",
+};
+
+// ─── Scrollbar styling for the form-submission modal body (matches the
+//     app's other modal — thin, light-blue thumb) ────────────────────
+const FORM_MODAL_SCROLL_STYLE_ID = "ucma-form-modal-scroll";
+const injectFormModalScrollStyles = () => {
+  if (
+    typeof document === "undefined" ||
+    document.getElementById(FORM_MODAL_SCROLL_STYLE_ID)
+  )
+    return;
+  const tag = document.createElement("style");
+  tag.id = FORM_MODAL_SCROLL_STYLE_ID;
+  tag.innerHTML = `
+    .cst-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .cst-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+    .cst-scroll::-webkit-scrollbar-thumb { background: #c5cff0; border-radius: 10px; }
+    .cst-scroll::-webkit-scrollbar-thumb:hover { background: #405189; }
+    .cst-scroll { scrollbar-width: thin; scrollbar-color: #c5cff0 #f1f1f1; }
+  `;
+  document.head.appendChild(tag);
+};
+
+// ─── Shared chip / box styles used inside the form-submission modal
+//     (same look as the app's activity-timeline modal). ───────────────
+const coordPill = {
+  background: "#f0f4ff",
+  borderRadius: "6px",
+  padding: "5px 12px",
+  fontSize: "12px",
+  color: "#405189",
+  fontWeight: 500,
+  border: "0.5px solid #c5cff0",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "5px",
+};
+
+const timeBox = {
+  background: "#f8f9fc",
+  borderRadius: "6px",
+  padding: "8px 12px",
+  border: "0.5px solid #eaecf5",
+};
+const timeBoxLabel = {
+  fontSize: "11px",
+  color: "#999",
+  marginBottom: "3px",
+  textTransform: "uppercase",
+  letterSpacing: "0.5px",
+};
+const timeBoxValue = {
+  fontSize: "13px",
+  color: "#333",
+  fontWeight: 500,
 };
 
 // ─── Compact select style used inside the timeline filter bar ──
@@ -341,6 +413,123 @@ const injectStyles = () => {
 const todayIsoIN = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
+// ─── Form-submission helpers ────────────────────────────────────
+// `submitted_data` is a flat array of { id, type, label, value, required }.
+// Render each value according to its `type`; image fields carry an object
+// with a `file_url` instead of a plain scalar.
+const formatFormTimestamp = (ts) => {
+  if (!ts) return "";
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return "";
+  const time = date.toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour12: true,
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const day = date.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+  return `${day}, ${time}`;
+};
+
+// ─── Resolve a form submission's "submitted vs pending" state.
+//     `status` on the record hasn't been guaranteed to be a strict boolean —
+//     it can arrive as a boolean, a numeric flag (1/0), or a string
+//     ("submitted" / "pending" / "completed" / "true" / etc). Treating it
+//     as `formModalData.status ? ... : ...` is what caused the badge to
+//     show the wrong color/label whenever the backend sent a string like
+//     "pending" (which is truthy in JS) or a numeric 0/1. This normalizes
+//     all of those into a single boolean. ─────────────────────────────
+const isFormSubmitted = (status) => {
+  if (status === true || status === 1) return true;
+  if (status === false || status === 0) return false;
+  if (typeof status === "string") {
+    return ["true", "1", "submitted", "completed", "success"].includes(
+      status.trim().toLowerCase(),
+    );
+  }
+  return false;
+};
+
+const renderFormFieldValue = (field) => {
+  const isEmpty =
+    field?.value === null || field?.value === undefined || field?.value === "";
+
+  if (field?.type === "image") {
+    const url = field?.value?.file_url;
+    if (!url) {
+      return <span className="text-muted small">No image</span>;
+    }
+    return (
+      <img
+        src={url}
+        alt={field.label || "Uploaded"}
+        onClick={(e) => {
+          e.stopPropagation();
+          window.open(url, "_blank", "noopener,noreferrer");
+        }}
+        className="rounded-3 border img-fluid"
+        style={{
+          width: "84px",
+          height: "84px",
+          objectFit: "cover",
+          cursor: "pointer",
+        }}
+      />
+    );
+  }
+
+  if (field?.type === "file" || field?.value?.file_url) {
+    const url = field?.value?.file_url;
+    if (!url) {
+      return <span className="text-muted small">No file</span>;
+    }
+    const fileName = field?.value?.file_name || "View file";
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="d-inline-flex align-items-center gap-1"
+      >
+        <i className="ri-external-link-line"></i> {fileName}
+      </a>
+    );
+  }
+
+  if (isEmpty) {
+    return <span className="text-muted small">—</span>;
+  }
+
+  return <span>{String(field.value)}</span>;
+};
+
+// ─── Pin-shaped marker icon (teardrop + document glyph) for points that
+// have a form submission. Built as a data-URI SVG so it renders as a real
+// pin instead of a plain circle — Marker's `label` option can't reliably
+// center an emoji glyph on a small circle icon, which is why that
+// approach looked broken. ─────────────────────────────────────────────
+const buildFormMarkerIcon = () => ({
+  url:
+    "data:image/svg+xml;charset=UTF-8," +
+    encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38">
+        <path d="M15 0C6.7 0 0 6.7 0 15c0 11.2 15 23 15 23s15-11.8 15-23C30 6.7 23.3 0 15 0z" fill="${COLORS.form}"/>
+        <circle cx="15" cy="15" r="10.5" fill="#ffffff"/>
+        <rect x="10.2" y="9.5" width="9.6" height="11" rx="1.2" fill="none" stroke="${COLORS.form}" stroke-width="1.4"/>
+        <line x1="12.3" y1="13" x2="17.7" y2="13" stroke="${COLORS.form}" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="12.3" y1="15.5" x2="17.7" y2="15.5" stroke="${COLORS.form}" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="12.3" y1="18" x2="15.5" y2="18" stroke="${COLORS.form}" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    `),
+  scaledSize: new window.google.maps.Size(30, 38),
+  anchor: new window.google.maps.Point(15, 38),
+});
+
 const UsersClusterMapAll = ({
   employees = [],
   initialEmpId = null,
@@ -372,6 +561,11 @@ const UsersClusterMapAll = ({
   const [liveLocation, setLiveLocation] = useState(null);
   const [isLive, setIsLive] = useState(false);
 
+  // ── Form submission details modal ──
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [formModalData, setFormModalData] = useState(null); // the form_submission object
+  const [formModalMeta, setFormModalMeta] = useState(null); // { timestamp, address } of the point it came from
+
   // Playback state
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0); // 0..1 along whole route
@@ -388,7 +582,39 @@ const UsersClusterMapAll = ({
 
   useEffect(() => {
     injectStyles();
+    injectFormModalScrollStyles();
   }, []);
+
+  // ─── Custom-status / custom-form master lists, cached in localStorage.
+  //     Read once on mount — individual location records only carry the
+  //     numeric IDs (`custom_status`, `custom_form`), so every point/form
+  //     submission resolves its display name (and, for statuses, an icon)
+  //     against these lists rather than showing the raw ID. ──────────────
+  const customStatusList = useMemo(
+    () => GetLocalStorageData(LS_CUSTOM_STATUSES_KEY),
+    [],
+  );
+
+  const customFormList = useMemo(
+    () => GetLocalStorageData(LS_CUSTOM_FORM_KEY),
+    [],
+  );
+
+  const findCustomStatus = useCallback(
+    (id) => {
+      if (id === null || id === undefined || id === "") return null;
+      return customStatusList.find((s) => String(s.id) === String(id)) || null;
+    },
+    [customStatusList],
+  );
+
+  const findCustomForm = useCallback(
+    (id) => {
+      if (id === null || id === undefined || id === "") return null;
+      return customFormList.find((f) => String(f.id) === String(id)) || null;
+    },
+    [customFormList],
+  );
 
   // ─── Stable map options object. This must NOT be recreated on every
   //     render — the marching-ants effect ticks `antOffset` every 60ms,
@@ -577,8 +803,6 @@ const UsersClusterMapAll = ({
         });
       },
       onMessage: (data) => {
-        console.log("liveeeee dataaaa", data);
-
         if (!data || data.latitude == null || data.longitude == null) return;
         const normalized = normalizeLiveLocation(data);
         setLiveLocation(normalized);
@@ -644,6 +868,28 @@ const UsersClusterMapAll = ({
           }
         }
 
+        // form_submission carries { id, form_version, submitted_data: [...],
+        // timestamp, status, created_on, employee, custom_status, custom_form }.
+        // Not every point has one — only stops where the employee filled a
+        // custom form (e.g. checkout/early-leave reason) will.
+        const formSubmission =
+          loc?.form_submission &&
+          Array.isArray(loc.form_submission.submitted_data)
+            ? loc.form_submission
+            : null;
+
+        // Custom-status / custom-form IDs can live either directly on the
+        // location record or inside its form_submission — check both,
+        // preferring the form_submission's copy since that's the one tied
+        // to the actual reason/status the employee picked at that stop.
+        const rawCustomStatusId =
+          formSubmission?.custom_status ?? loc?.custom_status ?? null;
+        const rawCustomFormId =
+          formSubmission?.custom_form ?? loc?.custom_form ?? null;
+
+        const customStatusInfo = findCustomStatus(rawCustomStatusId);
+        const customFormInfo = findCustomForm(rawCustomFormId);
+
         return {
           index: index + 1,
           name: activeEmployee?.first_name || "",
@@ -655,6 +901,9 @@ const UsersClusterMapAll = ({
           battery: loc?.battery_percentage,
           outside: loc?.is_outside_range,
           profile_url: activeEmployee?.profile_url,
+          formSubmission,
+          customStatusInfo, // resolved { id, name, icon, is_break, ... } or null
+          customFormInfo, // resolved { id, name, schema, ... } or null
         };
       });
       setPath(processed);
@@ -667,7 +916,7 @@ const UsersClusterMapAll = ({
     setIsPlaying(false);
     setProgress(0);
     setMovingPos(null);
-  }, [activeLocations, activeEmployee]);
+  }, [activeLocations, activeEmployee, findCustomStatus, findCustomForm]);
 
   // ─── Trip summary: duration + total distance ──────────────────
   const summary = useMemo(() => {
@@ -939,6 +1188,27 @@ const UsersClusterMapAll = ({
     setSelectedMarker(null);
   };
 
+  // ─── Form submission modal open/close ──────────────────────────
+  const openFormModal = (point, e) => {
+    if (e) e.stopPropagation();
+    if (!point?.formSubmission) return;
+    setFormModalData(point.formSubmission);
+    setFormModalMeta({
+      timestamp: point.timestamp,
+      date: point.date,
+      address: point.address,
+      customStatusInfo: point.customStatusInfo,
+      customFormInfo: point.customFormInfo,
+    });
+    setFormModalOpen(true);
+  };
+
+  const closeFormModal = () => {
+    setFormModalOpen(false);
+    setFormModalData(null);
+    setFormModalMeta(null);
+  };
+
   // ─── Timeline / marker click → pan + zoom in on that point's location,
   //     open its info window, and expand its card. Also stops any running
   //     playback and clears scrub progress so the zoomed-in view isn't
@@ -957,6 +1227,18 @@ const UsersClusterMapAll = ({
       const currentZoom = mapRef.current.getZoom() || 0;
       mapRef.current.panTo({ lat: p.lat, lng: p.lng });
       mapRef.current.setZoom(Math.max(currentZoom, TIMELINE_FOCUS_ZOOM));
+    }
+  };
+
+  // ─── Marker click on the map (start / end dots). Does everything
+  //     handleTimelineClick does (pan/zoom/select), AND — per request —
+  //     opens the form-submission modal directly if that point has one,
+  //     instead of requiring a separate "Form details" click inside the
+  //     InfoWindow. ─────────────────────────────────────────────────────
+  const handleMarkerClick = (p, i) => {
+    handleTimelineClick(p, i);
+    if (p?.formSubmission) {
+      openFormModal(p);
     }
   };
 
@@ -1112,7 +1394,7 @@ const UsersClusterMapAll = ({
                     strokeWeight: 3,
                     strokeColor: "#ffffff",
                   }}
-                  onClick={() => handleTimelineClick(path[0], 0)}
+                  onClick={() => handleMarkerClick(path[0], 0)}
                 />
               </>
             )}
@@ -1131,9 +1413,28 @@ const UsersClusterMapAll = ({
                   strokeColor: "#ffffff",
                 }}
                 onClick={() =>
-                  handleTimelineClick(path[path.length - 1], path.length - 1)
+                  handleMarkerClick(path[path.length - 1], path.length - 1)
                 }
               />
+            )}
+
+            {/* Form-submission markers — every point (except start/end, which
+                already carry their own marker above) that has a filled form
+                gets its own document-pin marker. Clicking it pans/zooms in
+                AND opens the form details modal (handleMarkerClick does both). */}
+            {path.map(
+              (p, i) =>
+                p.formSubmission &&
+                i !== 0 &&
+                i !== path.length - 1 && (
+                  <Marker
+                    key={`form-marker-${i}`}
+                    position={{ lat: p.lat, lng: p.lng }}
+                    zIndex={11}
+                    icon={buildFormMarkerIcon()}
+                    onClick={() => handleMarkerClick(p, i)}
+                  />
+                ),
             )}
 
             {/* Animated moving marker */}
@@ -1302,6 +1603,119 @@ const UsersClusterMapAll = ({
                               <i className="ri-map-pin-2-fill"></i>{" "}
                               {user.address}
                             </div>
+                            {user.customStatusInfo && (
+                              <div
+                                style={{
+                                  marginTop: "4px",
+                                  fontSize: "11px",
+                                  color: "#334155",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  background: "#f1f5f9",
+                                  borderRadius: "10px",
+                                  padding: "2px 8px",
+                                }}
+                              >
+                                <span>{user.customStatusInfo.icon}</span>
+                                <span>{user.customStatusInfo.name}</span>
+                              </div>
+                            )}
+                            {user.formSubmission && (
+                              <button
+                                type="button"
+                                onClick={(e) => openFormModal(user, e)}
+                                style={{
+                                  width: "100%",
+                                  minHeight: "36px",
+                                  marginTop: "8px",
+                                  padding: "5px 8px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "7px",
+                                  border: "1px solid #2563eb",
+                                  borderRadius: "7px",
+                                  background: "#eff6ff",
+                                  color: "#2563eb",
+                                  cursor: "pointer",
+                                  fontFamily: "inherit",
+                                  textAlign: "left",
+                                  boxSizing: "border-box",
+                                }}
+                              >
+                                {/* Icon */}
+                                <span
+                                  style={{
+                                    width: "24px",
+                                    height: "24px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexShrink: 0,
+                                    borderRadius: "5px",
+                                    background: "#2563eb",
+                                    color: "#fff",
+                                    fontSize: "14px",
+                                  }}
+                                >
+                                  <i className="ri-file-list-3-line"></i>
+                                </span>
+
+                                {/* Title */}
+                                <span
+                                  style={{
+                                    fontSize: "11px",
+                                    fontWeight: 700,
+                                    color: "#1d4ed8",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  Form details
+                                </span>
+
+                                {/* Divider */}
+                                {user.customFormInfo?.name && (
+                                  <span
+                                    style={{
+                                      width: "1px",
+                                      height: "16px",
+                                      background: "#93c5fd",
+                                      margin: "0 2px",
+                                      flexShrink: 0,
+                                    }}
+                                  />
+                                )}
+
+                                {/* Form name */}
+                                {user.customFormInfo?.name && (
+                                  <span
+                                    style={{
+                                      flex: 1,
+                                      minWidth: 0,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                      fontSize: "10px",
+                                      fontWeight: 500,
+                                      color: "#64748b",
+                                    }}
+                                  >
+                                    {user.customFormInfo.name}
+                                  </span>
+                                )}
+
+                                {/* Arrow */}
+                                <i
+                                  className="ri-arrow-right-s-line"
+                                  style={{
+                                    fontSize: "18px",
+                                    color: "#2563eb",
+                                    marginLeft: "auto",
+                                    flexShrink: 0,
+                                  }}
+                                ></i>
+                              </button>
+                            )}
                           </div>
                         </div>
                       </li>
@@ -1499,12 +1913,7 @@ const UsersClusterMapAll = ({
             )}
           </AnimatePresence>
 
-          {/* ── Playback controls — vertical panel, left side of the map.
-              Positioned as a vertically-centered floating column
-              (top:50% + translateY(-50%)) instead of a fixed pixel offset,
-              so it stays centered on the map regardless of viewport height;
-              the mobile media query (see injected CSS) resets the transform
-              and pins it to the top-left on small screens instead. ── */}
+          {/* ── Playback controls — vertical panel, left side of the map. ── */}
           {path.length > 1 && (
             <div
               className="ucma-playback-panel"
@@ -1518,12 +1927,8 @@ const UsersClusterMapAll = ({
                 alignItems: "center",
                 gap: "16px",
                 zIndex: 5,
-                // no card background — each control floats on its own
               }}
             >
-              {/* Vertical duration line with per-stop tick marks —
-                  a slim glowing rail so it stays visible over any map color,
-                  no boxed background around it. */}
               <div
                 className="ucma-playback-rail"
                 style={{
@@ -1571,11 +1976,6 @@ const UsersClusterMapAll = ({
                       }}
                     />
                   ))}
-                {/* Rotated range input — custom thumb via .ucma-vslider (see injected CSS),
-                    track itself stays transparent so only our own rail shows.
-                    onMouseDown/onTouchStart pause any running playback the
-                    instant the user grabs the thumb, before the drag starts
-                    changing `progress`, so scrubbing never fights the RAF loop. */}
                 <input
                   type="range"
                   min={0}
@@ -1598,7 +1998,6 @@ const UsersClusterMapAll = ({
                 />
               </div>
 
-              {/* Play / Resume toggle — floats directly on the map, own shadow */}
               <motion.button
                 onClick={togglePlay}
                 whileTap={{ scale: 0.9 }}
@@ -1624,7 +2023,6 @@ const UsersClusterMapAll = ({
                 {isPlaying ? "❚❚" : "▶"}
               </motion.button>
 
-              {/* Reset */}
               <button
                 onClick={handleReset}
                 className="ucma-playback-reset"
@@ -1645,7 +2043,6 @@ const UsersClusterMapAll = ({
                 ⟲
               </button>
 
-              {/* Speed selector — 0.5x / 1x / 1.5x / 2x, stacked chips, default 1x */}
               <div
                 style={{
                   display: "flex",
@@ -1687,9 +2084,7 @@ const UsersClusterMapAll = ({
           )}
         </div>
 
-        {/* ── TIMELINE (right) — now a responsive % width (clamped) instead of a
-            fixed 340px, so it scales with the actual screen width. Filters
-            right-aligned above it, then zigzag spine. ── */}
+        {/* ── TIMELINE (right) ── */}
         <div
           style={{
             flex: `0 0 ${TIMELINE_WIDTH_CLAMP}`,
@@ -1700,7 +2095,7 @@ const UsersClusterMapAll = ({
             background: "#fff",
           }}
         >
-          {/* ── Filters: Department / Employee / Date — directly above the timeline ── */}
+          {/* ── Filters ── */}
           <div
             className="ucma-tl-filterbar"
             style={{
@@ -1771,10 +2166,6 @@ const UsersClusterMapAll = ({
               </div>
             </div>
 
-            {/* Date filter — real calendar picker. Any past date (or today)
-                is selectable; picking a date with no history for this
-                employee simply renders an empty timeline instead of being
-                blocked, and triggers an on-demand fetch for that date. */}
             <div
               style={{
                 display: "flex",
@@ -1803,7 +2194,7 @@ const UsersClusterMapAll = ({
             </div>
           </div>
 
-          {/* Header — Full view / Refresh removed from here, now live as map overlay controls */}
+          {/* Header */}
           <div
             style={{
               padding: "12px 16px",
@@ -1933,7 +2324,7 @@ const UsersClusterMapAll = ({
             </div>
           </div>
 
-          {/* Zigzag timeline: central spine, alternating left/right cards. */}
+          {/* Zigzag timeline */}
           <div
             className="ucma-scroll"
             style={{
@@ -2014,7 +2405,6 @@ const UsersClusterMapAll = ({
                 display: loadingLocations ? "none" : "block",
               }}
             >
-              {/* Base spine (grey) — spans full content height */}
               <div
                 style={{
                   position: "absolute",
@@ -2026,7 +2416,6 @@ const UsersClusterMapAll = ({
                   transform: "translateX(-1px)",
                 }}
               />
-              {/* Progress spine (blue fill up to active point) */}
               <motion.div
                 animate={{ height: `${spineProgressPct}%` }}
                 transition={{ duration: 0.25, ease: "easeOut" }}
@@ -2047,6 +2436,10 @@ const UsersClusterMapAll = ({
                 const isActive = activeIndex === i;
                 const isExpanded = expandedIndex === i;
                 const onLeft = i % 2 === 0;
+                const hasForm =
+                  !!p.formSubmission &&
+                  Array.isArray(p.formSubmission.submitted_data) &&
+                  p.formSubmission.submitted_data.length > 0;
 
                 const card = (
                   <motion.div
@@ -2087,32 +2480,76 @@ const UsersClusterMapAll = ({
                     >
                       {p.address || "—"}
                     </div>
-                    {typeof p.battery === "number" && (
+                    {p.customStatusInfo && (
                       <div
                         style={{
+                          marginTop: "4px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
                           fontSize: "10px",
-                          color: "#64748b",
-                          marginTop: "2px",
+                          fontWeight: 600,
+                          color: "#334155",
+                          background: "#e2e8f0",
+                          borderRadius: "10px",
+                          padding: "2px 8px",
                         }}
                       >
-                        🔋 {p.battery}%
+                        <span>{p.customStatusInfo.icon}</span>
+                        <span>{p.customStatusInfo.name}</span>
                       </div>
                     )}
-                    {p.outside && (
-                      <span
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "4px",
+                        marginTop: "4px",
+                        justifyContent: onLeft ? "flex-end" : "flex-start",
+                      }}
+                    >
+                      {typeof p.battery === "number" && (
+                        <span style={{ fontSize: "10px", color: "#64748b" }}>
+                          🔋 {p.battery}%
+                        </span>
+                      )}
+                      {p.outside && (
+                        <span
+                          style={{
+                            fontSize: "9px",
+                            fontWeight: 600,
+                            color: "#b91c1c",
+                            background: "#fee2e2",
+                            borderRadius: "10px",
+                            padding: "1px 7px",
+                          }}
+                        >
+                          Outside range
+                        </span>
+                      )}
+                    </div>
+                    {hasForm && (
+                      <button
+                        onClick={(e) => openFormModal(p, e)}
                         style={{
-                          display: "inline-block",
-                          marginTop: "3px",
-                          fontSize: "9px",
+                          marginTop: "6px",
+                          border: "1px solid #2563eb",
+                          background: "#eff6ff",
+                          color: "#2563eb",
+                          borderRadius: "6px",
+                          padding: "3px 9px",
+                          fontSize: "10.5px",
                           fontWeight: 600,
-                          color: "#b91c1c",
-                          background: "#fee2e2",
-                          borderRadius: "10px",
-                          padding: "1px 7px",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
                         }}
+                        title="View form submission details"
                       >
-                        Outside range
-                      </span>
+                        <i className="ri-file-list-3-line"></i>{" "}
+                        {p.customFormInfo?.name || "Form details"}
+                      </button>
                     )}
                   </motion.div>
                 );
@@ -2131,7 +2568,6 @@ const UsersClusterMapAll = ({
                       minHeight: "64px",
                     }}
                   >
-                    {/* left slot */}
                     <div
                       style={{
                         display: "flex",
@@ -2143,10 +2579,15 @@ const UsersClusterMapAll = ({
                       {onLeft && card}
                     </div>
 
-                    {/* spine dot */}
-                    <div style={{ display: "flex", justifyContent: "center" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        position: "relative",
+                      }}
+                    >
                       <motion.div
-                        onClick={() => handleTimelineClick(p, i)}
+                        onClick={() => handleMarkerClick(p, i)}
                         animate={{
                           scale: isActive ? 1.15 : 1,
                           boxShadow: isActive
@@ -2174,7 +2615,6 @@ const UsersClusterMapAll = ({
                       </motion.div>
                     </div>
 
-                    {/* right slot */}
                     <div
                       style={{
                         display: "flex",
@@ -2192,6 +2632,237 @@ const UsersClusterMapAll = ({
           </div>
         </div>
       </div>
+
+      {/* ── Form submission details modal ── */}
+      <Modal isOpen={formModalOpen} toggle={closeFormModal} centered size="lg">
+        <ModalHeader toggle={closeFormModal}>
+          <span style={{ fontSize: "15px", fontWeight: 500 }}>
+            <i className="mdi mdi-file-document-outline me-2 text-primary"></i>
+            {formModalMeta?.customFormInfo?.name || "Form Submission Details"}
+          </span>
+        </ModalHeader>
+
+        <ModalBody
+          className="cst-scroll"
+          style={{
+            maxHeight: "72vh",
+            overflowY: "auto",
+            overflowX: "hidden",
+            paddingRight: "18px",
+          }}
+        >
+          {formModalData ? (
+            <>
+              {/* Status + meta chips — badge now uses isFormSubmitted() so
+                  string/numeric status values ("pending", 0, "submitted", 1,
+                  true/false) all resolve to the correct color + label
+                  instead of relying on raw truthiness. */}
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                  marginBottom: "16px",
+                }}
+              >
+                {formModalData?.status !== undefined &&
+                  formModalData?.status !== null && (
+                    <Badge
+                      color={
+                        isFormSubmitted(formModalData.status)
+                          ? "success"
+                          : "secondary"
+                      }
+                      pill
+                      style={{ fontSize: "11px", padding: "10px 12px" }}
+                    >
+                      {isFormSubmitted(formModalData.status)
+                        ? "Submitted"
+                        : "Pending"}
+                    </Badge>
+                  )}
+                {formModalMeta?.customStatusInfo && (
+                  <div
+                    style={{
+                      ...coordPill,
+                      background: "#fff8e1",
+                      color: "#b07d00",
+                      borderColor: "#f0d070",
+                    }}
+                  >
+                    <span>{formModalMeta.customStatusInfo.icon}</span>
+                    {formModalMeta.customStatusInfo.name}
+                  </div>
+                )}
+              </div>
+
+              {/* Form name / status */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "8px",
+                  marginBottom: "12px",
+                }}
+              >
+                <div style={timeBox}>
+                  <div style={timeBoxLabel}>
+                    <i className="mdi mdi-form-select me-1" />
+                    Form Name
+                  </div>
+                  <div style={timeBoxValue}>
+                    {formModalMeta?.customFormInfo?.name || "—"}
+                  </div>
+                </div>
+                <div style={timeBox}>
+                  <div style={timeBoxLabel}>
+                    <i className="mdi mdi-checkbox-marked-circle-outline me-1" />
+                    Form Status
+                  </div>
+                  <div style={timeBoxValue}>
+                    {formModalMeta?.customStatusInfo ? (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                        }}
+                      >
+                        <span>{formModalMeta.customStatusInfo.icon}</span>
+                        <span>{formModalMeta.customStatusInfo.name}</span>
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Time / location grid */}
+              {(formModalMeta?.timestamp || formModalMeta?.address) && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: formModalMeta?.address
+                      ? "1fr 1fr"
+                      : "1fr",
+                    gap: "8px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  {formModalMeta?.timestamp && (
+                    <div style={timeBox}>
+                      <div style={timeBoxLabel}>
+                        <i className="mdi mdi-clock-outline me-1" />
+                        Submitted At
+                      </div>
+                      <div style={timeBoxValue}>
+                        {formModalMeta.timestamp}
+                        {formModalMeta?.date ? `, ${formModalMeta.date}` : ""}
+                      </div>
+                    </div>
+                  )}
+                  {formModalMeta?.address && (
+                    <div style={timeBox}>
+                      <div style={timeBoxLabel}>
+                        <i className="mdi mdi-map-marker-outline me-1" />
+                        Location
+                      </div>
+                      <div style={timeBoxValue}>{formModalMeta.address}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Submitted fields */}
+              <div
+                style={{
+                  fontSize: "11px",
+                  color: "#999",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.4px",
+                  marginBottom: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                <i className="mdi mdi-form-select" />
+                Submitted Fields
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+                  gap: "8px",
+                }}
+              >
+                {formModalData.submitted_data.map((field) => (
+                  <div
+                    key={field.id}
+                    style={{
+                      background: "#fff",
+                      border: "0.5px solid #e2e5ee",
+                      borderRadius: "10px",
+                      padding: "10px 12px",
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.4px",
+                        color: "#999",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      {field.label}
+                    </div>
+                    <div style={{ fontSize: "13px", color: "#333" }}>
+                      {renderFormFieldValue(field)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "40px 0",
+              }}
+            >
+              <i
+                className="mdi mdi-file-remove-outline"
+                style={{
+                  fontSize: "48px",
+                  color: "#ccc",
+                  marginBottom: "12px",
+                }}
+              />
+              <p style={{ color: "#999", fontSize: "15px", margin: 0 }}>
+                No form submission data.
+              </p>
+            </div>
+          )}
+
+          <div className="d-flex justify-content-center mt-4">
+            <Button
+              color="warning"
+              onClick={closeFormModal}
+              style={{ minWidth: "100px" }}
+            >
+              Close
+            </Button>
+          </div>
+        </ModalBody>
+      </Modal>
     </div>
   );
 };
