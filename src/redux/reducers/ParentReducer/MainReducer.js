@@ -50,6 +50,7 @@ import CommentReducer from "../ChildReducer/CommentReducer";
 import FolderReducer from "../ChildReducer/FolderReducer";
 import CustomFormReducer from "../ChildReducer/CustomFormReducer";
 import AssignCustomFormReducer from "../ChildReducer/AssignCustomFormReducer";
+import TrackingConfigReducer from "../ChildReducer/TrackingConfigReducer";
 
 export const MainReducer = combineReducers({
   MetaReducer: MetaReducer,
@@ -103,4 +104,5 @@ export const MainReducer = combineReducers({
   FolderReducer: FolderReducer,
   CustomFormReducer: CustomFormReducer,
   AssignCustomFormReducer: AssignCustomFormReducer,
+  TrackingConfigReducer: TrackingConfigReducer,
 });

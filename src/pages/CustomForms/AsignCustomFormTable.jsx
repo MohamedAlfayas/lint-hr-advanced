@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 
 import "react-toastify/dist/ReactToastify.css";
 
@@ -14,7 +14,7 @@ import { assign_custom_form_component_name } from "../../common/constant/Constan
 import { GetApi } from "../../common/api/GetApi";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
-const CUSTOM_FORM_STORAGE_KEY = "custom_form_list";
+const CUSTOM_FORM_STORAGE_KEY = "custom_form";
 
 // ================= EMPLOYEE AVATAR =================
 const EmployeeAvatar = ({ emp, size = 32, style = {} }) => {
@@ -76,8 +76,6 @@ const AsignCustomFormTable = () => {
     (state) => state.AssignCustomFormReducer,
   );
 
-  const [customForms, setCustomForms] = useState([]);
-
   // ================= FETCH MAPPING FROM API -> REDUX ONLY (NO LOCALSTORAGE) =================
   useEffect(() => {
     const fetchMapping = async () => {
@@ -98,12 +96,6 @@ const AsignCustomFormTable = () => {
 
     fetchMapping();
   }, [dispatch]);
-
-  // ================= CUSTOM FORM LIST (FOR NAME LOOKUP) — FROM LOCAL STORAGE =================
-  useEffect(() => {
-    const forms = GetLocalStorageData(CUSTOM_FORM_STORAGE_KEY) || [];
-    setCustomForms(forms);
-  }, []);
 
   // ================= CUSTOM FORM ID -> NAME LOOKUP =================
   const customFormMap = useMemo(() => {
@@ -173,9 +165,9 @@ const AsignCustomFormTable = () => {
             return "-";
           }
 
-          return (
-            <b>{customFormMap[String(customFormId)] || `#${customFormId}`}</b>
-          );
+          const name = customFormMap[String(customFormId)];
+
+          return name ? <b>{name}</b> : "-";
         },
       },
       {

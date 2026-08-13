@@ -287,6 +287,7 @@ const LeaveInfoBlock = ({
 
     {reason && (
       <small
+        title={reason}
         style={{
           color: "#57534e",
           fontSize: "10px",

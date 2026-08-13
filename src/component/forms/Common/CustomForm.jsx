@@ -978,8 +978,8 @@ export default function FormBuilder({ editFormId = null }) {
           updatedList = [...custom_form_data, saved];
         }
 
-        // persist the full list to localStorage under "custom_form_list"
-        SetLocalStorage("custom_form_list", updatedList, 1);
+        // persist the full list to localStorage under "custom_form"
+        SetLocalStorage("custom_form", updatedList, 1);
 
         Swal.fire({
           icon: "success",

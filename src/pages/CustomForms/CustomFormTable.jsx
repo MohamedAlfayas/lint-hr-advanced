@@ -13,7 +13,7 @@ const CustomFormTable = () => {
 
   useEffect(() => {
     // show cached data instantly while the API call is in flight
-    const cached = GetLocalStorageData("custom_form_list");
+    const cached = GetLocalStorageData("custom_form");
     if (cached) {
       dispatch(setCustomForm(cached));
     }
@@ -25,7 +25,7 @@ const CustomFormTable = () => {
       .then((res) => {
         const data = res?.data?.data || [];
         dispatch(setCustomForm(data));
-        SetLocalStorage("custom_form_list", data, 1);
+        SetLocalStorage("custom_form", data, 1);
       })
       .catch((err) => {
         console.log("ERR", err);
