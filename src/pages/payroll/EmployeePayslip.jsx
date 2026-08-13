@@ -49,13 +49,14 @@ const getStatusColor = (status) => {
     case "approved":
     case "paid":
       return "success";
+    case "closed":
+      return "info";
     default:
       return "secondary";
   }
 };
 
-// Builds calendar-year options (e.g. "2024", "2025") from the years actually
-// present in the fetched records — no fixed 5-year range, no FY math, no dupes.
+// Builds calendar-year options from the records
 const getYearOptions = (records) => {
   const years = [...new Set(records.map((r) => Number(r.year)))]
     .filter((y) => !Number.isNaN(y))
@@ -71,8 +72,6 @@ const EmployeePayslip = ({ withTopPadding = true, employeeId = null }) => {
   const [selectedYear, setSelectedYear] = useState("");
 
   // ── Payslip detail modal state ──────────────────────────────────────────
-  // MyPayslipDetailModal is self-fetching: we only need to pass it the
-  // payslip id, it loads full detail + handles its own PDF download.
   const [selectedPayslipId, setSelectedPayslipId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -108,9 +107,15 @@ const EmployeePayslip = ({ withTopPadding = true, employeeId = null }) => {
     fetchData();
   }, [fetchData]);
 
-  const filteredRecords = records.filter(
-    (row) => !selectedYear || Number(row.year) === Number(selectedYear),
-  );
+  // Filters records by year AND restricts display strictly to "paid" or "closed" status
+  const filteredRecords = records.filter((row) => {
+    const matchesYear =
+      !selectedYear || Number(row.year) === Number(selectedYear);
+    const isValidStatus = ["paid", "closed"].includes(
+      String(row.status).toLowerCase()
+    );
+    return matchesYear && isValidStatus;
+  });
 
   const handleOpenSlip = (row) => {
     setSelectedPayslipId(row.id);
@@ -223,6 +228,7 @@ const EmployeePayslip = ({ withTopPadding = true, employeeId = null }) => {
           </CardBody>
         </Card>
       </div>
+
       {/* Payslip history */}
       <Card className="border shadow-none">
         <CardBody className="p-4">
@@ -240,8 +246,8 @@ const EmployeePayslip = ({ withTopPadding = true, employeeId = null }) => {
               <span className="d-inline-flex align-items-center justify-content-center rounded-circle bg-light text-muted mb-3">
                 <i className="ri-file-search-line"></i>
               </span>
-              <h6 className="text-muted mb-1">No payslips found</h6>
-              <p className="text-muted mb-0">Try a different year.</p>
+              <h6 className="text-muted mb-1">No paid or closed payslips found</h6>
+              <p className="text-muted mb-0">Try selecting a different year.</p>
             </div>
           ) : (
             <SimpleBar
@@ -275,8 +281,7 @@ const EmployeePayslip = ({ withTopPadding = true, employeeId = null }) => {
                             className={`text-${getStatusColor(row.status)}`}
                             pill
                           >
-                            {row.status.charAt(0).toUpperCase() +
-                              row.status.slice(1)}
+                            {row.status ? row.status.charAt(0).toUpperCase() + row.status.slice(1) : "—"}
                           </Badge>
                         </td>
                         <td className="text-end">
@@ -316,9 +321,6 @@ const EmployeePayslip = ({ withTopPadding = true, employeeId = null }) => {
         </CardBody>
       </Card>
 
-      {/* Payslip detail modal — fetches its own data from payroll/employee-payslip/?id=
-          and generates the styled PDF client-side via @react-pdf/renderer.
-          This replaces the previous broken inline axios download call. */}
       <MyPayslipDetailModal
         payslipId={selectedPayslipId}
         isOpen={modalOpen}

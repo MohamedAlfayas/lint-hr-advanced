@@ -2,9 +2,12 @@ import React, { useEffect, useState } from "react";
 import {
   Card, CardHeader, CardBody, CardTitle, Table, Spinner, Badge,
   Button, Modal, ModalHeader, ModalBody, ModalFooter, Input, FormGroup, Label,
+  Nav, NavItem, NavLink, TabContent, TabPane,
 } from "reactstrap";
+import classnames from "classnames";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
+import CompOffLedger from "./CompOffLedger";
 
 const STATUS_BADGE = {
   present:     "success",
@@ -133,13 +136,20 @@ const AttendanceEditTab = ({ days, period, employeeName, onRegularize }) => {
 };
 
 // ───────────────────────────────────────────────────────────────────────────
-// Container — fetches attendance/leave days for the employee/month/year
-// and wires up the regularize save call.
+// Container — two tabs: Attendance edit + Comp-Off ledger.
+// Fetches attendance/leave days and wires up the regularize save call.
 // ───────────────────────────────────────────────────────────────────────────
 const EmployeeAttendanceEdit = ({ employeeId, employeeName, month, year, onSaved }) => {
+  const [activeTab, setActiveTab] = useState("1");
   const [loading, setLoading] = useState(false);
   const [days, setDays]       = useState([]);
   const [period, setPeriod]   = useState(null);
+  // bump this to force CompOffLedger to reload after a regularization save
+  const [ledgerRefresh, setLedgerRefresh] = useState(0);
+
+  const toggleTab = (tab) => {
+    if (activeTab !== tab) setActiveTab(tab);
+  };
 
   const fetchData = () => {
     if (!employeeId || !month || !year) return;
@@ -166,6 +176,7 @@ const EmployeeAttendanceEdit = ({ employeeId, employeeName, month, year, onSaved
       .then(() => {
         toast.success("Regularization saved.");
         fetchData();
+        setLedgerRefresh((n) => n + 1); // comp-off ledger changed on recompute
         if (typeof onSaved === "function") onSaved();
         onDone && onDone();
       })
@@ -175,22 +186,53 @@ const EmployeeAttendanceEdit = ({ employeeId, employeeName, month, year, onSaved
       });
   };
 
-  if (loading) {
-    return (
-      <div className="text-center py-5">
-        <Spinner color="primary" />
-        <p className="text-muted mt-2" style={{ fontSize: 13 }}>Loading attendance & leave records...</p>
-      </div>
-    );
-  }
-
   return (
-    <AttendanceEditTab
-      days={days}
-      period={period}
-      employeeName={employeeName}
-      onRegularize={handleRegularize}
-    />
+    <React.Fragment>
+      <Nav tabs className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3">
+        <NavItem>
+          <NavLink style={{ cursor: "pointer" }}
+            className={classnames({ active: activeTab === "1" })}
+            onClick={() => toggleTab("1")}>
+            Attendance
+          </NavLink>
+        </NavItem>
+        <NavItem>
+          <NavLink style={{ cursor: "pointer" }}
+            className={classnames({ active: activeTab === "2" })}
+            onClick={() => toggleTab("2")}>
+            Comp-Off Ledger
+          </NavLink>
+        </NavItem>
+      </Nav>
+
+      <TabContent activeTab={activeTab}>
+        <TabPane tabId="1">
+          {loading ? (
+            <div className="text-center py-5">
+              <Spinner color="primary" />
+              <p className="text-muted mt-2" style={{ fontSize: 13 }}>Loading attendance & leave records...</p>
+            </div>
+          ) : (
+            <AttendanceEditTab
+              days={days}
+              period={period}
+              employeeName={employeeName}
+              onRegularize={handleRegularize}
+            />
+          )}
+        </TabPane>
+
+        <TabPane tabId="2">
+          <CompOffLedger
+            key={ledgerRefresh}
+            employeeId={employeeId}
+            employeeName={employeeName}
+            month={month}
+            year={year}
+          />
+        </TabPane>
+      </TabContent>
+    </React.Fragment>
   );
 };
 

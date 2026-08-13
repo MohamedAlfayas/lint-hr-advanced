@@ -23,6 +23,7 @@ import GratuityPolicySettings from "./GratuityPolicySettings";
 import ReimbursementPolicySettings from "./ReimbursementpolicySettings";
 import LeaveCreditPolicySettings from "./LeaveCreditPolicySettings";
 import IncomeTaxPolicySettings from "./IncomeTaxPolicySettings";
+import ProbationPolicySettings from "./ProbationPolicySettings";
 const AdvancedSettingsTab = ({ onEarningAdd }) => {
   const [activeTab, setActiveTab] = useState("1");
 
@@ -166,6 +167,14 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
             </NavLink>
           </NavItem>
 
+          <NavItem>
+            <NavLink style={{ cursor: "pointer" }}
+              className={classnames({ active: activeTab === "14" })}
+              onClick={() => toggleTab("14")}>
+              Probation Policy
+            </NavLink>
+          </NavItem>
+
         </Nav>
 
         {/* Tab Content */}
@@ -220,6 +229,10 @@ const AdvancedSettingsTab = ({ onEarningAdd }) => {
 
           <TabPane tabId="13">
             <IncomeTaxPolicySettings/>
+          </TabPane>
+
+          <TabPane tabId="14">
+            <ProbationPolicySettings/>
           </TabPane>
 
         </TabContent>
