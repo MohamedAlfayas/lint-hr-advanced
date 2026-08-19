@@ -69,6 +69,7 @@ const defaultTaskData = {
   start_time: "",
   end_time: "",
   status: true,
+  requires_field_visit: false, // ✅ NEW FIELD
 };
 
 // ─── Build employee option object (normalised shape) ─────────────────────────
@@ -144,8 +145,6 @@ const TaskListForm = () => {
   const taskStatusOptions = buildTaskStatusOptions();
   const taskPriorityOptions = buildTaskPriorityOptions();
 
-  console.log("Task Priority Options:", taskPriorityOptions);
-
   // ─── Async load for collaborators search API ──────────────────────────────
   const loadCollaboratorOptions = useCallback(
     async (inputValue) => {
@@ -178,6 +177,7 @@ const TaskListForm = () => {
         points: form_obj.points ? String(form_obj.points) : "1",
         collaborators_id_list: form_obj.collaborators_id_list || [],
         collaborator_details: form_obj.collaborator_details || [],
+        requires_field_visit: !!form_obj.requires_field_visit, // ✅ NEW FIELD
       });
     } else if (form_obj && form_obj.project) {
       setTaskData({
@@ -319,6 +319,11 @@ const TaskListForm = () => {
           start_time: taskData.start_time || null,
           end_time: taskData.end_time || null,
           status: taskData.status,
+          // ✅ NEW FIELD — only meaningful (and only ever true) for Client tasks
+          requires_field_visit:
+            taskData.related_to === "client"
+              ? !!taskData.requires_field_visit
+              : false,
         };
 
         if (isEdit) payload.id = taskData.id;
@@ -428,8 +433,6 @@ const TaskListForm = () => {
   const showProject = taskData.related_to === "project";
   const showClient = taskData.related_to === "client";
 
-  console.log("Task_List ", taskData);
-
   return (
     <React.Fragment>
       <Row>
@@ -517,11 +520,19 @@ const TaskListForm = () => {
                     )}
                     value={relatedToValue}
                     onChange={(selected) => {
+                      const nextRelatedTo = selected
+                        ? selected.value
+                        : "custom";
                       setTaskData((prev) => ({
                         ...prev,
-                        related_to: selected ? selected.value : "custom",
+                        related_to: nextRelatedTo,
                         project: null,
                         client: null,
+                        // ✅ reset the toggle whenever we leave "client"
+                        requires_field_visit:
+                          nextRelatedTo === "client"
+                            ? prev.requires_field_visit
+                            : false,
                       }));
                     }}
                   />
@@ -629,6 +640,42 @@ const TaskListForm = () => {
                       }}
                     />
                     <div className="form-text">Select a client.</div>
+                  </div>
+                </Col>
+              )}
+
+              {/* ── Requires Field Visit (Client tasks only) ──────────── */}
+              {showClient && (
+                <Col md={12}>
+                  <div className="mb-3">
+                    <Label
+                      htmlFor="requires_field_visit"
+                      className="form-label"
+                    >
+                      Requires Field Visit
+                    </Label>
+                    <div
+                      className="form-check form-switch form-switch-md form-switch-success"
+                      dir="ltr"
+                    >
+                      <Input
+                        type="checkbox"
+                        id="requires_field_visit"
+                        className="form-check-input"
+                        checked={!!taskData.requires_field_visit}
+                        onChange={(e) =>
+                          setTaskData((prev) => ({
+                            ...prev,
+                            requires_field_visit: e.target.checked,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="form-text">
+                      {taskData.requires_field_visit
+                        ? "Yes — this task requires an on-site visit."
+                        : "No — this task does not require an on-site visit."}
+                    </div>
                   </div>
                 </Col>
               )}

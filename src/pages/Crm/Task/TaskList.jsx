@@ -116,7 +116,9 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
   const getAllTasks = async () => {
     try {
       const response = await Api.get("/task/");
-      dispatch(setTasks(response?.data?.data || []));
+      // ✅ FIX: API returns { external: [...], internal: [...] }, not a flat array
+      const { external = [], internal = [] } = response?.data?.data || {};
+      dispatch(setTasks([...external, ...internal]));
     } catch (error) {
       console.log("Task Fetch Error :", error);
     }
@@ -138,7 +140,7 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
         Header: "Title",
         id: "title",
         filterable: false,
-        width: 280,        // fixed instead of auto
+        width: 280, // fixed instead of auto
         minWidth: 280,
         accessor: (obj) => {
           const plainDescription =
@@ -193,7 +195,7 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
                     fontSize: "13px",
                     color: "#6c757d",
                     marginTop: "4px",
-                    minHeight: "16px", 
+                    minHeight: "16px",
                     visibility: plainDescription ? "visible" : "hidden",
                   }}
                 >
@@ -238,6 +240,26 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
             );
           }
           return "-";
+        },
+      },
+
+      // ✅ NEW COLUMN — only meaningful for Client-related tasks
+      {
+        Header: "Field Visit",
+        id: "requires_field_visit",
+        filterable: false,
+        accessor: (obj) => {
+          if (obj.related_to !== "client") return "-";
+          return obj.requires_field_visit ? (
+            <span className="badge bg-success-subtle text-success">
+              <i className="ri-map-pin-line align-bottom me-1" />
+              Required
+            </span>
+          ) : (
+            <span className="badge bg-secondary-subtle text-secondary">
+              Not Required
+            </span>
+          );
         },
       },
 
@@ -419,6 +441,7 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
       task_priority: null,
       start_time: "",
       end_time: "",
+      requires_field_visit: false, // ✅ NEW FIELD
     }),
     [projectId, clientId],
   );

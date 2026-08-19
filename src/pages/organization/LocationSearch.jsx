@@ -17,6 +17,11 @@ import {
 import Select from "react-select";
 import { map_radius_options } from "../../common/constant/Constants";
 
+// ✅ Static reference — must be defined outside component to avoid
+// useJsApiLoader reloading the script on every render (which was
+// silently killing AutocompleteService and breaking suggestions)
+const GOOGLE_MAPS_LIBRARIES = ["places"];
+
 function LocationSearch({ locationObj, setLocationObj, LocationFormikForm }) {
   const [mapZoom, setMapZoom] = useState(21);
   const [mapCenter, setMapCenter] = useState({
@@ -45,11 +50,10 @@ function LocationSearch({ locationObj, setLocationObj, LocationFormikForm }) {
     height: "400px",
   };
 
-  // ✅ Use consistent loader ID and libraries
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: process.env.REACT_APP_MAP_API_KEY,
-    libraries: ["places"],
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   // ✅ Handle location data updates
@@ -102,11 +106,15 @@ function LocationSearch({ locationObj, setLocationObj, LocationFormikForm }) {
       LocationFormikForm.setFieldError("accurate_address", undefined);
     }
 
-    if (value.trim().length) {
+    if (value.trim().length && isLoaded && window.google?.maps?.places) {
       const autocomplete = new window.google.maps.places.AutocompleteService();
       autocomplete.getPlacePredictions({ input: value }, (preds, status) => {
-        if (status === "OK") setPredictions(preds);
-        else setPredictions([]);
+        if (status === "OK") {
+          setPredictions(preds);
+        } else {
+          console.warn("Places prediction failed:", status);
+          setPredictions([]);
+        }
       });
     } else {
       setPredictions([]);
@@ -152,6 +160,8 @@ function LocationSearch({ locationObj, setLocationObj, LocationFormikForm }) {
           lng: place.geometry.location.lng(),
         });
         setPredictions([]);
+      } else {
+        console.warn("Place details failed:", status);
       }
     });
   };
