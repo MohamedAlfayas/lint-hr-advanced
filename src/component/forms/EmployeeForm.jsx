@@ -87,6 +87,12 @@ const EmployeeForm = () => {
 
   const [dob, setDob] = useState([]);
   const [joining_date, setJoinDate] = useState([]);
+  const [dobTypeError, setDobTypeError] = useState("");
+  const [joiningTypeError, setJoiningTypeError] = useState("");
+  const dobPickerRef = React.useRef(null);
+  const joinPickerRef = React.useRef(null);
+  const dobRawTyped = React.useRef("");
+  const joinRawTyped = React.useRef("");
   const [selectedFileName, setSelectedFileName] = React.useState("");
   const [selectedFileName1, setSelectedFileName1] = React.useState("");
   const [selectedFileName2, setSelectedFileName2] = React.useState("");
@@ -134,7 +140,8 @@ const EmployeeForm = () => {
   const isExistingEmployee = !!(form_obj?.id && form_obj.id !== 0);
   const [defaultProbationMonths, setDefaultProbationMonths] = useState(0);
   const [probation_end_date, setProbationEndDate] = useState(null);
-
+  const [dobRawInvalidText, setDobRawInvalidText] = useState(null); // null => show DatePicker
+  const [joinRawInvalidText, setJoinRawInvalidText] = useState(null); // null => show DatePicker
   const handleAddLocationClick = () => {
     setLocationToEdit(null);
     setLocationModalOpen(true);
@@ -147,18 +154,23 @@ const EmployeeForm = () => {
   // ── Date helpers ──────────────────────────────────────────────────────────
   const today = dayjs().startOf("day");
   const minDobDate = dayjs("1900-01-01");
+  const maxDobForMinAge = today.subtract(15, "year");
   // const oneMonthLater = dayjs().add(1, "month").endOf("day");
   const minJoiningDate = dayjs("1900-01-01");
   const maxJoiningDate = dayjs().add(1, "year").endOf("day");
-  // DOB: must be in the past (before today)
+  // DOB: must be between 1900-01-01 and today (calendar).
+  // Pre-1900 typed errors are caught via onKeyUp so AntD still blocks calendar
+  // selection of those dates while showing immediate inline errors when typing.
   // const disableDobDates = (current) => current && current >= today;
   const disableDobDates = (current) => {
     return (
       current &&
-      (current.isBefore(minDobDate, "day") || current.isAfter(today, "day"))
+      (current.isBefore(minDobDate, "day") || current.isAfter(today, "day")
+      ||  current.isAfter(maxDobForMinAge, "day")
+    )
     );
   };
-  // Joining date: from past up to 1 month in future
+  // Joining date: from 1900-01-01 up to 1 year in the future (calendar).
   // const disableJoiningDates = (current) => current && current > oneMonthLater;
   const disableJoiningDates = (current) => {
     return (
@@ -392,8 +404,188 @@ const EmployeeForm = () => {
     });
   };
 
+  const handleDateKeyDown = (e) => {
+    const controlKeys = [
+      "Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End",
+    ];
+    if (!/^[0-9\-]$/.test(e.key) && !controlKeys.includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  // After every render: if an error is active, re-write the raw typed text back
+  // into the DOM input. AntD resets its controlled input to match the `value`
+  // prop on every re-render; useLayoutEffect runs after the DOM update (before
+  // paint) and overrides it, so the user always sees what they typed.
+  React.useLayoutEffect(() => {
+    if (dobTypeError && dobRawTyped.current) {
+      const input = dobPickerRef.current?.nativeElement?.querySelector("input");
+      if (input) input.value = dobRawTyped.current;
+    }
+  });
+  React.useLayoutEffect(() => {
+    if (joiningTypeError && joinRawTyped.current) {
+      const input = joinPickerRef.current?.nativeElement?.querySelector("input");
+      if (input) input.value = joinRawTyped.current;
+    }
+  });
+
+  const handleDobKeyUp = (e) => {
+    const val = e.target.value;
+    dobRawTyped.current = val;
+    if (val.length !== 10) { setDobTypeError(""); return; }
+    const parsed = dayjs(val, DateFormat, true);
+    if (!parsed.isValid()) {
+      setDobTypeError("Invalid date format. Use DD-MM-YYYY");
+      return;
+    }
+    if (parsed.year() < 1900) {
+      setDobTypeError("Year must be 1900 or later");
+    } else if (parsed.isAfter(dayjs(), "day")) {
+      setDobTypeError("Date of birth cannot be a future date");
+    } else if (parsed.isAfter(maxDobForMinAge, "day")) {
+    setDobTypeError("Employee must be at least 15 years old");
+    } else {
+      setDobTypeError("");
+    }
+  };
+
+  const handleJoinKeyUp = (e) => {
+    const val = e.target.value;
+    joinRawTyped.current = val;
+    if (val.length !== 10) { setJoiningTypeError(""); return; }
+    const parsed = dayjs(val, DateFormat, true);
+    if (!parsed.isValid()) {
+      setJoiningTypeError("Invalid date format. Use DD-MM-YYYY");
+      return;
+    }
+    if (parsed.year() < 1900) {
+      setJoiningTypeError("Year must be 1900 or later");
+    } else if (parsed.isAfter(dayjs().add(1, "year"), "day")) {
+      setJoiningTypeError("Joining date cannot exceed one year from today");
+    } else {
+      setJoiningTypeError("");
+    }
+  };
+
+  // const handleDobBlur = (e) => {
+  //   const typed = e.target.value;
+  //   dobRawTyped.current = typed;
+  //   if (!typed) return;
+  //   const parsed = dayjs(typed, DateFormat, true);
+  //   if (!parsed.isValid()) {
+  //     setDobTypeError("Invalid date format. Use DD-MM-YYYY");
+  //     return;
+  //   }
+  //   if (parsed.year() < 1900) {
+  //     setDobTypeError("Year must be 1900 or later");
+  //     return;
+  //   }
+  //   if (parsed.isAfter(dayjs(), "day")) {
+  //     setDobTypeError("Date of birth cannot be a future date");
+  //     return;
+  //   }
+  //   dobRawTyped.current = "";
+  //   setDobTypeError("");
+  //   handleDateChange(parsed, typed);
+  // };
+
+  const handleDobBlur = (e) => {
+    const typed = dobRawTyped.current || e.target.value;
+    if (!typed) return;
+
+    const parsed = dayjs(typed, DateFormat, true);
+    let errMsg = "";
+    if (!parsed.isValid()) errMsg = "Invalid date format. Use DD-MM-YYYY";
+    else if (parsed.year() < 1900) errMsg = "Year must be 1900 or later";
+    else if (parsed.isAfter(dayjs(), "day")) errMsg = "Date of birth cannot be a future date";
+    else if (parsed.isAfter(maxDobForMinAge, "day")) errMsg = "Employee must be at least 15 years old";
+
+    if (errMsg) {
+      setDobTypeError(errMsg);
+      setDobRawInvalidText(typed); // switch to plain input, showing exactly this text
+      return;
+    }
+
+    setDobRawInvalidText(null); // valid — go back to normal DatePicker
+    dobRawTyped.current = "";
+    setDobTypeError("");
+    handleDateChange(parsed, typed);
+  };
+
+  // const handleJoinBlur = (e) => {
+  //   const typed = e.target.value;
+  //   joinRawTyped.current = typed;
+  //   if (!typed) return;
+  //   const parsed = dayjs(typed, DateFormat, true);
+  //   if (!parsed.isValid()) {
+  //     setJoiningTypeError("Invalid date format. Use DD-MM-YYYY");
+  //     return;
+  //   }
+  //   if (parsed.year() < 1900) {
+  //     setJoiningTypeError("Year must be 1900 or later");
+  //     return;
+  //   }
+  //   if (parsed.isAfter(dayjs().add(1, "year"), "day")) {
+  //     setJoiningTypeError("Joining date cannot exceed one year from today");
+  //     return;
+  //   }
+  //   joinRawTyped.current = "";
+  //   setJoiningTypeError("");
+  //   handleJoinDateChange(parsed, typed);
+  // };
+
+
+  const handleJoinBlur = (e) => {
+    const typed = joinRawTyped.current || e.target.value;
+    if (!typed) return;
+
+    const parsed = dayjs(typed, DateFormat, true);
+    let errMsg = "";
+    if (!parsed.isValid()) {
+      errMsg = "Invalid date format. Use DD-MM-YYYY";
+    } else if (parsed.year() < 1900) {
+      errMsg = "Year must be 1900 or later";
+    } else if (parsed.isAfter(dayjs().add(1, "year"), "day")) {
+      errMsg = "Joining date cannot exceed one year from today";
+    }
+
+    if (errMsg) {
+      setJoiningTypeError(errMsg);
+      setJoinRawInvalidText(typed); // switch to plain input, showing exactly this text
+      return;
+    }
+
+    setJoinRawInvalidText(null); // valid — go back to normal DatePicker
+    joinRawTyped.current = "";
+    setJoiningTypeError("");
+    handleJoinDateChange(parsed, typed);
+  };
+
   const handleDateChange = (selectedDates, dateStr, instance) => {
+    // Don't clear dob state when AntD fires onChange(null,"") internally
+    // (e.g. for disabled/invalid dates) — keep the previous committed value.
+    if (!selectedDates || !dateStr) {
+      setDobTypeError("");
+      return;
+    }
     setDob(dateStr);
+    const year = selectedDates.year();
+    if (year < 1900) {
+      setDobTypeError("Year must be 1900 or later");
+      return;
+    }
+    if (selectedDates.isAfter(dayjs(), "day")) {
+      setDobTypeError("Date of birth cannot be a future date");
+      FormikForm.setFieldValue("dob", "");
+      return;
+    }
+    if (selectedDates.isAfter(maxDobForMinAge, "day")) {          // ADD
+      setDobTypeError("Employee must be at least 15 years old");   // ADD
+      FormikForm.setFieldValue("dob", "");                         // ADD
+      return;                                                      // ADD
+    }
+    setDobTypeError("");
     setEmployeeObj({
       ...employeeObj,
       dob: ConvertISODateFormat(ConvertDateFormat(dateStr)),
@@ -450,7 +642,24 @@ const EmployeeForm = () => {
   };
 
   const handleJoinDateChange = (selectedJoinDate, dateStr, instance) => {
+    // Don't clear joining_date state when AntD fires onChange(null,"") internally.
+    if (!selectedJoinDate || !dateStr) {
+      setJoiningTypeError("");
+      return;
+    }
     setJoinDate(dateStr);
+    const year = selectedJoinDate.year();
+    if (year < 1900) {
+      setJoiningTypeError("Year must be 1900 or later");
+      return;
+    }
+    const maxJoiningDateLimit = dayjs().add(1, "year").endOf("day");
+    if (selectedJoinDate.isAfter(maxJoiningDateLimit, "day")) {
+      setJoiningTypeError("Joining date cannot exceed one year from today");
+      FormikForm.setFieldValue("joining_date", "");
+      return;
+    }
+    setJoiningTypeError("");
     setEmployeeObj({
       ...employeeObj,
       joining_date: ConvertISODateFormat(ConvertDateFormat(dateStr)),
@@ -623,6 +832,14 @@ const EmployeeForm = () => {
               dayjs(value).isSame(dayjs(), "day") ||
               dayjs(value).isBefore(dayjs(), "day")
             );
+          },
+        )
+        .test(
+          "dob-min-age-15",
+          "Employee must be at least 15 years old",
+          (value) => {
+            if (!value) return false;
+            return !dayjs(value).isAfter(dayjs().subtract(15, "year"), "day");
           },
         ),
 
@@ -1328,8 +1545,28 @@ const EmployeeForm = () => {
                   <Label htmlFor="dob" className="form-label">
                     Date of Birth <span>*</span>
                   </Label>
+
+                  {dobRawInvalidText !== null ? (
+                    <Input
+                      type="text"
+                      className={`form-control${dobTypeError ? " border-danger" : ""}`}
+                      placeholder="DD-MM-YYYY"
+                      autoFocus
+                      value={dobRawInvalidText}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setDobRawInvalidText(val);
+                        dobRawTyped.current = val;
+                        handleDobKeyUp({ target: { value: val } }); // reuse existing live validation
+                      }}
+                      onKeyDown={handleDateKeyDown}
+                      onBlur={handleDobBlur}
+                    />
+                  ) : (
+
                   <DatePicker
-                    className={`form-control${(FormikForm.touched.dob || hasAttemptedSubmit) && FormikForm.errors.dob ? " border-danger" : ""}`}
+                    ref={dobPickerRef}
+                    className={`form-control${((FormikForm.touched.dob || hasAttemptedSubmit) && FormikForm.errors.dob) || dobTypeError ? " border-danger" : ""}`}
                     placeholder="DD-MM-YYYY"
                     id="dob"
                     name="dob"
@@ -1338,14 +1575,20 @@ const EmployeeForm = () => {
                     onChange={handleDateChange}
                     allowClear={false}
                     disabledDate={disableDobDates}
-                    inputReadOnly={true}
+                    onKeyDown={handleDateKeyDown}
+                    onKeyUp={handleDobKeyUp}
+                    onBlur={handleDobBlur}
                   />
-                  {(FormikForm.touched.dob || hasAttemptedSubmit) && FormikForm.errors.dob && (
+                  )}
+                  {dobTypeError && (
+                    <div className="lc_form_error_text">{dobTypeError}</div>
+                  )}
+                  {!dobTypeError && (FormikForm.touched.dob || hasAttemptedSubmit) && FormikForm.errors.dob && (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.dob}
                     </div>
                   )}
-                  {!(
+                  {!dobTypeError && !(
                   (FormikForm.touched.dob || hasAttemptedSubmit) &&
                   FormikForm.errors.dob) && (
                     <div className="form-text mb-3">
@@ -1803,8 +2046,29 @@ const EmployeeForm = () => {
                   <Label htmlFor="joining_date" className="form-label">
                     Joining Date <span>*</span>
                   </Label>
+
+                    {joinRawInvalidText !== null ? (
+                      <Input
+                        type="text"
+                        className={`form-control${joiningTypeError ? " border-danger" : ""}`}
+                        placeholder="DD-MM-YYYY"
+                        id="joining_date"
+                        name="joining_date"
+                        autoFocus
+                        value={joinRawInvalidText}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setJoinRawInvalidText(val);
+                          joinRawTyped.current = val;
+                          handleJoinKeyUp({ target: { value: val } });
+                        }}
+                        onKeyDown={handleDateKeyDown}
+                        onBlur={handleJoinBlur}
+                      />
+                    ) : (
                   <DatePicker
-                    className={`form-control${(FormikForm.touched.joining_date || hasAttemptedSubmit) && FormikForm.errors.joining_date ? " border-danger" : ""}`}
+                    ref={joinPickerRef}
+                    className={`form-control${((FormikForm.touched.joining_date || hasAttemptedSubmit) && FormikForm.errors.joining_date) || joiningTypeError ? " border-danger" : ""}`}
                     id="joining_date"
                     name="joining_date"
                     value={
@@ -1814,15 +2078,21 @@ const EmployeeForm = () => {
                     allowClear={false}
                     onChange={handleJoinDateChange}
                     disabledDate={disableJoiningDates}
-                    inputReadOnly={true}
+                    onKeyDown={handleDateKeyDown}
+                    onKeyUp={handleJoinKeyUp}
+                    onBlur={handleJoinBlur}
                   />
-                  {(FormikForm.touched.joining_date || hasAttemptedSubmit) &&
+                  )}
+                  {joiningTypeError && (
+                    <div className="lc_form_error_text">{joiningTypeError}</div>
+                  )}
+                  {!joiningTypeError && (FormikForm.touched.joining_date || hasAttemptedSubmit) &&
                     FormikForm.errors.joining_date && (
                       <div className="lc_form_error_text">
                         {FormikForm.errors.joining_date}
                       </div>
                     )}
-                  {!(
+                  {!joiningTypeError && !(
                     (FormikForm.touched.joining_date || hasAttemptedSubmit) &&
                     FormikForm.errors.joining_date
                   ) && (
