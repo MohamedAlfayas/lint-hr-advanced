@@ -30,32 +30,25 @@ export const getBaseUrlFromDomain = () => {
   }
   return base_url;
 };
+export const BaseURL = getBaseUrlFromDomain();
+// export const BaseURL = "https://dev.linthr.com/";
+//export const BaseURL = "http://192.168.1.14:8000/";
+export const ProductionBaseURL = "http://62.72.59.28:8000";
 export const getWsUrlFromDomain = () => {
   const domain = window.location.hostname.split(".")[0];
-
-  // Safely extract token without crashing or returning "undefined"
-  let token = "";
-  try {
-    const rawToken = localStorage.getItem("lint_hr_token");
-    const parsed = rawToken ? JSON.parse(rawToken) : null;
-    token = (typeof parsed === "object" && parsed !== null ? parsed.access : parsed) || "";
-  } catch {
-    token = localStorage.getItem("lint_hr_token") || "";
-  }
-
+  const token = JSON.parse(localStorage.getItem("lint_hr_token"));
   if (
     !!process.env.REACT_APP_LC_PLATFORM &&
     process.env.REACT_APP_LC_PLATFORM === "local"
   ) {
     const httpUrl = getBaseUrlFromDomain();
     const wsUrl = httpUrl.replace(/^http/, "ws").replace(/\/$/, "");
-    return `${wsUrl}/ws/tracking/?token=${token}`;
+    return `${wsUrl}/ws/tracking/?token=${token?.access}`;
   } else {
     // Construct the base URL dynamically
     if (!!domain) {
-      return `wss://${domain}.${process.env.REACT_APP_BASE_URL}/ws/tracking/?token=${token}`;
+      return `wss://${domain}.${process.env.REACT_APP_BASE_URL}/ws/tracking/?token=${token?.access}`;
     }
   }
-};
 };
 export const WsBaseURL = getWsUrlFromDomain();
