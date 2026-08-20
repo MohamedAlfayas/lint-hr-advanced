@@ -69,6 +69,7 @@ const TrackingConfigForm = () => {
         still_mode_interval: Number(values.still_mode_interval),
         move_mode_interval: Number(values.move_mode_interval),
         always_track_on_interval: values.always_track_on_interval,
+        is_tracking_enabled: values.is_tracking_enabled,
         tracking_radius_range: Number(values.tracking_radius_range),
       };
 
@@ -111,6 +112,7 @@ const TrackingConfigForm = () => {
       move_mode_interval: tracking_config_data?.move_mode_interval ?? "",
       always_track_on_interval:
         tracking_config_data?.always_track_on_interval ?? false,
+      is_tracking_enabled: tracking_config_data?.is_tracking_enabled ?? false,
       tracking_radius_range: tracking_config_data?.tracking_radius_range ?? "",
     },
     validationSchema: Yup.object({
@@ -131,6 +133,7 @@ const TrackingConfigForm = () => {
         .required("Please Enter Tracking Radius Range")
         .min(10, "Must be at least 10 meters"),
       always_track_on_interval: Yup.boolean().required(),
+      is_tracking_enabled: Yup.boolean().required(),
     }),
     onSubmit: HandleConfigSaveAPI,
   });
@@ -286,6 +289,39 @@ const TrackingConfigForm = () => {
                       <i>
                         {formik.values.always_track_on_interval ? "Yes" : "No"}
                       </i>
+                    </b>
+                  </div>
+                </Col>
+                <Col md={6}>
+                  <Label
+                    htmlFor="is_tracking_enabled"
+                    className="form-label d-block"
+                  >
+                    Tracking Enable
+                  </Label>
+                  <div
+                    className="form-check form-switch form-switch-md form-switch-success"
+                    dir="ltr"
+                  >
+                    <Input
+                      id="is_tracking_enabled"
+                      name="is_tracking_enabled"
+                      type="checkbox"
+                      className="form-check-input"
+                      disabled={!isEditable || fetching}
+                      checked={formik.values.is_tracking_enabled}
+                      onChange={(e) =>
+                        formik.setFieldValue(
+                          "is_tracking_enabled",
+                          e.target.checked,
+                        )
+                      }
+                    />
+                  </div>
+                  <div className="form-text">
+                    Currently{" "}
+                    <b>
+                      <i>{formik.values.is_tracking_enabled ? "Yes" : "No"}</i>
                     </b>
                   </div>
                 </Col>
