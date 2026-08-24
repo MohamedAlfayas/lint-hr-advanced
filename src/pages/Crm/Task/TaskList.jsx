@@ -107,22 +107,24 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
     return filtered;
   }, [task_data, projectId, clientId, searchQuery]);
 
-  // ── Fetch all tasks on mount ────────────────────────────────────────────────
-  useEffect(() => {
-    getAllTasks();
-    dispatch(resetTaskListFilterKeys());
-  }, []);
-
-  const getAllTasks = async () => {
+  // ── Fetch all tasks ─────────────────────────────────────────────────────────
+  const getAllTasks = useCallback(async () => {
     try {
       const response = await Api.get("/task/");
-      // ✅ FIX: API returns { external: [...], internal: [...] }, not a flat array
-      const { external = [], internal = [] } = response?.data?.data || {};
-      dispatch(setTasks([...external, ...internal]));
+      // ✅ FIX: API returns { data: [...] } — a flat array, not { external, internal }
+      const tasks = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : [];
+      dispatch(setTasks(tasks));
     } catch (error) {
       console.log("Task Fetch Error :", error);
     }
-  };
+  }, [dispatch]);
+
+  useEffect(() => {
+    getAllTasks();
+    dispatch(resetTaskListFilterKeys());
+  }, [getAllTasks, dispatch]);
 
   // ── Modal handlers ──────────────────────────────────────────────────────────
   const openTaskDetail = useCallback((taskId) => {
@@ -243,7 +245,7 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
         },
       },
 
-      // ✅ NEW COLUMN — only meaningful for Client-related tasks
+      // ✅ Field Visit — only meaningful for Client-related tasks
       {
         Header: "Field Visit",
         id: "requires_field_visit",
@@ -353,7 +355,10 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
         filterable: false,
         accessor: (obj) => {
           const priorities = GetLocalStorageData("task_priority") || [];
-          const priority = priorities.find((p) => p.id === obj.task_priority);
+          // ✅ FIX: loose numeric compare (string/number mismatch caused missed lookups)
+          const priority = priorities.find(
+            (p) => Number(p.id) === Number(obj.task_priority),
+          );
           if (!priority) return "-";
           return (
             <span
@@ -375,7 +380,10 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
         filterable: false,
         accessor: (obj) => {
           const statuses = GetLocalStorageData("task_status") || [];
-          const status = statuses.find((s) => s.id === obj.task_status);
+          // ✅ FIX: loose numeric compare (string/number mismatch caused missed lookups)
+          const status = statuses.find(
+            (s) => Number(s.id) === Number(obj.task_status),
+          );
           if (!status) return "-";
           return (
             <span
@@ -388,21 +396,21 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
         },
       },
 
-      {
-        Header: "Start Time",
-        id: "start_time",
-        filterable: false,
-        accessor: (obj) =>
-          obj.start_time ? new Date(obj.start_time).toLocaleString() : "-",
-      },
+      // {
+      //   Header: "Start Time",
+      //   id: "start_time",
+      //   filterable: false,
+      //   accessor: (obj) =>
+      //     obj.start_time ? new Date(obj.start_time).toLocaleString() : "-",
+      // },
 
-      {
-        Header: "End Time",
-        id: "end_time",
-        filterable: false,
-        accessor: (obj) =>
-          obj.end_time ? new Date(obj.end_time).toLocaleString() : "-",
-      },
+      // {
+      //   Header: "End Time",
+      //   id: "end_time",
+      //   filterable: false,
+      //   accessor: (obj) =>
+      //     obj.end_time ? new Date(obj.end_time).toLocaleString() : "-",
+      // },
 
       {
         Header: "Active",
@@ -441,7 +449,8 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
       task_priority: null,
       start_time: "",
       end_time: "",
-      requires_field_visit: false, // ✅ NEW FIELD
+      requires_field_visit: false,
+      client_location: null, // ✅ FIX: keep in sync with TaskListForm's defaultTaskData
     }),
     [projectId, clientId],
   );

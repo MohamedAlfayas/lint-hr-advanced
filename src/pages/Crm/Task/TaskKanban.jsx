@@ -275,7 +275,7 @@ function TaskCard({
   };
   const overdue = isOverdue(task.end_time);
   const collabs = task.collaborators_id_list || [];
-  // ✅ NEW — only relevant for client-related tasks
+  // ✅ only relevant for client-related tasks
   const showFieldVisitBadge =
     task.related_to === "client" && !!task.requires_field_visit;
 
@@ -302,7 +302,7 @@ function TaskCard({
               {priority.label}
             </span>
 
-            {/* ✅ NEW — Field Visit badge */}
+            {/* Field Visit badge */}
             {showFieldVisitBadge && (
               <span
                 className="badge fs-11 d-inline-flex align-items-center gap-1 badge-soft-info"
@@ -572,9 +572,11 @@ const TaskKanban = ({ searchQuery = "" }) => {
       setError(null);
       try {
         const response = await Api.get("/task/");
-        // ✅ FIX: API returns { external: [...], internal: [...] }, not a flat array
-        const { external = [], internal = [] } = response?.data?.data || {};
-        dispatch(setTasks([...external, ...internal]));
+        // ✅ FIX: API returns { data: [...] } — a flat array, not { external, internal }
+        const fetchedTasks = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : [];
+        dispatch(setTasks(fetchedTasks));
       } catch (err) {
         console.error("Task Fetch Error:", err);
         setError("Failed to load tasks. Please try again.");
