@@ -2450,7 +2450,8 @@ const InfoTable = ({
                           {formname &&
                             component_list_for_import_btn_access.includes(
                               formname,
-                            ) && (
+                            ) && 
+                            formname !== holiday_component_name &&(
                               <button
                                 type="button"
                                 className="btn btn-primary align-bottom me-1"
@@ -2607,7 +2608,8 @@ const InfoTable = ({
                             formname !== project_component_name &&
                             formname !== task_list_component_name &&
                             formname !== client_component_name &&
-                            formname !== custom_status_form_component_name && (
+                            formname !== custom_status_form_component_name && 
+                            formname !== holiday_component_name &&(
                               <button
                                 type="button"
                                 className="btn btn-info"

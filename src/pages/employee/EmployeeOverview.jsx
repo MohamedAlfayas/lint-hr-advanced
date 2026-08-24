@@ -16,6 +16,8 @@ const EmployeeOverview = (props) => {
   const BranchData = GetLocalStorageData("branch") || [];
   const TaskStatusData = GetLocalStorageData("task_status") || [];
 
+  console.log("employment_type data:", profileObj?.employment_type);
+
   const allBranches = BranchData.flatMap(
     (org) => org.entity_location_details || [],
   );
@@ -47,6 +49,17 @@ const EmployeeOverview = (props) => {
       (w) => w.id === profileObj?.work_schedule_id
     )?.name || "";
 
+
+
+  const employmentTypeName = profileObj?.employment_type_name
+
+
+  
+  const reportingManagerName =
+    profileObj?.reporting_manager_info?.name ||
+    profileObj?.reporting_manager_info?.first_name ||
+    (profileObj?.reporting_manager_id ? `#${profileObj.reporting_manager_id}` : "-");
+
   const noDataOptions = {
     loop: true,
     autoplay: true,
@@ -61,7 +74,9 @@ const EmployeeOverview = (props) => {
     { icon: "ri-calendar-line", label: "Date of Birth", value: profileObj?.dob },
     { icon: "ri-mail-line", label: "Email", value: profileObj?.email },
     { icon: "ri-phone-line", label: "Mobile", value: profileObj?.contact_number },
-    // { icon: "ri-briefcase-line", label: "Designation", value: designation },
+    { icon: "ri-briefcase-line", label: "Role", value: designation },
+    { icon: "ri-user-star-line", label: "Reporting Manager", value: reportingManagerName },
+    { icon: "ri-briefcase-4-line", label: "Employment Type", value: employmentTypeName },
     { icon: "ri-time-line", label: "Work Schedule", value: workScheduleName || "-" },
     { icon: "ri-team-line", label: "Department", value: departmentNames },
     { icon: "ri-building-line", label: "Branch", value: branchNames },
@@ -263,8 +278,10 @@ const EmployeeOverview = (props) => {
               </div>
             </div>
 
-            <SimpleBar style={{ height: "260px" }} className="pe-1">
+            {/* <SimpleBar style={{ height: "260px" }} className="pe-1"> */}
+            
               {recentTasks.length ? (
+                <SimpleBar className="flex-grow-1 pe-1" style={{ minHeight: 0 }}>
                 <div className="table-responsive">
                   <table className="table table-borderless table-nowrap align-middle mb-0">
                     <thead className="text-muted" style={{ fontSize: "12px" }}>
@@ -342,10 +359,11 @@ const EmployeeOverview = (props) => {
                     </tbody>
                   </table>
                 </div>
+                </SimpleBar>
               ) : (
                 <div
-                  className="d-flex align-items-center justify-content-center"
-                  style={{ height: "260px" }}
+                  className="d-flex align-items-center justify-content-center flex-grow-1"
+                  // style={{ height: "260px" }}
                 >
                   <Lottie options={noDataOptions} height={160} width={160} />
                   {/* <p className="text-muted text-center mb-0">
@@ -353,7 +371,7 @@ const EmployeeOverview = (props) => {
                   </p> */}
                 </div>
               )}
-            </SimpleBar>
+           
 
             <Link
               to={tasksLink || "#"}

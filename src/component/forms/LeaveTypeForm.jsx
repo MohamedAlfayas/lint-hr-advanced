@@ -65,6 +65,8 @@ const LeaveTypeForm = () => {
 
   const [daysCountError, setDaysCountError] = useState("");
   const [carryForwardError, setCarryForwardError] = useState("");
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [nameLengthError, setNameLengthError] = useState("");
 
   const canEditLeaveType = (field) => {
     const isFrozen =
@@ -138,12 +140,18 @@ const LeaveTypeForm = () => {
   const handleInputChange = (e) => {
     if (!canEditLeaveType("name")) return;
     const { name, value } = e.target;
+    if (value.startsWith(" ")) return;
     if (name === "name") {
       const textOnly = value.replace(/[^a-zA-Z0-9\s.,?!"'_\-()&:;/\\]/g,
       "");
      
       setLeaveTypeData({ ...leaveTypeData, [name]: textOnly });
       FormikForm.setFieldValue(name, textOnly);
+      setNameLengthError(
+        textOnly.length > 150
+          ? "Leave Type Name is too long. Maximum 150 characters allowed."
+          : ""
+      );
     } 
     
     else if (name === "description") {
@@ -291,6 +299,16 @@ const LeaveTypeForm = () => {
           .max(
             24,
             "Leave Hour Allowed in a Day must not exceed 24"
+          )
+          .test(
+            "day-lte-year",
+            "Leave Hour Allowed in a Day must not exceed Leave Hour Allowed in a Year",
+            function (value) {
+              const { allowed_count } = this.parent;
+              if (value == null || value === "" ) return true;
+              if (allowed_count == null || allowed_count === "") return true;
+              return Number(value) <= Number(allowed_count);
+            }
           ),
       otherwise: (schema) => schema.nullable(),
     }),
@@ -335,10 +353,21 @@ const LeaveTypeForm = () => {
             ? leaveTypeData.monthly_allowed_count
             : values.allowed_count
         )
-      ) {
+      ) 
+      {
         toast.error("Carry Forward Limit must not exceed Leave Days Count");
-      } else if (values.unit === 2 && values.hour_allowed_in_day === 0) {
+      } else if (values.unit === leave_type_hour_unit && values.hour_allowed_in_day === 0) {
         toast.error("Leave Hour Must not be 0");
+      } else if (
+        values.unit === leave_type_hour_unit &&
+        Number(values.hour_allowed_in_day) > Number(values.allowed_count)
+      ) {
+        // 👇 new check goes here, right after the existing hour_allowed_in_day === 0 check
+        toast.error("Leave Hour Allowed in a Day must not exceed Leave Hour Allowed in a Year");
+      // {
+      //   toast.error("Carry Forward Limit must not exceed Leave Days Count");
+      // } else if (values.unit === 2 && values.hour_allowed_in_day === 0) {
+      //   toast.error("Leave Hour Must not be 0");
       } else {
         const payload = {
           ...leaveTypeData,
@@ -395,7 +424,15 @@ const LeaveTypeForm = () => {
     <React.Fragment>
       <Row>
         <Col xl={40}>
-          <Form className="form-steps" onSubmit={FormikForm.handleSubmit}>
+          {/* <Form className="form-steps" onSubmit={FormikForm.handleSubmit}> */}
+          <Form
+            className="form-steps"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setHasAttemptedSubmit(true);
+              FormikForm.handleSubmit(e);
+            }}
+          >
             <Row>
               <Col md={12} lg={12} xxl={12}>
                 <div className="mb-3">
@@ -412,22 +449,40 @@ const LeaveTypeForm = () => {
                       placeholder="Casual"
                       value={leaveTypeData.name || ""}
                       onChange={handleInputChange}
+                      onBlur={() => {
+                        if (leaveTypeData.name && leaveTypeData.name.trim() !== "") {
+                          FormikForm.setFieldTouched("name", true);
+                        }
+                      }}
                       // maxLength={150}
+                      // invalid={
+                      //   // FormikForm.touched.name && FormikForm.errors.name
+                      //   FormikForm.errors.name
+                      //     ? true
+                      //     : false
+                      // }
                       invalid={
-                        // FormikForm.touched.name && FormikForm.errors.name
-                        FormikForm.errors.name
-                          ? true
-                          : false
+                        !!nameLengthError ||
+                        !!((FormikForm.touched.name || hasAttemptedSubmit) && FormikForm.errors.name)
                       }
                     />
                     
-                    {FormikForm.errors.name ? (
+                    {
+                      nameLengthError ? (
+                      <FormFeedback type="invalid" style={{ display: "block" }}>
+                        {nameLengthError}
+                      </FormFeedback>
+                    ) :
+                    
+                    (FormikForm.touched.name || hasAttemptedSubmit) && 
+                    FormikForm.errors.name ? (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.name}
                       </FormFeedback>
                     ) : null}
                   </div>
-                  {!FormikForm.errors.name && (
+                  {!nameLengthError &&
+                  !((FormikForm.touched.name || hasAttemptedSubmit) && FormikForm.errors.name) && (
                     <div id="passwordHelpBlock" className="form-text">
                       Enter Leave Type Name.
                     </div>
@@ -829,6 +884,7 @@ const LeaveTypeForm = () => {
 
                           FormikForm.setFieldValue("allowed_count", parsed);
                           FormikForm.validateField("allowed_count");
+                          FormikForm.validateField("hour_allowed_in_day");
                         }}
                       />
                       {/* <i className="ri-time-line"></i> */}
