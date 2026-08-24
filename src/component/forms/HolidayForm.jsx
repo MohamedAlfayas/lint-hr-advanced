@@ -1,6 +1,6 @@
 import axios from "axios";
 import { FilePond } from "filepond";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState,useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import {
@@ -57,6 +57,29 @@ const HolidayForm = () => {
   const ws_options = GetLocalStorageData("work_schedule") || [];
   const [selectedWS, setSelectedWS] = useState([]);
 
+  const [dateTypeError, setDateTypeError] = useState("");
+  const [dateRawInvalidText, setDateRawInvalidText] = useState(null);
+  const datePickerRef = useRef(null);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const dateRawTyped = useRef("");
+  const [lengthWarnings, setLengthWarnings] = useState({
+    name: "",
+    description: "",
+  });
+
+  const MAX_LENGTHS = {
+    name: 150,
+    description: 200,
+  };
+
+  const checkMaxLength = (field, rawValue) => {
+    const max = MAX_LENGTHS[field];
+    const msg =
+      rawValue.length > max
+        ? `${field.charAt(0).toUpperCase() + field.slice(1)} cannot exceed ${max} characters`
+        : "";
+    setLengthWarnings((prev) => ({ ...prev, [field]: msg }));
+  };
 
   useEffect(() => {
     console.log("USEEFFECT CALLED HOLIDAY");
@@ -70,6 +93,10 @@ const HolidayForm = () => {
         form_obj.work_schedule_id_list.includes(data.id)
       )
     );
+    setDateTypeError("");
+    setDateRawInvalidText(null);
+    dateRawTyped.current = "";
+    setLengthWarnings({ name: "", description: "" });
   }, [form_obj]);
 
   const FormikForm = useFormik({
@@ -163,13 +190,106 @@ const HolidayForm = () => {
     FormikForm.setFieldTouched("work_schedule_id_list", true, false);
   };
 
+  // const handleDateChange = (selectedDates, dateStr) => {
+  //   setDate(dateStr);
+  //   setHolidayObj({
+  //     ...holidayObj,
+  //     date: ConvertISODateFormat(ConvertDateFormat(dateStr)),
+  //   });
+  // };
+
   const handleDateChange = (selectedDates, dateStr) => {
+    if (!selectedDates || !dateStr) {
+      setDateTypeError("");
+      return;
+    }
     setDate(dateStr);
-    setHolidayObj({
-      ...holidayObj,
-      date: ConvertISODateFormat(ConvertDateFormat(dateStr)),
-    });
+    if (selectedDates.isBefore(minDate, "day")) {
+      setDateTypeError("Year must be 1900 or later");
+      FormikForm.setFieldValue("date", "");
+      return;
+    }
+    if (selectedDates.isAfter(maxDate, "day")) {
+      setDateTypeError("Date cannot exceed one year from today");
+      FormikForm.setFieldValue("date", "");
+      return;
+    }
+    setDateTypeError("");
+    const formattedDate = ConvertISODateFormat(ConvertDateFormat(dateStr));
+    setHolidayObj({ ...holidayObj, date: formattedDate });
+    FormikForm.setFieldValue("date", formattedDate);
+    FormikForm.setFieldTouched("date", true, false);
   };
+
+  const handleDateKeyDown = (e) => {
+    const controlKeys = ["Backspace","Delete","Tab","ArrowLeft","ArrowRight","Home","End"];
+    if (!/^[0-9\-]$/.test(e.key) && !controlKeys.includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  const handleDateKeyUp = (e) => {
+    const val = e.target.value;
+    dateRawTyped.current = val;
+    // Try to validate whenever it's plausibly a complete date,
+    // not just when it's exactly 10 chars (handles "1-1-1800" too).
+    
+    if (val.length < 8) { setDateTypeError(""); return; } // still typing, don't flash errors early
+    const formatRegex = /^\d{2}-\d{2}-\d{4}$/;
+
+    if (!formatRegex.test(val)) {
+      setDateTypeError("Invalid date format. Use DD-MM-YYYY.");
+      return;
+    }
+
+    const parsed = dayjs(val, DateFormat, true);
+
+    if (!parsed.isValid()) {
+      setDateTypeError("Invalid date. Please enter a valid date.");
+      return;
+    }
+    if (parsed.isBefore(minDate, "day")) {
+      setDateTypeError("Year must be 1900 or later");
+    } else if (parsed.isAfter(maxDate, "day")) {
+      setDateTypeError("Date cannot exceed one year from today");
+    } else {
+      setDateTypeError("");
+    }
+  };
+
+  const handleDateBlur = (e) => {
+    const typed = dateRawTyped.current || e.target.value;
+    if (!typed) return;
+    const formatRegex = /^\d{2}-\d{2}-\d{4}$/;
+    const parsed = dayjs(typed, DateFormat, true);
+    let errMsg = "";
+
+    if (!formatRegex.test(typed)) {
+      errMsg = "Invalid date format. Use DD-MM-YYYY.";
+    } else if (!parsed.isValid()) {
+      errMsg = "Invalid date. Please enter a valid date.";
+    }
+    else if (parsed.isBefore(minDate, "day")) errMsg = "Year must be 1900 or later";
+    else if (parsed.isAfter(maxDate, "day")) errMsg = "Date cannot exceed one year from today";
+
+    if (errMsg) {
+      setDateTypeError(errMsg);
+      setDateRawInvalidText(typed);
+      return;
+    }
+    setDateRawInvalidText(null);
+    dateRawTyped.current = "";
+    setDateTypeError("");
+    handleDateChange(parsed, typed);
+  };
+
+
+  React.useLayoutEffect(() => {
+    if (dateTypeError && dateRawTyped.current) {
+      const input = datePickerRef.current?.nativeElement?.querySelector("input");
+      if (input) input.value = dateRawTyped.current;
+    }
+  });
 
   const disableHolidayDates = (current) => {
     if (!current) return false;
@@ -195,7 +315,22 @@ const HolidayForm = () => {
     <React.Fragment>
       <Row>
         <Col>
-          <Form onSubmit={FormikForm.handleSubmit}>
+          {/* <Form onSubmit={FormikForm.handleSubmit}> */}
+          <Form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setHasAttemptedSubmit(true);
+                  FormikForm.setTouched({
+                    name: true,
+                    date: true,
+                    description: true,
+                    work_schedule_id_list: true,
+                  });
+                  const errors = await FormikForm.validateForm();
+                  if (Object.keys(errors).length > 0) return;
+                  FormikForm.handleSubmit();
+                }}
+              >
             <Row className="g-3">
               <Col lg={12}>
                 <label htmlFor="holidayName" className="form-label">
@@ -215,63 +350,84 @@ const HolidayForm = () => {
 
                     FormikForm.setFieldValue("name", value);
                     FormikForm.setFieldTouched("name", true, false);
-
+                    checkMaxLength("name", value);
                     setHolidayObj({
                       ...holidayObj,
                       name: value,
                     });
 
                   }}
-                  onBlur={() => FormikForm.setFieldTouched("name", true)}
+                  // onBlur={() => FormikForm.setFieldTouched("name", true)}
+                  onBlur={() => {
+                    if (holidayObj.name && holidayObj.name.trim() !== "") {
+                      FormikForm.setFieldTouched("name", true);
+                    }
+                  }}
 
                   invalid={!!(FormikForm.touched.name && FormikForm.errors.name)}
                 />
-                {FormikForm.errors.name && (
+                {/* {FormikForm.errors.name && (
                   <div className="lc_form_error_text">
                     {FormikForm.errors.name}
                   </div>
+                )} */}
+
+                {(FormikForm.touched.name || hasAttemptedSubmit) &&
+                  FormikForm.errors.name &&
+                  !lengthWarnings.name && (
+                    <div className="lc_form_error_text">{FormikForm.errors.name}</div>
+                  )}
+                {lengthWarnings.name && (
+                  <div className="lc_form_error_text">{lengthWarnings.name}</div>
                 )}
               </Col>
               <Col lg={12}>
                 <div className="mb-3">
                   <Label htmlfor="date">Date <span>*</span></Label>
+                  {dateRawInvalidText !== null ? (
+                    <Input
+                      type="text"
+                      className={`form-control${dateTypeError ? " border-danger" : ""}`}
+                      placeholder="DD-MM-YYYY"
+                      autoFocus
+                      value={dateRawInvalidText}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setDateRawInvalidText(val);
+                        dateRawTyped.current = val;
+                        handleDateKeyUp({ target: { value: val } });
+                      }}
+                      onKeyDown={handleDateKeyDown}
+                      onBlur={handleDateBlur}
+                    />
+                  ) : (
                   <DatePicker
+                    ref={datePickerRef}
                     name="date"
                     id="date"
-                    className={`form-control ${FormikForm.touched.date && FormikForm.errors.date
-                        ? "border-danger"
-                        : ""
+                    placeholder="DD-MM-YYYY"
+                    className={`form-control ${
+                      ((FormikForm.touched.date && FormikForm.errors.date) || dateTypeError)
+                        ? "border-danger" : ""
                       }`}
-                    format="DD-MM-YYYY"
-                    value={
-                      FormikForm.values.date
-                        ? dayjs(FormikForm.values.date, "YYYY-MM-DD")
-                        : null
-                    }
+                    format={DateFormat}
+                    // value={FormikForm.values.date ? dayjs(FormikForm.values.date, "YYYY-MM-DD") : null}
+                    value={date ? dayjs(date, DateFormat) : null}
                     allowClear={false}
                     disabledDate={disableHolidayDates}
-                    inputReadOnly={true}
-                    onChange={(selectedDate, dateString) => {
-                      const formattedDate = ConvertISODateFormat(
-                        ConvertDateFormat(dateString)
-                      );
-
-                      setDate(dateString);
-
-                      setHolidayObj({
-                        ...holidayObj,
-                        date: formattedDate,
-                      });
-
-                      FormikForm.setFieldValue("date", formattedDate);
-                      FormikForm.setFieldTouched("date", true, false);
-                    }}
+                    onKeyDown={handleDateKeyDown}
+                    onKeyUp={handleDateKeyUp}
+                    onBlur={handleDateBlur}
+                    onChange={handleDateChange}
                   />
-                  {FormikForm.errors.date && (
-                    <div className="lc_form_error_text">
-                      {FormikForm.errors.date}
-                    </div>
-                  )}
+                )}
+
+                {dateTypeError && (
+                  <div className="lc_form_error_text">{dateTypeError}</div>
+                )}
+                {!dateTypeError && FormikForm.errors.date && (
+                  <div className="lc_form_error_text">{FormikForm.errors.date}</div>
+                )}
                 </div>
               </Col>
               <Col lg={12}>
@@ -355,7 +511,7 @@ const HolidayForm = () => {
 
                     FormikForm.setFieldValue("description", filteredValue);
                     FormikForm.setFieldTouched("description", true, false);
-
+                    checkMaxLength("description", filteredValue);
                     setHolidayObj({
                       ...holidayObj,
                       description: filteredValue,
@@ -365,10 +521,19 @@ const HolidayForm = () => {
                   rows={4}
                 >
                 </textarea>
-                {FormikForm.errors.description && (
+                {/* {FormikForm.errors.description && (
                   <div className="lc_form_error_text">
                     {FormikForm.errors.description}
                   </div>
+                )} */}
+
+                {(FormikForm.touched.description || hasAttemptedSubmit) &&
+                  FormikForm.errors.description &&
+                  !lengthWarnings.description && (
+                    <div className="lc_form_error_text">{FormikForm.errors.description}</div>
+                  )}
+                {lengthWarnings.description && (
+                  <div className="lc_form_error_text">{lengthWarnings.description}</div>
                 )}
               </Col>
 
