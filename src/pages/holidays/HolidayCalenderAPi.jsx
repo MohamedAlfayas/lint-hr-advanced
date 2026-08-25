@@ -4,6 +4,10 @@ import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setHoliday } from "../../redux/reducers/ChildReducer/HolidayReducer";
+import { useMemo } from "react";
+
+const MIN_DATE = new Date(1900, 0, 1);
+const MAX_DATE = new Date(new Date().getFullYear() + 1, 11, 31);
 
 const HolidayCalenderAPi = () => {
   const dispatch = useDispatch();
@@ -27,6 +31,48 @@ const HolidayCalenderAPi = () => {
     );
   });
 
+  const flatpickrOptions = useMemo(
+    () => ({
+      dateFormat: "d M, Y",
+      inline: true,
+      minDate: MIN_DATE,
+      maxDate: MAX_DATE,
+
+      onMonthChange: (selectedDates, dateStr, instance) => {
+        setCurrentMonth(instance.currentMonth);
+        setCurrentYear(instance.currentYear);
+      },
+
+      onYearChange: (selectedDates, dateStr, instance) => {
+        setCurrentMonth(instance.currentMonth);
+        setCurrentYear(instance.currentYear);
+      },
+
+      onDayCreate: (dObj, dStr, fp, dayElem) => {
+        const year = dayElem.dateObj.getFullYear();
+        const month = String(dayElem.dateObj.getMonth() + 1).padStart(2, "0");
+        const day = String(dayElem.dateObj.getDate()).padStart(2, "0");
+
+        const currentDate = `${year}-${month}-${day}`;
+
+        const holiday = holidays.find((item) => item.date === currentDate);
+
+        if (holiday) {
+          dayElem.style.boxSizing = "border-box";
+          dayElem.style.background = "#405189";
+          dayElem.style.backgroundClip = "content-box";
+          dayElem.style.color = "#fff";
+          dayElem.style.borderRadius = "8%";
+          dayElem.style.fontWeight = "600";
+          dayElem.style.padding = "0px";
+          dayElem.title = holiday.name;
+        }
+      },
+    }),
+    [holidays] // only rebuild options when holiday data actually changes
+  );
+
+
   return (
     <React.Fragment>
       <div className="col-xxl-4 col-xl-4">
@@ -38,48 +84,49 @@ const HolidayCalenderAPi = () => {
             <div className="upcoming-scheduled">
               <Flatpickr
                 className="form-control"
-                options={{
-                  dateFormat: "d M, Y",
-                  inline: true,
+                options={flatpickrOptions}
+                // options={{
+                //   dateFormat: "d M, Y",
+                //   inline: true,
 
-                  onMonthChange: (selectedDates, dateStr, instance) => {
-                    setCurrentMonth(instance.currentMonth);
-                    setCurrentYear(instance.currentYear);
-                  },
+                //   onMonthChange: (selectedDates, dateStr, instance) => {
+                //     setCurrentMonth(instance.currentMonth);
+                //     setCurrentYear(instance.currentYear);
+                //   },
 
-                  onYearChange: (selectedDates, dateStr, instance) => {
-                    setCurrentMonth(instance.currentMonth);
-                    setCurrentYear(instance.currentYear);
-                  },
+                //   onYearChange: (selectedDates, dateStr, instance) => {
+                //     setCurrentMonth(instance.currentMonth);
+                //     setCurrentYear(instance.currentYear);
+                //   },
 
-                  onDayCreate: (dObj, dStr, fp, dayElem) => {
-                    const year = dayElem.dateObj.getFullYear();
-                    const month = String(
-                      dayElem.dateObj.getMonth() + 1,
-                    ).padStart(2, "0");
-                    const day = String(dayElem.dateObj.getDate()).padStart(
-                      2,
-                      "0",
-                    );
+                //   onDayCreate: (dObj, dStr, fp, dayElem) => {
+                //     const year = dayElem.dateObj.getFullYear();
+                //     const month = String(
+                //       dayElem.dateObj.getMonth() + 1,
+                //     ).padStart(2, "0");
+                //     const day = String(dayElem.dateObj.getDate()).padStart(
+                //       2,
+                //       "0",
+                //     );
 
-                    const currentDate = `${year}-${month}-${day}`;
+                //     const currentDate = `${year}-${month}-${day}`;
 
-                    const holiday = holidays.find(
-                      (item) => item.date === currentDate,
-                    );
+                //     const holiday = holidays.find(
+                //       (item) => item.date === currentDate,
+                //     );
 
-                    if (holiday) {
-                      dayElem.style.boxSizing = "border-box";
-                      dayElem.style.background = "#405189";
-                      dayElem.style.backgroundClip = "content-box";
-                      dayElem.style.color = "#fff";
-                      dayElem.style.borderRadius = "8%";
-                      dayElem.style.fontWeight = "600";
-                      dayElem.style.padding = "0px";
-                      dayElem.title = holiday.name;
-                    }
-                  },
-                }}
+                //     if (holiday) {
+                //       dayElem.style.boxSizing = "border-box";
+                //       dayElem.style.background = "#405189";
+                //       dayElem.style.backgroundClip = "content-box";
+                //       dayElem.style.color = "#fff";
+                //       dayElem.style.borderRadius = "8%";
+                //       dayElem.style.fontWeight = "600";
+                //       dayElem.style.padding = "0px";
+                //       dayElem.title = holiday.name;
+                //     }
+                //   },
+                // }}
               />
             </div>
 
