@@ -16,7 +16,7 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_MB = 2;
 const ALLOWED_TYPES = [
   "image/jpeg",
   "image/png",
@@ -87,6 +87,7 @@ const downloadFile = (url, filename) => {
   a.click();
   document.body.removeChild(a);
 };
+
 
 const stripHtmlToText = (html) => {
   if (!html) return "";
@@ -457,7 +458,8 @@ const AttachmentGrid = ({
           name: isPreview ? a.name : (a.attachment_url || "").split("/").pop(),
           origIdx,
         }))
-        .filter((a) => !isPdf(a.url || "")),
+        // .filter((a) => !isPdf(a.url || "")),
+        .filter((a) => !(isPdf(a.url || "") || isPdf(a.name || ""))),
     [attachments, isPreview],
   );
 
@@ -479,7 +481,8 @@ const AttachmentGrid = ({
           const name = isPreview
             ? att.name
             : (att.attachment_url || "").split("/").pop();
-          const pdf = isPdf(url || "");
+          // const pdf = isPdf(url || "");
+          const pdf = isPdf(url || "") || isPdf(name || "");
 
           return (
             <div
@@ -495,8 +498,14 @@ const AttachmentGrid = ({
             >
               {pdf ? (
                 <div
-                  title={`Download ${name}`}
-                  onClick={() => downloadFile(url, name)}
+                  // title={`Download ${name}`}
+                  // onClick={() => downloadFile(url, name)}
+                  title={isPreview ? `View ${name}` : `Download ${name}`}
+                  onClick={() =>
+                    isPreview
+                      ? window.open(url, "_blank", "noopener,noreferrer")
+                      : downloadFile(url, name)
+                  }
                   style={{
                     width: 64,
                     height: 64,
@@ -692,13 +701,15 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
   const canSave =
     !savingComment &&
     !commentError &&
-    (commentLength > 0 || selectedFiles.length > 0);
+    // (commentLength > 0 || selectedFiles.length > 0);
+    commentLength > 0;
 
   const previewAttachments = useMemo(
     () =>
       selectedFiles.map((f) => ({
         previewUrl: f.previewUrl || "",
-        attachment_url: f.previewUrl || `pdf::${f.name}`,
+        // attachment_url: f.previewUrl || `pdf::${f.name}`,
+        attachment_url: f.previewUrl || "",
         name: f.name,
       })),
     [selectedFiles],
@@ -724,9 +735,10 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
         );
         continue;
       }
-      const previewUrl = file.type.startsWith("image/")
-        ? URL.createObjectURL(file)
-        : null;
+      // const previewUrl = file.type.startsWith("image/")
+      //   ? URL.createObjectURL(file)
+      //   : null;
+      const previewUrl = URL.createObjectURL(file);
       valid.push({ file, previewUrl, name: file.name });
     }
 
@@ -786,7 +798,11 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
     try {
       const formData = new FormData();
       formData.append("task", String(taskId));
-      formData.append("comment", latestComment);
+      // formData.append("comment", latestComment);
+      // selectedFiles.forEach(({ file }) => formData.append("attachments", file));
+      const commentToSend = isCommentEmpty(latestComment) ? " " : latestComment;
+      formData.append("comment", commentToSend);
+
       selectedFiles.forEach(({ file }) => formData.append("attachments", file));
 
       const response = await Api.post("/task/add-task-comment/", formData, {
@@ -807,8 +823,12 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
       toast.success(response?.data?.message || "Comment Added");
     } catch (error) {
       console.error("Add comment error:", error);
-      setFileError("Failed to post comment. File size must not exceed 2 MB.");
-      toast.error("Failed to post comment.");
+        const backendMsg =
+        error?.response?.data?.error_message ||
+        error?.response?.data?.message ||
+        "Failed to post comment. Please try again.";
+        setFileError(backendMsg);
+        toast.error(backendMsg);
     } finally {
       setSavingComment(false);
     }
