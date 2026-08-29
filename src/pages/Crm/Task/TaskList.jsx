@@ -74,6 +74,9 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
 
   // ── Redux ───────────────────────────────────────────────────────────────────
   const { tasks: task_data } = useSelector((state) => state.TaskReducer);
+  const { task_list_filter_keys } = useSelector(
+    (state) => state.TableFilterReducer,
+  );
 
   const displayedTasks = useMemo(() => {
     if (!Array.isArray(task_data)) return [];
@@ -104,8 +107,44 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
       );
     }
 
+    // ── Apply select-filter panel (TaskListFilter) ─────────────────────────
+    const f = task_list_filter_keys || {};
+
+    if (f.assigned_to) {
+      filtered = filtered.filter(
+        (task) => Number(task.assigned_to) === Number(f.assigned_to),
+      );
+    }
+
+    if (Array.isArray(f.collaborator_id) && f.collaborator_id.length > 0) {
+      const collabIds = f.collaborator_id.map(Number);
+      filtered = filtered.filter((task) =>
+        (task.collaborators_id_list || []).some((id) =>
+          collabIds.includes(Number(id)),
+        ),
+      );
+    }
+
+    if (f.task_status) {
+      filtered = filtered.filter(
+        (task) => Number(task.task_status) === Number(f.task_status),
+      );
+    }
+
+    if (f.task_priority) {
+      filtered = filtered.filter(
+        (task) => Number(task.task_priority) === Number(f.task_priority),
+      );
+    }
+
+    if (f.is_my_task !== null && f.is_my_task !== undefined) {
+      filtered = filtered.filter(
+        (task) => !!task.is_my_task === !!f.is_my_task,
+      );
+    }
+
     return filtered;
-  }, [task_data, projectId, clientId, searchQuery]);
+  }, [task_data, projectId, clientId, searchQuery, task_list_filter_keys]);
 
   // ── Fetch all tasks ─────────────────────────────────────────────────────────
   const getAllTasks = useCallback(async () => {
@@ -395,22 +434,6 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
           );
         },
       },
-
-      // {
-      //   Header: "Start Time",
-      //   id: "start_time",
-      //   filterable: false,
-      //   accessor: (obj) =>
-      //     obj.start_time ? new Date(obj.start_time).toLocaleString() : "-",
-      // },
-
-      // {
-      //   Header: "End Time",
-      //   id: "end_time",
-      //   filterable: false,
-      //   accessor: (obj) =>
-      //     obj.end_time ? new Date(obj.end_time).toLocaleString() : "-",
-      // },
 
       {
         Header: "Active",
