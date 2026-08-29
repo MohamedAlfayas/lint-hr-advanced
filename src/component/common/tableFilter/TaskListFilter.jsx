@@ -125,8 +125,47 @@ const TaskListFilter = () => {
     }),
   };
 
+  const task_type_options = [
+    { value: true, label: "My Task" },
+    { value: false, label: "Team Task" },
+  ];
+
+  // Add handler case inside handleFilterChange, before the generic val logic:
+  if (name === "is_my_task") {
+    dispatch(
+      setTaskListFilterKeys({
+        ...task_list_filter_keys,
+        is_my_task: e ? e.value : null,
+      }),
+    );
+    return;
+  }
+
   return (
     <React.Fragment>
+      <Col md={2}>
+        <Select
+          id="task_type_filter"
+          noOptionsMessage={() => "No options"}
+          name="task_type_filter"
+          isClearable
+          isMulti={false}
+          options={task_type_options}
+          placeholder="My Task / Team Task"
+          value={
+            task_list_filter_keys?.is_my_task !== undefined &&
+            task_list_filter_keys?.is_my_task !== null
+              ? task_type_options.find(
+                  (t) => t.value === task_list_filter_keys.is_my_task,
+                ) || null
+              : null
+          }
+          onChange={(e) => handleFilterChange(e, "is_my_task")}
+          menuPortalTarget={document.body}
+          menuPosition="fixed"
+          styles={selectStyles}
+        />
+      </Col>
       {/* Assigned To */}
       <Col md={2}>
         <Select
