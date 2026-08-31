@@ -65,6 +65,7 @@ import no_image from "../../assets/images/users/no_img.jpg";
 const EmployeeForm = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const [employeeObj, setEmployeeObj] = useState({});
+  const [initialFormValues, setInitialFormValues] = useState({});
 
   const dispatch = useDispatch();
 
@@ -112,6 +113,8 @@ const EmployeeForm = () => {
     last_name: "",
     email: "",
   });
+
+  const [empIdApiError, setEmpIdApiError] = useState("");
 
   const MAX_LENGTHS = {
     emp_id: 50,
@@ -224,6 +227,14 @@ const EmployeeForm = () => {
       this_role_id = form_obj?.role?.id;
     }
     setEmployeeObj({
+      ...form_obj,
+      dob: ConvertISODateFormat(form_obj.dob),
+      joining_date: ConvertISODateFormat(form_obj.joining_date),
+      role_id: this_role_id,
+      employment_type: form_obj.employment_type || 2,
+      probation_end_date: ConvertISODateFormat(form_obj.probation_end_date),
+    });
+    setInitialFormValues({
       ...form_obj,
       dob: ConvertISODateFormat(form_obj.dob),
       joining_date: ConvertISODateFormat(form_obj.joining_date),
@@ -762,13 +773,16 @@ const EmployeeForm = () => {
 
   const FormikForm = useFormik({
     enableReinitialize: true,
-    initialValues: employeeObj,
+    // initialValues: employeeObj,
+    initialValues: initialFormValues,
     validationSchema: Yup.object({
       emp_id: Yup.string()
         .trim()
         .matches(
-          /^[A-Z0-9_-]+$/,
-          "Employee ID must contain only uppercase letters, numbers, hyphens (-), and underscores (_).",
+          // /^[A-Z0-9_-]+$/,
+          // "Employee ID must contain only uppercase letters, numbers, hyphens (-), and underscores (_).",
+          /^[A-Z0-9](?:[A-Z0-9_-]*[A-Z0-9])?$/,
+          "Employee ID can contain hyphens (-) and underscores (_) only between letters or numbers.",
         )
         .required("Please enter employee ID")
         .max(50, "Employee ID cannot exceed 50 characters"),
@@ -1004,7 +1018,20 @@ const EmployeeForm = () => {
         ) {
           setTeamsToBeUpdated(ApiRes?.data?.team_employees_to_be_updated);
           setShowRMModal(true);
-        } else {
+        } 
+        else if (
+          ApiRes?.data?.message &&
+          /employee id/i.test(ApiRes.data.message) &&
+          /already exist/i.test(ApiRes.data.message)
+        ) {
+          setEmpIdApiError(ApiRes.data.message);
+          FormikForm.setFieldTouched("emp_id", true);
+          fieldRefs.current.emp_id?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        } 
+        else {
           toast.error(ApiRes?.data?.message || ApiRes?.data?.detail);
         }
       }
@@ -1123,9 +1150,20 @@ const EmployeeForm = () => {
 
               // Wait until validation completes
               const errors = await FormikForm.validateForm();
+              const NAME_REGEX = /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/;
+              const NAME_ERROR_MSG =
+                "Name cannot start or end with a hyphen (-) or apostrophe ('). Only alphabets, spaces, hyphens, and apostrophes are allowed.";
 
-              if (Object.keys(errors).length > 0) {
-                const firstErrorField = Object.keys(errors)[0];
+              const manualErrors = { ...errors };
+              const fn = (employeeObj.first_name || "").trim();
+              const ln = (employeeObj.last_name || "").trim();
+              if (fn && !NAME_REGEX.test(fn)) manualErrors.first_name = NAME_ERROR_MSG;
+              if (ln && !NAME_REGEX.test(ln)) manualErrors.last_name = NAME_ERROR_MSG;
+
+              // if (Object.keys(errors).length > 0) {
+              //   const firstErrorField = Object.keys(errors)[0];
+              if (Object.keys(manualErrors).length > 0) {
+                const firstErrorField = Object.keys(manualErrors)[0];
 
                 requestAnimationFrame(() => {
                   const node = fieldRefs.current[firstErrorField];
@@ -1215,7 +1253,7 @@ const EmployeeForm = () => {
                           padding: "3px",
                         }}
                       >
-                        Uppercase letters and numbers only
+                        Uppercase letters and numbers only.  Hyphen (-) or underscore (_) allowed only in the middle, not at start/end.
                       </UncontrolledTooltip>
                     </Label>
                   </div>
@@ -1242,6 +1280,7 @@ const EmployeeForm = () => {
 
                         FormikForm.setFieldValue("emp_id", val);
                         FormikForm.setFieldTouched("emp_id", true, false);
+                        setEmpIdApiError(""); 
 
                      
                       }}
@@ -1254,7 +1293,7 @@ const EmployeeForm = () => {
                       invalid={
                         // !!FormikForm.errors.emp_id
                         !!((FormikForm.touched.emp_id || hasAttemptedSubmit) &&
-                          FormikForm.errors.emp_id)
+                          FormikForm.errors.emp_id) || !!empIdApiError
                       }
                     />
                     {
@@ -1262,8 +1301,9 @@ const EmployeeForm = () => {
                       !(
                         (FormikForm.touched.emp_id || hasAttemptedSubmit) &&
                         FormikForm.errors.emp_id
-                      ) &&
-                      <i className="ri-user-line"></i>
+                      )
+                      //  &&
+                      // <i className="ri-user-line"></i>
                     }
                     {
                     // FormikForm.errors.emp_id && (
@@ -1277,6 +1317,9 @@ const EmployeeForm = () => {
                     {lengthWarnings.emp_id && (
                       <div className="lc_form_error_text">{lengthWarnings.emp_id}</div>
                     )}
+                    {empIdApiError && (
+                      <div className="lc_form_error_text">{empIdApiError}</div>
+                    )}
                   </div>
                   {
                   // !FormikForm.errors.emp_id && (
@@ -1284,6 +1327,7 @@ const EmployeeForm = () => {
                       (FormikForm.touched.emp_id || hasAttemptedSubmit) &&
                       FormikForm.errors.emp_id
                     ) && 
+                    !empIdApiError &&   
                     <div className="form-text mb-3">Enter employee ID</div>
                   }
                 </div>
@@ -2304,15 +2348,27 @@ const EmployeeForm = () => {
                             employeeObj.allowed_attendance_methods?.[key] ||
                             false
                           }
-                          onChange={(e) =>
+                          // onChange={(e) =>
+                          //   setEmployeeObj({
+                          //     ...employeeObj,
+                          //     allowed_attendance_methods: {
+                          //       ...employeeObj?.allowed_attendance_methods,
+                          //       [key]: e.target.checked,
+                          //     },
+                          //   })
+                          // }
+                          onChange={(e) => {
+                            const updated = {
+                              ...employeeObj?.allowed_attendance_methods,
+                              [key]: e.target.checked,
+                            };
                             setEmployeeObj({
                               ...employeeObj,
-                              allowed_attendance_methods: {
-                                ...employeeObj?.allowed_attendance_methods,
-                                [key]: e.target.checked,
-                              },
-                            })
-                          }
+                              allowed_attendance_methods: updated,
+                            });
+                            FormikForm.setFieldValue("allowed_attendance_methods", updated);
+                            FormikForm.setFieldTouched("allowed_attendance_methods", true, false);
+                          }}
                         />
                         <Label className="form-check-label" htmlFor={id}>
                           {label}
