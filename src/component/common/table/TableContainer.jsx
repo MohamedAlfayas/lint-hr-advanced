@@ -112,10 +112,6 @@ const TableContainer = ({
   const onChangeInSelect = (event) => {
     setPageSize(Number(event.target.value));
   };
-  // const onChangeInInput = (event) => {
-  //   const page = event.target.value ? Number(event.target.value) - 1 : 0;
-  //   gotoPage(page);
-  // };
   const handlePageSizeChange = (e) => {
     setPageSize(Number(e.target.value));
     gotoPage(page);
@@ -125,10 +121,12 @@ const TableContainer = ({
     (pageIndex + 1) * pageSize < data.length
       ? (pageIndex + 1) * pageSize
       : data.length;
-  const totalItem =
-    (pageIndex + 1) * pageSize < rows.length
-      ? (pageIndex + 1) * pageSize
-      : rows.length;
+
+  // ✅ FIX: empty state now lives here, inside the table, so the filter row
+  // (rendered right below in the Row/CardBody) stays visible even when a
+  // filter selection produces zero matching rows.
+  const hasRows = page.length > 0;
+
   return (
     <Fragment>
       {isGlobalFilter && (
@@ -179,73 +177,96 @@ const TableContainer = ({
               {formname === leave_type_component_name && <LeaveTypeFilter />}
               {formname === holiday_component_name && <HolidayFilter />}
               {formname === task_list_component_name && <TaskListFilter />}
-
-              {/* <Col md={2}>
-                <div>
-                  <button type="button" className="btn btn-primary w-100">
-                    {" "}
-                    <i className="ri-equalizer-fill me-1 align-bottom"></i>
-                    Filters
-                  </button>
-                </div>
-              </Col> */}
             </Row>
           </CardBody>
         </Row>
       )}
 
-      <div className={`${divClass} custom-table-container table-wrapper`}>
-        <Table
-          hover
-          {...getTableProps()}
-          className={`${tableClass} ${window.location.pathname === "/approval" ? "custom-table" : ""}`}
+      {hasRows ? (
+        <div className={`${divClass} custom-table-container table-wrapper`}>
+          <Table
+            hover
+            {...getTableProps()}
+            className={`${tableClass} ${window.location.pathname === "/approval" ? "custom-table" : ""}`}
+          >
+            <thead className={`${theadClass} custom-table-header`}>
+              {headerGroups.map((headerGroup) => (
+                <tr
+                  className={`${trClass} custom-table-row`}
+                  key={headerGroup.id}
+                  {...headerGroup.getHeaderGroupProps()}
+                >
+                  {headerGroup.headers.map((column) => (
+                    <th
+                      key={column.id}
+                      className={`${thClass} custom-table-header-cell`}
+                      {...column.getSortByToggleProps()}
+                    >
+                      {column.render("Header")}
+                      {generateSortingIndicator(column)}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+
+            <tbody {...getTableBodyProps()} className="custom-table-body">
+              {page.map((row) => {
+                prepareRow(row);
+                return (
+                  <Fragment key={row.getRowProps().key}>
+                    <tr className="custom-table-row">
+                      {row.cells.map((cell) => (
+                        <td
+                          className={`${tdClass} custom-table-cell`}
+                          key={cell.id}
+                          {...cell.getCellProps()}
+                        >
+                          {cell.render("Cell")}
+                        </td>
+                      ))}
+                    </tr>
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </Table>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "25vh",
+          }}
         >
-          <thead className={`${theadClass} custom-table-header`}>
-            {headerGroups.map((headerGroup) => (
-              <tr
-                className={`${trClass} custom-table-row`}
-                key={headerGroup.id}
-                {...headerGroup.getHeaderGroupProps()}
-              >
-                {headerGroup.headers.map((column) => (
-                  <th
-                    key={column.id}
-                    className={`${thClass} custom-table-header-cell`}
-                    {...column.getSortByToggleProps()}
-                  >
-                    {column.render("Header")}
-                    {generateSortingIndicator(column)}
-                    {/* <Filter column={column} /> */}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
+          <lord-icon
+            src="https://cdn.lordicon.com/msoeawqm.json"
+            trigger="loop"
+            colors="primary:#405189,secondary:#0ab39c"
+            style={{
+              marginTop: "20px",
+              width: "150px",
+              height: "80px",
+              marginBottom: "20px",
+            }}
+          ></lord-icon>
+          <p
+            style={{
+              width: "300px",
+              color: "#405189",
+              fontSize: "20px",
+              textAlign: "center",
+            }}
+          >
+            Sorry! No Result Found
+          </p>
+        </div>
+      )}
 
-          <tbody {...getTableBodyProps()} className="custom-table-body">
-            {page.map((row) => {
-              prepareRow(row);
-              return (
-                <Fragment key={row.getRowProps().key}>
-                  <tr className="custom-table-row">
-                    {row.cells.map((cell) => (
-                      <td
-                        className={`${tdClass} custom-table-cell`}
-                        key={cell.id}
-                        {...cell.getCellProps()}
-                      >
-                        {cell.render("Cell")}
-                      </td>
-                    ))}
-                  </tr>
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </Table>
-      </div>
-
-      {showInfo === true && (
+      {showInfo === true && hasRows && (
         <Row className="align-items-center g-3 text-center text-sm-start mb-3">
           <div className="col-sm">
             <div className="text-muted">

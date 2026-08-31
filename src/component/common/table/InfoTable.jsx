@@ -1042,7 +1042,7 @@ const InfoTable = ({
     }).then(async (result) => {
       if (result.isConfirmed) {
         orderInfo.lastWorkingDay =
-          orderData?.is_active === true ? (result.value || null) : null;
+          orderData?.is_active === true ? result.value || null : null;
         setActiveInactiveAPIOrderData(orderData);
         setActiveInactiveAPIOrderInfo(orderInfo);
         ActivateOrDeactivate(orderData, orderInfo);
@@ -2365,38 +2365,6 @@ const InfoTable = ({
                             {formname.split("_").join(" ")}
                           </h5>
                         )}
-                      {/* {formname && formname === holiday_component_name && (
-                    <center>
-                      <div className="flex-shrink-0 ms-5 mt-0">
-                        <UncontrolledDropdown className="card-header-dropdown">
-                          <DropdownToggle
-                            tag="a"
-                            className="text-reset dropdown-btn"
-                            role="button"
-                          >
-                            <span className="text-muted">
-                              01 Jan 2023 to 31 Dec 2023
-                              <i className="mdi mdi-chevron-down ms-1"></i>
-                            </span>
-                          </DropdownToggle>
-                          <DropdownMenu className="dropdown-menu-end">
-                            <DropdownItem>
-                              01 Jan 2022 to 31 Dec 2022
-                            </DropdownItem>
-                            <DropdownItem>
-                              01 Jan 2023 to 31 Dec 2023
-                            </DropdownItem>
-                            <DropdownItem>
-                              01 Jan 2024 to 31 Dec 2024
-                            </DropdownItem>
-                            <DropdownItem>
-                              01 Jan 2025 to 31 Dec 2025
-                            </DropdownItem>
-                          </DropdownMenu>
-                        </UncontrolledDropdown>
-                      </div>
-                    </center>
-                  )} */}
                     </div>
                     <div className="col-sm-auto">
                       <div className="d-flex gap-1 flex-wrap">
@@ -2450,8 +2418,8 @@ const InfoTable = ({
                           {formname &&
                             component_list_for_import_btn_access.includes(
                               formname,
-                            ) && 
-                            formname !== holiday_component_name &&(
+                            ) &&
+                            formname !== holiday_component_name && (
                               <button
                                 type="button"
                                 className="btn btn-primary align-bottom me-1"
@@ -2465,139 +2433,6 @@ const InfoTable = ({
                                 Import
                               </button>
                             )}{" "}
-                          {/* <div>
-                        {formname &&
-                          formname === leave_approval_component_name && (
-                            <div
-                              style={{ display: "flex", flexDirection: "row" }}
-                            >
-                              <div style={{ marginBottom: "10px" }}>
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      position: "relative",
-                                      width: "200px",
-                                    }}
-                                  >
-                                    <i
-                                      className="bx bx-search-alt search-icon"
-                                      style={{
-                                        position: "absolute",
-                                        top: "50%",
-                                        left: "10px",
-                                        transform: "translateY(-50%)",
-                                      }}
-                                    ></i>
-                                    <input
-                                      type="text"
-                                      placeholder="Search"
-                                      value={search}
-                                      onChange={handleSearchChange}
-                                      style={{
-                                        padding: "6px 30px 6px 30px",
-                                        borderRadius: "4px",
-                                        border: "1px solid #ccc",
-                                        width: "100%",
-                                        outline: "none",
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div
-                                style={{
-                                  marginLeft: "10px",
-                                  marginRight: "5px",
-                                }}
-                              >
-                                <label
-                                  htmlFor="roleName"
-                                  className="form-label"
-                                >
-                                  Status:
-                                </label>
-                                <select
-                                  value={statusFilter}
-                                  onChange={handleStatusFilterChange}
-                                  style={{
-                                    padding: "6px",
-                                    borderRadius: "4px",
-                                    border: "1px solid #ccc",
-                                    width: "170px",
-                                    outline: "none",
-                                  }}
-                                >
-                                  <option value="all">All Status</option>
-                                  <option value="approved">Approved</option>
-                                  <option value="rejected">Rejected</option>
-                                </select>
-                              </div>
-                              <div
-                                style={{
-                                  marginLeft: "10px",
-                                  marginRight: "5px",
-                                }}
-                              >
-                                <label
-                                  htmlFor="roleName"
-                                  className="form-label"
-                                >
-                                  Type:
-                                </label>
-                                <select
-                                  value={typeFilter}
-                                  onChange={handleTypeFilterChange}
-                                  style={{
-                                    padding: "6px",
-                                    borderRadius: "4px",
-                                    border: "1px solid #ccc",
-                                    width: "170px",
-                                    outline: "none",
-                                  }}
-                                >
-                                  <option value="all">All Types</option>
-                                  <option value="type1">Type 1</option>
-                                  <option value="type2">Type 2</option>
-                                </select>
-                              </div>
-                              <div></div>
-                            </div>
-                          )}
-                      </div>
-                      {formname &&
-                        formname === leave_approval_component_name && (
-                          <div>
-                            <button
-                              type="button"
-                              className="btn btn-success add-btn"
-                              id="bulk-approve-btn"
-                              style={{
-                                textTransform: "capitalize",
-                                marginRight: "5px",
-                              }}
-                              onClick={() => handleBulkAction("approve")}
-                            >
-                              <i className="ri-check-line fs-16"></i> Bulk
-                              Approve
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-danger add-btn"
-                              id="bulk-reject-btn"
-                              style={{ textTransform: "capitalize" }}
-                              onClick={() => handleBulkAction("reject")}
-                            >
-                              <i className="ri-close-line fs-16"></i> Bulk
-                              Reject
-                            </button>
-                          </div>
-                        )} */}
                           {formname &&
                             formname !== attendance_pending_table &&
                             formname !== leave_pending_table &&
@@ -2608,8 +2443,8 @@ const InfoTable = ({
                             formname !== project_component_name &&
                             formname !== task_list_component_name &&
                             formname !== client_component_name &&
-                            formname !== custom_status_form_component_name && 
-                            formname !== holiday_component_name &&(
+                            formname !== custom_status_form_component_name &&
+                            formname !== holiday_component_name && (
                               <button
                                 type="button"
                                 className="btn btn-info"
@@ -2619,36 +2454,7 @@ const InfoTable = ({
                                 Export
                               </button>
                             )}{" "}
-                          {isMultiDeleteButton && (
-                            <div>
-                              {/* <button
-                                className="btn btn-soft-danger"
-                                onClick={() => setDeleteModalMulti(true)}
-                              >
-                                <i className="ri-delete-bin-2-line"></i>
-                              </button>{" "} */}
-                              {/* {formname === leave_approval_component_name && (
-                            <>
-                              <button
-                                type="button"
-                                className="btn btn-success add-btn"
-                                id="bulk-approve-btn"
-                                onClick={() => handleBulkAction("approve")}
-                              >
-                                <i className="ri-check-line fs-16"></i> Bulk Approve
-                              </button>{" "}
-                              <button
-                                type="button"
-                                className="btn btn-danger add-btn"
-                                id="bulk-reject-btn"
-                                onClick={() => handleBulkAction("reject")}
-                              >
-                                <i className="ri-close-line fs-16"></i> Bulk Reject
-                              </button>{" "}
-                            </>
-                          )} */}
-                            </div>
-                          )}
+                          {isMultiDeleteButton && <div></div>}
                           {selectApproveReject &&
                             (formname === leave_approval_component_name ||
                               formname ===
@@ -2705,29 +2511,6 @@ const InfoTable = ({
                                   )}
                               </div>
                             )}
-                          {/* {selectApproveReject &&
-                        formname === attendance_approval_component_name && (
-                          <div>
-                            <button
-                              type="button"
-                              className="btn btn-success add-btn"
-                              id="bulk-approve-btn"
-                              onClick={() => handleBulkApproval()}
-                            >
-                              <i className="ri-check-line fs-16"></i> Bulk
-                              Approve
-                            </button>{" "}
-                            <button
-                              type="button"
-                              className="btn btn-danger add-btn"
-                              id="bulk-reject-btn"
-                              onClick={() => handleBulkReject()}
-                            >
-                              <i className="ri-close-line fs-16"></i> Bulk
-                              Reject
-                            </button>{" "}
-                          </div>
-                        )} */}
                         </div>
                       </div>
                     </div>
@@ -2801,147 +2584,16 @@ const InfoTable = ({
                 </Nav>
                 {isLoading ? (
                   <TableSkeleton />
-                ) : dataList.length ? (
-                  // <TableContainer
-                  //   columns={tableColumn}
-                  //   data={
-                  //     dataList
-                  //       ?.filter((obj) => {
-                  //         return Object.entries(table_filter_keys || {}).every(
-                  //           ([key, value]) => {
-                  //             // ─────────────────────────────
-                  //             // Skip Empty Filters
-                  //             // ─────────────────────────────
-                  //             if (
-                  //               value === 0 ||
-                  //               value === null ||
-                  //               value === undefined ||
-                  //               value === "" ||
-                  //               (Array.isArray(value) && value.length === 0)
-                  //             ) {
-                  //               return true;
-                  //             }
-
-                  //             // ─────────────────────────────
-                  //             // Multi Select Array Filter
-                  //             // collaborator_id
-                  //             // ─────────────────────────────
-                  //             if (Array.isArray(value)) {
-                  //               const taskValues =
-                  //                 obj?.collaborators_id_list ||
-                  //                 obj?.[key] ||
-                  //                 [];
-
-                  //               return value.some((id) =>
-                  //                 taskValues
-                  //                   .map((v) => Number(v))
-                  //                   .includes(Number(id)),
-                  //               );
-                  //             }
-
-                  //             // ─────────────────────────────
-                  //             // Nested Object ID
-                  //             // role_id → role.id
-                  //             // ─────────────────────────────
-                  //             if (key.endsWith("_id")) {
-                  //               const objectKey = key.replace("_id", "");
-
-                  //               if (
-                  //                 obj?.[objectKey] &&
-                  //                 typeof obj[objectKey] === "object" &&
-                  //                 "id" in obj[objectKey]
-                  //               ) {
-                  //                 return (
-                  //                   Number(obj[objectKey].id) === Number(value)
-                  //                 );
-                  //               }
-                  //             }
-
-                  //             // ─────────────────────────────
-                  //             // Direct Compare
-                  //             // ─────────────────────────────
-                  //             return Number(obj?.[key]) === Number(value);
-                  //           },
-                  //         );
-                  //       })
-
-                  //       // ─────────────────────────────
-                  //       // Search Filter
-                  //       // ─────────────────────────────
-
-                  //       // Year + Month Filter
-                  //       .filter((obj) => {
-                  //         const selectedYear =
-                  //           attendance_approval_table_filter_keys?.year;
-
-                  //         const selectedMonth =
-                  //           attendance_approval_table_filter_keys?.month;
-
-                  //         // No year selected -> show all
-                  //         if (!selectedYear) return true;
-
-                  //         const holidayDate = dayjs(obj.date);
-
-                  //         const yearMatch =
-                  //           holidayDate.year().toString() === selectedYear;
-
-                  //         const monthMatch =
-                  //           selectedMonth === 0 ||
-                  //           selectedMonth === undefined ||
-                  //           selectedMonth === null ||
-                  //           holidayDate.month() + 1 === selectedMonth;
-
-                  //         return yearMatch && monthMatch;
-                  //       })
-
-                  //       // Search Filter
-                  //       .filter((d) => {
-                  //         if (!search?.trim()) return true;
-
-                  //         const searchText = search.toLowerCase();
-
-                  //         const nameMatch =
-                  //           d?.name
-                  //             ?.toString()
-                  //             .toLowerCase()
-                  //             .includes(searchText) || false;
-
-                  //         const descriptionMatch =
-                  //           d?.description
-                  //             ?.toString()
-                  //             .toLowerCase()
-                  //             .includes(searchText) || false;
-
-                  //         const formattedDate = d?.date
-                  //           ? dayjs(d.date).format("DD-MM-YYYY")
-                  //           : "";
-
-                  //         const normalizedDate = formattedDate.replace(
-                  //           /[-/]/g,
-                  //           "",
-                  //         );
-                  //         const normalizedSearch = search.replace(/[-/]/g, "");
-
-                  //         const dateMatch =
-                  //           formattedDate.includes(search) ||
-                  //           normalizedDate.includes(normalizedSearch);
-
-                  //         return nameMatch || descriptionMatch || dateMatch;
-                  //       }) || []
-                  //   }
-                  //   isPagination={true}
-                  //   isGlobalFilter={true}
-                  //   formname={formname}
-                  //   customPageSize={50}
-                  //   divClass="table-responsive table-card"
-                  //   tableClass="align-middle table-nowrap"
-                  //   theadClass="table-light text-muted"
-                  //   handleDataClick={handleDataClicks}
-                  //   isDataFilter={true}
-                  //   SearchPlaceholder="Search for data ID, customer, data status or something..."
-                  //   showInfo={true}
-                  // />
-
+                ) : (
+                  // ✅ FIX: TableContainer (which renders the filter row, e.g.
+                  // TaskListFilter) is now ALWAYS rendered, even when dataList
+                  // is empty. Previously this whole block was swapped out for
+                  // a plain "No Result Found" div whenever a filter produced
+                  // zero matches — which made the filter selects themselves
+                  // disappear the moment you picked a filter with no results.
+                  // The empty-state message is now rendered *inside*
+                  // TableContainer, below the filter row, via its `noResults`
+                  // prop.
                   <TableContainer
                     columns={tableColumn}
                     data={
@@ -3006,10 +2658,8 @@ const InfoTable = ({
                         })
 
                         // ─────────────────────────────
-                        // Search Filter
-                        // ─────────────────────────────
-
                         // Year + Month Filter
+                        // ─────────────────────────────
                         .filter((obj) => {
                           const selectedYear =
                             attendance_approval_table_filter_keys?.year;
@@ -3034,24 +2684,12 @@ const InfoTable = ({
                           return yearMatch && monthMatch;
                         })
 
+                        // ─────────────────────────────
                         // Search Filter
-
+                        // ─────────────────────────────
                         .filter((d) => {
                           if (!search?.trim()) return true;
 
-                          // return Object.values(d).some((value) => {
-                          // if (typeof value === "string") {
-                          // return value
-                          // .toLowerCase()
-                          // .includes(search.toLowerCase());
-                          // }
-
-                          // if (typeof value === "number") {
-                          // return String(value).includes(search);
-                          // }
-
-                          // return false;
-                          // });
                           return Object.entries(d).some(([key, value]) => {
                             // Ignore ID fields
                             if (
@@ -3090,25 +2728,9 @@ const InfoTable = ({
                               return matched;
                             }
 
-                            // if (value == null) return false;
-
-                            // return String(value)
-                            // .toLowerCase()
-                            // .includes(search.toLowerCase());
                             const matched = searchValue
                               .toLowerCase()
                               .includes(search.toLowerCase());
-
-                            if (matched) {
-                              console.log(
-                                "Holiday:",
-                                d.name,
-                                "Matched Key:",
-                                key,
-                                "Matched Value:",
-                                value,
-                              );
-                            }
 
                             return matched;
                           });
@@ -3126,38 +2748,6 @@ const InfoTable = ({
                     SearchPlaceholder="Search for data ID, customer, data status or something..."
                     showInfo={true}
                   />
-                ) : (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: "25vh",
-                    }}
-                  >
-                    <lord-icon
-                      src="https://cdn.lordicon.com/msoeawqm.json"
-                      trigger="loop"
-                      colors="primary:#405189,secondary:#0ab39c"
-                      style={{
-                        marginTop: "20px",
-                        width: "150px",
-                        height: "80px",
-                        marginBottom: "20px",
-                      }}
-                    ></lord-icon>
-                    <p
-                      style={{
-                        width: "300px",
-                        color: "#405189",
-                        fontSize: "20px",
-                        textAlign: "center",
-                      }}
-                    >
-                      Sorry! No Result Found
-                    </p>
-                  </div>
                 )}
               </div>
               <Modal id="showModal" isOpen={modal} toggle={toggle} centered>
@@ -3185,19 +2775,7 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Order Id"
                         type="text"
-                        // validate={{
-                        //     required: { value: true },
-                        // }}
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={validation.values.orderId || ""}
-                        // invalid={
-                        //     validation.touched.orderId && validation.errors.orderId ? true : false
-                        // }
                       />
-                      {/* {validation.touched.orderId && validation.errors.orderId ? (
-                                                    <FormFeedback type="invalid">{validation.errors.orderId}</FormFeedback>
-                                                ) : null} */}
                     </div>
 
                     <div className="mb-3">
@@ -3213,19 +2791,7 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Name"
                         type="text"
-                        // validate={{
-                        //     required: { value: true },
-                        // }}
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={validation.values.customer || ""}
-                        // invalid={
-                        //     validation.touched.customer && validation.errors.customer ? true : false
-                        // }
                       />
-                      {/* {validation.touched.customer && validation.errors.customer ? (
-                                                    <FormFeedback type="invalid">{validation.errors.customer}</FormFeedback>
-                                                ) : null} */}
                     </div>
 
                     <div className="mb-3">
@@ -3237,52 +2803,14 @@ const InfoTable = ({
                         name="product"
                         type="select"
                         className="form-select"
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={
-                        //     validation.values.product || ""
-                        // }
                         required
-                      >
-                        {/* {productname.map((item, key) => (
-                                                        <React.Fragment key={key}>
-                                                            {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
-                                                        </React.Fragment>
-                                                    ))} */}
-                      </Input>
-                      {/* {validation.touched.product &&
-                                                    validation.errors.product ? (
-                                                    <FormFeedback type="invalid">
-                                                        {validation.errors.product}
-                                                    </FormFeedback>
-                                                ) : null} */}
+                      ></Input>
                     </div>
 
                     <div className="mb-3">
                       <Label htmlFor="date-field" className="form-label">
                         Order Date
                       </Label>
-                      {/* 
-                                                <Flatpickr
-                                                    name="orderDate"
-                                                    className="form-control"
-                                                    id="datepicker-publish-input"
-                                                    placeholder="Select a date"
-                                                    options={{
-                                                        enableTime: true,
-                                                        altInput: true,
-                                                        altFormat: "d M, Y, G:i K",
-                                                        dateFormat: "d M, Y, G:i K",
-                                                    }}
-                                                    onChange={(e) =>
-                                                        dateformate(e)
-                                                    }
-                                                    value={validation.values.orderDate || ""}
-                                                /> */}
-
-                      {/* {validation.touched.orderDate && validation.errors.orderDate ? (
-                                                    <FormFeedback type="invalid">{validation.errors.orderDate}</FormFeedback>
-                                                ) : null} */}
                     </div>
                     <div className="row gy-4 mb-3">
                       <div className="col-md-6">
@@ -3290,19 +2818,7 @@ const InfoTable = ({
                           <Label htmlFor="amount-field" className="form-label">
                             Amount
                           </Label>
-                          <Input
-                            name="amount"
-                            type="text"
-                            // onChange={validation.handleChange}
-                            // onBlur={validation.handleBlur}
-                            // value={validation.values.amount || ""}
-                            // invalid={
-                            //     validation.touched.amount && validation.errors.amount ? true : false
-                            // }
-                          />
-                          {/* {validation.touched.amount && validation.errors.amount ? (
-                                                            <FormFeedback type="invalid">{validation.errors.amount}</FormFeedback>
-                                                        ) : null} */}
+                          <Input name="amount" type="text" />
                         </div>
                       </div>
                       <div className="col-md-6">
@@ -3315,24 +2831,7 @@ const InfoTable = ({
                             name="payment"
                             type="select"
                             className="form-select"
-                            // onChange={validation.handleChange}
-                            // onBlur={validation.handleBlur}
-                            // value={
-                            //     validation.values.payment || ""
-                            // }
-                          >
-                            {/* {orderpayement.map((item, key) => (
-                                                                <React.Fragment key={key}>
-                                                                    {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
-                                                                </React.Fragment>
-                                                            ))} */}
-                          </Input>
-                          {/* {validation.touched.payment &&
-                                                            validation.errors.payment ? (
-                                                            <FormFeedback type="invalid">
-                                                                {validation.errors.payment}
-                                                            </FormFeedback>
-                                                        ) : null} */}
+                          ></Input>
                         </div>
                       </div>
                     </div>
@@ -3346,24 +2845,7 @@ const InfoTable = ({
                         name="status"
                         type="select"
                         className="form-select"
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={
-                        //     validation.values.status || ""
-                        // }
-                      >
-                        {/* {orderstatus.map((item, key) => (
-                                                        <React.Fragment key={key}>
-                                                            {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
-                                                        </React.Fragment>
-                                                    ))} */}
-                      </Input>
-                      {/* {validation.touched.status &&
-                                                    validation.errors.status ? (
-                                                    <FormFeedback type="invalid">
-                                                        {validation.errors.status}
-                                                    </FormFeedback>
-                                                ) : null} */}
+                      ></Input>
                     </div>
                   </ModalBody>
                   <div className="modal-footer">
@@ -3377,12 +2859,6 @@ const InfoTable = ({
                       >
                         Close
                       </button>
-
-                      {/* <button type="submit" className="btn btn-success">
-                                                    {!!isEdit
-                                                        ? "Update"
-                                                        : "Add Customer"}
-                                                </button> */}
                     </div>
                   </div>
                 </Form>
@@ -3649,10 +3125,6 @@ const InfoTable = ({
                                     <span
                                       className="badge text-uppercase"
                                       style={{
-                                        // backgroundColor:
-                                        //   item.color && /^#/.test(item.color)
-                                        //     ? item.color
-                                        //     : "#000000",
                                         backgroundColor: getValidColor(
                                           item.color,
                                         ),

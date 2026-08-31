@@ -41,6 +41,23 @@ const TaskListFilter = () => {
     (state) => state.TableFilterReducer,
   );
 
+  // ✅ FIX: employee_options has no "label" field, so react-select rendered
+  // a blank box once an item was selected. Build a labeled version for
+  // any Select that shows employee names (Assigned To).
+  const employee_options_with_label = useMemo(
+    () =>
+      employee_options.map((emp) => ({
+        ...emp,
+        value: emp.id,
+        label:
+          `${emp.first_name || ""} ${emp.last_name || ""}`.trim() ||
+          emp.label ||
+          emp.name ||
+          `Employee ${emp.id}`,
+      })),
+    [employee_options],
+  );
+
   // ── Collaborator default options (active employees from localStorage) ───────
   const defaultCollaboratorOptions = useMemo(
     () =>
@@ -98,6 +115,18 @@ const TaskListFilter = () => {
       return;
     }
 
+    // ✅ FIX: this case was previously outside handleFilterChange (dead code,
+    // caused is_my_task filtering to never actually run)
+    if (name === "is_my_task") {
+      dispatch(
+        setTaskListFilterKeys({
+          ...task_list_filter_keys,
+          is_my_task: e ? e.value : null,
+        }),
+      );
+      return;
+    }
+
     let val;
 
     if (e) {
@@ -129,17 +158,6 @@ const TaskListFilter = () => {
     { value: true, label: "My Task" },
     { value: false, label: "Team Task" },
   ];
-
-  // Add handler case inside handleFilterChange, before the generic val logic:
-  if (name === "is_my_task") {
-    dispatch(
-      setTaskListFilterKeys({
-        ...task_list_filter_keys,
-        is_my_task: e ? e.value : null,
-      }),
-    );
-    return;
-  }
 
   return (
     <React.Fragment>
@@ -179,12 +197,12 @@ const TaskListFilter = () => {
           components={{ Option: EmployeeDisplayInSelect }}
           innerRef={inputRef}
           isMulti={false}
-          options={employee_options.filter((e) => e.is_active)}
+          options={employee_options_with_label.filter((e) => e.is_active)}
           placeholder="Assigned To"
           className="basic-multi-select"
           value={
             task_list_filter_keys?.assigned_to
-              ? employee_options.find(
+              ? employee_options_with_label.find(
                   (e) => e.id === task_list_filter_keys.assigned_to,
                 ) || null
               : null
