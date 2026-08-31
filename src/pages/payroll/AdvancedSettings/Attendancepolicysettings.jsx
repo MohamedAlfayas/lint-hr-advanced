@@ -1,8 +1,14 @@
 // AttendancePolicySettings.jsx
+// One screen, ONE shared Effective Date + Status, ONE Save button.
+// Three sections still persist to their own endpoints (backend tables kept
+// separate); Save fires them sequentially and STOPS on first failure.
+//   1. Attendance Policy       -> payroll/attendence-policy-settings/
+//   2. Attendance Hours Policy -> payroll/attendance-hours-policy/
+//   3. Comp Off Policy         -> payroll/comp-off-policy/
 import React, { useEffect, useState } from "react";
 import {
   Card, CardHeader, CardBody, CardTitle, CardSubtitle,
-  Col, Row, Label, Button, Input, Badge,
+  Col, Row, Label, Button, Input, Badge, Spinner,
 } from "reactstrap";
 import Select from "react-select";
 import { Api } from "../../../common/api/Api";
@@ -14,14 +20,15 @@ const SALARY_METHOD_OPTIONS = [
   { value: "working_days", label: "Working Days" },
   { value: "fixed_days", label: "Fixed Days" },
 ];
-
-const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => ({
-  value: i + 1,
-  label: String(i + 1),
-}));
+const ROUNDING_OPTIONS = [
+  { value: "actual", label: "Actual (No Rounding)" },
+  { value: "round_30", label: "Round Down to 30 Minutes" },
+  { value: "round_60", label: "Round Down to 60 Minutes" },
+];
+const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: String(i + 1) }));
 
 const SectionLabel = ({ children }) => (
-  <p className="text-uppercase fw-semibold text-muted mb-2" style={{ fontSize: 11, letterSpacing: "0.8px" }}>
+  <p className="text-uppercase fw-semibold text-muted mb-2 mt-1" style={{ fontSize: 11, letterSpacing: "0.8px" }}>
     {children}
   </p>
 );
@@ -50,94 +57,194 @@ const ViewToggle = ({ checked, label }) => (
   </div>
 );
 
+const Switch = ({ checked, onChange, disabled }) => (
+  <div className="form-check form-switch mb-0">
+    <Input className="form-check-input" type="checkbox" checked={!!checked} disabled={disabled} onChange={onChange} />
+  </div>
+);
+
+// ── section blanks (effective_date / is_active injected from shared) ─────
+const ATT_BLANK = {
+  salary_calculation_method: "calendar_days",
+  fixed_pay_days: null,
+  include_week_offs: true,
+  include_holidays: true,
+  half_day_value: "0.50",
+  enable_late_mark_policy: false,
+  late_mark_limit: 0,
+  late_mark_penalty_days: "0.00",
+  mark_absent_if_no_attendance: true,
+};
+const HOURS_BLANK = {
+  half_day_minimum_hours: "4.00",
+  full_day_minimum_hours: "7.00",
+  max_permission_hours_per_day: "0.00",
+};
+const COMP_BLANK = {
+  is_comp_off_enabled: false,
+  rounding_method: "actual",
+  minimum_hours_for_rounding: "7.00",
+  max_comp_off_hours_per_day: "",
+  compensation_rounding_method: "actual",
+};
+
 const AttendancePolicySettings = () => {
-  const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState(null);
+
+  // shared
+  const [effectiveDate, setEffectiveDate] = useState("");
+  const [isActive, setIsActive] = useState(true);
+
+  // per-section field state + existing ids
+  const [att, setAtt] = useState(ATT_BLANK);
+  const [attId, setAttId] = useState(null);
+  const [hours, setHours] = useState(HOURS_BLANK);
+  const [hoursId, setHoursId] = useState(null);
+  const [comp, setComp] = useState(COMP_BLANK);
+  const [compId, setCompId] = useState(null);
+
   const [isEmpty, setIsEmpty] = useState(false);
 
-  const fetchData = () => {
+  const fetchAll = () => {
     setLoading(true);
-    Api({ method: "GET", url: "payroll/attendence-policy-settings/" })
-      .then((res) => {
-        const list = res?.data?.data || [];
-        setRecords(list);
-        setIsEmpty(list.length === 0);
-        if (list.length > 0) setForm({ ...list[0] });
+    Promise.all([
+      Api({ method: "GET", url: "payroll/attendence-policy-settings/" }).then(r => r?.data?.data || []).catch(() => []),
+      Api({ method: "GET", url: "payroll/attendance-hours-policy/" }).then(r => r?.data?.data || []).catch(() => []),
+      Api({ method: "GET", url: "payroll/comp-off-policy/" }).then(r => r?.data?.data || []).catch(() => []),
+    ])
+      .then(([attList, hoursList, compList]) => {
+        const a = attList[0], h = hoursList[0], c = compList[0];
+
+        setIsEmpty(!a && !h && !c);
+
+        // shared effective/active seeded from the attendance policy (fallback to others)
+        const seed = a || h || c || {};
+        setEffectiveDate(seed.effective_date || "");
+        setIsActive(seed.is_active ?? true);
+
+        setAttId(a?.id || null);
+        setAtt(a ? {
+          salary_calculation_method: a.salary_calculation_method || "calendar_days",
+          fixed_pay_days: a.fixed_pay_days ?? null,
+          include_week_offs: a.include_week_offs ?? true,
+          include_holidays: a.include_holidays ?? true,
+          half_day_value: String(a.half_day_value ?? "0.50"),
+          enable_late_mark_policy: a.enable_late_mark_policy ?? false,
+          late_mark_limit: a.late_mark_limit ?? 0,
+          late_mark_penalty_days: String(a.late_mark_penalty_days ?? "0.00"),
+          mark_absent_if_no_attendance: a.mark_absent_if_no_attendance ?? true,
+        } : ATT_BLANK);
+
+        setHoursId(h?.id || null);
+        setHours(h ? {
+          half_day_minimum_hours: String(h.half_day_minimum_hours ?? "4.00"),
+          full_day_minimum_hours: String(h.full_day_minimum_hours ?? "7.00"),
+          max_permission_hours_per_day: String(h.max_permission_hours_per_day ?? "0.00"),
+        } : HOURS_BLANK);
+
+        setCompId(c?.id || null);
+        setComp(c ? {
+          is_comp_off_enabled: c.is_comp_off_enabled ?? false,
+          rounding_method: c.rounding_method || "actual",
+          minimum_hours_for_rounding: String(c.minimum_hours_for_rounding ?? "7.00"),
+          max_comp_off_hours_per_day:
+            c.max_comp_off_hours_per_day === null || c.max_comp_off_hours_per_day === undefined
+              ? "" : String(c.max_comp_off_hours_per_day),
+          compensation_rounding_method: c.compensation_rounding_method || "actual",
+        } : COMP_BLANK);
       })
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchAll(); }, []);
 
-  const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
-  const handleToggle = (field) => setForm((prev) => ({ ...prev, [field]: !prev[field] }));
+  const setA = (k, v) => setAtt((f) => ({ ...f, [k]: v }));
+  const setH = (k, v) => setHours((f) => ({ ...f, [k]: v }));
+  const setC = (k, v) => setComp((f) => ({ ...f, [k]: v }));
 
   const validate = () => {
     const checks = [
-      required("Effective date", form.effective_date),
-      required("Salary calculation method", form.salary_calculation_method),
-      range("Half day value", form.half_day_value, 0, 1),
+      required("Effective date", effectiveDate),
+      required("Salary calculation method", att.salary_calculation_method),
+      range("Half day value", att.half_day_value, 0, 1),
     ];
-    if (form.salary_calculation_method === "fixed_days") {
-      checks.push(required("Fixed pay days", form.fixed_pay_days));
-      checks.push(day("Fixed pay days", form.fixed_pay_days));
+    if (att.salary_calculation_method === "fixed_days") {
+      checks.push(required("Fixed pay days", att.fixed_pay_days));
+      checks.push(day("Fixed pay days", att.fixed_pay_days));
     }
-    if (form.enable_late_mark_policy) {
-      checks.push(range("Allowed late marks", form.late_mark_limit, 0, 31));
-      checks.push(range("Late mark penalty (LOP days)", form.late_mark_penalty_days, 0, 31));
+    if (att.enable_late_mark_policy) {
+      checks.push(range("Allowed late marks", att.late_mark_limit, 0, 31));
+      checks.push(range("Late mark penalty (LOP days)", att.late_mark_penalty_days, 0, 31));
     }
-    return runChecks(checks, toast);
+    if (!runChecks(checks, toast)) return false;
+
+    // hours cross-field
+    const half = parseFloat(hours.half_day_minimum_hours);
+    const full = parseFloat(hours.full_day_minimum_hours);
+    if (isNaN(half) || isNaN(full)) { toast.error("Attendance hours thresholds must be numbers."); return false; }
+    if (half >= full) { toast.error("Half-day minimum must be less than full-day minimum."); return false; }
+    return true;
   };
 
-  const handleSave = () => {
+  // sequential save, STOP on first failure
+  const handleSave = async () => {
     if (!validate()) return;
-    setLoading(true);
-    const isUpdate = form?.id;
-    Api({
-      method: isUpdate ? "PUT" : "POST",
-      url: "payroll/attendence-policy-settings/",
-      data: form,
-    })
-      .then((res) => {
-        toast.success(res?.data?.message || "Saved successfully");
-        fetchData();
-        setIsEditing(false);
-      })
-      .catch((err) => toast.error(err?.response?.data?.message || "Failed to save"))
-      .finally(() => setLoading(false));
+    setSaving(true);
+
+    const shared = { effective_date: effectiveDate, is_active: isActive };
+    const attBody   = { ...att,   ...shared, ...(attId   ? { id: attId }   : {}) };
+    const hoursBody = { ...hours, ...shared, ...(hoursId ? { id: hoursId } : {}) };
+    const compBody  = {
+      ...comp, ...shared,
+      max_comp_off_hours_per_day: comp.max_comp_off_hours_per_day === "" ? null : comp.max_comp_off_hours_per_day,
+      ...(compId ? { id: compId } : {}),
+    };
+
+    const steps = [
+      { name: "Attendance Policy",       url: "payroll/attendence-policy-settings/", id: attId,   body: attBody },
+      { name: "Attendance Hours Policy", url: "payroll/attendance-hours-policy/",    id: hoursId, body: hoursBody },
+      { name: "Comp Off Policy",         url: "payroll/comp-off-policy/",            id: compId,  body: compBody },
+    ];
+
+    try {
+      for (const step of steps) {
+        await Api({ method: step.id ? "PUT" : "POST", url: step.url, data: step.body });
+      }
+      toast.success("All policies saved.");
+      setIsEditing(false);
+      fetchAll();
+    } catch (err) {
+      const which = err?.config?.url?.includes("attendance-hours") ? "Attendance Hours Policy"
+        : err?.config?.url?.includes("comp-off") ? "Comp Off Policy"
+        : "Attendance Policy";
+      toast.error(
+        `${which}: ${err?.response?.data?.message || err?.response?.data?.error_message || "save failed"}. ` +
+        "Earlier sections were saved; fix and Save again."
+      );
+      fetchAll();
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleCancel = () => {
-    if (records.length > 0) setForm({ ...records[0] });
-    setIsEditing(false);
-  };
+  const handleCancel = () => { setIsEditing(false); fetchAll(); };
 
   const handleNew = () => {
-    setForm({
-      effective_date: "",
-      salary_calculation_method: "calendar_days",
-      fixed_pay_days: null,
-      include_week_offs: true,
-      include_holidays: true,
-      half_day_value: "0.50",
-      enable_late_mark_policy: false,
-      late_mark_limit: 0,
-      late_mark_penalty_days: "0.00",
-      mark_absent_if_no_attendance: true,
-      is_active: true,
-    });
-    setIsEmpty(false);
-    setIsEditing(true);
+    setEffectiveDate(""); setIsActive(true);
+    setAtt(ATT_BLANK); setAttId(null);
+    setHours(HOURS_BLANK); setHoursId(null);
+    setComp(COMP_BLANK); setCompId(null);
+    setIsEmpty(false); setIsEditing(true);
   };
 
-  const data = form || {};
+  const isWorkingDays = att.salary_calculation_method === "working_days";
+  const compDisabled = !comp.is_comp_off_enabled;
 
-  const isWorkingDays =
-    (isEditing ? form?.salary_calculation_method : data?.salary_calculation_method)
-    === "working_days";
-  const currentMethod = isEditing ? form?.salary_calculation_method : data?.salary_calculation_method;
+  if (loading) {
+    return <div className="text-center py-5"><Spinner color="primary" /></div>;
+  }
 
   if (isEmpty && !isEditing) {
     return (
@@ -154,7 +261,7 @@ const AttendancePolicySettings = () => {
             </div>
             <h6 className="mb-1">No Attendance Policy Configured</h6>
             <p className="text-muted mb-4" style={{ fontSize: 13 }}>
-              Set up your attendance and salary calculation preferences.
+              Set up attendance, hours, and comp-off preferences.
             </p>
             <Button color="primary" onClick={handleNew}>
               <i className="ri-add-line align-bottom me-1"></i> Configure Policy
@@ -171,95 +278,64 @@ const AttendancePolicySettings = () => {
         <div>
           <CardTitle tag="h5" className="mb-0">Attendance Policy</CardTitle>
           <CardSubtitle className="text-muted mt-1" style={{ fontSize: 12 }}>
-            Salary calculation method and late mark rules
+            Salary calculation, hours thresholds & comp-off — one effective date
           </CardSubtitle>
         </div>
-        <div className="d-flex gap-2">
-          {!isEditing && (
-            <>
-              <Button size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); }}>
-                <i className="ri-edit-line fs-14"></i> Edit
-              </Button>
-              <Button size="sm" color="success" outline onClick={handleNew}>
-                <i className="ri-add-line fs-14"></i> New Version
-              </Button>
-            </>
-          )}
-        </div>
+        {!isEditing && (
+          <Button size="sm" color="primary" outline onClick={() => setIsEditing(true)}>
+            <i className="ri-edit-line fs-14"></i> Edit
+          </Button>
+        )}
       </CardHeader>
 
       <CardBody className="p-4">
-        {!isEditing && records.length > 1 && (
-          <div className="d-flex gap-2 flex-wrap mb-4">
-            {records.map((r, i) => (
-              <Badge
-                key={r.id}
-                color={form?.id === r.id ? "primary" : "light"}
-                className={form?.id === r.id ? "" : "text-dark border"}
-                style={{ cursor: "pointer", fontSize: 12, padding: "5px 12px" }}
-                onClick={() => setForm({ ...r })}
-              >
-                {r.effective_date} {i === 0 && <span className="ms-1">· Latest</span>}
-              </Badge>
-            ))}
-          </div>
-        )}
+        {/* Active banner */}
+        <div className={`alert d-flex align-items-center gap-2 py-2 px-3 mb-4 ${isActive ? "alert-success" : "alert-secondary"}`}>
+          <i className={`fs-16 ${isActive ? "ri-checkbox-circle-fill" : "ri-close-circle-line"}`}></i>
+          <span style={{ fontSize: 13 }}>
+            <strong>Policy is {isActive ? "Active" : "Inactive"}</strong>
+            {effectiveDate && <span className="ms-2 opacity-75">· Effective from {effectiveDate}</span>}
+          </span>
+        </div>
 
-        {!isEditing && (
-          <div className={`alert d-flex align-items-center gap-2 py-2 px-3 mb-4 ${data.is_active ? "alert-success" : "alert-secondary"}`}>
-            <i className={`fs-16 ${data.is_active ? "ri-checkbox-circle-fill" : "ri-close-circle-line"}`}></i>
-            <span style={{ fontSize: 13 }}>
-              <strong>Policy is {data.is_active ? "Active" : "Inactive"}</strong>
-              {data.effective_date && <span className="ms-2 opacity-75">· Effective from {data.effective_date}</span>}
-            </span>
-          </div>
-        )}
-
+        {/* GENERAL (shared) */}
         <SectionLabel>General</SectionLabel>
         <div className="border rounded mb-4">
           <SettingRow label="Effective Date">
             {isEditing ? (
-              <Input type="date" value={form.effective_date || ""} onChange={(e) => handleChange("effective_date", e.target.value)} style={{ width: 180 }} />
-            ) : (
-              <span style={{ fontSize: 13 }}>{data.effective_date || "—"}</span>
-            )}
+              <Input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} style={{ width: 180 }} />
+            ) : <span style={{ fontSize: 13 }}>{effectiveDate || "—"}</span>}
           </SettingRow>
-
           <SettingRow label="Status">
             {isEditing ? (
               <div className="form-check form-switch mb-0">
-                <Input className="form-check-input" type="checkbox" checked={!!form.is_active} onChange={() => handleToggle("is_active")} />
-                <Label className="form-check-label ms-1" style={{ fontSize: 13 }}>{form.is_active ? "Active" : "Inactive"}</Label>
+                <Input className="form-check-input" type="checkbox" checked={isActive} onChange={() => setIsActive(v => !v)} />
+                <Label className="form-check-label ms-1" style={{ fontSize: 13 }}>{isActive ? "Active" : "Inactive"}</Label>
               </div>
-            ) : (
-              <ViewToggle checked={!!data.is_active} label={data.is_active ? "Active" : "Inactive"} />
-            )}
+            ) : <ViewToggle checked={isActive} label={isActive ? "Active" : "Inactive"} />}
           </SettingRow>
-
           <SettingRow label="Salary Calculation Method" last>
             {isEditing ? (
               <Select
                 options={SALARY_METHOD_OPTIONS}
-                value={SALARY_METHOD_OPTIONS.find(o => o.value === form.salary_calculation_method)}
+                value={SALARY_METHOD_OPTIONS.find(o => o.value === att.salary_calculation_method)}
                 onChange={(e) => {
-                  handleChange("salary_calculation_method", e.value);
-                  if (e.value === "working_days") {
-                    handleChange("include_week_offs", false);
-                    handleChange("include_holidays", false);
-                  }
-                  if (e.value !== "fixed_days") handleChange("fixed_pay_days", null);
+                  setA("salary_calculation_method", e.value);
+                  if (e.value === "working_days") { setA("include_week_offs", false); setA("include_holidays", false); }
+                  if (e.value !== "fixed_days") setA("fixed_pay_days", null);
                 }}
                 styles={{ container: (p) => ({ ...p, width: 220 }) }}
               />
             ) : (
               <Badge color="primary" pill style={{ fontSize: 12, padding: "4px 12px" }}>
-                {SALARY_METHOD_OPTIONS.find(o => o.value === data.salary_calculation_method)?.label || "—"}
+                {SALARY_METHOD_OPTIONS.find(o => o.value === att.salary_calculation_method)?.label || "—"}
               </Badge>
             )}
           </SettingRow>
         </div>
 
-        {currentMethod !== "fixed_days" && (
+        {/* DAY INCLUSIONS / FIXED DAYS */}
+        {att.salary_calculation_method !== "fixed_days" ? (
           <>
             <SectionLabel>Day Inclusions & Half Day</SectionLabel>
             <div className="border rounded mb-4">
@@ -268,124 +344,152 @@ const AttendancePolicySettings = () => {
                 ["include_holidays", "Include Holidays in Payable Days"],
                 ["mark_absent_if_no_attendance", "Mark Absent if No Attendance"],
               ].map(([key, label], i, arr) => (
-                <SettingRow key={key} label={label} last={i === arr.length - 1}>
-                  {isEditing ? (
-                    <div className="form-check form-switch mb-0">
-                      <Input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={!!form[key]}
-                        disabled={isWorkingDays && ["include_week_offs", "include_holidays"].includes(key)}
-                        onChange={() => handleToggle(key)}
-                      />
-                    </div>
-                  ) : (
-                    <ViewToggle checked={!!data[key]} />
-                  )}
+                <SettingRow key={key} label={label} last={false}>
+                  {isEditing
+                    ? <Switch checked={att[key]} disabled={isWorkingDays && ["include_week_offs", "include_holidays"].includes(key)} onChange={() => setA(key, !att[key])} />
+                    : <ViewToggle checked={!!att[key]} />}
                 </SettingRow>
               ))}
               <SettingRow label="Half Day Value" last>
                 {isEditing ? (
-                  <Input type="number" step="0.01" min="0" max="1" value={form.half_day_value || ""}
+                  <Input type="number" step="0.01" min="0" max="1" value={att.half_day_value}
                     onChange={(e) => {
-                      let val = e.target.value;
-                      if (val !== "" && Number(val) > 1) val = "1";
-                      if (val !== "" && Number(val) < 0) val = "0";
-                      handleChange("half_day_value", val);
+                      let v = e.target.value;
+                      if (v !== "" && Number(v) > 1) v = "1";
+                      if (v !== "" && Number(v) < 0) v = "0";
+                      setA("half_day_value", v);
                     }} style={{ width: 100 }} />
-                ) : (
-                  <Badge color="light" className="text-dark border" style={{ fontSize: 12 }}>{data.half_day_value || "—"}</Badge>
-                )}
+                ) : <Badge color="light" className="text-dark border" style={{ fontSize: 12 }}>{att.half_day_value || "—"}</Badge>}
               </SettingRow>
             </div>
           </>
-        )}
-
-        {currentMethod === "fixed_days" && (
+        ) : (
           <>
             <SectionLabel>Fixed Days</SectionLabel>
             <div className="border rounded mb-4">
               <SettingRow label="Fixed Pay Days">
                 {isEditing ? (
-                  <Select
-                    options={DAY_OPTIONS}
-                    value={DAY_OPTIONS.find(o => o.value === form.fixed_pay_days)}
-                    onChange={(e) => handleChange("fixed_pay_days", e.value)}
-                    styles={{ container: (p) => ({ ...p, width: 120 }) }}
-                  />
-                ) : (
-                  <span style={{ fontSize: 13 }}>{data.fixed_pay_days || "—"}</span>
-                )}
+                  <Select options={DAY_OPTIONS}
+                    value={DAY_OPTIONS.find(o => o.value === att.fixed_pay_days)}
+                    onChange={(e) => setA("fixed_pay_days", e.value)}
+                    styles={{ container: (p) => ({ ...p, width: 120 }) }} />
+                ) : <span style={{ fontSize: 13 }}>{att.fixed_pay_days || "—"}</span>}
               </SettingRow>
               <SettingRow label="Half Day Value" last>
                 {isEditing ? (
-                  <Input type="number" step="0.01" min="0" max="1" value={form.half_day_value || ""}
+                  <Input type="number" step="0.01" min="0" max="1" value={att.half_day_value}
                     onChange={(e) => {
-                      let val = e.target.value;
-                      if (val !== "" && Number(val) > 1) val = "1";
-                      if (val !== "" && Number(val) < 0) val = "0";
-                      handleChange("half_day_value", val);
+                      let v = e.target.value;
+                      if (v !== "" && Number(v) > 1) v = "1";
+                      if (v !== "" && Number(v) < 0) v = "0";
+                      setA("half_day_value", v);
                     }} style={{ width: 100 }} />
-                ) : (
-                  <Badge color="light" className="text-dark border" style={{ fontSize: 12 }}>{data.half_day_value || "—"}</Badge>
-                )}
+                ) : <Badge color="light" className="text-dark border" style={{ fontSize: 12 }}>{att.half_day_value || "—"}</Badge>}
               </SettingRow>
             </div>
           </>
         )}
 
+        {/* LATE MARK */}
         <SectionLabel>Late Mark Policy</SectionLabel>
         <div className="border rounded mb-4">
-          <SettingRow label="Enable Late Mark Policy">
-            {isEditing ? (
-              <div className="form-check form-switch mb-0">
-                <Input className="form-check-input" type="checkbox" checked={!!form.enable_late_mark_policy} onChange={() => handleToggle("enable_late_mark_policy")} />
-              </div>
-            ) : (
-              <ViewToggle checked={!!data.enable_late_mark_policy} />
-            )}
+          <SettingRow label="Enable Late Mark Policy" last={!att.enable_late_mark_policy}>
+            {isEditing
+              ? <Switch checked={att.enable_late_mark_policy} onChange={() => setA("enable_late_mark_policy", !att.enable_late_mark_policy)} />
+              : <ViewToggle checked={!!att.enable_late_mark_policy} />}
           </SettingRow>
-
-          {(isEditing ? form.enable_late_mark_policy : data.enable_late_mark_policy) && (
+          {att.enable_late_mark_policy && (
             <>
               <SettingRow label="Allowed Late Marks">
                 {isEditing ? (
-                  <Input type="number" min="0" max="31" value={form.late_mark_limit || 0}
-                    onChange={(e) => {
-                      let val = parseInt(e.target.value) || 0;
-                      val = Math.max(0, Math.min(31, val));
-                      handleChange("late_mark_limit", val);
-                    }} style={{ width: 100 }} />
-                ) : (
-                  <span style={{ fontSize: 13 }}>{data.late_mark_limit ?? "—"}</span>
-                )}
+                  <Input type="number" min="0" max="31" value={att.late_mark_limit || 0}
+                    onChange={(e) => { let v = parseInt(e.target.value) || 0; v = Math.max(0, Math.min(31, v)); setA("late_mark_limit", v); }}
+                    style={{ width: 100 }} />
+                ) : <span style={{ fontSize: 13 }}>{att.late_mark_limit ?? "—"}</span>}
               </SettingRow>
               <SettingRow label="Penalty (LOP Days)" last>
                 {isEditing ? (
-                  <Input type="number" step="0.01" min="0" max="31" value={form.late_mark_penalty_days || "0.00"}
+                  <Input type="number" step="0.01" min="0" max="31" value={att.late_mark_penalty_days || "0.00"}
                     onChange={(e) => {
-                      let val = e.target.value;
-                      if (val !== "" && Number(val) > 31) val = "31";
-                      if (val !== "" && Number(val) < 0) val = "0";
-                      handleChange("late_mark_penalty_days", val);
+                      let v = e.target.value;
+                      if (v !== "" && Number(v) > 31) v = "31";
+                      if (v !== "" && Number(v) < 0) v = "0";
+                      setA("late_mark_penalty_days", v);
                     }} style={{ width: 100 }} />
-                ) : (
-                  <span style={{ fontSize: 13 }}>{data.late_mark_penalty_days ?? "—"}</span>
-                )}
+                ) : <span style={{ fontSize: 13 }}>{att.late_mark_penalty_days ?? "—"}</span>}
               </SettingRow>
             </>
           )}
-          {!(isEditing ? form.enable_late_mark_policy : data.enable_late_mark_policy) && (
-            <SettingRow label="" last><span className="text-muted" style={{ fontSize: 12 }}>No late mark penalty configured</span></SettingRow>
-          )}
+        </div>
+
+        {/* HOURS THRESHOLDS */}
+        <SectionLabel>Hours Thresholds (Day Loss)</SectionLabel>
+        <div className="border rounded mb-4">
+          <SettingRow label="Half-Day Minimum (hrs)">
+            {isEditing ? (
+              <Input type="number" step="0.25" min="0" value={hours.half_day_minimum_hours}
+                onChange={(e) => setH("half_day_minimum_hours", e.target.value)} style={{ width: 120 }} />
+            ) : <span style={{ fontSize: 13 }}>{hours.half_day_minimum_hours}</span>}
+          </SettingRow>
+          <SettingRow label="Full-Day Minimum (hrs)">
+            {isEditing ? (
+              <Input type="number" step="0.25" min="0" value={hours.full_day_minimum_hours}
+                onChange={(e) => setH("full_day_minimum_hours", e.target.value)} style={{ width: 120 }} />
+            ) : <span style={{ fontSize: 13 }}>{hours.full_day_minimum_hours}</span>}
+          </SettingRow>
+          <SettingRow label="Max Permission (hrs/day)" last>
+            {isEditing ? (
+              <Input type="number" step="0.25" min="0" value={hours.max_permission_hours_per_day}
+                onChange={(e) => setH("max_permission_hours_per_day", e.target.value)} style={{ width: 120 }} />
+            ) : <span style={{ fontSize: 13 }}>{hours.max_permission_hours_per_day}</span>}
+          </SettingRow>
+        </div>
+
+        {/* COMP OFF */}
+        <SectionLabel>Comp Off</SectionLabel>
+        <div className="border rounded mb-4">
+          <SettingRow label="Comp-Off Enabled">
+            {isEditing
+              ? <Switch checked={comp.is_comp_off_enabled} onChange={() => setC("is_comp_off_enabled", !comp.is_comp_off_enabled)} />
+              : <ViewToggle checked={!!comp.is_comp_off_enabled} />}
+          </SettingRow>
+          <SettingRow label="Pending Rounding Method">
+            {isEditing ? (
+              <Input type="select" value={comp.rounding_method} disabled={compDisabled}
+                onChange={(e) => setC("rounding_method", e.target.value)} style={{ width: 240 }}>
+                {ROUNDING_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </Input>
+            ) : <span style={{ fontSize: 13 }}>{ROUNDING_OPTIONS.find(o => o.value === comp.rounding_method)?.label || "—"}</span>}
+          </SettingRow>
+          <SettingRow label="Compensation Rounding Method">
+            {isEditing ? (
+              <Input type="select" value={comp.compensation_rounding_method} disabled={compDisabled}
+                onChange={(e) => setC("compensation_rounding_method", e.target.value)} style={{ width: 240 }}>
+                {ROUNDING_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </Input>
+            ) : <span style={{ fontSize: 13 }}>{ROUNDING_OPTIONS.find(o => o.value === comp.compensation_rounding_method)?.label || "—"}</span>}
+          </SettingRow>
+          <SettingRow label="Minimum Hours for Rounding">
+            {isEditing ? (
+              <Input type="number" step="0.25" min="0" disabled={compDisabled} value={comp.minimum_hours_for_rounding}
+                onChange={(e) => setC("minimum_hours_for_rounding", e.target.value)} style={{ width: 120 }} />
+            ) : <span style={{ fontSize: 13 }}>{comp.minimum_hours_for_rounding}</span>}
+          </SettingRow>
+          <SettingRow label="Max Comp-Off (hrs/day)" last>
+            {isEditing ? (
+              <Input type="number" step="0.25" min="0" disabled={compDisabled}
+                value={comp.max_comp_off_hours_per_day} placeholder="Blank = no cap"
+                onChange={(e) => setC("max_comp_off_hours_per_day", e.target.value)} style={{ width: 160 }} />
+            ) : <span style={{ fontSize: 13 }}>{comp.max_comp_off_hours_per_day === "" ? "No cap" : comp.max_comp_off_hours_per_day}</span>}
+          </SettingRow>
         </div>
 
         {isEditing && (
           <div className="d-flex justify-content-end gap-2 pt-2 border-top">
-            <Button color="light" className="border" onClick={handleCancel} disabled={loading}>Cancel</Button>
-            <Button color="success" onClick={handleSave} disabled={loading}>
-              <i className="ri-check-double-line align-middle me-1"></i>
-              {loading ? "Saving…" : "Save Changes"}
+            <Button color="light" className="border" onClick={handleCancel} disabled={saving}>Cancel</Button>
+            <Button color="success" onClick={handleSave} disabled={saving}>
+              {saving ? <Spinner size="sm" className="me-1" /> : <i className="ri-check-double-line align-middle me-1"></i>}
+              {saving ? "Saving…" : "Save Changes"}
             </Button>
           </div>
         )}

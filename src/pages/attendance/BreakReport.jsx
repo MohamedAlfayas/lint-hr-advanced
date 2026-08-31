@@ -1,0 +1,626 @@
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardHeader,
+  Col,
+  Row,
+  Container,
+  Modal,
+  ModalBody,
+  ModalHeader,
+  Button,
+} from "reactstrap";
+import SimpleBar from "simplebar-react";
+import { MetaTitle } from "../../common/data/MetaTitle";
+import { ButtonToolbar, IconButton, Table } from "rsuite";
+import { format } from "date-fns";
+import { Link } from "react-router-dom";
+import { MonthFormat } from "../../common/constant/Constants";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+dayjs.extend(customParseFormat);
+import { useDispatch, useSelector } from "react-redux";
+import { DatePicker } from "antd";
+import { Api } from "../../common/api/Api";
+import { changeLayoutMode } from "../../layout/HtmlLayoutHelpers";
+const ExcelJs = require("exceljs");
+import "../../common/css/lc_style.css";
+
+const { Column, HeaderCell, Cell, ColumnGroup } = Table;
+
+const BreakReport = () => {
+  const dispatch = useDispatch();
+  const { layoutModeType } = useSelector((state) => state.LayoutReducer);
+
+  document.title = `Team Monthly Break Report | ${MetaTitle}`;
+
+  useEffect(() => {
+    if (layoutModeType) dispatch(changeLayoutMode(layoutModeType));
+  }, []);
+
+  const [loading, setLoading] = useState(false);
+  const [report, setReport] = useState([]);
+  const [filterKeys, setFilterKeys] = useState({
+    month: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}`,
+  });
+
+  const [showModal, setShowModal] = useState(false);
+  const toggleModal = () => setShowModal((s) => !s);
+
+  const [detailModal, setDetailModal] = useState(false);
+  const [detailData, setDetailData] = useState({
+    date: "",
+    status_log: [],
+  });
+
+  useEffect(() => {
+    getReportData(filterKeys.month);
+  }, []);
+
+  const getReportData = (thisMonth) => {
+    setLoading(true);
+    Api({
+      type: "GET",
+      url: "report/get-employee-break-report/?thisMonth=" + thisMonth,
+    })
+      .then((res) => {
+        setReport(res?.data?.data || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  };
+
+  const handleDateRangeChange = (e, monthStr) => {
+    setFilterKeys((p) => ({ ...p, month: monthStr }));
+    getReportData(monthStr);
+  };
+
+  function formatDate(dateString) {
+    const d = new Date(dateString);
+    const month = new Intl.DateTimeFormat("en", { month: "short" }).format(d);
+    const day = d.getDate().toString().padStart(2, "0");
+    return `${day} ${month} ${d.getFullYear().toString().substr(2)}`;
+  }
+
+  // seconds -> H:MM:SS
+  function formatDuration(seconds) {
+    if (!seconds) return "-";
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h}:${m.toString().padStart(2, "0")}:${s
+      .toString()
+      .padStart(2, "0")}`;
+  }
+
+  // ----- derived data -----
+  const breakDates = Array.from(
+    new Set(report.flatMap((e) => e.break_status_data.map((d) => d.date))),
+  );
+
+  const breakTypes = Array.from(
+    new Map(
+      report.flatMap((e) =>
+        e.break_status_data.flatMap((d) =>
+          (d.status_log || []).map((s) => [s.id, s.name]),
+        ),
+      ),
+    ),
+  )
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.id - b.id);
+
+  const teamTotalBreak = report.reduce(
+    (sum, e) => sum + (e.overall_total_break_duration || 0),
+    0,
+  );
+
+  const monthLabel = breakDates.length
+    ? (() => {
+        const d = new Date(breakDates[0]);
+        return `${d.toLocaleString("default", {
+          month: "short",
+        })} ${d.getFullYear()}`;
+      })()
+    : filterKeys.month;
+
+  // per-employee, per-type total across the month
+  const getTypeTotal = (rowData, typeId) =>
+    rowData.break_status_data.reduce((sum, d) => {
+      const entry = (d.status_log || []).find((s) => s.id === typeId);
+      return sum + (entry ? entry.break_duration : 0);
+    }, 0);
+
+  // ----- employee fixed cell -----
+  const FixedColumns = ({ rowData, index, ...props }) => {
+    const emp = rowData.employee || {};
+    const html_tag = (
+      <div className="d-flex gap-2 align-items-center">
+        <div className="flex-shrink-0">
+          <div
+            className="avatar-xs rounded-circle"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              background: "#0ab39c",
+            }}
+            title={emp.first_name}
+          >
+            <span className="first_letter" style={{ color: "white" }}>
+              {emp?.first_name?.charAt(0) || ""}
+            </span>
+          </div>
+        </div>
+        <div className="flex-grow-1">
+          <Link to="#" className="link-body-emphasis mb-0">
+            <h5 className="fs-14 mb-1" style={{ textAlign: "left" }}>
+              {emp.first_name} {emp.last_name}
+            </h5>
+          </Link>
+          <div className="fs-14 mb-1" style={{ textAlign: "left" }}>
+            {emp.email}
+          </div>
+        </div>
+      </div>
+    );
+    return (
+      <Cell
+        {...props}
+        style={{
+          backgroundColor:
+            index % 2 === 0
+              ? layoutModeType === "dark"
+                ? "#1a1a1a"
+                : "white"
+              : layoutModeType === "dark"
+                ? "#242933"
+                : "#e6f7ff",
+          alignItems: "flex-start",
+          justifyContent: "flex-start",
+          paddingRight: "10px",
+        }}
+      >
+        {html_tag}
+      </Cell>
+    );
+  };
+
+  // ----- per-date break cell -----
+  const BreakCell = ({ rowData, date, bgColor, ...props }) => {
+    const day = rowData.break_status_data.find((d) => d.date === date);
+    const total = day?.total_break_duration || 0;
+    const hasLog = day?.status_log?.length > 0;
+    return (
+      <Cell {...props} style={{ backgroundColor: bgColor }}>
+        {total > 0 ? (
+          <div className="d-flex flex-column align-items-center">
+            <span
+              style={{
+                fontWeight: "bold",
+                color: "#f06548",
+              }}
+            >
+              {formatDuration(total)}
+            </span>
+
+            {hasLog && (
+              <Link
+                to="#"
+                className="mt-1"
+                style={{ color: "#0AB39C", fontSize: "12px" }}
+                onClick={() => {
+                  setDetailData({
+                    date: format(new Date(day.date), "dd MMM, yyyy"),
+                    status_log: day.status_log,
+                  });
+                  setDetailModal(true);
+                }}
+              >
+                View
+              </Link>
+            )}
+          </div>
+        ) : (
+          "-"
+        )}
+      </Cell>
+    );
+  };
+
+  // ----- per-break-type summary cell -----
+  const BreakTypeCell = ({ rowData, typeId, ...props }) => {
+    const total = getTypeTotal(rowData, typeId);
+    return <Cell {...props}>{formatDuration(total)}</Cell>;
+  };
+
+  // ----- per-employee export -----
+  const DownloadCell = ({ rowData, ...props }) => {
+    const exportEmp = () => {
+      const emp = rowData.employee || {};
+      const name = emp.first_name || "Employee";
+
+      const wb = new ExcelJs.Workbook();
+      const sheet = wb.addWorksheet("Breaks");
+      const headers = ["Date", ...breakTypes.map((bt) => bt.name), "Total"];
+      const hr = sheet.addRow(headers);
+      hr.font = { bold: true };
+
+      rowData.break_status_data.forEach((day) => {
+        const row = [formatDate(day.date)];
+        breakTypes.forEach((bt) => {
+          const c = (day.status_log || []).find((x) => x.id === bt.id);
+          row.push(c ? formatDuration(c.break_duration) : "-");
+        });
+        row.push(formatDuration(day.total_break_duration));
+        sheet.addRow(row);
+      });
+
+      sheet.eachRow((r) =>
+        r.eachCell((c) => {
+          c.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+          };
+          c.alignment = { horizontal: "center", wrapText: true };
+        }),
+      );
+      sheet.columns.forEach((col) => {
+        let max = 0;
+        col.eachCell({ includeEmpty: true }, (c) => {
+          max = Math.max(max, c.value ? c.value.toString().length : 0);
+        });
+        col.width = max < 10 ? 10 : Math.min(max + 2, 50);
+      });
+
+      wb.xlsx.writeBuffer().then((data) => {
+        const blob = new Blob([data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${name}_Breaks_${filterKeys.month}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      });
+    };
+
+    return (
+      <Cell
+        {...props}
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ButtonToolbar>
+          <IconButton
+            appearance="subtle"
+            onClick={exportEmp}
+            icon={
+              <span className="text-primary d-inline-block edit-item-btn fs-16">
+                <i className="ri-download-2-line" />
+              </span>
+            }
+          />
+        </ButtonToolbar>
+      </Cell>
+    );
+  };
+
+  // ----- team export -----
+  const exportExcelFile = () => {
+    const wb = new ExcelJs.Workbook();
+    const sheet = wb.addWorksheet("Break Report", {
+      views: [{ state: "frozen", xSplit: 2, ySplit: 1 }],
+    });
+
+    const headers = ["Employee", "Email"];
+    breakDates.forEach((d) => headers.push(formatDate(d)));
+    breakTypes.forEach((bt) => headers.push(bt.name));
+    headers.push("Total Break");
+
+    const headerRow = sheet.addRow(headers);
+    headerRow.font = { bold: true };
+
+    report.forEach((emp) => {
+      const e = emp.employee || {};
+      const row = [
+        `${e.first_name || ""} ${e.last_name || ""}`.trim(),
+        e.email || "",
+      ];
+      breakDates.forEach((d) => {
+        const day = emp.break_status_data.find((x) => x.date === d);
+        row.push(
+          day && day.total_break_duration > 0
+            ? formatDuration(day.total_break_duration)
+            : "-",
+        );
+      });
+      breakTypes.forEach((bt) => {
+        const total = getTypeTotal(emp, bt.id);
+        row.push(total > 0 ? formatDuration(total) : "-");
+      });
+      row.push(formatDuration(emp.overall_total_break_duration));
+
+      const dataRow = sheet.addRow(row);
+      dataRow.eachCell((cell, n) => {
+        if (cell.value !== "-" && n > 2) {
+          cell.font = { color: { argb: "f06548" }, bold: true };
+        }
+      });
+    });
+
+    sheet.eachRow((row) =>
+      row.eachCell((cell, n) => {
+        cell.alignment = { horizontal: "center" };
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+        if (n > 2 && n % 2 === 0) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "e6f7ff" },
+          };
+        }
+      }),
+    );
+    sheet.columns.forEach((col) => {
+      let max = 0;
+      col.eachCell({ includeEmpty: true }, (c) => {
+        max = Math.max(max, c.value ? c.value.toString().length : 0);
+      });
+      col.width = max < 10 ? 10 : max + 2;
+    });
+
+    wb.xlsx.writeBuffer().then((data) => {
+      const blob = new Blob([data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Break_Report_${filterKeys.month}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    });
+  };
+
+  // ----- columns -----
+  const isDark = layoutModeType === "dark";
+  const headerColor = isDark ? "#242933" : "#e6f7ff";
+  const headerBgColor = isDark ? "#1a1d24" : "white";
+
+  const dynamicColumns = breakDates.map((date, index) => {
+    const bgColor =
+      index % 2 === 0
+        ? isDark
+          ? "#1a1d24"
+          : "white"
+        : isDark
+          ? "#242933"
+          : "#e6f7ff";
+    return (
+      <ColumnGroup
+        key={`date_${date}`}
+        align="center"
+        header={<span style={{ fontWeight: "bold" }}>{formatDate(date)}</span>}
+      >
+        <Column width={110} align="center">
+          <HeaderCell style={{ fontWeight: "bold", background: bgColor }}>
+            Break
+          </HeaderCell>
+          <BreakCell date={date} bgColor={bgColor} />
+        </Column>
+      </ColumnGroup>
+    );
+  });
+
+  const summaryColumns = [
+    ...breakTypes.map((bt) => (
+      <Column width={140} align="center" key={`bt_${bt.id}`}>
+        <HeaderCell
+          style={{ background: headerBgColor, fontWeight: "bold", padding: 18 }}
+        >
+          {bt.name}
+        </HeaderCell>
+        <BreakTypeCell typeId={bt.id} style={{ background: headerBgColor }} />
+      </Column>
+    )),
+    <Column width={140} align="center" key="total-break">
+      <HeaderCell
+        style={{ background: headerBgColor, fontWeight: "bold", padding: 18 }}
+      >
+        Total Break
+      </HeaderCell>
+      <Cell style={{ background: headerBgColor, fontWeight: "bold" }}>
+        {(rowData) => formatDuration(rowData.overall_total_break_duration)}
+      </Cell>
+    </Column>,
+    <Column width={80} fixed="right" key="download">
+      <HeaderCell style={{ fontWeight: "bold", padding: 18 }}>Down</HeaderCell>
+      <DownloadCell />
+    </Column>,
+  ];
+
+  return (
+    <React.Fragment>
+      <div className="page-content">
+        <Container fluid>
+          <Card>
+            <CardHeader className="border-0 rounded">
+              <Row className="g-2 align-items-center">
+                <Col xl={2}>
+                  <div className="form-icon right">
+                    <DatePicker
+                      value={dayjs(filterKeys?.month, MonthFormat)}
+                      format={MonthFormat}
+                      picker="month"
+                      allowClear={false}
+                      className="form-control"
+                      placeholder="Select Month"
+                      onChange={handleDateRangeChange}
+                    />
+                  </div>
+                </Col>
+
+                <Col xl={4}>
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="badge bg-info-subtle text-info fs-12 p-2">
+                      Employees: <b>{report.length}</b>
+                    </span>
+                  </div>
+                </Col>
+
+                <Col xl={6} className="text-end">
+                  <Button
+                    type="button"
+                    className="btn btn-info"
+                    onClick={toggleModal}
+                    style={{
+                      padding: "0.25rem 0.5rem",
+                      fontSize: "0.75rem",
+                      width: "80px",
+                    }}
+                  >
+                    <i className="ri-file-download-line align-bottom me-1"></i>
+                    Export
+                  </Button>
+                </Col>
+
+                <Modal isOpen={showModal} toggle={toggleModal} centered>
+                  <ModalHeader toggle={toggleModal}></ModalHeader>
+                  <ModalBody className="py-3 px-5">
+                    <div className="mt-2 text-center">
+                      <lord-icon
+                        src="https://cdn.lordicon.com/nocovwne.json"
+                        trigger="loop"
+                        colors="primary:#0ab39c,secondary:#f06548"
+                        style={{ width: "100px", height: "100px" }}
+                      ></lord-icon>
+                      <div className="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
+                        <h4>Are you sure?</h4>
+                        <p className="text-muted mx-4 mb-0">
+                          Export <b>{monthLabel}</b> Break Report as a XLSX
+                          file?
+                        </p>
+                      </div>
+                    </div>
+                    <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
+                      <Button
+                        type="button"
+                        className="btn w-sm btn-light"
+                        onClick={toggleModal}
+                      >
+                        Close
+                      </Button>
+                      <Button
+                        type="button"
+                        className="btn w-sm btn-success"
+                        onClick={() => {
+                          exportExcelFile();
+                          toggleModal();
+                        }}
+                      >
+                        Download
+                      </Button>
+                    </div>
+                  </ModalBody>
+                </Modal>
+              </Row>
+            </CardHeader>
+          </Card>
+        </Container>
+
+        <Table
+          bordered
+          cellBordered
+          height={500}
+          headerHeight={60}
+          data={report || []}
+          rowHeight={60}
+          autoHeight
+          loading={loading}
+          className="mb-5"
+          affixHorizontalScrollbar
+        >
+          <Column width={250} fixed="left" align="center">
+            <HeaderCell
+              style={{
+                background: headerColor,
+                borderRadius: "1px",
+                padding: "18px",
+                fontWeight: "bold",
+              }}
+            >
+              Employee
+            </HeaderCell>
+            <FixedColumns />
+          </Column>
+          {dynamicColumns}
+          {summaryColumns}
+        </Table>
+
+        {/* status_log detail modal */}
+        <Modal
+          isOpen={detailModal}
+          toggle={() => setDetailModal(false)}
+          centered
+          className="custom-modal"
+        >
+          <ModalHeader toggle={() => setDetailModal(false)}>
+            <h5 className="modal-title" style={{ fontSize: "smaller" }}>
+              Date: {detailData.date}
+            </h5>
+          </ModalHeader>
+          <ModalBody className="text-left">
+            <SimpleBar style={{ maxHeight: "410px" }} className="p-2 pt-0">
+              {detailData.status_log?.length > 0 ? (
+                <table className="table table-sm mb-3">
+                  <thead>
+                    <tr>
+                      <th>Break Type</th>
+                      <th className="text-end">Duration</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detailData.status_log.map((s, i) => (
+                      <tr key={`${s.id}_${i}`}>
+                        <td>{s.name}</td>
+                        <td className="text-end">
+                          {formatDuration(s.break_duration)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-muted mb-0">No breaks logged.</p>
+              )}
+            </SimpleBar>
+            <div className="text-center mt-3">
+              <Button
+                className="btn btn-warning"
+                onClick={() => setDetailModal(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </ModalBody>
+        </Modal>
+      </div>
+    </React.Fragment>
+  );
+};
+
+export default BreakReport;

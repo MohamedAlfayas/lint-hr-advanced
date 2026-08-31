@@ -68,14 +68,21 @@ const Dashboard = () => {
           </Row> */}
           <Row className="lc_dashboard_row">
             {/* Attendance Table (takes 9 cols on XL, full width on smaller) */}
-            <Col xl={9} lg={8} md={12} sm={12} xs={12} className="lc_table_col">
+            <Col xl={9} lg={8} md={13} sm={13} xs={13} className="lc_table_col mx-auto">
+              <div className="card ">
+                <div className="card-body p-0">
               <TodayAttendanceTable />
+              </div>
+              </div>
             </Col>
 
             {/* Map */}
-            <Col xl={3} lg={4} md={12} sm={12} xs={12} className="lc_map_col">
-              <div className="lc_container">
+            <Col xl={3} lg={4} md={11.5} sm={11.5} xs={11.5} className="lc_map_col mx-auto">
+              {/* <div className="lc_container"> */}
+              <div className="card ">
+                <div className="card-body p-0">
                 <UsersClusterMap />
+              </div>
               </div>
             </Col>
             {/* <AdminDashboard /> */}

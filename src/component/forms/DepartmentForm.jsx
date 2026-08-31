@@ -47,6 +47,27 @@ const DepartmentForm = () => {
 
   const [departmentOptions, setDepartmentOptions] = useState([]);
 
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+
+  const [lengthWarnings, setLengthWarnings] = useState({
+    name: "",
+    description: "",
+  });
+
+  const MAX_LENGTHS = {
+    name: 50,
+    description: 200,
+  };
+
+  const checkMaxLength = (field, rawValue) => {
+    const max = MAX_LENGTHS[field];
+    const label = field === "name" ? "Department Name" : "Description";
+    const msg =
+      rawValue.length > max
+        ? `${label} cannot exceed ${max} characters`
+        : "";
+    setLengthWarnings((prev) => ({ ...prev, [field]: msg }));
+  };
   useEffect(() => {
     setDepartmentData(form_obj);
     setDepartmentOptions(
@@ -68,7 +89,22 @@ const DepartmentForm = () => {
     enableReinitialize: true,
     initialValues: departmentData,
     validationSchema: Yup.object({
-      name: Yup.string().trim().required("Please Enter Department Name"),
+      // WITH THIS:
+      name: Yup.string()
+        .trim()
+        .required("Please Enter Department Name")
+        .min(1, "Department Name must be at least 1 character")
+        .max(50, `Department Name must not exceed 50 characters`)
+        .matches(/^[a-zA-Z0-9 .,\-&()'_]+$/, "Only letters, numbers, spaces and . , - & ( ) ' _ are allowed"),
+
+      description: Yup.string()
+        .trim()
+        .max(200, "Description must not exceed 200 characters")
+        .matches(
+          /^[a-zA-Z0-9\s.,!?'"\-_()&:;/]*$/,
+          "Only letters, numbers, spaces and . , ! ? ' \" - _ ( ) & : ; / are allowed"
+        ),
+
       pid: Yup.number()
         .required("Select Parent Department")
         .min(1, "Please Select Parent Department"),
@@ -93,11 +129,31 @@ const DepartmentForm = () => {
     <React.Fragment>
       <Row>
         <Col>
-          <Form onSubmit={FormikForm.handleSubmit}>
+          {/* <Form onSubmit={FormikForm.handleSubmit}> */}
+          <Form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setHasAttemptedSubmit(true);
+
+              const touchedFields = {};
+              Object.keys(FormikForm.initialValues).forEach((key) => {
+                touchedFields[key] = true;
+              });
+              FormikForm.setTouched(touchedFields, true);
+
+              const errors = await FormikForm.validateForm();
+              if (Object.keys(errors).length > 0) {
+                return; // stop here — only the invalid fields will show errors
+              }
+
+              FormikForm.handleSubmit();
+            }}
+            noValidate
+          >
             <Row className="g-3">
               <Col lg={12}>
                 <label htmlFor="departmentName" className="form-label">
-                  Department Name
+                  Department Name <span>*</span>
                 </label>
                 <Input
                   type="text"
@@ -106,25 +162,42 @@ const DepartmentForm = () => {
                   id="departmentName"
                   placeholder="Enter department name"
                   value={departmentData.name || ""}
-                  onChange={handleInputChange}
+                  onChange={(e) => {
+                    const { value } = e.target;
+                    if (value.startsWith(" ")) return;
+                    if (value === "" || /^[a-zA-Z0-9 .,\-&()'_]+$/.test(value)) {
+                      FormikForm.handleChange(e);
+                      FormikForm.setFieldTouched("name", true, false);
+                      setDepartmentData({ ...departmentData, name: value });
+                      checkMaxLength("name", value);
+                    }
+                  }}
+                  onBlur={FormikForm.handleBlur}
                   invalid={
-                    FormikForm.touched.name && FormikForm.errors.name
-                      ? true
-                      : false
+                    !!((FormikForm.touched.name || hasAttemptedSubmit) && FormikForm.errors.name)
                   }
                 />
-                {FormikForm.touched.name && FormikForm.errors.name ? (
-                  <FormFeedback type="invalid">
-                    {FormikForm.errors.name}
-                  </FormFeedback>
-                ) : null}
-                <div id="passwordHelpBlock" className="form-text">
-                  Select Department.
-                </div>
+                {(FormikForm.touched.name || hasAttemptedSubmit) &&
+                  FormikForm.errors.name &&
+                  !lengthWarnings.name && (
+                    <FormFeedback type="invalid">{FormikForm.errors.name}</FormFeedback>
+                  )}
+                {lengthWarnings.name && (
+                  <div className="lc_form_error_text">{lengthWarnings.name}</div>
+                )}
+                {!(
+                  (FormikForm.touched.name || hasAttemptedSubmit) && FormikForm.errors.name
+                ) &&
+                  !lengthWarnings.name && (
+                    <div id="passwordHelpBlock" className="form-text">
+                      Select Department.
+                    </div>
+                  )}
+                
               </Col>
               <Col lg={12}>
                 <Label htmlFor="parentDepartment" className="form-label">
-                  Parent Department
+                  Parent Department <span>*</span>
                 </Label>
 
                 <Select
@@ -151,12 +224,19 @@ const DepartmentForm = () => {
                       (opt) => opt.id === departmentData.pid
                     ) || null
                   }
+                  // onChange={(selectedOption) => {
+                  //   setDepartmentData({
+                  //     ...departmentData,
+                  //     pid: selectedOption ? selectedOption.value : null,
+                  //   });
+                  // }}
+
                   onChange={(selectedOption) => {
-                    setDepartmentData({
-                      ...departmentData,
-                      pid: selectedOption ? selectedOption.value : null,
-                    });
+                    const val = selectedOption ? selectedOption.value : null;
+                    setDepartmentData({ ...departmentData, pid: val });
+                    FormikForm.setFieldValue("pid", val);
                   }}
+                  onBlur={() => FormikForm.setFieldTouched("pid", true)}
                   options={departmentOptions.map((item) => ({
                     value: item.id,
                     label: item.name,
@@ -164,15 +244,14 @@ const DepartmentForm = () => {
                   isClearable
                 />
 
-                {FormikForm.touched.pid && FormikForm.errors.pid ? (
-                  <FormFeedback type="invalid">
+                {(FormikForm.touched.pid || hasAttemptedSubmit) && FormikForm.errors.pid ? (
+                  <FormFeedback type="invalid" className="d-block">
                     {FormikForm.errors.pid}
                   </FormFeedback>
-                ) : null}
-
-                <div id="passwordHelpBlock" className="form-text">
+                ) : (  <div id="passwordHelpBlock" className="form-text">
                   Select Parent Department.
-                </div>
+                </div>)}
+
               </Col>
               <Col md={12} lg={12} xxl={12}>
                 <div>
@@ -249,11 +328,41 @@ const DepartmentForm = () => {
                   id="description"
                   placeholder="Enter description"
                   value={departmentData.description || ""}
-                  onChange={handleInputChange}
+                  onChange={(e) => {
+                    const { value } = e.target;
+                    if (value === "" || /^[a-zA-Z0-9\s.,!?'"\-_()&:;/]*$/.test(value)) {
+                      FormikForm.handleChange(e);
+                      FormikForm.setFieldTouched("description", true, false);
+                      setDepartmentData({ ...departmentData, description: value });
+                      checkMaxLength("description", value);
+                    }
+                  }}
+                  onBlur={FormikForm.handleBlur}
+                  invalid={
+                    !!((FormikForm.touched.description || hasAttemptedSubmit) &&
+                      FormikForm.errors.description)
+                  }
                 />
-                <div id="passwordHelpBlock" className="form-text">
-                  Enter Description.
-                </div>
+                {(FormikForm.touched.description || hasAttemptedSubmit) &&
+                  FormikForm.errors.description &&
+                  !lengthWarnings.description && (
+                    <FormFeedback type="invalid" className="d-block">
+                      {FormikForm.errors.description}
+                    </FormFeedback>
+                  )}
+                {lengthWarnings.description && (
+                  <div className="lc_form_error_text">{lengthWarnings.description}</div>
+                )}
+                {!(
+                  (FormikForm.touched.description || hasAttemptedSubmit) &&
+                  FormikForm.errors.description
+                ) &&
+                  !lengthWarnings.description && (
+                    <div id="passwordHelpBlock" className="form-text">
+                      Enter Description.
+                    </div>
+                  )}
+                
               </Col>
 
               <Col lg={12}>

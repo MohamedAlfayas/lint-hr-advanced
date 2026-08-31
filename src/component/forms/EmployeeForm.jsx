@@ -65,6 +65,7 @@ import no_image from "../../assets/images/users/no_img.jpg";
 const EmployeeForm = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const [employeeObj, setEmployeeObj] = useState({});
+  const [initialFormValues, setInitialFormValues] = useState({});
 
   const dispatch = useDispatch();
 
@@ -87,6 +88,12 @@ const EmployeeForm = () => {
 
   const [dob, setDob] = useState([]);
   const [joining_date, setJoinDate] = useState([]);
+  const [dobTypeError, setDobTypeError] = useState("");
+  const [joiningTypeError, setJoiningTypeError] = useState("");
+  const dobPickerRef = React.useRef(null);
+  const joinPickerRef = React.useRef(null);
+  const dobRawTyped = React.useRef("");
+  const joinRawTyped = React.useRef("");
   const [selectedFileName, setSelectedFileName] = React.useState("");
   const [selectedFileName1, setSelectedFileName1] = React.useState("");
   const [selectedFileName2, setSelectedFileName2] = React.useState("");
@@ -94,13 +101,50 @@ const EmployeeForm = () => {
   const [selectedFileName4, setSelectedFileName4] = React.useState("");
   const [selectedFileName5, setSelectedFileName5] = React.useState("");
   const [errors, setErrors] = useState("");
-  const inputRef = useRef(null);
+  const [nameTouched, setNameTouched] = useState({
+    first_name: false,
+    last_name: false,
+  });
+  const [emailTouched, setEmailTouched] = useState(false);
 
+  const [lengthWarnings, setLengthWarnings] = useState({
+    emp_id: "",
+    first_name: "",
+    last_name: "",
+    email: "",
+  });
+
+  const [empIdApiError, setEmpIdApiError] = useState("");
+
+  const MAX_LENGTHS = {
+    emp_id: 50,
+    first_name: 50,
+    last_name: 50,
+    email: 50,
+  };
+
+  const checkMaxLength = (field, rawValue) => {
+    const max = MAX_LENGTHS[field];
+    const msg =
+      rawValue.length > max
+        ? `${field
+            .replace("_", " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase())} cannot exceed ${max} characters`
+        : "";
+    setLengthWarnings((prev) => ({ ...prev, [field]: msg }));
+  };
+
+  const inputRef = useRef(null);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const fieldRefs = useRef({});
   // ── Location Modal State ──────────────────────────────────────────────────
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [locationToEdit, setLocationToEdit] = useState(null);
   const isExistingEmployee = !!(form_obj?.id && form_obj.id !== 0);
-
+  const [defaultProbationMonths, setDefaultProbationMonths] = useState(0);
+  const [probation_end_date, setProbationEndDate] = useState(null);
+  const [dobRawInvalidText, setDobRawInvalidText] = useState(null); // null => show DatePicker
+  const [joinRawInvalidText, setJoinRawInvalidText] = useState(null); // null => show DatePicker
   const handleAddLocationClick = () => {
     setLocationToEdit(null);
     setLocationModalOpen(true);
@@ -113,18 +157,23 @@ const EmployeeForm = () => {
   // ── Date helpers ──────────────────────────────────────────────────────────
   const today = dayjs().startOf("day");
   const minDobDate = dayjs("1900-01-01");
+  const maxDobForMinAge = today.subtract(15, "year");
   // const oneMonthLater = dayjs().add(1, "month").endOf("day");
   const minJoiningDate = dayjs("1900-01-01");
   const maxJoiningDate = dayjs().add(1, "year").endOf("day");
-  // DOB: must be in the past (before today)
+  // DOB: must be between 1900-01-01 and today (calendar).
+  // Pre-1900 typed errors are caught via onKeyUp so AntD still blocks calendar
+  // selection of those dates while showing immediate inline errors when typing.
   // const disableDobDates = (current) => current && current >= today;
   const disableDobDates = (current) => {
     return (
       current &&
-      (current.isBefore(minDobDate, "day") || current.isAfter(today, "day"))
+      (current.isBefore(minDobDate, "day") || current.isAfter(today, "day")
+      ||  current.isAfter(maxDobForMinAge, "day")
+    )
     );
   };
-  // Joining date: from past up to 1 month in future
+  // Joining date: from 1900-01-01 up to 1 year in the future (calendar).
   // const disableJoiningDates = (current) => current && current > oneMonthLater;
   const disableJoiningDates = (current) => {
     return (
@@ -182,7 +231,22 @@ const EmployeeForm = () => {
       dob: ConvertISODateFormat(form_obj.dob),
       joining_date: ConvertISODateFormat(form_obj.joining_date),
       role_id: this_role_id,
+      employment_type: form_obj.employment_type || 2,
+      probation_end_date: ConvertISODateFormat(form_obj.probation_end_date),
     });
+    setInitialFormValues({
+      ...form_obj,
+      dob: ConvertISODateFormat(form_obj.dob),
+      joining_date: ConvertISODateFormat(form_obj.joining_date),
+      role_id: this_role_id,
+      employment_type: form_obj.employment_type || 2,
+      probation_end_date: ConvertISODateFormat(form_obj.probation_end_date),
+    });
+    setProbationEndDate(
+      form_obj.probation_end_date
+        ? ConvertDateFormat(ConvertISODateFormat(form_obj.probation_end_date))
+        : null,
+    );
     console.log("form_obj.dob:", form_obj.dob);
     console.log("form_obj.joining_date:", form_obj.joining_date);
     setDob(
@@ -216,6 +280,10 @@ const EmployeeForm = () => {
     showFile3NameIfSelected();
     showFile4NameIfSelected();
     showFile5NameIfSelected();
+
+    setNameTouched({ first_name: false, last_name: false });
+    setEmailTouched(false);
+    setHasAttemptedSubmit(false);
   }, [form_obj]);
 
   useEffect(() => {
@@ -225,6 +293,18 @@ const EmployeeForm = () => {
       }, 100);
     }
   }, [employeeObj?.id]);
+
+  // Load the active probation policy default (for auto-filling end date).
+  useEffect(() => {
+    Api({ method: "GET", url: "payroll/probation-policy/" })
+      .then((res) => {
+        const latest = (res?.data?.data || [])[0];
+        setDefaultProbationMonths(
+          latest ? (latest.default_probation_months || 0) : 0,
+        );
+      })
+      .catch(() => setDefaultProbationMonths(0));
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -240,17 +320,12 @@ const EmployeeForm = () => {
       [field]: val,
     }));
 
+    setNameTouched((prev) => ({ ...prev, [field]: true }));
+    checkMaxLength(field, val);
     FormikForm.setFieldValue(field, val);
     FormikForm.setFieldTouched(field, true, false);
 
-    if (val.length > 50) {
-      FormikForm.setFieldError(
-        field,
-        `${field === "first_name" ? "First" : "Last"} name cannot exceed 50 characters`,
-      );
-    } else {
-      FormikForm.setFieldError(field, undefined);
-    }
+
   };
 
   const handleProfileChange = (e) => {
@@ -340,8 +415,188 @@ const EmployeeForm = () => {
     });
   };
 
+  const handleDateKeyDown = (e) => {
+    const controlKeys = [
+      "Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End",
+    ];
+    if (!/^[0-9\-]$/.test(e.key) && !controlKeys.includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  // After every render: if an error is active, re-write the raw typed text back
+  // into the DOM input. AntD resets its controlled input to match the `value`
+  // prop on every re-render; useLayoutEffect runs after the DOM update (before
+  // paint) and overrides it, so the user always sees what they typed.
+  React.useLayoutEffect(() => {
+    if (dobTypeError && dobRawTyped.current) {
+      const input = dobPickerRef.current?.nativeElement?.querySelector("input");
+      if (input) input.value = dobRawTyped.current;
+    }
+  });
+  React.useLayoutEffect(() => {
+    if (joiningTypeError && joinRawTyped.current) {
+      const input = joinPickerRef.current?.nativeElement?.querySelector("input");
+      if (input) input.value = joinRawTyped.current;
+    }
+  });
+
+  const handleDobKeyUp = (e) => {
+    const val = e.target.value;
+    dobRawTyped.current = val;
+    if (val.length !== 10) { setDobTypeError(""); return; }
+    const parsed = dayjs(val, DateFormat, true);
+    if (!parsed.isValid()) {
+      setDobTypeError("Invalid date format. Use DD-MM-YYYY");
+      return;
+    }
+    if (parsed.year() < 1900) {
+      setDobTypeError("Year must be 1900 or later");
+    } else if (parsed.isAfter(dayjs(), "day")) {
+      setDobTypeError("Date of birth cannot be a future date");
+    } else if (parsed.isAfter(maxDobForMinAge, "day")) {
+    setDobTypeError("Employee must be at least 15 years old");
+    } else {
+      setDobTypeError("");
+    }
+  };
+
+  const handleJoinKeyUp = (e) => {
+    const val = e.target.value;
+    joinRawTyped.current = val;
+    if (val.length !== 10) { setJoiningTypeError(""); return; }
+    const parsed = dayjs(val, DateFormat, true);
+    if (!parsed.isValid()) {
+      setJoiningTypeError("Invalid date format. Use DD-MM-YYYY");
+      return;
+    }
+    if (parsed.year() < 1900) {
+      setJoiningTypeError("Year must be 1900 or later");
+    } else if (parsed.isAfter(dayjs().add(1, "year"), "day")) {
+      setJoiningTypeError("Joining date cannot exceed one year from today");
+    } else {
+      setJoiningTypeError("");
+    }
+  };
+
+  // const handleDobBlur = (e) => {
+  //   const typed = e.target.value;
+  //   dobRawTyped.current = typed;
+  //   if (!typed) return;
+  //   const parsed = dayjs(typed, DateFormat, true);
+  //   if (!parsed.isValid()) {
+  //     setDobTypeError("Invalid date format. Use DD-MM-YYYY");
+  //     return;
+  //   }
+  //   if (parsed.year() < 1900) {
+  //     setDobTypeError("Year must be 1900 or later");
+  //     return;
+  //   }
+  //   if (parsed.isAfter(dayjs(), "day")) {
+  //     setDobTypeError("Date of birth cannot be a future date");
+  //     return;
+  //   }
+  //   dobRawTyped.current = "";
+  //   setDobTypeError("");
+  //   handleDateChange(parsed, typed);
+  // };
+
+  const handleDobBlur = (e) => {
+    const typed = dobRawTyped.current || e.target.value;
+    if (!typed) return;
+
+    const parsed = dayjs(typed, DateFormat, true);
+    let errMsg = "";
+    if (!parsed.isValid()) errMsg = "Invalid date format. Use DD-MM-YYYY";
+    else if (parsed.year() < 1900) errMsg = "Year must be 1900 or later";
+    else if (parsed.isAfter(dayjs(), "day")) errMsg = "Date of birth cannot be a future date";
+    else if (parsed.isAfter(maxDobForMinAge, "day")) errMsg = "Employee must be at least 15 years old";
+
+    if (errMsg) {
+      setDobTypeError(errMsg);
+      setDobRawInvalidText(typed); // switch to plain input, showing exactly this text
+      return;
+    }
+
+    setDobRawInvalidText(null); // valid — go back to normal DatePicker
+    dobRawTyped.current = "";
+    setDobTypeError("");
+    handleDateChange(parsed, typed);
+  };
+
+  // const handleJoinBlur = (e) => {
+  //   const typed = e.target.value;
+  //   joinRawTyped.current = typed;
+  //   if (!typed) return;
+  //   const parsed = dayjs(typed, DateFormat, true);
+  //   if (!parsed.isValid()) {
+  //     setJoiningTypeError("Invalid date format. Use DD-MM-YYYY");
+  //     return;
+  //   }
+  //   if (parsed.year() < 1900) {
+  //     setJoiningTypeError("Year must be 1900 or later");
+  //     return;
+  //   }
+  //   if (parsed.isAfter(dayjs().add(1, "year"), "day")) {
+  //     setJoiningTypeError("Joining date cannot exceed one year from today");
+  //     return;
+  //   }
+  //   joinRawTyped.current = "";
+  //   setJoiningTypeError("");
+  //   handleJoinDateChange(parsed, typed);
+  // };
+
+
+  const handleJoinBlur = (e) => {
+    const typed = joinRawTyped.current || e.target.value;
+    if (!typed) return;
+
+    const parsed = dayjs(typed, DateFormat, true);
+    let errMsg = "";
+    if (!parsed.isValid()) {
+      errMsg = "Invalid date format. Use DD-MM-YYYY";
+    } else if (parsed.year() < 1900) {
+      errMsg = "Year must be 1900 or later";
+    } else if (parsed.isAfter(dayjs().add(1, "year"), "day")) {
+      errMsg = "Joining date cannot exceed one year from today";
+    }
+
+    if (errMsg) {
+      setJoiningTypeError(errMsg);
+      setJoinRawInvalidText(typed); // switch to plain input, showing exactly this text
+      return;
+    }
+
+    setJoinRawInvalidText(null); // valid — go back to normal DatePicker
+    joinRawTyped.current = "";
+    setJoiningTypeError("");
+    handleJoinDateChange(parsed, typed);
+  };
+
   const handleDateChange = (selectedDates, dateStr, instance) => {
+    // Don't clear dob state when AntD fires onChange(null,"") internally
+    // (e.g. for disabled/invalid dates) — keep the previous committed value.
+    if (!selectedDates || !dateStr) {
+      setDobTypeError("");
+      return;
+    }
     setDob(dateStr);
+    const year = selectedDates.year();
+    if (year < 1900) {
+      setDobTypeError("Year must be 1900 or later");
+      return;
+    }
+    if (selectedDates.isAfter(dayjs(), "day")) {
+      setDobTypeError("Date of birth cannot be a future date");
+      FormikForm.setFieldValue("dob", "");
+      return;
+    }
+    if (selectedDates.isAfter(maxDobForMinAge, "day")) {          // ADD
+      setDobTypeError("Employee must be at least 15 years old");   // ADD
+      FormikForm.setFieldValue("dob", "");                         // ADD
+      return;                                                      // ADD
+    }
+    setDobTypeError("");
     setEmployeeObj({
       ...employeeObj,
       dob: ConvertISODateFormat(ConvertDateFormat(dateStr)),
@@ -350,11 +605,72 @@ const EmployeeForm = () => {
       "dob",
       ConvertISODateFormat(ConvertDateFormat(dateStr)),
     );
-    FormikForm.setFieldTouched("dob", true);
+    // FormikForm.setFieldTouched("dob", true);
+  };
+
+  const handleEmploymentTypeChange = (e) => {
+    const val = parseInt(e.target.value, 10);
+    setEmployeeObj((prev) => ({ ...prev, employment_type: val }));
+    // Switching to Full Time clears the probation end date.
+    if (val === 2) {
+      setProbationEndDate(null);
+      setEmployeeObj((prev) => ({ ...prev, probation_end_date: "" }));
+      return;
+    }
+    // Switching to Probation: auto-fill end = joining + default months (if empty).
+    // Parse the joining date from the DISPLAY state using DateFormat (same safe
+    // pattern the picker binding uses at lines ~786/1505). Do NOT use
+    // employeeObj.joining_date with bare dayjs() — that value is in the app ISO
+    // format and dayjs misparses it, swapping month/day (May-04 + 3mo produced
+    // 2026-04-08 instead of 2026-08-04).
+    if (val === 1 && !probation_end_date && joining_date && defaultProbationMonths) {
+      const joinDayjs = dayjs(joining_date, DateFormat);
+      if (joinDayjs.isValid()) {
+        const endObj = joinDayjs.add(defaultProbationMonths, "month");
+        const endDisplay = endObj.format(DateFormat);     // for the picker
+        const endIso = endObj.format("YYYY-MM-DD");         // for the backend
+        // Do NOT round-trip through ConvertISODateFormat/ConvertDateFormat:
+        // that path goes YYYY-MM-DD -> DD-MM-YYYY -> new Date() misparses as
+        // MM-DD-YYYY and swaps month/day (Aug-04 -> Apr-08). dayjs formats the
+        // real date object directly.
+        setProbationEndDate(endDisplay);
+        setEmployeeObj((prev) => ({ ...prev, probation_end_date: endIso }));
+        FormikForm.setFieldValue("probation_end_date", endIso);
+      }
+    }
+  };
+
+  const handleProbationEndDateChange = (d, dateStr) => {
+    setProbationEndDate(dateStr);   // display string, in DateFormat
+    // dateStr is in DateFormat -> parse with dayjs, emit YYYY-MM-DD for backend.
+    // Avoids ConvertISODateFormat(ConvertDateFormat(...)) which swaps month/day.
+    const iso = dayjs(dateStr, DateFormat).isValid()
+      ? dayjs(dateStr, DateFormat).format("YYYY-MM-DD")
+      : "";
+    setEmployeeObj((prev) => ({ ...prev, probation_end_date: iso }));
+    FormikForm.setFieldValue("probation_end_date", iso);
+    FormikForm.setFieldTouched("probation_end_date", true);
   };
 
   const handleJoinDateChange = (selectedJoinDate, dateStr, instance) => {
+    // Don't clear joining_date state when AntD fires onChange(null,"") internally.
+    if (!selectedJoinDate || !dateStr) {
+      setJoiningTypeError("");
+      return;
+    }
     setJoinDate(dateStr);
+    const year = selectedJoinDate.year();
+    if (year < 1900) {
+      setJoiningTypeError("Year must be 1900 or later");
+      return;
+    }
+    const maxJoiningDateLimit = dayjs().add(1, "year").endOf("day");
+    if (selectedJoinDate.isAfter(maxJoiningDateLimit, "day")) {
+      setJoiningTypeError("Joining date cannot exceed one year from today");
+      FormikForm.setFieldValue("joining_date", "");
+      return;
+    }
+    setJoiningTypeError("");
     setEmployeeObj({
       ...employeeObj,
       joining_date: ConvertISODateFormat(ConvertDateFormat(dateStr)),
@@ -457,13 +773,16 @@ const EmployeeForm = () => {
 
   const FormikForm = useFormik({
     enableReinitialize: true,
-    initialValues: employeeObj,
+    // initialValues: employeeObj,
+    initialValues: initialFormValues,
     validationSchema: Yup.object({
       emp_id: Yup.string()
         .trim()
         .matches(
-          /^[A-Z0-9_-]+$/,
-          "Employee ID must contain only uppercase letters, numbers, hyphens (-), and underscores (_).",
+          // /^[A-Z0-9_-]+$/,
+          // "Employee ID must contain only uppercase letters, numbers, hyphens (-), and underscores (_).",
+          /^[A-Z0-9](?:[A-Z0-9_-]*[A-Z0-9])?$/,
+          "Employee ID can contain hyphens (-) and underscores (_) only between letters or numbers.",
         )
         .required("Please enter employee ID")
         .max(50, "Employee ID cannot exceed 50 characters"),
@@ -504,10 +823,10 @@ const EmployeeForm = () => {
         .trim()
         .required("Please enter email")
         .transform((value) => (value ? value.trim().toLowerCase() : value))
-        .max(254, "Email must not exceed 254 characters")
+        .max(50, "Email must not exceed 50 characters")
         .matches(
-          /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/,
-          "Enter a valid email address",
+          /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,13}$/,
+          "Enter a valid email address.",
         ),
 
       gender: Yup.number()
@@ -527,6 +846,14 @@ const EmployeeForm = () => {
               dayjs(value).isSame(dayjs(), "day") ||
               dayjs(value).isBefore(dayjs(), "day")
             );
+          },
+        )
+        .test(
+          "dob-min-age-15",
+          "Employee must be at least 15 years old",
+          (value) => {
+            if (!value) return false;
+            return !dayjs(value).isAfter(dayjs().subtract(15, "year"), "day");
           },
         ),
 
@@ -587,6 +914,25 @@ const EmployeeForm = () => {
       work_schedule_id: Yup.number()
         .required("Please select work schedule")
         .min(1, "Please select work schedule"),
+
+      reporting_manager_id: Yup.number()
+        .nullable()
+        .test(
+          "reporting-manager-required",
+          "Please select reporting manager",
+          function (value) {
+            // mirror your HandleEmployeeSaveAPI rule: only required
+            // if primary dept isn't the root department
+            return !!value; // or your conditional logic if you want it optional for root dept
+          }
+        ),
+      allowed_attendance_methods: Yup.object()
+        .test(
+          "at-least-one-method",
+          "Please select at least one attendance method",
+          (value) =>
+            !!value && Object.values(value).some((v) => v === true),
+        ),
       cf_values: Yup.array().of(
         Yup.object().shape({
           value: Yup.mixed().when("is_required", {
@@ -613,6 +959,12 @@ const EmployeeForm = () => {
       ).some((v) => v === true);
       if (!hasAtLeastOneTrue) {
         setErrors("Please select at least one attendance method!");
+        return;
+      } else if (
+        Number(employeeObj?.employment_type) === 1 &&
+        !employeeObj?.probation_end_date
+      ) {
+        toast.error("Probation employees require an end date.");
         return;
       } else {
         setErrors("");
@@ -666,7 +1018,20 @@ const EmployeeForm = () => {
         ) {
           setTeamsToBeUpdated(ApiRes?.data?.team_employees_to_be_updated);
           setShowRMModal(true);
-        } else {
+        } 
+        else if (
+          ApiRes?.data?.message &&
+          /employee id/i.test(ApiRes.data.message) &&
+          /already exist/i.test(ApiRes.data.message)
+        ) {
+          setEmpIdApiError(ApiRes.data.message);
+          FormikForm.setFieldTouched("emp_id", true);
+          fieldRefs.current.emp_id?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        } 
+        else {
           toast.error(ApiRes?.data?.message || ApiRes?.data?.detail);
         }
       }
@@ -674,17 +1039,37 @@ const EmployeeForm = () => {
     }
   };
 
+  // useEffect(() => {
+  //   if (
+  //     hasAttemptedSubmit &&
+  //     Object.keys(FormikForm.errors).length > 0
+  //   ) {
+  //     const firstErrorField = Object.keys(FormikForm.errors)[0];
+  //     FormikForm.setFieldTouched(firstErrorField, true, false);
+  //     const errorField = document.querySelector(`[name="${firstErrorField}"]`);
+  //     if (errorField) errorField.focus();
+  //   }
+  // }, [FormikForm.errors, hasAttemptedSubmit]);
+
   useEffect(() => {
+    // if (hasAttemptedSubmit && Object.keys(FormikForm.errors).length > 0)
     if (
-      FormikForm.submitCount > 0 &&
-      Object.keys(FormikForm.errors).length > 0
-    ) {
+        hasAttemptedSubmit &&
+        FormikForm.submitCount > 0 &&
+        Object.keys(FormikForm.errors).length > 0
+      ) 
+      {
       const firstErrorField = Object.keys(FormikForm.errors)[0];
       FormikForm.setFieldTouched(firstErrorField, true, false);
-      const errorField = document.querySelector(`[name="${firstErrorField}"]`);
-      if (errorField) errorField.focus();
+
+      const node = fieldRefs.current[firstErrorField];
+      if (node) {
+        node.scrollIntoView({ behavior: "smooth", block: "center" });
+        const focusable = node.querySelector("input, select, textarea");
+        if (focusable) focusable.focus();
+      }
     }
-  }, [FormikForm.submitCount]);
+  }, [FormikForm.errors, hasAttemptedSubmit]);
 
   const [showRMModal, setShowRMModal] = useState(false);
   const onRMModalCloseClick = () => setShowRMModal(false);
@@ -739,8 +1124,69 @@ const EmployeeForm = () => {
     <React.Fragment>
       <Row>
         <Col>
+          {/* <Form
+            // onSubmit={FormikForm.handleSubmit}
+            onSubmit={(e) => {
+              setHasAttemptedSubmit(true);
+              FormikForm.handleSubmit(e);
+            }}
+            noValidate
+            action="javascript:void(0)"
+          > */}
           <Form
-            onSubmit={FormikForm.handleSubmit}
+            onSubmit={async (e) => {
+              e.preventDefault();
+
+              setHasAttemptedSubmit(true);
+
+              // Touch all fields so Formik validates every required field
+              const touchedFields = {};
+
+              Object.keys(FormikForm.initialValues).forEach((key) => {
+                touchedFields[key] = true;
+              });
+
+              FormikForm.setTouched(touchedFields, true);
+
+              // Wait until validation completes
+              const errors = await FormikForm.validateForm();
+              const NAME_REGEX = /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/;
+              const NAME_ERROR_MSG =
+                "Name cannot start or end with a hyphen (-) or apostrophe ('). Only alphabets, spaces, hyphens, and apostrophes are allowed.";
+
+              const manualErrors = { ...errors };
+              const fn = (employeeObj.first_name || "").trim();
+              const ln = (employeeObj.last_name || "").trim();
+              if (fn && !NAME_REGEX.test(fn)) manualErrors.first_name = NAME_ERROR_MSG;
+              if (ln && !NAME_REGEX.test(ln)) manualErrors.last_name = NAME_ERROR_MSG;
+
+              // if (Object.keys(errors).length > 0) {
+              //   const firstErrorField = Object.keys(errors)[0];
+              if (Object.keys(manualErrors).length > 0) {
+                const firstErrorField = Object.keys(manualErrors)[0];
+
+                requestAnimationFrame(() => {
+                  const node = fieldRefs.current[firstErrorField];
+
+                  if (!node) return;
+
+                  node.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                  });
+
+                  const input = node.querySelector(
+                    "input, textarea, select"
+                  );
+
+                  input?.focus();
+                });
+
+                return;
+              }
+
+              FormikForm.handleSubmit();
+            }}
             noValidate
             action="javascript:void(0)"
           >
@@ -778,7 +1224,7 @@ const EmployeeForm = () => {
             <Row>
               {/* ── Employee ID ──────────────────────────────────────────── */}
               <Col md={12} lg={12} xxl={12}>
-                <div>
+                <div  ref={(el) => (fieldRefs.current.emp_id = el)}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <Label
                       htmlFor="employeeid"
@@ -807,7 +1253,7 @@ const EmployeeForm = () => {
                           padding: "3px",
                         }}
                       >
-                        Uppercase letters and numbers only
+                        Uppercase letters and numbers only.  Hyphen (-) or underscore (_) allowed only in the middle, not at start/end.
                       </UncontrolledTooltip>
                     </Label>
                   </div>
@@ -825,44 +1271,71 @@ const EmployeeForm = () => {
                           .toUpperCase()
                           .replace(/[^A-Z0-9_-]/g, "");
 
+                       
                         setEmployeeObj((prev) => ({
                           ...prev,
                           emp_id: val,
                         }));
+                        checkMaxLength("emp_id", val);
 
                         FormikForm.setFieldValue("emp_id", val);
                         FormikForm.setFieldTouched("emp_id", true, false);
+                        setEmpIdApiError(""); 
 
-                        if (val.length > 50) {
-                          FormikForm.setFieldError(
-                            "emp_id",
-                            "Employee ID cannot exceed 50 characters",
-                          );
-                        } else {
-                          FormikForm.setFieldError("emp_id", undefined);
+                     
+                      }}
+                      // onBlur={() => FormikForm.setFieldTouched("emp_id", true)}
+                      onBlur={() => {
+                        if (employeeObj.emp_id && employeeObj.emp_id.trim() !== "") {
+                          FormikForm.setFieldTouched("emp_id", true);
                         }
                       }}
-                      onBlur={() => FormikForm.setFieldTouched("emp_id", true)}
-                      invalid={!!FormikForm.errors.emp_id}
+                      invalid={
+                        // !!FormikForm.errors.emp_id
+                        !!((FormikForm.touched.emp_id || hasAttemptedSubmit) &&
+                          FormikForm.errors.emp_id) || !!empIdApiError
+                      }
                     />
-                    {!FormikForm.errors.emp_id && (
-                      <i className="ri-user-line"></i>
-                    )}
-                    {FormikForm.errors.emp_id && (
+                    {
+                    // !FormikForm.errors.emp_id && (
+                      !(
+                        (FormikForm.touched.emp_id || hasAttemptedSubmit) &&
+                        FormikForm.errors.emp_id
+                      )
+                      //  &&
+                      // <i className="ri-user-line"></i>
+                    }
+                    {
+                    // FormikForm.errors.emp_id && (
+                    (FormikForm.touched.emp_id || hasAttemptedSubmit) &&
+                      FormikForm.errors.emp_id && 
+                      !lengthWarnings.emp_id &&(
                       <FormFeedback type="invalid">
                         {FormikForm.errors.emp_id}
                       </FormFeedback>
                     )}
+                    {lengthWarnings.emp_id && (
+                      <div className="lc_form_error_text">{lengthWarnings.emp_id}</div>
+                    )}
+                    {empIdApiError && (
+                      <div className="lc_form_error_text">{empIdApiError}</div>
+                    )}
                   </div>
-                  {!FormikForm.errors.emp_id && (
+                  {
+                  // !FormikForm.errors.emp_id && (
+                  !(
+                      (FormikForm.touched.emp_id || hasAttemptedSubmit) &&
+                      FormikForm.errors.emp_id
+                    ) && 
+                    !empIdApiError &&   
                     <div className="form-text mb-3">Enter employee ID</div>
-                  )}
+                  }
                 </div>
               </Col>
 
               {/* ── First Name ───────────────────────────────────────────── */}
               <Col md={6} lg={6} xxl={6}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.first_name = el)}>
                   <Label htmlFor="first_name" className="form-label">
                     First Name <span>*</span>
                   </Label>
@@ -875,29 +1348,52 @@ const EmployeeForm = () => {
                       placeholder="Elon"
                       value={employeeObj.first_name || ""}
                       onChange={(e) => handleNameInput(e, "first_name")}
-                      onBlur={() =>
-                        FormikForm.setFieldTouched("first_name", true)
+                      onBlur={() => {
+                        if (employeeObj.first_name && employeeObj.first_name.trim() !== "") {
+                          FormikForm.setFieldTouched("first_name", true);
+                          setNameTouched((prev) => ({
+                            ...prev,
+                            first_name: true,
+                          }));
+                        }
+                      }}
+                      invalid={
+                        // !!(
+                        //   nameTouched.first_name && FormikForm.errors.first_name
+                        // )
+                        !!((nameTouched.first_name || hasAttemptedSubmit) &&
+                          FormikForm.errors.first_name)
                       }
-                      invalid={!!FormikForm.errors.first_name}
                     />
-                    {!FormikForm.errors.first_name && (
-                      <i className="ri-user-line"></i>
-                    )}
-                    {FormikForm.errors.first_name && (
+                    {!(
+                      // nameTouched.first_name && FormikForm.errors.first_name
+                      (nameTouched.first_name || hasAttemptedSubmit) &&
+                        FormikForm.errors.first_name
+                    ) && <i className="ri-user-line"></i>}
+                    {/* {nameTouched.first_name && FormikForm.errors.first_name && ( */}
+                    {(nameTouched.first_name || hasAttemptedSubmit) &&
+                      FormikForm.errors.first_name && 
+                      !lengthWarnings.first_name && (
+
                       <FormFeedback type="invalid">
                         {FormikForm.errors.first_name}
                       </FormFeedback>
                     )}
+                    {lengthWarnings.first_name && (
+                      <div className="lc_form_error_text">{lengthWarnings.first_name}</div>
+                    )}
                   </div>
-                  {!FormikForm.errors.first_name && (
-                    <div className="form-text mb-3">Enter first name.</div>
-                  )}
+                  {!(
+                    // nameTouched.first_name && FormikForm.errors.first_name
+                      (nameTouched.first_name || hasAttemptedSubmit) &&
+                        FormikForm.errors.first_name
+                  ) && <div className="form-text mb-3">Enter first name.</div>}
                 </div>
               </Col>
 
               {/* ── Last Name ────────────────────────────────────────────── */}
               <Col md={6} lg={6} xxl={6}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.last_name = el)}>
                   <Label htmlFor="last_name" className="form-label">
                     Last Name <span>*</span>
                   </Label>
@@ -910,21 +1406,43 @@ const EmployeeForm = () => {
                       placeholder="Musk"
                       value={employeeObj.last_name || ""}
                       onChange={(e) => handleNameInput(e, "last_name")}
-                      onBlur={() =>
-                        FormikForm.setFieldTouched("last_name", true)
+                      onBlur={() => {
+                          if (employeeObj.last_name && employeeObj.last_name.trim() !== "") {
+                            FormikForm.setFieldTouched("last_name", true);
+                            setNameTouched((prev) => ({
+                              ...prev,
+                              last_name: true,
+                            }));
+                          }
+                      }}
+                      invalid={
+                        // !!(nameTouched.last_name && FormikForm.errors.last_name)
+                         !!((nameTouched.last_name || hasAttemptedSubmit) &&
+                          FormikForm.errors.last_name)
                       }
-                      invalid={!!FormikForm.errors.last_name}
                     />
-                    {!FormikForm.errors.last_name && (
-                      <i className="ri-user-2-line"></i>
-                    )}
-                    {FormikForm.errors.last_name && (
+                    {!(
+                      // nameTouched.last_name && FormikForm.errors.last_name
+                      (nameTouched.last_name || hasAttemptedSubmit) &&
+                        FormikForm.errors.last_name
+                    ) && <i className="ri-user-2-line"></i>}
+                    {/* {nameTouched.last_name && FormikForm.errors.last_name && ( */}
+                    {(nameTouched.last_name || hasAttemptedSubmit) &&
+                      FormikForm.errors.last_name &&
+                      !lengthWarnings.last_name && (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.last_name}
                       </FormFeedback>
                     )}
+                    {lengthWarnings.last_name && (
+                      <div className="lc_form_error_text">{lengthWarnings.last_name}</div>
+                    )}
                   </div>
-                  {!FormikForm.errors.last_name && (
+                  {!(
+                    // nameTouched.last_name && FormikForm.errors.last_name
+                      (nameTouched.last_name || hasAttemptedSubmit) &&
+                      FormikForm.errors.last_name
+                  )  && (
                     <div className="form-text mb-3">Enter last name.</div>
                   )}
                 </div>
@@ -932,7 +1450,7 @@ const EmployeeForm = () => {
 
               {/* ── Email ────────────────────────────────────────────────── */}
               <Col md={12} lg={12} xxl={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.email = el)}>
                   <Label htmlFor="emailid" className="form-label">
                     Email <span>*</span>
                   </Label>
@@ -944,44 +1462,71 @@ const EmployeeForm = () => {
                       placeholder="name@company.com"
                       value={employeeObj.email || ""}
                       onChange={(e) => {
-                        setEmployeeObj({
-                          ...employeeObj,
-                          email: e.target.value,
-                        });
+                      const val = e.target.value;
+                     
+                      setEmployeeObj({
+                      ...employeeObj,
+                      email: val,
+                      });
+
+                      setEmailTouched(true);
+                      checkMaxLength("email", val);
+                      FormikForm.setFieldValue("email", val);
+                      FormikForm.setFieldTouched("email", true, false);
                       }}
                       onBlur={(e) => {
-                        const value = e.target.value.trim().toLowerCase();
+                      const value = e.target.value.trim().toLowerCase();
 
-                        setEmployeeObj({
-                          ...employeeObj,
-                          email: value,
-                        });
+                      setEmployeeObj({
+                      ...employeeObj,
+                      email: value,
+                      });
 
-                        FormikForm.setFieldValue("email", value);
-                        FormikForm.handleBlur(e);
+                     
+                      FormikForm.setFieldValue("email", value);
+                      FormikForm.handleBlur(e);
+
+                      if (value !== "") {
+                        setEmailTouched(true);
+                      }
                       }}
                       invalid={
-                        !!(FormikForm.touched.email && FormikForm.errors.email)
+                        // !!(emailTouched && FormikForm.errors.email)
+                          !!((emailTouched || hasAttemptedSubmit) &&
+                          FormikForm.errors.email)
                       }
-                    />
-                    {!(FormikForm.touched.email && FormikForm.errors.email) && (
+                      />
+                      {
+                      // !(emailTouched && FormikForm.errors.email)
+                      !((emailTouched || hasAttemptedSubmit) && FormikForm.errors.email)
+                       && 
                       <i className="ri-at-line"></i>
-                    )}
-                    {FormikForm.touched.email && FormikForm.errors.email && (
+                      }
+                      {/* {emailTouched && FormikForm.errors.email && ( */}
+                       {(emailTouched || hasAttemptedSubmit) &&
+                      FormikForm.errors.email &&
+                      !lengthWarnings.email && (
                       <FormFeedback type="invalid">
-                        {FormikForm.errors.email}
+                      {FormikForm.errors.email}
                       </FormFeedback>
-                    )}
-                  </div>
-                  {!FormikForm.errors.email && (
-                    <div className="form-text mb-3">Enter email.</div>
-                  )}
+                      )}
+                      {lengthWarnings.email && (
+                        <div className="lc_form_error_text">{lengthWarnings.email}</div>
+                      )}
+                      </div>
+                      {!(
+                        // emailTouched && FormikForm.errors.email
+                          (emailTouched || hasAttemptedSubmit) &&
+                          FormikForm.errors.email
+                      ) && 
+                      <div className="form-text mb-3">Enter email.</div>
+                      }
                 </div>
               </Col>
 
               {/* ── Gender ───────────────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.gender = el)}>
                   <Label htmlFor="gender" className="form-label">
                     Gender <span>*</span>
                   </Label>
@@ -996,7 +1541,8 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.gender &&
+                          // FormikForm.touched.gender &&
+                          (FormikForm.touched.gender || hasAttemptedSubmit) &&
                           FormikForm.errors.gender
                             ? "red"
                             : provided.borderColor,
@@ -1010,31 +1556,61 @@ const EmployeeForm = () => {
                       []
                     }
                     onChange={(e) => {
+                      console.log("Gender Selected:", e);
+                      console.log("Gender Value:", e.value, typeof e.value);
+
                       setEmployeeObj({ ...employeeObj, gender: e.value });
                       FormikForm.setFieldValue("gender", e.value);
-                      FormikForm.setFieldTouched("gender", true);
+                      // FormikForm.setFieldTouched("gender", true);
                     }}
-                    onBlur={() => FormikForm.setFieldTouched("gender", true)}
+                    // onBlur={() => FormikForm.setFieldTouched("gender", true)}
+                    onBlur={() => {
+                      if (employeeObj.gender) {
+                        FormikForm.setFieldTouched("gender", true);
+                      }
+                    }}
                   />
-                  {FormikForm.touched.gender && FormikForm.errors.gender && (
+                  {(FormikForm.touched.gender || hasAttemptedSubmit) && FormikForm.errors.gender && (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.gender}
                     </div>
                   )}
-                  {!FormikForm.errors.gender && (
+                  {!(
+                    (FormikForm.touched.gender || hasAttemptedSubmit) &&
+                    FormikForm.errors.gender )&& 
                     <div className="form-text mb-3">Select gender.</div>
-                  )}
+                  }
                 </div>
               </Col>
 
               {/* ── DOB ──────────────────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.dob = el)}>
                   <Label htmlFor="dob" className="form-label">
                     Date of Birth <span>*</span>
                   </Label>
+
+                  {dobRawInvalidText !== null ? (
+                    <Input
+                      type="text"
+                      className={`form-control${dobTypeError ? " border-danger" : ""}`}
+                      placeholder="DD-MM-YYYY"
+                      autoFocus
+                      value={dobRawInvalidText}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setDobRawInvalidText(val);
+                        dobRawTyped.current = val;
+                        handleDobKeyUp({ target: { value: val } }); // reuse existing live validation
+                      }}
+                      onKeyDown={handleDateKeyDown}
+                      onBlur={handleDobBlur}
+                    />
+                  ) : (
+
                   <DatePicker
-                    className={`form-control${FormikForm.touched.dob && FormikForm.errors.dob ? " border-danger" : ""}`}
+                    ref={dobPickerRef}
+                    className={`form-control${((FormikForm.touched.dob || hasAttemptedSubmit) && FormikForm.errors.dob) || dobTypeError ? " border-danger" : ""}`}
                     placeholder="DD-MM-YYYY"
                     id="dob"
                     name="dob"
@@ -1043,14 +1619,22 @@ const EmployeeForm = () => {
                     onChange={handleDateChange}
                     allowClear={false}
                     disabledDate={disableDobDates}
-                    inputReadOnly={true}
+                    onKeyDown={handleDateKeyDown}
+                    onKeyUp={handleDobKeyUp}
+                    onBlur={handleDobBlur}
                   />
-                  {FormikForm.touched.dob && FormikForm.errors.dob && (
+                  )}
+                  {dobTypeError && (
+                    <div className="lc_form_error_text">{dobTypeError}</div>
+                  )}
+                  {!dobTypeError && (FormikForm.touched.dob || hasAttemptedSubmit) && FormikForm.errors.dob && (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.dob}
                     </div>
                   )}
-                  {!FormikForm.errors.dob && (
+                  {!dobTypeError && !(
+                  (FormikForm.touched.dob || hasAttemptedSubmit) &&
+                  FormikForm.errors.dob) && (
                     <div className="form-text mb-3">
                       Select a valid date of birth.
                     </div>
@@ -1060,7 +1644,7 @@ const EmployeeForm = () => {
 
               {/* ── Contact Number ───────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.contact_number = el)}>
                   <Label className="form-label">
                     Contact Number <span>*</span>
                   </Label>
@@ -1099,17 +1683,18 @@ const EmployeeForm = () => {
                         updateProfileData("contact_number", value);
                         FormikForm.setFieldValue("contact_number", value);
                       }}
-                      onBlur={() =>
-                        FormikForm.setFieldTouched("contact_number", true)
+                      onBlur={() =>{
+                        // FormikForm.setFieldTouched("contact_number", true)
+                        if (employeeObj.contact_number && employeeObj.contact_number.trim() !== "") {
+                          FormikForm.setFieldTouched("contact_number", true);
                       }
+                    }}
                       invalid={
-                        !!(
-                          FormikForm.touched.contact_number &&
-                          FormikForm.errors.contact_number
-                        )
+                        !!((FormikForm.touched.contact_number || hasAttemptedSubmit) &&
+                          FormikForm.errors.contact_number)
                       }
                     />
-                    {FormikForm.touched.contact_number &&
+                    {(FormikForm.touched.contact_number || hasAttemptedSubmit) &&
                       FormikForm.errors.contact_number && (
                         <FormFeedback type="invalid">
                           {FormikForm.errors.contact_number}
@@ -1163,7 +1748,11 @@ const EmployeeForm = () => {
                       </SimpleBar>
                     </DropdownMenu>
                   </Dropdown>
-                  {!FormikForm.errors.contact_number && (
+                  {
+                    !(
+                        (FormikForm.touched.contact_number || hasAttemptedSubmit) &&
+                        FormikForm.errors.contact_number
+                      ) && (
                     <div className="form-text mb-3">
                       Enter contact number (10 digits only).
                     </div>
@@ -1173,7 +1762,7 @@ const EmployeeForm = () => {
 
               {/* ── Branch ───────────────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.branch_id_list = el)}>
                   <Label htmlFor="branch" className="form-label">
                     Branch <span>*</span>
                   </Label>
@@ -1190,7 +1779,7 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.branch_id_list &&
+                          (FormikForm.touched.branch_id_list  || hasAttemptedSubmit)  &&
                           FormikForm.errors.branch_id_list
                             ? "red"
                             : provided.borderColor,
@@ -1210,27 +1799,31 @@ const EmployeeForm = () => {
                         "branch_id_list",
                         e.map((d) => d.value),
                       );
-                      FormikForm.setFieldTouched("branch_id_list", true);
+                      // FormikForm.setFieldTouched("branch_id_list", true);
                     }}
-                    onBlur={() =>
-                      FormikForm.setFieldTouched("branch_id_list", true)
-                    }
+                    onBlur={() =>{
+                      if (employeeObj.branch_id_list && employeeObj.branch_id_list.length > 0) {
+                        FormikForm.setFieldTouched("branch_id_list", true);
+                      }
+                    }}
                   />
-                  {FormikForm.touched.branch_id_list &&
+                  {(FormikForm.touched.branch_id_list || hasAttemptedSubmit) &&
                     FormikForm.errors.branch_id_list && (
                       <div className="lc_form_error_text">
                         {FormikForm.errors.branch_id_list}
                       </div>
                     )}
-                  {!FormikForm.errors.branch_id_list && (
+                  {!(
+                    (FormikForm.touched.branch_id_list || hasAttemptedSubmit) &&
+                    FormikForm.errors.branch_id_list ) && 
                     <div className="form-text mb-3">Select branch.</div>
-                  )}
+                  }
                 </div>
               </Col>
 
               {/* ── Primary Department ───────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.primary_department_id_list = el)}>
                   <Label
                     htmlFor="primary_department_id_list"
                     className="form-label"
@@ -1250,7 +1843,7 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.primary_department_id_list &&
+                          (FormikForm.touched.primary_department_id_list  || hasAttemptedSubmit)&&
                           FormikForm.errors.primary_department_id_list
                             ? "red"
                             : provided.borderColor,
@@ -1272,35 +1865,44 @@ const EmployeeForm = () => {
                         "primary_department_id_list",
                         e.map((d) => d.id),
                       );
-                      FormikForm.setFieldTouched(
-                        "primary_department_id_list",
-                        true,
-                      );
+                      // FormikForm.setFieldTouched(
+                      //   "primary_department_id_list",
+                      //   true,
+                      // );
                     }}
-                    onBlur={() =>
-                      FormikForm.setFieldTouched(
+                    onBlur={() =>{
+                        if (
+                            employeeObj.primary_department_id_list &&
+                            employeeObj.primary_department_id_list.length > 0
+                          )
+                       {
+                         FormikForm.setFieldTouched(
                         "primary_department_id_list",
                         true,
                       )
+                      }
+                    } 
                     }
                   />
-                  {FormikForm.touched.primary_department_id_list &&
+                  {(FormikForm.touched.primary_department_id_list  || hasAttemptedSubmit)  &&
                     FormikForm.errors.primary_department_id_list && (
                       <div className="lc_form_error_text">
                         {FormikForm.errors.primary_department_id_list}
                       </div>
                     )}
-                  {!FormikForm.errors.primary_department_id_list && (
+                  {!(
+                  (FormikForm.touched.primary_department_id_list || hasAttemptedSubmit) &&
+                  FormikForm.errors.primary_department_id_list ) && 
                     <div className="form-text mb-3">
                       Select primary department.
                     </div>
-                  )}
+                  }
                 </div>
               </Col>
 
               {/* ── Reporting Manager ────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.reporting_manager_id = el)}>
                   <Label htmlFor="reporting_manager_id">
                     Reporting Manager <span>*</span>
                   </Label>
@@ -1313,6 +1915,17 @@ const EmployeeForm = () => {
                     components={{ Option: EmployeeDisplayInSelect }}
                     className="basic-multi-select"
                     classNamePrefix="lc-select"
+                     styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        borderColor:
+                          !state.isFocused &&
+                          (FormikForm.touched.reporting_manager_id || hasAttemptedSubmit) &&
+                          FormikForm.errors.reporting_manager_id
+                            ? "red"
+                            : provided.borderColor,
+                      }),
+                    }}
                     value={
                       (employeeObj.reporting_manager_id &&
                         reportingManagerOptions.find(
@@ -1320,22 +1933,43 @@ const EmployeeForm = () => {
                         )) ||
                       null
                     }
-                    onChange={(selectedOption) => {
-                      setEmployeeObj({
-                        ...employeeObj,
-                        reporting_manager_id: selectedOption
-                          ? selectedOption.id
-                          : null,
-                      });
-                    }}
-                  />
+                  //   onChange={(selectedOption) => {
+                  //     setEmployeeObj({
+                  //       ...employeeObj,
+                  //       reporting_manager_id: selectedOption
+                  //         ? selectedOption.id
+                  //         : null,
+                  //     });
+                  //   }}
+                  // />
+                  onChange={(selectedOption) => {
+                    const val = selectedOption ? selectedOption.id : 0;
+                    setEmployeeObj({ ...employeeObj, reporting_manager_id: val });
+                    FormikForm.setFieldValue("reporting_manager_id", val);
+                    // FormikForm.setFieldTouched("reporting_manager_id", true);
+                  }}
+                  onBlur={() => {
+                    if (employeeObj.reporting_manager_id) {
+                      FormikForm.setFieldTouched("reporting_manager_id", true)}
+                  }}
+                />
+                {(FormikForm.touched.reporting_manager_id || hasAttemptedSubmit) &&
+                  FormikForm.errors.reporting_manager_id && (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.reporting_manager_id}
+                    </div>
+                )}
                 </div>
-                <div className="form-text mb-3">Select reporting manager.</div>
+                {!(
+                  (FormikForm.touched.reporting_manager_id || hasAttemptedSubmit) &&
+                  FormikForm.errors.reporting_manager_id
+                )&&
+                <div className="form-text mb-3">Select reporting manager.</div>}
               </Col>
 
               {/* ── Role ─────────────────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.role_id = el)}>
                   <Label htmlFor="role_id" className="form-label">
                     Role <span>*</span>
                   </Label>
@@ -1350,7 +1984,7 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.role_id &&
+                          (FormikForm.touched.role_id || hasAttemptedSubmit)&&
                           FormikForm.errors.role_id
                             ? "red"
                             : provided.borderColor,
@@ -1366,24 +2000,32 @@ const EmployeeForm = () => {
                     onChange={(e) => {
                       setEmployeeObj({ ...employeeObj, role_id: e.id });
                       FormikForm.setFieldValue("role_id", e.id);
-                      FormikForm.setFieldTouched("role_id", true);
+                      // FormikForm.setFieldTouched("role_id", true);
                     }}
-                    onBlur={() => FormikForm.setFieldTouched("role_id", true)}
+                    onBlur={() =>
+                      {
+                        if (employeeObj.role_id) {
+                          FormikForm.setFieldTouched("role_id", true);
+                        }
+                      } }
                   />
-                  {FormikForm.touched.role_id && FormikForm.errors.role_id && (
+                  {(FormikForm.touched.role_id || hasAttemptedSubmit) && FormikForm.errors.role_id && (
                     <div className="lc_form_error_text">
                       {FormikForm.errors.role_id}
                     </div>
                   )}
-                  {!FormikForm.errors.role_id && (
+                  {
+                  !(
+                  (FormikForm.touched.role_id || hasAttemptedSubmit) &&
+                  FormikForm.errors.role_id ) && 
                     <div className="form-text mb-3">Select role.</div>
-                  )}
+                  }
                 </div>
               </Col>
 
               {/* ── Work Schedule ────────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.work_schedule_id = el)}>
                   <Label htmlFor="empWs" className="form-label">
                     Work Schedule <span>*</span>
                   </Label>
@@ -1398,7 +2040,7 @@ const EmployeeForm = () => {
                         ...provided,
                         borderColor:
                           !state.isFocused &&
-                          FormikForm.touched.work_schedule_id &&
+                          (FormikForm.touched.work_schedule_id || hasAttemptedSubmit) &&
                           FormikForm.errors.work_schedule_id
                             ? "red"
                             : provided.borderColor,
@@ -1418,32 +2060,59 @@ const EmployeeForm = () => {
                         work_schedule_id: e.id,
                       });
                       FormikForm.setFieldValue("work_schedule_id", e.id);
-                      FormikForm.setFieldTouched("work_schedule_id", true);
+                      // FormikForm.setFieldTouched("work_schedule_id", true);
                     }}
                     onBlur={() =>
-                      FormikForm.setFieldTouched("work_schedule_id", true)
+                      {
+                        if (employeeObj.work_schedule_id) {
+                          FormikForm.setFieldTouched("work_schedule_id", true);
+                        }
+                      }
                     }
                   />
-                  {FormikForm.touched.work_schedule_id &&
+                  {(FormikForm.touched.work_schedule_id || hasAttemptedSubmit) &&
                     FormikForm.errors.work_schedule_id && (
                       <div className="lc_form_error_text">
                         {FormikForm.errors.work_schedule_id}
                       </div>
                     )}
-                  {!FormikForm.errors.work_schedule_id && (
+                  {!(
+                  (FormikForm.touched.work_schedule_id || hasAttemptedSubmit) &&
+                  FormikForm.errors.work_schedule_id ) && 
                     <div className="form-text mb-3">Select work schedule.</div>
-                  )}
+                  }
                 </div>
               </Col>
 
               {/* ── Joining Date ─────────────────────────────────────────── */}
               <Col lg={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.joining_date = el)}>
                   <Label htmlFor="joining_date" className="form-label">
                     Joining Date <span>*</span>
                   </Label>
+
+                    {joinRawInvalidText !== null ? (
+                      <Input
+                        type="text"
+                        className={`form-control${joiningTypeError ? " border-danger" : ""}`}
+                        placeholder="DD-MM-YYYY"
+                        id="joining_date"
+                        name="joining_date"
+                        autoFocus
+                        value={joinRawInvalidText}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setJoinRawInvalidText(val);
+                          joinRawTyped.current = val;
+                          handleJoinKeyUp({ target: { value: val } });
+                        }}
+                        onKeyDown={handleDateKeyDown}
+                        onBlur={handleJoinBlur}
+                      />
+                    ) : (
                   <DatePicker
-                    className={`form-control${FormikForm.touched.joining_date && FormikForm.errors.joining_date ? " border-danger" : ""}`}
+                    ref={joinPickerRef}
+                    className={`form-control${((FormikForm.touched.joining_date || hasAttemptedSubmit) && FormikForm.errors.joining_date) || joiningTypeError ? " border-danger" : ""}`}
                     id="joining_date"
                     name="joining_date"
                     value={
@@ -1453,21 +2122,79 @@ const EmployeeForm = () => {
                     allowClear={false}
                     onChange={handleJoinDateChange}
                     disabledDate={disableJoiningDates}
-                    inputReadOnly={true}
+                    onKeyDown={handleDateKeyDown}
+                    onKeyUp={handleJoinKeyUp}
+                    onBlur={handleJoinBlur}
                   />
-                  {FormikForm.touched.joining_date &&
+                  )}
+                  {joiningTypeError && (
+                    <div className="lc_form_error_text">{joiningTypeError}</div>
+                  )}
+                  {!joiningTypeError && (FormikForm.touched.joining_date || hasAttemptedSubmit) &&
                     FormikForm.errors.joining_date && (
                       <div className="lc_form_error_text">
                         {FormikForm.errors.joining_date}
                       </div>
                     )}
-                  {!FormikForm.errors.joining_date && (
+                  {!joiningTypeError && !(
+                    (FormikForm.touched.joining_date || hasAttemptedSubmit) &&
+                    FormikForm.errors.joining_date
+                  ) && (
                     <div className="form-text mb-3">
                       Select a valid joining date (up to 1 year in the future).
                     </div>
                   )}
                 </div>
               </Col>
+
+              {/* ── Employment Type ──────────────────────────────────────── */}
+              <Col lg={12}>
+                <div className="mb-3">
+                  <Label htmlFor="employment_type" className="form-label">
+                    Employment Type <span>*</span>
+                  </Label>
+                  <select
+                    className="form-control"
+                    id="employment_type"
+                    name="employment_type"
+                    value={employeeObj?.employment_type || 2}
+                    onChange={handleEmploymentTypeChange}
+                  >
+                    <option value={1}>Probation</option>
+                    <option value={2}>Full Time</option>
+                  </select>
+                </div>
+              </Col>
+
+              {/* ── Probation End Date (only when Probation) ─────────────── */}
+              {Number(employeeObj?.employment_type) === 1 && (
+                <Col lg={12}>
+                  <div>
+                    <Label htmlFor="probation_end_date" className="form-label">
+                      Probation End Date <span>*</span>
+                    </Label>
+                    <DatePicker
+                      className="form-control"
+                      id="probation_end_date"
+                      name="probation_end_date"
+                      value={
+                        probation_end_date
+                          ? dayjs(probation_end_date, DateFormat)
+                          : null
+                      }
+                      format={DateFormat}
+                      allowClear={false}
+                      onChange={handleProbationEndDateChange}
+                      inputReadOnly={true}
+                    />
+                    <div className="form-text mb-3">
+                      {defaultProbationMonths
+                        ? `Auto-filled to ${defaultProbationMonths} month(s) from joining; adjust if needed.`
+                        : "No probation policy configured — please set the end date manually."}
+                    </div>
+                  </div>
+                </Col>
+              )}
 
               {/* ── ID Proof ─────────────────────────────────────────────── */}
               {/* {selectedFileName ? (
@@ -1589,7 +2316,7 @@ const EmployeeForm = () => {
 
               {/* ── Attendance Methods ───────────────────────────────────── */}
               <Col md={12} lg={12} xxl={12}>
-                <div>
+                <div ref={(el) => (fieldRefs.current.allowed_attendance_methods = el)}>
                   <Label htmlFor="auth_types" className="form-label">
                     Allowed Attendance Methods <span>*</span>
                   </Label>
@@ -1621,15 +2348,27 @@ const EmployeeForm = () => {
                             employeeObj.allowed_attendance_methods?.[key] ||
                             false
                           }
-                          onChange={(e) =>
+                          // onChange={(e) =>
+                          //   setEmployeeObj({
+                          //     ...employeeObj,
+                          //     allowed_attendance_methods: {
+                          //       ...employeeObj?.allowed_attendance_methods,
+                          //       [key]: e.target.checked,
+                          //     },
+                          //   })
+                          // }
+                          onChange={(e) => {
+                            const updated = {
+                              ...employeeObj?.allowed_attendance_methods,
+                              [key]: e.target.checked,
+                            };
                             setEmployeeObj({
                               ...employeeObj,
-                              allowed_attendance_methods: {
-                                ...employeeObj?.allowed_attendance_methods,
-                                [key]: e.target.checked,
-                              },
-                            })
-                          }
+                              allowed_attendance_methods: updated,
+                            });
+                            FormikForm.setFieldValue("allowed_attendance_methods", updated);
+                            FormikForm.setFieldTouched("allowed_attendance_methods", true, false);
+                          }}
                         />
                         <Label className="form-check-label" htmlFor={id}>
                           {label}
@@ -1637,6 +2376,12 @@ const EmployeeForm = () => {
                       </div>
                     ))}
                   </div>
+                  {hasAttemptedSubmit &&
+                    FormikForm.errors.allowed_attendance_methods && (
+                      <div className="lc_form_error_text">
+                        {FormikForm.errors.allowed_attendance_methods}
+                      </div>
+                  )}
                   {errors && (
                     <div style={{ color: "red", marginTop: "4px" }}>
                       {errors}
@@ -1669,7 +2414,7 @@ const EmployeeForm = () => {
                                 invalid={
                                   !!(
                                     obj.is_required &&
-                                    FormikForm.submitCount > 0 &&
+                                    hasAttemptedSubmit &&
                                     (!obj.value ||
                                       String(obj.value).trim() === "")
                                   )
@@ -1678,7 +2423,7 @@ const EmployeeForm = () => {
                               <i className="ri-user-2-line"></i>
                             </div>
                             {obj.is_required &&
-                            FormikForm.submitCount > 0 &&
+                            hasAttemptedSubmit &&
                             (!obj.value || String(obj.value).trim() === "") ? (
                               <div className="lc_form_error_text">
                                 This field is required
@@ -1700,7 +2445,7 @@ const EmployeeForm = () => {
                                 invalid={
                                   !!(
                                     obj.is_required &&
-                                    FormikForm.submitCount > 0 &&
+                                    hasAttemptedSubmit &&
                                     (!obj.value ||
                                       String(obj.value).trim() === "")
                                   )
@@ -1709,7 +2454,7 @@ const EmployeeForm = () => {
                               <i className="ri-user-2-line"></i>
                             </div>
                             {obj.is_required &&
-                            FormikForm.submitCount > 0 &&
+                            hasAttemptedSubmit &&
                             (!obj.value || String(obj.value).trim() === "") ? (
                               <div className="lc_form_error_text">
                                 This field is required
@@ -1754,7 +2499,7 @@ const EmployeeForm = () => {
                                   borderColor:
                                     !state.isFocused &&
                                     obj.is_required &&
-                                    FormikForm.submitCount > 0 &&
+                                    hasAttemptedSubmit &&
                                     (!obj.value ||
                                       String(obj.value).trim() === "")
                                       ? "red"
@@ -1770,7 +2515,7 @@ const EmployeeForm = () => {
                               placeholder={`Select ${obj.name}`}
                             />
                             {obj.is_required &&
-                              FormikForm.submitCount > 0 &&
+                              hasAttemptedSubmit &&
                               (!obj.value ||
                                 String(obj.value).trim() === "") && (
                                 <div className="lc_form_error_text">

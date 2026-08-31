@@ -20,13 +20,13 @@ const HolidayFilter = () => {
 
   const dep_options = useMemo(
     () => GetLocalStorageData("department") || [],
-    []
+    [],
   );
 
   const dispatch = useDispatch();
 
   const { attendance_approval_table_filter_keys } = useSelector(
-    (state) => state.TableFilterReducer
+    (state) => state.TableFilterReducer,
   );
 
   const handleFilterChange = (e, name) => {
@@ -35,7 +35,7 @@ const HolidayFilter = () => {
       setAttendanceApprovalTableFilterKeys({
         ...attendance_approval_table_filter_keys,
         [name]: val,
-      })
+      }),
     );
   };
 
@@ -44,7 +44,7 @@ const HolidayFilter = () => {
       setAttendanceApprovalTableFilterKeys({
         ...attendance_approval_table_filter_keys,
         thisMonth: monthStr,
-      })
+      }),
     );
   };
 
@@ -64,61 +64,60 @@ const HolidayFilter = () => {
     { id: 12, label: "December", value: "December" },
   ];
 
-
   return (
     <React.Fragment>
-      
-        <Col md={4}>
-          <div className="form-icon right">
-            <DatePicker
-              picker="year"
-              inputReadOnly={true}
-              allowClear={false}
-              className="form-control"
-              style={{ width: "100%",   height: "38px", }}
-              placeholder="Select Year"
-              disabledDate={(current) => {
-                const minYear = 1900;
-                const maxYear = new Date().getFullYear() + 1;
+      <Col md={4}>
+        <div className="form-icon right">
+          <DatePicker
+            picker="year"
+            inputReadOnly={true}
+            allowClear={false}
+            className="form-control"
+            style={{ width: "100%", height: "38px" }}
+            placeholder="Select Year"
+            disabledDate={(current) => {
+              const minYear = 1900;
+              const maxYear = new Date().getFullYear() + 1;
 
-                return (
-                  current.year() < minYear ||
-                  current.year() > maxYear
-                );
-              }}
-              // onChange={handleDateRangeChange}
-              onChange={(date, yearStr) => {
+              return current.year() < minYear || current.year() > maxYear;
+            }}
+            // onChange={handleDateRangeChange}
+            onChange={(date, yearStr) => {
               dispatch(
                 setAttendanceApprovalTableFilterKeys({
                   ...attendance_approval_table_filter_keys,
                   year: yearStr,
-                })
-              );
-            }}
-            />
-          </div>
-        </Col>
-
-        
-        <Col md={4}>
-          <Select
-            options={monthOptions}
-            placeholder="Select Month"
-            getOptionLabel={(option) => option.label}
-            getOptionValue={(option) => option.id}
-            defaultValue={monthOptions[0]}
-            onChange={(selected) => {
-              dispatch(
-                setAttendanceApprovalTableFilterKeys({
-                  ...attendance_approval_table_filter_keys,
-                  month: selected?.id || 0,
-                })
+                }),
               );
             }}
           />
-        </Col>
+        </div>
+      </Col>
 
-    
+      <Col md={4}>
+        <Select
+          options={monthOptions}
+          placeholder="Select Month"
+          getOptionLabel={(option) => option.label}
+          getOptionValue={(option) => option.id}
+          defaultValue={monthOptions[0]}
+          styles={{
+            menuPortal: (base) => ({
+              ...base,
+              zIndex: 9999,
+            }),
+          }}
+          menuPortalTarget={document.body}
+          onChange={(selected) => {
+            dispatch(
+              setAttendanceApprovalTableFilterKeys({
+                ...attendance_approval_table_filter_keys,
+                month: selected?.id || 0,
+              }),
+            );
+          }}
+        />
+      </Col>
     </React.Fragment>
   );
 };

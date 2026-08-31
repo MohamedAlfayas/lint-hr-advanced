@@ -74,6 +74,9 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
 
   // ── Redux ───────────────────────────────────────────────────────────────────
   const { tasks: task_data } = useSelector((state) => state.TaskReducer);
+  const { task_list_filter_keys } = useSelector(
+    (state) => state.TableFilterReducer,
+  );
 
   const displayedTasks = useMemo(() => {
     if (!Array.isArray(task_data)) return [];
@@ -104,23 +107,63 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
       );
     }
 
+    // ── Apply select-filter panel (TaskListFilter) ─────────────────────────
+    const f = task_list_filter_keys || {};
+
+    if (f.assigned_to) {
+      filtered = filtered.filter(
+        (task) => Number(task.assigned_to) === Number(f.assigned_to),
+      );
+    }
+
+    if (Array.isArray(f.collaborator_id) && f.collaborator_id.length > 0) {
+      const collabIds = f.collaborator_id.map(Number);
+      filtered = filtered.filter((task) =>
+        (task.collaborators_id_list || []).some((id) =>
+          collabIds.includes(Number(id)),
+        ),
+      );
+    }
+
+    if (f.task_status) {
+      filtered = filtered.filter(
+        (task) => Number(task.task_status) === Number(f.task_status),
+      );
+    }
+
+    if (f.task_priority) {
+      filtered = filtered.filter(
+        (task) => Number(task.task_priority) === Number(f.task_priority),
+      );
+    }
+
+    if (f.is_my_task !== null && f.is_my_task !== undefined) {
+      filtered = filtered.filter(
+        (task) => !!task.is_my_task === !!f.is_my_task,
+      );
+    }
+
     return filtered;
-  }, [task_data, projectId, clientId, searchQuery]);
+  }, [task_data, projectId, clientId, searchQuery, task_list_filter_keys]);
 
-  // ── Fetch all tasks on mount ────────────────────────────────────────────────
-  useEffect(() => {
-    getAllTasks();
-    dispatch(resetTaskListFilterKeys());
-  }, []);
-
-  const getAllTasks = async () => {
+  // ── Fetch all tasks ─────────────────────────────────────────────────────────
+  const getAllTasks = useCallback(async () => {
     try {
       const response = await Api.get("/task/");
-      dispatch(setTasks(response?.data?.data || []));
+      // ✅ FIX: API returns { data: [...] } — a flat array, not { external, internal }
+      const tasks = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : [];
+      dispatch(setTasks(tasks));
     } catch (error) {
       console.log("Task Fetch Error :", error);
     }
-  };
+  }, [dispatch]);
+
+  useEffect(() => {
+    getAllTasks();
+    dispatch(resetTaskListFilterKeys());
+  }, [getAllTasks, dispatch]);
 
   // ── Modal handlers ──────────────────────────────────────────────────────────
   const openTaskDetail = useCallback((taskId) => {
@@ -138,6 +181,8 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
         Header: "Title",
         id: "title",
         filterable: false,
+        width: 280, // fixed instead of auto
+        minWidth: 280,
         accessor: (obj) => {
           const plainDescription =
             obj.description?.replace(/<[^>]*>/g, "") || "";
@@ -175,7 +220,7 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
           }
 
           return (
-            <div>
+            <div style={{ minHeight: "36px" }}>
               <b
                 className="text-primary"
                 style={{ cursor: "pointer" }}
@@ -191,11 +236,13 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
                     fontSize: "13px",
                     color: "#6c757d",
                     marginTop: "4px",
+                    minHeight: "16px",
+                    visibility: plainDescription ? "visible" : "hidden",
                   }}
                 >
                   {plainDescription.length > 60
                     ? `${plainDescription.substring(0, 60)}...`
-                    : plainDescription}
+                    : plainDescription || "placeholder"}
                 </div>
               )}
             </div>
@@ -234,6 +281,26 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
             );
           }
           return "-";
+        },
+      },
+
+      // ✅ Field Visit — only meaningful for Client-related tasks
+      {
+        Header: "Field Visit",
+        id: "requires_field_visit",
+        filterable: false,
+        accessor: (obj) => {
+          if (obj.related_to !== "client") return "-";
+          return obj.requires_field_visit ? (
+            <span className="badge bg-success-subtle text-success">
+              <i className="ri-map-pin-line align-bottom me-1" />
+              Required
+            </span>
+          ) : (
+            <span className="badge bg-secondary-subtle text-secondary">
+              Not Required
+            </span>
+          );
         },
       },
 
@@ -327,7 +394,10 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
         filterable: false,
         accessor: (obj) => {
           const priorities = GetLocalStorageData("task_priority") || [];
-          const priority = priorities.find((p) => p.id === obj.task_priority);
+          // ✅ FIX: loose numeric compare (string/number mismatch caused missed lookups)
+          const priority = priorities.find(
+            (p) => Number(p.id) === Number(obj.task_priority),
+          );
           if (!priority) return "-";
           return (
             <span
@@ -349,7 +419,10 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
         filterable: false,
         accessor: (obj) => {
           const statuses = GetLocalStorageData("task_status") || [];
-          const status = statuses.find((s) => s.id === obj.task_status);
+          // ✅ FIX: loose numeric compare (string/number mismatch caused missed lookups)
+          const status = statuses.find(
+            (s) => Number(s.id) === Number(obj.task_status),
+          );
           if (!status) return "-";
           return (
             <span
@@ -360,22 +433,6 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
             </span>
           );
         },
-      },
-
-      {
-        Header: "Start Time",
-        id: "start_time",
-        filterable: false,
-        accessor: (obj) =>
-          obj.start_time ? new Date(obj.start_time).toLocaleString() : "-",
-      },
-
-      {
-        Header: "End Time",
-        id: "end_time",
-        filterable: false,
-        accessor: (obj) =>
-          obj.end_time ? new Date(obj.end_time).toLocaleString() : "-",
       },
 
       {
@@ -415,6 +472,8 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
       task_priority: null,
       start_time: "",
       end_time: "",
+      requires_field_visit: false,
+      client_location: null, // ✅ FIX: keep in sync with TaskListForm's defaultTaskData
     }),
     [projectId, clientId],
   );

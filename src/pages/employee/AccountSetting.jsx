@@ -462,15 +462,18 @@ const AccountSettings = () => {
   };
 
   const FormikFormPassword = useFormik({
-    enableReinitialize: true,
+    // enableReinitialize: true,
     initialValues: changePassword,
     validationSchema: Yup.object({
       old_password: Yup.string()
         .matches(/^\S*$/, "Password cannot contain spaces")
         .required("Old Password is required"),
       new_password: Yup.string()
+        .matches(/^\S*$/, "Password cannot contain spaces")
+        .min(8, "Minimum 8 characters required")
+        .max(20, "Maximum 20 characters allowed")
         .matches(
-          /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/,
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*]).*$/,
           "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
         )
         .notOneOf(
@@ -494,7 +497,13 @@ const AccountSettings = () => {
         });
         navigate(`/employee/view/${employeeObj.emp_uuid}`);
       } else {
-        toast.error("Something Went Wrong");
+        const backendMessage =
+          Api?.data?.message || Api?.data?.detail || "Something Went Wrong";
+
+        FormikFormPassword.setFieldTouched("old_password", true, false);
+        FormikFormPassword.setFieldError("old_password", backendMessage);
+
+        toast.error(backendMessage);
       }
     },
   });
@@ -1654,11 +1663,77 @@ const AccountSettings = () => {
                                   type={showPassword1 ? "text" : "password"}
                                   className="form-control"
                                   placeholder="Enter current password"
+                                  onKeyDown={(e) => {
+                                    if (e.key === " ") {
+                                      e.preventDefault();
+                                    }
+                                  }}
                                   onChange={(e) => {
+                                    const value = e.target.value;
+
                                     setChangePassword({
                                       ...changePassword,
-                                      old_password: e.target.value,
+                                      old_password: value,
                                     });
+
+                                    FormikFormPassword.setFieldValue(
+                                      "old_password",
+                                      value,
+                                      false,
+                                    );
+                                    FormikFormPassword.setFieldTouched(
+                                      "old_password",
+                                      true,
+                                      false,
+                                    );
+                                    if (!value) {
+                                      FormikFormPassword.setFieldError(
+                                        "old_password",
+                                        "Old Password is required",
+                                      );
+                                    } else {
+                                      FormikFormPassword.setFieldError(
+                                        "old_password",
+                                        undefined,
+                                      );
+                                    }
+
+                                    // Re-check new_password against updated old_password
+                                    if (changePassword.new_password) {
+                                      const strongPasswordRegex =
+                                        /^(?=\S*$)(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*]).*$/;
+                                      const newPassVal =
+                                        changePassword.new_password;
+
+                                      if (newPassVal.length > 20) {
+                                        FormikFormPassword.setFieldError(
+                                          "new_password",
+                                          "Maximum 20 characters allowed",
+                                        );
+                                      } else if (newPassVal.length < 8) {
+                                        FormikFormPassword.setFieldError(
+                                          "new_password",
+                                          "Minimum 8 characters required",
+                                        );
+                                      } else if (
+                                        !strongPasswordRegex.test(newPassVal)
+                                      ) {
+                                        FormikFormPassword.setFieldError(
+                                          "new_password",
+                                          "Must include uppercase, lowercase, number & special character",
+                                        );
+                                      } else if (newPassVal === value) {
+                                        FormikFormPassword.setFieldError(
+                                          "new_password",
+                                          "New Password must be different from Old Password",
+                                        );
+                                      } else {
+                                        FormikFormPassword.setFieldError(
+                                          "new_password",
+                                          undefined,
+                                        );
+                                      }
+                                    }
                                   }}
                                   value={changePassword.old_password || ""}
                                   invalid={
@@ -1672,23 +1747,22 @@ const AccountSettings = () => {
                                 <FormFeedback type="invalid">
                                   {FormikFormPassword.errors.old_password}
                                 </FormFeedback>
-                                {!FormikFormPassword.touched.old_password &&
-                                !FormikFormPassword.errors.old_password ? (
-                                  <i
-                                    className={`mdi mdi-${
-                                      showPassword1
-                                        ? "eye-off-outline"
-                                        : "eye-outline"
-                                    } eye-icon`}
-                                    // style={{
-                                    //   cursor: "pointer",
-                                    //   marginLeft: "10px",
-                                    // }}
-                                    onClick={() =>
-                                      setShowPassword1(!showPassword1)
-                                    }
-                                  />
-                                ) : null}
+
+                                <i
+                                  className={`mdi mdi-${
+                                    showPassword1
+                                      ? "eye-off-outline"
+                                      : "eye-outline"
+                                  } eye-icon`}
+                                  // style={{
+                                  //   cursor: "pointer",
+                                  //   marginLeft: "10px",
+                                  // }}
+                                  style={{ cursor: "pointer" }}
+                                  onClick={() =>
+                                    setShowPassword1(!showPassword1)
+                                  }
+                                />
                               </div>
                             </div>
                           </Col>
@@ -1708,12 +1782,95 @@ const AccountSettings = () => {
                                   type={showPassword2 ? "text" : "password"}
                                   className="form-control"
                                   placeholder="Enter new password"
-                                  onChange={(e) =>
+                                  onKeyDown={(e) => {
+                                    if (e.key === " ") {
+                                      e.preventDefault();
+                                    }
+                                  }}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+
                                     setChangePassword({
                                       ...changePassword,
-                                      new_password: e.target.value,
-                                    })
-                                  }
+                                      new_password: value,
+                                    });
+
+                                    FormikFormPassword.setFieldValue(
+                                      "new_password",
+                                      value,
+                                      false,
+                                    );
+                                    FormikFormPassword.setFieldTouched(
+                                      "new_password",
+                                      true,
+                                      false,
+                                    );
+
+                                    const strongPasswordRegex =
+                                      /^(?=\S*$)(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*]).*$/;
+
+                                    if (!value) {
+                                      FormikFormPassword.setFieldError(
+                                        "new_password",
+                                        "New Password is required",
+                                      );
+                                    } else if (value.length > 20) {
+                                      FormikFormPassword.setFieldError(
+                                        "new_password",
+                                        "Maximum 20 characters allowed",
+                                      );
+                                    } else if (value.length < 8) {
+                                      FormikFormPassword.setFieldError(
+                                        "new_password",
+                                        "Minimum 8 characters required",
+                                      );
+                                    } else if (
+                                      !strongPasswordRegex.test(value)
+                                    ) {
+                                      FormikFormPassword.setFieldError(
+                                        "new_password",
+                                        "Must include uppercase, lowercase, number & special character",
+                                      );
+                                    } else if (
+                                      value === changePassword.old_password
+                                    ) {
+                                      FormikFormPassword.setFieldError(
+                                        "new_password",
+                                        "New Password must be different from Old Password",
+                                      );
+                                    } else {
+                                      FormikFormPassword.setFieldError(
+                                        "new_password",
+                                        undefined,
+                                      );
+                                    }
+
+                                    // Re-check confirm_password against updated new_password
+                                    if (changePassword.confirm_password) {
+                                      if (
+                                        changePassword.confirm_password.length >
+                                        20
+                                      ) {
+                                        FormikFormPassword.setFieldError(
+                                          "confirm_password",
+                                          "Maximum 20 characters allowed",
+                                        );
+                                      } else if (
+                                        changePassword.confirm_password !==
+                                        value
+                                      ) {
+                                        FormikFormPassword.setFieldError(
+                                          "confirm_password",
+                                          "Passwords must match",
+                                        );
+                                      } else {
+                                        FormikFormPassword.setFieldError(
+                                          "confirm_password",
+                                          undefined,
+                                        );
+                                      }
+                                    }
+                                  }}
                                   value={changePassword.new_password || ""}
                                   invalid={
                                     FormikFormPassword.touched.new_password &&
@@ -1730,16 +1887,14 @@ const AccountSettings = () => {
                                     setShowPassword2(!showPassword2)
                                   }
                                 >
-                                  {!FormikFormPassword.touched.new_password &&
-                                  !FormikFormPassword.errors.new_password ? (
-                                    <i
-                                      className={`mdi mdi-${
-                                        showPassword2
-                                          ? "eye-off-outline"
-                                          : "eye-outline"
-                                      } eye-icon`}
-                                    />
-                                  ) : null}
+                                  <i
+                                    className={`mdi mdi-${
+                                      showPassword2
+                                        ? "eye-off-outline"
+                                        : "eye-outline"
+                                    } eye-icon`}
+                                    style={{ cursor: "pointer" }}
+                                  />
                                 </div>
                               </div>
                             </div>
@@ -1760,12 +1915,54 @@ const AccountSettings = () => {
                                   type={showPassword3 ? "text" : "password"}
                                   className="form-control"
                                   placeholder="Confirm password"
-                                  onChange={(e) =>
+                                  onKeyDown={(e) => {
+                                    if (e.key === " ") {
+                                      e.preventDefault();
+                                    }
+                                  }}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+
                                     setChangePassword({
                                       ...changePassword,
-                                      confirm_password: e.target.value,
-                                    })
-                                  }
+                                      confirm_password: value,
+                                    });
+
+                                    FormikFormPassword.setFieldValue(
+                                      "confirm_password",
+                                      value,
+                                      false,
+                                    );
+                                    FormikFormPassword.setFieldTouched(
+                                      "confirm_password",
+                                      true,
+                                      false,
+                                    );
+
+                                    if (!value) {
+                                      FormikFormPassword.setFieldError(
+                                        "confirm_password",
+                                        "Confirm Password is required",
+                                      );
+                                    } else if (value.length > 20) {
+                                      FormikFormPassword.setFieldError(
+                                        "confirm_password",
+                                        "Maximum 20 characters allowed",
+                                      );
+                                    } else if (
+                                      value !== changePassword.new_password
+                                    ) {
+                                      FormikFormPassword.setFieldError(
+                                        "confirm_password",
+                                        "Passwords must match",
+                                      );
+                                    } else {
+                                      FormikFormPassword.setFieldError(
+                                        "confirm_password",
+                                        undefined,
+                                      );
+                                    }
+                                  }}
                                   value={changePassword.confirm_password || ""}
                                   invalid={
                                     FormikFormPassword.touched
@@ -1779,19 +1976,18 @@ const AccountSettings = () => {
                                 <FormFeedback>
                                   {FormikFormPassword.errors.confirm_password}
                                 </FormFeedback>
-                                {!FormikFormPassword.touched.confirm_password &&
-                                !FormikFormPassword.errors.confirm_password ? (
-                                  <i
-                                    className={`mdi mdi-${
-                                      showPassword3
-                                        ? "eye-off-outline"
-                                        : "eye-outline"
-                                    } eye-icon`}
-                                    onClick={() =>
-                                      setShowPassword3(!showPassword3)
-                                    }
-                                  />
-                                ) : null}
+
+                                <i
+                                  className={`mdi mdi-${
+                                    showPassword3
+                                      ? "eye-off-outline"
+                                      : "eye-outline"
+                                  } eye-icon`}
+                                  onClick={() =>
+                                    setShowPassword3(!showPassword3)
+                                  }
+                                  style={{ cursor: "pointer" }}
+                                />
                               </div>
                             </div>
                           </Col>

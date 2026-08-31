@@ -16,18 +16,14 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
   const [showStatusSheet, setShowStatusSheet] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
 
-  // const { total_seconds, currently_checked_in, show_attendance_timer } =
-  //   useSelector((state) => state.ClockReducer);
-
   const {
     total_seconds,
-    // display_seconds,
     currently_checked_in,
     total_break_duration,
     is_on_break,
     maximum_break_duration,
     show_attendance_timer,
-    clock_initialized, // ADD THIS
+    clock_initialized,
   } = useSelector((state) => state.ClockReducer);
   const dispatch = useDispatch();
 
@@ -38,41 +34,21 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
   const [showLateModal, setShowLateModal] = useState(false);
   const [lateReason, setLateReason] = useState("");
   const [liveBreakSeconds, setLiveBreakSeconds] = useState(0);
-  // useEffect(() => {
-  //   if (currently_checked_in) {
-  //     const interval = setInterval(() => {
-  //       dispatch(
-  //         setTimer({
-  //           total_seconds: total_seconds + 1,
-  //           currently_checked_in: currently_checked_in,
-  //         }),
-  //       );
-  //     }, 1000);
-  //     return () => clearInterval(interval);
-  //   }
-  // }, [total_seconds, currently_checked_in, dispatch]);
 
   useEffect(() => {
     if (!currently_checked_in) return;
 
     const interval = setInterval(() => {
-      // const stopTimer =
-      //   is_on_break &&
-      //   total_break_duration >= maximum_break_duration;
       const exceededBreakLimit = total_break_duration > maximum_break_duration;
-
       const stopTimer = is_on_break && exceededBreakLimit;
       dispatch(
         setTimer({
           total_seconds: stopTimer ? total_seconds : total_seconds + 1,
-
           currently_checked_in,
-
           total_break_duration:
             is_on_break && !stopTimer
               ? total_break_duration + 1
               : total_break_duration,
-
           is_on_break,
           maximum_break_duration,
         }),
@@ -90,7 +66,6 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
   ]);
 
   const handleCheckInOut = async () => {
-    // Close the status sheet if it was open (checkout flow)
     setShowStatusSheet(false);
     setLoading(true);
 
@@ -185,17 +160,10 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
     );
   };
 
-  /**
-   * ✅ KEY FIX:
-   * - Check IN  → call handleCheckInOut directly (no bottom sheet)
-   * - Check OUT → open StatusBottomSheet so user can update status before leaving
-   */
   const handleButtonClick = () => {
     if (currently_checked_in) {
-      // Checked IN → show bottom sheet for checkout flow
       setShowStatusSheet(true);
     } else {
-      // Not checked in → go straight to check-in, no sheet needed
       handleCheckInOut();
     }
   };
@@ -232,9 +200,6 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
   };
 
   const payableBreak = Math.min(total_break_duration, maximum_break_duration);
-
-  // const displaySeconds =
-  //   total_seconds + payableBreak;
   const displaySeconds = total_seconds;
 
   return (
@@ -255,7 +220,7 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
       >
         {show_attendance_timer && (
           <>
-            {hideTimer ? null : loading ? (
+            {loading ? (
               <Button color="primary" className="btn-load" outline>
                 <span className="d-flex align-items-center">
                   <Spinner size="sm" className="flex-shrink-0">
@@ -268,7 +233,7 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
               <Button
                 color={currently_checked_in ? "warning" : "secondary"}
                 className="custom-toggle"
-                onClick={handleButtonClick} // ✅ FIX: uses smart handler
+                onClick={handleButtonClick}
                 outline
                 style={{ whiteSpace: "nowrap" }}
               >
@@ -325,10 +290,6 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
         </div>
       </Col>
 
-      {/*
-        ✅ FIX: StatusBottomSheet is shown ONLY during checkout.
-        The onCheckInOut prop triggers the actual checkout API call.
-      */}
       <StatusBottomSheet
         show={showStatusSheet}
         onClose={() => setShowStatusSheet(false)}
@@ -346,7 +307,6 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
         onClose={() => setShowTimeline(false)}
       />
 
-      {/* Late Attendance Modal */}
       <Modal
         fade
         isOpen={showLateModal}

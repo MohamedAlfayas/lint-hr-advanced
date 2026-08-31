@@ -47,9 +47,15 @@ body .rs-table-row-header .rs-table-cell {
 .lc_form_error_text {
   width: 100%;
   margin-top: 0.25rem;
+  margin-bottom: 1rem;
   font-size: 0.875em;
   color: var(--vz-form-invalid-color);
 }
+
+.invalid-feedback {
+  padding-bottom: 1rem;
+}
+
 .custom-select-medium {
   /* padding: 0.375rem 0.75rem;   */
   height: 2rem;
@@ -250,6 +256,11 @@ body .rs-table-row-header .rs-table-cell {
   color: #999;
 }
 
+.avatar-outline {
+  border: 2px solid #e9ecef;
+  padding: 3px;
+  background-color: #fff; /* clean ring against illustrated bg */
+}
 
 /* === Main Card === */
 .lc-infowindow-card {
@@ -351,7 +362,9 @@ body .rs-table-row-header .rs-table-cell {
   font-size: 15px;
   color: #fff;
   background: linear-gradient(135deg, #0ab39c, #0d6efd);
-  box-shadow: 0 0 0 3px #fff, 0 0 0 4px #d9e6ff;
+  box-shadow:
+    0 0 0 3px #fff,
+    0 0 0 4px #d9e6ff;
 }
 
 /* === Details === */
@@ -392,6 +405,7 @@ body .rs-table-row-header .rs-table-cell {
 .gm-style-iw-d {
   padding: 0 !important;
   margin: 0 !important;
+  max-width: 285px !important;
 }
 
 .gm-ui-hover-effect {
@@ -632,4 +646,18 @@ body .rs-table-row-header .rs-table-cell {
 }
 .org-card-edit {
   padding: 0;
+}
+#old_password.is-invalid,
+#new_password.is-invalid,
+#confirm_password.is-invalid {
+  background-image: none !important;
+  padding-right: 40px !important;
+}
+.eye-icon {
+  position: absolute;
+  right: 12px;
+  top: 19px;
+  transform: translateY(-50%);
+  z-index: 3;
+  cursor: pointer;
 }

@@ -104,6 +104,8 @@ const AttendanceEmployeeTable = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [leave_modal, setLeave_modal] = useState(false);
   const [locationModal, setLocationModal] = useState(false);
+  const [imagePreviewModal, setImagePreviewModal] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState("");
   const [leaveDate, setLeaveDate] = useState(null);
   const [attendanceEditData, setAttendanceEditData] = useState(null);
   const [leaveApplyData, setLeaveApplyData] = useState(null);
@@ -235,6 +237,16 @@ const AttendanceEmployeeTable = () => {
 
   const close_location = () => {
     setLocationModal(false);
+  };
+
+  const open_image_preview = (url) => {
+    setPreviewImageUrl(url);
+    setImagePreviewModal(true);
+  };
+
+  const close_image_preview = () => {
+    setImagePreviewModal(false);
+    setPreviewImageUrl("");
   };
 
   const close_timeLine = () => {
@@ -1571,12 +1583,16 @@ const AttendanceEmployeeTable = () => {
                                   <img
                                     src={checkInData.face_url}
                                     alt="check-in"
+                                    onClick={() =>
+                                      open_image_preview(checkInData.face_url)
+                                    }
                                     style={{
                                       width: "40px",
                                       height: "40px",
                                       borderRadius: "50%",
                                       objectFit: "cover",
                                       flexShrink: 0,
+                                      cursor: "pointer",
                                     }}
                                   />
                                 ) : (
@@ -1650,12 +1666,16 @@ const AttendanceEmployeeTable = () => {
                                   <img
                                     src={checkOutData.face_url}
                                     alt="check-out"
+                                    onClick={() =>
+                                      open_image_preview(checkOutData.face_url)
+                                    }
                                     style={{
                                       width: "40px",
                                       height: "40px",
                                       borderRadius: "50%",
                                       objectFit: "cover",
                                       flexShrink: 0,
+                                      cursor: "pointer",
                                     }}
                                   />
                                 ) : checkOutData ? (
@@ -1758,6 +1778,37 @@ const AttendanceEmployeeTable = () => {
         centered
       >
         <AllDistanceCalculater allLocationData={allLocationData} />
+      </Modal>
+      {/* Image Preview Modal */}
+      <Modal
+        isOpen={imagePreviewModal}
+        toggle={() => {
+          close_image_preview();
+        }}
+        centered
+      >
+        <ModalBody className="text-center">
+          <img
+            src={previewImageUrl}
+            alt="preview"
+            style={{
+              width: "100%",
+              maxHeight: "500px",
+              objectFit: "contain",
+              borderRadius: "8px",
+            }}
+          />
+          <div className="text-center mt-3">
+            <Button
+              className="btn btn-warning"
+              onClick={() => {
+                close_image_preview();
+              }}
+            >
+              Close
+            </Button>
+          </div>
+        </ModalBody>
       </Modal>
       {/* Notes Modal */}
       <Modal

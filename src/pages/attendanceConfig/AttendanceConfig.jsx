@@ -62,6 +62,7 @@ import GeneralConfiguration from "./GeneralConfiguration";
 import LocationsAndPoliciesConfig from "./LocationsAndPoliciesConfig";
 import QrcodeConfig from "./QRcodeConfig";
 import CustomStatus from "../organization/CustomStatus";
+import TrackingConfigForm from "../organization/TrackingConfigForm";
 
 // register lottie and define custom element
 defineElement(loadAnimation);
@@ -152,6 +153,21 @@ const AttendanceConfig = () => {
                     Custom Status
                   </NavLink>
                 </NavItem>
+                <NavItem>
+                  <NavLink
+                    style={{ cursor: "pointer" }}
+                    className={classnames({
+                      "mb-2": true,
+                      active: verticalTab === "5",
+                    })}
+                    onClick={() => {
+                      toggleVertical("5");
+                    }}
+                    id="v-pills-messages-tab"
+                  >
+                    Tracking Configuration
+                  </NavLink>
+                </NavItem>
               </Nav>
             </Col>
             <Col md={10}>
@@ -178,6 +194,9 @@ const AttendanceConfig = () => {
                 </TabPane>
                 <TabPane TabPane tabId="4" id="v-pills-messages">
                   <CustomStatus />
+                </TabPane>
+                <TabPane TabPane tabId="5" id="v-pills-messages">
+                  <TrackingConfigForm />
                 </TabPane>
               </TabContent>
             </Col>

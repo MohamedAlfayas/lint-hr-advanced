@@ -27,6 +27,7 @@ const initialState = {
     collaborator_id: [],
     task_status: null,
     task_priority: null,
+    is_my_task: null,
   },
 };
 
@@ -91,6 +92,7 @@ const TableFilterReducer = createSlice({
         collaborator_id: [],
         task_status: null,
         task_priority: null,
+        is_my_task: null,
       };
 
       state.search = "";

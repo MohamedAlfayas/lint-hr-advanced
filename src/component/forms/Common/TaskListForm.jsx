@@ -69,6 +69,8 @@ const defaultTaskData = {
   start_time: "",
   end_time: "",
   status: true,
+  requires_field_visit: false, // ✅ NEW FIELD
+  client_location: null, // ✅ NEW FIELD
 };
 
 // ─── Build employee option object (normalised shape) ─────────────────────────
@@ -128,6 +130,25 @@ const TaskListForm = () => {
       .filter((c) => c.value !== undefined && c.value !== null);
   };
 
+  // ✅ NEW: client locations sourced from localStorage "entity_locations"
+  // (type === "client" AND type_id === selected client's id)
+  const buildClientLocationOptions = (clientId) => {
+    if (clientId === null || clientId === undefined || clientId === "")
+      return [];
+    const list = GetLocalStorageData("entity_locations") || [];
+    return list
+      .filter(
+        (l) => l.type === "client" && Number(l.type_id) === Number(clientId), // ✅ loose numeric compare, avoids string/number mismatch
+      )
+      .map((l) => {
+        const id = l.id;
+        const name =
+          l.name || l.accurate_address || l.address || `Location ${id}`;
+        return { ...l, id, value: id, label: name };
+      })
+      .filter((l) => l.value !== undefined && l.value !== null);
+  };
+
   const buildTaskStatusOptions = () => {
     const list = GetLocalStorageData("task_status") || [];
     return list.map((s) => ({ ...s, value: s.id, label: s.name || s.title }));
@@ -141,10 +162,9 @@ const TaskListForm = () => {
   const employeeOptions = buildEmployeeOptions();
   const projectOptions = buildProjectOptions();
   const clientOptions = buildClientOptions();
+  const clientLocationOptions = buildClientLocationOptions(taskData.client); // ✅ NEW
   const taskStatusOptions = buildTaskStatusOptions();
   const taskPriorityOptions = buildTaskPriorityOptions();
-
-  console.log("Task Priority Options:", taskPriorityOptions);
 
   // ─── Async load for collaborators search API ──────────────────────────────
   const loadCollaboratorOptions = useCallback(
@@ -178,6 +198,14 @@ const TaskListForm = () => {
         points: form_obj.points ? String(form_obj.points) : "1",
         collaborators_id_list: form_obj.collaborators_id_list || [],
         collaborator_details: form_obj.collaborator_details || [],
+        requires_field_visit: !!form_obj.requires_field_visit, // ✅ NEW FIELD
+        // ✅ API returns client_location as a full object ({id, type, type_id, name, ...})
+        // when editing, but we only ever store/send the plain id internally.
+        client_location:
+          form_obj.client_location &&
+          typeof form_obj.client_location === "object"
+            ? (form_obj.client_location.id ?? null)
+            : (form_obj.client_location ?? null),
       });
     } else if (form_obj && form_obj.project) {
       setTaskData({
@@ -288,6 +316,15 @@ const TaskListForm = () => {
           "Description cannot exceed 500 characters",
           (value) => !value || value.length <= 500,
         ),
+      // ✅ NEW: required only when related_to === "client" and requires_field_visit is checked
+      client_location: Yup.number()
+        .nullable()
+        .when(["related_to", "requires_field_visit"], {
+          is: (related_to, requires_field_visit) =>
+            related_to === "client" && !!requires_field_visit,
+          then: (schema) => schema.required("Please Select Client Location"),
+          otherwise: (schema) => schema.notRequired(),
+        }),
     }),
 
     onSubmit: async () => {
@@ -302,6 +339,9 @@ const TaskListForm = () => {
 
       try {
         const isEdit = !!(taskData?.id && taskData.id !== 0);
+
+        const needsFieldVisit =
+          taskData.related_to === "client" && !!taskData.requires_field_visit;
 
         const payload = {
           title: trimmedTitle,
@@ -319,6 +359,12 @@ const TaskListForm = () => {
           start_time: taskData.start_time || null,
           end_time: taskData.end_time || null,
           status: taskData.status,
+          // ✅ NEW FIELD — only meaningful (and only ever true) for Client tasks
+          requires_field_visit: needsFieldVisit,
+          // ✅ NEW FIELD — id only, sent only when a field visit is required
+          client_location: needsFieldVisit
+            ? taskData.client_location || null
+            : null,
         };
 
         if (isEdit) payload.id = taskData.id;
@@ -384,6 +430,12 @@ const TaskListForm = () => {
   const clientValue =
     clientOptions.find((o) => o.id === taskData.client) || null;
 
+  // ✅ NEW
+  const clientLocationValue =
+    clientLocationOptions.find(
+      (o) => Number(o.id) === Number(taskData.client_location),
+    ) || null;
+
   const assignedToValue =
     employeeOptions.find((e) => e.id === taskData.assigned_to) || null;
 
@@ -427,8 +479,7 @@ const TaskListForm = () => {
 
   const showProject = taskData.related_to === "project";
   const showClient = taskData.related_to === "client";
-
-  console.log("Task_List ", taskData);
+  const showClientLocation = showClient && !!taskData.requires_field_visit; // ✅ NEW
 
   return (
     <React.Fragment>
@@ -517,11 +568,23 @@ const TaskListForm = () => {
                     )}
                     value={relatedToValue}
                     onChange={(selected) => {
+                      const nextRelatedTo = selected
+                        ? selected.value
+                        : "custom";
                       setTaskData((prev) => ({
                         ...prev,
-                        related_to: selected ? selected.value : "custom",
+                        related_to: nextRelatedTo,
                         project: null,
                         client: null,
+                        // ✅ reset the toggle + location whenever we leave "client"
+                        requires_field_visit:
+                          nextRelatedTo === "client"
+                            ? prev.requires_field_visit
+                            : false,
+                        client_location:
+                          nextRelatedTo === "client"
+                            ? prev.client_location
+                            : null,
                       }));
                     }}
                   />
@@ -622,13 +685,117 @@ const TaskListForm = () => {
                       placeholder="Select Client"
                       value={clientValue}
                       onChange={(selected) => {
+                        const val = selected ? selected.id : null;
                         setTaskData((prev) => ({
                           ...prev,
-                          client: selected ? selected.id : null,
+                          client: val,
+                          // ✅ location options depend on client, reset selection
+                          client_location: null,
                         }));
+                        FormikForm.setFieldValue("client_location", null);
                       }}
                     />
                     <div className="form-text">Select a client.</div>
+                  </div>
+                </Col>
+              )}
+
+              {/* ── Requires Field Visit (Client tasks only) ──────────── */}
+              {showClient && (
+                <Col md={12}>
+                  <div className="mb-3">
+                    <Label
+                      htmlFor="requires_field_visit"
+                      className="form-label"
+                    >
+                      Requires Field Visit
+                    </Label>
+                    <div
+                      className="form-check form-switch form-switch-md form-switch-success"
+                      dir="ltr"
+                    >
+                      <Input
+                        type="checkbox"
+                        id="requires_field_visit"
+                        className="form-check-input"
+                        checked={!!taskData.requires_field_visit}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setTaskData((prev) => ({
+                            ...prev,
+                            requires_field_visit: checked,
+                            // ✅ clear location if the toggle is switched off
+                            client_location: checked
+                              ? prev.client_location
+                              : null,
+                          }));
+                          if (!checked) {
+                            FormikForm.setFieldValue("client_location", null);
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="form-text">
+                      {taskData.requires_field_visit
+                        ? "Yes — this task requires an on-site visit."
+                        : "No — this task does not require an on-site visit."}
+                    </div>
+                  </div>
+                </Col>
+              )}
+
+              {/* ── Client Location (only when Requires Field Visit is on) ─ */}
+              {showClientLocation && (
+                <Col md={12}>
+                  <div className="mb-3">
+                    <Label htmlFor="client_location" className="form-label">
+                      Client Location *
+                    </Label>
+                    <Select
+                      id="client_location"
+                      name="client_location"
+                      isClearable
+                      isDisabled={!taskData.client}
+                      options={clientLocationOptions}
+                      className="basic-single-select"
+                      classNamePrefix="lc-select"
+                      placeholder={
+                        taskData.client
+                          ? "Select Client Location"
+                          : "Select a Client first"
+                      }
+                      noOptionsMessage={() =>
+                        "No locations found for this client"
+                      }
+                      styles={selectStyles(
+                        FormikForm.touched.client_location,
+                        FormikForm.errors.client_location,
+                      )}
+                      value={clientLocationValue}
+                      onChange={(selected) => {
+                        const val = selected ? selected.id : null;
+                        setTaskData((prev) => ({
+                          ...prev,
+                          client_location: val,
+                        }));
+                        FormikForm.setFieldValue("client_location", val);
+                        FormikForm.setFieldTouched(
+                          "client_location",
+                          true,
+                          false,
+                        );
+                      }}
+                    />
+                    {FormikForm.touched.client_location &&
+                    FormikForm.errors.client_location ? (
+                      <div className="text-danger small mt-1">
+                        {FormikForm.errors.client_location}
+                      </div>
+                    ) : (
+                      <div className="form-text">
+                        Select the client site location for this visit.
+                      </div>
+                    )}
                   </div>
                 </Col>
               )}

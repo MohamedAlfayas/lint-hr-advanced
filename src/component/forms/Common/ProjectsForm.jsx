@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import dayjs from "dayjs";
 import { Col, Form, Input, Label, Row, Button, FormFeedback } from "reactstrap";
 
 import { useDispatch, useSelector } from "react-redux";
@@ -65,6 +66,7 @@ const ClientOptionDisplay = ({ innerRef, innerProps, data, isSelected }) => (
 
 const ProjectForm = () => {
   const dispatch = useDispatch();
+  const minProjectDate = dayjs("1900-01-01");
 
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
 
@@ -109,14 +111,28 @@ const ProjectForm = () => {
     const { name, value } = e.target;
 
     if (name === "price") {
-      if (value === "" || (Number(value) >= 0 && Number(value) <= MAX_PRICE)) {
-        setProjectData((prev) => ({
-          ...prev,
-          [name]: value,
-        }));
+      FormikForm.setFieldTouched("price", true, false);
 
-        FormikForm.setFieldValue(name, value);
+      setProjectData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+
+      FormikForm.setFieldValue(name, value);
+
+      if (value === "") {
+        FormikForm.setFieldError("price", undefined);
+      } else if (Number(value) > MAX_PRICE) {
+        FormikForm.setFieldError(
+          "price",
+          "Price cannot exceed 100000000000.00",
+        );
+      } else if (Number(value) < 0) {
+        FormikForm.setFieldError("price", "Price cannot be negative");
+      } else {
+        FormikForm.setFieldError("price", undefined);
       }
+
       return;
     }
 
@@ -127,7 +143,6 @@ const ProjectForm = () => {
         ...prev,
         [name]: filteredValue,
       }));
-      
 
       FormikForm.setFieldValue(name, filteredValue);
       FormikForm.setFieldTouched("title", true, false);
@@ -148,8 +163,8 @@ const ProjectForm = () => {
 
     if (name === "description") {
       const filteredValue = value
-      .replace(/^\s+/, "")
-      .replace(/[^A-Za-z0-9\s.,\-#\/'&():;?!]/g, "");
+        .replace(/^\s+/, "")
+        .replace(/[^A-Za-z0-9\s.,\-#\/'&():;?!]/g, "");
 
       setProjectData((prev) => ({
         ...prev,
@@ -157,6 +172,39 @@ const ProjectForm = () => {
       }));
 
       FormikForm.setFieldValue("description", filteredValue);
+
+      return;
+    }
+
+    
+    if (name === "start_date" || name === "deadline") {
+      const updatedData = {
+        ...projectData,
+        [name]: value,
+      };
+
+      setProjectData(updatedData);
+      FormikForm.setFieldValue(name, value);
+      FormikForm.setFieldTouched(name, true, false);
+
+      const startDate =
+        name === "start_date" ? value : updatedData.start_date;
+
+      const deadlineDate =
+        name === "deadline" ? value : updatedData.deadline;
+
+      if (
+        startDate &&
+        deadlineDate &&
+        dayjs(deadlineDate).isBefore(dayjs(startDate), "day")
+      ) {
+        FormikForm.setFieldError(
+          "deadline",
+          "Deadline cannot be before Start Date"
+        );
+      } else {
+        FormikForm.setFieldError("deadline", undefined);
+      }
 
       return;
     }
@@ -232,17 +280,57 @@ const ProjectForm = () => {
         }),
 
       // Optional Fields
-      start_date: Yup.string().nullable(),
-      deadline: Yup.string().nullable(),
+      start_date: Yup.string()
+      .nullable()
+      .test(
+        "start-date-range",
+        "Start date cannot be before 01-01-1900",
+        (value) => {
+          if (!value) return true;
+
+          return (
+            dayjs(value).isSame(minProjectDate, "day") ||
+            dayjs(value).isAfter(minProjectDate, "day")
+          );
+        }
+      ),
+      deadline: Yup.string()
+        .nullable()
+        .test(
+          "deadline-range",
+          "Deadline cannot be before 01-01-1900",
+          (value) => {
+            if (!value) return true;
+
+            return (
+              dayjs(value).isSame(minProjectDate, "day") ||
+              dayjs(value).isAfter(minProjectDate, "day")
+            );
+          }
+        )
+        .test(
+          "deadline-check",
+          "Deadline cannot be before Start Date",
+          function (deadline) {
+            const { start_date } = this.parent;
+
+            if (!start_date || !deadline) return true;
+
+            return (
+              dayjs(deadline).isSame(dayjs(start_date), "day") ||
+              dayjs(deadline).isAfter(dayjs(start_date), "day")
+            );
+          }
+        ),
       price: Yup.number()
         .min(0, "Price cannot be negative")
         .max(100000000000, "Price cannot exceed 100000000000.00")
         .nullable(),
-      
+
       description: Yup.string()
         .matches(
           /^[A-Za-z0-9\s.,\-#\/'&():;?!]*$/,
-          "Description contains invalid characters"
+          "Description contains invalid characters",
         )
         .max(1500, "Description must not exceed 1500 characters.")
         .nullable(),
@@ -467,6 +555,7 @@ const ProjectForm = () => {
                   <Input
                     type="date"
                     name="start_date"
+                    min="1900-01-01"
                     className="form-control"
                     value={projectData.start_date || ""}
                     onChange={handleInputChange}
@@ -495,6 +584,7 @@ const ProjectForm = () => {
                   <Input
                     type="date"
                     name="deadline"
+                    min="1900-01-01"
                     className="form-control"
                     value={projectData.deadline || ""}
                     onChange={handleInputChange}
@@ -523,7 +613,7 @@ const ProjectForm = () => {
                     className="form-control"
                     placeholder="0.00"
                     min={0}
-                    max={100000000000}
+                    // max={100000000000}
                     onKeyDown={(e) => {
                       if (e.key === "-" || e.key === "e" || e.key === "E") {
                         e.preventDefault();
@@ -532,14 +622,10 @@ const ProjectForm = () => {
                     onBlur={() => FormikForm.setFieldTouched("price", true)}
                     value={projectData.price || ""}
                     onChange={handleInputChange}
-                    invalid={
-                      FormikForm.touched.price && FormikForm.errors.price
-                        ? true
-                        : false
-                    }
+                    invalid={FormikForm.errors.price ? true : false}
                   />
 
-                  {FormikForm.touched.price && FormikForm.errors.price && (
+                  {FormikForm.errors.price && (
                     <FormFeedback>{FormikForm.errors.price}</FormFeedback>
                   )}
                 </div>

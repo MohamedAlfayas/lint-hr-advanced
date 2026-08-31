@@ -15,6 +15,12 @@ import {
   CLIENT_VIEW_ACCESS_KEY,
   CREATE_CLIENT_ACCESS_KEY,
   EDIT_CLIENT_ACCESS_KEY,
+  COMPANY_PROFILE_VIEW_ACCESS_KEY,
+  DEPARTMENT_VIEW_ACCESS_KEY,
+  BRANCH_VIEW_ACCESS_KEY,
+  ROLES_VIEW_ACCESS_KEY,
+  FORMS_VIEW_ACCESS_KEY,
+  LOCATION_GROUP_VIEW_ACCESS_KEY,
 } from "../common/constant/RoleConstants";
 import Status from "../pages/Task/Status/Status";
 import Priorities from "../pages/Task/Priorities/Priorities";
@@ -29,6 +35,7 @@ import ClientOverview from "../pages/Crm/Clients/ClientOverview";
 import ClientOverviewTab from "../pages/Crm/Clients/ClientOverviewTab";
 import LeaveReport from "../pages/attendance/LeaveReport";
 import AllEmployeeLocation from "../pages/dashboard/EmployeeMap/AllEmployeeLocation";
+import BreakReport from "../pages/attendance/BreakReport";
 
 // import Dashboard from "../pages/dashboard/Dashboard";
 // import Login from "../pages/auth/login/Login";
@@ -102,7 +109,15 @@ const privateRoutes = [
   {
     path: "/organization",
     component: <ProjectOverview />,
-    perm: ["dac690d1-6712-4aa6-9b4f-7d71bc4f8eb1"],
+    perm: [
+      COMPANY_PROFILE_VIEW_ACCESS_KEY,
+      DEPARTMENT_VIEW_ACCESS_KEY,
+      BRANCH_VIEW_ACCESS_KEY,
+      CUSTOM_FIELD_VIEW_ACCESS_KEY,
+      ROLES_VIEW_ACCESS_KEY,
+      FORMS_VIEW_ACCESS_KEY,
+      LOCATION_GROUP_VIEW_ACCESS_KEY,
+    ],
   },
   {
     path: "/employee",
@@ -167,6 +182,11 @@ const privateRoutes = [
   {
     path: "/leavereport",
     component: <LeaveReport />,
+    perm: [CAN_VIEW_REPORT_ACCESS_KEY],
+  },
+  {
+    path: "/breakreport",
+    component: <BreakReport />,
     perm: [CAN_VIEW_REPORT_ACCESS_KEY],
   },
   {

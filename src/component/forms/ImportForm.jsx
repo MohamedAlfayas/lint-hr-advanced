@@ -34,14 +34,17 @@ const MAX_ISSUES_SHOWN = 12;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/; // YYYY-MM-DD
 const COUNTRY_CODE_RE = /^\+\d{1,4}$/; // +91
-const ID_LIST_RE = /^\[\s*\d+(\s*,\s*\d+)*\s*\]$/; // [1] or [1,2]
 const INT_RE = /^\d+$/;
 const BOOL_VALUES = new Set(["true", "false", "1", "0", "yes", "no"]);
 
 const isInt = (v) => INT_RE.test(String(v).trim());
 const isBool = (v) => BOOL_VALUES.has(String(v).trim().toLowerCase());
 const isEmail = (v) => EMAIL_RE.test(String(v).trim());
-const isPhone = (v) => /^\d{7,15}$/.test(String(v).replace(/[\s-]/g, ""));
+const isPhone = (v) => /^\d{10}$/.test(String(v).replace(/[\s-]/g, ""));
+const isName = (v) => /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/.test(String(v).trim());
+const isTextOnly = (v) =>
+  /^[A-Za-z][A-Za-z0-9\s.'&/-]*$/.test(String(v).trim());
+const isEmpId = (v) => /^[A-Za-z0-9_-]+$/.test(String(v).trim());
 const isDate = (v) => {
   const s = String(v).trim();
   if (!DATE_RE.test(s)) return false;
@@ -49,18 +52,56 @@ const isDate = (v) => {
   return !isNaN(d.getTime());
 };
 
+// Converts a parsed Excel cell into "YYYY-MM-DD".
+// Handles real Date objects (from cellDates:true) and falls back to
+// parsing common text formats (m/d/yy, m/d/yyyy) so validation matches
+// whatever the sheet actually contains.
+const toISODate = (v) => {
+  if (v == null || v === "") return v;
+
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    const y = v.getUTCFullYear();
+    const m = String(v.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(v.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  const s = String(v).trim();
+  if (DATE_RE.test(s)) return s; // already ISO
+
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (m) {
+    let [, mm, dd, yy] = m;
+    if (yy.length === 2) yy = (Number(yy) < 70 ? "20" : "19") + yy;
+    mm = mm.padStart(2, "0");
+    dd = dd.padStart(2, "0");
+    const iso = `${yy}-${mm}-${dd}`;
+    return isNaN(new Date(iso).getTime()) ? s : iso;
+  }
+
+  return s; // leave as-is; isDate() will flag it as invalid
+};
+
 // One rule per column. `required` => cell must be non-empty.
 // `validate` => format check (only run when the cell is non-empty).
 const FIELD_RULES = {
-  emp_id: { required: true },
-  first_name: { required: true },
-  last_name: { required: true },
-  email: {
+  emp_id: {
     required: true,
-    validate: isEmail,
-    msg: "is not a valid email",
+    validate: isEmpId,
+    msg: "must be alphanumeric (letters, numbers, - or _ only)",
   },
-  password: { required: false },
+  first_name: {
+    required: true,
+    validate: isName,
+    msg: "must contain letters only (no numbers or symbols)",
+  },
+  last_name: {
+    required: true,
+    validate: isName,
+    msg: "must contain letters only (no numbers or symbols)",
+  },
+  email: { required: true, validate: isEmail, msg: "is not a valid email" },
+  password: { required: true },
   dob: {
     required: true,
     validate: isDate,
@@ -72,52 +113,70 @@ const FIELD_RULES = {
     msg: "must be a valid date (YYYY-MM-DD)",
   },
   country_code: {
-    required: false,
+    required: true,
     validate: (v) => COUNTRY_CODE_RE.test(String(v).trim()),
     msg: "must look like +91",
   },
   contact_number: {
-    required: false,
+    required: true,
     validate: isPhone,
-    msg: "must be a phone number (7–15 digits)",
+    msg: "must be a 10-digit phone number",
   },
   gender: {
-    required: false,
-    validate: (v) => /^[12]$/.test(String(v).trim()),
-    msg: "must be 1 or 2",
+    required: true,
+    validate: (v) => /^(male|female|other)$/i.test(String(v).trim()),
+    msg: "must be Male, Female, or Other",
   },
-  primary_department_id_list: {
-    required: false,
-    validate: (v) => ID_LIST_RE.test(String(v).trim()),
-    msg: "must look like [1] or [1,2]",
+  branch: {
+    required: true,
+    validate: isTextOnly,
+    msg: "must be text (letters, starting with a letter)",
   },
-  branch_id_list: {
-    required: false,
-    validate: (v) => ID_LIST_RE.test(String(v).trim()),
-    msg: "must look like [1] or [1,2]",
+  primary_department: {
+    required: true,
+    validate: isTextOnly,
+    msg: "must be text (letters, starting with a letter)",
   },
-  role: { required: false, validate: isInt, msg: "must be a number" },
-  work_schedule: { required: false, validate: isInt, msg: "must be a number" },
+  role: {
+    required: true,
+    validate: isTextOnly,
+    msg: "must be text (letters, starting with a letter)",
+  },
+  work_schedule: {
+    required: true,
+    validate: isTextOnly,
+    msg: "must be text (letters, starting with a letter)",
+  },
   reporting_manager: {
-    required: false,
+    required: true,
     validate: (v) => {
       const s = String(v).trim();
       return isEmail(s) || isInt(s);
     },
     msg: "must be an email or a numeric id",
   },
-  profile_timezone: { required: false },
-  is_active: {
-    required: false,
-    validate: isBool,
-    msg: "must be TRUE or FALSE",
+  profile_timezone: {
+    required: true,
+    validate: (v) => /^[A-Za-z]+\/[A-Za-z_]+$/.test(String(v).trim()),
+    msg: "must be a valid timezone (e.g. Asia/Kolkata)",
   },
-  is_manager: {
-    required: false,
+  is_active: { required: true, validate: isBool, msg: "must be TRUE or FALSE" },
+  "allow_check_in/out_outside_the_range": {
+    required: true,
     validate: isBool,
     msg: "must be TRUE or FALSE",
   },
   outside_range_notes_required: {
+    required: true,
+    validate: isBool,
+    msg: "must be TRUE or FALSE",
+  },
+  "allow_web_check_in/out": {
+    required: true,
+    validate: isBool,
+    msg: "must be TRUE or FALSE",
+  },
+  "allow_web_check_in/out": {
     required: false,
     validate: isBool,
     msg: "must be TRUE or FALSE",
@@ -194,8 +253,10 @@ const ImportForm = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        // cellDates + raw:false => date cells come out as "YYYY-MM-DD"
-        // strings instead of Excel serial numbers (e.g. 45293).
+        // raw:true + cellDates:true => date cells come through as real
+        // Date objects instead of the sheet's own display format
+        // (raw:false + dateNF doesn't reliably override an existing
+        // cell format, which is what caused "4/1/99" to slip through).
         const wb = XLSX.read(e.target.result, {
           type: "array",
           cellDates: true,
@@ -204,9 +265,22 @@ const ImportForm = () => {
         const parsed = XLSX.utils.sheet_to_json(ws, {
           header: 1,
           blankrows: false,
-          raw: false,
-          dateNF: "yyyy-mm-dd",
+          raw: true,
         });
+
+        if (parsed.length > 0) {
+          const header = parsed[0].map((h) => String(h).trim());
+          const dateCols = ["dob", "joining_date"]
+            .map((k) => header.indexOf(k))
+            .filter((i) => i > -1);
+
+          for (let i = 1; i < parsed.length; i++) {
+            dateCols.forEach((ci) => {
+              parsed[i][ci] = toISODate(parsed[i][ci]);
+            });
+          }
+        }
+
         setRows(parsed);
         const dataRows = parsed
           .slice(1)

@@ -1,32 +1,34 @@
 import React, { useEffect } from "react";
-import { MetaTitle } from "../../common/data/MetaTitle";
-import { useState } from "react";
-import { useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import InfoTable from "../../component/common/table/InfoTable";
 import { Api } from "../../common/api/Api";
-import { useDispatch, useSelector } from "react-redux";
-import { setRole } from "../../redux/reducers/ChildReducer/RoleReducer";
-import RsuiteTable from "../../component/common/table/RsuiteTable";
+import { setCustomForm } from "../../redux/reducers/ChildReducer/CustomFormReducer";
 import { custom_form_component_name } from "../../common/constant/Constants";
-
-import { default_roles_list } from "../../common/constant/RoleConstants";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { SetLocalStorage } from "../../meta/SetLocalStorageData";
 
 const CustomFormTable = () => {
   const dispatch = useDispatch();
-
-  const { role_data } = useSelector((state) => state.RoleReducer);
-
+  const { custom_form_data } = useSelector((state) => state.CustomFormReducer);
 
   useEffect(() => {
+    // show cached data instantly while the API call is in flight
+    const cached = GetLocalStorageData("custom_form");
+    if (cached) {
+      dispatch(setCustomForm(cached));
+    }
+
     Api({
       method: "GET",
-      url: "/role/get-role/",
+      url: "/custom/custom-form/",
     })
       .then((res) => {
-        dispatch(setRole(res?.data?.data));
+        const data = res?.data?.data || [];
+        dispatch(setCustomForm(data));
+        SetLocalStorage("custom_form", data, 1);
       })
       .catch((err) => {
-        console.log("ERR");
+        console.log("ERR", err);
       });
   }, []);
 
@@ -35,69 +37,57 @@ const CustomFormTable = () => {
       Header: "Name",
       filterable: false,
       id: "name",
-      accessor: (obj) => {
-        return <b>{obj.name}</b>;
-      },
+      accessor: (obj) => <b>{obj.name}</b>,
     },
     {
-      Header: "Employees",
-      accessor: "total_employees",
+      Header: "Description",
+      accessor: "description",
       filterable: false,
-      id: "total_employees",
+      id: "description",
     },
     {
-      Header: "Permissions",
-      accessor: "roles",
+      Header: "Fields",
       filterable: false,
-      id: "roles",
-      accessor: (obj) => {
-        let total_roles = obj.roles_list.length;
-
-        return <b>{total_roles}</b>;
-      },
+      id: "fields",
+      accessor: (obj) => <b>{obj.schema?.length || 0}</b>,
     },
     {
       Header: "Status",
       id: "status",
       filterable: false,
       accessor: (obj) => {
-        let status = obj.status === 1 ? "Primary" : "Secondary";
-        let statusClass = obj.status === 1 ? "success" : "info";
+        let status = obj.status ? "Active" : "Inactive";
+        let statusClass = obj.status ? "success" : "danger";
         return (
           <span
             className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
           >
-            {" "}
-            {status}{" "}
+            {status}
           </span>
         );
       },
     },
   ];
 
-  const initialFormObj = useMemo(() => {
-    return {
-      id: 0,
-      name: "",
-      total_employees: 0,
-      roles_list: [],
-      status: 1,
-      description: "",
-      is_admin: false,
-    };
-  }, []);
+  const initialFormObj = {
+    id: 0,
+    name: "",
+    description: "",
+    schema: [],
+    status: true,
+  };
 
   const filterKey = "status";
   const filterOptions = [
     {
-      option: 1,
-      label: "Primary",
-      count: role_data.filter((e) => e[filterKey] === 1).length || 0,
+      option: true,
+      label: "Active",
+      count: custom_form_data.filter((e) => e[filterKey] === true).length || 0,
     },
     {
-      option: 2,
-      label: "Secondary",
-      count: role_data.filter((e) => e[filterKey] === 2).length || 0,
+      option: false,
+      label: "Inactive",
+      count: custom_form_data.filter((e) => e[filterKey] === false).length || 0,
     },
   ];
 
@@ -105,7 +95,7 @@ const CustomFormTable = () => {
     <React.Fragment>
       <InfoTable
         additionalColumn={additionalColumn}
-        tabledata={role_data}
+        tabledata={custom_form_data}
         formname={custom_form_component_name}
         initialFormObj={initialFormObj}
         filterKey={filterKey}

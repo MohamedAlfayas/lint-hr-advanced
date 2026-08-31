@@ -61,12 +61,14 @@ import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { GetCustomField } from "../../../common/js/GetCustomField";
 import { SweetAlert } from "../sweetAlert/SweetAlert";
 import Swal from "sweetalert2";
+import * as Yup from "yup";
 import "../../../common/./css/lc_style.css";
 import { ExportSampleData } from "../../../common/js/ExportSampleData";
 import {
   attendance_approval_component_name,
   component_list_for_import_btn_access,
   employee_component_name,
+  work_schedule_component_name,
   holiday_component_name,
   leave_approval_component_name,
   leave_type_component_name,
@@ -216,6 +218,13 @@ const InfoTable = ({
   const [isLoading, setIsLoading] = useState(true);
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [reorderList, setReorderList] = useState([]);
+
+  const getValidColor = (color) => {
+    const option = new Option();
+    option.style.color = color;
+
+    return option.style.color ? color : "#000000";
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -383,7 +392,7 @@ const InfoTable = ({
     let content =
       formname === leave_approval_component_name ||
       formname === leave_pending_table
-        ? `<span>Are You Sure to <strong style='color:green'>Accept </strong> Leave To <strong style='color:#7066e0'>  ${employee_first_name}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `
+        ? `<span>Are You Sure to <strong style='color:green'>Accept </strong> ${orderData.leave_type_name} To <strong style='color:#7066e0'>  ${employee_first_name}</strong>  on  ${orderData.start} to  ${orderData.end} </span> `
         : orderData.is_present === false
           ? `<span>Oops, <strong style='color:#7066e0'>${employee_first_name}</strong> didn't show up on <strong style='color:grey'>${format(
               new Date(orderData.date),
@@ -542,7 +551,7 @@ const InfoTable = ({
     let content =
       formname === leave_approval_component_name ||
       formname === leave_pending_table
-        ? `<span>Are You Sure to <strong style='color:red'>Reject</strong> Leave To <strong style='color:#7066e0'> ${employee_first_name} </strong> on ${orderData.start} to  ${orderData.end} </span>`
+        ? `<span>Are You Sure to <strong style='color:red'>Reject</strong> ${orderData.leave_type_name} To <strong style='color:#7066e0'> ${employee_first_name} </strong> on ${orderData.start} to  ${orderData.end} </span>`
         : `<span>Confirm Action : <strong style='color:red'>Reject</strong> pending status and mark <strong style='color:#7066e0'>  ${employee_first_name}</strong>  as absent on   <strong style='color:grey'>${format(
             new Date(orderData.date),
             "dd MMM, yyyy",
@@ -1020,8 +1029,20 @@ const InfoTable = ({
       confirmButtonColor: `${orderInfo?.confirmBtnColor}`,
       cancelButtonColor: "#3085d6",
       confirmButtonText: `Yes, ${orderInfo?.text}`,
+      // On deactivation, capture the last working day so payroll still pays
+      // this employee for the month they worked. Optional — can be left blank.
+      ...(orderData?.is_active === true
+        ? {
+            input: "date",
+            inputLabel: "Last working day (optional)",
+            inputValue: new Date().toISOString().slice(0, 10),
+            inputAttributes: { max: new Date().toISOString().slice(0, 10) },
+          }
+        : {}),
     }).then(async (result) => {
       if (result.isConfirmed) {
+        orderInfo.lastWorkingDay =
+          orderData?.is_active === true ? result.value || null : null;
         setActiveInactiveAPIOrderData(orderData);
         setActiveInactiveAPIOrderInfo(orderInfo);
         ActivateOrDeactivate(orderData, orderInfo);
@@ -1059,6 +1080,7 @@ const InfoTable = ({
     const payload = {
       emp_uuid: orderData?.emp_uuid,
       status: orderInfo?.statusCode,
+      last_working_day: orderInfo?.lastWorkingDay || null,
     };
 
     const Api = await PostApi(
@@ -1123,129 +1145,300 @@ const InfoTable = ({
     }
   };
 
+  const resetPasswordValidationSchema = Yup.object({
+    admin_password: Yup.string().required("Please enter Admin Password"),
+    new_password: Yup.string()
+      .min(8, "Minimum 8 characters required")
+      .max(20, "Maximum 20 characters allowed")
+      .matches(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*]).*$/,
+        "Must include uppercase, lowercase, number & special character",
+      )
+      .required("New Password is required"),
+    confirm_password: Yup.string()
+      .oneOf([Yup.ref("new_password")], "Passwords do not match")
+      .required("Please Confirm Password"),
+  });
+
   const handleResetPassword = (orderData) => {
     const profile_data = JSON.parse(
-      localStorage.getItem("lint_hr_profile_data"),
+      localStorage.getItem("lint_hr_profile_data") || "{}",
     );
 
-    const first_name =
-      Object.keys(profile_data).length > 0 ? profile_data.first_name : "";
-    const last_name =
-      Object.keys(profile_data).length > 0 ? profile_data.last_name : "";
+    const first_name = profile_data?.first_name || "";
+    const last_name = profile_data?.last_name || "";
 
     Swal.fire({
       title: "Reset Password",
       html: `
-        <form id="resetPasswordForm">
-        <div class="position-relative">
-        <label for="adminPassword" class="label-lc">Admin Password (${first_name} ${last_name})</label>
-        <div class="input-group">
-          <input type="password" id="adminPassword" class="form-control swal2-input" placeholder="Enter Admin Password" required>
-        </div>
-      </div>
-      <label for="newPassword" class="label-lc">New Password (${orderData.first_name} ${orderData.last_name})</label>
-      <div class="input-group">
-        <input type="password" id="newPassword" class="form-control swal2-input" placeholder="Enter New Password" required>
-      </div>
-      <label for="confirmPassword" class="label-lc">Confirm Password (${orderData.first_name} ${orderData.last_name})</label>
-      <div class="input-group">
-        <input type="password" id="confirmPassword" class="form-control swal2-input" placeholder="Enter Confirm Password" required>    
+      <style>
+        .label-lc {
+          display: block;
+          text-align: left;
+          width: 90%;
+          margin: 8px auto 10px;
+          font-weight: 500;
+        }
 
-      </div>
-      
-      
-        </form>
-      `,
+        .password-wrapper {
+          position: relative;
+          width: 90%;
+          margin: 0 auto 5px;
+        }
+
+        .password-wrapper .swal2-input {
+          width: 100% !important;
+          margin: 0 !important;
+          padding-right: 45px !important;
+          box-sizing: border-box;
+        }
+
+        .password-toggle {
+          position: absolute;
+          top: 50%;
+          right: 15px;
+          transform: translateY(-50%);
+          cursor: pointer;
+          z-index: 9999;
+          color: #6c757d;
+          font-size: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .error-message {
+          color: #f06548;
+          font-size: 12px;
+          text-align: left;
+          min-height: 18px;
+          width: 90%;
+          margin: 2px auto 8px;
+        }
+      </style>
+
+      <form id="resetPasswordForm">
+        <label class="label-lc">
+          Admin Password (${first_name} ${last_name})
+        </label>
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="adminPassword"
+            class="swal2-input"
+            placeholder="Enter Admin Password"
+          />
+          <span class="password-toggle" data-target="adminPassword">
+             <i class="las la-eye"></i>
+          </span>
+        </div>
+        <div id="adminPasswordError" class="error-message"></div>
+
+        <label class="label-lc">
+          New Password (${orderData.first_name || ""} ${orderData.last_name || ""})
+        </label>
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="newPassword"
+            class="swal2-input"
+            placeholder="Enter New Password"
+          />
+          <span class="password-toggle" data-target="newPassword">
+             <i class="las la-eye"></i>
+          </span>
+        </div>
+        <div id="newPasswordError" class="error-message"></div>
+
+        <label class="label-lc">
+          Confirm Password (${orderData.first_name || ""} ${orderData.last_name || ""})
+        </label>
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="confirmPassword"
+            class="swal2-input"
+            placeholder="Enter Confirm Password"
+          />
+          <span class="password-toggle" data-target="confirmPassword">
+            <i class="las la-eye"></i>
+          </span>
+        </div>
+        <div id="confirmPasswordError" class="error-message"></div>
+      </form>
+    `,
       icon: false,
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#f06548",
       confirmButtonText: "Reset Password",
-      preConfirm: () => {
-        const adminPasswordInput = document.getElementById("adminPassword");
-        const adminPasswordValue = adminPasswordInput.value.trim();
-        const newPasswordInput = document.getElementById("newPassword");
-        const newPasswordValue = newPasswordInput.value.trim();
-        const confirmPasswordInput = document.getElementById("confirmPassword");
-        const confirmPasswordValue = confirmPasswordInput.value.trim();
-        const pattern =
-          /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
-        if (!adminPasswordValue) {
-          Swal.showValidationMessage("Please enter Admin Password");
-          return false;
-        }
-        if (!newPasswordValue) {
-          Swal.showValidationMessage("Please enter New Password");
-          return false;
-        }
-        if (!confirmPasswordValue) {
-          Swal.showValidationMessage("Please enter Confirm Password");
-          return false;
-        }
-        if (!pattern.test(newPasswordValue)) {
-          Swal.showValidationMessage(
-            "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
+
+      preConfirm: async () => {
+        const adminPasswordValue = document
+          .getElementById("adminPassword")
+          .value.trim();
+        const newPasswordValue = document
+          .getElementById("newPassword")
+          .value.trim();
+        const confirmPasswordValue = document
+          .getElementById("confirmPassword")
+          .value.trim();
+
+        const adminPasswordError =
+          document.getElementById("adminPasswordError");
+        const newPasswordError = document.getElementById("newPasswordError");
+        const confirmPasswordError = document.getElementById(
+          "confirmPasswordError",
+        );
+
+        // Reset previous error messages
+        adminPasswordError.textContent = "";
+        newPasswordError.textContent = "";
+        confirmPasswordError.textContent = "";
+
+        let isValid = true;
+
+        // Validate all fields on submit
+        try {
+          await resetPasswordValidationSchema.validate(
+            {
+              admin_password: adminPasswordValue,
+              new_password: newPasswordValue,
+              confirm_password: confirmPasswordValue,
+            },
+            { abortEarly: false },
           );
+        } catch (err) {
+          isValid = false;
+          if (err.inner) {
+            err.inner.forEach((error) => {
+              if (error.path === "admin_password")
+                adminPasswordError.textContent = error.message;
+              if (error.path === "new_password")
+                newPasswordError.textContent = error.message;
+              if (error.path === "confirm_password")
+                confirmPasswordError.textContent = error.message;
+            });
+          }
+        }
+
+        if (!isValid) {
           return false;
         }
-        const adminPassword = document.getElementById("adminPassword");
-        const newPassword = document.getElementById("newPassword").value;
-        const confirmPassword =
-          document.getElementById("confirmPassword").value;
 
-        if (newPassword !== confirmPassword) {
-          Swal.showValidationMessage("Passwords do not match");
+        const data = {
+          admin_password: adminPasswordValue,
+          emp_uuid: orderData.emp_uuid,
+          new_password: newPasswordValue,
+          confirm_password: confirmPasswordValue,
+        };
+
+        try {
+          const Api = await PostApi("employee/reset-password/", data, false);
+
+          if (Api.status && Api.status === 200) {
+            return {
+              adminPassword: adminPasswordValue,
+              newPassword: newPasswordValue,
+              confirmPassword: confirmPasswordValue,
+              apiResponse: Api,
+            };
+          } else {
+            toast.error(
+              Api?.data?.message ||
+                Api?.data?.detail ||
+                "Reset Password Failed",
+            );
+            return false;
+          }
+        } catch (error) {
+          toast.error("Something went wrong. Please try again.");
+          return false;
         }
-
-        return { adminPassword, newPassword, confirmPassword };
       },
+
       didOpen: () => {
-        // Add event listener to the eye buttons for each password input
-        const passwordToggleButtons =
-          document.querySelectorAll(".password-toggle");
-        passwordToggleButtons.forEach((button) => {
-          button.addEventListener("click", () => {
-            const passwordInput = button.previousElementSibling;
-            togglePasswordVisibility(passwordInput);
-          });
+        document.querySelectorAll(".password-toggle").forEach((button) => {
+          button.onclick = () => {
+            const input = document.getElementById(button.dataset.target);
+            if (input.type === "password") {
+              input.type = "text";
+              button.innerHTML = '<i class="las la-eye-slash"></i>';
+            } else {
+              input.type = "password";
+              button.innerHTML = '<i class="las la-eye"></i>';
+            }
+          };
         });
 
-        // Focus on the Admin Password input field
         const adminPasswordInput = document.getElementById("adminPassword");
-        if (adminPasswordInput) {
-          adminPasswordInput.focus();
-        }
+        const newPasswordInput = document.getElementById("newPassword");
+        const confirmPasswordInput = document.getElementById("confirmPassword");
+
+        const adminPasswordError =
+          document.getElementById("adminPasswordError");
+        const newPasswordError = document.getElementById("newPasswordError");
+        const confirmPasswordError = document.getElementById(
+          "confirmPasswordError",
+        );
+
+        const validateField = async (fieldName, values, errorElement) => {
+          try {
+            await resetPasswordValidationSchema.validateAt(fieldName, values);
+            errorElement.textContent = "";
+          } catch (err) {
+            errorElement.textContent = err.message;
+          }
+        };
+
+        // Realtime validation
+        adminPasswordInput.addEventListener("input", () => {
+          validateField(
+            "admin_password",
+            { admin_password: adminPasswordInput.value },
+            adminPasswordError,
+          );
+        });
+
+        newPasswordInput.addEventListener("input", () => {
+          const values = {
+            admin_password: adminPasswordInput.value,
+            new_password: newPasswordInput.value,
+            confirm_password: confirmPasswordInput.value,
+          };
+
+          validateField("new_password", values, newPasswordError);
+
+          if (confirmPasswordInput.value) {
+            validateField("confirm_password", values, confirmPasswordError);
+          }
+        });
+
+        confirmPasswordInput.addEventListener("input", () => {
+          validateField(
+            "confirm_password",
+            {
+              admin_password: adminPasswordInput.value,
+              new_password: newPasswordInput.value,
+              confirm_password: confirmPasswordInput.value,
+            },
+            confirmPasswordError,
+          );
+        });
+
+        adminPasswordInput.focus();
       },
     }).then(async (result) => {
       if (result.isConfirmed) {
-        const { adminPassword, newPassword, confirmPassword } = result.value;
-        const data = {
-          admin_password: adminPassword.value,
-          emp_uuid: orderData.emp_uuid,
-          new_password: newPassword,
-          confirm_password: confirmPassword,
-        };
-
-        const Api = await PostApi("employee/reset-password/", data, false);
-        if (Api.status && Api.status === 200) {
-          Swal.fire(
-            "Password Reset!",
+        Swal.fire(
+          "Password Reset!",
+          result.value?.apiResponse?.data?.message ||
             "Password has been reset successfully.",
-            "success",
-          );
-        } else {
-          toast.error(Api?.data?.message);
-        }
+          "success",
+        );
       }
     });
   };
-  function togglePasswordVisibility(passwordInput) {
-    if (passwordInput.type === "password") {
-      passwordInput.type = "text";
-    } else {
-      passwordInput.type = "password";
-    }
-  }
   // Column
   const initialColumns = [
     {
@@ -1480,20 +1673,35 @@ const InfoTable = ({
           formname === priorities_component_name ||
           formname === task_list_component_name ||
           formname === custom_status_form_component_name ||
-          formname === custom_field_component_name
+          formname === custom_field_component_name ||
+          formname === work_schedule_component_name
         ) {
           const rowData = cellProps.row.original;
+
+          const isLockedStatusRow =
+            formname === status_component_name &&
+            (rowData.id === 1 || rowData.id === 3);
 
           return (
             <>
               <li className="list-inline-item edit">
-                <Link
-                  to="javascript:void(0)"
-                  className="text-primary d-inline-block edit-item-btn"
-                  onClick={() => handleCreateAndUpdate(rowData.id, rowData)}
-                >
-                  <i className="ri-pencil-fill fs-16"></i>
-                </Link>
+                {isLockedStatusRow ? (
+                  <span
+                    className="text-muted d-inline-block edit-item-btn"
+                    style={{ cursor: "not-allowed", opacity: 0.5 }}
+                    title="This status cannot be edited"
+                  >
+                    <i className="ri-pencil-fill fs-16"></i>
+                  </span>
+                ) : (
+                  <Link
+                    to="javascript:void(0)"
+                    className="text-primary d-inline-block edit-item-btn"
+                    onClick={() => handleCreateAndUpdate(rowData.id, rowData)}
+                  >
+                    <i className="ri-pencil-fill fs-16"></i>
+                  </Link>
+                )}
               </li>
 
               {/* <li className="list-inline-item">
@@ -1555,7 +1763,7 @@ const InfoTable = ({
                   <i className="ri-pencil-fill fs-16"></i>
                 </Link>
               </li>
-              <li className="list-inline-item">
+              {/* <li className="list-inline-item">
                 <Link
                   to="#"
                   className="text-danger d-inline-block remove-item-btn"
@@ -1564,6 +1772,22 @@ const InfoTable = ({
                   }}
                 >
                   <i className="ri-delete-bin-5-fill fs-16"></i>
+                </Link>
+              </li> */}
+            </ul>
+          );
+        } else if (formname === work_schedule_component_name) {
+          return (
+            <ul className="list-inline hstack gap-2 mb-0">
+              <li className="list-inline-item edit">
+                <Link
+                  to="javascript:void(0)"
+                  className="text-primary d-inline-block edit-item-btn"
+                  onClick={() => {
+                    handleCreateAndUpdate(orderData.id, orderData);
+                  }}
+                >
+                  <i className="ri-pencil-fill fs-16"></i>
                 </Link>
               </li>
             </ul>
@@ -1884,6 +2108,7 @@ const InfoTable = ({
 
   const handleCreateAndUpdate = ($id, table_obj) => {
     console.log("table_obj === ", table_obj);
+    console.log("id === ", $id);
 
     let FormObj = {};
 
@@ -2140,38 +2365,6 @@ const InfoTable = ({
                             {formname.split("_").join(" ")}
                           </h5>
                         )}
-                      {/* {formname && formname === holiday_component_name && (
-                    <center>
-                      <div className="flex-shrink-0 ms-5 mt-0">
-                        <UncontrolledDropdown className="card-header-dropdown">
-                          <DropdownToggle
-                            tag="a"
-                            className="text-reset dropdown-btn"
-                            role="button"
-                          >
-                            <span className="text-muted">
-                              01 Jan 2023 to 31 Dec 2023
-                              <i className="mdi mdi-chevron-down ms-1"></i>
-                            </span>
-                          </DropdownToggle>
-                          <DropdownMenu className="dropdown-menu-end">
-                            <DropdownItem>
-                              01 Jan 2022 to 31 Dec 2022
-                            </DropdownItem>
-                            <DropdownItem>
-                              01 Jan 2023 to 31 Dec 2023
-                            </DropdownItem>
-                            <DropdownItem>
-                              01 Jan 2024 to 31 Dec 2024
-                            </DropdownItem>
-                            <DropdownItem>
-                              01 Jan 2025 to 31 Dec 2025
-                            </DropdownItem>
-                          </DropdownMenu>
-                        </UncontrolledDropdown>
-                      </div>
-                    </center>
-                  )} */}
                     </div>
                     <div className="col-sm-auto">
                       <div className="d-flex gap-1 flex-wrap">
@@ -2225,7 +2418,8 @@ const InfoTable = ({
                           {formname &&
                             component_list_for_import_btn_access.includes(
                               formname,
-                            ) && (
+                            ) &&
+                            formname !== holiday_component_name && (
                               <button
                                 type="button"
                                 className="btn btn-primary align-bottom me-1"
@@ -2239,139 +2433,6 @@ const InfoTable = ({
                                 Import
                               </button>
                             )}{" "}
-                          {/* <div>
-                        {formname &&
-                          formname === leave_approval_component_name && (
-                            <div
-                              style={{ display: "flex", flexDirection: "row" }}
-                            >
-                              <div style={{ marginBottom: "10px" }}>
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      position: "relative",
-                                      width: "200px",
-                                    }}
-                                  >
-                                    <i
-                                      className="bx bx-search-alt search-icon"
-                                      style={{
-                                        position: "absolute",
-                                        top: "50%",
-                                        left: "10px",
-                                        transform: "translateY(-50%)",
-                                      }}
-                                    ></i>
-                                    <input
-                                      type="text"
-                                      placeholder="Search"
-                                      value={search}
-                                      onChange={handleSearchChange}
-                                      style={{
-                                        padding: "6px 30px 6px 30px",
-                                        borderRadius: "4px",
-                                        border: "1px solid #ccc",
-                                        width: "100%",
-                                        outline: "none",
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div
-                                style={{
-                                  marginLeft: "10px",
-                                  marginRight: "5px",
-                                }}
-                              >
-                                <label
-                                  htmlFor="roleName"
-                                  className="form-label"
-                                >
-                                  Status:
-                                </label>
-                                <select
-                                  value={statusFilter}
-                                  onChange={handleStatusFilterChange}
-                                  style={{
-                                    padding: "6px",
-                                    borderRadius: "4px",
-                                    border: "1px solid #ccc",
-                                    width: "170px",
-                                    outline: "none",
-                                  }}
-                                >
-                                  <option value="all">All Status</option>
-                                  <option value="approved">Approved</option>
-                                  <option value="rejected">Rejected</option>
-                                </select>
-                              </div>
-                              <div
-                                style={{
-                                  marginLeft: "10px",
-                                  marginRight: "5px",
-                                }}
-                              >
-                                <label
-                                  htmlFor="roleName"
-                                  className="form-label"
-                                >
-                                  Type:
-                                </label>
-                                <select
-                                  value={typeFilter}
-                                  onChange={handleTypeFilterChange}
-                                  style={{
-                                    padding: "6px",
-                                    borderRadius: "4px",
-                                    border: "1px solid #ccc",
-                                    width: "170px",
-                                    outline: "none",
-                                  }}
-                                >
-                                  <option value="all">All Types</option>
-                                  <option value="type1">Type 1</option>
-                                  <option value="type2">Type 2</option>
-                                </select>
-                              </div>
-                              <div></div>
-                            </div>
-                          )}
-                      </div>
-                      {formname &&
-                        formname === leave_approval_component_name && (
-                          <div>
-                            <button
-                              type="button"
-                              className="btn btn-success add-btn"
-                              id="bulk-approve-btn"
-                              style={{
-                                textTransform: "capitalize",
-                                marginRight: "5px",
-                              }}
-                              onClick={() => handleBulkAction("approve")}
-                            >
-                              <i className="ri-check-line fs-16"></i> Bulk
-                              Approve
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-danger add-btn"
-                              id="bulk-reject-btn"
-                              style={{ textTransform: "capitalize" }}
-                              onClick={() => handleBulkAction("reject")}
-                            >
-                              <i className="ri-close-line fs-16"></i> Bulk
-                              Reject
-                            </button>
-                          </div>
-                        )} */}
                           {formname &&
                             formname !== attendance_pending_table &&
                             formname !== leave_pending_table &&
@@ -2382,7 +2443,8 @@ const InfoTable = ({
                             formname !== project_component_name &&
                             formname !== task_list_component_name &&
                             formname !== client_component_name &&
-                            formname !== custom_status_form_component_name && (
+                            formname !== custom_status_form_component_name &&
+                            formname !== holiday_component_name && (
                               <button
                                 type="button"
                                 className="btn btn-info"
@@ -2392,36 +2454,7 @@ const InfoTable = ({
                                 Export
                               </button>
                             )}{" "}
-                          {isMultiDeleteButton && (
-                            <div>
-                              {/* <button
-                                className="btn btn-soft-danger"
-                                onClick={() => setDeleteModalMulti(true)}
-                              >
-                                <i className="ri-delete-bin-2-line"></i>
-                              </button>{" "} */}
-                              {/* {formname === leave_approval_component_name && (
-                            <>
-                              <button
-                                type="button"
-                                className="btn btn-success add-btn"
-                                id="bulk-approve-btn"
-                                onClick={() => handleBulkAction("approve")}
-                              >
-                                <i className="ri-check-line fs-16"></i> Bulk Approve
-                              </button>{" "}
-                              <button
-                                type="button"
-                                className="btn btn-danger add-btn"
-                                id="bulk-reject-btn"
-                                onClick={() => handleBulkAction("reject")}
-                              >
-                                <i className="ri-close-line fs-16"></i> Bulk Reject
-                              </button>{" "}
-                            </>
-                          )} */}
-                            </div>
-                          )}
+                          {isMultiDeleteButton && <div></div>}
                           {selectApproveReject &&
                             (formname === leave_approval_component_name ||
                               formname ===
@@ -2478,29 +2511,6 @@ const InfoTable = ({
                                   )}
                               </div>
                             )}
-                          {/* {selectApproveReject &&
-                        formname === attendance_approval_component_name && (
-                          <div>
-                            <button
-                              type="button"
-                              className="btn btn-success add-btn"
-                              id="bulk-approve-btn"
-                              onClick={() => handleBulkApproval()}
-                            >
-                              <i className="ri-check-line fs-16"></i> Bulk
-                              Approve
-                            </button>{" "}
-                            <button
-                              type="button"
-                              className="btn btn-danger add-btn"
-                              id="bulk-reject-btn"
-                              onClick={() => handleBulkReject()}
-                            >
-                              <i className="ri-close-line fs-16"></i> Bulk
-                              Reject
-                            </button>{" "}
-                          </div>
-                        )} */}
                         </div>
                       </div>
                     </div>
@@ -2574,147 +2584,16 @@ const InfoTable = ({
                 </Nav>
                 {isLoading ? (
                   <TableSkeleton />
-                ) : dataList.length ? (
-                  // <TableContainer
-                  //   columns={tableColumn}
-                  //   data={
-                  //     dataList
-                  //       ?.filter((obj) => {
-                  //         return Object.entries(table_filter_keys || {}).every(
-                  //           ([key, value]) => {
-                  //             // ─────────────────────────────
-                  //             // Skip Empty Filters
-                  //             // ─────────────────────────────
-                  //             if (
-                  //               value === 0 ||
-                  //               value === null ||
-                  //               value === undefined ||
-                  //               value === "" ||
-                  //               (Array.isArray(value) && value.length === 0)
-                  //             ) {
-                  //               return true;
-                  //             }
-
-                  //             // ─────────────────────────────
-                  //             // Multi Select Array Filter
-                  //             // collaborator_id
-                  //             // ─────────────────────────────
-                  //             if (Array.isArray(value)) {
-                  //               const taskValues =
-                  //                 obj?.collaborators_id_list ||
-                  //                 obj?.[key] ||
-                  //                 [];
-
-                  //               return value.some((id) =>
-                  //                 taskValues
-                  //                   .map((v) => Number(v))
-                  //                   .includes(Number(id)),
-                  //               );
-                  //             }
-
-                  //             // ─────────────────────────────
-                  //             // Nested Object ID
-                  //             // role_id → role.id
-                  //             // ─────────────────────────────
-                  //             if (key.endsWith("_id")) {
-                  //               const objectKey = key.replace("_id", "");
-
-                  //               if (
-                  //                 obj?.[objectKey] &&
-                  //                 typeof obj[objectKey] === "object" &&
-                  //                 "id" in obj[objectKey]
-                  //               ) {
-                  //                 return (
-                  //                   Number(obj[objectKey].id) === Number(value)
-                  //                 );
-                  //               }
-                  //             }
-
-                  //             // ─────────────────────────────
-                  //             // Direct Compare
-                  //             // ─────────────────────────────
-                  //             return Number(obj?.[key]) === Number(value);
-                  //           },
-                  //         );
-                  //       })
-
-                  //       // ─────────────────────────────
-                  //       // Search Filter
-                  //       // ─────────────────────────────
-
-                  //       // Year + Month Filter
-                  //       .filter((obj) => {
-                  //         const selectedYear =
-                  //           attendance_approval_table_filter_keys?.year;
-
-                  //         const selectedMonth =
-                  //           attendance_approval_table_filter_keys?.month;
-
-                  //         // No year selected -> show all
-                  //         if (!selectedYear) return true;
-
-                  //         const holidayDate = dayjs(obj.date);
-
-                  //         const yearMatch =
-                  //           holidayDate.year().toString() === selectedYear;
-
-                  //         const monthMatch =
-                  //           selectedMonth === 0 ||
-                  //           selectedMonth === undefined ||
-                  //           selectedMonth === null ||
-                  //           holidayDate.month() + 1 === selectedMonth;
-
-                  //         return yearMatch && monthMatch;
-                  //       })
-
-                  //       // Search Filter
-                  //       .filter((d) => {
-                  //         if (!search?.trim()) return true;
-
-                  //         const searchText = search.toLowerCase();
-
-                  //         const nameMatch =
-                  //           d?.name
-                  //             ?.toString()
-                  //             .toLowerCase()
-                  //             .includes(searchText) || false;
-
-                  //         const descriptionMatch =
-                  //           d?.description
-                  //             ?.toString()
-                  //             .toLowerCase()
-                  //             .includes(searchText) || false;
-
-                  //         const formattedDate = d?.date
-                  //           ? dayjs(d.date).format("DD-MM-YYYY")
-                  //           : "";
-
-                  //         const normalizedDate = formattedDate.replace(
-                  //           /[-/]/g,
-                  //           "",
-                  //         );
-                  //         const normalizedSearch = search.replace(/[-/]/g, "");
-
-                  //         const dateMatch =
-                  //           formattedDate.includes(search) ||
-                  //           normalizedDate.includes(normalizedSearch);
-
-                  //         return nameMatch || descriptionMatch || dateMatch;
-                  //       }) || []
-                  //   }
-                  //   isPagination={true}
-                  //   isGlobalFilter={true}
-                  //   formname={formname}
-                  //   customPageSize={50}
-                  //   divClass="table-responsive table-card"
-                  //   tableClass="align-middle table-nowrap"
-                  //   theadClass="table-light text-muted"
-                  //   handleDataClick={handleDataClicks}
-                  //   isDataFilter={true}
-                  //   SearchPlaceholder="Search for data ID, customer, data status or something..."
-                  //   showInfo={true}
-                  // />
-
+                ) : (
+                  // ✅ FIX: TableContainer (which renders the filter row, e.g.
+                  // TaskListFilter) is now ALWAYS rendered, even when dataList
+                  // is empty. Previously this whole block was swapped out for
+                  // a plain "No Result Found" div whenever a filter produced
+                  // zero matches — which made the filter selects themselves
+                  // disappear the moment you picked a filter with no results.
+                  // The empty-state message is now rendered *inside*
+                  // TableContainer, below the filter row, via its `noResults`
+                  // prop.
                   <TableContainer
                     columns={tableColumn}
                     data={
@@ -2779,10 +2658,8 @@ const InfoTable = ({
                         })
 
                         // ─────────────────────────────
-                        // Search Filter
-                        // ─────────────────────────────
-
                         // Year + Month Filter
+                        // ─────────────────────────────
                         .filter((obj) => {
                           const selectedYear =
                             attendance_approval_table_filter_keys?.year;
@@ -2807,24 +2684,12 @@ const InfoTable = ({
                           return yearMatch && monthMatch;
                         })
 
+                        // ─────────────────────────────
                         // Search Filter
-
+                        // ─────────────────────────────
                         .filter((d) => {
                           if (!search?.trim()) return true;
 
-                          // return Object.values(d).some((value) => {
-                          // if (typeof value === "string") {
-                          // return value
-                          // .toLowerCase()
-                          // .includes(search.toLowerCase());
-                          // }
-
-                          // if (typeof value === "number") {
-                          // return String(value).includes(search);
-                          // }
-
-                          // return false;
-                          // });
                           return Object.entries(d).some(([key, value]) => {
                             // Ignore ID fields
                             if (
@@ -2863,25 +2728,9 @@ const InfoTable = ({
                               return matched;
                             }
 
-                            // if (value == null) return false;
-
-                            // return String(value)
-                            // .toLowerCase()
-                            // .includes(search.toLowerCase());
                             const matched = searchValue
                               .toLowerCase()
                               .includes(search.toLowerCase());
-
-                            if (matched) {
-                              console.log(
-                                "Holiday:",
-                                d.name,
-                                "Matched Key:",
-                                key,
-                                "Matched Value:",
-                                value,
-                              );
-                            }
 
                             return matched;
                           });
@@ -2899,38 +2748,6 @@ const InfoTable = ({
                     SearchPlaceholder="Search for data ID, customer, data status or something..."
                     showInfo={true}
                   />
-                ) : (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: "25vh",
-                    }}
-                  >
-                    <lord-icon
-                      src="https://cdn.lordicon.com/msoeawqm.json"
-                      trigger="loop"
-                      colors="primary:#405189,secondary:#0ab39c"
-                      style={{
-                        marginTop: "20px",
-                        width: "150px",
-                        height: "80px",
-                        marginBottom: "20px",
-                      }}
-                    ></lord-icon>
-                    <p
-                      style={{
-                        width: "300px",
-                        color: "#405189",
-                        fontSize: "20px",
-                        textAlign: "center",
-                      }}
-                    >
-                      Sorry! No Result Found
-                    </p>
-                  </div>
                 )}
               </div>
               <Modal id="showModal" isOpen={modal} toggle={toggle} centered>
@@ -2958,19 +2775,7 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Order Id"
                         type="text"
-                        // validate={{
-                        //     required: { value: true },
-                        // }}
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={validation.values.orderId || ""}
-                        // invalid={
-                        //     validation.touched.orderId && validation.errors.orderId ? true : false
-                        // }
                       />
-                      {/* {validation.touched.orderId && validation.errors.orderId ? (
-                                                    <FormFeedback type="invalid">{validation.errors.orderId}</FormFeedback>
-                                                ) : null} */}
                     </div>
 
                     <div className="mb-3">
@@ -2986,19 +2791,7 @@ const InfoTable = ({
                         className="form-control"
                         placeholder="Enter Name"
                         type="text"
-                        // validate={{
-                        //     required: { value: true },
-                        // }}
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={validation.values.customer || ""}
-                        // invalid={
-                        //     validation.touched.customer && validation.errors.customer ? true : false
-                        // }
                       />
-                      {/* {validation.touched.customer && validation.errors.customer ? (
-                                                    <FormFeedback type="invalid">{validation.errors.customer}</FormFeedback>
-                                                ) : null} */}
                     </div>
 
                     <div className="mb-3">
@@ -3010,52 +2803,14 @@ const InfoTable = ({
                         name="product"
                         type="select"
                         className="form-select"
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={
-                        //     validation.values.product || ""
-                        // }
                         required
-                      >
-                        {/* {productname.map((item, key) => (
-                                                        <React.Fragment key={key}>
-                                                            {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
-                                                        </React.Fragment>
-                                                    ))} */}
-                      </Input>
-                      {/* {validation.touched.product &&
-                                                    validation.errors.product ? (
-                                                    <FormFeedback type="invalid">
-                                                        {validation.errors.product}
-                                                    </FormFeedback>
-                                                ) : null} */}
+                      ></Input>
                     </div>
 
                     <div className="mb-3">
                       <Label htmlFor="date-field" className="form-label">
                         Order Date
                       </Label>
-                      {/* 
-                                                <Flatpickr
-                                                    name="orderDate"
-                                                    className="form-control"
-                                                    id="datepicker-publish-input"
-                                                    placeholder="Select a date"
-                                                    options={{
-                                                        enableTime: true,
-                                                        altInput: true,
-                                                        altFormat: "d M, Y, G:i K",
-                                                        dateFormat: "d M, Y, G:i K",
-                                                    }}
-                                                    onChange={(e) =>
-                                                        dateformate(e)
-                                                    }
-                                                    value={validation.values.orderDate || ""}
-                                                /> */}
-
-                      {/* {validation.touched.orderDate && validation.errors.orderDate ? (
-                                                    <FormFeedback type="invalid">{validation.errors.orderDate}</FormFeedback>
-                                                ) : null} */}
                     </div>
                     <div className="row gy-4 mb-3">
                       <div className="col-md-6">
@@ -3063,19 +2818,7 @@ const InfoTable = ({
                           <Label htmlFor="amount-field" className="form-label">
                             Amount
                           </Label>
-                          <Input
-                            name="amount"
-                            type="text"
-                            // onChange={validation.handleChange}
-                            // onBlur={validation.handleBlur}
-                            // value={validation.values.amount || ""}
-                            // invalid={
-                            //     validation.touched.amount && validation.errors.amount ? true : false
-                            // }
-                          />
-                          {/* {validation.touched.amount && validation.errors.amount ? (
-                                                            <FormFeedback type="invalid">{validation.errors.amount}</FormFeedback>
-                                                        ) : null} */}
+                          <Input name="amount" type="text" />
                         </div>
                       </div>
                       <div className="col-md-6">
@@ -3088,24 +2831,7 @@ const InfoTable = ({
                             name="payment"
                             type="select"
                             className="form-select"
-                            // onChange={validation.handleChange}
-                            // onBlur={validation.handleBlur}
-                            // value={
-                            //     validation.values.payment || ""
-                            // }
-                          >
-                            {/* {orderpayement.map((item, key) => (
-                                                                <React.Fragment key={key}>
-                                                                    {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
-                                                                </React.Fragment>
-                                                            ))} */}
-                          </Input>
-                          {/* {validation.touched.payment &&
-                                                            validation.errors.payment ? (
-                                                            <FormFeedback type="invalid">
-                                                                {validation.errors.payment}
-                                                            </FormFeedback>
-                                                        ) : null} */}
+                          ></Input>
                         </div>
                       </div>
                     </div>
@@ -3119,24 +2845,7 @@ const InfoTable = ({
                         name="status"
                         type="select"
                         className="form-select"
-                        // onChange={validation.handleChange}
-                        // onBlur={validation.handleBlur}
-                        // value={
-                        //     validation.values.status || ""
-                        // }
-                      >
-                        {/* {orderstatus.map((item, key) => (
-                                                        <React.Fragment key={key}>
-                                                            {item.options.map((item, key) => (<option value={item.value} key={key}>{item.label}</option>))}
-                                                        </React.Fragment>
-                                                    ))} */}
-                      </Input>
-                      {/* {validation.touched.status &&
-                                                    validation.errors.status ? (
-                                                    <FormFeedback type="invalid">
-                                                        {validation.errors.status}
-                                                    </FormFeedback>
-                                                ) : null} */}
+                      ></Input>
                     </div>
                   </ModalBody>
                   <div className="modal-footer">
@@ -3150,12 +2859,6 @@ const InfoTable = ({
                       >
                         Close
                       </button>
-
-                      {/* <button type="submit" className="btn btn-success">
-                                                    {!!isEdit
-                                                        ? "Update"
-                                                        : "Add Customer"}
-                                                </button> */}
                     </div>
                   </div>
                 </Form>
@@ -3422,10 +3125,9 @@ const InfoTable = ({
                                     <span
                                       className="badge text-uppercase"
                                       style={{
-                                        backgroundColor:
-                                          item.color && /^#/.test(item.color)
-                                            ? item.color
-                                            : "#000000",
+                                        backgroundColor: getValidColor(
+                                          item.color,
+                                        ),
                                         color: "#fff",
                                         padding: "6px 10px",
                                         fontSize: "11px",

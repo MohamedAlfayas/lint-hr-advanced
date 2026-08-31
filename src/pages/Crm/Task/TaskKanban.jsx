@@ -82,7 +82,16 @@ function buildColumns(taskStatusList) {
   if (!Array.isArray(taskStatusList) || taskStatusList.length === 0) {
     return FALLBACK_COLUMNS;
   }
-  return taskStatusList.map((s, idx) => ({
+
+  const firstItem = taskStatusList.filter((s) => Number(s.id) === 1);
+  const lastItem = taskStatusList.filter((s) => Number(s.id) === 3);
+  const middleItems = taskStatusList
+    .filter((s) => Number(s.id) !== 1 && Number(s.id) !== 3)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  const sortedList = [...firstItem, ...middleItems, ...lastItem];
+
+  return sortedList.map((s, idx) => ({
     id: Number(s.id),
     title: s.title || s.name || `Status ${s.id}`,
     icon: STATUS_ICONS[idx % STATUS_ICONS.length],
@@ -252,17 +261,13 @@ function AvatarCircle({ id, employeeMap, size = 22, fontSize = 9 }) {
 }
 
 // ─── TaskCard ──────────────────────────────────────────────────────
-// FIX: removed broken handleDeleteTask that referenced out-of-scope
-//      `dispatch` and `tasks`. Delete is now handled via the `onDelete`
-//      prop which is provided by the parent (TaskKanban) where both
-//      `dispatch` and `tasks` are in scope.
 function TaskCard({
   task,
   priorityMap,
   employeeMap,
   onDragStart,
   onEdit,
-  onDelete, // FIX: used directly — no local re-implementation
+  onDelete,
 }) {
   const priority = priorityMap[Number(task.task_priority)] || {
     label: "Normal",
@@ -270,6 +275,9 @@ function TaskCard({
   };
   const overdue = isOverdue(task.end_time);
   const collabs = task.collaborators_id_list || [];
+  // ✅ only relevant for client-related tasks
+  const showFieldVisitBadge =
+    task.related_to === "client" && !!task.requires_field_visit;
 
   return (
     <div
@@ -280,18 +288,31 @@ function TaskCard({
       <div style={{ padding: "10px 12px" }}>
         {/* Priority + menu */}
         <div className="d-flex align-items-start justify-content-between mb-2">
-          <span
-            className="badge fs-11 d-inline-flex align-items-center gap-1"
-            style={{
-              background: priority.color + "22",
-              color: priority.color,
-              border: `1px solid ${priority.color}44`,
-              fontWeight: 600,
-            }}
-          >
-            <i className="ri-flag-2-line"></i>
-            {priority.label}
-          </span>
+          <div className="d-flex flex-wrap gap-1">
+            <span
+              className="badge fs-11 d-inline-flex align-items-center gap-1"
+              style={{
+                background: priority.color + "22",
+                color: priority.color,
+                border: `1px solid ${priority.color}44`,
+                fontWeight: 600,
+              }}
+            >
+              <i className="ri-flag-2-line"></i>
+              {priority.label}
+            </span>
+
+            {/* Field Visit badge */}
+            {showFieldVisitBadge && (
+              <span
+                className="badge fs-11 d-inline-flex align-items-center gap-1 badge-soft-info"
+                title="Requires Field Visit"
+              >
+                <i className="ri-map-pin-line"></i>
+                Field Visit
+              </span>
+            )}
+          </div>
 
           <UncontrolledDropdown>
             <DropdownToggle
@@ -306,7 +327,6 @@ function TaskCard({
                 <i className="ri-edit-2-line align-bottom me-2 text-muted"></i>
                 Edit
               </DropdownItem>
-              {/* FIX: calls onDelete(task.id) — wired to handleDelete in TaskKanban */}
               <DropdownItem
                 className="text-danger"
                 onClick={() => onDelete(task.id)}
@@ -448,7 +468,6 @@ function TaskCard({
 }
 
 // ─── KanbanColumn ──────────────────────────────────────────────────
-// FIX: onDelete is now properly forwarded down to TaskCard
 function KanbanColumn({
   column,
   tasks,
@@ -458,7 +477,7 @@ function KanbanColumn({
   onDrop,
   onDragOver,
   onEdit,
-  onDelete, // FIX: was received but never passed to TaskCard
+  onDelete,
 }) {
   const [isOver, setIsOver] = useState(false);
 
@@ -509,7 +528,7 @@ function KanbanColumn({
               employeeMap={employeeMap}
               onDragStart={onDragStart}
               onEdit={onEdit}
-              onDelete={onDelete} // FIX: now properly passed down
+              onDelete={onDelete}
             />
           ))
         )}
@@ -531,6 +550,9 @@ const TaskKanban = ({ searchQuery = "" }) => {
   const [error, setError] = useState(null);
   const [updatingIds, setUpdatingIds] = useState(new Set());
   const draggedTask = useRef(null);
+  const boardScrollRef = useRef(null);
+  const isPanning = useRef(false);
+  const panStart = useRef({ x: 0, scrollLeft: 0 });
 
   // ── Build lookup maps from localStorage ──────────────────────────
   const taskStatusList = (GetLocalStorageData("task_status") || []).filter(
@@ -550,8 +572,11 @@ const TaskKanban = ({ searchQuery = "" }) => {
       setError(null);
       try {
         const response = await Api.get("/task/");
-        const data = response?.data?.data || [];
-        dispatch(setTasks(data));
+        // ✅ FIX: API returns { data: [...] } — a flat array, not { external, internal }
+        const fetchedTasks = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : [];
+        dispatch(setTasks(fetchedTasks));
       } catch (err) {
         console.error("Task Fetch Error:", err);
         setError("Failed to load tasks. Please try again.");
@@ -588,6 +613,37 @@ const TaskKanban = ({ searchQuery = "" }) => {
 
   function handleDragOver(e) {
     e.preventDefault();
+  }
+
+  // ── Click & drag to scroll (outside cards) ────────────────────────
+  function handlePanMouseDown(e) {
+    if (e.target.closest("[draggable='true']")) return;
+    if (e.button !== 0) return;
+    const rect = boardScrollRef.current.getBoundingClientRect();
+    const clickedOnScrollbar =
+      e.clientY > rect.bottom - 17 &&
+      boardScrollRef.current.scrollWidth > boardScrollRef.current.clientWidth;
+    if (clickedOnScrollbar) return;
+    isPanning.current = true;
+    panStart.current = {
+      x: e.pageX,
+      scrollLeft: boardScrollRef.current.scrollLeft,
+    };
+    boardScrollRef.current.style.cursor = "grabbing";
+  }
+
+  function handlePanMouseMove(e) {
+    if (!isPanning.current) return;
+    e.preventDefault();
+    const dx = e.pageX - panStart.current.x;
+    boardScrollRef.current.scrollLeft = panStart.current.scrollLeft - dx;
+  }
+
+  function handlePanMouseUp() {
+    isPanning.current = false;
+    if (boardScrollRef.current) {
+      boardScrollRef.current.style.cursor = "default";
+    }
   }
 
   async function handleDrop(e, targetColumnId) {
@@ -631,7 +687,6 @@ const TaskKanban = ({ searchQuery = "" }) => {
   }
 
   // ── Delete handler ────────────────────────────────────────────────
-  // FIX: moved here from TaskCard so dispatch and tasks are in scope
   async function handleDelete(taskId) {
     const result = await Swal.fire({
       title: "Delete Task?",
@@ -651,7 +706,6 @@ const TaskKanban = ({ searchQuery = "" }) => {
       });
 
       if (response?.status === 200 || response?.status === 201) {
-        // FIX: tasks and dispatch are in scope here
         dispatch(setTasks(tasks.filter((item) => item.id !== taskId)));
 
         Swal.fire({
@@ -793,7 +847,15 @@ const TaskKanban = ({ searchQuery = "" }) => {
           <p className="text-muted mt-2 fs-14">Loading tasks…</p>
         </div>
       ) : (
-        <div className="kanban-scroll-wrapper" style={styles.boardWrapper}>
+        <div
+          className="kanban-scroll-wrapper"
+          style={styles.boardWrapper}
+          ref={boardScrollRef}
+          onMouseDown={handlePanMouseDown}
+          onMouseMove={handlePanMouseMove}
+          onMouseUp={handlePanMouseUp}
+          onMouseLeave={handlePanMouseUp}
+        >
           <div style={styles.boardInner}>
             {columns.map((col) => (
               <KanbanColumn

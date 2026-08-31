@@ -26,21 +26,21 @@ import { useSelector } from "react-redux";
 import CustomFormTable from "../CustomForms/CustomFormTable";
 import LocationGroup from "./LocationGroup";
 import CustomStatus from "./CustomStatus";
-import { 
-        CONFIGURATION_VIEW_ACCESS_KEY,
-        COMPANY_PROFILE_VIEW_ACCESS_KEY,
-        DEPARTMENT_VIEW_ACCESS_KEY,
-        BRANCH_VIEW_ACCESS_KEY,
-        CUSTOM_FIELD_VIEW_ACCESS_KEY,
-        ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY,
-        PAYROLL_VIEW_ACCESS_KEY,
-        ROLES_VIEW_ACCESS_KEY,
-        FORMS_VIEW_ACCESS_KEY,
-        LOCATION_GROUP_VIEW_ACCESS_KEY,
-         } from "../../common/constant/RoleConstants";
+import {
+  CONFIGURATION_VIEW_ACCESS_KEY,
+  COMPANY_PROFILE_VIEW_ACCESS_KEY,
+  DEPARTMENT_VIEW_ACCESS_KEY,
+  BRANCH_VIEW_ACCESS_KEY,
+  CUSTOM_FIELD_VIEW_ACCESS_KEY,
+  ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY,
+  PAYROLL_VIEW_ACCESS_KEY,
+  ROLES_VIEW_ACCESS_KEY,
+  FORMS_VIEW_ACCESS_KEY,
+  LOCATION_GROUP_VIEW_ACCESS_KEY,
+} from "../../common/constant/RoleConstants";
+import CustomFormConfig from "../CustomFormConfig/CustomFormConfig";
 
 const Section = () => {
-
   // const [departmentView, SetDepartmentView] = useState(false);
   // const [branchView, SetBranchView] = useState(false);
 
@@ -80,10 +80,10 @@ const Section = () => {
     locationGroup: false,
     customStatus: false,
   });
-  
+
   useEffect(() => {
     const profileData = JSON.parse(
-      localStorage.getItem("lint_hr_profile_data")
+      localStorage.getItem("lint_hr_profile_data"),
     );
     console.log(profileData.permission_list);
     console.log("Profile Data:", profileData);
@@ -93,73 +93,45 @@ const Section = () => {
     const permissionList = profileData.permission_list;
     console.log("Permission List:", permissionList);
 
-    console.log(
-      "Payroll:",
-      permissionList.includes(PAYROLL_VIEW_ACCESS_KEY)
-    );
+    console.log("Payroll:", permissionList.includes(PAYROLL_VIEW_ACCESS_KEY));
 
-    console.log(
-      "Roles:",
-      permissionList.includes(ROLES_VIEW_ACCESS_KEY)
-    );
+    console.log("Roles:", permissionList.includes(ROLES_VIEW_ACCESS_KEY));
 
-    console.log(
-      "Forms:",
-      permissionList.includes(FORMS_VIEW_ACCESS_KEY)
-    );
+    console.log("Forms:", permissionList.includes(FORMS_VIEW_ACCESS_KEY));
 
     console.log(
       "Location Group:",
-      permissionList.includes(LOCATION_GROUP_VIEW_ACCESS_KEY)
+      permissionList.includes(LOCATION_GROUP_VIEW_ACCESS_KEY),
     );
 
     console.log(
       "Attendance Config:",
-      permissionList.includes(ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY)
+      permissionList.includes(ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY),
     );
     setPermissions({
-      companyInfo: permissionList.includes(
-        COMPANY_PROFILE_VIEW_ACCESS_KEY
-      ),
+      companyInfo: permissionList.includes(COMPANY_PROFILE_VIEW_ACCESS_KEY),
 
-      department: permissionList.includes(
-        DEPARTMENT_VIEW_ACCESS_KEY
-      ),
+      department: permissionList.includes(DEPARTMENT_VIEW_ACCESS_KEY),
 
-      branch: permissionList.includes(
-        BRANCH_VIEW_ACCESS_KEY
-      ),
+      branch: permissionList.includes(BRANCH_VIEW_ACCESS_KEY),
 
-      customField: permissionList.includes(
-        CUSTOM_FIELD_VIEW_ACCESS_KEY
-      ),
+      customField: permissionList.includes(CUSTOM_FIELD_VIEW_ACCESS_KEY),
 
       attendance: permissionList.includes(
-        ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY
+        ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY,
       ),
 
-      payroll: permissionList.includes(
-        PAYROLL_VIEW_ACCESS_KEY
-      ),
+      payroll: permissionList.includes(PAYROLL_VIEW_ACCESS_KEY),
 
-      roles: permissionList.includes(
-        ROLES_VIEW_ACCESS_KEY
-      ),
+      roles: permissionList.includes(ROLES_VIEW_ACCESS_KEY),
 
-      forms: permissionList.includes(
-        FORMS_VIEW_ACCESS_KEY
-      ),
+      forms: permissionList.includes(FORMS_VIEW_ACCESS_KEY),
 
-      locationGroup: permissionList.includes(
-        LOCATION_GROUP_VIEW_ACCESS_KEY
-      ),
+      locationGroup: permissionList.includes(LOCATION_GROUP_VIEW_ACCESS_KEY),
 
-      customStatus: permissionList.includes(
-        CONFIGURATION_VIEW_ACCESS_KEY
-      ),
+      customStatus: permissionList.includes(CONFIGURATION_VIEW_ACCESS_KEY),
     });
   }, []);
-
 
   //Tab
   const [activeTab, setActiveTab] = useState(() => {
@@ -252,7 +224,7 @@ const Section = () => {
                       </NavLink>
                     </NavItem>
                   )}
-                  {permissions.department && (
+                  {(permissions.department && (
                     <NavItem>
                       <NavLink
                         className={classnames(
@@ -267,9 +239,10 @@ const Section = () => {
                         Departments
                       </NavLink>
                     </NavItem>
-                  ) || null}
+                  )) ||
+                    null}
 
-                  {permissions.branch && (
+                  {(permissions.branch && (
                     <NavItem>
                       <NavLink
                         className={classnames(
@@ -284,9 +257,10 @@ const Section = () => {
                         Branch
                       </NavLink>
                     </NavItem>
-                  ) || null}
+                  )) ||
+                    null}
 
-                  {permissions.attendance && (
+                  {(permissions.attendance && (
                     <NavItem>
                       <NavLink
                         className={classnames(
@@ -301,77 +275,82 @@ const Section = () => {
                         Attendance
                       </NavLink>
                     </NavItem>
-                  ) || null}
+                  )) ||
+                    null}
 
-                  {permissions.payroll && (
-                  <NavItem>
-                    <NavLink
-                      className={classnames(
-                        { active: activeTab === "5" },
-                        "fw-semibold",
-                      )}
-                      onClick={() => {
-                        toggleTab("5");
-                      }}
-                      href="#"
-                    >
-                      Payroll
-                    </NavLink>
-                  </NavItem>
-                  ) || null}
+                  {(permissions.payroll && (
+                    <NavItem>
+                      <NavLink
+                        className={classnames(
+                          { active: activeTab === "5" },
+                          "fw-semibold",
+                        )}
+                        onClick={() => {
+                          toggleTab("5");
+                        }}
+                        href="#"
+                      >
+                        Payroll
+                      </NavLink>
+                    </NavItem>
+                  )) ||
+                    null}
 
-                  {permissions.customField && (
-                  <NavItem>
-                    <NavLink
-                      className={classnames(
-                        { active: activeTab === "6" },
-                        "fw-semibold",
-                      )}
-                      onClick={() => {
-                        toggleTab("6");
-                      }}
-                      href="#"
-                    >
-                      Custom Field
-                    </NavLink>
-                  </NavItem>
-                  ) || null}
+                  {(permissions.customField && (
+                    <NavItem>
+                      <NavLink
+                        className={classnames(
+                          { active: activeTab === "6" },
+                          "fw-semibold",
+                        )}
+                        onClick={() => {
+                          toggleTab("6");
+                        }}
+                        href="#"
+                      >
+                        Custom Field
+                      </NavLink>
+                    </NavItem>
+                  )) ||
+                    null}
 
-                  {permissions.roles && (
-                  <NavItem>
-                    <NavLink
-                      className={classnames(
-                        { active: activeTab === "7" },
-                        "fw-semibold",
-                      )}
-                      onClick={() => {
-                        toggleTab("7");
-                      }}
-                      href="#"
-                    >
-                      Roles
-                    </NavLink>
-                  </NavItem>
-                  ) || null}
+                  {(permissions.roles && (
+                    <NavItem>
+                      <NavLink
+                        className={classnames(
+                          { active: activeTab === "7" },
+                          "fw-semibold",
+                        )}
+                        onClick={() => {
+                          toggleTab("7");
+                        }}
+                        href="#"
+                      >
+                        Roles
+                      </NavLink>
+                    </NavItem>
+                  )) ||
+                    null}
 
-                  {/* {permissions.forms && (
-                  <NavItem>
-                    <NavLink
-                      className={classnames(
-                        { active: activeTab === "8" },
-                        "fw-semibold",
-                      )}
-                      onClick={() => {
-                        toggleTab("8");
-                      }}
-                      href="#"
-                    >
-                      Forms
-                    </NavLink>
-                  </NavItem>
-                  ) || null} */}
+                  {(permissions.forms && (
+                    <NavItem>
+                      <NavLink
+                        className={classnames(
+                          { active: activeTab === "8" },
+                          "fw-semibold",
+                        )}
+                        onClick={() => {
+                          toggleTab("8");
+                        }}
+                        href="#"
+                      >
+                        Forms
+                      </NavLink>
+                    </NavItem>
+                  )) ||
+                    null}
 
-                  {permissions.locationGroup && (
+                  {(permissions.locationGroup && (
                     <NavItem>
                       <NavLink
                         className={classnames(
@@ -386,7 +365,8 @@ const Section = () => {
                         Location Group
                       </NavLink>
                     </NavItem>
-                  ) || null}
+                  )) ||
+                    null}
                   {/* <NavItem>
                     <NavLink
                       className={classnames(
@@ -410,57 +390,67 @@ const Section = () => {
       <Row>
         <Col lg={12}>
           <TabContent activeTab={activeTab} className="text-muted">
-            {permissions.companyInfo && (
+            {(permissions.companyInfo && (
               <TabPane tabId="1">
                 <OrgInfoTab />
               </TabPane>
-            ) || null}
-            {permissions.department && (
+            )) ||
+              null}
+            {(permissions.department && (
               <TabPane tabId="2">
                 <DepartmentsTab />
               </TabPane>
-            ) || null}
+            )) ||
+              null}
 
-            {permissions.branch && (
+            {(permissions.branch && (
               <TabPane tabId="3">
                 <Branch />
               </TabPane>
-            ) || null}
-            {permissions.attendance && (
-            <TabPane tabId="4">
-              <AttendanceConfig />
-            </TabPane>
-            ) || null}
-            {permissions.payroll && (
-            <TabPane tabId="5">
-              <PayRollConfig />
-            </TabPane>
-            ) || null}
-            {permissions.customField && (
-            <TabPane tabId="6">
-              <CustomField />
-            </TabPane>
-            ) || null}
-            {permissions.roles && (
-            <TabPane tabId="7">
-              <Roles />
-            </TabPane>
-            ) || null}
-            {/* {permissions.forms && (
-            <TabPane tabId="8">
-              <CustomFormTable />
-            </TabPane>
-            ) || null} */}
-            {permissions.locationGroup && (
-            <TabPane tabId="9">
-              <LocationGroup />
-            </TabPane>
-            ) || null}
-            {permissions.customStatus && (
-            <TabPane tabId="10">
-              <CustomStatus />
-            </TabPane>
-            ) || null}
+            )) ||
+              null}
+            {(permissions.attendance && (
+              <TabPane tabId="4">
+                <AttendanceConfig />
+              </TabPane>
+            )) ||
+              null}
+            {(permissions.payroll && (
+              <TabPane tabId="5">
+                <PayRollConfig />
+              </TabPane>
+            )) ||
+              null}
+            {(permissions.customField && (
+              <TabPane tabId="6">
+                <CustomField />
+              </TabPane>
+            )) ||
+              null}
+            {(permissions.roles && (
+              <TabPane tabId="7">
+                <Roles />
+              </TabPane>
+            )) ||
+              null}
+            {(permissions.forms && (
+              <TabPane tabId="8">
+                <CustomFormConfig />
+              </TabPane>
+            )) ||
+              null}
+            {(permissions.locationGroup && (
+              <TabPane tabId="9">
+                <LocationGroup />
+              </TabPane>
+            )) ||
+              null}
+            {(permissions.customStatus && (
+              <TabPane tabId="10">
+                <CustomStatus />
+              </TabPane>
+            )) ||
+              null}
           </TabContent>
         </Col>
       </Row>

@@ -13,9 +13,10 @@ import {
   deleteComment,
 } from "../../../../redux/reducers/ChildReducer/CommentReducer";
 
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_MB = 2;
 const ALLOWED_TYPES = [
   "image/jpeg",
   "image/png",
@@ -23,6 +24,13 @@ const ALLOWED_TYPES = [
   "image/webp",
   "application/pdf",
 ];
+
+// Comment validation rules
+const MAX_COMMENT_LENGTH = 2000;
+const MIN_COMMENT_LENGTH = 0;
+
+const COMMENT_ALLOWED_CHAR_REGEX = /^[A-Za-z0-9\s.,!?'"\-_()&:;/@]*$/;
+const COMMENT_INVALID_CHAR_REGEX = /[^A-Za-z0-9\s.,!?'"\-_()&:;/@]/g;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -78,6 +86,45 @@ const downloadFile = (url, filename) => {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+};
+
+
+const stripHtmlToText = (html) => {
+  if (!html) return "";
+  try {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return doc.body.textContent || "";
+  } catch {
+    return html.replace(/<[^>]*>/g, "");
+  }
+};
+
+const validateCommentText = (html) => {
+  const text = stripHtmlToText(html);
+  const length = text.length;
+
+  if (length > MAX_COMMENT_LENGTH) {
+    return {
+      valid: false,
+      length,
+      error: `Maximum ${MAX_COMMENT_LENGTH} characters allowed (${length}/${MAX_COMMENT_LENGTH}).`,
+    };
+  }
+
+  if (!COMMENT_ALLOWED_CHAR_REGEX.test(text)) {
+    const invalidChars = Array.from(
+      new Set(text.match(COMMENT_INVALID_CHAR_REGEX) || []),
+    );
+    return {
+      valid: false,
+      length,
+      error: `Invalid character${invalidChars.length > 1 ? "s" : ""}: ${invalidChars
+        .map((c) => (c === "\\" ? "\\\\" : c))
+        .join(" ")}.`,
+    };
+  }
+
+  return { valid: true, length, error: "" };
 };
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
@@ -411,7 +458,8 @@ const AttachmentGrid = ({
           name: isPreview ? a.name : (a.attachment_url || "").split("/").pop(),
           origIdx,
         }))
-        .filter((a) => !isPdf(a.url || "")),
+        // .filter((a) => !isPdf(a.url || "")),
+        .filter((a) => !(isPdf(a.url || "") || isPdf(a.name || ""))),
     [attachments, isPreview],
   );
 
@@ -433,7 +481,8 @@ const AttachmentGrid = ({
           const name = isPreview
             ? att.name
             : (att.attachment_url || "").split("/").pop();
-          const pdf = isPdf(url || "");
+          // const pdf = isPdf(url || "");
+          const pdf = isPdf(url || "") || isPdf(name || "");
 
           return (
             <div
@@ -449,8 +498,14 @@ const AttachmentGrid = ({
             >
               {pdf ? (
                 <div
-                  title={`Download ${name}`}
-                  onClick={() => downloadFile(url, name)}
+                  // title={`Download ${name}`}
+                  // onClick={() => downloadFile(url, name)}
+                  title={isPreview ? `View ${name}` : `Download ${name}`}
+                  onClick={() =>
+                    isPreview
+                      ? window.open(url, "_blank", "noopener,noreferrer")
+                      : downloadFile(url, name)
+                  }
                   style={{
                     width: 64,
                     height: 64,
@@ -594,6 +649,8 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileError, setFileError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
+  const [commentError, setCommentError] = useState("");
+  const [commentLength, setCommentLength] = useState(0);
 
   const fileInputRef = useRef(null);
   const editor = useRef(null);
@@ -604,6 +661,8 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
       placeholder: "Write a comment or note about this task...",
       height: 220,
       toolbarAdaptive: false,
+      showCharsCounter: false,
+      showWordsCounter: false,
       buttons: [
         "bold",
         "italic",
@@ -636,14 +695,21 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
     return text === "";
   };
 
+  // const canSave =
+  //   !savingComment && (!isCommentEmpty(comment) || selectedFiles.length > 0);
+
   const canSave =
-    !savingComment && (!isCommentEmpty(comment) || selectedFiles.length > 0);
+    !savingComment &&
+    !commentError &&
+    // (commentLength > 0 || selectedFiles.length > 0);
+    commentLength > 0;
 
   const previewAttachments = useMemo(
     () =>
       selectedFiles.map((f) => ({
         previewUrl: f.previewUrl || "",
-        attachment_url: f.previewUrl || `pdf::${f.name}`,
+        // attachment_url: f.previewUrl || `pdf::${f.name}`,
+        attachment_url: f.previewUrl || "",
         name: f.name,
       })),
     [selectedFiles],
@@ -669,14 +735,21 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
         );
         continue;
       }
-      const previewUrl = file.type.startsWith("image/")
-        ? URL.createObjectURL(file)
-        : null;
+      // const previewUrl = file.type.startsWith("image/")
+      //   ? URL.createObjectURL(file)
+      //   : null;
+      const previewUrl = URL.createObjectURL(file);
       valid.push({ file, previewUrl, name: file.name });
     }
 
     setSelectedFiles((prev) => [...prev, ...valid]);
     e.target.value = "";
+  };
+
+  const handleEditorChange = (newContent) => {
+    const { length, error } = validateCommentText(newContent);
+    setCommentLength(length);
+    setCommentError(error);
   };
 
   const removeFile = (index) => {
@@ -694,6 +767,8 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
     setComment("");
     setSelectedFiles([]);
     setFileError("");
+    setCommentError("");      
+    setCommentLength(0);  
     if (editor.current) {
       editor.current.value = "";
     }
@@ -707,7 +782,15 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
   // ─── Save comment ────────────────────────────────────────────────────────────
 
   const handleSaveComment = async () => {
-    if (isCommentEmpty(comment) && selectedFiles.length === 0) return;
+    const latestComment = editor.current?.value ?? comment;
+
+    const { valid, error } = validateCommentText(latestComment);   // add
+    if (!valid) {                                             // add
+      setCommentError(error);                                 // add
+      toast.error(error);                                     // add
+      return;                                                 // add
+    }  
+    if (isCommentEmpty(latestComment) && selectedFiles.length === 0) return;
 
     setSavingComment(true);
     setFileError("");
@@ -715,7 +798,11 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
     try {
       const formData = new FormData();
       formData.append("task", String(taskId));
-      formData.append("comment", comment);
+      // formData.append("comment", latestComment);
+      // selectedFiles.forEach(({ file }) => formData.append("attachments", file));
+      const commentToSend = isCommentEmpty(latestComment) ? " " : latestComment;
+      formData.append("comment", commentToSend);
+
       selectedFiles.forEach(({ file }) => formData.append("attachments", file));
 
       const response = await Api.post("/task/add-task-comment/", formData, {
@@ -736,8 +823,12 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
       toast.success(response?.data?.message || "Comment Added");
     } catch (error) {
       console.error("Add comment error:", error);
-      setFileError("Failed to post comment. Please try again.");
-      toast.error("Failed to post comment.");
+        const backendMsg =
+        error?.response?.data?.error_message ||
+        error?.response?.data?.message ||
+        "Failed to post comment. Please try again.";
+        setFileError(backendMsg);
+        toast.error(backendMsg);
     } finally {
       setSavingComment(false);
     }
@@ -849,8 +940,40 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
             ref={editor}
             value={comment}
             config={editorConfig}
-            onBlur={(newContent) => setComment(newContent)}
+            onChange={handleEditorChange} 
           />
+
+          <div
+            className="d-flex align-items-center justify-content-between px-3 py-1"
+            style={{
+              borderTop: "1px solid #f1f5f9",
+              background: commentError ? "#fff5f5" : "#f8fafc",
+            }}
+          >
+            <span style={{ fontSize: "0.72rem", color: "#ef4444", flex: 1, paddingRight: 10 }}>
+              {commentError && (
+                <>
+                  <i className="ri-error-warning-line me-1" />
+                  {commentError}
+                </>
+              )}
+            </span>
+            <span
+              style={{
+                fontSize: "0.72rem",
+                fontWeight: commentLength > MAX_COMMENT_LENGTH ? 700 : 400,
+                color:
+                  commentLength > MAX_COMMENT_LENGTH
+                    ? "#ef4444"
+                    : commentLength > MAX_COMMENT_LENGTH * 0.9
+                      ? "#f59e0b"
+                      : "#9ca3af",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {commentLength}/{MAX_COMMENT_LENGTH}
+            </span>
+          </div>
 
           {/* File previews */}
           {selectedFiles.length > 0 && (
@@ -903,7 +1026,7 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
                 Attach
               </button>
               <span style={{ fontSize: "0.7rem", color: "#9ca3af" }}>
-                Images &amp; PDF · max 5 MB
+                Images &amp; PDF · max 2 MB
               </span>
             </div>
 
@@ -921,7 +1044,8 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
                 type="button"
                 className="btn btn-outline-danger btn-sm"
                 onClick={handleClear}
-                disabled={isCommentEmpty(comment) && selectedFiles.length === 0}
+                // disabled={isCommentEmpty(comment) && selectedFiles.length === 0}
+                disabled={commentLength === 0 && selectedFiles.length === 0}
               >
                 Clear
               </button>

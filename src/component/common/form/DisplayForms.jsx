@@ -50,6 +50,7 @@ import {
   client_component_name,
   project_component_name,
   task_list_component_name,
+  assign_custom_form_component_name,
 } from "../../../common/constant/Constants";
 import BranchForm from "../../forms/BranchForm";
 import ContactGroupForm from "../../forms/Common/ContactGroupForm";
@@ -64,11 +65,11 @@ import CustomStatusForm from "../../forms/Common/CustomStatusForm";
 import ClientForm from "../../forms/Common/ClientsForm";
 import ProjectForm from "../../forms/Common/ProjectsForm";
 import TaskListForm from "../../forms/Common/TaskListForm";
+import AsignCustomForm from "../../forms/Common/AsignCustomForm";
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
-  const { form_title, form_width_percentage, component_to_show } = useSelector(
-    (state) => state.RightSideBarReducer,
-  );
+  const { form_title, form_width_percentage, component_to_show, form_obj } =
+    useSelector((state) => state.RightSideBarReducer);
 
   return (
     <div>
@@ -147,7 +148,9 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
               ) : component_to_show === contacts_component_name ? (
                 <ContactsForm />
               ) : component_to_show === custom_form_component_name ? (
-                <CustomForm />
+                <CustomForm editFormId={form_obj?.id ? form_obj : null} />
+              ) : component_to_show === assign_custom_form_component_name ? (
+                <AsignCustomForm />
               ) : (
                 <></>
               )}
