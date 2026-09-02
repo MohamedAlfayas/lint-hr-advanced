@@ -31,6 +31,14 @@ const PrioritiesForm = () => {
       status: true,
   });
 
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+
+  const [lengthErrors, setLengthErrors] = useState({
+    name: "",
+    color: "",
+    description: "",
+  });
+
   // ================= SYNC form_obj INTO LOCAL STATE =================
   useEffect(() => {
     if (form_obj) {
@@ -42,6 +50,8 @@ const PrioritiesForm = () => {
       description: form_obj.description || "",
       status: form_obj.status !== undefined ? form_obj.status : true,
     });
+    setHasAttemptedSubmit(false);
+    setLengthErrors({ name: "", color: "", description: "" });
     }
   }, [form_obj]);
 
@@ -61,42 +71,44 @@ const PrioritiesForm = () => {
         .replace(/[^a-zA-Z0-9\s.,\-&()']/g, "");
 
       if (inputValue.length > 50) {
-        FormikForm.setFieldError(
-          "name",
-          "Status name is too long. Please keep it within 50 characters."
-        );
+        setLengthErrors((prev) => ({
+          ...prev,
+          name: "Priority name is too long. Please keep it within 50 characters.",
+        }));
       } else {
-        FormikForm.setFieldError("name", undefined);
+        setLengthErrors((prev) => ({ ...prev, name: "" }));
       }
     }
 
     if (name === "color") {
       inputValue = value
-      .replace(/^\s+/, "")
-      .replace(/[^a-zA-Z0-9\s.,\-&()']/g, "");
-      if (inputValue.length > 50) {
-      FormikForm.setFieldError(
-        "name",
-        "Priority name is too long. Please keep it within 50 characters."
-      );
-    }
+        .replace(/^\s+/, "")
+        .replace(/[^a-zA-Z0-9\s.,\-&()'#]/g, "");
+      if (inputValue.length > 25) {
+        setLengthErrors((prev) => ({
+          ...prev,
+          color: "Color value must not exceed 25 characters.",
+        }));
+      } else {
+        setLengthErrors((prev) => ({ ...prev, color: "" }));
+      }
     }
 
     if (name === "description") {
       inputValue = value
-      .replace(/^\s+/, "")
-      .replace(
-        /[^a-zA-Z0-9\s.,!?'"_\-()&:;/]/g,
-        ""
-      );
+        .replace(/^\s+/, "")
+        .replace(
+          /[^a-zA-Z0-9\s.,!?'"_\-()&:;/]/g,
+          ""
+        );
 
       if (inputValue.length > 200) {
-        FormikForm.setFieldError(
-          "description",
-          "Description is too long. Please keep it within 200 characters."
-        );
+        setLengthErrors((prev) => ({
+          ...prev,
+          description: "Description is too long. Please keep it within 200 characters.",
+        }));
       } else {
-        FormikForm.setFieldError("description", undefined);
+        setLengthErrors((prev) => ({ ...prev, description: "" }));
       }
     }
 
@@ -106,7 +118,8 @@ const PrioritiesForm = () => {
     }));
 
     FormikForm.setFieldValue(name, inputValue);
-    if (FormikForm.touched[name]) {
+    // if (FormikForm.touched[name]) {
+    if (hasAttemptedSubmit) {
       FormikForm.validateField(name);
     }
   };
@@ -149,7 +162,12 @@ const PrioritiesForm = () => {
         ),
     }),
 
+    validateOnMount: false,
+    validateOnBlur: false,
+    validateOnChange: false,
+
     onSubmit: async () => {
+      // setHasSubmitted(true); 
 
       const trimmedName = prioritiesData.name?.trim();
 
@@ -246,11 +264,23 @@ const PrioritiesForm = () => {
     },
   });
 
+  const showError = (field) =>
+    !!lengthErrors[field] || (hasAttemptedSubmit && !!FormikForm.errors[field]);
+  const getErrorMessage = (field) => lengthErrors[field] || FormikForm.errors[field];
+  
+
   return (
     <React.Fragment>
       <Row>
         <Col xl={40}>
-          <Form onSubmit={FormikForm.handleSubmit}>
+          {/* <Form onSubmit={FormikForm.handleSubmit}> */}
+          <Form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setHasAttemptedSubmit(true);
+                FormikForm.handleSubmit(e);
+              }}
+            >
             <Row>
               {/* ── Priority Name ─────────────────────────────────── */}
               <Col md={12} lg={12} xxl={12}>
@@ -268,18 +298,28 @@ const PrioritiesForm = () => {
                       value={prioritiesData.name || ""}
                       onChange={handleInputChange}
                       onBlur={FormikForm.handleBlur}
-                      invalid={!!FormikForm.errors.name}
+                      // invalid={!!FormikForm.errors.name}
+                      invalid={showError("name")}
                     />
-                    {!FormikForm.errors.name && (
+                    {/* {!FormikForm.errors.name && (
                       <i className="ri-flag-line" />
                     )}
                     {FormikForm.errors.name ? (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.name}
                       </FormFeedback>
-                    ) : null}
+                    ) : null} */}
+                    {!showError("name") && (
+                        <i className="ri-flag-line" />
+                      )}
+                      {showError("name") && (
+                        <FormFeedback type="invalid">
+                          {getErrorMessage("name")}
+                        </FormFeedback>
+                      )}
                   </div>
-                  {!FormikForm.errors.name && (
+                  {/* {!FormikForm.errors.name && ( */}
+                  {!showError("name") && (
                     <div className="form-text">Enter Priority Name.</div>
                   )}
                 </div>
@@ -319,16 +359,17 @@ const PrioritiesForm = () => {
                       value={prioritiesData.color || ""}
                       onChange={handleInputChange}
                       onBlur={FormikForm.handleBlur}
-                      invalid={!!FormikForm.errors.color}
+                      // invalid={!!FormikForm.errors.color}
+                      invalid={showError("color")}
                     />
                   </div>
                   {/* <div className="form-text">
                     Pick or type a color name / hex code. Invalid values will default to black (#000000).
                   </div> */}
 
-                  {FormikForm.errors.color ? (
+                  {showError("color") ? (
                     <FormFeedback type="invalid" style={{ display: "block" }}>
-                      {FormikForm.errors.color}
+                      {getErrorMessage("color")}
                     </FormFeedback>
                   ) : (
                     <div className="form-text">
@@ -352,12 +393,17 @@ const PrioritiesForm = () => {
                     name="description"
                     value={prioritiesData.description || ""}
                     onChange={handleInputChange}
-                    invalid={!!FormikForm.errors.description}
+                    invalid={showError("description")}
                   />
-                  {FormikForm.errors.description ? (
+                  {/* {FormikForm.errors.description ? (
                     <FormFeedback type="invalid">
                       {FormikForm.errors.description}
-                    </FormFeedback>
+                    </FormFeedback> */}
+
+                  {showError("description") ? (
+                  <FormFeedback type="invalid">
+                    {getErrorMessage("description")}
+                  </FormFeedback>
                   ) : (
                     <div className="form-text">
                       Description (Optional).

@@ -123,7 +123,7 @@ const AttendanceConfig = () => {
                             Location and Policies
                           </NavLink>
                         </NavItem> */}
-                <NavItem>
+                {/* <NavItem>
                   <NavLink
                     style={{ cursor: "pointer" }}
                     className={classnames({
@@ -152,7 +152,7 @@ const AttendanceConfig = () => {
                   >
                     Custom Status
                   </NavLink>
-                </NavItem>
+                </NavItem> */}
                 <NavItem>
                   <NavLink
                     style={{ cursor: "pointer" }}

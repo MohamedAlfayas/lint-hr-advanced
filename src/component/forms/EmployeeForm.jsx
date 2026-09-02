@@ -313,7 +313,8 @@ const EmployeeForm = () => {
 
   // ── Name input: strip numbers and special chars on change ─────────────────
   const handleNameInput = (e, field) => {
-    const val = e.target.value.replace(/[^A-Za-z\s'-]/g, "");
+    let val = e.target.value.replace(/[^A-Za-z\s'-]/g, "");
+    val = val.replace(/^[\s'-]+/, ""); 
 
     setEmployeeObj((prev) => ({
       ...prev,
@@ -793,7 +794,7 @@ const EmployeeForm = () => {
         .nullable()
         .test(
           "first-name-validation",
-          "Only alphabets, spaces, hyphens (-), and apostrophes (') are allowed",
+          "First name can contain spaces, hyphens (-), and apostrophes (') only between letters.",
           (value) => {
             if (!value || value.trim() === "") return true;
 
@@ -809,7 +810,7 @@ const EmployeeForm = () => {
         .nullable()
         .test(
           "last-name-validation",
-          "Only alphabets, spaces, hyphens (-), and apostrophes (') are allowed",
+          "Last name can contain spaces, hyphens (-), and apostrophes (') only between letters.",
           (value) => {
             if (!value || value.trim() === "") return true;
 

@@ -151,12 +151,16 @@ const TaskListForm = () => {
 
   const buildTaskStatusOptions = () => {
     const list = GetLocalStorageData("task_status") || [];
-    return list.map((s) => ({ ...s, value: s.id, label: s.name || s.title }));
+    return list
+      .filter((s) => s.status !== false || s.id === taskData.task_status)
+      .map((s) => ({ ...s, value: s.id, label: s.name || s.title }));
   };
 
   const buildTaskPriorityOptions = () => {
     const list = GetLocalStorageData("task_priority") || [];
-    return list.map((p) => ({ ...p, value: p.id, label: p.name }));
+    return list
+      .filter((p) => p.status !== false || p.id === taskData.task_priority)
+      .map((p) => ({ ...p, value: p.id, label: p.name }));
   };
 
   const employeeOptions = buildEmployeeOptions();

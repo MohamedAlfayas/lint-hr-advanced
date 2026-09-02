@@ -99,6 +99,21 @@ const stripHtmlToText = (html) => {
   }
 };
 
+const stripLeadingWhitespaceHtml = (html) => {
+  if (!html) return html;
+  let result = html.trim();
+  let prev;
+  do {
+    prev = result;
+    result = result
+      .replace(/^<(p|div)[^>]*>(\s|&nbsp;|<br\s*\/?>)*<\/\1>/i, "")
+      .replace(/^<br\s*\/?>/i, "")
+      .replace(/^(\s|&nbsp;)+/i, "")
+      .trim();
+  } while (result !== prev && result.length > 0);
+  return result;
+};
+
 const validateCommentText = (html) => {
   const text = stripHtmlToText(html);
   const length = text.length;
@@ -746,8 +761,22 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
     e.target.value = "";
   };
 
+  // const handleEditorChange = (newContent) => {
+  //   const { length, error } = validateCommentText(newContent);
+  //   setCommentLength(length);
+  //   setCommentError(error);
+  // };
+
   const handleEditorChange = (newContent) => {
-    const { length, error } = validateCommentText(newContent);
+    const sanitized = stripLeadingWhitespaceHtml(newContent);
+
+    if (sanitized !== newContent && editor.current) {
+      editor.current.value = sanitized;
+    }
+
+    setComment(sanitized);
+
+    const { length, error } = validateCommentText(sanitized);
     setCommentLength(length);
     setCommentError(error);
   };
