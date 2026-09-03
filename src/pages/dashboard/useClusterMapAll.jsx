@@ -101,10 +101,12 @@ const haversine = (a, b) => {
 // ─── Prefer formatted_* fields (higher-precision/corrected coordinates &
 // address), fall back to the raw fields when formatted_* is absent ──────
 const getLat = (loc) =>
-  parseFloat(loc?.formatted_latitude ?? loc?.latitude) || 0;
+  // parseFloat(loc?.formatted_latitude ?? loc?.latitude) || 0;
+  parseFloat(loc?.latitude) || 0;
 
 const getLng = (loc) =>
-  parseFloat(loc?.formatted_longitude ?? loc?.longitude) || 0;
+  // parseFloat(loc?.formatted_longitude ?? loc?.longitude) || 0;
+  parseFloat(loc?.longitude) || 0;
 
 // `formatted_address` arrives as a Python-dict-repr string (single quotes,
 // None/True/False) — not valid JSON — so it can't be JSON.parse'd. Pull the
