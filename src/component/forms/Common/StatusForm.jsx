@@ -31,6 +31,26 @@ import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
 
 defineElement(loadAnimation);
 
+const BLOCKED_COLORS = new Set([
+  "black", "#000", "#000000", "rgb(0,0,0)", "rgba(0,0,0,1)",
+  "white", "#fff", "#ffffff", "rgb(255,255,255)", "rgba(255,255,255,1)",
+]);
+
+const isBlackOrWhite = (value) => {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase().replace(/\s+/g, "");
+  return BLOCKED_COLORS.has(normalized);
+};
+
+const isValidHex = (value) =>
+  !!value && /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value.trim());
+
+const getSwatchColor = (value) => {
+  if (!isValidHex(value)) return "#0b94a7";
+  if (isBlackOrWhite(value)) return "#0b94a7";
+  return value;
+};
+
 const StatusForm = () => {
   const dispatch = useDispatch();
 
@@ -40,7 +60,7 @@ const StatusForm = () => {
   const [statusData, setStatusData] = useState({
     id: 0,
     name: "",
-    color: "#000000",
+    color: "#0b94a7",
     description: "",
     status: true,
   });
@@ -59,7 +79,10 @@ const StatusForm = () => {
       setStatusData({
         id: form_obj.id || 0,
         name: form_obj.name || "",
-        color: form_obj.color || "#000000",
+        // color: form_obj.color || "#0b94a7",
+        color: isBlackOrWhite(form_obj.color)
+        ? "#0b94a7"
+        : (form_obj.color || "#0b94a7"),
         description: form_obj.description || "",
         status: form_obj.status !== undefined ? form_obj.status : true,
       });
@@ -108,6 +131,11 @@ const StatusForm = () => {
         setLengthErrors((prev) => ({
           ...prev,
           color: "Color value must not exceed 25 characters.",
+        }));
+      } else if (isBlackOrWhite(inputValue)) {
+        setLengthErrors((prev) => ({
+          ...prev,
+          color: "Black and white are not allowed as a status color.",
         }));
       } else {
         setLengthErrors((prev) => ({ ...prev, color: "" }));
@@ -176,7 +204,12 @@ const StatusForm = () => {
       color: Yup.string()
         .trim()
         .required("Please enter a value or select a color.")
-        .max(25, "Color value must not exceed 25 characters."),
+        .max(25, "Color value must not exceed 25 characters.")
+        .test(
+          "not-black-or-white",
+          "Black and white are not allowed as a status color.",
+          (value) => !isBlackOrWhite(value),
+        ),
 
       description: Yup.string()
         .trim()
@@ -236,6 +269,15 @@ const StatusForm = () => {
         FormikForm.setFieldError(
           "color",
           "Color value must not exceed 25 characters.",
+        );
+        return;
+      }
+
+      if (isBlackOrWhite(statusData.color)) {
+        FormikForm.setFieldTouched("color", true);
+        FormikForm.setFieldError(
+          "color",
+          "Black and white are not allowed as a status color.",
         );
         return;
       }
@@ -372,13 +414,26 @@ const StatusForm = () => {
                         padding: 2,
                         cursor: "pointer",
                       }}
-                      value={statusData.color || "#000000"}
-                      onChange={(e) =>
-                        setStatusData((prev) => ({
-                          ...prev,
-                          color: e.target.value,
-                        }))
-                      }
+                      // value={statusData.color || "#0b94a7"}
+                      value={getSwatchColor(statusData.color)}
+                      // onChange={(e) =>
+                      //   setStatusData((prev) => ({
+                      //     ...prev,
+                      //     color: e.target.value,
+                      //   }))
+                      // }
+                      onChange={(e) => {
+                        const picked = e.target.value;
+                        if (isBlackOrWhite(picked)) {
+                          setLengthErrors((prev) => ({
+                            ...prev,
+                            color: "Black and white are not allowed as a status color.",
+                          }));
+                        } else {
+                          setLengthErrors((prev) => ({ ...prev, color: "" }));
+                        }
+                        setStatusData((prev) => ({ ...prev, color: picked }));
+                      }}
                     />
                     <Input
                       type="text"
@@ -407,7 +462,7 @@ const StatusForm = () => {
                   ) : (
                     <div className="form-text">
                       Pick or type a color name / hex code. Invalid values will
-                      default to black (#000000).
+                      default to blue ("#0b94a7").
                     </div>
                   )}
                 </div>

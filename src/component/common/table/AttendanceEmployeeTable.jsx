@@ -1922,7 +1922,7 @@ const AttendanceEmployeeTable = () => {
               <Row className="g-3">
                 {hrStatus != 2 && (
                   <Col xs={12}>
-                    <label
+                    {/* <label
                       htmlFor="exampleFormControlTextarea1"
                       className="form-label text-body"
                     >
@@ -1940,7 +1940,7 @@ const AttendanceEmployeeTable = () => {
                           notes: e.target.value,
                         })
                       }
-                    ></textarea>
+                    ></textarea> */}
                   </Col>
                 )}
                 <Col xs={12} className="text-end">

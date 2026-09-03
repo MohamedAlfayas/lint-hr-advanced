@@ -120,7 +120,7 @@ const EmployeeForm = () => {
     emp_id: 50,
     first_name: 50,
     last_name: 50,
-    email: 50,
+    email: 100,
   };
 
   const checkMaxLength = (field, rawValue) => {
@@ -313,8 +313,8 @@ const EmployeeForm = () => {
 
   // ── Name input: strip numbers and special chars on change ─────────────────
   const handleNameInput = (e, field) => {
-    let val = e.target.value.replace(/[^A-Za-z\s'-]/g, "");
-    val = val.replace(/^[\s'-]+/, ""); 
+    let val = e.target.value.replace(/[^A-Za-z\s'_-]/g, "");
+    val = val.replace(/^[\s']+/, ""); 
 
     setEmployeeObj((prev) => ({
       ...prev,
@@ -824,7 +824,7 @@ const EmployeeForm = () => {
         .trim()
         .required("Please enter email")
         .transform((value) => (value ? value.trim().toLowerCase() : value))
-        .max(50, "Email must not exceed 50 characters")
+        .max(100, "Email must not exceed 100 characters")
         .matches(
           /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,13}$/,
           "Enter a valid email address.",
@@ -955,6 +955,7 @@ const EmployeeForm = () => {
     onSubmit: async (values) => {
       values.first_name = values.first_name?.trim() || "";
       values.last_name = values.last_name?.trim() || "";
+      values.emp_id = values.emp_id?.trim() || "";
       const hasAtLeastOneTrue = Object.values(
         values.allowed_attendance_methods,
       ).some((v) => v === true);
@@ -996,6 +997,8 @@ const EmployeeForm = () => {
       Object.entries(employeeObj).forEach(([key, val]) => {
         if (key === "cf_values" || key === "allowed_attendance_methods") {
           form_data.append(key, JSON.stringify(val));
+        } else if (key === "first_name" || key === "last_name" || key === "emp_id") {
+          form_data.append(key, typeof val === "string" ? val.trim() : val);
         } else {
           form_data.append(key, val);
         }
@@ -1268,9 +1271,10 @@ const EmployeeForm = () => {
                       placeholder="LC001"
                       value={employeeObj.emp_id || ""}
                       onChange={(e) => {
-                        const val = e.target.value
+                        let val = e.target.value
                           .toUpperCase()
-                          .replace(/[^A-Z0-9_-]/g, "");
+                          .replace(/[^A-Z0-9_ -]/g, "");
+                        val = val.replace(/^\s+/, "");
 
                        
                         setEmployeeObj((prev) => ({

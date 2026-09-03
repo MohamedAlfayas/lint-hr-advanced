@@ -68,6 +68,9 @@ const WAIT_THRESHOLD_KM = 0.05;
 // ISO (YYYY-MM-DD) format used throughout for the date filter's internal value
 const ISO_DATE_FORMAT = "YYYY-MM-DD";
 
+// How far back the date picker allows selection (from today)
+const DATE_RANGE_YEARS_BACK = 1;
+
 // localStorage keys that hold the org's custom-status and custom-form
 // master lists. Individual location / form_submission records only carry
 // numeric `custom_status` / `custom_form` IDs — the human-readable name
@@ -635,12 +638,30 @@ const UsersClusterMapAll = ({
     [],
   );
 
-  // ─── Reset filters whenever a new employee list is handed in (modal reopened) ──
+  // ─── Stable signature for the employees list. `employees` is a prop and
+  //     may arrive as a brand-new array reference on every parent re-render
+  //     even when its contents are identical (e.g. parent state unrelated
+  //     to this component changed). Keying the reset effect below directly
+  //     on `employees` meant ANY such re-render wiped dateFilter back to ""
+  //     — which is why a manually-picked date would silently revert. Keying
+  //     on this id-based signature instead means the reset only fires when
+  //     the actual set of employees changes (i.e. a genuine "modal
+  //     reopened with a different roster" case). ─────────────────────────
+  const employeesSignature = useMemo(
+    () => employees.map((e) => e.employee_id).join(","),
+    [employees],
+  );
+
+  // ─── Reset filters whenever the employee roster actually changes (modal
+  //     reopened). dateFilter is also reset to "" here so the default-date
+  //     effect below picks a fresh starting date for the new session —
+  //     this is the ONLY place dateFilter gets force-reset. ──────────────
   useEffect(() => {
     setDeptFilter("All");
     setSelectedEmpId(initialEmpId ?? null);
     setLocationCache({});
-  }, [employees, initialEmpId]);
+    setDateFilter("");
+  }, [employeesSignature, initialEmpId]);
 
   // ─── Department options ────────────────────────────────────────
   const departmentOptions = useMemo(() => {
@@ -696,17 +717,20 @@ const UsersClusterMapAll = ({
     if (onSelectEmployee) onSelectEmployee(activeEmployee);
   }, [activeEmployee]);
 
-  // ─── Default the date filter whenever the selected employee changes:
-  //     prefer `initialDate` (the row the user clicked "View" on), falling
-  //     back to today. The user can still pick any other date from the
-  //     picker afterwards — every date is fetched on demand, so there's no
-  //     need to pre-know which dates have data. ──────────────────────────
+  // ─── Default the date filter ONLY when nothing is picked yet.
+  //     Previously this ran `setDateFilter(initialDate || todayIsoIN())`
+  //     unconditionally on every selectedEmpId change, which stomped over
+  //     whatever date the user had manually selected the instant they
+  //     switched employees. Using a functional update that keeps `prev`
+  //     when it's already set fixes that — the user's chosen date now
+  //     survives an employee switch. It still defaults to `initialDate`
+  //     (or today) the first time an employee is selected after a reset. ──
   useEffect(() => {
     if (!selectedEmpId) {
       setDateFilter("");
       return;
     }
-    setDateFilter(initialDate || todayIsoIN());
+    setDateFilter((prev) => prev || initialDate || todayIsoIN());
   }, [selectedEmpId, initialDate]);
 
   // ─── Fetch the selected employee + date's location history on demand ──
@@ -1254,6 +1278,33 @@ const UsersClusterMapAll = ({
     if (mapRef.current) fitToPath(mapRef.current, path);
   };
 
+  // ─── Date picker helpers (must stay above the `!isLoaded` early return —
+//     hooks can't be conditionally skipped) ──────────────────────────
+  const todayDayjs = useMemo(() => dayjs(todayIsoIN(), ISO_DATE_FORMAT), []);
+  const minYear = todayDayjs.year() - DATE_RANGE_YEARS_BACK;
+
+  const disabledDate = useCallback(
+    (current) => {
+      if (!current) return false;
+      if (current.year() < minYear) return true;
+      return current.isAfter(todayDayjs, "day");
+    },
+    [minYear, todayDayjs],
+  );
+
+  const datePickerValue = useMemo(
+    () => (dateFilter ? dayjs(dateFilter, ISO_DATE_FORMAT) : null),
+    [dateFilter],
+  );
+
+  const handleDatePickerChange = (date) => {
+    // Use the dayjs object and re-format to ISO ourselves — the second
+    // arg antd gives us is formatted per the display `format` prop
+    // ("DD MMM YYYY"), which is NOT what dateFilter uses internally
+    // (ISO "YYYY-MM-DD").
+    setDateFilter(date ? date.format(ISO_DATE_FORMAT) : "");
+  };
+
   if (!isLoaded) return <p>Loading Map...</p>;
 
   const isEndpoint = (i) => i === 0 || i === path.length - 1;
@@ -1277,27 +1328,52 @@ const UsersClusterMapAll = ({
   const distanceCovered = (summary.km * progress).toFixed(1);
 
   // ─── Date picker helpers ────────────────────────────────────────
-  const datePickerValue = dateFilter
-    ? dayjs(dateFilter, ISO_DATE_FORMAT)
-    : null;
+  // const datePickerValue = dateFilter
+  //   ? dayjs(dateFilter, ISO_DATE_FORMAT)
+  //   : null;
 
-  const handleDatePickerChange = (date) => {
-    // Use the dayjs object and re-format to ISO ourselves — the second
-    // arg antd gives us is formatted per the display `format` prop
-    // ("DD MMM YYYY"), which is NOT what dateFilter uses internally
-    // (ISO "YYYY-MM-DD"). Storing the display string here was producing
-    // "Invalid Date" (shown as NaN) and breaking the fetch/cache key.
-    // null when cleared → falls back to no date selected.
-    setDateFilter(date ? date.format(ISO_DATE_FORMAT) : "");
-  };
+  // const datePickerValue = useMemo(
+  //   () => (dateFilter ? dayjs(dateFilter, ISO_DATE_FORMAT) : null),
+  //   [dateFilter],
+  // );
 
-  // Only future dates are blocked. Past dates that happen to have no
-  // location history for this employee are still selectable — they just
-  // render an empty timeline/"no data" state instead of being dead ends.
-  const disabledDate = (current) => {
-    if (!current) return false;
-    return current.format(ISO_DATE_FORMAT) > todayIsoIN();
-  };
+  // const handleDatePickerChange = (date) => {
+  //   // Use the dayjs object and re-format to ISO ourselves — the second
+  //   // arg antd gives us is formatted per the display `format` prop
+  //   // ("DD MMM YYYY"), which is NOT what dateFilter uses internally
+  //   // (ISO "YYYY-MM-DD"). Storing the display string here was producing
+  //   // "Invalid Date" (shown as NaN) and breaking the fetch/cache key.
+  //   // null when cleared → falls back to no date selected.
+  //   setDateFilter(date ? date.format(ISO_DATE_FORMAT) : "");
+  // };
+
+  // Only allow dates from exactly 1 year ago through today (inclusive).
+  // Future dates are blocked; dates older than 1 year are blocked too.
+  // Past dates within that window that happen to have no location history
+  // for this employee are still selectable — they just render an empty
+  // timeline/"no data" state instead of being dead ends.
+
+  // const disabledDate = (current) => {
+  //   if (!current) return false;
+  //   const currentStr = current.format(ISO_DATE_FORMAT);
+  //   const today = todayIsoIN();
+  //   const earliestAllowed = dayjs(today, ISO_DATE_FORMAT)
+  //     .subtract(DATE_RANGE_YEARS_BACK, "year")
+  //     .format(ISO_DATE_FORMAT);
+  //   return currentStr > today || currentStr < earliestAllowed;
+  // };
+
+  // const todayDayjs = useMemo(() => dayjs(todayIsoIN(), ISO_DATE_FORMAT), []);
+  // const minYear = todayDayjs.year() - DATE_RANGE_YEARS_BACK;
+
+  // const disabledDate = useCallback(
+  //   (current) => {
+  //     if (!current) return false;
+  //     if (current.year() < minYear) return true;
+  //     return current.isAfter(todayDayjs, "day");
+  //   },
+  //   [minYear, todayDayjs],
+  // );
 
   return (
     <div

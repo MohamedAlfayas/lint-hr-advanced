@@ -19,6 +19,26 @@ import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
 
 defineElement(loadAnimation);
 
+const BLOCKED_COLORS = new Set([
+  "black", "#000", "#000000", "rgb(0,0,0)", "rgba(0,0,0,1)",
+  "white", "#fff", "#ffffff", "rgb(255,255,255)", "rgba(255,255,255,1)",
+]);
+
+const isBlackOrWhite = (value) => {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase().replace(/\s+/g, "");
+  return BLOCKED_COLORS.has(normalized);
+};
+
+const isValidHex = (value) =>
+  !!value && /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value.trim());
+
+const getSwatchColor = (value) => {
+  if (!isValidHex(value)) return "#0b94a7";
+  if (isBlackOrWhite(value)) return "#0b94a7";
+  return value;
+};
+
 const PrioritiesForm = () => {
   const dispatch = useDispatch();
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
@@ -26,7 +46,7 @@ const PrioritiesForm = () => {
   const [prioritiesData, setPrioritiesData] = useState({
       id: 0,
       name: "",
-      color: "#000000",
+      color: "#0b94a7",
       description: "",
       status: true,
   });
@@ -46,7 +66,7 @@ const PrioritiesForm = () => {
           setPrioritiesData({
       id: form_obj.id || 0,
       name: form_obj.name || "",
-      color: form_obj.color || "#000000",
+      color: form_obj.color || "#0b94a7",
       description: form_obj.description || "",
       status: form_obj.status !== undefined ? form_obj.status : true,
     });
@@ -89,6 +109,11 @@ const PrioritiesForm = () => {
           ...prev,
           color: "Color value must not exceed 25 characters.",
         }));
+      } else if (isBlackOrWhite(inputValue)) {
+      setLengthErrors((prev) => ({
+        ...prev,
+        color: "Black and white are not allowed as a priority color.",
+      }));
       } else {
         setLengthErrors((prev) => ({ ...prev, color: "" }));
       }
@@ -148,7 +173,12 @@ const PrioritiesForm = () => {
       color: Yup.string()
         .trim()
         .required("Please enter a value or select a color.")
-        .max(25, "Color value must not exceed 25 characters."),
+        .max(25, "Color value must not exceed 25 characters.")
+        .test(
+          "not-black-or-white",
+          "Black and white are not allowed as a priority color.",
+          (value) => !isBlackOrWhite(value),
+        ),
 
       description: Yup.string()
         .trim()
@@ -199,7 +229,7 @@ const PrioritiesForm = () => {
         FormikForm.setFieldTouched("color", true);
         FormikForm.setFieldError(
           "color",
-          "Color value must not exceed 25 characters."
+          "Black and white are not allowed as a priority color."
         );
         return;
       }
@@ -342,13 +372,26 @@ const PrioritiesForm = () => {
                         padding: 2,
                         cursor: "pointer",
                       }}
-                      value={prioritiesData.color || "#000000"}
-                      onChange={(e) =>
-                        setPrioritiesData((prev) => ({
-                          ...prev,
-                          color: e.target.value,
-                        }))
-                      }
+                      // value={prioritiesData.color || "#000000"}
+                      value={getSwatchColor(prioritiesData.color)}
+                      // onChange={(e) =>
+                      //   setPrioritiesData((prev) => ({
+                      //     ...prev,
+                      //     color: e.target.value,
+                      //   }))
+                      // }
+                       onChange={(e) => {
+                        const picked = e.target.value;
+                        if (isBlackOrWhite(picked)) {
+                          setLengthErrors((prev) => ({
+                            ...prev,
+                            color: "Black and white are not allowed as a priority color.",
+                          }));
+                        } else {
+                          setLengthErrors((prev) => ({ ...prev, color: "" }));
+                        }
+                        setPrioritiesData((prev) => ({ ...prev, color: picked }));
+                      }}
                     />
                     <Input
                       type="text"
@@ -373,7 +416,7 @@ const PrioritiesForm = () => {
                     </FormFeedback>
                   ) : (
                     <div className="form-text">
-                      Pick or type a color name / hex code. Invalid values will default to black (#000000).
+                      Pick or type a color name / hex code. Invalid values will default to  blue ("#0b94a7").
                     </div>
                   )}
 
