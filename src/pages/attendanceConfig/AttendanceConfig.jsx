@@ -93,7 +93,7 @@ const AttendanceConfig = () => {
           <Row>
             <Col md={2} className="border-end">
               <Nav pills className="flex-column text-left" id="v-pills-tab">
-                <NavItem>
+                {/* <NavItem>
                   <NavLink
                     style={{ cursor: "pointer" }}
                     className={classnames({
@@ -107,7 +107,7 @@ const AttendanceConfig = () => {
                   >
                     General
                   </NavLink>
-                </NavItem>
+                </NavItem> */}
                 {/* <NavItem>
                           <NavLink
                             style={{ cursor: "pointer" }}
@@ -123,7 +123,7 @@ const AttendanceConfig = () => {
                             Location and Policies
                           </NavLink>
                         </NavItem> */}
-                {/* <NavItem>
+                 {/* <NavItem>
                   <NavLink
                     style={{ cursor: "pointer" }}
                     className={classnames({
@@ -137,7 +137,7 @@ const AttendanceConfig = () => {
                   >
                     QR Code
                   </NavLink>
-                </NavItem>
+                </NavItem>  */}
                 <NavItem>
                   <NavLink
                     style={{ cursor: "pointer" }}
@@ -152,7 +152,7 @@ const AttendanceConfig = () => {
                   >
                     Custom Status
                   </NavLink>
-                </NavItem> */}
+                </NavItem> 
                 <NavItem>
                   <NavLink
                     style={{ cursor: "pointer" }}
