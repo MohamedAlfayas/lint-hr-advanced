@@ -88,10 +88,12 @@ const EmployeeForm = () => {
 
   const [dob, setDob] = useState([]);
   const [joining_date, setJoinDate] = useState([]);
+  // const [dobPanelKey, setDobPanelKey] = useState(0);
   const [dobTypeError, setDobTypeError] = useState("");
   const [joiningTypeError, setJoiningTypeError] = useState("");
   const dobPickerRef = React.useRef(null);
   const joinPickerRef = React.useRef(null);
+  const dobPanelObserverRef = React.useRef(null);
   const dobRawTyped = React.useRef("");
   const joinRawTyped = React.useRef("");
   const [selectedFileName, setSelectedFileName] = React.useState("");
@@ -182,6 +184,88 @@ const EmployeeForm = () => {
         current.isAfter(maxJoiningDate, "day"))
     );
   };
+
+  // const attachDobNavLock = () => {
+  //   const panel = document.querySelector(".lc-dob-picker-panel");
+  //   if (!panel) return;
+
+  //   const clampNav = () => {
+  //     const header = panel.querySelector(".ant-picker-header-view");
+  //     if (!header) return;
+  //     const text = (header.textContent || "").trim();
+
+  //     const yearMatch = text.match(/^\d{4}$/);
+  //     const decadeMatch = text.match(/^(\d{4})-(\d{4})$/);
+  //     const monthYearMatch = text.match(/^([A-Za-z]+)\s+(\d{4})$/);
+
+  //     const superPrevBtn = panel.querySelector(".ant-picker-header-super-prev-btn");
+  //     const superNextBtn = panel.querySelector(".ant-picker-header-super-next-btn");
+  //     const prevBtn = panel.querySelector(".ant-picker-header-prev-btn");
+  //     const nextBtn = panel.querySelector(".ant-picker-header-next-btn");
+
+  //     let atMinYear = false;
+  //     let atMaxYear = false;
+  //     let atMinMonth = false;
+  //     let atMaxMonth = false;
+
+  //     if (yearMatch) {
+  //       const y = parseInt(yearMatch[0], 10);
+  //       atMinYear = y <= minDobDate.year();
+  //       atMaxYear = y >= maxDobForMinAge.year();
+  //     } else if (decadeMatch) {
+  //       const startY = parseInt(decadeMatch[1], 10);
+  //       const endY = parseInt(decadeMatch[2], 10);
+  //       atMinYear = startY <= Math.floor(minDobDate.year() / 10) * 10;
+  //       atMaxYear = endY >= maxDobForMinAge.year();
+  //     } else if (monthYearMatch) {
+  //       const monthName = monthYearMatch[1];
+  //       const y = parseInt(monthYearMatch[2], 10);
+  //       const current = dayjs(`${monthName} ${y}`, "MMM YYYY");
+  //       if (current.isValid()) {
+  //         atMinYear = y <= minDobDate.year();
+  //         atMaxYear = y >= maxDobForMinAge.year();
+  //         atMinMonth = current.isSame(minDobDate, "month") || current.isBefore(minDobDate, "month");
+  //         atMaxMonth = current.isSame(maxDobForMinAge, "month") || current.isAfter(maxDobForMinAge, "month");
+  //       }
+  //     }
+
+  //     if (superPrevBtn) superPrevBtn.style.visibility = atMinYear ? "hidden" : "";
+  //     if (superNextBtn) superNextBtn.style.visibility = atMaxYear ? "hidden" : "";
+  //     if (prevBtn) prevBtn.style.visibility = atMinMonth ? "hidden" : "";
+  //     if (nextBtn) nextBtn.style.visibility = atMaxMonth ? "hidden" : "";
+  //   };
+
+  //   clampNav();
+  //   if (dobPanelObserverRef.current) dobPanelObserverRef.current.disconnect();
+  //   const observer = new MutationObserver(clampNav);
+  //   observer.observe(panel, { childList: true, subtree: true, characterData: true });
+  //   dobPanelObserverRef.current = observer;
+  // };
+
+  // const handleDobOpenChange = (open) => {
+  //   if (open) {
+  //     // Panel isn't in the DOM the instant `open` flips true — wait one tick.
+  //     setTimeout(attachDobNavLock, 0);
+  //   } else {
+  //     if (dobPanelObserverRef.current) {
+  //       dobPanelObserverRef.current.disconnect();
+  //       dobPanelObserverRef.current = null;
+  //     }
+  //     setDobPanelKey((k) => k + 1);
+  //   }
+  // };
+
+  // const handleDobOpenChange = (open) => {
+  //   if (open) {
+  //     // Panel isn't in the DOM the instant `open` flips true — wait one tick.
+  //     setTimeout(attachDobNavLock, 0);
+  //   } else {
+  //     if (dobPanelObserverRef.current) {
+  //       dobPanelObserverRef.current.disconnect();
+  //       dobPanelObserverRef.current = null;
+  //     }
+  //   }
+  // };
 
   const showFileNameIfSelected = () => {
     const idProofUrl = form_obj.id_proof_url;
@@ -313,8 +397,9 @@ const EmployeeForm = () => {
 
   // ── Name input: strip numbers and special chars on change ─────────────────
   const handleNameInput = (e, field) => {
-    let val = e.target.value.replace(/[^A-Za-z\s'_-]/g, "");
-    val = val.replace(/^[\s']+/, ""); 
+    let val = e.target.value.replace(/[^A-Za-z\s'-]/g, "");
+    // val = val.replace(/^[\s']+/, ""); 
+    val = val.replace(/^\s+/, "");
 
     setEmployeeObj((prev) => ({
       ...prev,
@@ -429,18 +514,52 @@ const EmployeeForm = () => {
   // into the DOM input. AntD resets its controlled input to match the `value`
   // prop on every re-render; useLayoutEffect runs after the DOM update (before
   // paint) and overrides it, so the user always sees what they typed.
+
+  // React.useLayoutEffect(() => {
+  //   if (dobTypeError && dobRawTyped.current) {
+  //     const input = dobPickerRef.current?.nativeElement?.querySelector("input");
+  //     if (input) input.value = dobRawTyped.current;
+  //   }
+  // });
+  // React.useLayoutEffect(() => {
+  //   if (joiningTypeError && joinRawTyped.current) {
+  //     const input = joinPickerRef.current?.nativeElement?.querySelector("input");
+  //     if (input) input.value = joinRawTyped.current;
+  //   }
+  // });
+
   React.useLayoutEffect(() => {
     if (dobTypeError && dobRawTyped.current) {
-      const input = dobPickerRef.current?.nativeElement?.querySelector("input");
+      const input = document.getElementById("dob");
       if (input) input.value = dobRawTyped.current;
     }
   });
   React.useLayoutEffect(() => {
     if (joiningTypeError && joinRawTyped.current) {
-      const input = joinPickerRef.current?.nativeElement?.querySelector("input");
+      const input = document.getElementById("joining_date");
       if (input) input.value = joinRawTyped.current;
     }
   });
+
+  useEffect(() => {
+    const input = document.getElementById("dob");
+    if (!input) return;
+    input.addEventListener("keyup", handleDobKeyUp);
+    return () => input.removeEventListener("keyup", handleDobKeyUp);
+  }, [dob, dobRawInvalidText]);
+
+  useEffect(() => {
+    const input = document.getElementById("joining_date");
+    if (!input) return;
+    input.addEventListener("keyup", handleJoinKeyUp);
+    return () => input.removeEventListener("keyup", handleJoinKeyUp);
+  }, [joining_date, joinRawInvalidText]);
+
+  const handleDobOpenChange = (open) => {
+  if (!open) {
+    setDobTypeError("");
+  }
+};
 
   const handleDobKeyUp = (e) => {
     const val = e.target.value;
@@ -583,29 +702,31 @@ const EmployeeForm = () => {
     }
     setDob(dateStr);
     const year = selectedDates.year();
-    if (year < 1900) {
-      setDobTypeError("Year must be 1900 or later");
-      return;
-    }
-    if (selectedDates.isAfter(dayjs(), "day")) {
-      setDobTypeError("Date of birth cannot be a future date");
-      FormikForm.setFieldValue("dob", "");
-      return;
-    }
-    if (selectedDates.isAfter(maxDobForMinAge, "day")) {          // ADD
-      setDobTypeError("Employee must be at least 15 years old");   // ADD
-      FormikForm.setFieldValue("dob", "");                         // ADD
-      return;                                                      // ADD
-    }
-    setDobTypeError("");
-    setEmployeeObj({
-      ...employeeObj,
-      dob: ConvertISODateFormat(ConvertDateFormat(dateStr)),
-    });
-    FormikForm.setFieldValue(
-      "dob",
-      ConvertISODateFormat(ConvertDateFormat(dateStr)),
-    );
+      if (year < 1900) {
+        setDobTypeError("Year must be 1900 or later");
+        return;
+      }
+      if (selectedDates.isAfter(dayjs(), "day")) {
+        setDobTypeError("Date of birth cannot be a future date");
+        FormikForm.setFieldValue("dob", "");
+        return;
+      }
+      if (selectedDates.isAfter(maxDobForMinAge, "day")) {          // ADD
+        setDobTypeError("Employee must be at least 15 years old");   // ADD
+        FormikForm.setFieldValue("dob", "");                         // ADD
+        return;                                                      // ADD
+      }
+      setDobTypeError("");
+      setEmployeeObj({
+        ...employeeObj,
+         dob: ConvertISODateFormat(dateStr),
+        // dob: ConvertISODateFormat(ConvertDateFormat(dateStr)),
+      });
+      FormikForm.setFieldValue(
+        "dob",
+        ConvertISODateFormat(dateStr)
+        // ConvertISODateFormat(ConvertDateFormat(dateStr)),
+      );
     // FormikForm.setFieldTouched("dob", true);
   };
 
@@ -674,11 +795,13 @@ const EmployeeForm = () => {
     setJoiningTypeError("");
     setEmployeeObj({
       ...employeeObj,
-      joining_date: ConvertISODateFormat(ConvertDateFormat(dateStr)),
+      joining_date: ConvertISODateFormat(dateStr),
+      // joining_date: ConvertISODateFormat(ConvertDateFormat(dateStr)),
     });
     FormikForm.setFieldValue(
       "joining_date",
-      ConvertISODateFormat(ConvertDateFormat(dateStr)),
+      ConvertISODateFormat(dateStr)
+      // ConvertISODateFormat(ConvertDateFormat(dateStr)),
     );
     FormikForm.setFieldTouched("joining_date", true);
   };
@@ -718,23 +841,62 @@ const EmployeeForm = () => {
     }));
   };
 
+  // const handleCFInputChange = (e, cf_id) => {
+  //   setEmployeeObj({
+  //     ...employeeObj,
+  //     cf_values: [...employeeObj.cf_values].map((item) =>
+  //       item.id === cf_id ? { ...item, value: e.target.value } : { ...item },
+  //     ),
+  //   });
+  // };
+
   const handleCFInputChange = (e, cf_id) => {
-    setEmployeeObj({
-      ...employeeObj,
-      cf_values: [...employeeObj.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: e.target.value } : { ...item },
-      ),
-    });
+    const updated = employeeObj.cf_values.map((item) =>
+      item.id === cf_id ? { ...item, value: e.target.value } : item,
+    );
+    setEmployeeObj({ ...employeeObj, cf_values: updated });
+    FormikForm.setFieldValue("cf_values", updated);
+    FormikForm.setFieldTouched("cf_values", true, false);
   };
 
+  // const handleCFSelectChange = (e, cf_id) => {
+  //   setEmployeeObj({
+  //     ...employeeObj,
+  //     cf_values: [...employeeObj.cf_values].map((item) =>
+  //       item.id === cf_id ? { ...item, value: e.value } : item,
+  //     ),
+  //   });
+  // };
+
   const handleCFSelectChange = (e, cf_id) => {
-    setEmployeeObj({
-      ...employeeObj,
-      cf_values: [...employeeObj.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: e.value } : item,
-      ),
-    });
+    const updated = employeeObj.cf_values.map((item) =>
+      item.id === cf_id ? { ...item, value: e.value } : item,
+    );
+    setEmployeeObj({ ...employeeObj, cf_values: updated });
+    FormikForm.setFieldValue("cf_values", updated);
+    FormikForm.setFieldTouched("cf_values", true, false);
   };
+
+  // const handleCFFileChange = async (e, cf_id) => {
+  //   const file = e.target.files[0];
+  //   let img_url = "";
+  //   let cf_form_data = new FormData();
+  //   cf_form_data.append("cf_file", file);
+  //   const ApiRes = await PostApi(
+  //     "fields/upload-custom-field-file/",
+  //     cf_form_data,
+  //     true,
+  //   );
+  //   img_url = ApiRes.status === 200 ? String(ApiRes?.data?.data) : "";
+  //   if (ApiRes.status !== 200)
+  //     toast.error(ApiRes?.data?.message || ApiRes?.data?.detail);
+  //   setEmployeeObj({
+  //     ...employeeObj,
+  //     cf_values: [...employeeObj.cf_values].map((item) =>
+  //       item.id === cf_id ? { ...item, value: img_url } : item,
+  //     ),
+  //   });
+  // };
 
   const handleCFFileChange = async (e, cf_id) => {
     const file = e.target.files[0];
@@ -749,23 +911,34 @@ const EmployeeForm = () => {
     img_url = ApiRes.status === 200 ? String(ApiRes?.data?.data) : "";
     if (ApiRes.status !== 200)
       toast.error(ApiRes?.data?.message || ApiRes?.data?.detail);
-    setEmployeeObj({
-      ...employeeObj,
-      cf_values: [...employeeObj.cf_values].map((item) =>
-        item.id === cf_id ? { ...item, value: img_url } : item,
-      ),
-    });
+    const updated = employeeObj.cf_values.map((item) =>
+      item.id === cf_id ? { ...item, value: img_url } : item,
+    );
+    setEmployeeObj({ ...employeeObj, cf_values: updated });
+    FormikForm.setFieldValue("cf_values", updated);
+    FormikForm.setFieldTouched("cf_values", true, false);
   };
 
+  // const handleCFDateChange = (e, dateStr, cf_id) => {
+  //   setEmployeeObj({
+  //     ...employeeObj,
+  //     cf_values: [...employeeObj.cf_values].map((item) =>
+  //       item.id === cf_id
+  //         ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
+  //         : item,
+  //     ),
+  //   });
+  // };
+
   const handleCFDateChange = (e, dateStr, cf_id) => {
-    setEmployeeObj({
-      ...employeeObj,
-      cf_values: [...employeeObj.cf_values].map((item) =>
-        item.id === cf_id
-          ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
-          : item,
-      ),
-    });
+    const updated = employeeObj.cf_values.map((item) =>
+      item.id === cf_id
+        ? { ...item, value: ConvertISODateFormat(ConvertDateFormat(dateStr)) }
+        : item,
+    );
+    setEmployeeObj({ ...employeeObj, cf_values: updated });
+    FormikForm.setFieldValue("cf_values", updated);
+    FormikForm.setFieldTouched("cf_values", true, false);
   };
 
   // ── Yup schema ────────────────────────────────────────────────────────────
@@ -834,65 +1007,115 @@ const EmployeeForm = () => {
         .required("Please select gender")
         .min(1, "Please select gender"),
 
+      // dob: Yup.string()
+      //   .trim()
+      //   .required("Please select date of birth")
+      //   .test(
+      //     "dob-not-future",
+      //     "Date of birth cannot be a future date",
+      //     (value) => {
+      //       if (!value) return false;
+      //       // return dayjs(value).isBefore(dayjs());
+      //       return (
+      //         dayjs(value).isSame(dayjs(), "day") ||
+      //         dayjs(value).isBefore(dayjs(), "day")
+      //       );
+      //     },
+      //   )
+      //   .test(
+      //     "dob-min-age-15",
+      //     "Employee must be at least 15 years old",
+      //     (value) => {
+      //       if (!value) return false;
+      //       return !dayjs(value).isAfter(dayjs().subtract(15, "year"), "day");
+      //     },
+      //   ),
+
+      // joining_date: Yup.string()
+      //   .trim()
+      //   .required("Please select joining date")
+      //   .test(
+      //     "joining-within-range",
+      //     "Joining date must be within the next 1 year",
+      //     (value) => {
+      //       if (!value) return false;
+      //       const d = dayjs(value);
+      //       // return d.isBefore(dayjs().add(1, "month").add(1, "day"));
+      //       return (
+      //         d.isSame(dayjs("1900-01-01"), "day") ||
+      //         (d.isAfter(dayjs("1900-01-01"), "day") &&
+      //           d.isBefore(dayjs().add(1, "year").add(1, "day")))
+      //       );
+      //     },
+      //   )
+      //   // New validation for minimum age 15
+      //   .test(
+      //     "minimum-age-at-joining",
+      //     "Employee must be at least 15 years old on joining date",
+      //     function (joiningDate) {
+      //       const { dob } = this.parent;
+
+      //       if (!dob || !joiningDate) return true;
+
+      //       const dobDate = dayjs(dob);
+      //       const dojDate = dayjs(joiningDate);
+
+      //       const minimumJoiningDate = dobDate.add(15, "year");
+
+      //       return (
+      //         dojDate.isSame(minimumJoiningDate, "day") ||
+      //         dojDate.isAfter(minimumJoiningDate, "day")
+      //       );
+      //     },
+      //   ),
+
       dob: Yup.string()
         .trim()
         .required("Please select date of birth")
-        .test(
-          "dob-not-future",
-          "Date of birth cannot be a future date",
-          (value) => {
-            if (!value) return false;
-            // return dayjs(value).isBefore(dayjs());
-            return (
-              dayjs(value).isSame(dayjs(), "day") ||
-              dayjs(value).isBefore(dayjs(), "day")
-            );
-          },
-        )
-        .test(
-          "dob-min-age-15",
-          "Employee must be at least 15 years old",
-          (value) => {
-            if (!value) return false;
-            return !dayjs(value).isAfter(dayjs().subtract(15, "year"), "day");
-          },
-        ),
+        .test("dob-not-future", "Date of birth cannot be a future date", (value) => {
+          if (!value) return false;
+          const d = dayjs(value, "YYYY-MM-DD", true);
+          return d.isValid() && !d.isAfter(dayjs(), "day");
+        })
+        .test("dob-min-age-15", "Employee must be at least 15 years old", (value) => {
+          if (!value) return false;
+          const d = dayjs(value, "YYYY-MM-DD", true);
+          return d.isValid() && !d.isAfter(dayjs().subtract(15, "year"), "day");
+        }),
 
       joining_date: Yup.string()
         .trim()
         .required("Please select joining date")
         .test(
           "joining-within-range",
-          "Joining date must be within the next 1 month",
+          "Joining date must be within the next 1 year",
           (value) => {
             if (!value) return false;
-            const d = dayjs(value);
-            // return d.isBefore(dayjs().add(1, "month").add(1, "day"));
+            const d = dayjs(value, "YYYY-MM-DD", true);
+            if (!d.isValid()) return false;
+
+            const min = dayjs("1900-01-01");
+            const max = dayjs().add(1, "year"); // exactly one year from today, inclusive
+
             return (
-              d.isSame(dayjs("1900-01-01"), "day") ||
-              (d.isAfter(dayjs("1900-01-01"), "day") &&
-                d.isBefore(dayjs().add(1, "year").add(1, "day")))
+              (d.isSame(min, "day") || d.isAfter(min, "day")) &&
+              (d.isSame(max, "day") || d.isBefore(max, "day"))
             );
           },
         )
-        // New validation for minimum age 15
         .test(
           "minimum-age-at-joining",
           "Employee must be at least 15 years old on joining date",
           function (joiningDate) {
             const { dob } = this.parent;
-
             if (!dob || !joiningDate) return true;
 
-            const dobDate = dayjs(dob);
-            const dojDate = dayjs(joiningDate);
+            const dobDate = dayjs(dob, "YYYY-MM-DD", true);
+            const dojDate = dayjs(joiningDate, "YYYY-MM-DD", true);
+            if (!dobDate.isValid() || !dojDate.isValid()) return true;
 
             const minimumJoiningDate = dobDate.add(15, "year");
-
-            return (
-              dojDate.isSame(minimumJoiningDate, "day") ||
-              dojDate.isAfter(minimumJoiningDate, "day")
-            );
+            return dojDate.isSame(minimumJoiningDate, "day") || dojDate.isAfter(minimumJoiningDate, "day");
           },
         ),
 
@@ -1613,19 +1836,42 @@ const EmployeeForm = () => {
                     />
                   ) : (
 
+                  // <DatePicker
+                  //   key={dobPanelKey}
+                  //   ref={dobPickerRef}
+                  //   popupClassName="lc-dob-picker-panel"
+                  //   className={`form-control${((FormikForm.touched.dob || hasAttemptedSubmit) && FormikForm.errors.dob) || dobTypeError ? " border-danger" : ""}`}
+                  //   placeholder="DD-MM-YYYY"
+                  //   id="dob"
+                  //   name="dob"
+                  //   value={dob ? dayjs(dob, DateFormat) : null}
+                  //   defaultPickerValue={dob ? dayjs(dob, DateFormat) : maxDobForMinAge}
+                  //   format={DateFormat}
+                  //   onChange={handleDateChange}
+                  //   allowClear={false}
+                  //   disabledDate={disableDobDates}
+                  //   onOpenChange={handleDobOpenChange}
+                  //   onKeyDown={handleDateKeyDown}
+                  //   onKeyUp={handleDobKeyUp}
+                  //   onBlur={handleDobBlur}
+                  // />
+
                   <DatePicker
                     ref={dobPickerRef}
+                    popupClassName="lc-dob-picker-panel"
                     className={`form-control${((FormikForm.touched.dob || hasAttemptedSubmit) && FormikForm.errors.dob) || dobTypeError ? " border-danger" : ""}`}
                     placeholder="DD-MM-YYYY"
                     id="dob"
                     name="dob"
                     value={dob ? dayjs(dob, DateFormat) : null}
+                    defaultPickerValue={dob ? dayjs(dob, DateFormat) : maxDobForMinAge}
                     format={DateFormat}
                     onChange={handleDateChange}
                     allowClear={false}
                     disabledDate={disableDobDates}
+                    onOpenChange={handleDobOpenChange}
                     onKeyDown={handleDateKeyDown}
-                    onKeyUp={handleDobKeyUp}
+                    // onKeyUp={handleDobKeyUp}
                     onBlur={handleDobBlur}
                   />
                   )}

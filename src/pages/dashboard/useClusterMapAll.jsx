@@ -99,14 +99,48 @@ const haversine = (a, b) => {
 };
 
 // ─── Prefer formatted_* fields (higher-precision/corrected coordinates &
-// address), fall back to the raw fields when formatted_* is absent ──────
-const getLat = (loc) =>
-  // parseFloat(loc?.formatted_latitude ?? loc?.latitude) || 0;
-  parseFloat(loc?.latitude) || 0;
+// address), fall back to the raw fields when formatted_* is absent.
+// Returns null when the backend sends null/missing/non-numeric coords so
+// callers can skip the point on the map instead of plotting (0, 0). ────
+const getLat = (loc) => {
+  // const raw = loc?.formatted_latitude ?? loc?.latitude;
+  const raw = loc?.latitude;
+  if (raw == null || raw === "") return null;
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : null;
+};
 
-const getLng = (loc) =>
-  // parseFloat(loc?.formatted_longitude ?? loc?.longitude) || 0;
-  parseFloat(loc?.longitude) || 0;
+const getLng = (loc) => {
+  // const raw = loc?.formatted_longitude ?? loc?.longitude;
+  const raw = loc?.longitude;
+  if (raw == null || raw === "") return null;
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : null;
+};
+
+const hasValidCoords = (p) =>
+  p != null && Number.isFinite(p.lat) && Number.isFinite(p.lng);
+
+// True location-tracking frames (including null lat/lng when location is
+// off). Rejects socket acks / control messages that would otherwise create
+// today's cache key and block the REST history fetch.
+const isLocationTrackingPayload = (data) => {
+  if (!data || typeof data !== "object") return false;
+  return (
+    data.latitude != null ||
+    data.longitude != null ||
+    data.timestamp != null ||
+    data.time != null ||
+    data.created_at != null ||
+    data.is_location_on != null ||
+    data.is_internet_on != null ||
+    data.battery_percentage != null ||
+    data.form_submission != null ||
+    data.custom_status != null ||
+    data.accurate_address != null ||
+    data.formatted_address != null
+  );
+};
 
 // `formatted_address` arrives as a Python-dict-repr string (single quotes,
 // None/True/False) — not valid JSON — so it can't be JSON.parse'd. Pull the
@@ -565,6 +599,10 @@ const UsersClusterMapAll = ({
   // ── Live tracking (websocket) ──
   const [liveLocation, setLiveLocation] = useState(null);
   const [isLive, setIsLive] = useState(false);
+  // Live points that arrive before today's REST history is cached. Folding
+  // them into an empty cache key would make `if (locationCache[key]) return`
+  // skip the API fetch and leave the map/timeline empty.
+  const pendingLiveRef = useRef([]);
 
   // ── Form submission details modal ──
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -752,9 +790,13 @@ const UsersClusterMapAll = ({
         );
         const data = response?.data?.data;
         if (!cancelled) {
+          const base = Array.isArray(data) ? data : [];
+          const todayKey = `${selectedEmpId}::${todayIsoIN()}`;
+          const pending =
+            key === todayKey ? pendingLiveRef.current.splice(0) : [];
           setLocationCache((prev) => ({
             ...prev,
-            [key]: Array.isArray(data) ? data : [],
+            [key]: pending.length ? [...base, ...pending] : base,
           }));
         }
       } catch (error) {
@@ -763,7 +805,13 @@ const UsersClusterMapAll = ({
           error,
         );
         if (!cancelled) {
-          setLocationCache((prev) => ({ ...prev, [key]: [] }));
+          const todayKey = `${selectedEmpId}::${todayIsoIN()}`;
+          const pending =
+            key === todayKey ? pendingLiveRef.current.splice(0) : [];
+          setLocationCache((prev) => ({
+            ...prev,
+            [key]: pending,
+          }));
         }
       } finally {
         if (!cancelled) setLoadingLocations(false);
@@ -811,15 +859,18 @@ const UsersClusterMapAll = ({
       disconnectWebSocket();
       setIsLive(false);
       setLiveLocation(null);
+      pendingLiveRef.current = [];
       return;
     }
 
     setLiveLocation(null);
     setIsLive(false);
+    pendingLiveRef.current = [];
 
     connectWebSocket(selectedEmpId, {
       onOpen: () => {
         setIsLive(true);
+        pendingLiveRef.current = [];
         const todayKey = `${selectedEmpId}::${todayIsoIN()}`;
         setLocationCache((prev) => {
           if (!(todayKey in prev)) return prev;
@@ -829,16 +880,30 @@ const UsersClusterMapAll = ({
         });
       },
       onMessage: (data) => {
-        if (!data || data.latitude == null || data.longitude == null) return;
+        // Ignore watch acks / non-tracking frames. Accept null lat/lng when
+        // the payload is still a real location event (e.g. location off).
+        if (!isLocationTrackingPayload(data)) return;
+
         const normalized = normalizeLiveLocation(data);
-        setLiveLocation(normalized);
+        if (
+          hasValidCoords({
+            lat: getLat(normalized),
+            lng: getLng(normalized),
+          })
+        ) {
+          setLiveLocation(normalized);
+        }
 
         // Only fold live points into TODAY's history — a different date
         // being viewed shouldn't get contaminated with live data.
         const todayKey = `${selectedEmpId}::${todayIsoIN()}`;
         setLocationCache((prev) => {
-          const existing = prev[todayKey] || [];
-          return { ...prev, [todayKey]: [...existing, normalized] };
+          // Don't create today's key from WS alone — that skips REST fetch.
+          if (!(todayKey in prev)) {
+            pendingLiveRef.current = [...pendingLiveRef.current, normalized];
+            return prev;
+          }
+          return { ...prev, [todayKey]: [...prev[todayKey], normalized] };
         });
       },
       onClose: () => setIsLive(false),
@@ -848,13 +913,17 @@ const UsersClusterMapAll = ({
     return () => {
       disconnectWebSocket();
       setIsLive(false);
+      pendingLiveRef.current = [];
     };
   }, [selectedEmpId]);
 
   // Live marker only makes sense while looking at today's route.
   const isViewingToday = dateFilter === todayIsoIN();
   const liveMarkerPos =
-    isViewingToday && liveLocation
+    isViewingToday && liveLocation && hasValidCoords({
+      lat: getLat(liveLocation),
+      lng: getLng(liveLocation),
+    })
       ? {
           lat: getLat(liveLocation),
           lng: getLng(liveLocation),
@@ -926,6 +995,8 @@ const UsersClusterMapAll = ({
           date: indianDate,
           battery: loc?.battery_percentage,
           outside: loc?.is_outside_range,
+          locationOn: loc?.is_location_on,   // ← add
+          internetOn: loc?.is_internet_on,   // ← add
           profile_url: activeEmployee?.profile_url,
           formSubmission,
           customStatusInfo, // resolved { id, name, icon, is_break, ... } or null
@@ -944,12 +1015,22 @@ const UsersClusterMapAll = ({
     setMovingPos(null);
   }, [activeLocations, activeEmployee, findCustomStatus, findCustomForm]);
 
+  // Map/route only — timeline keeps the full `path` (including null lat/lng).
+  const mapPath = useMemo(
+    () =>
+      path
+        .map((p, pathIndex) => ({ ...p, pathIndex }))
+        .filter(hasValidCoords),
+    [path],
+  );
+
   // ─── Trip summary: duration + total distance ──────────────────
   const summary = useMemo(() => {
     if (path.length === 0) return { duration: "-", distance: "0 Km", km: 0 };
 
     let km = 0;
-    for (let i = 1; i < path.length; i++) km += haversine(path[i - 1], path[i]);
+    for (let i = 1; i < mapPath.length; i++)
+      km += haversine(mapPath[i - 1], mapPath[i]);
 
     let duration = "-";
     const firstTs = activeLocations[0]?.timestamp;
@@ -965,14 +1046,19 @@ const UsersClusterMapAll = ({
     }
 
     return { duration, distance: `${km.toFixed(1)} Km`, km };
-  }, [path, activeLocations]);
+  }, [path, mapPath, activeLocations]);
 
   // ─── Classify each timeline point ─────────────────────────────
   const pointType = useCallback(
     (i) => {
       if (i === 0) return "start";
       if (i === path.length - 1) return "end";
-      const moved = haversine(path[i - 1], path[i]); // km
+      const prev = path[i - 1];
+      const cur = path[i];
+      // No coords → still show in timeline, but don't invent a travel/wait
+      // classification from (0,0) or NaN distance.
+      if (!hasValidCoords(prev) || !hasValidCoords(cur)) return "travel";
+      const moved = haversine(prev, cur); // km
       return moved < WAIT_THRESHOLD_KM ? "waiting" : "travel";
     },
     [path],
@@ -992,15 +1078,15 @@ const UsersClusterMapAll = ({
   }, []);
 
   useEffect(() => {
-    if (mapRef.current && path.length > 0) fitToPath(mapRef.current, path);
-  }, [path, fitToPath]);
+    if (mapRef.current && mapPath.length > 0) fitToPath(mapRef.current, mapPath);
+  }, [mapPath, fitToPath]);
 
   const onMapLoad = useCallback(
     (map) => {
       mapRef.current = map;
-      if (path.length > 0) fitToPath(map, path);
+      if (mapPath.length > 0) fitToPath(map, mapPath);
     },
-    [path, fitToPath],
+    [mapPath, fitToPath],
   );
 
   // ─── Re-fit / re-trigger the map whenever the browser (or the modal
@@ -1015,69 +1101,71 @@ const UsersClusterMapAll = ({
     const handleResize = () => {
       if (mapRef.current && window.google) {
         window.google.maps.event.trigger(mapRef.current, "resize");
-        if (path.length > 0) fitToPath(mapRef.current, path);
+        if (mapPath.length > 0) fitToPath(mapRef.current, mapPath);
       }
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [path, fitToPath]);
+  }, [mapPath, fitToPath]);
 
   // ─── Interpolate position + label from a 0..1 progress value ──
+  // Uses mapPath (valid coords only) so playback never jumps to (0,0).
+  // nearIndex is the original timeline index (`pathIndex`).
   const computeFromProgress = useCallback(
     (t) => {
-      if (path.length === 0) return null;
-      if (path.length === 1) {
+      if (mapPath.length === 0) return null;
+      if (mapPath.length === 1) {
         return {
-          pos: { lat: path[0].lat, lng: path[0].lng },
-          label: path[0].timestamp,
-          nearIndex: 0,
+          pos: { lat: mapPath[0].lat, lng: mapPath[0].lng },
+          label: mapPath[0].timestamp,
+          nearIndex: mapPath[0].pathIndex,
         };
       }
 
-      const segCount = path.length - 1;
+      const segCount = mapPath.length - 1;
       const scaled = Math.min(Math.max(t, 0), 1) * segCount;
       const segIndex = Math.min(Math.floor(scaled), segCount - 1);
       const segT = scaled - segIndex;
 
-      const a = path[segIndex];
-      const b = path[segIndex + 1];
+      const a = mapPath[segIndex];
+      const b = mapPath[segIndex + 1];
 
       const lat = a.lat + (b.lat - a.lat) * segT;
       const lng = a.lng + (b.lng - a.lng) * segT;
-      const nearIndex = segT < 0.5 ? segIndex : segIndex + 1;
+      const near = segT < 0.5 ? a : b;
 
       return {
         pos: { lat, lng },
-        label: path[nearIndex].timestamp,
-        nearIndex,
+        label: near.timestamp,
+        nearIndex: near.pathIndex,
       };
     },
-    [path],
+    [mapPath],
   );
 
   // ─── Build the polyline coords drawn so far (start → current) ─
   const getDrawnPath = useCallback(
     (t) => {
-      if (path.length < 2) return [];
-      const segCount = path.length - 1;
+      if (mapPath.length < 2) return [];
+      const segCount = mapPath.length - 1;
       const scaled = Math.min(Math.max(t, 0), 1) * segCount;
       const segIndex = Math.min(Math.floor(scaled), segCount - 1);
       const segT = scaled - segIndex;
 
-      const drawn = path.slice(0, segIndex + 1).map((p) => ({
+      const drawn = mapPath.slice(0, segIndex + 1).map((p) => ({
         lat: p.lat,
         lng: p.lng,
       }));
 
-      const a = path[segIndex];
-      const b = path[segIndex + 1];
+      const a = mapPath[segIndex];
+      const b = mapPath[segIndex + 1];
       drawn.push({
         lat: a.lat + (b.lat - a.lat) * segT,
         lng: a.lng + (b.lng - a.lng) * segT,
       });
       return drawn;
     },
-    [path],
+    [mapPath],
   );
 
   // ─── Animation loop (playback) ─────────────────────────────────
@@ -1138,12 +1226,12 @@ const UsersClusterMapAll = ({
 
   // ─── Always-on marching-ants flow along the route line ─────────
   useEffect(() => {
-    if (path.length < 2) return;
+    if (mapPath.length < 2) return;
     const id = setInterval(() => {
       setAntOffset((o) => (o + 4) % 140);
     }, 60);
     return () => clearInterval(id);
-  }, [path.length]);
+  }, [mapPath.length]);
 
   // ─── Zoom in once, right when playback starts (not on every frame —
   //     calling setZoom repeatedly mid-pan is what caused the "stuck"
@@ -1181,7 +1269,7 @@ const UsersClusterMapAll = ({
   };
 
   const togglePlay = () => {
-    if (path.length < 2) return;
+    if (mapPath.length < 2) return;
     setSelectedMarker(null);
     if (progress >= 1) {
       setProgress(0);
@@ -1194,7 +1282,7 @@ const UsersClusterMapAll = ({
     setIsPlaying(false);
     setProgress(0);
     applyProgress(0);
-    if (mapRef.current && path.length) fitToPath(mapRef.current, path);
+    if (mapRef.current && mapPath.length) fitToPath(mapRef.current, mapPath);
   };
 
   // ─── Refresh → reset everything to initial full view ──────────
@@ -1206,7 +1294,7 @@ const UsersClusterMapAll = ({
     setActiveIndex(null);
     setExpandedIndex(null);
     setSelectedMarker(null);
-    if (mapRef.current) fitToPath(mapRef.current, path);
+    if (mapRef.current) fitToPath(mapRef.current, mapPath);
   };
 
   // ─── Close the InfoWindow (default 'x' + our own custom close icon) ──
@@ -1248,6 +1336,11 @@ const UsersClusterMapAll = ({
     setMovingPos(null);
     setActiveIndex(i);
     setExpandedIndex((cur) => (cur === i ? null : i));
+    // Null lat/lng stay in the timeline but have nothing to focus on the map.
+    if (!hasValidCoords(p)) {
+      setSelectedMarker(null);
+      return;
+    }
     setSelectedMarker({ lat: p.lat, lng: p.lng, count: 1, users: [p] });
     if (mapRef.current) {
       const currentZoom = mapRef.current.getZoom() || 0;
@@ -1277,7 +1370,7 @@ const UsersClusterMapAll = ({
     setActiveIndex(null);
     setExpandedIndex(null);
     setSelectedMarker(null);
-    if (mapRef.current) fitToPath(mapRef.current, path);
+    if (mapRef.current) fitToPath(mapRef.current, mapPath);
   };
 
   // ─── Date picker helpers (must stay above the `!isLoaded` early return —
@@ -1312,7 +1405,7 @@ const UsersClusterMapAll = ({
   const isEndpoint = (i) => i === 0 || i === path.length - 1;
 
   const drawnLinePath =
-    isPlaying || progress > 0 ? getDrawnPath(progress) : path;
+    isPlaying || progress > 0 ? getDrawnPath(progress) : mapPath;
 
   const typeConfig = {
     start: { color: COLORS.start, icon: "ri-flag-fill", letter: null },
@@ -1399,14 +1492,14 @@ const UsersClusterMapAll = ({
         <div style={{ flex: "1 1 0%", minWidth: 0, position: "relative" }}>
           <GoogleMap
             mapContainerStyle={{ width: "100%", height: "100%" }}
-            center={path.length ? path[0] : indiaCenter}
+            center={mapPath.length ? mapPath[0] : indiaCenter}
             onLoad={onMapLoad}
             options={mapOptions}
           >
             {/* Faint full-route track, always visible underneath */}
-            {path.length > 1 && (
+            {mapPath.length > 1 && (
               <Polyline
-                path={path}
+                path={mapPath}
                 options={{
                   strokeColor: COLORS.route,
                   strokeOpacity: 0.22,
@@ -1416,7 +1509,7 @@ const UsersClusterMapAll = ({
             )}
 
             {/* Travelled / full route line with continuous marching-ant arrows */}
-            {path.length > 1 && (
+            {mapPath.length > 1 && (
               <Polyline
                 path={drawnLinePath}
                 options={{
@@ -1442,11 +1535,11 @@ const UsersClusterMapAll = ({
               />
             )}
 
-            {/* Start marker (green) with radar ping ring */}
-            {path.length > 0 && (
+            {/* Start marker (green) with radar ping ring — first valid coords */}
+            {mapPath.length > 0 && (
               <>
                 <OverlayView
-                  position={path[0]}
+                  position={mapPath[0]}
                   mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
                 >
                   <div
@@ -1462,7 +1555,7 @@ const UsersClusterMapAll = ({
                   />
                 </OverlayView>
                 <Marker
-                  position={path[0]}
+                  position={mapPath[0]}
                   zIndex={10}
                   icon={{
                     path: window.google.maps.SymbolPath.CIRCLE,
@@ -1472,15 +1565,17 @@ const UsersClusterMapAll = ({
                     strokeWeight: 3,
                     strokeColor: "#ffffff",
                   }}
-                  onClick={() => handleMarkerClick(path[0], 0)}
+                  onClick={() =>
+                    handleMarkerClick(mapPath[0], mapPath[0].pathIndex)
+                  }
                 />
               </>
             )}
 
-            {/* End marker (red) */}
-            {path.length > 1 && (
+            {/* End marker (red) — last valid coords */}
+            {mapPath.length > 1 && (
               <Marker
-                position={path[path.length - 1]}
+                position={mapPath[mapPath.length - 1]}
                 zIndex={10}
                 icon={{
                   path: window.google.maps.SymbolPath.CIRCLE,
@@ -1491,7 +1586,10 @@ const UsersClusterMapAll = ({
                   strokeColor: "#ffffff",
                 }}
                 onClick={() =>
-                  handleMarkerClick(path[path.length - 1], path.length - 1)
+                  handleMarkerClick(
+                    mapPath[mapPath.length - 1],
+                    mapPath[mapPath.length - 1].pathIndex,
+                  )
                 }
               />
             )}
@@ -1499,18 +1597,19 @@ const UsersClusterMapAll = ({
             {/* Form-submission markers — every point (except start/end, which
                 already carry their own marker above) that has a filled form
                 gets its own document-pin marker. Clicking it pans/zooms in
-                AND opens the form details modal (handleMarkerClick does both). */}
-            {path.map(
-              (p, i) =>
+                AND opens the form details modal (handleMarkerClick does both).
+                Points with null lat/lng are timeline-only and skipped here. */}
+            {mapPath.map(
+              (p) =>
                 p.formSubmission &&
-                i !== 0 &&
-                i !== path.length - 1 && (
+                p.pathIndex !== mapPath[0].pathIndex &&
+                p.pathIndex !== mapPath[mapPath.length - 1].pathIndex && (
                   <Marker
-                    key={`form-marker-${i}`}
+                    key={`form-marker-${p.pathIndex}`}
                     position={{ lat: p.lat, lng: p.lng }}
                     zIndex={11}
                     icon={buildFormMarkerIcon()}
-                    onClick={() => handleMarkerClick(p, i)}
+                    onClick={() => handleMarkerClick(p, p.pathIndex)}
                   />
                 ),
             )}
@@ -1951,7 +2050,7 @@ const UsersClusterMapAll = ({
 
           {/* ── Live distance-covered readout, top-right, while playing/scrubbed ── */}
           <AnimatePresence>
-            {path.length > 1 && (isPlaying || progress > 0) && (
+            {mapPath.length > 1 && (isPlaying || progress > 0) && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -1992,7 +2091,7 @@ const UsersClusterMapAll = ({
           </AnimatePresence>
 
           {/* ── Playback controls — vertical panel, left side of the map. ── */}
-          {path.length > 1 && (
+          {mapPath.length > 1 && (
             <div
               className="ucma-playback-panel"
               style={{
@@ -2039,21 +2138,20 @@ const UsersClusterMapAll = ({
                     background: COLORS.travel,
                   }}
                 />
-                {path.length > 1 &&
-                  path.map((_, i) => (
-                    <span
-                      key={i}
-                      style={{
-                        position: "absolute",
-                        bottom: `${(i / (path.length - 1)) * 100}%`,
-                        width: "10px",
-                        height: "2px",
-                        background: "#ffffff",
-                        transform: "translateY(1px)",
-                        pointerEvents: "none",
-                      }}
-                    />
-                  ))}
+                {mapPath.map((_, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      position: "absolute",
+                      bottom: `${(i / (mapPath.length - 1)) * 100}%`,
+                      width: "10px",
+                      height: "2px",
+                      background: "#ffffff",
+                      transform: "translateY(1px)",
+                      pointerEvents: "none",
+                    }}
+                  />
+                ))}
                 <input
                   type="range"
                   min={0}
@@ -2558,6 +2656,34 @@ const UsersClusterMapAll = ({
                     >
                       {p.address || "—"}
                     </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "6px",
+                        marginTop: "3px",
+                        justifyContent: onLeft ? "flex-end" : "flex-start",
+                      }}
+                    >
+                      <i
+                        // className={p.locationOn ? "ri-map-pin-2-fill" : "ri-map-pin-off-line"}
+                        className={p.locationOn ? "ri-map-pin-2-fill" : "ri-map-pin-2-line"}
+                        title={p.locationOn ? "Location on" : "Location off"}
+                        style={{
+                          fontSize: "12px",
+                          color: p.locationOn ? "#16a34a" : "#ee1e1e",
+                        }}
+                      />
+                      <i
+                        className={p.internetOn ? "ri-wifi-fill" : "ri-wifi-off-line"}
+                        title={p.internetOn ? "Internet on" : "Internet off"}
+                        style={{
+                          fontSize: "12px",
+                          color: p.internetOn ? "#16a34a" : "#ee1e1e",
+                        }}
+                      />
+                    </div>
+
                     {p.customStatusInfo && (
                       <div
                         style={{
