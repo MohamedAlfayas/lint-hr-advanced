@@ -98,12 +98,24 @@ const haversine = (a, b) => {
   return 2 * R * Math.asin(Math.sqrt(h));
 };
 
-// ─── Prefer formatted_* fields (higher-precision/corrected coordinates &
-// address), fall back to the raw fields when formatted_* is absent.
+// ── Which coordinate source builds the map/timeline. "gps" = raw
+// latitude/longitude straight from the device, drawn as a solid blue
+// line. "road" = OSRM-snapped formatted_latitude/formatted_longitude
+// (falls back to raw if a point has no formatted_* pair yet), drawn as a
+// dotted red line. "both" keeps every marker/playback/timeline value on
+// the normal GPS path (same as "gps") and additionally overlays the
+// dotted red OSRM line on top of it. Surfaced as three tabs above the
+// map. ─────────────────────────────────────────────────────────────────
+const DATA_MODES = {
+  GPS: "gps",
+  ROAD: "road",
+  BOTH: "both",
+};
+
+// ─── Raw GPS coordinates, straight off the device.
 // Returns null when the backend sends null/missing/non-numeric coords so
 // callers can skip the point on the map instead of plotting (0, 0). ────
 const getLat = (loc) => {
-  // const raw = loc?.formatted_latitude ?? loc?.latitude;
   const raw = loc?.latitude;
   if (raw == null || raw === "") return null;
   const n = parseFloat(raw);
@@ -111,11 +123,31 @@ const getLat = (loc) => {
 };
 
 const getLng = (loc) => {
-  // const raw = loc?.formatted_longitude ?? loc?.longitude;
   const raw = loc?.longitude;
   if (raw == null || raw === "") return null;
   const n = parseFloat(raw);
   return Number.isFinite(n) ? n : null;
+};
+
+// ─── OSRM/road-snapped coordinates. Falls back to the raw fields when a
+// point hasn't been formatted yet. Returns null (not 0) when neither
+// source has a usable value. ───────────────────────────────────────────
+const getRoadLat = (loc) => {
+  const raw = loc?.formatted_latitude;
+  if (raw != null && raw !== "") {
+    const n = parseFloat(raw);
+    if (Number.isFinite(n) && n !== 0) return n;
+  }
+  return getLat(loc);
+};
+
+const getRoadLng = (loc) => {
+  const raw = loc?.formatted_longitude;
+  if (raw != null && raw !== "") {
+    const n = parseFloat(raw);
+    if (Number.isFinite(n) && n !== 0) return n;
+  }
+  return getLng(loc);
 };
 
 const hasValidCoords = (p) =>
@@ -155,7 +187,8 @@ const extractFormattedAddress = (loc) => {
   return loc?.accurate_address || "";
 };
 
-// Original palette — unchanged (form added for form-submission markers)
+// Original palette — unchanged (form added for form-submission markers,
+// roadLine added for the dotted OSRM/road-snapped route)
 const COLORS = {
   start: "#28a745",
   end: "#dc3545",
@@ -164,6 +197,7 @@ const COLORS = {
   route: "#1a73e8",
   moving: "#ff9800",
   form: "#7c3aed",
+  roadLine: "#dc2626",
 };
 
 // ─── Scrollbar styling for the form-submission modal body (matches the
@@ -413,6 +447,22 @@ const injectStyles = () => {
     .ucma-playback-panel > * {
       pointer-events: auto;
     }
+    .ucma-mode-tabs {
+      pointer-events: auto;
+    }
+    .ucma-mode-tab {
+      border: none;
+      background: rgba(255,255,255,0.95);
+      color: #334155;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    .ucma-mode-tab.active {
+      background: #2563eb;
+      color: #fff;
+    }
     @media (max-width: 480px), (max-height: 480px) {
       .ucma-playback-panel {
         left: 10px !important;
@@ -437,6 +487,10 @@ const injectStyles = () => {
         width: 30px !important;
         font-size: 10px !important;
         padding: 3px 0 !important;
+      }
+      .ucma-mode-tab {
+        font-size: 11px !important;
+        padding: 5px 9px !important;
       }
     }
     @media (max-width: 380px) {
@@ -603,6 +657,13 @@ const UsersClusterMapAll = ({
   // them into an empty cache key would make `if (locationCache[key]) return`
   // skip the API fetch and leave the map/timeline empty.
   const pendingLiveRef = useRef([]);
+
+  // ── Which coordinate source is currently driving the map/timeline:
+  //    raw GPS ("gps"), OSRM-snapped ("road"), or both overlaid together
+  //    ("both"). Three tabs on the map let the user flip between them;
+  //    switching re-derives `path` below from the same cached
+  //    `activeLocations`, no extra fetch required. ───────────────────────
+  const [dataMode, setDataMode] = useState(DATA_MODES.GPS);
 
   // ── Form submission details modal ──
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -918,21 +979,38 @@ const UsersClusterMapAll = ({
   }, [selectedEmpId]);
 
   // Live marker only makes sense while looking at today's route.
+  // ROAD mode snaps the live pin to OSRM coords; GPS / Both stay on raw GPS.
   const isViewingToday = dateFilter === todayIsoIN();
+  const resolveLiveLat =
+    dataMode === DATA_MODES.ROAD ? getRoadLat : getLat;
+  const resolveLiveLng =
+    dataMode === DATA_MODES.ROAD ? getRoadLng : getLng;
   const liveMarkerPos =
-    isViewingToday && liveLocation && hasValidCoords({
-      lat: getLat(liveLocation),
-      lng: getLng(liveLocation),
+    isViewingToday &&
+    liveLocation &&
+    hasValidCoords({
+      lat: resolveLiveLat(liveLocation),
+      lng: resolveLiveLng(liveLocation),
     })
       ? {
-          lat: getLat(liveLocation),
-          lng: getLng(liveLocation),
+          lat: resolveLiveLat(liveLocation),
+          lng: resolveLiveLng(liveLocation),
         }
       : null;
 
-  // ─── Build path + timeline data (from the active employee's route) ────
+  // ─── Build path + timeline data (from the active employee's route).
+  //     Re-runs on `dataMode` too, so flipping the GPS/Road/Both tab
+  //     re-derives the same cached `activeLocations` through the other
+  //     coordinate getter instead of re-fetching. "Both" keeps `path` on
+  //     normal GPS coordinates (same getters as "gps") — the OSRM overlay
+  //     for "both" is built separately below (secondaryRoadLinePath) so
+  //     every marker / timeline card / playback value stays anchored to
+  //     one consistent set of points. ─────────────────────────────────
   useEffect(() => {
     if (Array.isArray(activeLocations) && activeLocations.length > 0) {
+      const resolveLat = dataMode === DATA_MODES.ROAD ? getRoadLat : getLat;
+      const resolveLng = dataMode === DATA_MODES.ROAD ? getRoadLng : getLng;
+
       const processed = activeLocations.map((loc, index) => {
         let indianTime = "";
         let indianDate = "";
@@ -988,15 +1066,15 @@ const UsersClusterMapAll = ({
         return {
           index: index + 1,
           name: activeEmployee?.first_name || "",
-          lat: getLat(loc),
-          lng: getLng(loc),
+          lat: resolveLat(loc),
+          lng: resolveLng(loc),
           address: cleanedAddress,
           timestamp: indianTime,
           date: indianDate,
           battery: loc?.battery_percentage,
           outside: loc?.is_outside_range,
-          locationOn: loc?.is_location_on,   // ← add
-          internetOn: loc?.is_internet_on,   // ← add
+          locationOn: loc?.is_location_on,
+          internetOn: loc?.is_internet_on,
           profile_url: activeEmployee?.profile_url,
           formSubmission,
           customStatusInfo, // resolved { id, name, icon, is_break, ... } or null
@@ -1013,7 +1091,7 @@ const UsersClusterMapAll = ({
     setIsPlaying(false);
     setProgress(0);
     setMovingPos(null);
-  }, [activeLocations, activeEmployee, findCustomStatus, findCustomForm]);
+  }, [activeLocations, activeEmployee, findCustomStatus, findCustomForm, dataMode]);
 
   // Map/route only — timeline keeps the full `path` (including null lat/lng).
   const mapPath = useMemo(
@@ -1023,6 +1101,24 @@ const UsersClusterMapAll = ({
         .filter(hasValidCoords),
     [path],
   );
+
+  // ─── Secondary OSRM road-snapped line, shown ONLY in "Both" mode
+  //     alongside the primary (normal) path/markers/playback. Built
+  //     directly from activeLocations rather than from `path`, since
+  //     `path` itself stays on normal-GPS coordinates even while dataMode
+  //     is BOTH — this is purely a visual overlay drawn on top.
+  //     Null/invalid road coords are filtered out (same as mapPath). ────
+  const secondaryRoadLinePath = useMemo(() => {
+    if (dataMode !== DATA_MODES.BOTH) return [];
+    if (!Array.isArray(activeLocations) || activeLocations.length === 0)
+      return [];
+    return activeLocations
+      .map((loc) => ({
+        lat: getRoadLat(loc),
+        lng: getRoadLng(loc),
+      }))
+      .filter(hasValidCoords);
+  }, [activeLocations, dataMode]);
 
   // ─── Trip summary: duration + total distance ──────────────────
   const summary = useMemo(() => {
@@ -1422,54 +1518,6 @@ const UsersClusterMapAll = ({
 
   const distanceCovered = (summary.km * progress).toFixed(1);
 
-  // ─── Date picker helpers ────────────────────────────────────────
-  // const datePickerValue = dateFilter
-  //   ? dayjs(dateFilter, ISO_DATE_FORMAT)
-  //   : null;
-
-  // const datePickerValue = useMemo(
-  //   () => (dateFilter ? dayjs(dateFilter, ISO_DATE_FORMAT) : null),
-  //   [dateFilter],
-  // );
-
-  // const handleDatePickerChange = (date) => {
-  //   // Use the dayjs object and re-format to ISO ourselves — the second
-  //   // arg antd gives us is formatted per the display `format` prop
-  //   // ("DD MMM YYYY"), which is NOT what dateFilter uses internally
-  //   // (ISO "YYYY-MM-DD"). Storing the display string here was producing
-  //   // "Invalid Date" (shown as NaN) and breaking the fetch/cache key.
-  //   // null when cleared → falls back to no date selected.
-  //   setDateFilter(date ? date.format(ISO_DATE_FORMAT) : "");
-  // };
-
-  // Only allow dates from exactly 1 year ago through today (inclusive).
-  // Future dates are blocked; dates older than 1 year are blocked too.
-  // Past dates within that window that happen to have no location history
-  // for this employee are still selectable — they just render an empty
-  // timeline/"no data" state instead of being dead ends.
-
-  // const disabledDate = (current) => {
-  //   if (!current) return false;
-  //   const currentStr = current.format(ISO_DATE_FORMAT);
-  //   const today = todayIsoIN();
-  //   const earliestAllowed = dayjs(today, ISO_DATE_FORMAT)
-  //     .subtract(DATE_RANGE_YEARS_BACK, "year")
-  //     .format(ISO_DATE_FORMAT);
-  //   return currentStr > today || currentStr < earliestAllowed;
-  // };
-
-  // const todayDayjs = useMemo(() => dayjs(todayIsoIN(), ISO_DATE_FORMAT), []);
-  // const minYear = todayDayjs.year() - DATE_RANGE_YEARS_BACK;
-
-  // const disabledDate = useCallback(
-  //   (current) => {
-  //     if (!current) return false;
-  //     if (current.year() < minYear) return true;
-  //     return current.isAfter(todayDayjs, "day");
-  //   },
-  //   [minYear, todayDayjs],
-  // );
-
   return (
     <div
       style={{
@@ -1496,8 +1544,10 @@ const UsersClusterMapAll = ({
             onLoad={onMapLoad}
             options={mapOptions}
           >
-            {/* Faint full-route track, always visible underneath */}
-            {mapPath.length > 1 && (
+            {/* Faint full-route track, always visible underneath
+                (Normal / Both — the Road-only dotted line below replaces
+                this entirely rather than layering under it) */}
+            {mapPath.length > 1 && dataMode !== DATA_MODES.ROAD && (
               <Polyline
                 path={mapPath}
                 options={{
@@ -1508,8 +1558,9 @@ const UsersClusterMapAll = ({
               />
             )}
 
-            {/* Travelled / full route line with continuous marching-ant arrows */}
-            {mapPath.length > 1 && (
+            {/* Travelled / full route line with continuous marching-ant
+                arrows (Normal / Both) */}
+            {mapPath.length > 1 && dataMode !== DATA_MODES.ROAD && (
               <Polyline
                 path={drawnLinePath}
                 options={{
@@ -1534,6 +1585,57 @@ const UsersClusterMapAll = ({
                 }}
               />
             )}
+
+            {/* OSRM road-snapped route as a dotted red line (Road-only
+                mode — `mapPath` itself is already on road coordinates here) */}
+            {mapPath.length > 1 && dataMode === DATA_MODES.ROAD && (
+              <Polyline
+                path={mapPath}
+                options={{
+                  strokeOpacity: 0,
+                  icons: [
+                    {
+                      icon: {
+                        path: window.google.maps.SymbolPath.CIRCLE,
+                        scale: 2.5,
+                        fillColor: COLORS.roadLine,
+                        fillOpacity: 1,
+                        strokeWeight: 0,
+                      },
+                      offset: "0",
+                      repeat: "10px",
+                    },
+                  ],
+                }}
+              />
+            )}
+
+            {/* OSRM road-snapped overlay, dotted red (Both mode — drawn
+                on top of the normal blue line above, using the raw
+                activeLocations-derived secondaryRoadLinePath since `path`
+                stays on normal GPS coordinates while dataMode is BOTH) */}
+            {secondaryRoadLinePath.length > 1 &&
+              dataMode === DATA_MODES.BOTH && (
+                <Polyline
+                  path={secondaryRoadLinePath}
+                  options={{
+                    strokeOpacity: 0,
+                    icons: [
+                      {
+                        icon: {
+                          path: window.google.maps.SymbolPath.CIRCLE,
+                          scale: 2.5,
+                          fillColor: COLORS.roadLine,
+                          fillOpacity: 1,
+                          strokeWeight: 0,
+                        },
+                        offset: "0",
+                        repeat: "10px",
+                      },
+                    ],
+                  }}
+                />
+              )}
 
             {/* Start marker (green) with radar ping ring — first valid coords */}
             {mapPath.length > 0 && (
@@ -1994,7 +2096,52 @@ const UsersClusterMapAll = ({
               </div>
             )}
 
-          {/* ── Map overlay controls, top-left: Refresh + Full view ──
+          {/* ── Map overlay controls, top-center: GPS / Road / Both tabs ──
+              Switches which coordinate fields (`latitude`/`longitude` vs
+              OSRM-snapped `formatted_latitude`/`formatted_longitude`, or
+              both overlaid together) build the path shown below.
+              Centered horizontally so it doesn't collide with either the
+              start of the map or the Refresh/Full-view controls. ────────── */}
+          {path.length > 0 && (
+            <div
+              className="ucma-mode-tabs"
+              style={{
+                position: "absolute",
+                top: "12px",
+                left: "50%",
+                transform: "translateX(-50%)",
+                display: "flex",
+                borderRadius: "8px",
+                overflow: "hidden",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                zIndex: 5,
+              }}
+            >
+              <button
+                className={`ucma-mode-tab${dataMode === DATA_MODES.GPS ? " active" : ""}`}
+                onClick={() => setDataMode(DATA_MODES.GPS)}
+                title="Raw GPS coordinates"
+              >
+                Normal
+              </button>
+              <button
+                className={`ucma-mode-tab${dataMode === DATA_MODES.ROAD ? " active" : ""}`}
+                onClick={() => setDataMode(DATA_MODES.ROAD)}
+                title="OSRM road-snapped coordinates"
+              >
+                Road
+              </button>
+              <button
+                className={`ucma-mode-tab${dataMode === DATA_MODES.BOTH ? " active" : ""}`}
+                onClick={() => setDataMode(DATA_MODES.BOTH)}
+                title="Show both GPS and road-snapped routes"
+              >
+                Both
+              </button>
+            </div>
+          )}
+
+          {/* ── Map overlay controls, top-right: Refresh + Full view ──
               Moved out of the timeline panel so they sit on the map itself. ── */}
           {path.length > 0 && (
             <div
