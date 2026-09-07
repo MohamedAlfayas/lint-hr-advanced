@@ -569,6 +569,12 @@ body .rs-table-row-header .rs-table-cell {
   background: transparent !important;
 }
 
+/* Hide (not just gray out) disabled years/decades in the DOB picker */
+.lc-dob-picker-panel .ant-picker-year-panel .ant-picker-cell-disabled,
+.lc-dob-picker-panel .ant-picker-decade-panel .ant-picker-cell-disabled {
+  visibility: hidden;
+}
+
 .form-icon.right .form-control {
   padding-right: 3rem !important;
 }
