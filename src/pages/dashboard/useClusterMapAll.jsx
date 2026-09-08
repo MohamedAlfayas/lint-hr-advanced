@@ -68,6 +68,9 @@ const WAIT_THRESHOLD_KM = 0.05;
 // ISO (YYYY-MM-DD) format used throughout for the date filter's internal value
 const ISO_DATE_FORMAT = "YYYY-MM-DD";
 
+// How far back the date picker allows selection (from today)
+const DATE_RANGE_YEARS_BACK = 1;
+
 // localStorage keys that hold the org's custom-status and custom-form
 // master lists. Individual location / form_submission records only carry
 // numeric `custom_status` / `custom_form` IDs — the human-readable name
@@ -95,13 +98,81 @@ const haversine = (a, b) => {
   return 2 * R * Math.asin(Math.sqrt(h));
 };
 
-// ─── Prefer formatted_* fields (higher-precision/corrected coordinates &
-// address), fall back to the raw fields when formatted_* is absent ──────
-const getLat = (loc) =>
-  parseFloat(loc?.formatted_latitude ?? loc?.latitude) || 0;
+// ── Which coordinate source builds the map/timeline. "gps" = raw
+// latitude/longitude straight from the device, drawn as a solid blue
+// line. "road" = OSRM-snapped formatted_latitude/formatted_longitude
+// (falls back to raw if a point has no formatted_* pair yet), drawn as a
+// dotted red line. "both" keeps every marker/playback/timeline value on
+// the normal GPS path (same as "gps") and additionally overlays the
+// dotted red OSRM line on top of it. Surfaced as three tabs above the
+// map. ─────────────────────────────────────────────────────────────────
+const DATA_MODES = {
+  GPS: "gps",
+  ROAD: "road",
+  BOTH: "both",
+};
 
-const getLng = (loc) =>
-  parseFloat(loc?.formatted_longitude ?? loc?.longitude) || 0;
+// ─── Raw GPS coordinates, straight off the device.
+// Returns null when the backend sends null/missing/non-numeric coords so
+// callers can skip the point on the map instead of plotting (0, 0). ────
+const getLat = (loc) => {
+  const raw = loc?.latitude;
+  if (raw == null || raw === "") return null;
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : null;
+};
+
+const getLng = (loc) => {
+  const raw = loc?.longitude;
+  if (raw == null || raw === "") return null;
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : null;
+};
+
+// ─── OSRM/road-snapped coordinates. Falls back to the raw fields when a
+// point hasn't been formatted yet. Returns null (not 0) when neither
+// source has a usable value. ───────────────────────────────────────────
+const getRoadLat = (loc) => {
+  const raw = loc?.formatted_latitude;
+  if (raw != null && raw !== "") {
+    const n = parseFloat(raw);
+    if (Number.isFinite(n) && n !== 0) return n;
+  }
+  return getLat(loc);
+};
+
+const getRoadLng = (loc) => {
+  const raw = loc?.formatted_longitude;
+  if (raw != null && raw !== "") {
+    const n = parseFloat(raw);
+    if (Number.isFinite(n) && n !== 0) return n;
+  }
+  return getLng(loc);
+};
+
+const hasValidCoords = (p) =>
+  p != null && Number.isFinite(p.lat) && Number.isFinite(p.lng);
+
+// True location-tracking frames (including null lat/lng when location is
+// off). Rejects socket acks / control messages that would otherwise create
+// today's cache key and block the REST history fetch.
+const isLocationTrackingPayload = (data) => {
+  if (!data || typeof data !== "object") return false;
+  return (
+    data.latitude != null ||
+    data.longitude != null ||
+    data.timestamp != null ||
+    data.time != null ||
+    data.created_at != null ||
+    data.is_location_on != null ||
+    data.is_internet_on != null ||
+    data.battery_percentage != null ||
+    data.form_submission != null ||
+    data.custom_status != null ||
+    data.accurate_address != null ||
+    data.formatted_address != null
+  );
+};
 
 // `formatted_address` arrives as a Python-dict-repr string (single quotes,
 // None/True/False) — not valid JSON — so it can't be JSON.parse'd. Pull the
@@ -116,7 +187,8 @@ const extractFormattedAddress = (loc) => {
   return loc?.accurate_address || "";
 };
 
-// Original palette — unchanged (form added for form-submission markers)
+// Original palette — unchanged (form added for form-submission markers,
+// roadLine added for the dotted OSRM/road-snapped route)
 const COLORS = {
   start: "#28a745",
   end: "#dc3545",
@@ -125,6 +197,7 @@ const COLORS = {
   route: "#1a73e8",
   moving: "#ff9800",
   form: "#7c3aed",
+  roadLine: "#dc2626",
 };
 
 // ─── Scrollbar styling for the form-submission modal body (matches the
@@ -374,6 +447,22 @@ const injectStyles = () => {
     .ucma-playback-panel > * {
       pointer-events: auto;
     }
+    .ucma-mode-tabs {
+      pointer-events: auto;
+    }
+    .ucma-mode-tab {
+      border: none;
+      background: rgba(255,255,255,0.95);
+      color: #334155;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    .ucma-mode-tab.active {
+      background: #2563eb;
+      color: #fff;
+    }
     @media (max-width: 480px), (max-height: 480px) {
       .ucma-playback-panel {
         left: 10px !important;
@@ -398,6 +487,10 @@ const injectStyles = () => {
         width: 30px !important;
         font-size: 10px !important;
         padding: 3px 0 !important;
+      }
+      .ucma-mode-tab {
+        font-size: 11px !important;
+        padding: 5px 9px !important;
       }
     }
     @media (max-width: 380px) {
@@ -560,6 +653,17 @@ const UsersClusterMapAll = ({
   // ── Live tracking (websocket) ──
   const [liveLocation, setLiveLocation] = useState(null);
   const [isLive, setIsLive] = useState(false);
+  // Live points that arrive before today's REST history is cached. Folding
+  // them into an empty cache key would make `if (locationCache[key]) return`
+  // skip the API fetch and leave the map/timeline empty.
+  const pendingLiveRef = useRef([]);
+
+  // ── Which coordinate source is currently driving the map/timeline:
+  //    raw GPS ("gps"), OSRM-snapped ("road"), or both overlaid together
+  //    ("both"). Three tabs on the map let the user flip between them;
+  //    switching re-derives `path` below from the same cached
+  //    `activeLocations`, no extra fetch required. ───────────────────────
+  const [dataMode, setDataMode] = useState(DATA_MODES.GPS);
 
   // ── Form submission details modal ──
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -635,12 +739,30 @@ const UsersClusterMapAll = ({
     [],
   );
 
-  // ─── Reset filters whenever a new employee list is handed in (modal reopened) ──
+  // ─── Stable signature for the employees list. `employees` is a prop and
+  //     may arrive as a brand-new array reference on every parent re-render
+  //     even when its contents are identical (e.g. parent state unrelated
+  //     to this component changed). Keying the reset effect below directly
+  //     on `employees` meant ANY such re-render wiped dateFilter back to ""
+  //     — which is why a manually-picked date would silently revert. Keying
+  //     on this id-based signature instead means the reset only fires when
+  //     the actual set of employees changes (i.e. a genuine "modal
+  //     reopened with a different roster" case). ─────────────────────────
+  const employeesSignature = useMemo(
+    () => employees.map((e) => e.employee_id).join(","),
+    [employees],
+  );
+
+  // ─── Reset filters whenever the employee roster actually changes (modal
+  //     reopened). dateFilter is also reset to "" here so the default-date
+  //     effect below picks a fresh starting date for the new session —
+  //     this is the ONLY place dateFilter gets force-reset. ──────────────
   useEffect(() => {
     setDeptFilter("All");
     setSelectedEmpId(initialEmpId ?? null);
     setLocationCache({});
-  }, [employees, initialEmpId]);
+    setDateFilter("");
+  }, [employeesSignature, initialEmpId]);
 
   // ─── Department options ────────────────────────────────────────
   const departmentOptions = useMemo(() => {
@@ -696,17 +818,20 @@ const UsersClusterMapAll = ({
     if (onSelectEmployee) onSelectEmployee(activeEmployee);
   }, [activeEmployee]);
 
-  // ─── Default the date filter whenever the selected employee changes:
-  //     prefer `initialDate` (the row the user clicked "View" on), falling
-  //     back to today. The user can still pick any other date from the
-  //     picker afterwards — every date is fetched on demand, so there's no
-  //     need to pre-know which dates have data. ──────────────────────────
+  // ─── Default the date filter ONLY when nothing is picked yet.
+  //     Previously this ran `setDateFilter(initialDate || todayIsoIN())`
+  //     unconditionally on every selectedEmpId change, which stomped over
+  //     whatever date the user had manually selected the instant they
+  //     switched employees. Using a functional update that keeps `prev`
+  //     when it's already set fixes that — the user's chosen date now
+  //     survives an employee switch. It still defaults to `initialDate`
+  //     (or today) the first time an employee is selected after a reset. ──
   useEffect(() => {
     if (!selectedEmpId) {
       setDateFilter("");
       return;
     }
-    setDateFilter(initialDate || todayIsoIN());
+    setDateFilter((prev) => prev || initialDate || todayIsoIN());
   }, [selectedEmpId, initialDate]);
 
   // ─── Fetch the selected employee + date's location history on demand ──
@@ -726,9 +851,13 @@ const UsersClusterMapAll = ({
         );
         const data = response?.data?.data;
         if (!cancelled) {
+          const base = Array.isArray(data) ? data : [];
+          const todayKey = `${selectedEmpId}::${todayIsoIN()}`;
+          const pending =
+            key === todayKey ? pendingLiveRef.current.splice(0) : [];
           setLocationCache((prev) => ({
             ...prev,
-            [key]: Array.isArray(data) ? data : [],
+            [key]: pending.length ? [...base, ...pending] : base,
           }));
         }
       } catch (error) {
@@ -737,7 +866,13 @@ const UsersClusterMapAll = ({
           error,
         );
         if (!cancelled) {
-          setLocationCache((prev) => ({ ...prev, [key]: [] }));
+          const todayKey = `${selectedEmpId}::${todayIsoIN()}`;
+          const pending =
+            key === todayKey ? pendingLiveRef.current.splice(0) : [];
+          setLocationCache((prev) => ({
+            ...prev,
+            [key]: pending,
+          }));
         }
       } finally {
         if (!cancelled) setLoadingLocations(false);
@@ -785,15 +920,18 @@ const UsersClusterMapAll = ({
       disconnectWebSocket();
       setIsLive(false);
       setLiveLocation(null);
+      pendingLiveRef.current = [];
       return;
     }
 
     setLiveLocation(null);
     setIsLive(false);
+    pendingLiveRef.current = [];
 
     connectWebSocket(selectedEmpId, {
       onOpen: () => {
         setIsLive(true);
+        pendingLiveRef.current = [];
         const todayKey = `${selectedEmpId}::${todayIsoIN()}`;
         setLocationCache((prev) => {
           if (!(todayKey in prev)) return prev;
@@ -803,16 +941,30 @@ const UsersClusterMapAll = ({
         });
       },
       onMessage: (data) => {
-        if (!data || data.latitude == null || data.longitude == null) return;
+        // Ignore watch acks / non-tracking frames. Accept null lat/lng when
+        // the payload is still a real location event (e.g. location off).
+        if (!isLocationTrackingPayload(data)) return;
+
         const normalized = normalizeLiveLocation(data);
-        setLiveLocation(normalized);
+        if (
+          hasValidCoords({
+            lat: getLat(normalized),
+            lng: getLng(normalized),
+          })
+        ) {
+          setLiveLocation(normalized);
+        }
 
         // Only fold live points into TODAY's history — a different date
         // being viewed shouldn't get contaminated with live data.
         const todayKey = `${selectedEmpId}::${todayIsoIN()}`;
         setLocationCache((prev) => {
-          const existing = prev[todayKey] || [];
-          return { ...prev, [todayKey]: [...existing, normalized] };
+          // Don't create today's key from WS alone — that skips REST fetch.
+          if (!(todayKey in prev)) {
+            pendingLiveRef.current = [...pendingLiveRef.current, normalized];
+            return prev;
+          }
+          return { ...prev, [todayKey]: [...prev[todayKey], normalized] };
         });
       },
       onClose: () => setIsLive(false),
@@ -822,22 +974,43 @@ const UsersClusterMapAll = ({
     return () => {
       disconnectWebSocket();
       setIsLive(false);
+      pendingLiveRef.current = [];
     };
   }, [selectedEmpId]);
 
   // Live marker only makes sense while looking at today's route.
+  // ROAD mode snaps the live pin to OSRM coords; GPS / Both stay on raw GPS.
   const isViewingToday = dateFilter === todayIsoIN();
+  const resolveLiveLat =
+    dataMode === DATA_MODES.ROAD ? getRoadLat : getLat;
+  const resolveLiveLng =
+    dataMode === DATA_MODES.ROAD ? getRoadLng : getLng;
   const liveMarkerPos =
-    isViewingToday && liveLocation
+    isViewingToday &&
+    liveLocation &&
+    hasValidCoords({
+      lat: resolveLiveLat(liveLocation),
+      lng: resolveLiveLng(liveLocation),
+    })
       ? {
-          lat: getLat(liveLocation),
-          lng: getLng(liveLocation),
+          lat: resolveLiveLat(liveLocation),
+          lng: resolveLiveLng(liveLocation),
         }
       : null;
 
-  // ─── Build path + timeline data (from the active employee's route) ────
+  // ─── Build path + timeline data (from the active employee's route).
+  //     Re-runs on `dataMode` too, so flipping the GPS/Road/Both tab
+  //     re-derives the same cached `activeLocations` through the other
+  //     coordinate getter instead of re-fetching. "Both" keeps `path` on
+  //     normal GPS coordinates (same getters as "gps") — the OSRM overlay
+  //     for "both" is built separately below (secondaryRoadLinePath) so
+  //     every marker / timeline card / playback value stays anchored to
+  //     one consistent set of points. ─────────────────────────────────
   useEffect(() => {
     if (Array.isArray(activeLocations) && activeLocations.length > 0) {
+      const resolveLat = dataMode === DATA_MODES.ROAD ? getRoadLat : getLat;
+      const resolveLng = dataMode === DATA_MODES.ROAD ? getRoadLng : getLng;
+
       const processed = activeLocations.map((loc, index) => {
         let indianTime = "";
         let indianDate = "";
@@ -893,13 +1066,15 @@ const UsersClusterMapAll = ({
         return {
           index: index + 1,
           name: activeEmployee?.first_name || "",
-          lat: getLat(loc),
-          lng: getLng(loc),
+          lat: resolveLat(loc),
+          lng: resolveLng(loc),
           address: cleanedAddress,
           timestamp: indianTime,
           date: indianDate,
           battery: loc?.battery_percentage,
           outside: loc?.is_outside_range,
+          locationOn: loc?.is_location_on,
+          internetOn: loc?.is_internet_on,
           profile_url: activeEmployee?.profile_url,
           formSubmission,
           customStatusInfo, // resolved { id, name, icon, is_break, ... } or null
@@ -916,14 +1091,42 @@ const UsersClusterMapAll = ({
     setIsPlaying(false);
     setProgress(0);
     setMovingPos(null);
-  }, [activeLocations, activeEmployee, findCustomStatus, findCustomForm]);
+  }, [activeLocations, activeEmployee, findCustomStatus, findCustomForm, dataMode]);
+
+  // Map/route only — timeline keeps the full `path` (including null lat/lng).
+  const mapPath = useMemo(
+    () =>
+      path
+        .map((p, pathIndex) => ({ ...p, pathIndex }))
+        .filter(hasValidCoords),
+    [path],
+  );
+
+  // ─── Secondary OSRM road-snapped line, shown ONLY in "Both" mode
+  //     alongside the primary (normal) path/markers/playback. Built
+  //     directly from activeLocations rather than from `path`, since
+  //     `path` itself stays on normal-GPS coordinates even while dataMode
+  //     is BOTH — this is purely a visual overlay drawn on top.
+  //     Null/invalid road coords are filtered out (same as mapPath). ────
+  const secondaryRoadLinePath = useMemo(() => {
+    if (dataMode !== DATA_MODES.BOTH) return [];
+    if (!Array.isArray(activeLocations) || activeLocations.length === 0)
+      return [];
+    return activeLocations
+      .map((loc) => ({
+        lat: getRoadLat(loc),
+        lng: getRoadLng(loc),
+      }))
+      .filter(hasValidCoords);
+  }, [activeLocations, dataMode]);
 
   // ─── Trip summary: duration + total distance ──────────────────
   const summary = useMemo(() => {
     if (path.length === 0) return { duration: "-", distance: "0 Km", km: 0 };
 
     let km = 0;
-    for (let i = 1; i < path.length; i++) km += haversine(path[i - 1], path[i]);
+    for (let i = 1; i < mapPath.length; i++)
+      km += haversine(mapPath[i - 1], mapPath[i]);
 
     let duration = "-";
     const firstTs = activeLocations[0]?.timestamp;
@@ -939,14 +1142,19 @@ const UsersClusterMapAll = ({
     }
 
     return { duration, distance: `${km.toFixed(1)} Km`, km };
-  }, [path, activeLocations]);
+  }, [path, mapPath, activeLocations]);
 
   // ─── Classify each timeline point ─────────────────────────────
   const pointType = useCallback(
     (i) => {
       if (i === 0) return "start";
       if (i === path.length - 1) return "end";
-      const moved = haversine(path[i - 1], path[i]); // km
+      const prev = path[i - 1];
+      const cur = path[i];
+      // No coords → still show in timeline, but don't invent a travel/wait
+      // classification from (0,0) or NaN distance.
+      if (!hasValidCoords(prev) || !hasValidCoords(cur)) return "travel";
+      const moved = haversine(prev, cur); // km
       return moved < WAIT_THRESHOLD_KM ? "waiting" : "travel";
     },
     [path],
@@ -966,15 +1174,15 @@ const UsersClusterMapAll = ({
   }, []);
 
   useEffect(() => {
-    if (mapRef.current && path.length > 0) fitToPath(mapRef.current, path);
-  }, [path, fitToPath]);
+    if (mapRef.current && mapPath.length > 0) fitToPath(mapRef.current, mapPath);
+  }, [mapPath, fitToPath]);
 
   const onMapLoad = useCallback(
     (map) => {
       mapRef.current = map;
-      if (path.length > 0) fitToPath(map, path);
+      if (mapPath.length > 0) fitToPath(map, mapPath);
     },
-    [path, fitToPath],
+    [mapPath, fitToPath],
   );
 
   // ─── Re-fit / re-trigger the map whenever the browser (or the modal
@@ -989,69 +1197,71 @@ const UsersClusterMapAll = ({
     const handleResize = () => {
       if (mapRef.current && window.google) {
         window.google.maps.event.trigger(mapRef.current, "resize");
-        if (path.length > 0) fitToPath(mapRef.current, path);
+        if (mapPath.length > 0) fitToPath(mapRef.current, mapPath);
       }
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [path, fitToPath]);
+  }, [mapPath, fitToPath]);
 
   // ─── Interpolate position + label from a 0..1 progress value ──
+  // Uses mapPath (valid coords only) so playback never jumps to (0,0).
+  // nearIndex is the original timeline index (`pathIndex`).
   const computeFromProgress = useCallback(
     (t) => {
-      if (path.length === 0) return null;
-      if (path.length === 1) {
+      if (mapPath.length === 0) return null;
+      if (mapPath.length === 1) {
         return {
-          pos: { lat: path[0].lat, lng: path[0].lng },
-          label: path[0].timestamp,
-          nearIndex: 0,
+          pos: { lat: mapPath[0].lat, lng: mapPath[0].lng },
+          label: mapPath[0].timestamp,
+          nearIndex: mapPath[0].pathIndex,
         };
       }
 
-      const segCount = path.length - 1;
+      const segCount = mapPath.length - 1;
       const scaled = Math.min(Math.max(t, 0), 1) * segCount;
       const segIndex = Math.min(Math.floor(scaled), segCount - 1);
       const segT = scaled - segIndex;
 
-      const a = path[segIndex];
-      const b = path[segIndex + 1];
+      const a = mapPath[segIndex];
+      const b = mapPath[segIndex + 1];
 
       const lat = a.lat + (b.lat - a.lat) * segT;
       const lng = a.lng + (b.lng - a.lng) * segT;
-      const nearIndex = segT < 0.5 ? segIndex : segIndex + 1;
+      const near = segT < 0.5 ? a : b;
 
       return {
         pos: { lat, lng },
-        label: path[nearIndex].timestamp,
-        nearIndex,
+        label: near.timestamp,
+        nearIndex: near.pathIndex,
       };
     },
-    [path],
+    [mapPath],
   );
 
   // ─── Build the polyline coords drawn so far (start → current) ─
   const getDrawnPath = useCallback(
     (t) => {
-      if (path.length < 2) return [];
-      const segCount = path.length - 1;
+      if (mapPath.length < 2) return [];
+      const segCount = mapPath.length - 1;
       const scaled = Math.min(Math.max(t, 0), 1) * segCount;
       const segIndex = Math.min(Math.floor(scaled), segCount - 1);
       const segT = scaled - segIndex;
 
-      const drawn = path.slice(0, segIndex + 1).map((p) => ({
+      const drawn = mapPath.slice(0, segIndex + 1).map((p) => ({
         lat: p.lat,
         lng: p.lng,
       }));
 
-      const a = path[segIndex];
-      const b = path[segIndex + 1];
+      const a = mapPath[segIndex];
+      const b = mapPath[segIndex + 1];
       drawn.push({
         lat: a.lat + (b.lat - a.lat) * segT,
         lng: a.lng + (b.lng - a.lng) * segT,
       });
       return drawn;
     },
-    [path],
+    [mapPath],
   );
 
   // ─── Animation loop (playback) ─────────────────────────────────
@@ -1112,12 +1322,12 @@ const UsersClusterMapAll = ({
 
   // ─── Always-on marching-ants flow along the route line ─────────
   useEffect(() => {
-    if (path.length < 2) return;
+    if (mapPath.length < 2) return;
     const id = setInterval(() => {
       setAntOffset((o) => (o + 4) % 140);
     }, 60);
     return () => clearInterval(id);
-  }, [path.length]);
+  }, [mapPath.length]);
 
   // ─── Zoom in once, right when playback starts (not on every frame —
   //     calling setZoom repeatedly mid-pan is what caused the "stuck"
@@ -1155,7 +1365,7 @@ const UsersClusterMapAll = ({
   };
 
   const togglePlay = () => {
-    if (path.length < 2) return;
+    if (mapPath.length < 2) return;
     setSelectedMarker(null);
     if (progress >= 1) {
       setProgress(0);
@@ -1168,7 +1378,7 @@ const UsersClusterMapAll = ({
     setIsPlaying(false);
     setProgress(0);
     applyProgress(0);
-    if (mapRef.current && path.length) fitToPath(mapRef.current, path);
+    if (mapRef.current && mapPath.length) fitToPath(mapRef.current, mapPath);
   };
 
   // ─── Refresh → reset everything to initial full view ──────────
@@ -1180,7 +1390,7 @@ const UsersClusterMapAll = ({
     setActiveIndex(null);
     setExpandedIndex(null);
     setSelectedMarker(null);
-    if (mapRef.current) fitToPath(mapRef.current, path);
+    if (mapRef.current) fitToPath(mapRef.current, mapPath);
   };
 
   // ─── Close the InfoWindow (default 'x' + our own custom close icon) ──
@@ -1222,6 +1432,11 @@ const UsersClusterMapAll = ({
     setMovingPos(null);
     setActiveIndex(i);
     setExpandedIndex((cur) => (cur === i ? null : i));
+    // Null lat/lng stay in the timeline but have nothing to focus on the map.
+    if (!hasValidCoords(p)) {
+      setSelectedMarker(null);
+      return;
+    }
     setSelectedMarker({ lat: p.lat, lng: p.lng, count: 1, users: [p] });
     if (mapRef.current) {
       const currentZoom = mapRef.current.getZoom() || 0;
@@ -1251,7 +1466,34 @@ const UsersClusterMapAll = ({
     setActiveIndex(null);
     setExpandedIndex(null);
     setSelectedMarker(null);
-    if (mapRef.current) fitToPath(mapRef.current, path);
+    if (mapRef.current) fitToPath(mapRef.current, mapPath);
+  };
+
+  // ─── Date picker helpers (must stay above the `!isLoaded` early return —
+//     hooks can't be conditionally skipped) ──────────────────────────
+  const todayDayjs = useMemo(() => dayjs(todayIsoIN(), ISO_DATE_FORMAT), []);
+  const minYear = todayDayjs.year() - DATE_RANGE_YEARS_BACK;
+
+  const disabledDate = useCallback(
+    (current) => {
+      if (!current) return false;
+      if (current.year() < minYear) return true;
+      return current.isAfter(todayDayjs, "day");
+    },
+    [minYear, todayDayjs],
+  );
+
+  const datePickerValue = useMemo(
+    () => (dateFilter ? dayjs(dateFilter, ISO_DATE_FORMAT) : null),
+    [dateFilter],
+  );
+
+  const handleDatePickerChange = (date) => {
+    // Use the dayjs object and re-format to ISO ourselves — the second
+    // arg antd gives us is formatted per the display `format` prop
+    // ("DD MMM YYYY"), which is NOT what dateFilter uses internally
+    // (ISO "YYYY-MM-DD").
+    setDateFilter(date ? date.format(ISO_DATE_FORMAT) : "");
   };
 
   if (!isLoaded) return <p>Loading Map...</p>;
@@ -1259,7 +1501,7 @@ const UsersClusterMapAll = ({
   const isEndpoint = (i) => i === 0 || i === path.length - 1;
 
   const drawnLinePath =
-    isPlaying || progress > 0 ? getDrawnPath(progress) : path;
+    isPlaying || progress > 0 ? getDrawnPath(progress) : mapPath;
 
   const typeConfig = {
     start: { color: COLORS.start, icon: "ri-flag-fill", letter: null },
@@ -1275,29 +1517,6 @@ const UsersClusterMapAll = ({
       : 0;
 
   const distanceCovered = (summary.km * progress).toFixed(1);
-
-  // ─── Date picker helpers ────────────────────────────────────────
-  const datePickerValue = dateFilter
-    ? dayjs(dateFilter, ISO_DATE_FORMAT)
-    : null;
-
-  const handleDatePickerChange = (date) => {
-    // Use the dayjs object and re-format to ISO ourselves — the second
-    // arg antd gives us is formatted per the display `format` prop
-    // ("DD MMM YYYY"), which is NOT what dateFilter uses internally
-    // (ISO "YYYY-MM-DD"). Storing the display string here was producing
-    // "Invalid Date" (shown as NaN) and breaking the fetch/cache key.
-    // null when cleared → falls back to no date selected.
-    setDateFilter(date ? date.format(ISO_DATE_FORMAT) : "");
-  };
-
-  // Only future dates are blocked. Past dates that happen to have no
-  // location history for this employee are still selectable — they just
-  // render an empty timeline/"no data" state instead of being dead ends.
-  const disabledDate = (current) => {
-    if (!current) return false;
-    return current.format(ISO_DATE_FORMAT) > todayIsoIN();
-  };
 
   return (
     <div
@@ -1321,14 +1540,16 @@ const UsersClusterMapAll = ({
         <div style={{ flex: "1 1 0%", minWidth: 0, position: "relative" }}>
           <GoogleMap
             mapContainerStyle={{ width: "100%", height: "100%" }}
-            center={path.length ? path[0] : indiaCenter}
+            center={mapPath.length ? mapPath[0] : indiaCenter}
             onLoad={onMapLoad}
             options={mapOptions}
           >
-            {/* Faint full-route track, always visible underneath */}
-            {path.length > 1 && (
+            {/* Faint full-route track, always visible underneath
+                (Normal / Both — the Road-only dotted line below replaces
+                this entirely rather than layering under it) */}
+            {mapPath.length > 1 && dataMode !== DATA_MODES.ROAD && (
               <Polyline
-                path={path}
+                path={mapPath}
                 options={{
                   strokeColor: COLORS.route,
                   strokeOpacity: 0.22,
@@ -1337,8 +1558,9 @@ const UsersClusterMapAll = ({
               />
             )}
 
-            {/* Travelled / full route line with continuous marching-ant arrows */}
-            {path.length > 1 && (
+            {/* Travelled / full route line with continuous marching-ant
+                arrows (Normal / Both) */}
+            {mapPath.length > 1 && dataMode !== DATA_MODES.ROAD && (
               <Polyline
                 path={drawnLinePath}
                 options={{
@@ -1364,11 +1586,62 @@ const UsersClusterMapAll = ({
               />
             )}
 
-            {/* Start marker (green) with radar ping ring */}
-            {path.length > 0 && (
+            {/* OSRM road-snapped route as a dotted red line (Road-only
+                mode — `mapPath` itself is already on road coordinates here) */}
+            {mapPath.length > 1 && dataMode === DATA_MODES.ROAD && (
+              <Polyline
+                path={mapPath}
+                options={{
+                  strokeOpacity: 0,
+                  icons: [
+                    {
+                      icon: {
+                        path: window.google.maps.SymbolPath.CIRCLE,
+                        scale: 2.5,
+                        fillColor: COLORS.roadLine,
+                        fillOpacity: 1,
+                        strokeWeight: 0,
+                      },
+                      offset: "0",
+                      repeat: "10px",
+                    },
+                  ],
+                }}
+              />
+            )}
+
+            {/* OSRM road-snapped overlay, dotted red (Both mode — drawn
+                on top of the normal blue line above, using the raw
+                activeLocations-derived secondaryRoadLinePath since `path`
+                stays on normal GPS coordinates while dataMode is BOTH) */}
+            {secondaryRoadLinePath.length > 1 &&
+              dataMode === DATA_MODES.BOTH && (
+                <Polyline
+                  path={secondaryRoadLinePath}
+                  options={{
+                    strokeOpacity: 0,
+                    icons: [
+                      {
+                        icon: {
+                          path: window.google.maps.SymbolPath.CIRCLE,
+                          scale: 2.5,
+                          fillColor: COLORS.roadLine,
+                          fillOpacity: 1,
+                          strokeWeight: 0,
+                        },
+                        offset: "0",
+                        repeat: "10px",
+                      },
+                    ],
+                  }}
+                />
+              )}
+
+            {/* Start marker (green) with radar ping ring — first valid coords */}
+            {mapPath.length > 0 && (
               <>
                 <OverlayView
-                  position={path[0]}
+                  position={mapPath[0]}
                   mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
                 >
                   <div
@@ -1384,7 +1657,7 @@ const UsersClusterMapAll = ({
                   />
                 </OverlayView>
                 <Marker
-                  position={path[0]}
+                  position={mapPath[0]}
                   zIndex={10}
                   icon={{
                     path: window.google.maps.SymbolPath.CIRCLE,
@@ -1394,15 +1667,17 @@ const UsersClusterMapAll = ({
                     strokeWeight: 3,
                     strokeColor: "#ffffff",
                   }}
-                  onClick={() => handleMarkerClick(path[0], 0)}
+                  onClick={() =>
+                    handleMarkerClick(mapPath[0], mapPath[0].pathIndex)
+                  }
                 />
               </>
             )}
 
-            {/* End marker (red) */}
-            {path.length > 1 && (
+            {/* End marker (red) — last valid coords */}
+            {mapPath.length > 1 && (
               <Marker
-                position={path[path.length - 1]}
+                position={mapPath[mapPath.length - 1]}
                 zIndex={10}
                 icon={{
                   path: window.google.maps.SymbolPath.CIRCLE,
@@ -1413,7 +1688,10 @@ const UsersClusterMapAll = ({
                   strokeColor: "#ffffff",
                 }}
                 onClick={() =>
-                  handleMarkerClick(path[path.length - 1], path.length - 1)
+                  handleMarkerClick(
+                    mapPath[mapPath.length - 1],
+                    mapPath[mapPath.length - 1].pathIndex,
+                  )
                 }
               />
             )}
@@ -1421,18 +1699,19 @@ const UsersClusterMapAll = ({
             {/* Form-submission markers — every point (except start/end, which
                 already carry their own marker above) that has a filled form
                 gets its own document-pin marker. Clicking it pans/zooms in
-                AND opens the form details modal (handleMarkerClick does both). */}
-            {path.map(
-              (p, i) =>
+                AND opens the form details modal (handleMarkerClick does both).
+                Points with null lat/lng are timeline-only and skipped here. */}
+            {mapPath.map(
+              (p) =>
                 p.formSubmission &&
-                i !== 0 &&
-                i !== path.length - 1 && (
+                p.pathIndex !== mapPath[0].pathIndex &&
+                p.pathIndex !== mapPath[mapPath.length - 1].pathIndex && (
                   <Marker
-                    key={`form-marker-${i}`}
+                    key={`form-marker-${p.pathIndex}`}
                     position={{ lat: p.lat, lng: p.lng }}
                     zIndex={11}
                     icon={buildFormMarkerIcon()}
-                    onClick={() => handleMarkerClick(p, i)}
+                    onClick={() => handleMarkerClick(p, p.pathIndex)}
                   />
                 ),
             )}
@@ -1817,7 +2096,52 @@ const UsersClusterMapAll = ({
               </div>
             )}
 
-          {/* ── Map overlay controls, top-left: Refresh + Full view ──
+          {/* ── Map overlay controls, top-center: GPS / Road / Both tabs ──
+              Switches which coordinate fields (`latitude`/`longitude` vs
+              OSRM-snapped `formatted_latitude`/`formatted_longitude`, or
+              both overlaid together) build the path shown below.
+              Centered horizontally so it doesn't collide with either the
+              start of the map or the Refresh/Full-view controls. ────────── */}
+          {path.length > 0 && (
+            <div
+              className="ucma-mode-tabs"
+              style={{
+                position: "absolute",
+                top: "12px",
+                left: "50%",
+                transform: "translateX(-50%)",
+                display: "flex",
+                borderRadius: "8px",
+                overflow: "hidden",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                zIndex: 5,
+              }}
+            >
+              <button
+                className={`ucma-mode-tab${dataMode === DATA_MODES.GPS ? " active" : ""}`}
+                onClick={() => setDataMode(DATA_MODES.GPS)}
+                title="Raw GPS coordinates"
+              >
+                Normal
+              </button>
+              <button
+                className={`ucma-mode-tab${dataMode === DATA_MODES.ROAD ? " active" : ""}`}
+                onClick={() => setDataMode(DATA_MODES.ROAD)}
+                title="OSRM road-snapped coordinates"
+              >
+                Road
+              </button>
+              <button
+                className={`ucma-mode-tab${dataMode === DATA_MODES.BOTH ? " active" : ""}`}
+                onClick={() => setDataMode(DATA_MODES.BOTH)}
+                title="Show both GPS and road-snapped routes"
+              >
+                Both
+              </button>
+            </div>
+          )}
+
+          {/* ── Map overlay controls, top-right: Refresh + Full view ──
               Moved out of the timeline panel so they sit on the map itself. ── */}
           {path.length > 0 && (
             <div
@@ -1873,7 +2197,7 @@ const UsersClusterMapAll = ({
 
           {/* ── Live distance-covered readout, top-right, while playing/scrubbed ── */}
           <AnimatePresence>
-            {path.length > 1 && (isPlaying || progress > 0) && (
+            {mapPath.length > 1 && (isPlaying || progress > 0) && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -1914,7 +2238,7 @@ const UsersClusterMapAll = ({
           </AnimatePresence>
 
           {/* ── Playback controls — vertical panel, left side of the map. ── */}
-          {path.length > 1 && (
+          {mapPath.length > 1 && (
             <div
               className="ucma-playback-panel"
               style={{
@@ -1961,21 +2285,20 @@ const UsersClusterMapAll = ({
                     background: COLORS.travel,
                   }}
                 />
-                {path.length > 1 &&
-                  path.map((_, i) => (
-                    <span
-                      key={i}
-                      style={{
-                        position: "absolute",
-                        bottom: `${(i / (path.length - 1)) * 100}%`,
-                        width: "10px",
-                        height: "2px",
-                        background: "#ffffff",
-                        transform: "translateY(1px)",
-                        pointerEvents: "none",
-                      }}
-                    />
-                  ))}
+                {mapPath.map((_, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      position: "absolute",
+                      bottom: `${(i / (mapPath.length - 1)) * 100}%`,
+                      width: "10px",
+                      height: "2px",
+                      background: "#ffffff",
+                      transform: "translateY(1px)",
+                      pointerEvents: "none",
+                    }}
+                  />
+                ))}
                 <input
                   type="range"
                   min={0}
@@ -2480,6 +2803,34 @@ const UsersClusterMapAll = ({
                     >
                       {p.address || "—"}
                     </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "6px",
+                        marginTop: "3px",
+                        justifyContent: onLeft ? "flex-end" : "flex-start",
+                      }}
+                    >
+                      <i
+                        // className={p.locationOn ? "ri-map-pin-2-fill" : "ri-map-pin-off-line"}
+                        className={p.locationOn ? "ri-map-pin-2-fill" : "ri-map-pin-2-line"}
+                        title={p.locationOn ? "Location on" : "Location off"}
+                        style={{
+                          fontSize: "12px",
+                          color: p.locationOn ? "#16a34a" : "#ee1e1e",
+                        }}
+                      />
+                      <i
+                        className={p.internetOn ? "ri-wifi-fill" : "ri-wifi-off-line"}
+                        title={p.internetOn ? "Internet on" : "Internet off"}
+                        style={{
+                          fontSize: "12px",
+                          color: p.internetOn ? "#16a34a" : "#ee1e1e",
+                        }}
+                      />
+                    </div>
+
                     {p.customStatusInfo && (
                       <div
                         style={{

@@ -31,6 +31,26 @@ import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
 
 defineElement(loadAnimation);
 
+const BLOCKED_COLORS = new Set([
+  "black", "#000", "#000000", "rgb(0,0,0)", "rgba(0,0,0,1)",
+  "white", "#fff", "#ffffff", "rgb(255,255,255)", "rgba(255,255,255,1)",
+]);
+
+const isBlackOrWhite = (value) => {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase().replace(/\s+/g, "");
+  return BLOCKED_COLORS.has(normalized);
+};
+
+const isValidHex = (value) =>
+  !!value && /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value.trim());
+
+const getSwatchColor = (value) => {
+  if (!isValidHex(value)) return "#0b94a7";
+  if (isBlackOrWhite(value)) return "#0b94a7";
+  return value;
+};
+
 const StatusForm = () => {
   const dispatch = useDispatch();
 
@@ -40,10 +60,18 @@ const StatusForm = () => {
   const [statusData, setStatusData] = useState({
     id: 0,
     name: "",
-    color: "#000000",
+    color: "#0b94a7",
     description: "",
     status: true,
   });
+
+   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  
+    const [lengthErrors, setLengthErrors] = useState({
+      name: "",
+      color: "",
+      description: "",
+    });
 
   // ================= EDIT DATA =================
   useEffect(() => {
@@ -51,10 +79,15 @@ const StatusForm = () => {
       setStatusData({
         id: form_obj.id || 0,
         name: form_obj.name || "",
-        color: form_obj.color || "#000000",
+        // color: form_obj.color || "#0b94a7",
+        color: isBlackOrWhite(form_obj.color)
+        ? "#0b94a7"
+        : (form_obj.color || "#0b94a7"),
         description: form_obj.description || "",
         status: form_obj.status !== undefined ? form_obj.status : true,
       });
+      setHasAttemptedSubmit(false);
+      setLengthErrors({ name: "", color: "", description: "" });
     }
   }, [form_obj]);
 
@@ -72,18 +105,41 @@ const StatusForm = () => {
         .replace(/^\s+/, "")
         .replace(/[^a-zA-Z0-9\s.,\-&()']/g, "");
 
+      // if (inputValue.length > 50) {
+      //   FormikForm.setFieldError(
+      //     "name",
+      //     "Status name is too long. Please keep it within 50 characters.",
+      //   );
+      // } else {
+      //   FormikForm.setFieldError("name", undefined);
+      // }
       if (inputValue.length > 50) {
-        FormikForm.setFieldError(
-          "name",
-          "Status name is too long. Please keep it within 50 characters.",
-        );
+        setLengthErrors((prev) => ({
+          ...prev,
+          name: "Priority name is too long. Please keep it within 50 characters.",
+        }));
       } else {
-        FormikForm.setFieldError("name", undefined);
+        setLengthErrors((prev) => ({ ...prev, name: "" }));
       }
     }
 
     if (name === "color") {
-      inputValue = value.replace(/^\s+/, "");
+      inputValue = value
+      .replace(/^\s+/, "")
+      .replace(/[^a-zA-Z0-9\s.,\-&()'#]/g, "");
+      if (inputValue.length > 25) {
+        setLengthErrors((prev) => ({
+          ...prev,
+          color: "Color value must not exceed 25 characters.",
+        }));
+      } else if (isBlackOrWhite(inputValue)) {
+        setLengthErrors((prev) => ({
+          ...prev,
+          color: "Black and white are not allowed as a status color.",
+        }));
+      } else {
+        setLengthErrors((prev) => ({ ...prev, color: "" }));
+      }
     }
 
     if (name === "description") {
@@ -92,13 +148,20 @@ const StatusForm = () => {
         .replace(/[^a-zA-Z0-9\s.,!?'"_\-()&:;/]/g, "");
 
       if (inputValue.length > 200) {
-        FormikForm.setFieldError(
-          "description",
-          "Description is too long. Please keep it within 200 characters.",
-        );
-      } else {
-        FormikForm.setFieldError("description", undefined);
-      }
+      //   FormikForm.setFieldError(
+      //     "description",
+      //     "Description is too long. Please keep it within 200 characters.",
+      //   );
+      // } else {
+      //   FormikForm.setFieldError("description", undefined);
+      // }
+        setLengthErrors((prev) => ({
+            ...prev,
+            description: "Description is too long. Please keep it within 200 characters.",
+          }));
+        } else {
+          setLengthErrors((prev) => ({ ...prev, description: "" }));
+        }
     }
 
     setStatusData((prev) => ({
@@ -108,7 +171,8 @@ const StatusForm = () => {
 
     FormikForm.setFieldValue(name, inputValue);
 
-    if (FormikForm.touched[name]) {
+    // if (FormikForm.touched[name]) {
+    if (hasAttemptedSubmit) {
       FormikForm.validateField(name);
     }
   };
@@ -140,7 +204,12 @@ const StatusForm = () => {
       color: Yup.string()
         .trim()
         .required("Please enter a value or select a color.")
-        .max(25, "Color value must not exceed 25 characters."),
+        .max(25, "Color value must not exceed 25 characters.")
+        .test(
+          "not-black-or-white",
+          "Black and white are not allowed as a status color.",
+          (value) => !isBlackOrWhite(value),
+        ),
 
       description: Yup.string()
         .trim()
@@ -154,9 +223,13 @@ const StatusForm = () => {
         ),
     }),
 
+    validateOnMount: false,
+    validateOnBlur: false,
+    validateOnChange: false,
+
     // ================= SUBMIT =================
     onSubmit: async () => {
-      const trimmedName = statusData.name.trim();
+      const trimmedName = statusData.name?.trim();
 
       if (!trimmedName) {
         FormikForm.setFieldTouched("name", true);
@@ -196,6 +269,15 @@ const StatusForm = () => {
         FormikForm.setFieldError(
           "color",
           "Color value must not exceed 25 characters.",
+        );
+        return;
+      }
+
+      if (isBlackOrWhite(statusData.color)) {
+        FormikForm.setFieldTouched("color", true);
+        FormikForm.setFieldError(
+          "color",
+          "Black and white are not allowed as a status color.",
         );
         return;
       }
@@ -273,11 +355,23 @@ const StatusForm = () => {
     },
   });
 
+  const showError = (field) =>
+    !!lengthErrors[field] || (hasAttemptedSubmit && !!FormikForm.errors[field]);
+  const getErrorMessage = (field) => lengthErrors[field] || FormikForm.errors[field];
+  
+
   return (
     <React.Fragment>
       <Row>
         <Col xl={40}>
-          <Form onSubmit={FormikForm.handleSubmit}>
+          {/* <Form onSubmit={FormikForm.handleSubmit}> */}
+          <Form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setHasAttemptedSubmit(true);
+              FormikForm.handleSubmit(e);
+            }}
+          >
             <Row>
               {/* STATUS NAME */}
               <Col md={12}>
@@ -292,13 +386,14 @@ const StatusForm = () => {
                     value={statusData.name}
                     onChange={handleInputChange}
                     onBlur={FormikForm.handleBlur}
-                    invalid={
-                      // FormikForm.touched.name &&
-                      !!FormikForm.errors.name
-                    }
+                    // invalid={
+                    //   // FormikForm.touched.name &&
+                    //   !!FormikForm.errors.name
+                    // }
+                    invalid={showError("name")}
                   />
 
-                  <FormFeedback>{FormikForm.errors.name}</FormFeedback>
+                  <FormFeedback>{getErrorMessage("name")}</FormFeedback>
                 </div>
               </Col>
 
@@ -319,13 +414,26 @@ const StatusForm = () => {
                         padding: 2,
                         cursor: "pointer",
                       }}
-                      value={statusData.color || "#000000"}
-                      onChange={(e) =>
-                        setStatusData((prev) => ({
-                          ...prev,
-                          color: e.target.value,
-                        }))
-                      }
+                      // value={statusData.color || "#0b94a7"}
+                      value={getSwatchColor(statusData.color)}
+                      // onChange={(e) =>
+                      //   setStatusData((prev) => ({
+                      //     ...prev,
+                      //     color: e.target.value,
+                      //   }))
+                      // }
+                      onChange={(e) => {
+                        const picked = e.target.value;
+                        if (isBlackOrWhite(picked)) {
+                          setLengthErrors((prev) => ({
+                            ...prev,
+                            color: "Black and white are not allowed as a status color.",
+                          }));
+                        } else {
+                          setLengthErrors((prev) => ({ ...prev, color: "" }));
+                        }
+                        setStatusData((prev) => ({ ...prev, color: picked }));
+                      }}
                     />
                     <Input
                       type="text"
@@ -336,24 +444,25 @@ const StatusForm = () => {
                       value={statusData.color || ""}
                       onChange={handleInputChange}
                       onBlur={FormikForm.handleBlur}
-                      invalid={
-                        // FormikForm.touched.color &&
-                        !!FormikForm.errors.color
-                      }
+                      // invalid={
+                      //   // FormikForm.touched.color &&
+                      //   !!FormikForm.errors.color
+                      // }
+                      invalid={showError("color")}
                     />
                   </div>
                   {/* <div className="form-text">
                     Pick or type a color name / hex code. Invalid values will default to black (#000000).
                   </div> */}
 
-                  {FormikForm.errors.color ? (
+                  {showError("color") ? (
                     <FormFeedback type="invalid" style={{ display: "block" }}>
-                      {FormikForm.errors.color}
+                      {getErrorMessage("color")}
                     </FormFeedback>
                   ) : (
                     <div className="form-text">
                       Pick or type a color name / hex code. Invalid values will
-                      default to black (#000000).
+                      default to blue ("#0b94a7").
                     </div>
                   )}
                 </div>
@@ -370,11 +479,11 @@ const StatusForm = () => {
                     className="form-control"
                     value={statusData.description || ""}
                     onChange={handleInputChange}
-                    invalid={!!FormikForm.errors.description}
+                    invalid={showError("description")}
                   />
-                  {FormikForm.errors.description ? (
+                  {showError("description") ? (
                     <FormFeedback type="invalid">
-                      {FormikForm.errors.description}
+                      {getErrorMessage("description")}
                     </FormFeedback>
                   ) : (
                     <div className="form-text">Description (Optional).</div>

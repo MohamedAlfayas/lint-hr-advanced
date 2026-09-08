@@ -19,6 +19,26 @@ import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
 
 defineElement(loadAnimation);
 
+const BLOCKED_COLORS = new Set([
+  "black", "#000", "#000000", "rgb(0,0,0)", "rgba(0,0,0,1)",
+  "white", "#fff", "#ffffff", "rgb(255,255,255)", "rgba(255,255,255,1)",
+]);
+
+const isBlackOrWhite = (value) => {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase().replace(/\s+/g, "");
+  return BLOCKED_COLORS.has(normalized);
+};
+
+const isValidHex = (value) =>
+  !!value && /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value.trim());
+
+const getSwatchColor = (value) => {
+  if (!isValidHex(value)) return "#0b94a7";
+  if (isBlackOrWhite(value)) return "#0b94a7";
+  return value;
+};
+
 const PrioritiesForm = () => {
   const dispatch = useDispatch();
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
@@ -26,9 +46,17 @@ const PrioritiesForm = () => {
   const [prioritiesData, setPrioritiesData] = useState({
       id: 0,
       name: "",
-      color: "#000000",
+      color: "#0b94a7",
       description: "",
       status: true,
+  });
+
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+
+  const [lengthErrors, setLengthErrors] = useState({
+    name: "",
+    color: "",
+    description: "",
   });
 
   // ================= SYNC form_obj INTO LOCAL STATE =================
@@ -38,10 +66,12 @@ const PrioritiesForm = () => {
           setPrioritiesData({
       id: form_obj.id || 0,
       name: form_obj.name || "",
-      color: form_obj.color || "#000000",
+      color: form_obj.color || "#0b94a7",
       description: form_obj.description || "",
       status: form_obj.status !== undefined ? form_obj.status : true,
     });
+    setHasAttemptedSubmit(false);
+    setLengthErrors({ name: "", color: "", description: "" });
     }
   }, [form_obj]);
 
@@ -61,42 +91,49 @@ const PrioritiesForm = () => {
         .replace(/[^a-zA-Z0-9\s.,\-&()']/g, "");
 
       if (inputValue.length > 50) {
-        FormikForm.setFieldError(
-          "name",
-          "Status name is too long. Please keep it within 50 characters."
-        );
+        setLengthErrors((prev) => ({
+          ...prev,
+          name: "Priority name is too long. Please keep it within 50 characters.",
+        }));
       } else {
-        FormikForm.setFieldError("name", undefined);
+        setLengthErrors((prev) => ({ ...prev, name: "" }));
       }
     }
 
     if (name === "color") {
       inputValue = value
-      .replace(/^\s+/, "")
-      .replace(/[^a-zA-Z0-9\s.,\-&()']/g, "");
-      if (inputValue.length > 50) {
-      FormikForm.setFieldError(
-        "name",
-        "Priority name is too long. Please keep it within 50 characters."
-      );
-    }
+        .replace(/^\s+/, "")
+        .replace(/[^a-zA-Z0-9\s.,\-&()'#]/g, "");
+      if (inputValue.length > 25) {
+        setLengthErrors((prev) => ({
+          ...prev,
+          color: "Color value must not exceed 25 characters.",
+        }));
+      } else if (isBlackOrWhite(inputValue)) {
+      setLengthErrors((prev) => ({
+        ...prev,
+        color: "Black and white are not allowed as a priority color.",
+      }));
+      } else {
+        setLengthErrors((prev) => ({ ...prev, color: "" }));
+      }
     }
 
     if (name === "description") {
       inputValue = value
-      .replace(/^\s+/, "")
-      .replace(
-        /[^a-zA-Z0-9\s.,!?'"_\-()&:;/]/g,
-        ""
-      );
+        .replace(/^\s+/, "")
+        .replace(
+          /[^a-zA-Z0-9\s.,!?'"_\-()&:;/]/g,
+          ""
+        );
 
       if (inputValue.length > 200) {
-        FormikForm.setFieldError(
-          "description",
-          "Description is too long. Please keep it within 200 characters."
-        );
+        setLengthErrors((prev) => ({
+          ...prev,
+          description: "Description is too long. Please keep it within 200 characters.",
+        }));
       } else {
-        FormikForm.setFieldError("description", undefined);
+        setLengthErrors((prev) => ({ ...prev, description: "" }));
       }
     }
 
@@ -106,7 +143,8 @@ const PrioritiesForm = () => {
     }));
 
     FormikForm.setFieldValue(name, inputValue);
-    if (FormikForm.touched[name]) {
+    // if (FormikForm.touched[name]) {
+    if (hasAttemptedSubmit) {
       FormikForm.validateField(name);
     }
   };
@@ -135,7 +173,12 @@ const PrioritiesForm = () => {
       color: Yup.string()
         .trim()
         .required("Please enter a value or select a color.")
-        .max(25, "Color value must not exceed 25 characters."),
+        .max(25, "Color value must not exceed 25 characters.")
+        .test(
+          "not-black-or-white",
+          "Black and white are not allowed as a priority color.",
+          (value) => !isBlackOrWhite(value),
+        ),
 
       description: Yup.string()
         .trim()
@@ -149,7 +192,12 @@ const PrioritiesForm = () => {
         ),
     }),
 
+    validateOnMount: false,
+    validateOnBlur: false,
+    validateOnChange: false,
+
     onSubmit: async () => {
+      // setHasSubmitted(true); 
 
       const trimmedName = prioritiesData.name?.trim();
 
@@ -181,7 +229,7 @@ const PrioritiesForm = () => {
         FormikForm.setFieldTouched("color", true);
         FormikForm.setFieldError(
           "color",
-          "Color value must not exceed 25 characters."
+          "Black and white are not allowed as a priority color."
         );
         return;
       }
@@ -246,11 +294,23 @@ const PrioritiesForm = () => {
     },
   });
 
+  const showError = (field) =>
+    !!lengthErrors[field] || (hasAttemptedSubmit && !!FormikForm.errors[field]);
+  const getErrorMessage = (field) => lengthErrors[field] || FormikForm.errors[field];
+  
+
   return (
     <React.Fragment>
       <Row>
         <Col xl={40}>
-          <Form onSubmit={FormikForm.handleSubmit}>
+          {/* <Form onSubmit={FormikForm.handleSubmit}> */}
+          <Form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setHasAttemptedSubmit(true);
+                FormikForm.handleSubmit(e);
+              }}
+            >
             <Row>
               {/* ── Priority Name ─────────────────────────────────── */}
               <Col md={12} lg={12} xxl={12}>
@@ -268,18 +328,28 @@ const PrioritiesForm = () => {
                       value={prioritiesData.name || ""}
                       onChange={handleInputChange}
                       onBlur={FormikForm.handleBlur}
-                      invalid={!!FormikForm.errors.name}
+                      // invalid={!!FormikForm.errors.name}
+                      invalid={showError("name")}
                     />
-                    {!FormikForm.errors.name && (
+                    {/* {!FormikForm.errors.name && (
                       <i className="ri-flag-line" />
                     )}
                     {FormikForm.errors.name ? (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.name}
                       </FormFeedback>
-                    ) : null}
+                    ) : null} */}
+                    {!showError("name") && (
+                        <i className="ri-flag-line" />
+                      )}
+                      {showError("name") && (
+                        <FormFeedback type="invalid">
+                          {getErrorMessage("name")}
+                        </FormFeedback>
+                      )}
                   </div>
-                  {!FormikForm.errors.name && (
+                  {/* {!FormikForm.errors.name && ( */}
+                  {!showError("name") && (
                     <div className="form-text">Enter Priority Name.</div>
                   )}
                 </div>
@@ -302,13 +372,26 @@ const PrioritiesForm = () => {
                         padding: 2,
                         cursor: "pointer",
                       }}
-                      value={prioritiesData.color || "#000000"}
-                      onChange={(e) =>
-                        setPrioritiesData((prev) => ({
-                          ...prev,
-                          color: e.target.value,
-                        }))
-                      }
+                      // value={prioritiesData.color || "#000000"}
+                      value={getSwatchColor(prioritiesData.color)}
+                      // onChange={(e) =>
+                      //   setPrioritiesData((prev) => ({
+                      //     ...prev,
+                      //     color: e.target.value,
+                      //   }))
+                      // }
+                       onChange={(e) => {
+                        const picked = e.target.value;
+                        if (isBlackOrWhite(picked)) {
+                          setLengthErrors((prev) => ({
+                            ...prev,
+                            color: "Black and white are not allowed as a priority color.",
+                          }));
+                        } else {
+                          setLengthErrors((prev) => ({ ...prev, color: "" }));
+                        }
+                        setPrioritiesData((prev) => ({ ...prev, color: picked }));
+                      }}
                     />
                     <Input
                       type="text"
@@ -319,20 +402,21 @@ const PrioritiesForm = () => {
                       value={prioritiesData.color || ""}
                       onChange={handleInputChange}
                       onBlur={FormikForm.handleBlur}
-                      invalid={!!FormikForm.errors.color}
+                      // invalid={!!FormikForm.errors.color}
+                      invalid={showError("color")}
                     />
                   </div>
                   {/* <div className="form-text">
                     Pick or type a color name / hex code. Invalid values will default to black (#000000).
                   </div> */}
 
-                  {FormikForm.errors.color ? (
+                  {showError("color") ? (
                     <FormFeedback type="invalid" style={{ display: "block" }}>
-                      {FormikForm.errors.color}
+                      {getErrorMessage("color")}
                     </FormFeedback>
                   ) : (
                     <div className="form-text">
-                      Pick or type a color name / hex code. Invalid values will default to black (#000000).
+                      Pick or type a color name / hex code. Invalid values will default to  blue ("#0b94a7").
                     </div>
                   )}
 
@@ -352,12 +436,17 @@ const PrioritiesForm = () => {
                     name="description"
                     value={prioritiesData.description || ""}
                     onChange={handleInputChange}
-                    invalid={!!FormikForm.errors.description}
+                    invalid={showError("description")}
                   />
-                  {FormikForm.errors.description ? (
+                  {/* {FormikForm.errors.description ? (
                     <FormFeedback type="invalid">
                       {FormikForm.errors.description}
-                    </FormFeedback>
+                    </FormFeedback> */}
+
+                  {showError("description") ? (
+                  <FormFeedback type="invalid">
+                    {getErrorMessage("description")}
+                  </FormFeedback>
                   ) : (
                     <div className="form-text">
                       Description (Optional).

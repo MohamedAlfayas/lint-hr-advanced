@@ -30,6 +30,31 @@ const Status = () => {
     s.color = color;
     return s.color !== "";
   };
+
+  const getContrastTextColor = (backgroundColor) => {
+    if (!backgroundColor || !isValidColor(backgroundColor)) {
+      return "#FFFFFF";
+    }
+
+    const temp = document.createElement("div");
+    temp.style.color = backgroundColor;
+    document.body.appendChild(temp);
+
+    const rgb = window.getComputedStyle(temp).color;
+    document.body.removeChild(temp);
+
+    const matches = rgb.match(/\d+/g);
+
+    if (!matches || matches.length < 3) {
+      return "#FFFFFF";
+    }
+
+    const [r, g, b] = matches.map(Number);
+
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+    return brightness > 128 ? "#000000" : "#FFFFFF";
+  };
   // ================= TABLE COLUMNS =================
   const additionalColumn = useMemo(
     () => [
@@ -43,7 +68,8 @@ const Status = () => {
             style={{
               // backgroundColor: obj.color || "#6c757d",
               backgroundColor: isValidColor(obj.color) ? obj.color : "#000000",
-              color: "#fff",
+              // color: "#fff",
+              color: getContrastTextColor(obj.color),
               padding: "6px 10px",
               fontSize: "11px",
               fontWeight: 600,
