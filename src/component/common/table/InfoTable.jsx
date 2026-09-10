@@ -1680,7 +1680,7 @@ const InfoTable = ({
 
           const isLockedStatusRow =
             formname === status_component_name &&
-            (rowData.id === 1 || rowData.id === 3);
+            (rowData.id === 1 || rowData.id === 2 || rowData.id === 3);
 
           return (
             <>

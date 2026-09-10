@@ -13,7 +13,6 @@ import {
   deleteComment,
 } from "../../../../redux/reducers/ChildReducer/CommentReducer";
 
-
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MAX_FILE_SIZE_MB = 2;
@@ -88,7 +87,6 @@ const downloadFile = (url, filename) => {
   document.body.removeChild(a);
 };
 
-
 const stripHtmlToText = (html) => {
   if (!html) return "";
   try {
@@ -99,23 +97,147 @@ const stripHtmlToText = (html) => {
   }
 };
 
-const stripLeadingWhitespaceHtml = (html) => {
+// ─── Whitespace normalization ──────────────────────────────────────────────
+// Rules:
+//  - &nbsp; / \u00A0 counts as regular whitespace
+//  - any run of whitespace (spaces, tabs, newlines, nbsp) collapses to ONE space
+//  - leading/trailing whitespace is stripped entirely
+// Used both to validate/measure the comment and to sanitize what gets saved.
+
+const normalizeWhitespace = (text = "") =>
+  text
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+// Block-level tags that a rich text editor creates on Enter. A block of one
+// of these tags that has no real text in it (just &nbsp;/<br>/whitespace) is
+// "blank space" the same way a run of spaces is — it exists only because the
+// user pressed Enter one time too many.
+const BLANK_BLOCK_TAGS = new Set([
+  "P",
+  "DIV",
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "H5",
+  "H6",
+  "BLOCKQUOTE",
+]);
+
+// Removes paragraphs/divs that contain no real text (only <br>, &nbsp;, or
+// whitespace) — i.e. blank lines left behind by pressing Enter repeatedly,
+// whether at the start, end, or between two real paragraphs.
+const stripBlankBlocks = (root) => {
+  Array.from(root.children || []).forEach((child) => {
+    if (BLANK_BLOCK_TAGS.has(child.tagName)) {
+      const text = normalizeWhitespace(child.textContent || "");
+      if (text === "") {
+        child.remove();
+        return;
+      }
+    }
+    if (child.children && child.children.length) {
+      stripBlankBlocks(child);
+    }
+  });
+};
+
+// Strips leading/trailing <br> inside a block (blank space at the edges of a
+// line) and collapses any interior run of 2+ consecutive <br> (from
+// Shift+Enter mashing) down to a single <br>.
+const collapseBrRuns = (root) => {
+  const walk = (node) => {
+    if (!node.childNodes || !node.childNodes.length) return;
+    const kids = Array.from(node.childNodes);
+
+    while (kids.length && kids[0].nodeName === "BR") {
+      kids[0].remove();
+      kids.shift();
+    }
+    while (kids.length && kids[kids.length - 1].nodeName === "BR") {
+      kids[kids.length - 1].remove();
+      kids.pop();
+    }
+
+    let prevWasBr = false;
+    kids.forEach((k) => {
+      if (k.nodeName === "BR") {
+        if (prevWasBr) {
+          k.remove();
+        } else {
+          prevWasBr = true;
+        }
+      } else {
+        prevWasBr = false;
+        walk(k);
+      }
+    });
+  };
+  walk(root);
+};
+
+// Collapses whitespace runs inside the actual HTML (so a comment saved to the
+// backend never contains double spaces, leading-only-space content, or a
+// stack of blank lines from pressing Enter repeatedly), while preserving
+// tags/formatting (bold, italic, lists, links, etc.).
+const normalizeHtmlWhitespace = (html) => {
   if (!html) return html;
-  let result = html.trim();
-  let prev;
-  do {
-    prev = result;
-    result = result
-      .replace(/^<(p|div)[^>]*>(\s|&nbsp;|<br\s*\/?>)*<\/\1>/i, "")
-      .replace(/^<br\s*\/?>/i, "")
-      .replace(/^(\s|&nbsp;)+/i, "")
+
+  try {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+
+    const collapseNode = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        node.nodeValue = node.nodeValue.replace(/[\s\u00A0]+/g, " ");
+      } else if (node.childNodes && node.childNodes.length) {
+        node.childNodes.forEach(collapseNode);
+      }
+    };
+    doc.body.childNodes.forEach(collapseNode);
+
+    // Remove blank paragraphs/divs left by repeated Enter presses (leading,
+    // trailing, or between two real paragraphs), then clean up any leftover
+    // <br> runs inside the paragraphs that remain.
+    stripBlankBlocks(doc.body);
+    collapseBrRuns(doc.body);
+
+    const collectTextNodes = (root) => {
+      const nodes = [];
+      const walk = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          nodes.push(node);
+        } else if (node.childNodes && node.childNodes.length) {
+          node.childNodes.forEach(walk);
+        }
+      };
+      walk(root);
+      return nodes;
+    };
+
+    const textNodes = collectTextNodes(doc.body);
+    if (textNodes.length) {
+      textNodes[0].nodeValue = textNodes[0].nodeValue.replace(/^ /, "");
+      const last = textNodes[textNodes.length - 1];
+      last.nodeValue = last.nodeValue.replace(/ $/, "");
+    }
+
+    return doc.body.innerHTML;
+  } catch {
+    // Fallback for non-DOM environments: collapse whitespace/&nbsp; runs,
+    // drop empty paragraphs, and collapse runs of <br> in the raw HTML string.
+    return html
+      .replace(/(?:&nbsp;|[\s\u00A0]){2,}/g, " ")
+      .replace(/<(p|div)[^>]*>(\s|&nbsp;|<br\s*\/?>)*<\/\1>/gi, "")
+      .replace(/(<br\s*\/?>\s*){2,}/gi, "<br>")
       .trim();
-  } while (result !== prev && result.length > 0);
-  return result;
+  }
 };
 
 const validateCommentText = (html) => {
-  const text = stripHtmlToText(html);
+  const rawText = stripHtmlToText(html);
+  const text = normalizeWhitespace(rawText);
   const length = text.length;
 
   if (length > MAX_COMMENT_LENGTH) {
@@ -473,7 +595,6 @@ const AttachmentGrid = ({
           name: isPreview ? a.name : (a.attachment_url || "").split("/").pop(),
           origIdx,
         }))
-        // .filter((a) => !isPdf(a.url || "")),
         .filter((a) => !(isPdf(a.url || "") || isPdf(a.name || ""))),
     [attachments, isPreview],
   );
@@ -496,7 +617,6 @@ const AttachmentGrid = ({
           const name = isPreview
             ? att.name
             : (att.attachment_url || "").split("/").pop();
-          // const pdf = isPdf(url || "");
           const pdf = isPdf(url || "") || isPdf(name || "");
 
           return (
@@ -513,8 +633,6 @@ const AttachmentGrid = ({
             >
               {pdf ? (
                 <div
-                  // title={`Download ${name}`}
-                  // onClick={() => downloadFile(url, name)}
                   title={isPreview ? `View ${name}` : `Download ${name}`}
                   onClick={() =>
                     isPreview
@@ -704,26 +822,19 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
     [reduxComments],
   );
 
+  // Content is "empty" if, after collapsing all whitespace/&nbsp; runs and
+  // trimming, there is no visible text left (e.g. only spaces were typed).
   const isCommentEmpty = (html) => {
     if (!html) return true;
-    const text = html.replace(/<[^>]*>/g, "").trim();
-    return text === "";
+    return normalizeWhitespace(stripHtmlToText(html)) === "";
   };
 
-  // const canSave =
-  //   !savingComment && (!isCommentEmpty(comment) || selectedFiles.length > 0);
-
-  const canSave =
-    !savingComment &&
-    !commentError &&
-    // (commentLength > 0 || selectedFiles.length > 0);
-    commentLength > 0;
+  const canSave = !savingComment && !commentError && commentLength > 0;
 
   const previewAttachments = useMemo(
     () =>
       selectedFiles.map((f) => ({
         previewUrl: f.previewUrl || "",
-        // attachment_url: f.previewUrl || `pdf::${f.name}`,
         attachment_url: f.previewUrl || "",
         name: f.name,
       })),
@@ -750,9 +861,6 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
         );
         continue;
       }
-      // const previewUrl = file.type.startsWith("image/")
-      //   ? URL.createObjectURL(file)
-      //   : null;
       const previewUrl = URL.createObjectURL(file);
       valid.push({ file, previewUrl, name: file.name });
     }
@@ -761,22 +869,12 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
     e.target.value = "";
   };
 
-  // const handleEditorChange = (newContent) => {
-  //   const { length, error } = validateCommentText(newContent);
-  //   setCommentLength(length);
-  //   setCommentError(error);
-  // };
-
   const handleEditorChange = (newContent) => {
-    const sanitized = stripLeadingWhitespaceHtml(newContent);
-
-    if (sanitized !== newContent && editor.current) {
-      editor.current.value = sanitized;
-    }
-
-    setComment(sanitized);
-
-    const { length, error } = validateCommentText(sanitized);
+    setComment(newContent);
+    // Length/validation is always computed on the NORMALIZED text, so:
+    //  - leading-only spaces never count as content (length stays 0)
+    //  - "hi   b" is measured/validated as "hi b" (single space)
+    const { length, error } = validateCommentText(newContent);
     setCommentLength(length);
     setCommentError(error);
   };
@@ -796,8 +894,8 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
     setComment("");
     setSelectedFiles([]);
     setFileError("");
-    setCommentError("");      
-    setCommentLength(0);  
+    setCommentError("");
+    setCommentLength(0);
     if (editor.current) {
       editor.current.value = "";
     }
@@ -813,12 +911,12 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
   const handleSaveComment = async () => {
     const latestComment = editor.current?.value ?? comment;
 
-    const { valid, error } = validateCommentText(latestComment);   // add
-    if (!valid) {                                             // add
-      setCommentError(error);                                 // add
-      toast.error(error);                                     // add
-      return;                                                 // add
-    }  
+    const { valid, error } = validateCommentText(latestComment);
+    if (!valid) {
+      setCommentError(error);
+      toast.error(error);
+      return;
+    }
     if (isCommentEmpty(latestComment) && selectedFiles.length === 0) return;
 
     setSavingComment(true);
@@ -827,9 +925,14 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
     try {
       const formData = new FormData();
       formData.append("task", String(taskId));
-      // formData.append("comment", latestComment);
-      // selectedFiles.forEach(({ file }) => formData.append("attachments", file));
-      const commentToSend = isCommentEmpty(latestComment) ? " " : latestComment;
+
+      // Normalize whitespace in the HTML itself before it ever reaches the
+      // backend: collapses any run of spaces/&nbsp; to one space and strips
+      // leading/trailing whitespace, while keeping formatting tags intact.
+      const normalizedComment = normalizeHtmlWhitespace(latestComment);
+      const commentToSend = isCommentEmpty(normalizedComment)
+        ? " "
+        : normalizedComment;
       formData.append("comment", commentToSend);
 
       selectedFiles.forEach(({ file }) => formData.append("attachments", file));
@@ -852,12 +955,12 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
       toast.success(response?.data?.message || "Comment Added");
     } catch (error) {
       console.error("Add comment error:", error);
-        const backendMsg =
+      const backendMsg =
         error?.response?.data?.error_message ||
         error?.response?.data?.message ||
         "Failed to post comment. Please try again.";
-        setFileError(backendMsg);
-        toast.error(backendMsg);
+      setFileError(backendMsg);
+      toast.error(backendMsg);
     } finally {
       setSavingComment(false);
     }
@@ -969,7 +1072,7 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
             ref={editor}
             value={comment}
             config={editorConfig}
-            onChange={handleEditorChange} 
+            onChange={handleEditorChange}
           />
 
           <div
@@ -979,7 +1082,14 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
               background: commentError ? "#fff5f5" : "#f8fafc",
             }}
           >
-            <span style={{ fontSize: "0.72rem", color: "#ef4444", flex: 1, paddingRight: 10 }}>
+            <span
+              style={{
+                fontSize: "0.72rem",
+                color: "#ef4444",
+                flex: 1,
+                paddingRight: 10,
+              }}
+            >
               {commentError && (
                 <>
                   <i className="ri-error-warning-line me-1" />
@@ -1073,7 +1183,6 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
                 type="button"
                 className="btn btn-outline-danger btn-sm"
                 onClick={handleClear}
-                // disabled={isCommentEmpty(comment) && selectedFiles.length === 0}
                 disabled={commentLength === 0 && selectedFiles.length === 0}
               >
                 Clear
@@ -1200,6 +1309,14 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
       )}
     </div>
   );
+};
+
+// Named exports for unit testing the whitespace-handling logic in isolation.
+export {
+  stripHtmlToText,
+  normalizeWhitespace,
+  normalizeHtmlWhitespace,
+  validateCommentText,
 };
 
 export default TaskCommentSection;

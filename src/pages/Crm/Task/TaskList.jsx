@@ -69,6 +69,30 @@ const EmployeeAvatar = ({ emp, size = 32, style = {} }) => {
 const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
   const dispatch = useDispatch();
 
+  const isValidColor = (color) => {
+    const s = new Option().style;
+    s.color = color;
+    return s.color !== "";
+  };
+
+  const getContrastTextColor = (backgroundColor) => {
+    if (!backgroundColor || !isValidColor(backgroundColor)) {
+      return "#FFFFFF";
+    }
+    const temp = document.createElement("div");
+    temp.style.color = backgroundColor;
+    document.body.appendChild(temp);
+    const rgb = window.getComputedStyle(temp).color;
+    document.body.removeChild(temp);
+    const matches = rgb.match(/\d+/g);
+    if (!matches || matches.length < 3) {
+      return "#FFFFFF";
+    }
+    const [r, g, b] = matches.map(Number);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? "#000000" : "#FFFFFF";
+  };
+
   // ── Modal state ─────────────────────────────────────────────────────────────
   const [detailModal, setDetailModal] = useState({ open: false, taskId: null });
 
@@ -399,12 +423,13 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
             (p) => Number(p.id) === Number(obj.task_priority),
           );
           if (!priority) return "-";
+          const bgColor = isValidColor(priority.color) ? priority.color : "#000000";
           return (
             <span
               className="badge"
               style={{
-                backgroundColor: priority.color || "#ccc",
-                color: "#333",
+                backgroundColor: bgColor,
+                color: getContrastTextColor(priority.color),
               }}
             >
               {priority.name}
@@ -424,10 +449,11 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
             (s) => Number(s.id) === Number(obj.task_status),
           );
           if (!status) return "-";
+          const bgColor = isValidColor(status.color) ? status.color : "#000000";
           return (
             <span
               className="badge"
-              style={{ backgroundColor: status.color || "#ccc", color: "#333" }}
+              style={{ backgroundColor: bgColor, color: getContrastTextColor(status.color) }}
             >
               {status.name}
             </span>

@@ -1084,10 +1084,18 @@ const TaskDetailModal = ({
   const savedTimers = useRef({});
 
   const allEmployees = useMemo(() => getAllEmployees(), []);
-  const statusList = useMemo(
-    () => GetLocalStorageData("task_status") || [],
-    [],
-  );
+  // const statusList = useMemo(
+  //   () => GetLocalStorageData("task_status") || [],
+  //   [],
+  // );
+  const statusList = useMemo(() => {
+  const all = GetLocalStorageData("task_status") || [];
+    return all.filter(
+      (s) =>
+        s.status !== false ||
+        String(s.id) === String(editFields.task_status),
+    );
+  }, [editFields.task_status]);
   const priorityList = useMemo(
     () => GetLocalStorageData("task_priority") || [],
     [],
@@ -1594,16 +1602,18 @@ const TaskDetailModal = ({
                         position: "relative",
                         borderRadius: 8,
                         overflow: "hidden",
-                        border: priorityObj
-                          ? `1.5px solid ${priorityObj.color}55`
-                          : "1.5px solid #dee2e6",
-                        background: priorityObj
-                          ? `${priorityObj.color}08`
-                          : "#fff",
-                        transition: "border-color .2s, background .2s",
+                        border: "1.5px solid #dee2e6",
+                        background: "#fff",
+                        // border: priorityObj
+                        //   ? `1.5px solid ${priorityObj.color}55`
+                        //   : "1.5px solid #dee2e6",
+                        // background: priorityObj
+                        //   ? `${priorityObj.color}08`
+                        //   : "#fff",
+                        // transition: "border-color .2s, background .2s",
                       }}
                     >
-                      {priorityObj && (
+                      {/* {priorityObj && (
                         <span
                           style={{
                             position: "absolute",
@@ -1618,7 +1628,7 @@ const TaskDetailModal = ({
                             zIndex: 1,
                           }}
                         />
-                      )}
+                      )} */}
                       <select
                         className="form-select form-select-sm border-0 bg-transparent"
                         value={editFields.task_priority || ""}
@@ -1630,9 +1640,11 @@ const TaskDetailModal = ({
                         }
                         style={{
                           fontSize: "0.82rem",
-                          fontWeight: 500,
-                          paddingLeft: priorityObj ? 26 : 10,
-                          color: priorityObj ? priorityObj.color : "#495057",
+                          fontWeight: 400,
+                          // paddingLeft: priorityObj ? 26 : 10,
+                          // color: priorityObj ? priorityObj.color : "#495057",
+                          paddingLeft: 10,
+                          color: "#212529",
                           boxShadow: "none",
                         }}
                       >
@@ -1667,29 +1679,31 @@ const TaskDetailModal = ({
                         position: "relative",
                         borderRadius: 8,
                         overflow: "hidden",
-                        border: statusObj
-                          ? `1.5px solid ${statusObj.color}55`
-                          : "1.5px solid #dee2e6",
-                        background: statusObj ? `${statusObj.color}08` : "#fff",
-                        transition: "border-color .2s, background .2s",
+                        border: "1.5px solid #dee2e6",
+                        background: "#fff",
+                        // border: statusObj
+                        //   ? `1.5px solid ${statusObj.color}55`
+                        //   : "1.5px solid #dee2e6",
+                        // background: statusObj ? `${statusObj.color}08` : "#fff",
+                        // transition: "border-color .2s, background .2s",
                       }}
                     >
-                      {statusObj && (
-                        <span
-                          style={{
-                            position: "absolute",
-                            left: 10,
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                            width: 8,
-                            height: 8,
-                            borderRadius: "50%",
-                            background: statusObj.color,
-                            pointerEvents: "none",
-                            zIndex: 1,
-                          }}
-                        />
-                      )}
+                      {/* {statusObj && (
+                        // <span
+                        //   style={{
+                        //     position: "absolute",
+                        //     left: 10,
+                        //     top: "50%",
+                        //     transform: "translateY(-50%)",
+                        //     width: 8,
+                        //     height: 8,
+                        //     borderRadius: "50%",
+                        //     background: statusObj.color,
+                        //     pointerEvents: "none",
+                        //     zIndex: 1,
+                        //   }}
+                        // />
+                      )} */}
                       <select
                         className="form-select form-select-sm border-0 bg-transparent"
                         value={editFields.task_status || ""}
@@ -1698,9 +1712,11 @@ const TaskDetailModal = ({
                         }
                         style={{
                           fontSize: "0.82rem",
-                          fontWeight: 500,
-                          paddingLeft: statusObj ? 26 : 10,
-                          color: statusObj ? statusObj.color : "#495057",
+                          fontWeight: 400,
+                          paddingLeft: 10,
+                          color: "#212529",
+                          // paddingLeft: statusObj ? 26 : 10,
+                          // color: statusObj ? statusObj.color : "#495057",
                           boxShadow: "none",
                         }}
                       >

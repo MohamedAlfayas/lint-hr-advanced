@@ -155,10 +155,75 @@ const ClientForm = () => {
   const isEdit = !!(form_obj?.id && form_obj.id !== 0);
 
   const [clientData, setClientData] = useState({});
+  const [initialFormValues, setInitialFormValues] = useState({});
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [hasAttemptedLocationSubmit, setHasAttemptedLocationSubmit] =
+    useState(false);
+
+  const [lengthWarnings, setLengthWarnings] = useState({
+    name: "",
+    city: "",
+    address: "",
+    website: "",
+  });
+
+  const [locationLengthWarnings, setLocationLengthWarnings] = useState({
+    name: "",
+    city: "",
+    address: "",
+  });
+
+  const MAX_LENGTHS = {
+    name: 100,
+    city: 100,
+    address: 250,
+    website: 500,
+  };
+
+  const LOCATION_MAX_LENGTHS = {
+    name: 100,
+    city: 100,
+    address: 250,
+  };
+
+  const checkMaxLength = (field, rawValue) => {
+    const max = MAX_LENGTHS[field];
+    if (!max) return;
+    const labels = {
+      name: "Client Name",
+      city: "City",
+      address: "Address",
+      website: "Website URL",
+    };
+    const msg =
+      rawValue.length > max
+        ? field === "website"
+          ? `Website URL must not exceed ${max} characters`
+          : `${labels[field] || field} cannot exceed ${max} characters`
+        : "";
+    setLengthWarnings((prev) => ({ ...prev, [field]: msg }));
+  };
+
+  const checkLocationMaxLength = (field, rawValue) => {
+    const max = LOCATION_MAX_LENGTHS[field];
+    if (!max) return;
+    const labels = {
+      name: "Location Name",
+      city: "City",
+      address: "Address",
+    };
+    const msg =
+      rawValue.length > max
+        ? `${labels[field] || field} cannot exceed ${max} characters`
+        : "";
+    setLocationLengthWarnings((prev) => ({ ...prev, [field]: msg }));
+  };
 
   // ─── Location modal state ─────────────────────────────────────────────────
   const [modalOpen, setModalOpen] = useState(false);
   const [locationObj, setLocationObj] = useState(initialLocationObj);
+  const [initialLocationFormValues, setInitialLocationFormValues] =
+    useState(initialLocationObj);
   const [locationStateOptions, setLocationStateOptions] = useState([]);
   const [CountryListOptions, setCountryListOptions] = useState([]);
   const [entityLocations, setEntityLocations] = useState([]);
@@ -180,8 +245,16 @@ const ClientForm = () => {
   useEffect(() => {
     if (form_obj) {
       setClientData(form_obj);
+      setInitialFormValues(form_obj);
       // Load existing locations for this client if present
       setEntityLocations(form_obj?.entity_location_details || []);
+      setHasAttemptedSubmit(false);
+      setLengthWarnings({
+        name: "",
+        city: "",
+        address: "",
+        website: "",
+      });
     }
   }, [form_obj]);
 
@@ -208,6 +281,7 @@ const ClientForm = () => {
   useEffect(() => {
     if (form_obj) {
       setClientData(form_obj);
+      setInitialFormValues(form_obj);
       setEntityLocations(form_obj?.entity_location_details || []);
 
       const selectedCountry = CountryList.find(
@@ -215,6 +289,13 @@ const ClientForm = () => {
       );
 
       setStateListOptions(selectedCountry?.states || []);
+      setHasAttemptedSubmit(false);
+      setLengthWarnings({
+        name: "",
+        city: "",
+        address: "",
+        website: "",
+      });
     }
   }, [form_obj?.id]);
 
@@ -252,25 +333,9 @@ const ClientForm = () => {
     }));
 
     FormikForm.setFieldValue(name, value);
-    FormikForm.setFieldTouched(name, true, false);
 
-    if (name === "name") {
-      if (value.length > 100) {
-        FormikForm.setFieldError(
-          "name",
-          "Client Name cannot exceed 100 characters",
-        );
-      } else {
-        FormikForm.setFieldError("name", undefined);
-      }
-    }
-
-    if (name === "city") {
-      if (value.length > 100) {
-        FormikForm.setFieldError("city", "City cannot exceed 100 characters");
-      } else {
-        FormikForm.setFieldError("city", undefined);
-      }
+    if (name === "name" || name === "city") {
+      checkMaxLength(name, value);
     }
   };
 
@@ -319,28 +384,9 @@ const ClientForm = () => {
     }));
 
     locationFormik.setFieldValue(name, value);
-    locationFormik.setFieldTouched(name, true, false);
 
-    if (name === "city") {
-      if (value.length > 100) {
-        locationFormik.setFieldError(
-          "city",
-          "City cannot exceed 100 characters",
-        );
-      } else {
-        locationFormik.setFieldError("city", undefined);
-      }
-    }
-
-    if (name === "name") {
-      if (value.length > 100) {
-        locationFormik.setFieldError(
-          "name",
-          "Location Name cannot exceed 100 characters",
-        );
-      } else {
-        locationFormik.setFieldError("name", undefined);
-      }
+    if (name === "city" || name === "name") {
+      checkLocationMaxLength(name, value);
     }
   };
 
@@ -387,42 +433,76 @@ const ClientForm = () => {
   };
 
   const handleAddClick = () => {
-    setLocationObj({
+    const freshLocation = {
       ...initialLocationObj,
       type_id: form_obj?.id,
       type: "client",
-    });
+    };
+    setLocationObj(freshLocation);
+    setInitialLocationFormValues(freshLocation);
+    setHasAttemptedLocationSubmit(false);
+    setLocationLengthWarnings({ name: "", city: "", address: "" });
     setModalOpen(true);
   };
 
   const handleEditLocation = (location) => {
-    setLocationObj({
+    const editLocation = {
       ...location,
       type_id: form_obj?.id,
       type: "client",
-    });
+    };
+    setLocationObj(editLocation);
+    setInitialLocationFormValues(editLocation);
+    setHasAttemptedLocationSubmit(false);
+    setLocationLengthWarnings({ name: "", city: "", address: "" });
     setModalOpen(true);
   };
 
+  // const handleCountryChange = (e) => {
+  //   setClientData((prev) => ({
+  //     ...prev,
+  //     country: e?.value || "",
+  //     country_code: e?.countryCode || "",
+  //     state: "",
+  //   }));
+
+  //   FormikForm.setFieldValue("country", e?.value || "");
+  //   FormikForm.setFieldTouched("country", true, false);
+
+  //   FormikForm.setFieldValue("country_code", e?.countryCode || "");
+  //   FormikForm.setFieldTouched("country_code", true, false);
+
+  //   FormikForm.setFieldValue("state", "");
+  //   FormikForm.setFieldTouched("state", false, false);
+
+  //   setStateListOptions(
+  //     CountryListOptions.find((d) => d.value === e?.value)?.states || [],
+  //   );
+  // };
+
   const handleCountryChange = (e) => {
-    setClientData((prev) => ({
-      ...prev,
+    const selectedCountry = CountryListOptions.find((d) => d.value === e?.value);
+
+    const updatedClientData = {
+      ...clientData,
       country: e?.value || "",
       country_code: e?.countryCode || "",
       state: "",
-    }));
+    };
 
-    FormikForm.setFieldValue("country", e?.value || "");
-    FormikForm.setFieldTouched("country", true, false);
+    setClientData(updatedClientData);
+    setStateListOptions(selectedCountry?.states || []);
 
-    FormikForm.setFieldValue("state", "");
-    FormikForm.setFieldTouched("state", false, false);
-
-    setStateListOptions(
-      CountryListOptions.find((d) => d.value === e?.value)?.states || [],
-    );
+    // Single merged update + single validation pass — no race condition
+    FormikForm.setValues(updatedClientData).then(() => {
+      FormikForm.setTouched({
+        ...FormikForm.touched,
+        country: true,
+        country_code: true,
+        state: false,
+      });
+    });
   };
-
   const handleGSTNumberOnly = (e) => {
     const { name, value } = e.target;
 
@@ -447,7 +527,7 @@ const ClientForm = () => {
   // ─── Main client formik ───────────────────────────────────────────────────
   const FormikForm = useFormik({
     enableReinitialize: true,
-    initialValues: clientData,
+    initialValues: initialFormValues,
     validationSchema: Yup.object({
       name: Yup.string()
         .trim()
@@ -461,6 +541,9 @@ const ClientForm = () => {
           "Client Name cannot exceed 100 characters",
           (value) => !value || value.length <= 100,
         ),
+      owner: Yup.string()
+        .typeError("Please Select Owner")
+        .required("Please Select Owner"),
       phone_number: Yup.string()
         .required("Please Enter Phone Number")
         .matches(/^[0-9]+$/, "Phone number must contain digits only")
@@ -479,6 +562,8 @@ const ClientForm = () => {
         ),
       state: Yup.string().required("Please Enter State"),
       country: Yup.string().required("Please Enter Country"),
+      country_code: Yup.string()
+        .required("Country code is required"),
       pincode: Yup.string()
         .trim()
         .matches(/^[0-9]+$/, "Pincode should contain only numbers")
@@ -561,7 +646,7 @@ const ClientForm = () => {
   // ─── Location formik ──────────────────────────────────────────────────────
   const locationFormik = useFormik({
     enableReinitialize: true,
-    initialValues: locationObj,
+    initialValues: initialLocationFormValues,
     validationSchema: Yup.object({
       name: Yup.string()
         .matches(
@@ -786,12 +871,38 @@ const ClientForm = () => {
     }),
   });
 
+  const showClientError = (field) =>
+    (FormikForm.touched[field] || hasAttemptedSubmit) &&
+    FormikForm.errors[field];
+
+  const showLocationError = (field) =>
+    (locationFormik.touched[field] || hasAttemptedLocationSubmit) &&
+    locationFormik.errors[field];
+
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <React.Fragment>
       <Row>
         <Col xl={40}>
-          <Form onSubmit={FormikForm.handleSubmit}>
+          <Form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setHasAttemptedSubmit(true);
+
+              await FormikForm.setValues(clientData, false);
+
+              const touchedFields = {};
+              Object.keys(FormikForm.initialValues || {}).forEach((key) => {
+                touchedFields[key] = true;
+              });
+              FormikForm.setTouched(touchedFields, false);
+
+              const errors = await FormikForm.validateForm(clientData);
+              if (Object.keys(errors).length === 0) {
+                FormikForm.handleSubmit();
+              }
+            }}
+          >
             <Row>
               {/* ── Client Name ── */}
               <Col md={12} lg={12} xxl={12}>
@@ -808,18 +919,30 @@ const ClientForm = () => {
                       placeholder="Client Name"
                       value={clientData.name || ""}
                       onChange={handleTextOnly}
-                      invalid={!!FormikForm.errors.name}
+                      onBlur={() => {
+                        if (clientData.name && clientData.name.trim() !== "") {
+                          FormikForm.setFieldTouched("name", true);
+                        }
+                      }}
+                      invalid={
+                        !!(showClientError("name") || lengthWarnings.name)
+                      }
                     />
-                    {!FormikForm.touched.name && !FormikForm.errors.name && (
+                    {!(showClientError("name") || lengthWarnings.name) && (
                       <i className="ri-building-line" />
                     )}
-                    {FormikForm.errors.name ? (
+                    {showClientError("name") && !lengthWarnings.name ? (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.name}
                       </FormFeedback>
                     ) : null}
+                    {lengthWarnings.name && (
+                      <div className="lc_form_error_text">
+                        {lengthWarnings.name}
+                      </div>
+                    )}
                   </div>
-                  {!FormikForm.errors.name && (
+                  {!(showClientError("name") || lengthWarnings.name) && (
                     <div className="form-text">Enter Client Name.</div>
                   )}
                 </div>
@@ -829,7 +952,7 @@ const ClientForm = () => {
               <Col md={12} lg={12} xxl={12}>
                 <div className="mb-3">
                   <Label htmlFor="owner" className="form-label">
-                    Owner
+                    Owner *
                   </Label>
                   <Select
                     id="owner"
@@ -848,18 +971,33 @@ const ClientForm = () => {
                         .includes(inputValue.toLowerCase())
                     }
                     styles={selectStyles(
-                      FormikForm.touched.owner,
+                      FormikForm.touched.owner || hasAttemptedSubmit,
                       FormikForm.errors.owner,
                     )}
                     value={ownerSelectValue}
+                    onBlur={() => {
+                        if (clientData.owner) {
+                          FormikForm.setFieldTouched("owner", true);
+                        }
+                      }}
                     onChange={(selectedOption) => {
+                      const value = selectedOption ? selectedOption.id : null;
                       setClientData((prev) => ({
                         ...prev,
-                        owner: selectedOption ? selectedOption.id : null,
+                        owner: value,
                       }));
+                      FormikForm.setFieldValue("owner", value);
+                      FormikForm.setFieldTouched("owner", true, false);
                     }}
                   />
-                  <div className="form-text">Select the client owner.</div>
+                  {showClientError("owner") && (
+                    <div className="lc_form_error_text">
+                      {FormikForm.errors.owner}
+                    </div>
+                  )}
+                  {!showClientError("owner") && (
+                    <div className="form-text">Select the client owner.</div>
+                  )}
                 </div>
               </Col>
 
@@ -916,10 +1054,15 @@ const ClientForm = () => {
                     isMulti={false}
                     options={CountryListOptions}
                     styles={selectStyles(
-                      FormikForm.touched.country,
+                      FormikForm.touched.country || hasAttemptedSubmit,
                       FormikForm.errors.country,
                     )}
-                    onBlur={() => FormikForm.setFieldTouched("country", true)}
+                    // onBlur={() => FormikForm.setFieldTouched("country", true)}
+                    onBlur={() => {
+                      if (clientData.country && clientData.country.trim() !== "") {
+                        FormikForm.setFieldTouched("country", true);
+                      }
+                    }}
                     value={
                       CountryListOptions.find(
                         (d) => d.value === clientData.country,
@@ -927,11 +1070,9 @@ const ClientForm = () => {
                     }
                     onChange={handleCountryChange}
                   />
-                  {FormikForm.touched.country && FormikForm.errors.country && (
-                    <div className="lc_form_error_text">
-                      {FormikForm.errors.country}
-                    </div>
-                  )}
+                  <div className="lc_form_error_text">
+                    {showClientError("country") ? FormikForm.errors.country : "\u00A0"}
+                  </div>
                 </div>
               </Col>
 
@@ -946,10 +1087,17 @@ const ClientForm = () => {
                     isMulti={false}
                     options={stateListOptions}
                     styles={selectStyles(
-                      FormikForm.touched.state,
+                      FormikForm.touched.state || hasAttemptedSubmit,
                       FormikForm.errors.state,
                     )}
-                    onBlur={() => FormikForm.setFieldTouched("state", true)}
+                    // onBlur={() => FormikForm.setFieldTouched("state", true)}
+                    
+                    onBlur={() => {
+                      if (clientData.state && clientData.state.trim() !== "") {
+                        FormikForm.setFieldTouched("state", true);
+                      }
+                    }}
+
                     value={
                       stateListOptions.find(
                         (d) => d.value === clientData.state,
@@ -965,11 +1113,9 @@ const ClientForm = () => {
                       FormikForm.setFieldTouched("state", true, false);
                     }}
                   />
-                  {FormikForm.touched.state && FormikForm.errors.state && (
-                    <div className="lc_form_error_text">
-                      {FormikForm.errors.state}
-                    </div>
-                  )}
+                  <div className="lc_form_error_text">
+                    {showClientError("state") ? FormikForm.errors.state : "\u00A0"}
+                  </div>
                 </div>
               </Col>
 
@@ -999,25 +1145,27 @@ const ClientForm = () => {
                       }));
 
                       FormikForm.setFieldValue("address", value);
-                      FormikForm.setFieldTouched("address", true, false);
-
-                      if (value.length > 250) {
-                        FormikForm.setFieldError(
-                          "address",
-                          "Address cannot exceed 250 characters",
-                        );
-                      } else {
-                        FormikForm.setFieldError("address", undefined);
+                      checkMaxLength("address", value);
+                    }}
+                    onBlur={() => {
+                      if (
+                        clientData.address &&
+                        clientData.address.trim() !== ""
+                      ) {
+                        FormikForm.setFieldTouched("address", true);
                       }
                     }}
-                    onBlur={() => FormikForm.setFieldTouched("address", true)}
-                    invalid={!!FormikForm.errors.address}
+                    invalid={
+                      !!(
+                        showClientError("address") || lengthWarnings.address
+                      )
+                    }
                   />
-                  {FormikForm.errors.address ? (
-                    <FormFeedback type="invalid">
-                      {FormikForm.errors.address}
-                    </FormFeedback>
-                  ) : null}
+                  <div className="lc_form_error_text">
+                    {showClientError("address") && !lengthWarnings.address
+                      ? FormikForm.errors.address
+                      : lengthWarnings.address || "\u00A0"}
+                  </div>
                 </div>
               </Col>
 
@@ -1035,14 +1183,20 @@ const ClientForm = () => {
                     placeholder="City"
                     value={clientData.city || ""}
                     onChange={handleTextOnly}
-                    onBlur={() => FormikForm.setFieldTouched("city", true)}
-                    invalid={!!FormikForm.errors.city}
+                    onBlur={() => {
+                      if (clientData.city && clientData.city.trim() !== "") {
+                        FormikForm.setFieldTouched("city", true);
+                      }
+                    }}
+                    invalid={
+                      !!(showClientError("city") || lengthWarnings.city)
+                    }
                   />
-                  {FormikForm.errors.city ? (
-                    <FormFeedback type="invalid">
-                      {FormikForm.errors.city}
-                    </FormFeedback>
-                  ) : null}
+                  <div className="lc_form_error_text">
+                    {showClientError("city") && !lengthWarnings.city
+                      ? FormikForm.errors.city
+                      : lengthWarnings.city || "\u00A0"}
+                  </div>
                 </div>
               </Col>
 
@@ -1060,19 +1214,26 @@ const ClientForm = () => {
                     inputMode="numeric"
                     maxLength={6}
                     value={clientData.pincode || ""}
-                    onChange={handlePincodeOnly}
-                    onBlur={() => FormikForm.setFieldTouched("pincode", true)}
-                    invalid={
-                      FormikForm.touched.pincode && FormikForm.errors.pincode
-                        ? true
-                        : false
-                    }
+                    onChange={(e) => {
+                      handlePincodeOnly(e);
+                      const value = e.target.value
+                        .replace(/[^0-9]/g, "")
+                        .slice(0, 6);
+                      FormikForm.setFieldValue("pincode", value);
+                    }}
+                    onBlur={() => {
+                      if (
+                        clientData.pincode &&
+                        String(clientData.pincode).trim() !== ""
+                      ) {
+                        FormikForm.setFieldTouched("pincode", true);
+                      }
+                    }}
+                    invalid={!!showClientError("pincode")}
                   />
-                  {FormikForm.touched.pincode && FormikForm.errors.pincode ? (
-                    <FormFeedback type="invalid">
-                      {FormikForm.errors.pincode}
-                    </FormFeedback>
-                  ) : null}
+                  <div className="lc_form_error_text">
+                    {showClientError("pincode") ? FormikForm.errors.pincode : "\u00A0"}
+                  </div>
                 </div>
               </Col>
 
@@ -1080,7 +1241,7 @@ const ClientForm = () => {
               <Col md={6} lg={6} xxl={6}>
                 <div className="mb-3">
                   <Label htmlFor="country_code" className="form-label">
-                    Country Code
+                    Country Code *
                   </Label>
                   <Input
                     type="text"
@@ -1090,7 +1251,15 @@ const ClientForm = () => {
                     placeholder="e.g. IN"
                     value={clientData.country_code || ""}
                     readOnly
+                    invalid={!!(hasAttemptedSubmit && FormikForm.errors.country_code)}
                   />
+                   {hasAttemptedSubmit && FormikForm.errors.country_code ? (
+                    <FormFeedback type="invalid">
+                      {FormikForm.errors.country_code}
+                    </FormFeedback>
+                  ) : (
+                    <div className="form-text">Auto-filled based on selected country.</div>
+                  )}
                 </div>
               </Col>
               <Col md={6} lg={6} xxl={6}>
@@ -1105,23 +1274,26 @@ const ClientForm = () => {
                     className="form-control"
                     placeholder="9876543210"
                     value={clientData.phone_number || ""}
-                    onChange={handlePhoneNumberOnly}
-                    onBlur={() =>
-                      FormikForm.setFieldTouched("phone_number", true)
-                    }
-                    invalid={
-                      FormikForm.touched.phone_number &&
-                      FormikForm.errors.phone_number
-                        ? true
-                        : false
-                    }
+                    onChange={(e) => {
+                      handlePhoneNumberOnly(e);
+                      const value = e.target.value
+                        .replace(/[^0-9]/g, "")
+                        .slice(0, 10);
+                      FormikForm.setFieldValue("phone_number", value);
+                    }}
+                    onBlur={() => {
+                      if (
+                        clientData.phone_number &&
+                        String(clientData.phone_number).trim() !== ""
+                      ) {
+                        FormikForm.setFieldTouched("phone_number", true);
+                      }
+                    }}
+                    invalid={!!showClientError("phone_number")}
                   />
-                  {FormikForm.touched.phone_number &&
-                  FormikForm.errors.phone_number ? (
-                    <FormFeedback type="invalid">
-                      {FormikForm.errors.phone_number}
-                    </FormFeedback>
-                  ) : null}
+                  <div className="lc_form_error_text">
+                    {showClientError("phone_number") ? FormikForm.errors.phone_number : "\u00A0"}
+                  </div>
                 </div>
               </Col>
 
@@ -1150,34 +1322,40 @@ const ClientForm = () => {
                         }));
 
                         FormikForm.setFieldValue("website", value);
-                        FormikForm.setFieldTouched("website", true, false);
-
-                        if (value.length > 500) {
-                          FormikForm.setFieldError(
-                            "website",
-                            "Website URL must not exceed 500 characters",
-                          );
-                        } else {
-                          FormikForm.setFieldError("website", undefined);
+                        checkMaxLength("website", value);
+                      }}
+                      onBlur={() => {
+                        if (
+                          clientData.website &&
+                          clientData.website.trim() !== ""
+                        ) {
+                          FormikForm.setFieldTouched("website", true);
                         }
                       }}
-                      onBlur={() => FormikForm.setFieldTouched("website", true)}
-                      invalid={!!FormikForm.errors.website}
+                      invalid={
+                        !!(
+                          showClientError("website") || lengthWarnings.website
+                        )
+                      }
                     />
 
-                    {!FormikForm.touched.website &&
-                      !FormikForm.errors.website && (
-                        <i className="ri-global-line" />
-                      )}
+                    {!(
+                      showClientError("website") || lengthWarnings.website
+                    ) && <i className="ri-global-line" />}
 
-                    {FormikForm.errors.website ? (
+                    {showClientError("website") && !lengthWarnings.website ? (
                       <FormFeedback type="invalid">
                         {FormikForm.errors.website}
                       </FormFeedback>
                     ) : null}
+                    {lengthWarnings.website && (
+                      <div className="lc_form_error_text">
+                        {lengthWarnings.website}
+                      </div>
+                    )}
                   </div>
 
-                  {!FormikForm.errors.website && (
+                  {!(showClientError("website") || lengthWarnings.website) && (
                     <div className="form-text">Enter Client Website.</div>
                   )}
                 </div>
@@ -1213,23 +1391,27 @@ const ClientForm = () => {
                     placeholder="GST Number"
                     maxLength={15}
                     value={clientData.gst_number || ""}
-                    onChange={handleGSTNumberOnly}
-                    onBlur={() =>
-                      FormikForm.setFieldTouched("gst_number", true)
-                    }
-                    invalid={
-                      FormikForm.touched.gst_number &&
-                      FormikForm.errors.gst_number
-                        ? true
-                        : false
-                    }
+                    onChange={(e) => {
+                      handleGSTNumberOnly(e);
+                      const value = e.target.value
+                        .replace(/[^a-zA-Z0-9]/g, "")
+                        .toUpperCase()
+                        .slice(0, 15);
+                      FormikForm.setFieldValue("gst_number", value);
+                    }}
+                    onBlur={() => {
+                      if (
+                        clientData.gst_number &&
+                        String(clientData.gst_number).trim() !== ""
+                      ) {
+                        FormikForm.setFieldTouched("gst_number", true);
+                      }
+                    }}
+                    invalid={!!showClientError("gst_number")}
                   />
-                  {FormikForm.touched.gst_number &&
-                  FormikForm.errors.gst_number ? (
-                    <FormFeedback type="invalid">
-                      {FormikForm.errors.gst_number}
-                    </FormFeedback>
-                  ) : null}
+                  <div className="lc_form_error_text">
+                    {showClientError("gst_number") ? FormikForm.errors.gst_number : "\u00A0"}
+                  </div>
                 </div>
               </Col>
 
@@ -1345,7 +1527,25 @@ const ClientForm = () => {
           {locationObj.id === 0 ? "Add New Location" : "Edit Location"}
         </ModalHeader>
         <ModalBody>
-          <Form onSubmit={locationFormik.handleSubmit}>
+          <Form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setHasAttemptedLocationSubmit(true);
+
+              await locationFormik.setValues(locationObj, false);
+
+              const touchedFields = {};
+              Object.keys(locationFormik.initialValues || {}).forEach((key) => {
+                touchedFields[key] = true;
+              });
+              locationFormik.setTouched(touchedFields, false);
+
+              const errors = await locationFormik.validateForm(locationObj);
+              if (Object.keys(errors).length === 0) {
+                locationFormik.handleSubmit();
+              }
+            }}
+          >
             <Row className="gy-4">
               {/* Location Name */}
               <Col lg={12}>
@@ -1362,20 +1562,36 @@ const ClientForm = () => {
                     placeholder="Enter Location Name"
                     value={locationObj.name || ""}
                     onChange={handleLocationTextOnly}
-                    onBlur={() => locationFormik.setFieldTouched("name", true)}
-                    invalid={!!locationFormik.errors.name}
+                    onBlur={() => {
+                      if (locationObj.name && locationObj.name.trim() !== "") {
+                        locationFormik.setFieldTouched("name", true);
+                      }
+                    }}
+                    invalid={
+                      !!(
+                        showLocationError("name") ||
+                        locationLengthWarnings.name
+                      )
+                    }
                   />
-                  {!locationFormik.touched.name &&
-                    !locationFormik.errors.name && (
-                      <i className="ri-building-2-line" />
-                    )}
-                  {locationFormik.errors.name ? (
+                  {!(
+                    showLocationError("name") || locationLengthWarnings.name
+                  ) && <i className="ri-building-2-line" />}
+                  {showLocationError("name") &&
+                  !locationLengthWarnings.name ? (
                     <FormFeedback type="invalid">
                       {locationFormik.errors.name}
                     </FormFeedback>
                   ) : null}
+                  {locationLengthWarnings.name && (
+                    <div className="lc_form_error_text">
+                      {locationLengthWarnings.name}
+                    </div>
+                  )}
                 </div>
-                {!locationFormik.errors.name && (
+                {!(
+                  showLocationError("name") || locationLengthWarnings.name
+                ) && (
                   <div className="form-text">Enter Location Name.</div>
                 )}
               </Col>
@@ -1409,21 +1625,33 @@ const ClientForm = () => {
                     }));
 
                     locationFormik.setFieldValue("address", value);
-                    locationFormik.setFieldTouched("address", true, false);
-
-                    if (value.length > 250) {
-                      locationFormik.setFieldError(
-                        "address",
-                        "Address cannot exceed 250 characters",
-                      );
-                    } else {
-                      locationFormik.setFieldError("address", undefined);
+                    checkLocationMaxLength("address", value);
+                  }}
+                  onBlur={() => {
+                    if (
+                      locationObj.address &&
+                      locationObj.address.trim() !== ""
+                    ) {
+                      locationFormik.setFieldTouched("address", true);
                     }
                   }}
-                  invalid={!!locationFormik.errors.address}
+                  invalid={
+                    !!(
+                      showLocationError("address") ||
+                      locationLengthWarnings.address
+                    )
+                  }
                 />
-                {locationFormik.errors.address && (
-                  <FormFeedback>{locationFormik.errors.address}</FormFeedback>
+                {showLocationError("address") &&
+                  !locationLengthWarnings.address && (
+                    <FormFeedback>
+                      {locationFormik.errors.address}
+                    </FormFeedback>
+                  )}
+                {locationLengthWarnings.address && (
+                  <div className="lc_form_error_text">
+                    {locationLengthWarnings.address}
+                  </div>
                 )}
               </Col>
 
@@ -1439,14 +1667,24 @@ const ClientForm = () => {
                       (d) => d.value === locationObj?.country,
                     ) || null
                   }
-                  onChange={handleLocationCountryChange}
-                />
-                {locationFormik.touched.country &&
-                  locationFormik.errors.country && (
-                    <div className="lc_form_error_text">
-                      {locationFormik.errors.country}
-                    </div>
+                  onChange={(e) => {
+                    handleLocationCountryChange(e);
+                    locationFormik.setFieldValue("country", e?.value || "");
+                    locationFormik.setFieldTouched("country", true, false);
+                    locationFormik.setFieldValue("state", "");
+                    locationFormik.setFieldTouched("state", false, false);
+                  }}
+                  styles={selectStyles(
+                    locationFormik.touched.country ||
+                      hasAttemptedLocationSubmit,
+                    locationFormik.errors.country,
                   )}
+                />
+                {showLocationError("country") && (
+                  <div className="lc_form_error_text">
+                    {locationFormik.errors.country}
+                  </div>
+                )}
               </Col>
 
               {/* State */}
@@ -1461,14 +1699,21 @@ const ClientForm = () => {
                       (d) => d.value === locationObj?.state,
                     ) || null
                   }
-                  onChange={handleLocationStateChange}
-                />
-                {locationFormik.touched.state &&
-                  locationFormik.errors.state && (
-                    <div className="lc_form_error_text">
-                      {locationFormik.errors.state}
-                    </div>
+                  onChange={(e) => {
+                    handleLocationStateChange(e);
+                    locationFormik.setFieldValue("state", e?.value || "");
+                    locationFormik.setFieldTouched("state", true, false);
+                  }}
+                  styles={selectStyles(
+                    locationFormik.touched.state || hasAttemptedLocationSubmit,
+                    locationFormik.errors.state,
                   )}
+                />
+                {showLocationError("state") && (
+                  <div className="lc_form_error_text">
+                    {locationFormik.errors.state}
+                  </div>
+                )}
               </Col>
 
               {/* City */}
@@ -1483,14 +1728,29 @@ const ClientForm = () => {
                     placeholder="City"
                     value={locationObj.city || ""}
                     onChange={handleLocationTextOnly}
-                    invalid={!!locationFormik.errors.city}
+                    onBlur={() => {
+                      if (locationObj.city && locationObj.city.trim() !== "") {
+                        locationFormik.setFieldTouched("city", true);
+                      }
+                    }}
+                    invalid={
+                      !!(
+                        showLocationError("city") ||
+                        locationLengthWarnings.city
+                      )
+                    }
                   />
-                  {!locationFormik.touched.city &&
-                    !locationFormik.errors.city && (
-                      <i className="ri-map-pin-line"></i>
+                  {!(
+                    showLocationError("city") || locationLengthWarnings.city
+                  ) && <i className="ri-map-pin-line"></i>}
+                  {showLocationError("city") &&
+                    !locationLengthWarnings.city && (
+                      <FormFeedback>{locationFormik.errors.city}</FormFeedback>
                     )}
-                  {locationFormik.errors.city && (
-                    <FormFeedback>{locationFormik.errors.city}</FormFeedback>
+                  {locationLengthWarnings.city && (
+                    <div className="lc_form_error_text">
+                      {locationLengthWarnings.city}
+                    </div>
                   )}
                 </div>
               </Col>
@@ -1516,22 +1776,26 @@ const ClientForm = () => {
                         ...prev,
                         pincode: value,
                       }));
+                      locationFormik.setFieldValue("pincode", value);
                     }}
-                    invalid={
-                      locationFormik.touched.pincode &&
-                      !!locationFormik.errors.pincode
-                    }
+                    onBlur={() => {
+                      if (
+                        locationObj.pincode &&
+                        String(locationObj.pincode).trim() !== ""
+                      ) {
+                        locationFormik.setFieldTouched("pincode", true);
+                      }
+                    }}
+                    invalid={!!showLocationError("pincode")}
                   />
-                  {!locationFormik.touched.pincode &&
-                    !locationFormik.errors.pincode && (
-                      <i className="ri-mail-line"></i>
-                    )}
-                  {locationFormik.touched.pincode &&
-                    locationFormik.errors.pincode && (
-                      <FormFeedback>
-                        {locationFormik.errors.pincode}
-                      </FormFeedback>
-                    )}
+                  {!showLocationError("pincode") && (
+                    <i className="ri-mail-line"></i>
+                  )}
+                  {showLocationError("pincode") && (
+                    <FormFeedback>
+                      {locationFormik.errors.pincode}
+                    </FormFeedback>
+                  )}
                 </div>
               </Col>
 
@@ -1571,29 +1835,24 @@ const ClientForm = () => {
                         )
                       : null
                   }
-                  styles={{
-                    control: (provided, state) => ({
-                      ...provided,
-                      borderColor:
-                        !state.isFocused &&
-                        locationFormik.touched.timezone &&
-                        locationFormik.errors.timezone
-                          ? "red"
-                          : provided.borderColor,
-                    }),
+                  styles={selectStyles(
+                    locationFormik.touched.timezone ||
+                      hasAttemptedLocationSubmit,
+                    locationFormik.errors.timezone,
+                  )}
+                  onChange={(e) => {
+                    setLocationObj((prev) => ({ ...prev, timezone: e.value }));
+                    locationFormik.setFieldValue("timezone", e.value);
+                    locationFormik.setFieldTouched("timezone", true, false);
                   }}
-                  onChange={(e) =>
-                    setLocationObj((prev) => ({ ...prev, timezone: e.value }))
-                  }
                   options={timzone_options}
                   placeholder="Select a time zone"
                 />
-                {locationFormik.touched.timezone &&
-                  locationFormik.errors.timezone && (
-                    <div className="lc_form_error_text">
-                      {locationFormik.errors.timezone}
-                    </div>
-                  )}
+                {showLocationError("timezone") && (
+                  <div className="lc_form_error_text">
+                    {locationFormik.errors.timezone}
+                  </div>
+                )}
               </Col>
 
               {/* Modal Save */}
