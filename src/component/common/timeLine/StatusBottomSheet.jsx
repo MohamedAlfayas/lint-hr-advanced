@@ -65,7 +65,7 @@ const StatusBottomSheet = ({
   checkInLoading = false,
 }) => {
   const { profile_data } = useSelector((state) => state.MyProfileReducer);
-  const dispatch = useDispatch();//Added
+  const dispatch = useDispatch(); //Added
   const [userName, setUserName] = useState("Admin");
   const [imgError, setImgError] = useState(false);
   const [loadingId, setLoadingId] = useState(null);
@@ -88,40 +88,56 @@ const StatusBottomSheet = ({
   }, [profile_data]);
 
   useEffect(() => {
-    if (show) {
-      const raw = GetLocalStorageData("custom_statuses") || [];
-      const filtered = raw
-        .filter((item) => item && typeof item === "object")
-        .filter((item) => item.is_active === true || item.active === true)
-        .map((item) => ({
-          id: item.id,
-          name: item.name,
-          emoji: item.emoji ?? item.icon ?? "",
-          notes_required: item.notes_required ?? false,
-          location_required: item.location_required ?? false,
-        }));
-      setCustomStatuses(filtered);
+    if (!show) return;
 
-      // ✅ API — real active status fetch
-      Api({
-        type: "GET",
-        url: "attendance/custom-statuses/current/v2/",
-      })
-        .then((res) => {
-          const data = res?.data;
-          if (data && data.id) {
-            setActiveStatus(Number(data.id));
-            localStorage.setItem("active_custom_status", data.id);
-          } else {
-            setActiveStatus(null);
-            localStorage.removeItem("active_custom_status");
-          }
-        })
-        .catch(() => {
+    const raw = GetLocalStorageData("custom_statuses") || [];
+
+    const filtered = Array.isArray(raw)
+      ? raw
+          .filter((item) => item && typeof item === "object")
+          .filter((item) => item.is_active === true)
+          .filter((item) => {
+            const type = String(item.type || "")
+              .trim()
+              .toLowerCase();
+
+            return type === "custom" || type === "break";
+          })
+          .map((item) => ({
+            id: Number(item.id),
+            name: item.name || "",
+            emoji: item.icon || item.emoji || "",
+            notes_required: Boolean(item.notes_required),
+            location_required: Boolean(item.location_required),
+            type: String(item.type || "")
+              .trim()
+              .toLowerCase(),
+            is_break: Boolean(item.is_break),
+          }))
+      : [];
+
+    setCustomStatuses(filtered);
+
+    // Current active custom status
+    Api({
+      type: "GET",
+      url: "attendance/custom-statuses/current/v2/",
+    })
+      .then((res) => {
+        const data = res?.data;
+
+        if (data?.id) {
+          setActiveStatus(Number(data.id));
+          localStorage.setItem("active_custom_status", String(data.id));
+        } else {
           setActiveStatus(null);
           localStorage.removeItem("active_custom_status");
-        });
-    }
+        }
+      })
+      .catch(() => {
+        setActiveStatus(null);
+        localStorage.removeItem("active_custom_status");
+      });
   }, [show]);
 
   // ── helpers ───────────────────────────────────────────────────────────────
@@ -248,8 +264,7 @@ const StatusBottomSheet = ({
       const data = response?.data;
 
       if ([200, 201].includes(response?.status) && data) {
-
-        await GetTotalWorkDuration(dispatch);//Added
+        await GetTotalWorkDuration(dispatch); //Added
 
         if (data.action === "stopped") {
           setActiveStatus(null);
@@ -318,8 +333,7 @@ const StatusBottomSheet = ({
       const data = response?.data;
 
       if ([200, 201].includes(response?.status) && data) {
-
-        await GetTotalWorkDuration(dispatch);//Added
+        await GetTotalWorkDuration(dispatch); //Added
 
         const action = data.action;
 
