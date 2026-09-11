@@ -164,8 +164,15 @@ const Section = () => {
                     <Row className="align-items-center g-3">
                       <div className="col-md-auto">
                         <div className="avatar-md">
-                          <div className="avatar-title bg-white rounded-circle">
-                            <img src={slack} alt="" className="avatar-xs" />
+                          <div className="avatar-title bg-white rounded-circle" style={{ overflow: "hidden" }}>
+                            {/* <img src={slack} alt="" className="avatar-xs" /> */}
+                             <img
+                                src={company_detail?.light_logo_image || slack}
+                                alt={company_detail?.full_name || "Company Logo"}
+                                className="rounded-circle"
+                                style={{ width: "90%", height: "90%", objectFit: "cover", background: "#fff" }}
+                                onError={(e) => { e.target.onerror = null; e.target.src = slack; }}
+                              />
                           </div>
                         </div>
                       </div>

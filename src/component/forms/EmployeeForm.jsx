@@ -1421,7 +1421,18 @@ const EmployeeForm = () => {
               // if (Object.keys(errors).length > 0) {
               //   const firstErrorField = Object.keys(errors)[0];
               if (Object.keys(manualErrors).length > 0) {
-                const firstErrorField = Object.keys(manualErrors)[0];
+                let firstErrorField = Object.keys(manualErrors)[0];
+
+                if (firstErrorField === "cf_values") {
+                  const firstInvalidCf = employeeObj.cf_values?.find(
+                    (obj) =>
+                      obj.is_required &&
+                      (!obj.value || String(obj.value).trim() === "")
+                  );
+                  if (firstInvalidCf) {
+                    firstErrorField = firstInvalidCf.input_name;
+                  }
+                }
 
                 requestAnimationFrame(() => {
                   const node = fieldRefs.current[firstErrorField];
@@ -2678,7 +2689,9 @@ const EmployeeForm = () => {
               {employeeObj.cf_values && employeeObj.cf_values.length
                 ? employeeObj.cf_values.map((obj) => (
                     <Col lg={12} key={obj.id}>
-                      <div className="mb-3">
+                      <div className="mb-3"
+                       ref={(el) => (fieldRefs.current[obj.input_name] = el)}
+                      >
                         <Label htmlFor={obj.input_name} className="form-label">
                           {obj.name} {obj.is_required && <span>*</span>}
                         </Label>
@@ -2702,7 +2715,11 @@ const EmployeeForm = () => {
                                   )
                                 }
                               />
-                              <i className="ri-user-2-line"></i>
+                                {!(
+                                  obj.is_required &&
+                                  hasAttemptedSubmit &&
+                                  (!obj.value || String(obj.value).trim() === "")
+                                ) && <i className="ri-user-2-line"></i>}
                             </div>
                             {obj.is_required &&
                             hasAttemptedSubmit &&

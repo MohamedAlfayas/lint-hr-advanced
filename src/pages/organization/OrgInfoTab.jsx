@@ -928,7 +928,7 @@ const OrgInfoTab = () => {
                             )}
                           </Dropzone>
                           {/* {lightLogoFile && ( */}
-                          {lightLogoFile ? (
+                          {/* {lightLogoFile ? (
                             <Card className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete">
                               <div className="p-2">
                                 <Row className="align-items-center">
@@ -971,6 +971,30 @@ const OrgInfoTab = () => {
                               </Row>
                             </div>
                           )
+                          )} */}
+                          {lightLogoFile && (
+                            <Card className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete">
+                              <div className="p-2">
+                                <Row className="align-items-center">
+                                  <Col className="col-auto">
+                                    <img
+                                      height="80"
+                                      className="avatar-sm rounded bg-light"
+                                      alt={lightLogoFile.name}
+                                      src={lightLogoFile.preview}
+                                    />
+                                  </Col>
+                                  <Col>
+                                    <Link to="#" className="text-muted font-weight-bold">
+                                      {lightLogoFile.name}
+                                    </Link>
+                                    <p className="mb-0">
+                                      <strong>{lightLogoFile.formattedSize}</strong>
+                                    </p>
+                                  </Col>
+                                </Row>
+                              </div>
+                            </Card>
                           )}
                         </Col>
                       </Row>
