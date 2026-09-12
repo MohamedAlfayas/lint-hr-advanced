@@ -227,18 +227,18 @@ const StatusBottomSheet = ({
   };
 
   const executeToggleOff = async (statusId, notes) => {
-    const result = await Swal.fire({
-      title: "Stop this status?",
-      text: "This status will be turned OFF.",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#0ab39c",
-      cancelButtonColor: "#f06548",
-      confirmButtonText: "Yes",
-      cancelButtonText: "Cancel",
-    });
+    // const result = await Swal.fire({
+    //   title: "Stop this status?",
+    //   text: "This status will be turned OFF.",
+    //   icon: "question",
+    //   showCancelButton: true,
+    //   confirmButtonColor: "#0ab39c",
+    //   cancelButtonColor: "#f06548",
+    //   confirmButtonText: "Yes",
+    //   cancelButtonText: "Cancel",
+    // });
 
-    if (!result.isConfirmed) return;
+    // if (!result.isConfirmed) return;
 
     setLoadingId(statusId);
 

@@ -230,6 +230,13 @@ const LeaveTypeForm = () => {
     }),
   };
 
+  const getYearlyAllowedCount = () => {
+    if (leaveTypeData.is_credit_based) {
+      return (Number(leaveTypeData.monthly_allowed_count) || 0) * 12;
+    }
+    return Number(leaveTypeData.allowed_count) || 0;
+  };
+
   const FormikForm = useFormik({
     enableReinitialize: true,
     initialValues: leaveTypeData,
@@ -350,7 +357,8 @@ const LeaveTypeForm = () => {
         values.carry_forward_limit >
         (
           leaveTypeData.is_credit_based
-            ? leaveTypeData.monthly_allowed_count
+            // ? leaveTypeData.monthly_allowed_count
+            ? (Number(leaveTypeData.monthly_allowed_count) || 0) * 12
             : values.allowed_count
         )
       ) 
@@ -798,6 +806,11 @@ const LeaveTypeForm = () => {
                     ) : (
                       <div id="passwordHelpBlock" className="form-text">
                         Please Enter Leave Days Allowed in a year.
+                      </div>
+                    )}
+                    {leaveTypeData.is_credit_based && (
+                      <div id="passwordHelpBlock" className="form-text">
+                        Equivalent to {getYearlyAllowedCount()} days in a year (monthly × 12).
                       </div>
                     )}
                   </div>
@@ -1356,7 +1369,8 @@ const LeaveTypeForm = () => {
                               const safeVal = isNaN(val) || val < 0 ? 0 : val;
 
                               setCarryForwardError(
-                                safeVal > (leaveTypeData.allowed_count || 0)
+                                // safeVal > (leaveTypeData.allowed_count || 0)
+                                safeVal > getYearlyAllowedCount() 
                                   ? "Carry Forward Limit must not exceed Leave Days Count"
                                   : "",
                               );
