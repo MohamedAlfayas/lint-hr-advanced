@@ -265,7 +265,6 @@ const TableContainer = ({
           </p>
         </div>
       )}
-Pending Status
       {showInfo === true && hasRows && (
         <Row className="align-items-center g-3 text-center text-sm-start mt-3 mb-0">
           <div className="col-sm">
