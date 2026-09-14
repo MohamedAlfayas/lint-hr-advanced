@@ -88,6 +88,41 @@ const RESPONSIVE_STYLES = `
       font-size: 12px;
     }
   }
+
+
+   /* ✅ SimpleBar scroll track/thumb overrides */
+  .attendance-table-wrapper .simplebar-wrapper,
+  .attendance-table-wrapper .simplebar-mask,
+  .attendance-table-wrapper .simplebar-offset {
+    width: 100% !important;
+  }
+  .attendance-table-wrapper .simplebar-track.simplebar-vertical {
+    right: 2px;
+    width: 10px;
+  }
+  .attendance-table-wrapper .simplebar-track.simplebar-horizontal {
+    bottom: 2px;
+    height: 10px;
+  }
+  .attendance-table-wrapper .simplebar-track.simplebar-vertical .simplebar-scrollbar::before {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #adb5bd;
+    border-radius: 4px;
+    opacity: 1;
+  }
+  .attendance-table-wrapper .simplebar-track.simplebar-horizontal .simplebar-scrollbar::before {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #adb5bd;
+    border-radius: 4px;
+    opacity: 1;
+  }
+
 `;
 
 // ─── Custom status badge ──────────────────────────────────────────────────
@@ -1366,17 +1401,18 @@ const TodayAttendanceTable = () => {
                 style={{
                   marginTop: "8px",
                   border: "1px solid #f0f0f0",
-                  borderRadius: "6px",
+                  // borderRadius: "6px",
                 }}
               >
                 <SimpleBar
-                  style={{ maxHeight: "420px", minHeight: "420px" }}
+                  style={{ maxHeight: "420px", minHeight: "420px", width: "100%"  }}
                   autoHide={false}
                 >
-                  <style>
-                    {`.simplebar-track { display: none !important; }`}
-                  </style>
-                  <div style={{ minWidth: "100%" }}>
+                  {/* <style> */}
+                    {/* {`.simplebar-track { display: none !important; }`} */}
+                    {/* {`.simplebar-track.simplebar-horizontal { display: none !important; }`}
+                  </style> */}
+                  {/* <div style={{ minWidth: "100%", paddingRight: "14px"  }}> */}
                     <table
                       className={`table align-middle mb-0 attendance-table${
                         activeTab === "3" ? " leave-tab" : ""
@@ -1397,7 +1433,7 @@ const TodayAttendanceTable = () => {
                         )}
                       </tbody>
                     </table>
-                  </div>
+                  {/* </div> */}
                 </SimpleBar>
               </div>
             </CardBody>

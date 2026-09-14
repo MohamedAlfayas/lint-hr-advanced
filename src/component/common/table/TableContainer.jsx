@@ -265,11 +265,12 @@ const TableContainer = ({
           </p>
         </div>
       )}
-
+Pending Status
       {showInfo === true && hasRows && (
-        <Row className="align-items-center g-3 text-center text-sm-start mb-3">
+        <Row className="align-items-center g-3 text-center text-sm-start mt-3 mb-0">
           <div className="col-sm">
             <div className="text-muted">
+            {/* <div className="text-muted d-flex align-items-center justify-content-center justify-content-sm-start h-100"> */}
               Showing
               <span className="fw-semibold ms-1">{startItem}</span> to{" "}
               <span className="fw-semibold">{endItem}</span> of{" "}

@@ -332,8 +332,15 @@ const BranchForm = () => {
     let val = e.target.value.replace(/[^0-9]/g, "");
     if (field === "pincode") val = val.slice(0, 6);
     if (field === "contact_number") val = val.slice(0, 10);
-    markLiveTouched(field);
+    // markLiveTouched(field);
     setField(field, val, true);
+  };
+
+  const handleNumberBlur = (field) => {
+    const value = String(v[field] ?? "").trim();
+    if (value !== "") {
+      markLiveTouched(field);
+    }
   };
 
   const handleTextOnly = (e) => {
@@ -903,6 +910,7 @@ const BranchForm = () => {
                           value={v.pincode || ""}
                           maxLength={6}
                           onChange={(ev) => handleNumberOnly(ev, "pincode")}
+                          onBlur={() => handleNumberBlur("pincode")}
                           invalid={isInvalid("pincode")}
                         />
                         {!isInvalid("pincode") && (
@@ -969,6 +977,7 @@ const BranchForm = () => {
                             onChange={(ev) =>
                               handleNumberOnly(ev, "contact_number")
                             }
+                            onBlur={() => handleNumberBlur("contact_number")}
                             invalid={isInvalid("contact_number")}
                           />
                           {renderFieldHelp(

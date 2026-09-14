@@ -47,8 +47,8 @@ body .rs-table-row-header .rs-table-cell {
 .lc_form_error_text {
   width: 100%;
   margin-top: 0.25rem;
-  /* margin-bottom: 1rem; */
-  margin-bottom: 0;
+  margin-bottom: 1rem;
+  /* margin-bottom: 0; */
   font-size: 0.875em;
   color: var(--vz-form-invalid-color);
 }
@@ -668,3 +668,38 @@ body .rs-table-row-header .rs-table-cell {
   z-index: 3;
   cursor: pointer;
 }
+
+/* ===========================================
+   Fix Dashboard Footer to Bottom of Viewport
+=========================================== */
+.footer {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 250px !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  background-color: #fff !important;
+}
+
+[data-sidebar-size="sm"] .footer {
+  left: 70px !important;
+}
+
+.page-content {
+  padding-bottom: 60px !important;
+}
+
+/* ADD THIS: mobile/responsive fix */
+@media (max-width: 767px) {
+  .footer {
+    left: 0 !important;
+    padding: 10px !important;
+    text-align: center !important;
+  }
+  .footer .container-fluid,
+  .footer .row {
+    flex-direction: column !important;
+    text-align: center !important;
+  }
+}
+

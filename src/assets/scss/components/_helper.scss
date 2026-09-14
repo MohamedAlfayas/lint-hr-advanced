@@ -7,6 +7,7 @@ $border-style-mixing: double, dashed, groove, outset, ridge, dotted, inset;
 @each $border-style-mixing in $border-style-mixing {
     .border-#{$border-style-mixing} {
         border-style: #{$border-style-mixing} !important;
+        display: none;
     }
     .border-top-#{$border-style-mixing} {
         border-top-style: #{$border-style-mixing} !important;
