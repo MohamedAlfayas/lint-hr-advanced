@@ -48,17 +48,30 @@ function App() {
 
   useEffect(() => {
     generateToken();
-    onMessage(messaging, (payload) => {
-      const notificationTitle = payload.data.title;
+    const unsubscribe = onMessage(messaging, (payload) => {
+      const data = payload?.data || {};
+      const notificationTitle =
+        data.title || payload?.notification?.title || "Notification";
       const notificationOptions = {
-        body: payload.data.body,
-        icon: !!payload?.data?.image ? payload?.data?.image : "/logo-sm.png",
+        body: data.body || payload?.notification?.body || "",
+        icon: data.image ? data.image : "/logo-sm.png",
       };
       if (!document.hidden) {
-        // If tab is focused, show the notification immediately
-        new Notification(notificationTitle, notificationOptions);
+        try {
+          new Notification(notificationTitle, notificationOptions);
+        } catch (_) {
+          /* Notification API may be blocked */
+        }
       }
+      // Let the header inbox badge / list refresh without a full page reload.
+      // Silent pushes are not stored in the inbox API — a refetch is still cheap.
+      window.dispatchEvent(
+        new CustomEvent("linthr:notification", { detail: payload }),
+      );
     });
+    return () => {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
   }, []);
 
   return (

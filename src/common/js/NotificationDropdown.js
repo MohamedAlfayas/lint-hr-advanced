@@ -62,31 +62,71 @@ const NotificationDropdown = () => {
     [notifications],
   );
 
-  const fetchNotifications = useCallback(async ({ silent = false } = {}) => {
-    if (!silent) setLoading(true);
-    try {
-      // Unread only — already-read items disappear on reopen.
-      const res = await Api.get("/notification/list/", {
-        params: { unread_only: true },
-      });
-      const list = Array.isArray(res?.data?.data) ? res.data.data : [];
-      setNotifications(list);
-    } catch (err) {
-      console.error("Failed to load notifications:", err);
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  }, []);
+  const fetchNotifications = useCallback(
+    async ({ silent = false, mergeSeen = false } = {}) => {
+      if (!silent) setLoading(true);
+      try {
+        const res = await Api.get("/notification/list/", {
+          params: { unread_only: true },
+        });
+        const list = Array.isArray(res?.data?.data) ? res.data.data : [];
 
-  // Badge polling only while the dropdown is closed, so a just-read item
-  // stays in the open list (with seen styling) until the user reopens.
+        if (mergeSeen) {
+          // Keep rows the user already marked read in this open session, and
+          // append any brand-new unread items from the API.
+          setNotifications((prev) => {
+            const seenLocal = prev.filter((n) => n.is_read);
+            const seenIds = new Set(seenLocal.map((n) => n.id));
+            const fresh = list.filter((n) => !seenIds.has(n.id));
+            return [...fresh, ...seenLocal].sort(
+              (a, b) => new Date(b.created_on) - new Date(a.created_on),
+            );
+          });
+        } else {
+          setNotifications(list);
+        }
+      } catch (err) {
+        console.error("Failed to load notifications:", err);
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [],
+  );
+
+  // Auto-refresh badge: poll + tab focus + live FCM pushes (no full page reload).
   useEffect(() => {
-    if (isOpen) return undefined;
-    fetchNotifications({ silent: true });
-    const timer = setInterval(() => {
+    const refreshForBadge = () => {
+      if (document.hidden) return;
+      if (isOpen) {
+        fetchNotifications({ silent: true, mergeSeen: true });
+      } else {
+        fetchNotifications({ silent: true });
+      }
+    };
+
+    // Initial + periodic poll (badge updates while the app stays open).
+    if (!isOpen) {
       fetchNotifications({ silent: true });
-    }, 60000);
-    return () => clearInterval(timer);
+    }
+    const timer = setInterval(refreshForBadge, 20000);
+
+    const onFocus = () => refreshForBadge();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") refreshForBadge();
+    };
+    const onPush = () => refreshForBadge();
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("linthr:notification", onPush);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("linthr:notification", onPush);
+    };
   }, [fetchNotifications, isOpen]);
 
   const toggle = () => {
