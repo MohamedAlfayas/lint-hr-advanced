@@ -118,6 +118,23 @@ const EmployeeForm = () => {
 
   const [empIdApiError, setEmpIdApiError] = useState("");
 
+  const empIdCheckTimeout = useRef(null);
+
+  const checkEmpIdExists = (val) => {
+    const trimmed = (val || "").trim().toUpperCase();
+    if (!trimmed) {
+      setEmpIdApiError("");
+      return;
+    }
+    const isDuplicate = (employee_data || []).some(
+      (emp) =>
+        emp.emp_id &&
+        emp.emp_id.toUpperCase() === trimmed &&
+        emp.id !== employeeObj.id, // exclude the record being edited
+    );
+    setEmpIdApiError(isDuplicate ? `Employee ID ${trimmed} already exists` : "");
+  };
+
   const MAX_LENGTHS = {
     emp_id: 50,
     first_name: 50,
@@ -390,6 +407,13 @@ const EmployeeForm = () => {
         );
       })
       .catch(() => setDefaultProbationMonths(0));
+  }, []);
+
+    // ⬇️ ADD THE NEW CLEANUP EFFECT HERE
+  useEffect(() => {
+    return () => {
+      if (empIdCheckTimeout.current) clearTimeout(empIdCheckTimeout.current);
+    };
   }, []);
 
   const handleInputChange = (e) => {
@@ -968,6 +992,7 @@ const EmployeeForm = () => {
           /^[A-Z0-9](?:[A-Z0-9_-]*[A-Z0-9])?$/,
           "Employee ID can contain hyphens (-) and underscores (_) only between letters or numbers.",
         )
+        // "all zeros" is checked only on save (see submit handler) so typing "0" is not instant-invalid
         .required("Please enter employee ID")
         .max(50, "Employee ID cannot exceed 50 characters"),
 
@@ -1418,9 +1443,15 @@ const EmployeeForm = () => {
               if (fn && !NAME_REGEX.test(fn)) manualErrors.first_name = NAME_ERROR_MSG;
               if (ln && !NAME_REGEX.test(ln)) manualErrors.last_name = NAME_ERROR_MSG;
 
+              const empIdTrimmed = (syncedValues.emp_id || "").trim();
+              if (empIdTrimmed && /^0+$/.test(empIdTrimmed)) {
+                manualErrors.emp_id = "Employee ID cannot be all zeros.";
+              }
+
               // if (Object.keys(errors).length > 0) {
               //   const firstErrorField = Object.keys(errors)[0];
               if (Object.keys(manualErrors).length > 0) {
+                FormikForm.setErrors(manualErrors);
                 let firstErrorField = Object.keys(manualErrors)[0];
 
                 if (firstErrorField === "cf_values") {
@@ -1550,14 +1581,16 @@ const EmployeeForm = () => {
 
                         FormikForm.setFieldValue("emp_id", val);
                         FormikForm.setFieldTouched("emp_id", true, false);
-                        setEmpIdApiError(""); 
+                        // setEmpIdApiError(""); 
 
+                        checkEmpIdExists(val);
                      
                       }}
                       // onBlur={() => FormikForm.setFieldTouched("emp_id", true)}
                       onBlur={() => {
                         if (employeeObj.emp_id && employeeObj.emp_id.trim() !== "") {
                           FormikForm.setFieldTouched("emp_id", true);
+                          checkEmpIdExists(employeeObj.emp_id);
                         }
                       }}
                       invalid={

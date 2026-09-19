@@ -134,17 +134,21 @@ const AttendanceDashboard = () => {
           </div>
           {/* Filter Card End */}
 
-          <Row className="project-wrapper">
+          <Row className="project-wrapper align-items-stretch">
             {!showTeamTable && show_attendance_timer && (
-              <Col xxl={3} xl={3} sm={3}>
+              <Col xxl={3} xl={4} lg={4} md={5} sm={12} xs={12} className="d-flex">
                 <TimeTracking hideTimer={hideTimer} />
               </Col>
             )}
             {!showTeamTable && (
               <Col
                 xxl={show_attendance_timer ? 9 : 12}
-                xl={show_attendance_timer ? 9 : 12}
-                sm={show_attendance_timer ? 9 : 12}
+                xl={show_attendance_timer ? 8 : 12}
+                lg={show_attendance_timer ? 8 : 12}
+                md={show_attendance_timer ? 7 : 12}
+                sm={12}
+                xs={12}
+                className="d-flex"
               >
                 <AttendanceOverview />
               </Col>

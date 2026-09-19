@@ -84,6 +84,7 @@ const AttendanceEmployeeTable = () => {
     { key: "workSchedule", label: "Work Schedule" },
     { key: "break", label: "Break" },
     { key: "totalIn", label: "Total IN" },
+    { key: "ot", label: "OT" },
     { key: "paidHr", label: "Paid Hr" },
     { key: "status", label: "Status" },
     { key: "activity", label: "Activity" },
@@ -215,10 +216,12 @@ const AttendanceEmployeeTable = () => {
       ? employeeData.find(
           (e) => e.id === individual_attendance_report_data[0].employee_id,
         )
-      : [];
+      // : [];
+      : null;
   const employeeWorkSchedule =
     workScheduleData.find(
-      (w) => w.id === employeeInformation.work_schedule_id,
+      // (w) => w.id === employeeInformation.work_schedule_id,
+      (w) => w.id === employeeInformation?.work_schedule_id,
     ) || [];
 
   const day_leave_types = employee_leave_data.filter((d) => d.unit === 1);
@@ -1183,7 +1186,8 @@ const AttendanceEmployeeTable = () => {
 
           {/* ── OT (conditional) ─────────────────────────────────────── */}
           {employeeWorkSchedule?.has_ot &&
-            selectedColumns.includes("totalIn") && (
+            // selectedColumns.includes("totalIn") && (
+            selectedColumns.includes("ot") && ( 
               <Column flexGrow={1} minWidth={90}>
                 <HeaderCell>OT</HeaderCell>
                 <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />

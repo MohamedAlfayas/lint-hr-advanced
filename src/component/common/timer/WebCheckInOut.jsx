@@ -245,7 +245,7 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
                     </>
                   ) : (
                     <span className="icon-on">
-                      <i className="ri-time-line align-bottom me-1" /> Check IN
+                      <i className="ri-time-line align-bottom me-1" /> Check In
                     </span>
                   )}
                 </span>

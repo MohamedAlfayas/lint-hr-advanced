@@ -59,30 +59,82 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
   }, []);
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
+  const isAdmin = profile_data?.is_admin === true;
+  const permList = profile_data?.permission_list || [];
+
   let employee_type;
 
-  if (
-    profile_data.permission_list.includes(
-      VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
-    ) &&
-    profile_data.permission_list.includes(
-      VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
-    )
+  // if (
+  //   profile_data.permission_list.includes(
+  //     VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  //   ) &&
+  //   profile_data.permission_list.includes(
+  //     VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  //   )
+  // ) {
+  //   employee_type = 1;
+  // } else if (
+  //   profile_data.permission_list.includes(
+  //     VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  //   ) &&
+  //   !profile_data.permission_list.includes(
+  //     VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  //   )
+  // ) {
+  //   dispatch(setApprovalEmployeeTypeFilter(0));
+  //   employee_type = 0;
+  // } else {
+  //   employee_type = 1;
+  // }
+
+
+  if (isAdmin) {
+    dispatch(setApprovalEmployeeTypeFilter(0));
+    employee_type = 0;
+  } else if (
+    permList.includes(VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY) &&
+    permList.includes(VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY)
   ) {
     employee_type = 1;
   } else if (
-    profile_data.permission_list.includes(
-      VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
-    ) &&
-    !profile_data.permission_list.includes(
-      VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
-    )
+    permList.includes(VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY) &&
+    !permList.includes(VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY)
   ) {
     dispatch(setApprovalEmployeeTypeFilter(0));
     employee_type = 0;
   } else {
     employee_type = 1;
   }
+
+
+  // useEffect(() => {
+  //   const today = new Date();
+  //   const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
+  //     .toString()
+  //     .padStart(2, "0")}`;
+  //   dispatch(setLoaderVisible(true));
+  //   if (
+  //     profile_data.permission_list.includes(
+  //       VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  //     ) ||
+  //     profile_data.permission_list.includes(
+  //       VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  //     )
+  //   ) {
+  //     Api({
+  //       type: "GET",
+  //       url: `attendance/get-attendance-data-for-approval/?thisMonth=${thisMonth}&employee_type=${employee_type}`,
+  //     })
+  //       .then((res) => {
+  //         dispatch(setLoaderVisible(false));
+  //         dispatch(setAttendanceApprovalData(res?.data?.data));
+  //       })
+  //       .catch((err) => {
+  //         console.log("ERR");
+  //         dispatch(setLoaderVisible(false));
+  //       });
+  //   }
+  // }, []);
 
   useEffect(() => {
     const today = new Date();
@@ -91,12 +143,9 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
       .padStart(2, "0")}`;
     dispatch(setLoaderVisible(true));
     if (
-      profile_data.permission_list.includes(
-        VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
-      ) ||
-      profile_data.permission_list.includes(
-        VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
-      )
+      isAdmin ||
+      permList.includes(VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY) ||
+      permList.includes(VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY)
     ) {
       Api({
         type: "GET",
@@ -165,9 +214,24 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
       id: "employee_id",
 
       accessor: (obj) => {
+        // const thisEmployee = EmployeeData.find(
+        //   (data) => data.id === obj.employee_id,
+        // );
         const thisEmployee = EmployeeData.find(
-          (data) => data.id === obj.employee_id,
+          (data) => String(data.id) === String(obj.employee_id),
         );
+
+        if (!thisEmployee) {
+          console.log("thisEmployee: ",thisEmployee)
+          console.log("EmployeeData: ", EmployeeData)
+          return (
+            <div className="d-flex gap-2 align-items-center lc_sticky_first_additional_col">
+              <div className="flex-grow-1">
+                <div>-</div>
+              </div>
+            </div>
+          );
+        }
         return thisEmployee.profile_url ? (
           <div className="d-flex gap-2 align-items-center lc_sticky_first_additional_col">
             <div className="flex-shrink-0">

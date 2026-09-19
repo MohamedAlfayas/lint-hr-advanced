@@ -90,7 +90,8 @@ const AttendanceLeaveApprovalTable = () => {
   return (
     <React.Fragment>
       <Col xl={12}>
-        <Card>
+        {/* <Card> */}
+        <Card className="approval-pending-card">
           <CardHeader className="align-items-center border-0 d-flex">
             <h4 className="card-title mb-0 flex-grow-1">Pending Status</h4>
             <div className="col-md-auto ms-auto" style={{ marginLeft: "10px" }}>
