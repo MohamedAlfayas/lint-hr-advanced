@@ -715,7 +715,9 @@ const renderFormFieldValue = (field) => {
   return <span>{String(field.value)}</span>;
 };
 
-// ─── Activity Timeline helpers (check_in / check_out / custom_status) ──
+// ─── Activity Timeline helpers (check_in / check_out /
+//     custom_status_start / custom_status_end). Custom status is now two
+//     point events that share a log `id` (not one interval object). ────
 const ACTIVITY_TYPE_CONFIG = {
   check_in: {
     label: "Check In",
@@ -727,7 +729,22 @@ const ACTIVITY_TYPE_CONFIG = {
     icon: "ri-logout-circle-line",
     color: COLORS.end,
   },
-  custom_status: { label: "Status", icon: "ri-time-line", color: "#f59e0b" },
+  custom_status_start: {
+    label: "Status Start",
+    icon: "ri-play-circle-line",
+    color: "#f59e0b",
+  },
+  custom_status_end: {
+    label: "Status End",
+    icon: "ri-stop-circle-line",
+    color: "#d97706",
+  },
+  // Legacy interval shape (pre start/end split) — still renderable.
+  custom_status: {
+    label: "Status",
+    icon: "ri-time-line",
+    color: "#f59e0b",
+  },
 };
 
 const getActivityConfig = (type) =>
@@ -737,8 +754,101 @@ const getActivityConfig = (type) =>
     color: COLORS.travel,
   };
 
+const isStatusStartType = (type) =>
+  type === "custom_status_start" || type === "custom_status";
+
+const isStatusEndType = (type) => type === "custom_status_end";
+
+const isStatusActivityType = (type) =>
+  isStatusStartType(type) || isStatusEndType(type);
+
+// Status pings carry `location: { lat, lng }`; check-in/out use
+// latitude/longitude (+ a string `location` address). Support both.
+const getActivityLat = (item) => {
+  const fromFields = getLat(item);
+  if (fromFields != null) return fromFields;
+  const loc = item?.location;
+  if (loc && typeof loc === "object") {
+    const n = parseFloat(loc.lat);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+};
+
+const getActivityLng = (item) => {
+  const fromFields = getLng(item);
+  if (fromFields != null) return fromFields;
+  const loc = item?.location;
+  if (loc && typeof loc === "object") {
+    const n = parseFloat(loc.lng);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+};
+
 const activityHasCoords = (item) =>
-  hasValidCoords({ lat: getLat(item), lng: getLng(item) });
+  hasValidCoords({ lat: getActivityLat(item), lng: getActivityLng(item) });
+
+const getActivityAddressLabel = (item) => {
+  if (!item) return "";
+  if (typeof item.location === "string" && item.location.trim()) {
+    return item.location;
+  }
+  if (typeof item.notes === "string" && item.notes.trim()) return item.notes;
+  if (typeof item.start_notes === "string" && item.start_notes.trim()) {
+    return item.start_notes;
+  }
+  if (typeof item.end_notes === "string" && item.end_notes.trim()) {
+    return item.end_notes;
+  }
+  return "";
+};
+
+const getActivityChipLabel = (item, cfg) => {
+  const statusName = item?.status?.name;
+  if (item?.type === "custom_status_start") {
+    return statusName ? `${statusName} · Start` : cfg.label;
+  }
+  if (item?.type === "custom_status_end") {
+    return statusName ? `${statusName} · End` : cfg.label;
+  }
+  if (item?.type === "custom_status") {
+    return statusName || cfg.label;
+  }
+  return cfg.label;
+};
+
+// Expand legacy interval `custom_status` rows into start/end pings so the
+// zigzag UI always consumes the same point-event shape.
+const expandActivityItems = (items) => {
+  if (!Array.isArray(items)) return [];
+  const out = [];
+  items.forEach((item) => {
+    if (!item || item.type !== "custom_status") {
+      out.push(item);
+      return;
+    }
+    out.push({
+      type: "custom_status_start",
+      id: item.id,
+      timestamp: item.start_time || item.timestamp,
+      status: item.status,
+      notes: item.start_notes || item.notes || "",
+      location: item.start_location || item.location || null,
+    });
+    if (item.end_time) {
+      out.push({
+        type: "custom_status_end",
+        id: item.id,
+        timestamp: item.end_time,
+        status: item.status,
+        notes: item.end_notes || "",
+        location: item.end_location || null,
+      });
+    }
+  });
+  return out;
+};
 
 const formatSecondsDuration = (secs) => {
   if (secs === null || secs === undefined || Number.isNaN(secs)) return "";
@@ -1096,16 +1206,14 @@ const UsersClusterMapAll = ({
     };
   }, [selectedEmpId, dateFilter, locationCache]);
 
-  // ─── Fetch Activity Timeline on demand — only while that tab is open,
-  //     so switching to it for the first time triggers the call, and
-  //     flipping back and forth afterwards reuses the cache. ────────────
+  // ─── Fetch Activity Timeline whenever the Activity tab is active
+  //     (including every time the user switches onto it) and whenever
+  //     employee/date changes while that tab is open. ───────────────────
   useEffect(() => {
     if (activeTab !== TIMELINE_TABS.ACTIVITY) return;
     if (!selectedEmpId || !dateFilter) return;
 
     const key = `${selectedEmpId}::${dateFilter}`;
-    if (activityCache[key]) return;
-
     let cancelled = false;
 
     const fetchActivity = async () => {
@@ -1138,17 +1246,15 @@ const UsersClusterMapAll = ({
     return () => {
       cancelled = true;
     };
-  }, [activeTab, selectedEmpId, dateFilter, activityCache]);
+  }, [activeTab, selectedEmpId, dateFilter]);
 
-  // ─── Fetch Mobile (device toggle) Timeline on demand — same lazy /
-  //     cached pattern as Activity above. ────────────────────────────────
+  // ─── Fetch Mobile (device toggle) Timeline whenever the Mobile tab
+  //     is active — same “fetch on tab switch” pattern as Activity. ─────
   useEffect(() => {
     if (activeTab !== TIMELINE_TABS.MOBILE) return;
     if (!selectedEmpId || !dateFilter) return;
 
     const key = `${selectedEmpId}::${dateFilter}`;
-    if (mobileCache[key]) return;
-
     let cancelled = false;
 
     const fetchMobile = async () => {
@@ -1181,7 +1287,7 @@ const UsersClusterMapAll = ({
     return () => {
       cancelled = true;
     };
-  }, [activeTab, selectedEmpId, dateFilter, mobileCache]);
+  }, [activeTab, selectedEmpId, dateFilter]);
 
   // ─── Location history for the active employee + selected date ─────
   const activeLocations = useMemo(() => {
@@ -1204,23 +1310,68 @@ const UsersClusterMapAll = ({
     return mobileCache[key] || [];
   }, [selectedEmpId, dateFilter, mobileCache]);
 
-  // ─── Processed Activity Timeline rows — sorted chronologically, each
-  //     annotated with split IST time/date + resolved type config. ─────
+  // ─── Processed Activity Timeline rows — expand legacy intervals into
+  //     start/end pings, sort chronologically, pair shared ids for
+  //     duration / "ongoing", and annotate display fields. ─────────────
   const activityRows = useMemo(() => {
     if (!Array.isArray(activeActivity)) return [];
-    return [...activeActivity]
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-      .map((item, idx) => {
-        const { time, date } = splitIndianTime(item.timestamp);
-        return {
-          ...item,
-          _index: idx,
-          _time: time,
-          _date: date,
-          _config: getActivityConfig(item.type),
-          _hasCoords: activityHasCoords(item),
-        };
-      });
+    const expanded = expandActivityItems(activeActivity);
+    const sorted = [...expanded].sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
+    );
+
+    const startById = new Map();
+    const endIds = new Set();
+    sorted.forEach((item) => {
+      if (item?.type === "custom_status_start" && item.id != null) {
+        startById.set(item.id, item);
+      }
+      if (item?.type === "custom_status_end" && item.id != null) {
+        endIds.add(item.id);
+      }
+    });
+
+    return sorted.map((item, idx) => {
+      const { time, date } = splitIndianTime(item.timestamp);
+      const cfg = getActivityConfig(item.type);
+      let durationSecs = null;
+      let isOngoing = false;
+
+      if (item.type === "custom_status_end" && item.id != null) {
+        const start = startById.get(item.id);
+        if (start?.timestamp && item.timestamp) {
+          const ms =
+            new Date(item.timestamp).getTime() -
+            new Date(start.timestamp).getTime();
+          if (Number.isFinite(ms) && ms >= 0) {
+            durationSecs = Math.round(ms / 1000);
+          }
+        }
+      } else if (item.type === "custom_status_start" && item.id != null) {
+        isOngoing = !endIds.has(item.id);
+      } else if (
+        item.type === "custom_status" &&
+        item.duration_in_seconds != null
+      ) {
+        durationSecs = item.duration_in_seconds;
+        isOngoing = item.is_active === true;
+      }
+
+      return {
+        ...item,
+        _index: idx,
+        _time: time,
+        _date: date,
+        _config: cfg,
+        _hasCoords: activityHasCoords(item),
+        _chipLabel: getActivityChipLabel(item, cfg),
+        _subtitle:
+          getActivityAddressLabel(item) || (isOngoing ? "Ongoing" : ""),
+        _durationSecs: durationSecs,
+        _isOngoing: isOngoing,
+        _statusIcon: item.status?.icon || null,
+      };
+    });
   }, [activeActivity]);
 
   // ─── Processed Mobile Timeline — raw pings (chronological) plus the
@@ -1831,9 +1982,13 @@ const UsersClusterMapAll = ({
   //     InfoWindow. ─────────────────────────────────────────────────────
   const handleSideRowClick = (row, key) => {
     setExpandedIndex((cur) => (cur === key ? null : key));
-    const lat = getLat(row);
-    const lng = getLng(row);
+    const lat = getActivityLat(row) ?? getLat(row);
+    const lng = getActivityLng(row) ?? getLng(row);
     if (!hasValidCoords({ lat, lng })) return;
+    const address =
+      (typeof row.accurate_address === "string" && row.accurate_address) ||
+      getActivityAddressLabel(row) ||
+      "";
     setSelectedMarker({
       lat,
       lng,
@@ -1843,7 +1998,7 @@ const UsersClusterMapAll = ({
           name: activeEmployee?.first_name || "",
           profile_url: activeEmployee?.profile_url,
           timestamp: row._time || "",
-          address: row.accurate_address || row.location || "",
+          address,
         },
       ],
     });
@@ -3619,17 +3774,9 @@ const UsersClusterMapAll = ({
                     const rowKey = `activity-${item.type}-${item.id ?? idx}`;
                     const isActive = expandedIndex === rowKey;
                     const onLeft = idx % 2 === 0;
-                    const title =
-                      item.type === "custom_status"
-                        ? item.status?.name || cfg.label
-                        : cfg.label;
-                    const address =
-                      item.type === "custom_status"
-                        ? item.start_notes ||
-                          (item.end_time
-                            ? `Ended ${splitIndianTime(item.end_time).time}`
-                            : "Ongoing")
-                        : item.location || "—";
+                    const title = item._chipLabel || cfg.label;
+                    const address = item._subtitle || "—";
+                    const statusEmoji = item._statusIcon;
 
                     const card = (
                       <motion.div
@@ -3685,10 +3832,16 @@ const UsersClusterMapAll = ({
                             padding: "2px 8px",
                           }}
                         >
-                          <i
-                            className={cfg.icon}
-                            style={{ color: cfg.color, fontSize: "11px" }}
-                          ></i>
+                          {statusEmoji ? (
+                            <span style={{ fontSize: "11px", lineHeight: 1 }}>
+                              {statusEmoji}
+                            </span>
+                          ) : (
+                            <i
+                              className={cfg.icon}
+                              style={{ color: cfg.color, fontSize: "11px" }}
+                            ></i>
+                          )}
                           <span>{title}</span>
                         </div>
 
@@ -3701,21 +3854,21 @@ const UsersClusterMapAll = ({
                             justifyContent: onLeft ? "flex-end" : "flex-start",
                           }}
                         >
-                          {item.duration_in_seconds != null && (
+                          {item._isOngoing && (
                             <span
                               style={{
-                                fontSize: "10px",
+                                fontSize: "9px",
                                 fontWeight: 600,
-                                color: "#334155",
-                                background: "#e2e8f0",
+                                color: "#b45309",
+                                background: "#fef3c7",
                                 borderRadius: "10px",
                                 padding: "1px 7px",
                               }}
                             >
-                              {formatSecondsDuration(item.duration_in_seconds)}
+                              Ongoing
                             </span>
                           )}
-                          {item.type !== "custom_status" &&
+                          {!isStatusActivityType(item.type) &&
                             item.is_inside_range === false && (
                               <span
                                 style={{
@@ -3792,7 +3945,13 @@ const UsersClusterMapAll = ({
                               marginTop: "2px",
                             }}
                           >
-                            <i className={cfg.icon}></i>
+                            {statusEmoji ? (
+                              <span style={{ fontSize: "12px", lineHeight: 1 }}>
+                                {statusEmoji}
+                              </span>
+                            ) : (
+                              <i className={cfg.icon}></i>
+                            )}
                           </motion.div>
                         </div>
 

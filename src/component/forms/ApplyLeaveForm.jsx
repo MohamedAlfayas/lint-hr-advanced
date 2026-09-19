@@ -132,8 +132,14 @@ const checkPermissionAllowed = (leaveTypeObj, requestedStart, requestedEnd) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
+//
+// Props:
+//   lockedDate (optional) — a date (YYYY-MM-DD). When provided (e.g. when the
+//   form is opened from an attendance row), the leave date is fixed to it and
+//   cannot be changed. Only the time (hour-unit leave) / day duration can be
+//   adjusted. When omitted, the form behaves exactly as before.
 // ─────────────────────────────────────────────────────────────────────────────
-const ApplyLeaveForm = () => {
+const ApplyLeaveForm = ({ lockedDate = null }) => {
   const dispatch = useDispatch();
   const [leaveapplyObj, setLeaveApplyObj] = useState({});
 
@@ -168,6 +174,24 @@ const ApplyLeaveForm = () => {
   const [halfDayEndTime, setHalfDayEndTime] = useState(null);
 
   const [halfDayBoundaries, setHalfDayBoundaries] = useState(null);
+
+  // ── Locked date (fixed leave date when opened from an attendance row) ────
+  // lockedISO         -> "YYYY-MM-DD" (used for comparisons / in_between_dates)
+  // lockedStoredDate  -> same value in the exact format the RangePicker flow
+  //                      stores in leaveapplyObj.start / end
+  const lockedISO = useMemo(
+    () => (lockedDate ? dayjs(lockedDate).format("YYYY-MM-DD") : null),
+    [lockedDate],
+  );
+  const lockedStoredDate = useMemo(
+    () =>
+      lockedISO
+        ? ConvertISODateFormat(
+            ConvertDateFormat(dayjs(lockedISO).format(DateFormat)),
+          )
+        : null,
+    [lockedISO],
+  );
 
   const rawWorkScheduleData = GetLocalStorageData("work_schedule");
   const workScheduleData = Array.isArray(rawWorkScheduleData)
@@ -265,14 +289,16 @@ const ApplyLeaveForm = () => {
       .filter(
         (h) =>
           h.is_restricted === true &&
-          h.work_schedule_id_list?.includes(profileData?.work_schedule_id),
+          h.work_schedule_id_list?.includes(profileData?.work_schedule_id) &&
+          // when the date is locked, only a restricted holiday on that date is valid
+          (!lockedISO || dayjs(h.date).format("YYYY-MM-DD") === lockedISO),
       )
       .map((h) => ({
         value: h.id,
         label: h.name?.trim(),
         date: h.date,
       }));
-  }, [holidayData, profileData]);
+  }, [holidayData, profileData, lockedISO]);
 
   useEffect(() => {
     const dateStr = leaveapplyObj?.start
@@ -402,19 +428,27 @@ const ApplyLeaveForm = () => {
     setSelectedLeaveTypeObj(leave_type_record);
 
     if (!skipReset) {
+      // With a locked date, day-unit leave keeps the locked date instead of
+      // being cleared. (Restricted-holiday leave picks its own date; hour-unit
+      // leave keeps the date fixed through disabledDate and only asks for time.)
+      const lockDayUnit =
+        !!lockedISO &&
+        leaveTypeData?.type !== 1 &&
+        leaveTypeData?.unit === leave_type_day_unit;
+
       setLeaveApplyObj((prev) => ({
         ...prev,
         leave_type_id: leaveTypeData?.id,
         unit: leaveTypeData?.unit,
-        start: null,
-        end: null,
-        in_between_dates: [],
-        day_type: null,
-        requested_leave_count: 0,
+        start: lockDayUnit ? lockedStoredDate : null,
+        end: lockDayUnit ? lockedStoredDate : null,
+        in_between_dates: lockDayUnit ? [lockedISO] : [],
+        day_type: lockDayUnit ? 1 : null,
+        requested_leave_count: lockDayUnit ? 1 : 0,
       }));
       setHourDiff("");
-      setDaysCount("");
-      setInBetweenDays([]);
+      setDaysCount(lockDayUnit ? 1 : "");
+      setInBetweenDays(lockDayUnit ? [lockedISO] : []);
       setHalfDayStartTime(null);
       setHalfDayEndTime(null);
       setFromDate(null);
@@ -501,6 +535,11 @@ const ApplyLeaveForm = () => {
 
   const disabledDate = (current) => {
     if (!current) return false;
+
+    // Locked date: every other date is disabled
+    if (lockedISO) {
+      return current.format("YYYY-MM-DD") !== lockedISO;
+    }
 
     const minDate = dayjs().startOf("day").subtract(60, "day");
     const maxDate = dayjs().startOf("day").add(60, "day");
@@ -641,6 +680,23 @@ const ApplyLeaveForm = () => {
         ? null
         : ConvertToISODateTimeFormat(ConvertToDateTimeFormat(dateStr)),
     });
+  };
+
+  // Locked date + hour-unit leave (permission): only the time is picked.
+  // Builds the same DateTimeFormat string the DatePicker would emit so the
+  // existing from/to handlers and hour-diff calculation are reused as-is.
+  const handleLockedTimeChange = (time, which) => {
+    const dateStr = time
+      ? dayjs(
+          `${lockedISO} ${time.format("HH:mm")}`,
+          "YYYY-MM-DD HH:mm",
+        ).format(DateTimeFormat)
+      : "";
+    if (which === "start") {
+      handleFromDateChange(null, dateStr);
+    } else {
+      handleToDateChange(null, dateStr);
+    }
   };
 
   const calculateHourDiff = (start, end) => {
@@ -926,7 +982,9 @@ const ApplyLeaveForm = () => {
                     />
                     {restrictedHolidayOptions.length === 0 && (
                       <div className="form-text text-warning">
-                        No restricted holidays available for your work schedule.
+                        {lockedISO
+                          ? "No restricted holiday falls on the selected date."
+                          : "No restricted holidays available for your work schedule."}
                       </div>
                     )}
                   </div>
@@ -960,6 +1018,7 @@ const ApplyLeaveForm = () => {
                               name="start_date"
                               format={DateFormat}
                               placeholder="Start Date"
+                              disabled={!!lockedISO}
                               disabledDate={disabledDate}
                               inputReadOnly={true}
                               cellRender={(current, info) => {
@@ -1041,7 +1100,9 @@ const ApplyLeaveForm = () => {
                           </Col>
                         </div>
                         <div id="passwordHelpBlock" className="form-text mb-3">
-                          End Date auto-selects same as Start Date
+                          {lockedISO
+                            ? "Leave date is fixed to the selected attendance date"
+                            : "End Date auto-selects same as Start Date"}
                         </div>
 
                         {leaveapplyObj?.start && (
@@ -1146,6 +1207,7 @@ const ApplyLeaveForm = () => {
                             name="multiple_date"
                             format={DateFormat}
                             placeholder={["Start Date", "End Date"]}
+                            disabled={!!lockedISO}
                             disabledDate={disabledDate}
                             inputReadOnly={true}
                             cellRender={(current, info) => {
@@ -1200,7 +1262,9 @@ const ApplyLeaveForm = () => {
                           </span>
                         </div>
                         <div id="passwordHelpBlock" className="form-text">
-                          Please select Start &amp; End Date
+                          {lockedISO
+                            ? "Leave date is fixed to the selected attendance date"
+                            : "Please select Start & End Date"}
                         </div>
 
                         {(daysCount === 1 || daysCount === 0.5) && (
@@ -1379,125 +1443,217 @@ const ApplyLeaveForm = () => {
                 </Col>
               )}
 
-              {/* ── Hour-unit: datetime pickers ── */}
-              {!!currentUnit && currentUnit === leave_type_hour_unit && (
-                <Col lg={12}>
-                  <div className="row">
-                    <Col md={4} lg={4} xxl={4}>
-                      <DatePicker
-                        name="start"
-                        placeholder="Select Start Time"
-                        showTime={{
-                          minuteStep: 1,
-                          format: "HH:mm",
-                        }}
-                        format={DateTimeFormat}
-                        disabledDate={disabledDate}
-                        inputReadOnly={true}
-                        cellRender={(current, info) => {
-                          if (info.type !== "date" || !current?.format) {
-                            return info.originNode;
-                          }
-                          const currentISO = current.format("YYYY-MM-DD");
-                          const cellInfo = getDateCellInfo(currentISO);
-                          if (cellInfo) {
-                            return (
-                              <Tooltip title={cellInfo.tooltip}>
-                                <div
-                                  className="ant-picker-cell-inner"
-                                  style={{
-                                    ...cellInfo.style,
-                                    borderRadius: "4px",
-                                  }}
-                                >
-                                  {current.date()}
-                                </div>
-                              </Tooltip>
-                            );
-                          }
-                          return info.originNode;
-                        }}
-                        onChange={handleFromDateChange}
-                        value={
-                          !!leaveapplyObj?.start
-                            ? dayjs(
-                                ConvertToDateTimeFormat(
-                                  ConvertToISODateTimeFormat(
-                                    leaveapplyObj?.start,
+              {/* ── Hour-unit + locked date: fixed date, time-only pickers ── */}
+              {!!currentUnit &&
+                currentUnit === leave_type_hour_unit &&
+                !!lockedISO && (
+                  <Col lg={12}>
+                    <div className="row align-items-end">
+                      <Col md={3}>
+                        <Label className="form-label">Date</Label>
+                        <DatePicker
+                          name="locked_date"
+                          format={DateFormat}
+                          disabled={true}
+                          value={dayjs(lockedISO)}
+                          style={{ width: "100%" }}
+                        />
+                      </Col>
+                      <Col md={3}>
+                        <Label className="form-label">Start Time</Label>
+                        <TimePicker
+                          format="HH:mm"
+                          minuteStep={1}
+                          showSecond={false}
+                          needConfirm={false}
+                          placeholder="Start time"
+                          style={{ width: "100%" }}
+                          value={
+                            !!leaveapplyObj?.start
+                              ? dayjs(
+                                  ConvertToDateTimeFormat(
+                                    ConvertToISODateTimeFormat(
+                                      leaveapplyObj?.start,
+                                    ),
                                   ),
-                                ),
-                                DateTimeFormat,
-                              )
-                            : null
-                        }
-                        showNow={false}
-                      />
-                    </Col>
-
-                    <Col md={4} lg={4} xxl={4}>
-                      <DatePicker
-                        name="end"
-                        placeholder="Select End Time"
-                        showTime={{
-                          minuteStep: 1,
-                          format: "HH:mm",
-                        }}
-                        format={DateTimeFormat}
-                        disabledDate={disabledDate}
-                        inputReadOnly={true}
-                        cellRender={(current, info) => {
-                          if (info.type !== "date" || !current?.format) {
-                            return info.originNode;
+                                  DateTimeFormat,
+                                )
+                              : null
                           }
-                          const currentISO = current.format("YYYY-MM-DD");
-                          const cellInfo = getDateCellInfo(currentISO);
-                          if (cellInfo) {
-                            return (
-                              <Tooltip title={cellInfo.tooltip}>
-                                <div
-                                  className="ant-picker-cell-inner"
-                                  style={{
-                                    ...cellInfo.style,
-                                    borderRadius: "4px",
-                                  }}
-                                >
-                                  {current.date()}
-                                </div>
-                              </Tooltip>
-                            );
+                          onChange={(time) =>
+                            handleLockedTimeChange(time, "start")
                           }
-                          return info.originNode;
-                        }}
-                        onChange={handleToDateChange}
-                        value={
-                          !!leaveapplyObj?.end
-                            ? dayjs(
-                                ConvertToDateTimeFormat(
-                                  ConvertToISODateTimeFormat(
-                                    leaveapplyObj?.end,
+                        />
+                      </Col>
+                      <Col md={3}>
+                        <Label className="form-label">End Time</Label>
+                        <TimePicker
+                          format="HH:mm"
+                          minuteStep={1}
+                          showSecond={false}
+                          needConfirm={false}
+                          placeholder="End time"
+                          style={{ width: "100%" }}
+                          value={
+                            !!leaveapplyObj?.end
+                              ? dayjs(
+                                  ConvertToDateTimeFormat(
+                                    ConvertToISODateTimeFormat(
+                                      leaveapplyObj?.end,
+                                    ),
                                   ),
-                                ),
-                                DateTimeFormat,
-                              )
-                            : null
-                        }
-                        showNow={false}
-                      />
-                    </Col>
-                    <Col md={2} lg={2} xxl={2}>
-                      <span
-                        className="input-group-text"
-                        style={{ fontSize: "12px" }}
-                      >
-                        {hourDiff} h
-                      </span>
-                    </Col>
-                    <div id="passwordHelpBlock" className="form-text">
-                      Please select Date and Hour
+                                  DateTimeFormat,
+                                )
+                              : null
+                          }
+                          onChange={(time) =>
+                            handleLockedTimeChange(time, "end")
+                          }
+                        />
+                      </Col>
+                      <Col md={3}>
+                        <Label className="form-label">Total Hours</Label>
+                        <span className="form-control text-center">
+                          {hourDiff || "00:00"} h
+                        </span>
+                      </Col>
+                      <div id="passwordHelpBlock" className="form-text mt-2">
+                        Date is fixed to the selected attendance date. Please
+                        select the time
+                      </div>
                     </div>
-                  </div>
-                </Col>
-              )}
+                  </Col>
+                )}
+
+              {/* ── Hour-unit: datetime pickers ── */}
+              {!!currentUnit &&
+                currentUnit === leave_type_hour_unit &&
+                !lockedISO && (
+                  <Col lg={12}>
+                    <div className="row">
+                      <Col md={4} lg={4} xxl={4}>
+                        <DatePicker
+                          name="start"
+                          placeholder="Select Start Time"
+                          showTime={{
+                            minuteStep: 1,
+                            format: "HH:mm",
+                          }}
+                          format={DateTimeFormat}
+                          disabledDate={disabledDate}
+                          defaultPickerValue={
+                            lockedISO ? dayjs(lockedISO) : undefined
+                          }
+                          inputReadOnly={true}
+                          cellRender={(current, info) => {
+                            if (info.type !== "date" || !current?.format) {
+                              return info.originNode;
+                            }
+                            const currentISO = current.format("YYYY-MM-DD");
+                            const cellInfo = getDateCellInfo(currentISO);
+                            if (cellInfo) {
+                              return (
+                                <Tooltip title={cellInfo.tooltip}>
+                                  <div
+                                    className="ant-picker-cell-inner"
+                                    style={{
+                                      ...cellInfo.style,
+                                      borderRadius: "4px",
+                                    }}
+                                  >
+                                    {current.date()}
+                                  </div>
+                                </Tooltip>
+                              );
+                            }
+                            return info.originNode;
+                          }}
+                          onChange={handleFromDateChange}
+                          value={
+                            !!leaveapplyObj?.start
+                              ? dayjs(
+                                  ConvertToDateTimeFormat(
+                                    ConvertToISODateTimeFormat(
+                                      leaveapplyObj?.start,
+                                    ),
+                                  ),
+                                  DateTimeFormat,
+                                )
+                              : null
+                          }
+                          showNow={false}
+                        />
+                      </Col>
+
+                      <Col md={4} lg={4} xxl={4}>
+                        <DatePicker
+                          name="end"
+                          placeholder="Select End Time"
+                          showTime={{
+                            minuteStep: 1,
+                            format: "HH:mm",
+                          }}
+                          format={DateTimeFormat}
+                          disabledDate={disabledDate}
+                          defaultPickerValue={
+                            lockedISO ? dayjs(lockedISO) : undefined
+                          }
+                          inputReadOnly={true}
+                          cellRender={(current, info) => {
+                            if (info.type !== "date" || !current?.format) {
+                              return info.originNode;
+                            }
+                            const currentISO = current.format("YYYY-MM-DD");
+                            const cellInfo = getDateCellInfo(currentISO);
+                            if (cellInfo) {
+                              return (
+                                <Tooltip title={cellInfo.tooltip}>
+                                  <div
+                                    className="ant-picker-cell-inner"
+                                    style={{
+                                      ...cellInfo.style,
+                                      borderRadius: "4px",
+                                    }}
+                                  >
+                                    {current.date()}
+                                  </div>
+                                </Tooltip>
+                              );
+                            }
+                            return info.originNode;
+                          }}
+                          onChange={handleToDateChange}
+                          value={
+                            !!leaveapplyObj?.end
+                              ? dayjs(
+                                  ConvertToDateTimeFormat(
+                                    ConvertToISODateTimeFormat(
+                                      leaveapplyObj?.end,
+                                    ),
+                                  ),
+                                  DateTimeFormat,
+                                )
+                              : null
+                          }
+                          showNow={false}
+                        />
+                      </Col>
+                      <Col md={2} lg={2} xxl={2}>
+                        <span
+                          className="input-group-text"
+                          style={{ fontSize: "12px" }}
+                        >
+                          {hourDiff} h
+                        </span>
+                      </Col>
+                      <div id="passwordHelpBlock" className="form-text">
+                        {lockedISO
+                          ? "Date is fixed to the selected attendance date. Please select the time"
+                          : "Please select Date and Hour"}
+                      </div>
+                    </div>
+                  </Col>
+                )}
 
               {/* ── Reason ── */}
               <Col lg={12}>
