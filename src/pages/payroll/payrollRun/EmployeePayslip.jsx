@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import PayslipStatusCell from "./PayslipStatusCell";
 import PayslipBulkStatusBar from "./PayslipBulkStatusBar";
+import PayslipRevisionHistory from "./PayslipRevisionHistory";
 import ExcelJs from "exceljs";
 
 const fmtDateTime = (val) => {
@@ -377,7 +378,7 @@ const deptSelectStyles = {
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refreshKey = 0 }) => {
+const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refreshKey = 0, month, year }) => {
   const [loading, setLoading]                     = useState(false);
   const [payslipData, setPayslipData]             = useState([]);
   const [dynamicEarnings, setDynamicEarnings]     = useState([]);
@@ -387,6 +388,8 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
   const [downloading, setDownloading]             = useState(false);
   const [companyLogo, setCompanyLogo] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [rerunning, setRerunning] = useState(false);
+  const [historySlip, setHistorySlip] = useState(null);
   const toggleSelect = (id) =>
     setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
 
@@ -446,6 +449,49 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
   };
 
   useEffect(() => { fetchPayslips(); }, [payrollRunId, refreshKey]);
+
+  // Re-run (or first-run) payroll for just the checked rows — e.g. after
+  // fixing an attendance record for a couple of people, or clearing new
+  // joiners without waiting on everyone else. `selectedIds` are payslip
+  // ids (used for bulk status too); the run endpoint wants employee ids,
+  // so map through the payslip data we already have in memory.
+  const rerunEmployees = (employeeIds) => {
+    if (!month || !year) {
+      toast.error("Missing month/year for this run — cannot re-run.");
+      return;
+    }
+    if (!employeeIds.length) return;
+
+    setRerunning(true);
+    Api({
+      method: "POST",
+      url: "payroll/payroll-run/selected-employees/",
+      data: { month, year, employee_ids: employeeIds },
+    })
+      .then((res) => {
+        const { processed_employee_ids = [], failed = [] } = res?.data?.data || {};
+        toast.success(
+          `Re-ran ${processed_employee_ids.length} employee(s)` +
+          (failed.length ? `, ${failed.length} failed` : "")
+        );
+        if (failed.length) {
+          failed.forEach((f) => toast.error(`Employee #${f.employee_id}: ${f.error}`));
+        }
+        setSelectedIds([]);
+        fetchPayslips();
+      })
+      .catch((err) => toast.error(err?.response?.data?.error_message || err?.response?.data?.detail || "Failed to re-run selected employees."))
+      .finally(() => setRerunning(false));
+  };
+
+  const handleRerunSelected = () => {
+    const employeeIds = payslipData
+      .filter((row) => selectedIds.includes(row.id))
+      .map((row) => row.employee);
+    rerunEmployees(employeeIds);
+  };
+
+  const handleRerunOne = (row) => rerunEmployees([row.employee]);
 
   // ── Filtered rows — name/emp_id search AND department, both optional ──
   const filteredPayslipData = useMemo(() => {
@@ -688,7 +734,11 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
               <i className="ri-file-excel-2-line align-middle me-1"></i> Export Excel
             </Button>
             {selectedIds.length > 0 && (
-              <div className="d-flex align-items-center" style={{ height: 38 }}>
+              <div className="d-flex align-items-center gap-2" style={{ height: 38 }}>
+                <Button color="warning" size="sm" onClick={handleRerunSelected} disabled={rerunning}>
+                  {rerunning ? <Spinner size="sm" className="me-1" /> : <i className="ri-refresh-line align-middle me-1"></i>}
+                  Re-run Selected ({selectedIds.length})
+                </Button>
                 <PayslipBulkStatusBar
                   selectedIds={selectedIds}
                   onDone={() => { setSelectedIds([]); fetchPayslips(); }}
@@ -886,6 +936,25 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
                         <Button
                           color="light"
                           size="sm"
+                          className="border py-1 px-2 me-1"
+                          title="Re-run payroll for this employee only"
+                          disabled={rerunning}
+                          onClick={() => handleRerunOne(row)}
+                        >
+                          <i className="ri-refresh-line align-middle"></i>
+                        </Button>
+                        <Button
+                          color="light"
+                          size="sm"
+                          className="border py-1 px-2 me-1"
+                          title="View old versions of this payslip"
+                          onClick={() => setHistorySlip(row)}
+                        >
+                          <i className="ri-history-line align-middle"></i>
+                        </Button>
+                        <Button
+                          color="light"
+                          size="sm"
                           className="border py-1 px-2"
                           onClick={() => handleOpenModal(row)}
                         >
@@ -901,6 +970,13 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
           </div>
         </CardBody>
       </Card>
+
+      {/* ── Payslip Revision History Modal ── */}
+      <PayslipRevisionHistory
+        isOpen={Boolean(historySlip)}
+        toggle={() => setHistorySlip(null)}
+        payslip={historySlip}
+      />
 
       {/* ── Payslip Detail Modal ── */}
       {selectedSlip && (
