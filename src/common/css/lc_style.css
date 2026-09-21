@@ -678,7 +678,7 @@ body .rs-table-row-header .rs-table-cell {
   left: 250px !important;
   right: 0 !important;
   z-index: 1000 !important;
-  background-color: #fff !important;
+  /* background-color: #fff !important; */
 }
 
 [data-sidebar-size="sm"] .footer {
@@ -703,3 +703,174 @@ body .rs-table-row-header .rs-table-cell {
   }
 }
 
+/* === TimeTracking Card === */
+.time-tracking-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  margin-bottom: 1.5rem;
+}
+
+.time-tracking-card {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  margin-bottom: 0 !important;
+  overflow: hidden;
+}
+
+.time-tracking-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 14px 12px 12px;
+  box-sizing: border-box;
+}
+
+.date-cubes-row {
+  width: 100%;
+  max-width: 100%;
+  min-height: 52px;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.date-cubes {
+  display: flex;
+  gap: clamp(4px, 1.2vw, 8px);
+  width: 100%;
+  max-width: 100%;
+  justify-content: center;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+.date-cube {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: var(--cube-size, 52px);
+  aspect-ratio: 1 / 1;
+  border-radius: 18%;
+  border: 1.5px solid;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(20, 33, 61, 0.06);
+  padding: 4%;
+  box-sizing: border-box;
+  container-type: size;
+}
+
+.date-cube-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4%;
+  margin-bottom: 2%;
+  max-width: 100%;
+}
+
+.date-cube-badge {
+  width: 22%;
+  min-width: 12px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+  font-size: clamp(10px, 18cqw, 14px);
+}
+
+.date-cube-badge svg {
+  width: 0.65em;
+  height: 0.65em;
+}
+
+.date-cube-label {
+  font-size: clamp(7px, 14cqw, 8px);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.date-cube-value {
+  font-size: clamp(12px, 34cqw, 20px);
+  font-weight: 800;
+  color: #14213D;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.time-tracking-timer {
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.time-tracking-first-in {
+  margin-bottom: 0.5rem !important;
+}
+
+.time-tracking-btn.is-checked-in button,
+.time-tracking-btn.is-checked-in .btn {
+  background: linear-gradient(135deg, #FF6B6B 0%, #DC3545 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  border-radius: 30px !important;
+  padding: 8px 28px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.35) !important;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.time-tracking-btn.is-checked-in button:hover,
+.time-tracking-btn.is-checked-in .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(220, 53, 69, 0.45) !important;
+}
+
+.time-tracking-btn.is-checked-out button,
+.time-tracking-btn.is-checked-out .btn {
+  background: linear-gradient(135deg, #1CC6BE 0%, #0C7C8C 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  border-radius: 30px !important;
+  padding: 8px 28px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(12, 124, 140, 0.4) !important;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.time-tracking-btn.is-checked-out button:hover,
+.time-tracking-btn.is-checked-out .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(12, 124, 140, 0.5) !important;
+}
+
+/* Only affects the Attendance/Leave approval card, nothing else that uses TableContainer */
+.approval-pending-card {
+  margin-bottom: 0 !important;
+}
+
+.approval-pending-card .g-3.mt-1.mb-0 {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.approval-pending-card .card-body {
+  padding-bottom: 0 !important;
+}
+
+
+.hide-picker-footer .ant-picker-footer {
+  display: none;
+}

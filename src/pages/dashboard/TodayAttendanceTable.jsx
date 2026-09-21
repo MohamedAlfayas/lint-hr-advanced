@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   Card,
   CardBody,
@@ -42,12 +42,109 @@ import {
 dayjs.extend(customParseFormat);
 
 // ─── Responsive styles injected once ─────────────────────────────────────
+// const RESPONSIVE_STYLES = `
+//   .attendance-table-wrapper {
+//     width: 100%;
+//     overflow-x: auto;
+//     -webkit-overflow-scrolling: touch;
+//   }
+//   .attendance-table {
+//     width: 100%;
+//     min-width: 700px;
+//     table-layout: fixed;
+//     border-collapse: collapse;
+//   }
+//   .attendance-table.leave-tab {
+//     min-width: 560px;
+//   }
+//   @media (max-width: 991px) {
+//     .attendance-table {
+//       min-width: 620px;
+//     }
+//     .attendance-table.leave-tab {
+//       min-width: 480px;
+//     }
+//   }
+//   @media (max-width: 575px) {
+//     .attendance-table,
+//     .attendance-table.leave-tab {
+//       min-width: 520px;
+//     }
+//     .filter-container .row > [class*="col-"] {
+//       flex: 0 0 100%;
+//       max-width: 100%;
+//     }
+//   }
+//   .attendance-table thead th {
+//     position: sticky;
+//     top: 0;
+//     z-index: 2;
+//     background: #f8f9fa;
+//   }
+//   @media (max-width: 767px) {
+//     .attendance-table td,
+//     .attendance-table th {
+//       padding: 8px 6px !important;
+//       font-size: 12px;
+//     }
+//   }
+
+
+//    /* ✅ SimpleBar scroll track/thumb overrides */
+//   .attendance-table-wrapper .simplebar-wrapper,
+//   .attendance-table-wrapper .simplebar-mask,
+//   .attendance-table-wrapper .simplebar-offset {
+//     width: 100% !important;
+//   }
+//   .attendance-table-wrapper .simplebar-track.simplebar-vertical {
+//     right: 2px;
+//     width: 10px;
+//   }
+//   .attendance-table-wrapper .simplebar-track.simplebar-horizontal {
+//     bottom: 2px;
+//     height: 10px;
+//   }
+//   .attendance-table-wrapper .simplebar-track.simplebar-vertical .simplebar-scrollbar::before {
+//     top: 0;
+//     bottom: 0;
+//     left: 0;
+//     right: 0;
+//     background-color: #adb5bd;
+//     border-radius: 4px;
+//     opacity: 1;
+//   }
+//   .attendance-table-wrapper .simplebar-track.simplebar-horizontal .simplebar-scrollbar::before {
+//     top: 0;
+//     bottom: 0;
+//     left: 0;
+//     right: 0;
+//     background-color: #adb5bd;
+//     border-radius: 4px;
+//     opacity: 1;
+//   }
+
+// `;
 const RESPONSIVE_STYLES = `
+  /* Defensive: some dashboard themes set overflow:hidden on .card to clip
+     rounded corners — that silently clips our scrollbar too. Force it open
+     just for this card. */
+  #attendanceList,
+  #attendanceList .card-body {
+    overflow: visible !important;
+  }
+
   .attendance-table-wrapper {
     width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+    padding: 0 16px 16px 0; /* real empty space OUTSIDE the bordered table box */
+    overflow: visible;
   }
+
+  /* Border now traces the actual table box, not the outer wrapper */
+  .attendance-table-inner {
+    border: 1px solid #f0f0f0;
+  }
+
   .attendance-table {
     width: 100%;
     min-width: 700px;
@@ -89,42 +186,40 @@ const RESPONSIVE_STYLES = `
     }
   }
 
-
-   /* ✅ SimpleBar scroll track/thumb overrides */
+  /* ✅ Track sits OUTSIDE the bordered box (negative offset), landing in the
+     16px whitespace gutter reserved above by .attendance-table-wrapper's
+     padding — fully clickable since nothing here clips overflow. */
   .attendance-table-wrapper .simplebar-wrapper,
   .attendance-table-wrapper .simplebar-mask,
   .attendance-table-wrapper .simplebar-offset {
     width: 100% !important;
   }
+
+  .attendance-table-wrapper .simplebar-track {
+    pointer-events: auto;
+    z-index: 3;
+  }
   .attendance-table-wrapper .simplebar-track.simplebar-vertical {
-    right: 2px;
-    width: 10px;
+    right: -14px;
+    width: 8px;
   }
   .attendance-table-wrapper .simplebar-track.simplebar-horizontal {
-    bottom: 2px;
-    height: 10px;
+    bottom: -14px;
+    height: 8px;
   }
   .attendance-table-wrapper .simplebar-track.simplebar-vertical .simplebar-scrollbar::before {
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    top: 0; bottom: 0; left: 0; right: 0;
     background-color: #adb5bd;
     border-radius: 4px;
     opacity: 1;
   }
   .attendance-table-wrapper .simplebar-track.simplebar-horizontal .simplebar-scrollbar::before {
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    top: 0; bottom: 0; left: 0; right: 0;
     background-color: #adb5bd;
     border-radius: 4px;
     opacity: 1;
   }
-
 `;
-
 // ─── Custom status badge ──────────────────────────────────────────────────
 const getCheckInStatusBadge = (statusName, customStatuses = []) => {
   const matched = customStatuses.find(
@@ -684,6 +779,22 @@ const TodayAttendanceTable = () => {
     key: null,
     direction: "asc",
   });
+
+  const scrollBarRef = useRef(null);
+
+  useEffect(() => {
+    const scrollEl = scrollBarRef.current?.getScrollElement?.();
+    if (!scrollEl) return;
+
+    const handleWheel = (e) => {
+      scrollEl.scrollTop += e.deltaY;
+      scrollEl.scrollLeft += e.deltaX;
+      e.preventDefault();
+    };
+
+    scrollEl.addEventListener("wheel", handleWheel, { passive: false });
+    return () => scrollEl.removeEventListener("wheel", handleWheel);
+  }, [loading, activeTab]);
 
   const handleSort = (key) => {
     let direction = "asc";
@@ -1400,11 +1511,13 @@ const TodayAttendanceTable = () => {
                 className="attendance-table-wrapper"
                 style={{
                   marginTop: "8px",
-                  border: "1px solid #f0f0f0",
+                  // border: "1px solid #f0f0f0",
                   // borderRadius: "6px",
                 }}
               >
                 <SimpleBar
+                  ref={scrollBarRef}
+                  Name="attendance-table-inner"
                   style={{ maxHeight: "420px", minHeight: "420px", width: "100%"  }}
                   autoHide={false}
                 >

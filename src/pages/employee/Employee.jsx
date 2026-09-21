@@ -516,8 +516,12 @@ const Employee = () => {
       filterable: false,
       id: "reporting_manager_id",
       accessor: (obj) => {
-        const rm_obj =
-          EmployeeData.find((d) => d.id === obj.reporting_manager_id) || null;
+        // const rm_obj =
+        //   EmployeeData.find((d) => d.id === obj.reporting_manager_id) || null;
+          const rm_obj =
+            obj.reporting_manager_info ||
+            EmployeeData.find((d) => d.id === obj.reporting_manager_id) ||
+            null;
 
         const handleRMClick = (e) => {
           e.preventDefault();
@@ -585,7 +589,7 @@ const Employee = () => {
             {/* Name + Email */}
             <div className="flex-grow-1">
               <h5 className="fs-14 mb-1 link-body-emphasis">
-                {rm_obj.first_name}
+                {rm_obj.first_name} {rm_obj.last_name}
               </h5>
               <div className="text-muted">{rm_obj.email}</div>
             </div>

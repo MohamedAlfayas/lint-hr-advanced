@@ -21,9 +21,18 @@ import { toast } from "react-toastify";
 import { BaseURL, getBaseUrlFromDomain } from "../../../common/api/BaseURL";
 import { buildRedirectUrl } from "../../../common/api/BuildRedirectURL";
 
+// Letters, numbers, spaces, . , - & ( ) ' _
+const COMPANY_NAME_ALLOWED = /^[A-Za-z0-9\s.,\-&()'_]+$/;
+const COMPANY_NAME_SANITIZE = /[^A-Za-z0-9\s.,\-&()'_]/g;
+const COMPANY_NAME_MAX = 100;
+
+const COMPANY_NAME_MAX_ERROR =
+  "Company name cannot exceed 100 characters";
+
 const WorkSpace = () => {
   const [company_name, setDomain] = useState("");
   const [errorMessage, setErrorMessage] = useState(null);
+  const [maxLengthError, setMaxLengthError] = useState("");
 
   const navigate = useNavigate();
 
@@ -33,50 +42,88 @@ const WorkSpace = () => {
       company_name: company_name || "",
     },
     validationSchema: Yup.object({
-      company_name: Yup.string().trim().required("Domain URL is required"),
+      company_name: Yup.string()
+        .trim()
+        .required("Please enter company name")
+        .min(1, "Please enter company name")
+        .max(COMPANY_NAME_MAX, COMPANY_NAME_MAX_ERROR)
+        .matches(
+          COMPANY_NAME_ALLOWED,
+          "Company name can only contain letters, numbers, spaces, and . , - & ( ) ' _",
+        ),
     }),
     onSubmit: (values) => {
-      const company_name = values?.company_name;
+      // Trim before lookup; API match is case-insensitive
+      const trimmedName = (values?.company_name || "").trim();
 
-      if (!!company_name) {
-        let url = "";
-
-        if (
-          !!process.env.REACT_APP_LC_PLATFORM &&
-          process.env.REACT_APP_LC_PLATFORM === "local"
-        ) {
-          url = `${getBaseUrlFromDomain()}api/auth/validate-company/`;
-        } else {
-          const domain = window.location.hostname.split(".")[0];
-          url = `https://apps.${process.env.REACT_APP_BASE_URL}/api/auth/validate-company/`;
-        }
-
-        axios({
-          method: "POST",
-          url: url,
-          data: {
-            company_name: company_name,
-          },
-        })
-          .then((res) => {
-            setErrorMessage(null);
-            console.log("REs - ", res);
-            if (res?.data && res?.data?.domain) {
-              window.location.href = buildRedirectUrl(res?.data?.domain);
-            }
-          })
-          .catch((err) => {
-            console.error("Err - ", err);
-            setErrorMessage(
-              "We couldn’t find your workspace. Please Try Again.",
-            );
-            toast?.error(
-              err?.response?.data?.message || "Something Went Wrong",
-            );
-          });
+      if (!trimmedName) return;
+      if (trimmedName.length > COMPANY_NAME_MAX) {
+        setMaxLengthError(COMPANY_NAME_MAX_ERROR);
+        validation.setFieldTouched("company_name", true, false);
+        return;
       }
+
+      setDomain(trimmedName);
+      validation.setFieldValue("company_name", trimmedName, false);
+
+      let url = "";
+
+      if (
+        !!process.env.REACT_APP_LC_PLATFORM &&
+        process.env.REACT_APP_LC_PLATFORM === "local"
+      ) {
+        url = `${getBaseUrlFromDomain()}api/auth/validate-company/`;
+      } else {
+        const domain = window.location.hostname.split(".")[0];
+        url = `https://apps.${process.env.REACT_APP_BASE_URL}/api/auth/validate-company/`;
+      }
+
+      axios({
+        method: "POST",
+        url: url,
+        data: {
+          company_name: trimmedName,
+        },
+      })
+        .then((res) => {
+          setErrorMessage(null);
+          console.log("REs - ", res);
+          if (res?.data && res?.data?.domain) {
+            window.location.href = buildRedirectUrl(res?.data?.domain);
+          }
+        })
+        .catch((err) => {
+          console.error("Err - ", err);
+          setErrorMessage("Company not found");
+          toast?.error(
+            err?.response?.data?.message || "Company not found",
+          );
+        });
     },
   });
+
+  const handleCompanyNameChange = (e) => {
+    const val = e.target.value.replace(COMPANY_NAME_SANITIZE, "");
+    setDomain(val);
+    validation.setFieldValue("company_name", val, true);
+    validation.setFieldTouched("company_name", true, false);
+    setMaxLengthError(
+      val.length > COMPANY_NAME_MAX ? COMPANY_NAME_MAX_ERROR : "",
+    );
+    setErrorMessage(null);
+  };
+
+  const handleCompanyNameBlur = () => {
+    const trimmed = (company_name || "").trim();
+    if (trimmed !== company_name) {
+      setDomain(trimmed);
+      validation.setFieldValue("company_name", trimmed, true);
+      setMaxLengthError(
+        trimmed.length > COMPANY_NAME_MAX ? COMPANY_NAME_MAX_ERROR : "",
+      );
+    }
+    validation.setFieldTouched("company_name", true);
+  };
 
   document.title = `WorkSpace | ${MetaTitle}`;
   return (
@@ -98,7 +145,7 @@ const WorkSpace = () => {
                     fontWeight: "light",
                   }}
                 >
-                  <span class="mdi mdi-alert-circle"></span>
+                  <span className="mdi mdi-alert-circle"></span>
                   {errorMessage}
                 </div>
               </div>
@@ -140,47 +187,43 @@ const WorkSpace = () => {
                               >
                                 Please enter your company name
                               </Label>
-                              <Col lg={12}>
-                                <div className="mb-6">
-                                  <div className="input-group">
-                                    <Input
-                                      name="company_name"
-                                      className="form-control"
-                                      placeholder="Enter Company"
-                                      type="text"
-                                      onChange={(e) => {
-                                        setDomain(e.target.value);
-                                      }}
-                                      value={company_name || ""}
-                                      invalid={
-                                        validation.touched.company_name &&
-                                        validation.errors.company_name
-                                          ? true
-                                          : false
-                                      }
-                                    />
-
-                                    {validation.touched.company_name &&
-                                    validation.errors.company_name ? (
-                                      <FormFeedback type="invalid">
-                                        {validation.errors.company_name}
-                                      </FormFeedback>
-                                    ) : null}
-                                  </div>
-                                  <div
-                                    id="passwordHelpBlock"
-                                    className="form-text"
-                                  ></div>
-                                  {!validation.errors.company_name && (
-                                    <div
-                                      id="passwordHelpBlock"
-                                      className="form-text mb-3"
-                                    >
-                                      Domain name.
-                                    </div>
-                                  )}
-                                </div>
-                              </Col>
+                              <Input
+                                name="company_name"
+                                id="company_name"
+                                className="form-control"
+                                placeholder="Enter Company"
+                                type="text"
+                                onChange={handleCompanyNameChange}
+                                onBlur={handleCompanyNameBlur}
+                                value={company_name || ""}
+                                invalid={
+                                  !!maxLengthError ||
+                                  !!(
+                                    validation.touched.company_name &&
+                                    validation.errors.company_name
+                                  )
+                                }
+                              />
+                              {maxLengthError ? (
+                                <FormFeedback
+                                  type="invalid"
+                                  className="d-block"
+                                  style={{ paddingBottom: 0 }}
+                                >
+                                  {maxLengthError}
+                                </FormFeedback>
+                              ) : validation.touched.company_name &&
+                                validation.errors.company_name ? (
+                                <FormFeedback
+                                  type="invalid"
+                                  className="d-block"
+                                  style={{ paddingBottom: 0 }}
+                                >
+                                  {validation.errors.company_name}
+                                </FormFeedback>
+                              ) : (
+                                <div className="form-text">Domain name.</div>
+                              )}
                             </div>
 
                             <div className="mt-4">

@@ -1370,10 +1370,14 @@ const ApplyLeaveForm = ({ lockedDate = null }) => {
                         format="HH:mm"
                         minuteStep={1}
                         showSecond={false}
+                        popupClassName="hide-picker-footer"
+                        onSelect={handleHalfDayStartTimeChange} 
+                        // showNow={false}          // ← hides "Now"
+                        // needConfirm={false}      // ← hides "OK" (antd ≥ 5.14)
                         onChange={handleHalfDayStartTimeChange}
                         style={{ width: "100%" }}
                         placeholder="Select start time"
-                        needConfirm={false}
+                        // needConfirm={false}
                       />
                     </Col>
 
@@ -1396,10 +1400,12 @@ const ApplyLeaveForm = ({ lockedDate = null }) => {
                         minuteStep={1}
                         showSecond={false}
                         disabled={!halfDayStartTime}
+                        popupClassName="hide-picker-footer"
+                        onSelect={handleHalfDayEndTimeChange}
                         onChange={handleHalfDayEndTimeChange}
                         style={{ width: "100%" }}
                         placeholder="Select end time"
-                        needConfirm={false}
+                        // needConfirm={false}
                       />
                     </Col>
 
