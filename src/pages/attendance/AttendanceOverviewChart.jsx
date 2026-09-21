@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import ReactApexChart from "react-apexcharts";
 import getChartColorsArray from "../../component/common/dynamicColor/ChartsDynamicColor";
 
+
 const AttendanceOverviewChart = ({ dataColors, chartData }) => {
   console.log("DATA",chartData);
   

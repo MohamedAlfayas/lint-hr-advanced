@@ -869,3 +869,8 @@ body .rs-table-row-header .rs-table-cell {
 .approval-pending-card .card-body {
   padding-bottom: 0 !important;
 }
+
+
+.hide-picker-footer .ant-picker-footer {
+  display: none;
+}
