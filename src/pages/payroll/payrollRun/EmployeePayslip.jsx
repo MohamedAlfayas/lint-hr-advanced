@@ -11,6 +11,7 @@ import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import PayslipStatusCell from "./PayslipStatusCell";
 import PayslipBulkStatusBar from "./PayslipBulkStatusBar";
 import PayslipRevisionHistory from "./PayslipRevisionHistory";
+import { isPaymentRecorded } from "./statusHelpers";
 import ExcelJs from "exceljs";
 
 const fmtDateTime = (val) => {
@@ -378,7 +379,7 @@ const deptSelectStyles = {
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refreshKey = 0, month, year }) => {
+const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refreshKey = 0, month, year, runStatus, onPaymentReleased }) => {
   const [loading, setLoading]                     = useState(false);
   const [payslipData, setPayslipData]             = useState([]);
   const [dynamicEarnings, setDynamicEarnings]     = useState([]);
@@ -484,14 +485,36 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
       .finally(() => setRerunning(false));
   };
 
-  const handleRerunSelected = () => {
-    const employeeIds = payslipData
-      .filter((row) => selectedIds.includes(row.id))
-      .map((row) => row.employee);
-    rerunEmployees(employeeIds);
+  // Parent owns the overview totals and run-status badge. When it is
+  // wired, its callback refetches this table via refreshKey. Otherwise
+  // refresh locally so the grid still updates.
+  const refreshAfterChange = ({ clearSelection = false } = {}) => {
+    if (clearSelection) setSelectedIds([]);
+    if (onPaymentReleased) onPaymentReleased();
+    else fetchPayslips();
   };
 
-  const handleRerunOne = (row) => rerunEmployees([row.employee]);
+  const handleRerunSelected = () => {
+    const selected = payslipData.filter((row) => selectedIds.includes(row.id));
+    const blocked = selected.filter(isPaymentRecorded);
+    const eligible = selected.filter((row) => !isPaymentRecorded(row));
+    if (!eligible.length) {
+      toast.warning("Paid and partially paid payslips cannot be re-run.");
+      return;
+    }
+    if (blocked.length) {
+      toast.warning(`${blocked.length} paid or partially paid payslip(s) skipped.`);
+    }
+    rerunEmployees(eligible.map((row) => row.employee));
+  };
+
+  const handleRerunOne = (row) => {
+    if (isPaymentRecorded(row)) {
+      toast.warning("Paid and partially paid payslips cannot be re-run.");
+      return;
+    }
+    rerunEmployees([row.employee]);
+  };
 
   // ── Filtered rows — name/emp_id search AND department, both optional ──
   const filteredPayslipData = useMemo(() => {
@@ -539,6 +562,9 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
       ...dynamicDeductions,
       "Total Deductions",
       "Net Pay",
+      "Paid",
+      "Balance",
+      "Deferred",
       "Based On",
     ];
 
@@ -548,6 +574,8 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
     const dedStart = earnEnd + 1; // first deduction col
     const dedEnd = dedStart + dynamicDeductions.length; // includes Total Deductions
     const netCol = dedEnd + 1; // Net Pay col
+    const paidStart = netCol + 1; // Paid, Balance, Deferred
+    const paidEnd = netCol + 3;
 
     // ── Header row ──
     const headerRow = sheet.addRow(header);
@@ -591,6 +619,9 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
         ),
         Number(row.total_deductions || 0),
         netPay,
+        Number(row.paid_amount || 0),
+        Number(row.balance_amount || 0),
+        Number(row.deferred_amount || 0),
         (row.based_on || "CTC").toUpperCase(),
       ];
 
@@ -619,6 +650,10 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
             pattern: "solid",
             fgColor: { argb: "FDECEC" },
           };
+        }
+        // paid, balance, and deferred amounts
+        if (col >= paidStart && col <= paidEnd) {
+          cell.numFmt = "#,##0.00";
         }
         // net pay styling
         if (col === netCol) {
@@ -734,16 +769,16 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
               <i className="ri-file-excel-2-line align-middle me-1"></i> Export Excel
             </Button>
             {selectedIds.length > 0 && (
-              <div className="d-flex align-items-center gap-2" style={{ height: 38 }}>
-                <Button color="warning" size="sm" onClick={handleRerunSelected} disabled={rerunning}>
-                  {rerunning ? <Spinner size="sm" className="me-1" /> : <i className="ri-refresh-line align-middle me-1"></i>}
-                  Re-run Selected ({selectedIds.length})
-                </Button>
-                <PayslipBulkStatusBar
-                  selectedIds={selectedIds}
-                  onDone={() => { setSelectedIds([]); fetchPayslips(); }}
-                />
-              </div>
+              <Button
+                color="warning"
+                size="sm"
+                onClick={handleRerunSelected}
+                disabled={rerunning || !payslipData.some((row) => selectedIds.includes(row.id) && !isPaymentRecorded(row))}
+                title="Paid and partially paid payslips are skipped"
+              >
+                {rerunning ? <Spinner size="sm" className="me-1" /> : <i className="ri-refresh-line align-middle me-1"></i>}
+                Re-run Selected ({selectedIds.length})
+              </Button>
             )}
           </div>
         </CardHeader>
@@ -784,6 +819,13 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
             </Button>
           )}
         </div>
+
+        <PayslipBulkStatusBar
+          selectedIds={selectedIds}
+          payslips={payslipData}
+          runStatus={runStatus}
+          onDone={() => refreshAfterChange({ clearSelection: true })}
+        />
 
         <CardBody className="p-0 flex-grow-1" style={{ minHeight: 0 }}>
           <style>{`
@@ -831,6 +873,9 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
                     <th key={ded} className="text-danger" style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>{ded}</th>
                   ))}
                   <th className="text-dark" style={{ position:"sticky", top:0, zIndex:3, background:"#d8f3ea" }}>Net Pay</th>
+                  <th style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>Paid</th>
+                  <th style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>Balance</th>
+                  <th style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>Deferred</th>
                   <th className="text-center" style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>Based On</th>
                   <th className="text-center" style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>Status</th>
                   <th
@@ -848,7 +893,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
               <tbody>
                 {filteredPayslipData.length === 0 ? (
                   <tr>
-                    <td colSpan={9 + dynamicEarnings.length + dynamicDeductions.length} className="text-center py-4 text-muted">
+                    <td colSpan={13 + dynamicEarnings.length + dynamicDeductions.length} className="text-center py-4 text-muted">
                       No payslip data found.
                     </td>
                   </tr>
@@ -918,6 +963,11 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
                       <td className={`fw-bold ${netPay < 0 ? "text-danger" : "text-success"}`}>
                         &#8377;{fmt(row.net_pay)}
                       </td>
+                      <td>&#8377;{fmt(row.paid_amount)}</td>
+                      <td className={parseFloat(row.balance_amount || 0) > 0 ? "text-warning fw-semibold" : ""}>
+                        &#8377;{fmt(row.balance_amount)}
+                      </td>
+                      <td>&#8377;{fmt(row.deferred_amount)}</td>
 
                       <td className="text-center">
                         <Badge color={row.based_on === "ctc" ? "info" : "secondary"} className="fs-11 text-uppercase">
@@ -926,7 +976,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
                       </td>
 
                       <td className="text-center">
-                        <PayslipStatusCell payslip={row} onChanged={fetchPayslips} />
+                        <PayslipStatusCell payslip={row} runStatus={runStatus} onChanged={() => refreshAfterChange()} />
                       </td>
 
                       <td
@@ -937,8 +987,8 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
                           color="light"
                           size="sm"
                           className="border py-1 px-2 me-1"
-                          title="Re-run payroll for this employee only"
-                          disabled={rerunning}
+                          title={isPaymentRecorded(row) ? "Paid and partially paid payslips cannot be re-run" : "Re-run payroll for this employee only"}
+                          disabled={rerunning || isPaymentRecorded(row)}
                           onClick={() => handleRerunOne(row)}
                         >
                           <i className="ri-refresh-line align-middle"></i>

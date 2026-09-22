@@ -2,17 +2,23 @@ import React, { useEffect, useState } from "react";
 import { Input, Spinner } from "reactstrap";
 import { toast } from "react-toastify";
 import { Api } from "../../../common/api/Api";
-import { fetchStatusMaster } from "./statusHelpers";
+import { fetchStatusMaster, isZeroSettlement, labelFor, nextStatusCodes } from "./statusHelpers";
 import StatusBadge from "./StatusBadge";
 
-const PayslipStatusCell = ({ payslip, onChanged }) => {
+const PayslipStatusCell = ({ payslip, runStatus, onChanged }) => {
   const [rows, setRows] = useState([]);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { fetchStatusMaster("payslip").then(setRows); }, []);
 
-  const current   = rows.find((r) => r.code === payslip.status);
-  const nextCodes = current?.allowed_next || [];
+  // "paid" / "partially_paid" are released via the payment actions, except a
+  // zero slip (nothing earned, nothing deferred, nothing owed). The payment
+  // call reports success and leaves that slip approved, which blocks the run
+  // from becoming paid. Those slips can be marked paid here.
+  const nextCodes = nextStatusCodes(rows, payslip.status, runStatus);
+  const options = isZeroSettlement(payslip) && !nextCodes.includes("paid")
+    ? [...nextCodes, "paid"]
+    : nextCodes;
 
   const handleChange = (e) => {
     const target = e.target.value;
@@ -23,7 +29,21 @@ const PayslipStatusCell = ({ payslip, onChanged }) => {
       url: "payroll/employee-payslip-status/",
       data: { id: payslip.id, status: target },
     })
-      .then(() => { toast.success("Status updated"); onChanged && onChanged(); })
+      .then((res) => {
+        const body = res?.data?.data;
+        const skipped = Array.isArray(body?.skipped) ? body.skipped : [];
+        const updatedStatus = body?.status;
+        if (skipped.length && !body?.updated_count) {
+          toast.error(skipped[0]?.reason || "Status was not changed.");
+          return;
+        }
+        if (updatedStatus && updatedStatus !== target) {
+          toast.error(`Status stayed ${updatedStatus}.`);
+          return;
+        }
+        toast.success("Status updated");
+        onChanged && onChanged();
+      })
       .catch((err) => toast.error(err?.response?.data?.error_message || "Failed to update status."))
       .finally(() => setBusy(false));
   };
@@ -33,10 +53,10 @@ const PayslipStatusCell = ({ payslip, onChanged }) => {
   return (
     <div className="d-flex align-items-center gap-1">
       <StatusBadge scope="payslip" code={payslip.status} />
-      {nextCodes.length > 0 && (
-        <Input type="select" bsSize="sm" style={{ width: 110, fontSize: 11 }} value="" onChange={handleChange}>
+      {options.length > 0 && (
+        <Input type="select" bsSize="sm" style={{ width: 140, fontSize: 11 }} value="" onChange={handleChange}>
           <option value="">Move to…</option>
-          {nextCodes.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
+          {options.map((c) => <option key={c} value={c}>{labelFor(rows, c)}</option>)}
         </Input>
       )}
     </div>

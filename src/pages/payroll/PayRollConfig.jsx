@@ -52,6 +52,7 @@ import PayrollRun from "./payrollRun/payrollRun";
 import PayrollBulkEditor from "./payrollRun/PayrollBulkEditor";
 import EmployeePayslip from "./payrollRun/EmployeePayslip";
 import ReimbursementsTab from "./PayrollComponent/ReimbursementsTab";
+import StatusMasterTab from "./payrollRun/StatusMasterTab";
 defineElement(loadAnimation);
 
 // ─── Shared static data ──────────────────────────────────────────────────────
@@ -335,6 +336,7 @@ const PayRollConfig = () => {
     { id: "4", label: "Policy Settings" },
     { id: "5", label: "Payroll Run" },
     { id: "6", label: "Regularization" },
+    { id: "7", label: "Status Master" },
   ];
 
   return (
@@ -395,6 +397,10 @@ const PayRollConfig = () => {
                 
                 <TabPane tabId="6">
                   <PayrollBulkEditor />
+                </TabPane>
+
+                <TabPane tabId="7">
+                  <StatusMasterTab />
                 </TabPane>
               </TabContent>
             </Col>
