@@ -5,7 +5,6 @@ import {
   CardBody,
   CardTitle,
   CardSubtitle,
-  Col,
   Row,
   Button,
   Input,
@@ -90,8 +89,9 @@ const PayrollRun = () => {
   }, []);
 
   // Summary Card Calculations
-  const processedCount = records.filter((x) => x.status === "processed").length;
+  const processingCount = records.filter((x) => x.status === "processing").length;
   const approvedCount = records.filter((x) => x.status === "approved").length;
+  const partiallyPaidCount = records.filter((x) => x.status === "partially_paid").length;
   const paidCount = records.filter((x) => x.status === "paid").length;
 
   // Search by month name ("january" / "jan"), raw month value, or year.
@@ -118,15 +118,16 @@ const PayrollRun = () => {
   return (
     <React.Fragment>
       {/* Summary Cards */}
-      <Row className="mb-4">
+      <Row className="mb-4 g-3 row-cols-2 row-cols-md-3 row-cols-xl-5">
         {[
           { title: "Total Payroll Runs", count: records.length, bg: "info" },
-          { title: "Processed", count: processedCount, bg: "primary" },
+          { title: "Processed", count: processingCount, bg: "primary" },
           { title: "Approved", count: approvedCount, bg: "success" },
+          { title: "Partially Paid", count: partiallyPaidCount, bg: "warning" },
           { title: "Paid", count: paidCount, bg: "dark" },
-        ].map((card, idx) => (
-          <Col p="2" sm={6} md={3} key={idx}>
-            <Card className="shadow-none border mb-0">
+        ].map((card) => (
+          <div className="col" key={card.title}>
+            <Card className="shadow-none border mb-0 h-100">
               <CardBody className="p-3">
                 <p
                   className="text-muted text-uppercase fw-semibold mb-1"
@@ -137,7 +138,7 @@ const PayrollRun = () => {
                 <h4 className={`mb-0 fw-bold text-${card.bg}`}>{card.count}</h4>
               </CardBody>
             </Card>
-          </Col>
+          </div>
         ))}
       </Row>
 
@@ -246,6 +247,7 @@ const PayrollRun = () => {
         isOpen={detailsOpen}
         toggle={() => setDetailsOpen(!detailsOpen)}
         data={selectedRun}
+        onChanged={fetchData}
       />
     </React.Fragment>
   );

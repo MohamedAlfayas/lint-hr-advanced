@@ -68,7 +68,7 @@ const Branch = () => {
       city: "",
       pincode: "",
       contact_number: "",
-      country_code: "+91",
+      country_code: "",
       contact_email: "",
       about: "",
 

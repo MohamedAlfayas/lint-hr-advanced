@@ -204,6 +204,12 @@ const ApprovalFilter = ({ formname }) => {
   const firstEffectExecutedRef = useRef(false);
 
   useEffect(() => {
+    if (profile_data?.is_admin === true) {
+      setShowAllAttendanceApproval(true);
+      setShowAllLeaveApproval(true);
+      firstEffectExecutedRef.current = true;
+      return;
+    }
     const permissions = {
       [VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY]:
         setShowAllAttendanceApproval,

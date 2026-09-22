@@ -35,7 +35,6 @@ import CountryList from "../../common/data/CountryList";
 import no_image from "../../assets/images/users/no_img.jpg";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
-import { CountryCodeDisplayInSelect } from "../../common/js/CountryCodeDisplayInSelect";
 import { PostApi } from "../../common/api/PostApi";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import {
@@ -48,20 +47,88 @@ import { SetLocalStorage } from "../../meta/SetLocalStorageData";
 import LocationSearch from "../../pages/organization/LocationSearch";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { GetApi } from "../../common/api/GetApi";
+
+
+const resolveFlag = (countryObj) => {
+  if (!countryObj) return null;
+
+  const direct =
+    countryObj.flag ||
+    countryObj.flag_url ||
+    countryObj.flagUrl ||
+    countryObj.flagImage ||
+    countryObj.countryFlagImageUrl ||
+    countryObj.emoji;
+  if (direct) return { type: "src", value: direct };
+
+  const iso2 =
+    countryObj.iso2 || countryObj.alpha2 || countryObj.code;
+  if (iso2 && iso2.length === 2) {
+    return {
+      type: "src",
+      value: `https://flagcdn.com/24x18/${iso2.toLowerCase()}.png`,
+    };
+  }
+
+  return null;
+};
 const BranchForm = () => {
   const dispatch = useDispatch();
   const inputRef = useRef();
+  const fieldRefs = useRef({});
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
 
   // ── Country / State options ──────────────────────────────────────────────
   const [CountryListOptions, setCountryListOptions] = useState([]);
-  const [CountryCodeListOptions, setCountryCodeListOptions] = useState([]);
   const [branchStateOptions, setBranchStateOptions] = useState([]);
   const [locationStateOptions, setLocationStateOptions] = useState([]);
 
   // ── Modal ────────────────────────────────────────────────────────────────
   const [modalOpen, setModalOpen] = useState(false);
   const [ptSettingsOptions, setPtSettingsOptions] = useState([]);
+
+  // ── Submit-only required errors; instant max-length / format warnings ────
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [liveTouched, setLiveTouched] = useState({
+    pincode: false,
+    contact_number: false,
+    contact_email: false,
+  });
+  const [lengthWarnings, setLengthWarnings] = useState({
+    name: "",
+    address: "",
+    city: "",
+    contact_email: "",
+    about: "",
+  });
+
+  const MAX_LENGTHS = {
+    name: 100,
+    address: 250,
+    city: 100,
+    contact_email: 100,
+    about: 2000,
+  };
+
+  const FIELD_LABELS = {
+    name: "Branch Name",
+    address: "Address",
+    city: "City",
+    contact_email: "Email",
+    about: "Company Overview",
+  };
+
+  const LIVE_FORMAT_FIELDS = ["pincode", "contact_number", "contact_email"];
+
+  const checkMaxLength = (field, rawValue) => {
+    const max = MAX_LENGTHS[field];
+    if (!max) return;
+    const msg =
+      rawValue.length > max
+        ? `${FIELD_LABELS[field] || field} must not exceed ${max} characters`
+        : "";
+    setLengthWarnings((prev) => ({ ...prev, [field]: msg }));
+  };
 
   const initialBranchLocationObj = {
     type_id: 0,
@@ -86,17 +153,13 @@ const BranchForm = () => {
   };
 
   useEffect(() => {
-    const country_code_list = [];
-    const country_list = [];
-    CountryList.filter((c) => c.show === true).forEach((d) => {
-      country_code_list.push({
+    const country_list = CountryList.filter((c) => c.show === true).map(
+      (d) => ({
         ...d,
-        label: d.countryCode,
-        value: d.countryCode,
-      });
-      country_list.push({ ...d, label: d.countryName, value: d.countryName });
-    });
-    setCountryCodeListOptions(country_code_list);
+        label: d.countryName,
+        value: d.countryName,
+      }),
+    );
     setCountryListOptions(country_list);
   }, []);
 
@@ -115,11 +178,13 @@ const BranchForm = () => {
   // ── Branch Formik ────────────────────────────────────────────────────────
   const FormikForm = useFormik({
     enableReinitialize: true,
+    validateOnChange: false,
+    validateOnBlur: false,
     initialValues: {
       id: 0,
       name: "",
       country: "",
-      country_code: "+91",
+      country_code: "",
       state: "",
       address: "",
       city: "",
@@ -161,10 +226,10 @@ const BranchForm = () => {
         .max(100, "City must not exceed 100 characters"),
       pincode: Yup.string()
         .trim()
+        .required("Please Enter Pincode")
         .matches(/^[0-9]+$/, "Pincode should contain only numbers")
-        .length(6, "Please Enter Valid 6 Digit Pincode")
-        .required("Please Enter Pincode"),
-      country_code: Yup.string().required("Please select country code"),
+        .length(6, "Please Enter Valid 6 Digit Pincode"),
+      country_code: Yup.string().required("Country code is required"),
       contact_number: Yup.string()
         .required("Please Enter Phone Number")
         .matches(/^[0-9]+$/, "Phone number must contain digits only")
@@ -174,16 +239,17 @@ const BranchForm = () => {
         .matches(
           /^[a-zA-Z0-9\s\n.,!?'"\-_()&:;/]*$/,
           "Company Overview can contain only letters, numbers, spaces, line breaks, and . , ! ? ' \" - _ ( ) & : ; /"
-        ),
+        )
+        .max(2000, "Company Overview must not exceed 2000 characters"),
 
       contact_email: Yup.string()
         .trim()
         .required("Please enter email")
         .transform((value) => (value ? value.trim().toLowerCase() : value))
-        .max(254, "Email must not exceed 254 characters")
+        .max(100, "Email must not exceed 100 characters")
         .matches(
-          /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/,
-          "Enter a valid email address",
+          /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,13}$/,
+          "Enter a valid email address.",
         ),
     }),
     onSubmit: async (values) => {
@@ -214,11 +280,19 @@ const BranchForm = () => {
     },
   });
 
+  const setFieldAndMaybeValidate = (name, value, forceValidate = false) => {
+    const shouldValidate =
+      forceValidate ||
+      hasAttemptedSubmit ||
+      LIVE_FORMAT_FIELDS.includes(name);
+    FormikForm.setFieldValue(name, value, shouldValidate);
+  };
+
   // ── Load form_obj into Formik when sidebar opens ─────────────────────────
   useEffect(() => {
     if (form_obj && Object.keys(form_obj).length) {
       Object.entries(form_obj).forEach(([key, val]) => {
-        FormikForm.setFieldValue(key, val ?? "");
+        FormikForm.setFieldValue(key, val ?? "", false);
       });
 
       if (form_obj?.country) {
@@ -226,22 +300,53 @@ const BranchForm = () => {
           (d) => d.countryName === form_obj.country,
         );
         setBranchStateOptions(found?.states || []);
+        if (!form_obj.country_code && found?.countryCode) {
+          FormikForm.setFieldValue("country_code", found.countryCode, false);
+        }
       }
+      setHasAttemptedSubmit(false);
+      setLiveTouched({
+        pincode: false,
+        contact_number: false,
+        contact_email: false,
+      });
+      setLengthWarnings({
+        name: "",
+        address: "",
+        city: "",
+        contact_email: "",
+        about: "",
+      });
     }
   }, [form_obj]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────
-  const setField = (name, value) => FormikForm.setFieldValue(name, value);
+  const setField = (name, value, forceValidate = false) =>
+    setFieldAndMaybeValidate(name, value, forceValidate);
+
+  const markLiveTouched = (field) => {
+    setLiveTouched((prev) => ({ ...prev, [field]: true }));
+  };
 
   const handleNumberOnly = (e, field) => {
-    const val = e.target.value.replace(/[^0-9]/g, "");
-    setField(field, val);
+    let val = e.target.value.replace(/[^0-9]/g, "");
+    if (field === "pincode") val = val.slice(0, 6);
+    if (field === "contact_number") val = val.slice(0, 10);
+    // markLiveTouched(field);
+    setField(field, val, true);
+  };
+
+  const handleNumberBlur = (field) => {
+    const value = String(v[field] ?? "").trim();
+    if (value !== "") {
+      markLiveTouched(field);
+    }
   };
 
   const handleTextOnly = (e) => {
     const { name, value } = e.target;
 
-    FormikForm.setFieldValue(name, value.replace(/[^a-zA-Z\s]/g, ""));
+    FormikForm.setFieldValue(name, value.replace(/[^a-zA-Z\s]/g, ""), false);
   };
 
   const handleCityChange = (e) => {
@@ -249,7 +354,8 @@ const BranchForm = () => {
       .replace(/^\s+/, "") // remove leading spaces
       .replace(/[^A-Za-z\s.'-]/g, "");
 
-    FormikForm.setFieldValue("city", value);
+    setField("city", value);
+    checkMaxLength("city", value);
   };
 
   const handleBranchNameChange = (e) => {
@@ -257,13 +363,27 @@ const BranchForm = () => {
       .replace(/^[ ]+/g, "") // remove leading spaces
       .replace(/[^A-Za-z0-9.,&()'|\-\s]/g, "");
 
-    FormikForm.setFieldValue("name", value);
+    setField("name", value);
+    checkMaxLength("name", value);
   };
 
+  // const handleBranchCountryChange = (e) => {
+  //   setField("country", e?.value || "");
+  //   setField("state", "");
+  //   const found = CountryList.find((d) => d.countryName === e?.value);
+  //   setBranchStateOptions(found?.states || []);
+  // };
+
   const handleBranchCountryChange = (e) => {
-    setField("country", e?.value || "");
-    setField("state", "");
-    const found = CountryList.find((d) => d.countryName === e?.value);
+    const country = e?.value || "";
+    const country_code = e?.countryCode || "";
+
+    FormikForm.setValues(
+      { ...FormikForm.values, country , country_code, state: "" },
+      hasAttemptedSubmit || false // only force-validate if user already tried to submit
+    );
+
+    const found = CountryList.find((d) => d.countryName === country);
     setBranchStateOptions(found?.states || []);
   };
 
@@ -283,24 +403,64 @@ const BranchForm = () => {
     setField("cf_values", updated);
   };
 
-  // ── Auto-focus first error ───────────────────────────────────────────────
-  useEffect(() => {
-    if (
-      FormikForm.submitCount > 0 &&
-      Object.keys(FormikForm.errors).length > 0
-    ) {
-      const firstErrorField = Object.keys(FormikForm.errors)[0];
-      FormikForm.setFieldTouched(firstErrorField, true, false);
-      const errorField = document.querySelector(`[name="${firstErrorField}"]`);
-      if (errorField) errorField.focus();
+  // ── Auto-focus first error (EmployeeForm pattern) ────────────────────────
+  const focusFirstErrorField = (errors) => {
+    if (!errors || !Object.keys(errors).length) return;
+
+    let firstErrorField = Object.keys(errors)[0];
+
+    // Country code is read-only / auto-filled — focus Country select instead
+    if (firstErrorField === "country_code") {
+      firstErrorField = "country";
     }
-  }, [FormikForm.submitCount]);
+
+    FormikForm.setFieldTouched(firstErrorField, true, false);
+
+    requestAnimationFrame(() => {
+      const node = fieldRefs.current[firstErrorField];
+      if (!node) return;
+
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      const focusable = node.querySelector(
+        "input:not([type='hidden']), textarea, select",
+      );
+      if (focusable) {
+        focusable.focus();
+        return;
+      }
+
+      // react-select fallback
+      const rsInput = node.querySelector("input");
+      rsInput?.focus();
+    });
+  };
 
   const v = FormikForm.values;
   const e = FormikForm.errors;
-  const t = FormikForm.touched;
-  const isInvalid = (field) => !!(t[field] && e[field]);
-  const showHint = (field) => !e[field];
+
+  // Required messages only after Save; format errors instant for live fields
+  const showFieldError = (field) => {
+    if (!e[field]) return false;
+    if (hasAttemptedSubmit) return true;
+    if (!LIVE_FORMAT_FIELDS.includes(field) || !liveTouched[field]) return false;
+    const value = String(v[field] ?? "").trim();
+    if (!value) return false; // empty → wait for Save for "Please enter…"
+    return true;
+  };
+
+  const isInvalid = (field) =>
+    showFieldError(field) || !!lengthWarnings[field];
+
+  // Single message slot (hint OR error) — avoids FormFeedback padding expanding gaps
+  const renderFieldHelp = (field, hint) => {
+    const errorText =
+      lengthWarnings[field] || (showFieldError(field) ? e[field] : "");
+    if (errorText) {
+      return <div className="lc_form_error_text">{errorText}</div>;
+    }
+    return <div className="form-text">{hint}</div>;
+  };
 
   // ── Location Formik ──────────────────────────────────────────────────────
   const [branchLocationObj, setBranchLocationObj] = useState(
@@ -479,10 +639,24 @@ const BranchForm = () => {
   const isLocInvalid = (field) => !!(lt[field] && le[field]);
   const showLocHint = (field) => !le[field];
 
+  // const handleLocationCountryChange = (e) => {
+  //   setLocField("country", e?.value || "");
+  //   setLocField("state", "");
+  //   const found = CountryList.find((d) => d.countryName === e?.value);
+  //   setLocationStateOptions(found?.states || []);
+  // };
+
   const handleLocationCountryChange = (e) => {
-    setLocField("country", e?.value || "");
-    setLocField("state", "");
-    const found = CountryList.find((d) => d.countryName === e?.value);
+    const country = e?.value || "";
+    setBranchLocationObj((prev) => ({ ...prev, country, state: "" }));
+    LocationFormikForm.setValues(
+      { ...LocationFormikForm.values, country, state: "" },
+      true
+    );
+    LocationFormikForm.setFieldTouched("country", true, false);
+    LocationFormikForm.setFieldTouched("state", true, false);
+
+    const found = CountryList.find((d) => d.countryName === country);
     setLocationStateOptions(found?.states || []);
   };
 
@@ -537,351 +711,364 @@ const BranchForm = () => {
       <Row>
         <Col xl={12} lg={12}>
           <div>
-            <Form onSubmit={FormikForm.handleSubmit} noValidate>
+            <Form
+              onSubmit={async (ev) => {
+                ev.preventDefault();
+                setHasAttemptedSubmit(true);
+
+                const touchedFields = {};
+                Object.keys(FormikForm.initialValues).forEach((key) => {
+                  touchedFields[key] = true;
+                });
+                FormikForm.setTouched(touchedFields, false);
+
+                const errors = await FormikForm.validateForm();
+                if (Object.keys(errors).length > 0) {
+                  focusFirstErrorField(errors);
+                  return;
+                }
+
+                FormikForm.handleSubmit();
+              }}
+              noValidate
+            >
               <div className="live-preview">
                 <Row className="gy-4">
                   {/* ── Branch Name ───────────────────────────────────── */}
                   <Col lg={12}>
-                    <Label htmlFor="name" className="form-label">
-                      Branch Name <span>*</span>
-                    </Label>
-                    <div className="form-icon right">
-                      <Input
-                        type="text"
-                        className="form-control form-control-icon"
-                        id="name"
-                        name="name"
-                        innerRef={inputRef}
-                        placeholder="New Branch"
-                        value={v.name || ""}
-                        onChange={handleBranchNameChange}
-                        onBlur={() => FormikForm.setFieldTouched("name", true)}
-                        invalid={isInvalid("name")}
-                      />
-                      {!isInvalid("name") && (
-                        <i className="ri-building-2-line" />
-                      )}
-                      {isInvalid("name") && (
-                        <FormFeedback type="invalid">{e.name}</FormFeedback>
-                      )}
+                    <div ref={(el) => (fieldRefs.current.name = el)}>
+                      <Label htmlFor="name" className="form-label">
+                        Branch Name <span>*</span>
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type="text"
+                          className="form-control form-control-icon"
+                          id="name"
+                          name="name"
+                          innerRef={inputRef}
+                          placeholder="New Branch"
+                          value={v.name || ""}
+                          onChange={handleBranchNameChange}
+                          invalid={isInvalid("name")}
+                        />
+                        {!isInvalid("name") && (
+                          <i className="ri-building-2-line" />
+                        )}
+                      </div>
+                      {renderFieldHelp("name", "Enter your branch name.")}
                     </div>
-                    {showHint("name") && (
-                      <div className="form-text">Enter your branch name.</div>
-                    )}
                   </Col>
 
                   {/* ── Country ───────────────────────────────────────── */}
                   <Col lg={12}>
-                    <Label htmlFor="country" className="form-label">
-                      Country <span>*</span>
-                    </Label>
-                    <Select
-                      id="country"
-                      name="country"
-                      options={CountryListOptions}
-                      value={
-                        CountryListOptions.find((d) => d.value === v.country) ||
-                        null
-                      }
-                      onChange={handleBranchCountryChange}
-                      onBlur={() => FormikForm.setFieldTouched("country", true)}
-                      styles={{
-                        control: (provided, state) => ({
-                          ...provided,
-                          borderColor:
-                            !state.isFocused && t.country && e.country
-                              ? "red"
-                              : provided.borderColor,
-                        }),
-                      }}
-                    />
-                    {t.country && e.country && (
-                      <div className="lc_form_error_text">{e.country}</div>
-                    )}
-                    {showHint("country") && (
-                      <div className="form-text">Select country.</div>
-                    )}
+                    <div ref={(el) => (fieldRefs.current.country = el)}>
+                      <Label htmlFor="country" className="form-label">
+                        Country <span>*</span>
+                      </Label>
+                      <Select
+                        id="country"
+                        name="country"
+                        options={CountryListOptions}
+                        value={
+                          CountryListOptions.find(
+                            (d) => d.value === v.country,
+                          ) || null
+                        }
+                        onChange={handleBranchCountryChange}
+                        styles={{
+                          control: (provided, state) => ({
+                            ...provided,
+                            borderColor:
+                              !state.isFocused && isInvalid("country")
+                                ? "red"
+                                : provided.borderColor,
+                          }),
+                        }}
+                      />
+                      {renderFieldHelp("country", "Select country.")}
+                    </div>
                   </Col>
 
                   {/* ── State ─────────────────────────────────────────── */}
                   <Col lg={12}>
-                    <Label className="form-label">
-                      State <span>*</span>
-                    </Label>
-                    <Select
-                      name="state"
-                      options={branchStateOptions}
-                      value={
-                        branchStateOptions.find((d) => d.value === v.state) ||
-                        null
-                      }
-                      onChange={(opt) => {
-                        setField("state", opt?.value || "");
-                        FormikForm.setFieldTouched("state", true);
-                      }}
-                      onBlur={() => FormikForm.setFieldTouched("state", true)}
-                      styles={{
-                        control: (provided, state) => ({
-                          ...provided,
-                          borderColor:
-                            !state.isFocused && t.state && e.state
-                              ? "red"
-                              : provided.borderColor,
-                        }),
-                      }}
-                    />
-                    {t.state && e.state && (
-                      <div className="lc_form_error_text">{e.state}</div>
-                    )}
-                    {showHint("state") && (
-                      <div className="form-text">Select state.</div>
-                    )}
+                    <div ref={(el) => (fieldRefs.current.state = el)}>
+                      <Label className="form-label">
+                        State <span>*</span>
+                      </Label>
+                      <Select
+                        name="state"
+                        options={branchStateOptions}
+                        value={
+                          branchStateOptions.find((d) => d.value === v.state) ||
+                          null
+                        }
+                        onChange={(opt) => {
+                          setField("state", opt?.value || "");
+                        }}
+                        styles={{
+                          control: (provided, state) => ({
+                            ...provided,
+                            borderColor:
+                              !state.isFocused && isInvalid("state")
+                                ? "red"
+                                : provided.borderColor,
+                          }),
+                        }}
+                      />
+                      {renderFieldHelp("state", "Select state.")}
+                    </div>
                   </Col>
 
                   <Col lg={12}>
-                    <Label className="form-label">Professional Tax Settings</Label>
+                    <Label className="form-label">
+                      Professional Tax Settings
+                    </Label>
                     <Select
                       options={ptSettingsOptions}
-                      value={ptSettingsOptions.find((d) => d.value === v.pt_settings) || null}
-                      onChange={(opt) => setField("pt_settings", opt?.value || null)}
+                      value={
+                        ptSettingsOptions.find(
+                          (d) => d.value === v.pt_settings,
+                        ) || null
+                      }
+                      onChange={(opt) =>
+                        setField("pt_settings", opt?.value || null)
+                      }
                       isClearable
                     />
-                    <div className="form-text">Links PT slab rules to this branch.</div>
+                    <div className="form-text">
+                      Links PT slab rules to this branch.
+                    </div>
                   </Col>
 
                   {/* ── Address ───────────────────────────────────────── */}
                   <Col lg={12}>
-                    <Label htmlFor="address" className="form-label">
-                      Address <span>*</span>
-                    </Label>
-                    <Input
-                      type="textarea"
-                      className="form-control"
-                      id="address"
-                      name="address"
-                      rows="2"
-                      value={v.address || ""}
-                      // onChange={(ev) => setField("address", ev.target.value)}
-                      onChange={(ev) => {
-                        const value = ev.target.value
-                          .replace(/^\s+/, "") // remove leading spaces
-                          .replace(/[^A-Za-z0-9\s.,\-#/'&]/g, "");
+                    <div ref={(el) => (fieldRefs.current.address = el)}>
+                      <Label htmlFor="address" className="form-label">
+                        Address <span>*</span>
+                      </Label>
+                      <Input
+                        type="textarea"
+                        className="form-control"
+                        id="address"
+                        name="address"
+                        rows="2"
+                        value={v.address || ""}
+                        onChange={(ev) => {
+                          const value = ev.target.value
+                            .replace(/^\s+/, "")
+                            .replace(/[^A-Za-z0-9\s.,\-#/'&]/g, "");
 
-                        setField("address", value);
-                      }}
-                      onBlur={() => FormikForm.setFieldTouched("address", true)}
-                      invalid={isInvalid("address")}
-                    />
-                    {isInvalid("address") && (
-                      <FormFeedback type="invalid">{e.address}</FormFeedback>
-                    )}
-                    {showHint("address") && (
-                      <div className="form-text">Enter address.</div>
-                    )}
+                          setField("address", value);
+                          checkMaxLength("address", value);
+                        }}
+                        invalid={isInvalid("address")}
+                      />
+                      {renderFieldHelp("address", "Enter address.")}
+                    </div>
                   </Col>
 
                   {/* ── City ──────────────────────────────────────────── */}
                   <Col lg={12}>
-                    <Label htmlFor="city" className="form-label">
-                      City <span>*</span>
-                    </Label>
-                    <div className="form-icon right">
-                      <Input
-                        type="text"
-                        className="form-control form-control-icon"
-                        id="city"
-                        name="city"
-                        placeholder="City"
-                        value={v.city || ""}
-                        onChange={handleCityChange}
-                        onBlur={() => FormikForm.setFieldTouched("city", true)}
-                        invalid={isInvalid("city")}
-                      />
-                      {!isInvalid("city") && <i className="ri-map-pin-line" />}
-                      {isInvalid("city") && (
-                        <FormFeedback type="invalid">{e.city}</FormFeedback>
-                      )}
-                    </div>
-                    {showHint("city") && (
-                      <div className="form-text">
-                        Enter city (letters only).
+                    <div ref={(el) => (fieldRefs.current.city = el)}>
+                      <Label htmlFor="city" className="form-label">
+                        City <span>*</span>
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          type="text"
+                          className="form-control form-control-icon"
+                          id="city"
+                          name="city"
+                          placeholder="City"
+                          value={v.city || ""}
+                          onChange={handleCityChange}
+                          invalid={isInvalid("city")}
+                        />
+                        {!isInvalid("city") && (
+                          <i className="ri-map-pin-line" />
+                        )}
                       </div>
-                    )}
+                      {renderFieldHelp("city", "Enter city (letters only).")}
+                    </div>
                   </Col>
 
                   {/* ── Pincode ───────────────────────────────────────── */}
                   <Col lg={12}>
-                    <Label htmlFor="pincode" className="form-label">
-                      Pincode <span>*</span>
-                    </Label>
-                    <div className="form-icon right">
-                      <Input
-                        type="text"
-                        className="form-control form-control-icon"
-                        id="pincode"
-                        name="pincode"
-                        placeholder="600001"
-                        inputMode="numeric"
-                        value={v.pincode || ""}
-                        maxLength={6}
-                        onChange={(ev) => handleNumberOnly(ev, "pincode")}
-                        onBlur={() =>
-                          FormikForm.setFieldTouched("pincode", true)
-                        }
-                        invalid={isInvalid("pincode")}
-                      />
-                      {!isInvalid("pincode") && <i className="ri-map-2-line" />}
-                      {isInvalid("pincode") && (
-                        <FormFeedback type="invalid">{e.pincode}</FormFeedback>
-                      )}
-                    </div>
-                    {showHint("pincode") && (
-                      <div className="form-text">
-                        Enter pincode (digits only).
-                      </div>
-                    )}
-                  </Col>
-
-                  {/* ── Contact Number ────────────────────────────────── */}
-                  <Col lg={12}>
-                    <Label className="form-label">
-                      Contact Number <span>*</span>
-                    </Label>
-                    <Row>
-                      <Col md={3}>
-                        <Select
-                          id="country_code"
-                          name="country_code"
-                          isMulti={false}
-                          options={CountryCodeListOptions}
-                          components={{ Option: CountryCodeDisplayInSelect }}
-                          className="basic-multi-select"
-                          value={
-                            v.country_code
-                              ? CountryCodeListOptions.find(
-                                  (d) => d.countryCode === v.country_code,
-                                )
-                              : null
-                          }
-                          styles={{
-                            control: (provided, state) => ({
-                              ...provided,
-                              borderColor:
-                                !state.isFocused &&
-                                t.country_code &&
-                                e.country_code
-                                  ? "red"
-                                  : provided.borderColor,
-                            }),
-                          }}
-                          onChange={(opt) =>
-                            setField("country_code", opt.value)
-                          }
-                          onBlur={() =>
-                            FormikForm.setFieldTouched("country_code", true)
-                          }
-                        />
-                        {t.country_code && e.country_code && (
-                          <div className="lc_form_error_text">
-                            {e.country_code}
-                          </div>
-                        )}
-                      </Col>
-                      <Col md={9}>
+                    <div ref={(el) => (fieldRefs.current.pincode = el)}>
+                      <Label htmlFor="pincode" className="form-label">
+                        Pincode <span>*</span>
+                      </Label>
+                      <div className="form-icon right">
                         <Input
                           type="text"
-                          name="contact_number"
-                          className="form-control rounded-end flag-input"
-                          placeholder="Enter number"
+                          className="form-control form-control-icon"
+                          id="pincode"
+                          name="pincode"
+                          placeholder="600001"
                           inputMode="numeric"
-                          value={v.contact_number || ""}
-                          maxLength={10}
-                          onChange={(ev) =>
-                            handleNumberOnly(ev, "contact_number")
-                          }
-                          onBlur={() =>
-                            FormikForm.setFieldTouched("contact_number", true)
-                          }
-                          invalid={isInvalid("contact_number")}
+                          value={v.pincode || ""}
+                          maxLength={6}
+                          onChange={(ev) => handleNumberOnly(ev, "pincode")}
+                          onBlur={() => handleNumberBlur("pincode")}
+                          invalid={isInvalid("pincode")}
                         />
-                        {isInvalid("contact_number") && (
-                          <FormFeedback type="invalid">
-                            {e.contact_number}
-                          </FormFeedback>
+                        {!isInvalid("pincode") && (
+                          <i className="ri-map-2-line" />
                         )}
+                      </div>
+                      {renderFieldHelp(
+                        "pincode",
+                        "Enter pincode (digits only).",
+                      )}
+                    </div>
+                  </Col>
+
+                  {/* ── Country Code / Contact Number ── */}
+                  <Col lg={12}>
+                    <Row>
+                      <Col md={4}>
+                        <div
+                          ref={(el) => (fieldRefs.current.country_code = el)}
+                        >
+                          <Label
+                            htmlFor="country_code"
+                            className="form-label"
+                          >
+                            Country Code <span>*</span>
+                          </Label>
+                          <Input
+                            type="text"
+                            name="country_code"
+                            id="country_code"
+                            className="form-control"
+                            placeholder="e.g. +91"
+                            value={v.country_code || ""}
+                            readOnly
+                            invalid={isInvalid("country_code")}
+                          />
+                          {renderFieldHelp(
+                            "country_code",
+                            "Auto-filled based on selected country.",
+                          )}
+                        </div>
+                      </Col>
+                      <Col md={8}>
+                        <div
+                          ref={(el) =>
+                            (fieldRefs.current.contact_number = el)
+                          }
+                        >
+                          <Label
+                            htmlFor="contact_number"
+                            className="form-label"
+                          >
+                            Contact Number <span>*</span>
+                          </Label>
+                          <Input
+                            type="text"
+                            name="contact_number"
+                            id="contact_number"
+                            className="form-control"
+                            placeholder="9876543210"
+                            inputMode="numeric"
+                            value={v.contact_number || ""}
+                            maxLength={10}
+                            onChange={(ev) =>
+                              handleNumberOnly(ev, "contact_number")
+                            }
+                            onBlur={() => handleNumberBlur("contact_number")}
+                            invalid={isInvalid("contact_number")}
+                          />
+                          {renderFieldHelp(
+                            "contact_number",
+                            "Enter 10 digits only.",
+                          )}
+                        </div>
                       </Col>
                     </Row>
-                    {showHint("contact_number") && (
-                      <div className="form-text">Enter 10 digits only.</div>
-                    )}
                   </Col>
 
                   {/* ── Contact Email ─────────────────────────────────── */}
                   <Col lg={12}>
-                    <Label htmlFor="contact_email" className="form-label">
-                      Contact Email <span>*</span>
-                    </Label>
-                    <div className="form-icon right">
-                      <Input
-                        type="email"
-                        name="contact_email"
-                        className="form-control form-control-icon"
-                        id="contact_email"
-                        placeholder="user@company.com"
-                        value={v.contact_email || ""}
-                        onChange={(ev) =>
-                          setField("contact_email", ev.target.value.trim())
-                        }
-                        onBlur={() => {
-                          FormikForm.setFieldTouched("contact_email", true);
-                          setField(
-                            "contact_email",
-                            (v.contact_email || "").trim().toLowerCase(),
-                          );
-                        }}
-                        invalid={isInvalid("contact_email")}
-                      />
-                      {!isInvalid("contact_email") && (
-                        <i className="ri-mail-line" />
-                      )}
-                      {isInvalid("contact_email") && (
-                        <FormFeedback type="invalid">
-                          {e.contact_email}
-                        </FormFeedback>
+                    <div ref={(el) => (fieldRefs.current.contact_email = el)}>
+                      <Label htmlFor="contact_email" className="form-label">
+                        Contact Email <span>*</span>
+                      </Label>
+                      <div className="form-icon right">
+                        <Input
+                          name="contact_email"
+                          className="form-control form-control-icon"
+                          id="contact_email"
+                          placeholder="user@company.com"
+                          value={v.contact_email || ""}
+                          onChange={(ev) => {
+                            const val = ev.target.value;
+                            markLiveTouched("contact_email");
+                            setField("contact_email", val, true);
+                            checkMaxLength("contact_email", val);
+                          }}
+                          onBlur={(ev) => {
+                            const value = ev.target.value
+                              .trim()
+                              .toLowerCase();
+                            setField("contact_email", value, true);
+                            if (value !== "") {
+                              markLiveTouched("contact_email");
+                            }
+                          }}
+                          invalid={isInvalid("contact_email")}
+                        />
+                        {!isInvalid("contact_email") && (
+                          <i className="ri-mail-line" />
+                        )}
+                      </div>
+                      {renderFieldHelp(
+                        "contact_email",
+                        "Enter contact email.",
                       )}
                     </div>
-                    {showHint("contact_email") && (
-                      <div className="form-text">Enter contact email.</div>
-                    )}
                   </Col>
 
                   {/* ── About ─────────────────────────────────────────── */}
                   <Col lg={12}>
-                    <Label htmlFor="about" className="form-label">
-                      Company Overview
-                    </Label>
-                    <textarea
-                      className="form-control"
-                      id="about"
-                      name="about"
-                      rows="3"
-                      value={v.about || ""}
-                      // onChange={(ev) => setField("about", ev.target.value)}
-                      onChange={(ev) => {
-                        const value = ev.target.value
-                          .replace(/^\s+/, "") // remove leading spaces only
-                          .replace(/[^a-zA-Z0-9\s\n.,!?'"\-_()&:;/]/g, "");
+                    <div ref={(el) => (fieldRefs.current.about = el)}>
+                      <Label htmlFor="about" className="form-label">
+                        Company Overview
+                      </Label>
+                      <Input
+                        type="textarea"
+                        className="form-control"
+                        id="about"
+                        name="about"
+                        rows="3"
+                        value={v.about || ""}
+                        onChange={(ev) => {
+                          const value = ev.target.value
+                            .replace(/^\s+/, "")
+                            .replace(
+                              /[^a-zA-Z0-9\s\n.,!?'"\-_()&:;/]/g,
+                              "",
+                            );
 
-                        setField("about", value);
-                      }}
-                    />
-                    <div className="form-text">Company overview.</div>
+                          setField("about", value);
+                          checkMaxLength("about", value);
+                        }}
+                        invalid={isInvalid("about")}
+                      />
+                      {renderFieldHelp("about", "Company overview.")}
+                    </div>
                   </Col>
 
                   {/* ── Custom Fields ─────────────────────────────────── */}
                   {v.cf_values && v.cf_values.length
                     ? v.cf_values.map((obj) => (
                         <Col lg={12} key={obj.id}>
+                          <div
+                            ref={(el) =>
+                              (fieldRefs.current[obj.input_name] = el)
+                            }
+                          >
                           <Label
                             htmlFor={obj.input_name}
                             className="form-label"
@@ -920,6 +1107,7 @@ const BranchForm = () => {
                             />
                           )}
                           <div className="form-text">Enter {obj.name}</div>
+                          </div>
                         </Col>
                       ))
                     : null}

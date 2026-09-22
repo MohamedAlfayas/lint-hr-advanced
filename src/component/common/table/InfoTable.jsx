@@ -82,6 +82,7 @@ import {
   status_component_name,
   priorities_component_name,
   custom_status_form_component_name,
+  role_component_name,
 } from "../../../common/constant/Constants";
 import { removeProject } from "../../../redux/reducers/ChildReducer/ProjectsReducer";
 import { removeClient } from "../../../redux/reducers/ChildReducer/ClientReducer";
@@ -93,6 +94,8 @@ import {
   CREATE_CUSTOM_FIELD_ACCESS_KEY,
   EDIT_EMPLOYEE_ACCESS_KEY,
   EDIT_CUSTOM_FIELD_ACCESS_KEY,
+  CREATE_ROLES_ACCESS_KEY,
+  EDIT_ROLES_ACCESS_KEY,
   APPROVE_REJECT_HIERARCHY_LEAVE_ACCESS_KEY,
   APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
   APPROVE_REJECT_HIERARCHY_ATTENDANCE_ACCESS_KEY,
@@ -1680,7 +1683,7 @@ const InfoTable = ({
 
           const isLockedStatusRow =
             formname === status_component_name &&
-            (rowData.id === 1 || rowData.id === 3);
+            (rowData.id === 1 || rowData.id === 2 || rowData.id === 3);
 
           return (
             <>
@@ -1956,7 +1959,9 @@ const InfoTable = ({
               CREATE_CUSTOM_FIELD_ACCESS_KEY,
             )) ||
           (thisFormName === client_component_name &&
-            profile_data.permission_list.includes(CREATE_CLIENT_ACCESS_KEY))
+            profile_data.permission_list.includes(CREATE_CLIENT_ACCESS_KEY)) ||
+          (thisFormName === role_component_name &&
+            profile_data.permission_list.includes(CREATE_ROLES_ACCESS_KEY))
         ) {
           console.log("Create Access Granted");
           setShowCreateBtn(true);
@@ -1990,7 +1995,9 @@ const InfoTable = ({
               EDIT_CUSTOM_FIELD_ACCESS_KEY,
             )) ||
           (thisFormName === client_component_name &&
-            profile_data.permission_list.includes(EDIT_CLIENT_ACCESS_KEY))
+            profile_data.permission_list.includes(EDIT_CLIENT_ACCESS_KEY)) ||
+          (thisFormName === role_component_name &&
+            profile_data.permission_list.includes(EDIT_ROLES_ACCESS_KEY))
         ) {
           setShowEditBtn(true);
         } else if (thisFormName === leave_application_component_name) {

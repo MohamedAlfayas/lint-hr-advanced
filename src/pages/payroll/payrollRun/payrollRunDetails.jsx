@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Row, Col, Button, Badge,
   Table, Spinner, Nav, NavItem, NavLink, TabContent, TabPane,
@@ -10,6 +10,9 @@ import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import EmployeePayslip from "./EmployeePayslip";
 import EmployeeRegularization from "./EmployeeRegularization";
 import RunStatusActions from "./RunStatusActions";
+import RunPaymentActions from "./RunPaymentActions";
+import StatusBadge from "./StatusBadge";
+import { isRunFullySettled, promoteSettledRun } from "./statusHelpers";
 
 const employees = GetLocalStorageData("employee") || [];
 
@@ -53,22 +56,31 @@ const DetailRow = ({ label, value, last = false }) => (
   </Row>
 );
 
-const getStatusColor = (status) => {
-  switch (String(status).toLowerCase()) {
-    case "draft":     return "warning";
-    case "processed": return "primary";
-    case "approved":  return "success";
-    case "paid":      return "dark";
-    default:          return "secondary";
-  }
-};
-
 // `isOpen` / `toggle` are kept as props for drop-in compatibility with
 // existing callers (toggle is used to close/exit the full-screen page).
-const PayrollRunDetails = ({ isOpen, toggle, data }) => {
+// `onChanged` is optional — pass the parent list's refetch (e.g. payrollRun.jsx's
+// fetchData) so the run list picks up the status change too once a tranche is released.
+const PayrollRunDetails = ({ isOpen, toggle, data, onChanged }) => {
   const [activeTab, setActiveTab]       = useState("overview");
   const [payslips, setPayslips]         = useState([]);
   const [loadingSlips, setLoadingSlips] = useState(false);
+
+  // Run status is tracked locally so the badge/actions update immediately
+  // after a payment release, without waiting for the parent list to refetch
+  // and re-pass `data` (data.status itself never mutates in place here).
+  const [runStatus, setRunStatus] = useState(data?.status);
+  useEffect(() => { setRunStatus(data?.status); }, [data?.id, data?.status, isOpen]);
+
+  const refreshRunStatus = () => {
+    if (!data?.id) return;
+    Api({ method: "GET", url: "payroll/payroll-run/" })
+      .then((res) => {
+        const rows = res?.data?.data || res?.data || [];
+        const match = rows.find((r) => String(r.id) === String(data.id));
+        if (match) setRunStatus(match.status);
+      })
+      .catch(() => {});
+  };
 
   // ── Regularization tab state ─────────────────────────────────────────────
   const [selectedRegEmp, setSelectedRegEmp] = useState(null); // react-select option
@@ -79,11 +91,20 @@ const PayrollRunDetails = ({ isOpen, toggle, data }) => {
   // Payslips tab immediately reflects the new LOP days / net pay.
   const [payslipRefreshKey, setPayslipRefreshKey] = useState(0);
   const handleRegularizationSaved = () => setPayslipRefreshKey((k) => k + 1);
+  const promotedRunId = useRef(null);
 
+  // Reset UI state only when the panel is (re)opened for a run — not on
+  // every payslipRefreshKey bump, or a payment release would bounce the
+  // user back to the Overview tab mid-review.
   useEffect(() => {
     if (isOpen && data?.id) {
       setActiveTab("overview");
       setSelectedRegEmp(null);
+    }
+  }, [isOpen, data?.id]);
+
+  useEffect(() => {
+    if (isOpen && data?.id) {
       setLoadingSlips(true);
       Api({ method: "GET", url: `payroll/employee-payslip/?payroll_run=${data.id}` })
         .then((res) => {
@@ -104,7 +125,38 @@ const PayrollRunDetails = ({ isOpen, toggle, data }) => {
         .catch(() => toast.error("Failed to load payslip breakdown"))
         .finally(() => setLoadingSlips(false));
     }
-  }, [isOpen, data?.id]);
+    // payslipRefreshKey bumps after a regularization save OR a payment
+    // release, so the Overview/Bonus aggregates (incl. Paid/Balance) stay
+    // in sync with what EmployeePayslip's own table is showing.
+  }, [isOpen, data?.id, payslipRefreshKey]);
+
+  // Balance can already be zero while the run is still partially_paid.
+  // Paid is hidden as a manual next step, so Close never shows until the
+  // run itself is paid.
+  useEffect(() => {
+    if (!isOpen || !data?.id || loadingSlips) return;
+    if (runStatus !== "locked" && runStatus !== "partially_paid") return;
+    if (!isRunFullySettled(payslips)) return;
+    if (promotedRunId.current === data.id) return;
+    promotedRunId.current = data.id;
+    promoteSettledRun(data.id, payslips)
+      .then((res) => {
+        const status = res?.data?.data?.status;
+        if (status && status !== "paid") {
+          promotedRunId.current = null;
+          toast.error(`Run stayed ${status}.`);
+          return;
+        }
+        setRunStatus("paid");
+        setPayslipRefreshKey((k) => k + 1);
+        toast.success("Payroll run marked paid");
+        onChanged && onChanged();
+      })
+      .catch((err) => {
+        promotedRunId.current = null;
+        toast.error(err?.response?.data?.error_message || err?.message || "Could not mark the run paid.");
+      });
+  }, [isOpen, data?.id, loadingSlips, runStatus, payslips, onChanged]);
 
   // Lock body scroll while the full-screen page is open (same behaviour a
   // Modal would have given us for free).
@@ -124,6 +176,14 @@ const PayrollRunDetails = ({ isOpen, toggle, data }) => {
   const totalBonus      = payslips.reduce((s, p) => s + parseFloat(p.total_bonus     || 0), 0);
   const totalGratuity   = payslips.reduce((s, p) => s + parseFloat(p.gratuity_provision || 0), 0);
   const totalPF         = payslips.reduce((s, p) => s + parseFloat(p.pf_employee     || 0), 0);
+  const totalPaid       = payslips.reduce((s, p) => s + parseFloat(p.paid_amount     || 0), 0);
+  const totalBalance    = payslips.reduce((s, p) => s + parseFloat(p.balance_amount  || 0), 0);
+
+  const handlePaymentReleased = () => {
+    setPayslipRefreshKey((k) => k + 1); // re-fetch payslips inside EmployeePayslip tab
+    refreshRunStatus();
+    onChanged && onChanged();
+  };
 
   // ── Build react-select options for Regularization tab ───────────────────
   // Each option shows name + emp_id + department so duplicates are distinguishable
@@ -162,7 +222,12 @@ const PayrollRunDetails = ({ isOpen, toggle, data }) => {
           <span className="fw-semibold fs-5">
             Payroll Run — {MONTH_NAMES[data.month]} {data.year}
           </span>
-          <span className="ms-2"><RunStatusActions run={data} onChanged={() => {}} /></span>
+          <span className="ms-2">
+            <RunStatusActions run={{ ...data, status: runStatus }} onChanged={() => { refreshRunStatus(); onChanged && onChanged(); }} />
+          </span>
+          <span className="ms-3">
+            <RunPaymentActions run={{ ...data, status: runStatus }} payslips={payslips} onReleased={handlePaymentReleased} />
+          </span>
         </div>
         <Button close onClick={toggle} aria-label="Close" />
       </div>
@@ -207,7 +272,7 @@ const PayrollRunDetails = ({ isOpen, toggle, data }) => {
                     <div className="border rounded px-3 bg-white mb-3">
                       <DetailRow label="Month"        value={MONTH_NAMES[data.month]} />
                       <DetailRow label="Year"         value={data.year} />
-                      <DetailRow label="Status"       value={<Badge color={getStatusColor(data.status)}>{data.status}</Badge>} />
+                      <DetailRow label="Status"       value={<StatusBadge scope="run" code={runStatus} />} />
                       <DetailRow label="Processed At" value={fmtDateTime(data.processed_at)} />
                       <DetailRow label="Approved At"  value={fmtDateTime(data.approved_at)} />
                       <DetailRow label="Paid At"      value={fmtDateTime(data.paid_at)} />
@@ -223,6 +288,8 @@ const PayrollRunDetails = ({ isOpen, toggle, data }) => {
                       <DetailRow label="Total PF (Emp)"   value={`₹${fmt(totalPF)}`} />
                       <DetailRow label="Total Bonus"      value={<span className="text-success fw-semibold">₹{fmt(totalBonus)}</span>} />
                       <DetailRow label="Gratuity Provision" value={<span className="text-muted">₹{fmt(totalGratuity)}</span>} />
+                      <DetailRow label="Total Paid"       value={<span className="text-success fw-semibold">₹{fmt(totalPaid)}</span>} />
+                      <DetailRow label="Balance Pending"  value={<span className={totalBalance > 0 ? "text-warning fw-semibold" : "text-muted"}>₹{fmt(totalBalance)}</span>} />
                       <DetailRow label="Total Net Pay"    value={<span className="text-success fw-bold fs-6">₹{fmt(totalNetPay)}</span>} last />
                     </div>
                   </Col>
@@ -240,6 +307,8 @@ const PayrollRunDetails = ({ isOpen, toggle, data }) => {
                   month={data.month}
                   year={data.year}
                   refreshKey={payslipRefreshKey}
+                  runStatus={runStatus}
+                  onPaymentReleased={handlePaymentReleased}
                 />
               </div>
             </TabPane>

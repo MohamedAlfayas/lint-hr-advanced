@@ -21,6 +21,9 @@ import {
   ROLES_VIEW_ACCESS_KEY,
   FORMS_VIEW_ACCESS_KEY,
   LOCATION_GROUP_VIEW_ACCESS_KEY,
+  ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY,
+  VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
 } from "../common/constant/RoleConstants";
 import Status from "../pages/Task/Status/Status";
 import Priorities from "../pages/Task/Priorities/Priorities";
@@ -133,15 +136,18 @@ const privateRoutes = [
     component: <EmployeeView />,
     perm: "all",
   },
-  { path: "/roles", component: <Roles />, perm: [] },
-  { path: "/workschedule", component: <WorkSchedule />, perm: [] },
+  // { path: "/roles", component: <Roles />, perm: [] },
+  // { path: "/workschedule", component: <WorkSchedule />, perm: [] },
+  { path: "/roles", component: <Roles />, perm: [ROLES_VIEW_ACCESS_KEY] },
+  { path: "/workschedule", component: <WorkSchedule />, perm: [ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY] },
   { path: "/holidays", component: <Holidays />, perm: "all" },
   {
     path: "/my-reimbursements",
     component: <MyReimbursementsPage />,
     perm: "all",
   },
-  { path: "/leavetype", component: <LeaveType />, perm: [] },
+  // { path: "/leavetype", component: <LeaveType />, perm: [] },
+  { path: "/leavetype", component: <LeaveType />, perm: [ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY] },
   { path: "/account-settings", component: <AccountSettings />, perm: "all" },
   {
     path: "/leave-approval",
@@ -169,10 +175,15 @@ const privateRoutes = [
     perm: "all",
   },
   { path: "/xlsx", component: <Xlsx />, perm: "all" },
+  // {
+  //   path: "/attendanceconfig",
+  //   component: <AttendanceConfig />,
+  //   perm: [],
+  // },
   {
     path: "/attendanceconfig",
     component: <AttendanceConfig />,
-    perm: [],
+    perm: [ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY],
   },
   {
     path: "/attendancereport",
@@ -203,6 +214,8 @@ const privateRoutes = [
     perm: [
       VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
       VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
+      VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,      
+      VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY, 
       VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
       VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
     ],

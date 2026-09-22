@@ -86,8 +86,8 @@ const EmployeeForm = () => {
   const [dropdownOpen4, setDropdownOpen4] = useState(false);
   const toggle4 = () => setDropdownOpen4((prevState) => !prevState);
 
-  const [dob, setDob] = useState([]);
-  const [joining_date, setJoinDate] = useState([]);
+  const [dob, setDob] = useState(null);
+  const [joining_date, setJoinDate] = useState(null);
   // const [dobPanelKey, setDobPanelKey] = useState(0);
   const [dobTypeError, setDobTypeError] = useState("");
   const [joiningTypeError, setJoiningTypeError] = useState("");
@@ -117,6 +117,23 @@ const EmployeeForm = () => {
   });
 
   const [empIdApiError, setEmpIdApiError] = useState("");
+
+  const empIdCheckTimeout = useRef(null);
+
+  const checkEmpIdExists = (val) => {
+    const trimmed = (val || "").trim().toUpperCase();
+    if (!trimmed) {
+      setEmpIdApiError("");
+      return;
+    }
+    const isDuplicate = (employee_data || []).some(
+      (emp) =>
+        emp.emp_id &&
+        emp.emp_id.toUpperCase() === trimmed &&
+        emp.id !== employeeObj.id, // exclude the record being edited
+    );
+    setEmpIdApiError(isDuplicate ? `Employee ID ${trimmed} already exists` : "");
+  };
 
   const MAX_LENGTHS = {
     emp_id: 50,
@@ -310,40 +327,42 @@ const EmployeeForm = () => {
     ) {
       this_role_id = form_obj?.role?.id;
     }
+    // Prefer dayjs over ConvertISODateFormat — new Date(DD-MM-YYYY) swaps/NaNs.
+    const toIsoOrEmpty = (val) => {
+      if (!val || val === "-") return "";
+      const asIso = dayjs(val, "YYYY-MM-DD", true);
+      if (asIso.isValid()) return asIso.format("YYYY-MM-DD");
+      const asDisplay = dayjs(val, DateFormat, true);
+      if (asDisplay.isValid()) return asDisplay.format("YYYY-MM-DD");
+      return "";
+    };
+    const toDisplayOrNull = (val) => {
+      const iso = toIsoOrEmpty(val);
+      return iso ? dayjs(iso, "YYYY-MM-DD").format(DateFormat) : null;
+    };
+
     setEmployeeObj({
       ...form_obj,
-      dob: ConvertISODateFormat(form_obj.dob),
-      joining_date: ConvertISODateFormat(form_obj.joining_date),
+      dob: toIsoOrEmpty(form_obj.dob),
+      joining_date: toIsoOrEmpty(form_obj.joining_date),
       role_id: this_role_id,
       employment_type: form_obj.employment_type || 2,
-      probation_end_date: ConvertISODateFormat(form_obj.probation_end_date),
+      probation_end_date: toIsoOrEmpty(form_obj.probation_end_date),
     });
     setInitialFormValues({
       ...form_obj,
-      dob: ConvertISODateFormat(form_obj.dob),
-      joining_date: ConvertISODateFormat(form_obj.joining_date),
+      dob: toIsoOrEmpty(form_obj.dob),
+      joining_date: toIsoOrEmpty(form_obj.joining_date),
       role_id: this_role_id,
       employment_type: form_obj.employment_type || 2,
-      probation_end_date: ConvertISODateFormat(form_obj.probation_end_date),
+      probation_end_date: toIsoOrEmpty(form_obj.probation_end_date),
     });
-    setProbationEndDate(
-      form_obj.probation_end_date
-        ? ConvertDateFormat(ConvertISODateFormat(form_obj.probation_end_date))
-        : null,
-    );
+    setProbationEndDate(toDisplayOrNull(form_obj.probation_end_date));
     console.log("form_obj.dob:", form_obj.dob);
     console.log("form_obj.joining_date:", form_obj.joining_date);
-    setDob(
-      form_obj.dob
-        ? ConvertDateFormat(ConvertISODateFormat(form_obj.dob))
-        : null,
-    );
+    setDob(toDisplayOrNull(form_obj.dob));
     console.log("form_obj:", form_obj);
-    setJoinDate(
-      form_obj.joining_date
-        ? ConvertDateFormat(ConvertISODateFormat(form_obj.joining_date))
-        : null,
-    );
+    setJoinDate(toDisplayOrNull(form_obj.joining_date));
     form_obj?.primary_department_id_list?.length
       ? GetReportingManager(form_obj?.primary_department_id_list)
       : setReportingManagerOptions([]);
@@ -390,6 +409,13 @@ const EmployeeForm = () => {
       .catch(() => setDefaultProbationMonths(0));
   }, []);
 
+    // ⬇️ ADD THE NEW CLEANUP EFFECT HERE
+  useEffect(() => {
+    return () => {
+      if (empIdCheckTimeout.current) clearTimeout(empIdCheckTimeout.current);
+    };
+  }, []);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEmployeeObj({ ...employeeObj, [name]: value });
@@ -397,9 +423,8 @@ const EmployeeForm = () => {
 
   // ── Name input: strip numbers and special chars on change ─────────────────
   const handleNameInput = (e, field) => {
-    let val = e.target.value.replace(/[^A-Za-z\s'-]/g, "");
-    // val = val.replace(/^[\s']+/, ""); 
-    val = val.replace(/^\s+/, "");
+    let val = e.target.value.replace(/[^A-Za-z\s'-]/g, ""); 
+    // val = val.replace(/^\s+/, "");
 
     setEmployeeObj((prev) => ({
       ...prev,
@@ -668,7 +693,7 @@ const EmployeeForm = () => {
 
 
   const handleJoinBlur = (e) => {
-    const typed = joinRawTyped.current || e.target.value;
+    const typed = (joinRawTyped.current || e.target.value || "").trim();
     if (!typed) return;
 
     const parsed = dayjs(typed, DateFormat, true);
@@ -683,14 +708,11 @@ const EmployeeForm = () => {
 
     if (errMsg) {
       setJoiningTypeError(errMsg);
-      setJoinRawInvalidText(typed); // switch to plain input, showing exactly this text
+      setJoinRawInvalidText(typed);
       return;
     }
 
-    setJoinRawInvalidText(null); // valid — go back to normal DatePicker
-    joinRawTyped.current = "";
-    setJoiningTypeError("");
-    handleJoinDateChange(parsed, typed);
+    commitJoiningDate(parsed, typed);
   };
 
   const handleDateChange = (selectedDates, dateStr, instance) => {
@@ -717,15 +739,14 @@ const EmployeeForm = () => {
         return;                                                      // ADD
       }
       setDobTypeError("");
+      const iso = selectedDates.format("YYYY-MM-DD");
       setEmployeeObj({
         ...employeeObj,
-         dob: ConvertISODateFormat(dateStr),
-        // dob: ConvertISODateFormat(ConvertDateFormat(dateStr)),
+         dob: iso,
       });
       FormikForm.setFieldValue(
         "dob",
-        ConvertISODateFormat(dateStr)
-        // ConvertISODateFormat(ConvertDateFormat(dateStr)),
+        iso
       );
     // FormikForm.setFieldTouched("dob", true);
   };
@@ -774,36 +795,49 @@ const EmployeeForm = () => {
     FormikForm.setFieldTouched("probation_end_date", true);
   };
 
-  const handleJoinDateChange = (selectedJoinDate, dateStr, instance) => {
-    // Don't clear joining_date state when AntD fires onChange(null,"") internally.
+  const commitJoiningDate = (dateDayjs, dateStr) => {
+    const parsed =
+      dateDayjs && typeof dateDayjs.isValid === "function" && dateDayjs.isValid()
+        ? dateDayjs
+        : dayjs(dateStr, DateFormat, true);
+
+    if (!parsed.isValid()) {
+      setJoiningTypeError("Invalid date format. Use DD-MM-YYYY");
+      return;
+    }
+    if (parsed.year() < 1900) {
+      setJoiningTypeError("Year must be 1900 or later");
+      return;
+    }
+    if (parsed.isAfter(dayjs().add(1, "year"), "day")) {
+      setJoiningTypeError("Joining date cannot exceed one year from today");
+      FormikForm.setFieldValue("joining_date", "", false);
+      return;
+    }
+
+    const iso = parsed.format("YYYY-MM-DD");
+    const display = parsed.format(DateFormat);
+
+    setJoinDate(display);
+    setJoinRawInvalidText(null);
+    joinRawTyped.current = "";
+    setJoiningTypeError("");
+    setEmployeeObj((prev) => ({ ...prev, joining_date: iso }));
+
+    // Do not validate here: setFieldTouched/setFieldValue validation races on
+    // stale empty values and shows "Please select joining date" after a valid pick.
+    FormikForm.setFieldValue("joining_date", iso, false);
+    FormikForm.setFieldTouched("joining_date", true, false);
+    FormikForm.setFieldError("joining_date", undefined);
+  };
+
+  const handleJoinDateChange = (selectedJoinDate, dateStr) => {
+    // AntD can fire onChange(null, "") internally; keep the last committed value.
     if (!selectedJoinDate || !dateStr) {
       setJoiningTypeError("");
       return;
     }
-    setJoinDate(dateStr);
-    const year = selectedJoinDate.year();
-    if (year < 1900) {
-      setJoiningTypeError("Year must be 1900 or later");
-      return;
-    }
-    const maxJoiningDateLimit = dayjs().add(1, "year").endOf("day");
-    if (selectedJoinDate.isAfter(maxJoiningDateLimit, "day")) {
-      setJoiningTypeError("Joining date cannot exceed one year from today");
-      FormikForm.setFieldValue("joining_date", "");
-      return;
-    }
-    setJoiningTypeError("");
-    setEmployeeObj({
-      ...employeeObj,
-      joining_date: ConvertISODateFormat(dateStr),
-      // joining_date: ConvertISODateFormat(ConvertDateFormat(dateStr)),
-    });
-    FormikForm.setFieldValue(
-      "joining_date",
-      ConvertISODateFormat(dateStr)
-      // ConvertISODateFormat(ConvertDateFormat(dateStr)),
-    );
-    FormikForm.setFieldTouched("joining_date", true);
+    commitJoiningDate(selectedJoinDate, dateStr);
   };
 
   const handleTimeZoneChange = (selectedTimezone) => {
@@ -958,6 +992,7 @@ const EmployeeForm = () => {
           /^[A-Z0-9](?:[A-Z0-9_-]*[A-Z0-9])?$/,
           "Employee ID can contain hyphens (-) and underscores (_) only between letters or numbers.",
         )
+        // "all zeros" is checked only on save (see submit handler) so typing "0" is not instant-invalid
         .required("Please enter employee ID")
         .max(50, "Employee ID cannot exceed 50 characters"),
 
@@ -1088,19 +1123,17 @@ const EmployeeForm = () => {
         .required("Please select joining date")
         .test(
           "joining-within-range",
-          "Joining date must be within the next 1 year",
+          "Joining date cannot be more than 1 year from today",
           (value) => {
-            if (!value) return false;
-            const d = dayjs(value, "YYYY-MM-DD", true);
+            // Empty is handled by .required() — do not map it to the range message.
+            if (!value) return true;
+            let d = dayjs(value, "YYYY-MM-DD", true);
+            if (!d.isValid()) d = dayjs(value, DateFormat, true);
             if (!d.isValid()) return false;
 
-            const min = dayjs("1900-01-01");
-            const max = dayjs().add(1, "year"); // exactly one year from today, inclusive
-
-            return (
-              (d.isSame(min, "day") || d.isAfter(min, "day")) &&
-              (d.isSame(max, "day") || d.isBefore(max, "day"))
-            );
+            const min = dayjs("1900-01-01").startOf("day");
+            const max = dayjs().add(1, "year").endOf("day");
+            return !d.isBefore(min, "day") && !d.isAfter(max, "day");
           },
         )
         .test(
@@ -1366,6 +1399,29 @@ const EmployeeForm = () => {
 
               setHasAttemptedSubmit(true);
 
+              // Keep Formik in sync with committed date state (API uses employeeObj).
+              // Prevents stale empty joining_date / dob from failing required/range checks.
+              const syncedValues = {
+                ...FormikForm.values,
+                joining_date:
+                  employeeObj.joining_date || FormikForm.values.joining_date || "",
+                dob: employeeObj.dob || FormikForm.values.dob || "",
+                probation_end_date:
+                  employeeObj.probation_end_date ||
+                  FormikForm.values.probation_end_date ||
+                  "",
+              };
+              if (syncedValues.joining_date !== FormikForm.values.joining_date) {
+                await FormikForm.setFieldValue(
+                  "joining_date",
+                  syncedValues.joining_date,
+                  false,
+                );
+              }
+              if (syncedValues.dob !== FormikForm.values.dob) {
+                await FormikForm.setFieldValue("dob", syncedValues.dob, false);
+              }
+
               // Touch all fields so Formik validates every required field
               const touchedFields = {};
 
@@ -1373,10 +1429,10 @@ const EmployeeForm = () => {
                 touchedFields[key] = true;
               });
 
-              FormikForm.setTouched(touchedFields, true);
+              FormikForm.setTouched(touchedFields, false);
 
-              // Wait until validation completes
-              const errors = await FormikForm.validateForm();
+              // Wait until validation completes (use synced dates)
+              const errors = await FormikForm.validateForm(syncedValues);
               const NAME_REGEX = /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/;
               const NAME_ERROR_MSG =
                 "Name cannot start or end with a hyphen (-) or apostrophe ('). Only alphabets, spaces, hyphens, and apostrophes are allowed.";
@@ -1387,10 +1443,27 @@ const EmployeeForm = () => {
               if (fn && !NAME_REGEX.test(fn)) manualErrors.first_name = NAME_ERROR_MSG;
               if (ln && !NAME_REGEX.test(ln)) manualErrors.last_name = NAME_ERROR_MSG;
 
+              const empIdTrimmed = (syncedValues.emp_id || "").trim();
+              if (empIdTrimmed && /^0+$/.test(empIdTrimmed)) {
+                manualErrors.emp_id = "Employee ID cannot be all zeros.";
+              }
+
               // if (Object.keys(errors).length > 0) {
               //   const firstErrorField = Object.keys(errors)[0];
               if (Object.keys(manualErrors).length > 0) {
-                const firstErrorField = Object.keys(manualErrors)[0];
+                FormikForm.setErrors(manualErrors);
+                let firstErrorField = Object.keys(manualErrors)[0];
+
+                if (firstErrorField === "cf_values") {
+                  const firstInvalidCf = employeeObj.cf_values?.find(
+                    (obj) =>
+                      obj.is_required &&
+                      (!obj.value || String(obj.value).trim() === "")
+                  );
+                  if (firstInvalidCf) {
+                    firstErrorField = firstInvalidCf.input_name;
+                  }
+                }
 
                 requestAnimationFrame(() => {
                   const node = fieldRefs.current[firstErrorField];
@@ -1508,14 +1581,16 @@ const EmployeeForm = () => {
 
                         FormikForm.setFieldValue("emp_id", val);
                         FormikForm.setFieldTouched("emp_id", true, false);
-                        setEmpIdApiError(""); 
+                        // setEmpIdApiError(""); 
 
+                        checkEmpIdExists(val);
                      
                       }}
                       // onBlur={() => FormikForm.setFieldTouched("emp_id", true)}
                       onBlur={() => {
                         if (employeeObj.emp_id && employeeObj.emp_id.trim() !== "") {
                           FormikForm.setFieldTouched("emp_id", true);
+                          checkEmpIdExists(employeeObj.emp_id);
                         }
                       }}
                       invalid={
@@ -2647,7 +2722,9 @@ const EmployeeForm = () => {
               {employeeObj.cf_values && employeeObj.cf_values.length
                 ? employeeObj.cf_values.map((obj) => (
                     <Col lg={12} key={obj.id}>
-                      <div className="mb-3">
+                      <div className="mb-3"
+                       ref={(el) => (fieldRefs.current[obj.input_name] = el)}
+                      >
                         <Label htmlFor={obj.input_name} className="form-label">
                           {obj.name} {obj.is_required && <span>*</span>}
                         </Label>
@@ -2671,7 +2748,11 @@ const EmployeeForm = () => {
                                   )
                                 }
                               />
-                              <i className="ri-user-2-line"></i>
+                                {!(
+                                  obj.is_required &&
+                                  hasAttemptedSubmit &&
+                                  (!obj.value || String(obj.value).trim() === "")
+                                ) && <i className="ri-user-2-line"></i>}
                             </div>
                             {obj.is_required &&
                             hasAttemptedSubmit &&

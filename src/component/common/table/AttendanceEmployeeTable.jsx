@@ -49,17 +49,10 @@ import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderRed
 import { updateIndividualAttendanceReportData } from "../../../redux/reducers/ChildReducer/AttendanceReportReducer";
 import { GetAmPmDateTime } from "../../../common/js/ConvertDateTimeToAmPm";
 import { differenceInMinutes } from "date-fns";
-import {
-  setComponentToShow,
-  setFormObj,
-  setFormTitle,
-  setFormWidthPercentage,
-  toggleRSBView,
-} from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
+import { setFormObj } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
+import { setLeaveTypeForCurrentEmployee } from "../../../redux/reducers/ChildReducer/LeaveTypeReducer";
 import { set } from "lodash";
 import { setEmployeeLeaveType } from "../../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
-import { addLeaveApplication } from "../../../redux/reducers/ChildReducer/LeaveApplyReducer";
-import { setLeaveTypeForCurrentEmployee } from "../../../redux/reducers/ChildReducer/LeaveTypeReducer";
 import {
   late_entry_display,
   on_time_entry_display,
@@ -71,6 +64,8 @@ import DistanceCalculaterInMap from "../../../pages/attendance/DistanceCalculate
 import AllDistanceCalculater from "../../../pages/attendance/AllDistanceCalculater";
 import WebCheckInOut from "./../timer/WebCheckInOut";
 import CustomStatusTimeline from "./CustomStatusTimeLine";
+// NOTE: adjust this path to wherever ApplyLeaveForm.jsx lives in your project
+import ApplyLeaveForm from "../../forms/ApplyLeaveForm";
 
 const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
@@ -84,6 +79,7 @@ const AttendanceEmployeeTable = () => {
     { key: "workSchedule", label: "Work Schedule" },
     { key: "break", label: "Break" },
     { key: "totalIn", label: "Total IN" },
+    { key: "ot", label: "OT" },
     { key: "paidHr", label: "Paid Hr" },
     { key: "status", label: "Status" },
     { key: "activity", label: "Activity" },
@@ -108,7 +104,6 @@ const AttendanceEmployeeTable = () => {
   const [previewImageUrl, setPreviewImageUrl] = useState("");
   const [leaveDate, setLeaveDate] = useState(null);
   const [attendanceEditData, setAttendanceEditData] = useState(null);
-  const [leaveApplyData, setLeaveApplyData] = useState(null);
   const [hrStatus, setHrStatus] = useState(0);
   const [notesLength, setNotesLength] = useState(0);
   const [date, setDate] = useState(null);
@@ -117,49 +112,33 @@ const AttendanceEmployeeTable = () => {
   const [notesList, setNotesList] = useState([]);
 
   const [showSaveBtn, setShowSaveBtn] = useState(false);
-  const [leaveCount, setLeaveCount] = useState(0);
   const [locationData, setLocationData] = useState([]);
   const [locationType, setLocationType] = useState("");
   const [allLocationData, setAllLocationData] = useState([]);
-  // REPLACE your existing selectedColumns useState:
+
+  const DEFAULT_COLUMNS = [
+    "date",
+    "in",
+    "inLocation",
+    "out",
+    "outLocation",
+    "workSchedule",
+    "break",
+    "totalIn",
+    "paidHr",
+    "status",
+    "activity",
+    "customStatus",
+    "notes",
+    "action",
+  ];
+
   const [selectedColumns, setSelectedColumns] = useState(() => {
     try {
       const saved = localStorage.getItem("attendance_selected_columns");
-      return saved
-        ? JSON.parse(saved)
-        : [
-            "date",
-            "in",
-            "inLocation",
-            "out",
-            "outLocation",
-            "workSchedule",
-            "break",
-            "totalIn",
-            "paidHr",
-            "status",
-            "activity",
-            "customStatus",
-            "notes",
-            "action",
-          ];
+      return saved ? JSON.parse(saved) : DEFAULT_COLUMNS;
     } catch {
-      return [
-        "date",
-        "in",
-        "inLocation",
-        "out",
-        "outLocation",
-        "workSchedule",
-        "break",
-        "totalIn",
-        "paidHr",
-        "status",
-        "activity",
-        "customStatus",
-        "notes",
-        "action",
-      ];
+      return DEFAULT_COLUMNS;
     }
   });
   const containerRef = useRef(null);
@@ -182,7 +161,6 @@ const AttendanceEmployeeTable = () => {
     return () => ro.disconnect();
   }, []);
 
-  // ADD this useEffect after all your useState declarations:
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -202,9 +180,43 @@ const AttendanceEmployeeTable = () => {
     (state) => state.AttendanceReportReducer,
   );
 
+  // Used to auto-close the Apply Leave modal once ApplyLeaveForm submits
+  // successfully (the form dispatches add/editLeaveApplication on success).
+  const { leave_application_data } = useSelector(
+    (state) => state.LeaveApplyReducer,
+  );
+  const leaveSnapshotRef = useRef(leave_application_data);
+
+  // ApplyLeaveForm reads its leave types from LeaveTypeReducer
+  // (leave_type_for_current_employee), which is empty on this page.
+  // The attendance page already has the leave types + balances in
+  // EmployeeLeaveReducer, so map them into the shape the form expects:
+  // { leave_type: {id, name, unit, ...}, available_count }
   const { employee_leave_data } = useSelector(
     (state) => state.EmployeeLeaveReducer,
   );
+
+  const buildLeaveTypeRecords = () =>
+    (employee_leave_data || []).map((item) =>
+      item?.leave_type
+        ? item
+        : {
+            leave_type: {
+              ...item,
+              id: item.id,
+              name: item.name || item.label,
+              unit: item.unit,
+            },
+            available_count:
+              item.balance_leave_count ?? item.available_count ?? 0,
+          },
+    );
+
+  useEffect(() => {
+    if (leave_modal && leave_application_data !== leaveSnapshotRef.current) {
+      closeLeaveModal();
+    }
+  }, [leave_application_data, leave_modal]);
 
   const workScheduleData = GetLocalStorageData("work_schedule") || [];
   const employeeData = GetLocalStorageData("employee") || [];
@@ -215,14 +227,13 @@ const AttendanceEmployeeTable = () => {
       ? employeeData.find(
           (e) => e.id === individual_attendance_report_data[0].employee_id,
         )
-      : [];
+      // : [];
+      : null;
   const employeeWorkSchedule =
     workScheduleData.find(
-      (w) => w.id === employeeInformation.work_schedule_id,
+      // (w) => w.id === employeeInformation.work_schedule_id,
+      (w) => w.id === employeeInformation?.work_schedule_id,
     ) || [];
-
-  const day_leave_types = employee_leave_data.filter((d) => d.unit === 1);
-  // const hour_types = employee_leave_data.filter((d) => d.unit === 2);
 
   function open_timeline(rowData) {
     settimeline_modal(!timeline_modal);
@@ -259,7 +270,6 @@ const AttendanceEmployeeTable = () => {
 
   const closeLeaveModal = () => {
     setLeave_modal(false);
-    setLeaveCount(0);
   };
 
   const [initialObj, setInitialObj] = useState(0);
@@ -520,9 +530,9 @@ const AttendanceEmployeeTable = () => {
         return (
           <Cell {...props} className="link-group">
             <i
-              class={`mdi mdi-circle fs-10 align-middle text-${entry_status?.class} me-1 ms-2`}
+              className={`mdi mdi-circle fs-10 align-middle text-${entry_status?.class} me-1 ms-2`}
             ></i>
-            <span class="fs-12 mb-0 text-muted">
+            <span className="fs-12 mb-0 text-muted">
               {entry_status?.text || ""}
             </span>
           </Cell>
@@ -541,9 +551,9 @@ const AttendanceEmployeeTable = () => {
         return (
           <Cell {...props} className="link-group">
             <i
-              class={`mdi mdi-circle fs-10 align-middle text-${entry_status?.class} me-1 ms-2`}
+              className={`mdi mdi-circle fs-10 align-middle text-${entry_status?.class} me-1 ms-2`}
             ></i>
-            <span class="fs-12 mb-0 text-muted">
+            <span className="fs-12 mb-0 text-muted">
               {entry_status?.text || ""}
             </span>
           </Cell>
@@ -785,8 +795,10 @@ const AttendanceEmployeeTable = () => {
     setEditModalOpen(true);
   };
 
+  // Apply Leave: seed ApplyLeaveForm through the shared form_obj
+  // (same contract the right-sidebar flow uses), then show it in a modal.
   const applyLeave = (rowData) => {
-    let intialObj = {
+    const initialLeaveObj = {
       id: 0,
       leave_type_id: 0,
       reason: "",
@@ -798,38 +810,15 @@ const AttendanceEmployeeTable = () => {
       in_between_dates: [rowData?.date],
       employee_id: rowData?.employee_id,
     };
-    setLeaveApplyData(intialObj);
-    setLeave_modal(true);
-    setLeaveDate(rowData.date);
-  };
 
-  const handleApplyLeave = async () => {
-    dispatch(setLoaderVisible(true));
-    if (leaveApplyData.leave_type_id === 0) {
-      toast.error("Please Select Leave Type");
-    } else {
-      const Api = await PostApi(
-        "leave/leave-application/create/",
-        leaveApplyData,
-        false,
-      );
-      if (Api.status && Api.status === 200) {
-        if (leaveApplyData.id === 0) {
-          dispatch(addLeaveApplication(Api?.data.data));
-          dispatch(
-            setLeaveTypeForCurrentEmployee(
-              Api?.data?.leave_type_for_employee || [],
-            ),
-          );
-        }
-        dispatch(toggleRSBView(false));
-        setLeave_modal(false);
-        toast.success(Api?.data?.message);
-      } else {
-        toast.error(Api?.data?.message || Api?.data?.detail);
-      }
+    // Populate the form's leave type dropdown before the modal mounts
+    if (Array.isArray(employee_leave_data) && employee_leave_data.length > 0) {
+      dispatch(setLeaveTypeForCurrentEmployee(buildLeaveTypeRecords()));
     }
-    dispatch(setLoaderVisible(false));
+    dispatch(setFormObj(initialLeaveObj));
+    leaveSnapshotRef.current = leave_application_data;
+    setLeaveDate(rowData?.date);
+    setLeave_modal(true);
   };
 
   const updateAttendance = async () => {
@@ -1093,8 +1082,8 @@ const AttendanceEmployeeTable = () => {
             </Popover>
           }
         >
-          <button type="button" class="btn btn-primary mt-4 mt-md-0">
-            <i class="ri-align-left me-1"></i> Columns
+          <button type="button" className="btn btn-primary mt-4 mt-md-0">
+            <i className="ri-align-left me-1"></i> Columns
           </button>
         </Whisper>
       </div>
@@ -1183,7 +1172,8 @@ const AttendanceEmployeeTable = () => {
 
           {/* ── OT (conditional) ─────────────────────────────────────── */}
           {employeeWorkSchedule?.has_ot &&
-            selectedColumns.includes("totalIn") && (
+            // selectedColumns.includes("totalIn") && (
+            selectedColumns.includes("ot") && ( 
               <Column flexGrow={1} minWidth={90}>
                 <HeaderCell>OT</HeaderCell>
                 <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
@@ -1832,14 +1822,14 @@ const AttendanceEmployeeTable = () => {
           <div>
             <SimpleBar style={{ height: "200px" }} className="px-3 mx-n3 mb-2">
               {notesList && notesList.length > 0 ? (
-                notesList.map((d) => {
+                notesList.map((d, noteIdx) => {
                   let emp_details =
                     !!employee_data &&
                     employee_data.find((e) => e.id === d.employee_id);
                   console.log("DETAILS", emp_details);
 
                   return (
-                    <div className="d-flex mb-4">
+                    <div className="d-flex mb-4" key={d?.id ?? noteIdx}>
                       <div className="flex-shrink-0">
                         {emp_details?.profile_url ? (
                           <img
@@ -1920,29 +1910,7 @@ const AttendanceEmployeeTable = () => {
             </SimpleBar>
             <form className="mt-4">
               <Row className="g-3">
-                {hrStatus != 2 && (
-                  <Col xs={12}>
-                    {/* <label
-                      htmlFor="exampleFormControlTextarea1"
-                      className="form-label text-body"
-                    >
-                      Leave a Notes
-                    </label>
-                    <textarea
-                      className="form-control bg-light border-light"
-                      id="exampleFormControlTextarea1"
-                      rows="3"
-                      placeholder="Enter your comment..."
-                      value={notesUpdateObj?.notes || ""}
-                      onChange={(e) =>
-                        setNotesUpdateObj({
-                          ...notesUpdateObj,
-                          notes: e.target.value,
-                        })
-                      }
-                    ></textarea> */}
-                  </Col>
-                )}
+                {hrStatus != 2 && <Col xs={12}></Col>}
                 <Col xs={12} className="text-end">
                   <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
                     <button
@@ -1975,130 +1943,45 @@ const AttendanceEmployeeTable = () => {
         </ModalBody>
       </Modal>
 
+      {/* Apply Leave Modal — renders the shared ApplyLeaveForm */}
       <Modal
         isOpen={leave_modal}
-        toggle={() => {
-          closeLeaveModal();
-        }}
+        toggle={closeLeaveModal}
         centered
+        size="lg"
         className="custom-modal"
       >
-        <ModalHeader className="d-flex justify-content-center">
+        <div className="modal-header justify-content-center position-relative">
           <h5
-            className="modal-title center"
-            id="exampleModalToggleLabel"
+            className="modal-title text-center"
             style={{ fontSize: "smaller" }}
           >
-            Apply Leave on {format(new Date(leaveDate), "dd MMM, yyyy")}
+            Apply Leave
+            {leaveDate
+              ? ` - ${format(new Date(leaveDate), "dd MMM, yyyy")}`
+              : ""}
           </h5>
-        </ModalHeader>
-        <ModalBody className="text-left">
-          <Col md={12} lg={12} xxl={12}>
-            <Row className="mb-2">
-              <Col>
-                <Label htmlFor="calculation" className="form-label">
-                  Leave Type:
-                </Label>
-              </Col>
-              <Col>
-                <Select
-                  name="leave_type_id"
-                  isMulti={false}
-                  options={day_leave_types || []}
-                  value={
-                    leaveApplyData?.leave_type_id
-                      ? day_leave_types.find(
-                          (d) => d.id === leaveApplyData?.leave_type_id,
-                        )
-                      : []
-                  }
-                  isOptionDisabled={(option) =>
-                    option.balance_leave_count === 0
-                  }
-                  onChange={(e) => {
-                    setLeaveApplyData((prevData) => {
-                      const newData = {
-                        ...prevData,
-                        leave_type_id: e.id,
-                      };
-                      setLeaveCount(
-                        newData.leave_type_id
-                          ? employee_leave_data.find(
-                              (d) => d.id === newData.leave_type_id,
-                            )?.balance_leave_count
-                          : "",
-                      );
-                      return newData;
-                    });
-                  }}
-                  placeholder="Select Leave Type"
-                  className="basic-multi-select"
-                />
-              </Col>
-            </Row>
-            <Row className="mb-2">
-              <Col></Col>
-              <Col>
-                {leaveApplyData?.leave_type_id ? (
-                  <Col>
-                    {" "}
-                    <div id="passwordHelpBlock" className="form-text">
-                      {leaveCount} Days Remaining
-                    </div>
-                  </Col>
-                ) : null}
-              </Col>
-            </Row>
-          </Col>
-          <Col md={12} lg={12} xxl={12}>
-            <Row className="mt-4">
-              <Col>
-                <Label htmlFor="calculation" className="form-label">
-                  Reason:
-                </Label>
-              </Col>
-              <Col>
-                <textarea
-                  className="form-control bg-light border-light"
-                  id="exampleFormControlTextarea1"
-                  rows="3"
-                  placeholder="Enter Reason"
-                  value={leaveApplyData?.reason || ""}
-                  onChange={(e) => {
-                    setLeaveApplyData({
-                      ...leaveApplyData,
-                      reason: e.target.value,
-                    });
-                  }}
-                ></textarea>
-              </Col>
-            </Row>
-          </Col>
-
-          <div className="text-center mt-5">
-            <Col xs={12} className="text-end">
-              <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
-                <Button
-                  className="btn btn-warning"
-                  onClick={() => {
-                    closeLeaveModal();
-                  }}
-                >
-                  Close
-                </Button>
-
-                <button
-                  type="button"
-                  className="btn w-sm btn-success"
-                  data-bs-dismiss="modal"
-                  onClick={handleApplyLeave}
-                >
-                  <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                  Save
-                </button>
-              </div>
-            </Col>
-          </div>
+          <button
+            type="button"
+            className="btn-close"
+            aria-label="Close"
+            onClick={closeLeaveModal}
+            style={{
+              position: "absolute",
+              right: "16px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              margin: 0,
+            }}
+          ></button>
+        </div>
+        <ModalBody>
+          {/* antd picker popups default to z-index 1050, which sits behind
+              the Bootstrap modal (1055). Lift them while this modal is open. */}
+          <style>{`
+            .ant-picker-dropdown { z-index: 1100 !important; }
+          `}</style>
+          <ApplyLeaveForm lockedDate={leaveDate} />
         </ModalBody>
       </Modal>
     </Fragment>

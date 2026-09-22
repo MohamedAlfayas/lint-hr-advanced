@@ -3,7 +3,7 @@ import { Button, Spinner, ButtonGroup } from "reactstrap";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import { Api } from "../../../common/api/Api";
-import { fetchStatusMaster } from "./statusHelpers";
+import { fetchStatusMaster, labelFor, PAYMENT_ONLY_STATUSES } from "./statusHelpers";
 import StatusBadge from "./StatusBadge";
 
 const RunStatusActions = ({ run, onChanged, size = "sm" }) => {
@@ -13,13 +13,19 @@ const RunStatusActions = ({ run, onChanged, size = "sm" }) => {
   useEffect(() => { fetchStatusMaster("run").then(setRows); }, []);
 
   if (!run) return null;
-  const current   = rows.find((r) => r.code === run.status);
-  const nextCodes = current?.allowed_next || [];
+  const current = rows.find((r) => r.code === run.status);
+  // "paid" / "partially_paid" are reached automatically as payslips are
+  // released (see RunPaymentActions) — a manual cascade here would push
+  // every payslip to the same status regardless of who has a deferred
+  // incentive still pending, so those two targets are excluded.
+  const nextCodes = (current?.allowed_next || []).filter(
+    (c) => !PAYMENT_ONLY_STATUSES.includes(c)
+  );
 
   const move = (target) => {
     Swal.fire({
       icon: "question",
-      title: `Move run to "${target}"?`,
+      title: `Move run to "${labelFor(rows, target)}"?`,
       showCancelButton: true,
       confirmButtonText: "Yes, proceed",
       reverseButtons: true,
@@ -48,7 +54,7 @@ const RunStatusActions = ({ run, onChanged, size = "sm" }) => {
         <ButtonGroup size={size}>
           {nextCodes.map((code) => (
             <Button key={code} color="light" className="border" disabled={busy} onClick={() => move(code)}>
-              {busy ? <Spinner size="sm" /> : `→ ${code.replace(/_/g, " ")}`}
+              {busy ? <Spinner size="sm" /> : `→ ${labelFor(rows, code)}`}
             </Button>
           ))}
         </ButtonGroup>

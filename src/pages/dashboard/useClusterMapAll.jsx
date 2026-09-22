@@ -85,6 +85,34 @@ const LS_CUSTOM_FORM_KEY = "custom_form";
 // screens actually get visibly more room instead of stalling at 420px.
 const TIMELINE_WIDTH_CLAMP = "clamp(300px, 26vw, 640px)";
 
+// ── Which of the three timeline "views" is showing on the right panel.
+// Independent of `dataMode` (GPS/Road/Both) below — TAB switches which
+// API/dataset drives the right panel list, dataMode only affects which
+// coordinate fields are used for the map route while on the Location tab.
+const TIMELINE_TABS = {
+  LOCATION: "location",
+  ACTIVITY: "activity",
+  MOBILE: "mobile",
+};
+
+const TIMELINE_TAB_META = {
+  [TIMELINE_TABS.LOCATION]: {
+    label: "Location Timeline",
+    shortLabel: "Location",
+    icon: "ri-route-line",
+  },
+  [TIMELINE_TABS.ACTIVITY]: {
+    label: "Activity Timeline",
+    shortLabel: "Activity",
+    icon: "ri-list-check-2",
+  },
+  [TIMELINE_TABS.MOBILE]: {
+    label: "Mobile Timeline",
+    shortLabel: "Mobile",
+    icon: "ri-smartphone-line",
+  },
+};
+
 // ─── Distance helper (km) ───────────────────────────────────────
 const haversine = (a, b) => {
   const R = 6371;
@@ -355,9 +383,12 @@ const EmployeeDisplayInSelect = (props) => {
 // ─── One-time injected keyframes (structure/animation only, no color/font overrides) ─
 const STYLE_ID = "ucma-anim-styles";
 const injectStyles = () => {
-  if (document.getElementById(STYLE_ID)) return;
-  const tag = document.createElement("style");
-  tag.id = STYLE_ID;
+  let tag = document.getElementById(STYLE_ID);
+  if (!tag) {
+    tag = document.createElement("style");
+    tag.id = STYLE_ID;
+    document.head.appendChild(tag);
+  }
   tag.innerHTML = `
     @keyframes ucma-ring {
       0%   { transform: scale(0.6); opacity: 0.55; }
@@ -463,6 +494,58 @@ const injectStyles = () => {
       background: #2563eb;
       color: #fff;
     }
+    .ucma-view-tabs {
+      display: flex;
+      flex-direction: row;
+      width: 100%;
+      flex-shrink: 0;
+      border-bottom: 1px solid #e5e7eb;
+      background: #f8fafc;
+      padding: 0;
+    }
+    .ucma-view-tab {
+      flex: 1 1 0%;
+      min-width: 0;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 10px 6px;
+      cursor: pointer;
+      text-align: center;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      white-space: nowrap;
+      transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ucma-view-tab i {
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .ucma-view-tab-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ucma-view-tab:hover:not(.active) {
+      color: #2563eb;
+      background: #eef2ff;
+    }
+    .ucma-view-tab.active {
+      color: #2563eb;
+      background: #fff;
+      border-bottom-color: #2563eb;
+    }
+    .ucma-view-tab:focus-visible {
+      outline: 2px solid #2563eb;
+      outline-offset: -2px;
+    }
     @media (max-width: 480px), (max-height: 480px) {
       .ucma-playback-panel {
         left: 10px !important;
@@ -492,15 +575,25 @@ const injectStyles = () => {
         font-size: 11px !important;
         padding: 5px 9px !important;
       }
+      .ucma-view-tab {
+        font-size: 11px !important;
+        padding: 8px 4px !important;
+        gap: 3px !important;
+      }
+      .ucma-view-tab i {
+        font-size: 13px !important;
+      }
     }
     @media (max-width: 380px) {
       .ucma-tl-card {
         padding: 5px 7px !important;
         border-radius: 8px !important;
       }
+      .ucma-view-tab span.ucma-view-tab-label {
+        display: none;
+      }
     }
   `;
-  document.head.appendChild(tag);
 };
 
 const todayIsoIN = () =>
@@ -527,6 +620,27 @@ const formatFormTimestamp = (ts) => {
     year: "numeric",
   });
   return `${day}, ${time}`;
+};
+
+// ─── Shared IST time/date splitter used by the Activity + Mobile tabs ──
+const splitIndianTime = (ts) => {
+  if (!ts) return { time: "", date: "" };
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return { time: "", date: "" };
+  return {
+    time: date.toLocaleTimeString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      hour12: true,
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    date: date.toLocaleDateString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }),
+  };
 };
 
 // ─── Resolve a form submission's "submitted vs pending" state.
@@ -601,6 +715,192 @@ const renderFormFieldValue = (field) => {
   return <span>{String(field.value)}</span>;
 };
 
+// ─── Activity Timeline helpers (check_in / check_out /
+//     custom_status_start / custom_status_end). Custom status is now two
+//     point events that share a log `id` (not one interval object). ────
+const ACTIVITY_TYPE_CONFIG = {
+  check_in: {
+    label: "Check In",
+    icon: "ri-login-circle-line",
+    color: COLORS.start,
+  },
+  check_out: {
+    label: "Check Out",
+    icon: "ri-logout-circle-line",
+    color: COLORS.end,
+  },
+  custom_status_start: {
+    label: "Status Start",
+    icon: "ri-play-circle-line",
+    color: "#f59e0b",
+  },
+  custom_status_end: {
+    label: "Status End",
+    icon: "ri-stop-circle-line",
+    color: "#d97706",
+  },
+  // Legacy interval shape (pre start/end split) — still renderable.
+  custom_status: {
+    label: "Status",
+    icon: "ri-time-line",
+    color: "#f59e0b",
+  },
+};
+
+const getActivityConfig = (type) =>
+  ACTIVITY_TYPE_CONFIG[type] || {
+    label: type || "Activity",
+    icon: "ri-information-line",
+    color: COLORS.travel,
+  };
+
+const isStatusStartType = (type) =>
+  type === "custom_status_start" || type === "custom_status";
+
+const isStatusEndType = (type) => type === "custom_status_end";
+
+const isStatusActivityType = (type) =>
+  isStatusStartType(type) || isStatusEndType(type);
+
+// Status pings carry `location: { lat, lng }`; check-in/out use
+// latitude/longitude (+ a string `location` address). Support both.
+const getActivityLat = (item) => {
+  const fromFields = getLat(item);
+  if (fromFields != null) return fromFields;
+  const loc = item?.location;
+  if (loc && typeof loc === "object") {
+    const n = parseFloat(loc.lat);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+};
+
+const getActivityLng = (item) => {
+  const fromFields = getLng(item);
+  if (fromFields != null) return fromFields;
+  const loc = item?.location;
+  if (loc && typeof loc === "object") {
+    const n = parseFloat(loc.lng);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+};
+
+const activityHasCoords = (item) =>
+  hasValidCoords({ lat: getActivityLat(item), lng: getActivityLng(item) });
+
+const getActivityAddressLabel = (item) => {
+  if (!item) return "";
+  if (typeof item.location === "string" && item.location.trim()) {
+    return item.location;
+  }
+  if (typeof item.notes === "string" && item.notes.trim()) return item.notes;
+  if (typeof item.start_notes === "string" && item.start_notes.trim()) {
+    return item.start_notes;
+  }
+  if (typeof item.end_notes === "string" && item.end_notes.trim()) {
+    return item.end_notes;
+  }
+  return "";
+};
+
+const getActivityChipLabel = (item, cfg) => {
+  const statusName = item?.status?.name;
+  if (item?.type === "custom_status_start") {
+    return statusName ? `${statusName} · Start` : cfg.label;
+  }
+  if (item?.type === "custom_status_end") {
+    return statusName ? `${statusName} · End` : cfg.label;
+  }
+  if (item?.type === "custom_status") {
+    return statusName || cfg.label;
+  }
+  return cfg.label;
+};
+
+// Expand legacy interval `custom_status` rows into start/end pings so the
+// zigzag UI always consumes the same point-event shape.
+const expandActivityItems = (items) => {
+  if (!Array.isArray(items)) return [];
+  const out = [];
+  items.forEach((item) => {
+    if (!item || item.type !== "custom_status") {
+      out.push(item);
+      return;
+    }
+    out.push({
+      type: "custom_status_start",
+      id: item.id,
+      timestamp: item.start_time || item.timestamp,
+      status: item.status,
+      notes: item.start_notes || item.notes || "",
+      location: item.start_location || item.location || null,
+    });
+    if (item.end_time) {
+      out.push({
+        type: "custom_status_end",
+        id: item.id,
+        timestamp: item.end_time,
+        status: item.status,
+        notes: item.end_notes || "",
+        location: item.end_location || null,
+      });
+    }
+  });
+  return out;
+};
+
+const formatSecondsDuration = (secs) => {
+  if (secs === null || secs === undefined || Number.isNaN(secs)) return "";
+  const total = Math.max(0, Math.round(secs));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+};
+
+// ─── Mobile (device toggle) helpers ─────────────────────────────
+// Builds "from → to" segments for both location and internet state out of
+// the raw ping list, per the API's documented rule: a "location off"
+// segment runs from a ping with location_toggle:"off" until the next ping
+// with location_toggle:"on" (or "now"/end-of-day if it never comes back).
+// Same logic mirrored for internet_toggle.
+const buildToggleSegments = (pings, field) => {
+  if (!Array.isArray(pings) || pings.length === 0) return [];
+  const segments = [];
+  let openSegment = null;
+
+  pings.forEach((p) => {
+    const toggle = p?.[field];
+    if (toggle == null) return;
+    if (toggle === "off") {
+      // Close any still-open "off" segment before starting a fresh one
+      // (defensive — shouldn't normally happen with well-formed data).
+      if (openSegment)
+        segments.push({ ...openSegment, to: p.timestamp, ongoing: false });
+      openSegment = {
+        from: p.timestamp,
+        to: null,
+        ongoing: true,
+        startPing: p,
+      };
+    } else if (toggle === "on") {
+      if (openSegment) {
+        segments.push({
+          ...openSegment,
+          to: p.timestamp,
+          ongoing: false,
+          endPing: p,
+        });
+        openSegment = null;
+      }
+    }
+  });
+
+  if (openSegment) segments.push(openSegment);
+  return segments;
+};
+
 // ─── Pin-shaped marker icon (teardrop + document glyph) for points that
 // have a form submission. Built as a data-URI SVG so it renders as a real
 // pin instead of a plain circle — Marker's `label` option can't reliably
@@ -638,7 +938,12 @@ const UsersClusterMapAll = ({
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [path, setPath] = useState([]);
 
-  // ── Employee / department / date filter state ──
+  // ── Which right-panel timeline view is showing: Location / Activity /
+  //     Mobile. Location is the default per-load view. Switching tabs
+  //     never touches the employee/date filters — those stay shared. ──
+  const [activeTab, setActiveTab] = useState(TIMELINE_TABS.LOCATION);
+
+  // ── Employee / department / date filter state (shared by all 3 tabs) ──
   const [deptFilter, setDeptFilter] = useState("All");
   const [selectedEmpId, setSelectedEmpId] = useState(initialEmpId);
   const [dateFilter, setDateFilter] = useState(""); // "" = none picked yet, else "YYYY-MM-DD"
@@ -649,6 +954,19 @@ const UsersClusterMapAll = ({
   // employee/date combo doesn't re-fetch.
   const [locationCache, setLocationCache] = useState({});
   const [loadingLocations, setLoadingLocations] = useState(false);
+
+  // Per-employee, per-date Activity Timeline, from
+  // GET /attendance/get-attendance-activity-timeline/{emp_id}?date=YYYY-MM-DD
+  // Cached the same way as locationCache, fetched lazily only once the
+  // Activity tab is actually opened.
+  const [activityCache, setActivityCache] = useState({});
+  const [loadingActivity, setLoadingActivity] = useState(false);
+
+  // Per-employee, per-date Mobile (device toggle) Timeline, from
+  // GET /attendance/get-device-toggle-data/{emp_id}?date=YYYY-MM-DD
+  // Cached / fetched lazily the same way.
+  const [mobileCache, setMobileCache] = useState({});
+  const [loadingMobile, setLoadingMobile] = useState(false);
 
   // ── Live tracking (websocket) ──
   const [liveLocation, setLiveLocation] = useState(null);
@@ -761,7 +1079,10 @@ const UsersClusterMapAll = ({
     setDeptFilter("All");
     setSelectedEmpId(initialEmpId ?? null);
     setLocationCache({});
+    setActivityCache({});
+    setMobileCache({});
     setDateFilter("");
+    setActiveTab(TIMELINE_TABS.LOCATION);
   }, [employeesSignature, initialEmpId]);
 
   // ─── Department options ────────────────────────────────────────
@@ -885,12 +1206,194 @@ const UsersClusterMapAll = ({
     };
   }, [selectedEmpId, dateFilter, locationCache]);
 
+  // ─── Fetch Activity Timeline whenever the Activity tab is active
+  //     (including every time the user switches onto it) and whenever
+  //     employee/date changes while that tab is open. ───────────────────
+  useEffect(() => {
+    if (activeTab !== TIMELINE_TABS.ACTIVITY) return;
+    if (!selectedEmpId || !dateFilter) return;
+
+    const key = `${selectedEmpId}::${dateFilter}`;
+    let cancelled = false;
+
+    const fetchActivity = async () => {
+      try {
+        setLoadingActivity(true);
+        const response = await Api.get(
+          `/attendance/get-attendance-activity-timeline/${selectedEmpId}?date=${dateFilter}`,
+        );
+        const data = response?.data?.data;
+        if (!cancelled) {
+          setActivityCache((prev) => ({
+            ...prev,
+            [key]: Array.isArray(data) ? data : [],
+          }));
+        }
+      } catch (error) {
+        console.error(
+          `Error fetching activity timeline for employee ${selectedEmpId} on ${dateFilter}:`,
+          error,
+        );
+        if (!cancelled) {
+          setActivityCache((prev) => ({ ...prev, [key]: [] }));
+        }
+      } finally {
+        if (!cancelled) setLoadingActivity(false);
+      }
+    };
+
+    fetchActivity();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, selectedEmpId, dateFilter]);
+
+  // ─── Fetch Mobile (device toggle) Timeline whenever the Mobile tab
+  //     is active — same “fetch on tab switch” pattern as Activity. ─────
+  useEffect(() => {
+    if (activeTab !== TIMELINE_TABS.MOBILE) return;
+    if (!selectedEmpId || !dateFilter) return;
+
+    const key = `${selectedEmpId}::${dateFilter}`;
+    let cancelled = false;
+
+    const fetchMobile = async () => {
+      try {
+        setLoadingMobile(true);
+        const response = await Api.get(
+          `/attendance/get-device-toggle-data/${selectedEmpId}?date=${dateFilter}`,
+        );
+        const data = response?.data?.data;
+        if (!cancelled) {
+          setMobileCache((prev) => ({
+            ...prev,
+            [key]: Array.isArray(data) ? data : [],
+          }));
+        }
+      } catch (error) {
+        console.error(
+          `Error fetching mobile timeline for employee ${selectedEmpId} on ${dateFilter}:`,
+          error,
+        );
+        if (!cancelled) {
+          setMobileCache((prev) => ({ ...prev, [key]: [] }));
+        }
+      } finally {
+        if (!cancelled) setLoadingMobile(false);
+      }
+    };
+
+    fetchMobile();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, selectedEmpId, dateFilter]);
+
   // ─── Location history for the active employee + selected date ─────
   const activeLocations = useMemo(() => {
     if (!selectedEmpId || !dateFilter) return [];
     const key = `${selectedEmpId}::${dateFilter}`;
     return locationCache[key] || [];
   }, [selectedEmpId, dateFilter, locationCache]);
+
+  // ─── Activity Timeline rows for the active employee + selected date ──
+  const activeActivity = useMemo(() => {
+    if (!selectedEmpId || !dateFilter) return [];
+    const key = `${selectedEmpId}::${dateFilter}`;
+    return activityCache[key] || [];
+  }, [selectedEmpId, dateFilter, activityCache]);
+
+  // ─── Mobile (device toggle) pings for the active employee + selected date ──
+  const activeMobilePings = useMemo(() => {
+    if (!selectedEmpId || !dateFilter) return [];
+    const key = `${selectedEmpId}::${dateFilter}`;
+    return mobileCache[key] || [];
+  }, [selectedEmpId, dateFilter, mobileCache]);
+
+  // ─── Processed Activity Timeline rows — expand legacy intervals into
+  //     start/end pings, sort chronologically, pair shared ids for
+  //     duration / "ongoing", and annotate display fields. ─────────────
+  const activityRows = useMemo(() => {
+    if (!Array.isArray(activeActivity)) return [];
+    const expanded = expandActivityItems(activeActivity);
+    const sorted = [...expanded].sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
+    );
+
+    const startById = new Map();
+    const endIds = new Set();
+    sorted.forEach((item) => {
+      if (item?.type === "custom_status_start" && item.id != null) {
+        startById.set(item.id, item);
+      }
+      if (item?.type === "custom_status_end" && item.id != null) {
+        endIds.add(item.id);
+      }
+    });
+
+    return sorted.map((item, idx) => {
+      const { time, date } = splitIndianTime(item.timestamp);
+      const cfg = getActivityConfig(item.type);
+      let durationSecs = null;
+      let isOngoing = false;
+
+      if (item.type === "custom_status_end" && item.id != null) {
+        const start = startById.get(item.id);
+        if (start?.timestamp && item.timestamp) {
+          const ms =
+            new Date(item.timestamp).getTime() -
+            new Date(start.timestamp).getTime();
+          if (Number.isFinite(ms) && ms >= 0) {
+            durationSecs = Math.round(ms / 1000);
+          }
+        }
+      } else if (item.type === "custom_status_start" && item.id != null) {
+        isOngoing = !endIds.has(item.id);
+      } else if (
+        item.type === "custom_status" &&
+        item.duration_in_seconds != null
+      ) {
+        durationSecs = item.duration_in_seconds;
+        isOngoing = item.is_active === true;
+      }
+
+      return {
+        ...item,
+        _index: idx,
+        _time: time,
+        _date: date,
+        _config: cfg,
+        _hasCoords: activityHasCoords(item),
+        _chipLabel: getActivityChipLabel(item, cfg),
+        _subtitle:
+          getActivityAddressLabel(item) || (isOngoing ? "Ongoing" : ""),
+        _durationSecs: durationSecs,
+        _isOngoing: isOngoing,
+        _statusIcon: item.status?.icon || null,
+      };
+    });
+  }, [activeActivity]);
+
+  // ─── Processed Mobile Timeline — raw pings (chronological) plus the
+  //     derived on/off segments for both location and internet state. ──
+  const mobileRows = useMemo(() => {
+    if (!Array.isArray(activeMobilePings)) return [];
+    return [...activeMobilePings]
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .map((p, idx) => {
+        const { time, date } = splitIndianTime(p.timestamp);
+        return { ...p, _index: idx, _time: time, _date: date };
+      });
+  }, [activeMobilePings]);
+
+  const locationToggleSegments = useMemo(
+    () => buildToggleSegments(mobileRows, "location_toggle"),
+    [mobileRows],
+  );
+  const internetToggleSegments = useMemo(
+    () => buildToggleSegments(mobileRows, "internet_toggle"),
+    [mobileRows],
+  );
 
   // Websocket payloads aren't guaranteed to use the same field name as the
   // REST API for the time — try the common variants, and fall back to the
@@ -981,10 +1484,8 @@ const UsersClusterMapAll = ({
   // Live marker only makes sense while looking at today's route.
   // ROAD mode snaps the live pin to OSRM coords; GPS / Both stay on raw GPS.
   const isViewingToday = dateFilter === todayIsoIN();
-  const resolveLiveLat =
-    dataMode === DATA_MODES.ROAD ? getRoadLat : getLat;
-  const resolveLiveLng =
-    dataMode === DATA_MODES.ROAD ? getRoadLng : getLng;
+  const resolveLiveLat = dataMode === DATA_MODES.ROAD ? getRoadLat : getLat;
+  const resolveLiveLng = dataMode === DATA_MODES.ROAD ? getRoadLng : getLng;
   const liveMarkerPos =
     isViewingToday &&
     liveLocation &&
@@ -1091,14 +1592,18 @@ const UsersClusterMapAll = ({
     setIsPlaying(false);
     setProgress(0);
     setMovingPos(null);
-  }, [activeLocations, activeEmployee, findCustomStatus, findCustomForm, dataMode]);
+  }, [
+    activeLocations,
+    activeEmployee,
+    findCustomStatus,
+    findCustomForm,
+    dataMode,
+  ]);
 
   // Map/route only — timeline keeps the full `path` (including null lat/lng).
   const mapPath = useMemo(
     () =>
-      path
-        .map((p, pathIndex) => ({ ...p, pathIndex }))
-        .filter(hasValidCoords),
+      path.map((p, pathIndex) => ({ ...p, pathIndex })).filter(hasValidCoords),
     [path],
   );
 
@@ -1174,7 +1679,8 @@ const UsersClusterMapAll = ({
   }, []);
 
   useEffect(() => {
-    if (mapRef.current && mapPath.length > 0) fitToPath(mapRef.current, mapPath);
+    if (mapRef.current && mapPath.length > 0)
+      fitToPath(mapRef.current, mapPath);
   }, [mapPath, fitToPath]);
 
   const onMapLoad = useCallback(
@@ -1469,8 +1975,55 @@ const UsersClusterMapAll = ({
     if (mapRef.current) fitToPath(mapRef.current, mapPath);
   };
 
+  // ─── Activity / Mobile row click → same "pan + zoom on the map" idea as
+  //     handleTimelineClick, but these rows aren't part of `path`, so
+  //     there's no timeline index to set — just focus the map on that
+  //     ping's coordinates (when it has any) and select it for the
+  //     InfoWindow. ─────────────────────────────────────────────────────
+  const handleSideRowClick = (row, key) => {
+    setExpandedIndex((cur) => (cur === key ? null : key));
+    const lat = getActivityLat(row) ?? getLat(row);
+    const lng = getActivityLng(row) ?? getLng(row);
+    if (!hasValidCoords({ lat, lng })) return;
+    const address =
+      (typeof row.accurate_address === "string" && row.accurate_address) ||
+      getActivityAddressLabel(row) ||
+      "";
+    setSelectedMarker({
+      lat,
+      lng,
+      count: 1,
+      users: [
+        {
+          name: activeEmployee?.first_name || "",
+          profile_url: activeEmployee?.profile_url,
+          timestamp: row._time || "",
+          address,
+        },
+      ],
+    });
+    if (mapRef.current) {
+      const currentZoom = mapRef.current.getZoom() || 0;
+      mapRef.current.panTo({ lat, lng });
+      mapRef.current.setZoom(Math.max(currentZoom, TIMELINE_FOCUS_ZOOM));
+    }
+  };
+
+  // Clear selection/highlight state when flipping Location / Activity / Mobile
+  // so the previous tab's active card doesn't bleed into the next view.
+  const handleTimelineTabChange = (tabKey) => {
+    if (tabKey === activeTab) return;
+    setActiveTab(tabKey);
+    setExpandedIndex(null);
+    setActiveIndex(null);
+    setSelectedMarker(null);
+    setIsPlaying(false);
+    setProgress(0);
+    setMovingPos(null);
+  };
+
   // ─── Date picker helpers (must stay above the `!isLoaded` early return —
-//     hooks can't be conditionally skipped) ──────────────────────────
+  //     hooks can't be conditionally skipped) ──────────────────────────
   const todayDayjs = useMemo(() => dayjs(todayIsoIN(), ISO_DATE_FORMAT), []);
   const minYear = todayDayjs.year() - DATE_RANGE_YEARS_BACK;
 
@@ -1517,6 +2070,21 @@ const UsersClusterMapAll = ({
       : 0;
 
   const distanceCovered = (summary.km * progress).toFixed(1);
+
+  // ── Right-panel header count + loading flag, per active tab ──
+  const panelCount =
+    activeTab === TIMELINE_TABS.LOCATION
+      ? path.length
+      : activeTab === TIMELINE_TABS.ACTIVITY
+        ? activityRows.length
+        : mobileRows.length;
+
+  const panelLoading =
+    activeTab === TIMELINE_TABS.LOCATION
+      ? loadingLocations
+      : activeTab === TIMELINE_TABS.ACTIVITY
+        ? loadingActivity
+        : loadingMobile;
 
   return (
     <div
@@ -2099,10 +2667,11 @@ const UsersClusterMapAll = ({
           {/* ── Map overlay controls, top-center: GPS / Road / Both tabs ──
               Switches which coordinate fields (`latitude`/`longitude` vs
               OSRM-snapped `formatted_latitude`/`formatted_longitude`, or
-              both overlaid together) build the path shown below.
-              Centered horizontally so it doesn't collide with either the
-              start of the map or the Refresh/Full-view controls. ────────── */}
-          {path.length > 0 && (
+              both overlaid together) build the path shown below. Only
+              meaningful for the Location Timeline tab. Centered
+              horizontally so it doesn't collide with the Refresh/Full-view
+              controls on the right. ────────────────────────────────────── */}
+          {path.length > 0 && activeTab === TIMELINE_TABS.LOCATION && (
             <div
               className="ucma-mode-tabs"
               style={{
@@ -2197,48 +2766,52 @@ const UsersClusterMapAll = ({
 
           {/* ── Live distance-covered readout, top-right, while playing/scrubbed ── */}
           <AnimatePresence>
-            {mapPath.length > 1 && (isPlaying || progress > 0) && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                style={{
-                  position: "absolute",
-                  top: "56px",
-                  right: "12px",
-                  background: "rgba(255,255,255,0.95)",
-                  padding: "6px 14px",
-                  borderRadius: "20px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  zIndex: 5,
-                }}
-              >
-                {isPlaying && (
-                  <span
-                    className="ucma-liveblink"
-                    style={{
-                      width: "8px",
-                      height: "8px",
-                      borderRadius: "50%",
-                      background: COLORS.end,
-                      display: "inline-block",
-                    }}
-                  />
-                )}
-                <span>
-                  {distanceCovered} / {summary.distance}
-                </span>
-              </motion.div>
-            )}
+            {activeTab === TIMELINE_TABS.LOCATION &&
+              mapPath.length > 1 &&
+              (isPlaying || progress > 0) && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  style={{
+                    position: "absolute",
+                    top: "56px",
+                    right: "12px",
+                    background: "rgba(255,255,255,0.95)",
+                    padding: "6px 14px",
+                    borderRadius: "20px",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    zIndex: 5,
+                  }}
+                >
+                  {isPlaying && (
+                    <span
+                      className="ucma-liveblink"
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        background: COLORS.end,
+                        display: "inline-block",
+                      }}
+                    />
+                  )}
+                  <span>
+                    {distanceCovered} / {summary.distance}
+                  </span>
+                </motion.div>
+              )}
           </AnimatePresence>
 
-          {/* ── Playback controls — vertical panel, left side of the map. ── */}
-          {mapPath.length > 1 && (
+          {/* ── Playback controls — vertical panel, left side of the map.
+              Only meaningful for the Location Timeline tab (playback
+              animates the GPS/road route). ─────────────────────────── */}
+          {activeTab === TIMELINE_TABS.LOCATION && mapPath.length > 1 && (
             <div
               className="ucma-playback-panel"
               style={{
@@ -2412,13 +2985,16 @@ const UsersClusterMapAll = ({
           style={{
             flex: `0 0 ${TIMELINE_WIDTH_CLAMP}`,
             width: TIMELINE_WIDTH_CLAMP,
+            minWidth: 0,
+            minHeight: 0,
+            overflow: "hidden",
             borderLeft: "1px solid #e5e7eb",
             display: "flex",
             flexDirection: "column",
             background: "#fff",
           }}
         >
-          {/* ── Filters ── */}
+          {/* ── Filters (shared across all 3 tabs) ── */}
           <div
             className="ucma-tl-filterbar"
             style={{
@@ -2517,7 +3093,31 @@ const UsersClusterMapAll = ({
             </div>
           </div>
 
-          {/* Header */}
+          {/* ── View tabs: Location / Activity / Mobile Timeline — a single
+              row, placed right under the filters. These control ONLY what
+              the panel below renders — the employee/date filters and the
+              map itself stay shared across all three. Location is the
+              default tab on load. ─────────────────────────────────────── */}
+          <div className="ucma-view-tabs" role="tablist">
+            {Object.values(TIMELINE_TABS).map((tabKey) => (
+              <button
+                key={tabKey}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tabKey}
+                className={`ucma-view-tab${activeTab === tabKey ? " active" : ""}`}
+                onClick={() => handleTimelineTabChange(tabKey)}
+                title={TIMELINE_TAB_META[tabKey].label}
+              >
+                <i className={TIMELINE_TAB_META[tabKey].icon}></i>
+                <span className="ucma-view-tab-label">
+                  {TIMELINE_TAB_META[tabKey].shortLabel}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Header — label + count switch with the active tab */}
           <div
             style={{
               padding: "12px 16px",
@@ -2528,37 +3128,39 @@ const UsersClusterMapAll = ({
             }}
           >
             <span style={{ fontWeight: 600, fontSize: "14px" }}>
-              Timeline ({path.length})
-              {isLive && isViewingToday && (
-                <span
-                  style={{
-                    marginLeft: "8px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    fontSize: "10px",
-                    fontWeight: 700,
-                    color: "#16a34a",
-                    background: "#dcfce7",
-                    borderRadius: "10px",
-                    padding: "2px 8px",
-                    verticalAlign: "middle",
-                  }}
-                >
+              {TIMELINE_TAB_META[activeTab].label} ({panelCount})
+              {activeTab === TIMELINE_TABS.LOCATION &&
+                isLive &&
+                isViewingToday && (
                   <span
-                    className="ucma-liveblink"
                     style={{
-                      width: "6px",
-                      height: "6px",
-                      borderRadius: "50%",
-                      background: "#22c55e",
-                      display: "inline-block",
+                      marginLeft: "8px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      color: "#16a34a",
+                      background: "#dcfce7",
+                      borderRadius: "10px",
+                      padding: "2px 8px",
+                      verticalAlign: "middle",
                     }}
-                  />
-                  LIVE
-                </span>
-              )}
-              {loadingLocations && (
+                  >
+                    <span
+                      className="ucma-liveblink"
+                      style={{
+                        width: "6px",
+                        height: "6px",
+                        borderRadius: "50%",
+                        background: "#22c55e",
+                        display: "inline-block",
+                      }}
+                    />
+                    LIVE
+                  </span>
+                )}
+              {panelLoading && (
                 <span
                   style={{
                     marginLeft: "8px",
@@ -2573,81 +3175,157 @@ const UsersClusterMapAll = ({
             </span>
           </div>
 
-          {/* Trip summary */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-around",
-              padding: "14px 10px",
-              borderBottom: "1px solid #f0f0f0",
-              textAlign: "center",
-            }}
-          >
-            <div>
-              <i
-                className="ri-time-line"
-                style={{ color: "#ef4444", fontSize: "20px" }}
-              ></i>
-              <div
-                style={{ fontWeight: 700, fontSize: "15px", marginTop: "2px" }}
-              >
-                {summary.duration}
+          {/* Trip summary — Location tab only */}
+          {activeTab === TIMELINE_TABS.LOCATION && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-around",
+                padding: "14px 10px",
+                borderBottom: "1px solid #f0f0f0",
+                textAlign: "center",
+              }}
+            >
+              <div>
+                <i
+                  className="ri-time-line"
+                  style={{ color: "#ef4444", fontSize: "20px" }}
+                ></i>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: "15px",
+                    marginTop: "2px",
+                  }}
+                >
+                  {summary.duration}
+                </div>
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: "#94a3b8",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  DURATION
+                </div>
               </div>
-              <div
-                style={{
-                  fontSize: "10px",
-                  color: "#94a3b8",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                DURATION
+
+              <div>
+                <i
+                  className="ri-dashboard-3-line"
+                  style={{ color: "#10b981", fontSize: "20px" }}
+                ></i>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: "15px",
+                    marginTop: "2px",
+                  }}
+                >
+                  {summary.distance}
+                </div>
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: "#94a3b8",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  DISTANCE
+                </div>
+              </div>
+
+              <div>
+                <i
+                  className="ri-map-pin-2-line"
+                  style={{ color: "#3b82f6", fontSize: "20px" }}
+                ></i>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: "15px",
+                    marginTop: "2px",
+                  }}
+                >
+                  {path.length || "-"}
+                </div>
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: "#94a3b8",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  LOCATIONS
+                </div>
               </div>
             </div>
+          )}
 
-            <div>
-              <i
-                className="ri-dashboard-3-line"
-                style={{ color: "#10b981", fontSize: "20px" }}
-              ></i>
-              <div
-                style={{ fontWeight: 700, fontSize: "15px", marginTop: "2px" }}
-              >
-                {summary.distance}
+          {/* Mobile tab summary — on/off segment counts */}
+          {activeTab === TIMELINE_TABS.MOBILE && !loadingMobile && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-around",
+                padding: "14px 10px",
+                borderBottom: "1px solid #f0f0f0",
+                textAlign: "center",
+              }}
+            >
+              <div>
+                <i
+                  className="ri-map-pin-2-line"
+                  style={{ color: "#ee1e1e", fontSize: "20px" }}
+                ></i>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: "15px",
+                    marginTop: "2px",
+                  }}
+                >
+                  {locationToggleSegments.length}
+                </div>
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: "#94a3b8",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  LOCATION-OFF SPELLS
+                </div>
               </div>
-              <div
-                style={{
-                  fontSize: "10px",
-                  color: "#94a3b8",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                DISTANCE
+              <div>
+                <i
+                  className="ri-wifi-off-line"
+                  style={{ color: "#ee1e1e", fontSize: "20px" }}
+                ></i>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: "15px",
+                    marginTop: "2px",
+                  }}
+                >
+                  {internetToggleSegments.length}
+                </div>
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: "#94a3b8",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  INTERNET-OFF SPELLS
+                </div>
               </div>
             </div>
+          )}
 
-            <div>
-              <i
-                className="ri-map-pin-2-line"
-                style={{ color: "#3b82f6", fontSize: "20px" }}
-              ></i>
-              <div
-                style={{ fontWeight: 700, fontSize: "15px", marginTop: "2px" }}
-              >
-                {path.length || "-"}
-              </div>
-              <div
-                style={{
-                  fontSize: "10px",
-                  color: "#94a3b8",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                LOCATIONS
-              </div>
-            </div>
-          </div>
-
-          {/* Zigzag timeline */}
+          {/* ── Body — switches per active tab ── */}
           <div
             className="ucma-scroll"
             style={{
@@ -2657,329 +3335,896 @@ const UsersClusterMapAll = ({
               padding: "14px 6px",
             }}
           >
-            {loadingLocations && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "18px",
-                  padding: "4px 10px",
-                }}
-              >
-                {[0, 1, 2, 3].map((i) => (
+            {/* ══════════════ LOCATION TIMELINE (zigzag) ══════════════ */}
+            {activeTab === TIMELINE_TABS.LOCATION && (
+              <>
+                {loadingLocations && (
                   <div
-                    key={i}
                     style={{
                       display: "flex",
-                      justifyContent: i % 2 === 0 ? "flex-end" : "flex-start",
+                      flexDirection: "column",
+                      gap: "18px",
+                      padding: "4px 10px",
                     }}
                   >
-                    <div
-                      style={{
-                        width: "70%",
-                        maxWidth: "200px",
-                        borderRadius: "10px",
-                        padding: "8px 10px",
-                        border: "1px solid #eef0f3",
-                        background: "#f8fafc",
-                      }}
-                    >
+                    {[0, 1, 2, 3].map((i) => (
                       <div
-                        className="ucma-skeleton"
+                        key={i}
                         style={{
-                          width: "60%",
-                          height: "10px",
-                          marginBottom: "6px",
-                        }}
-                      />
-                      <div
-                        className="ucma-skeleton"
-                        style={{
-                          width: "40%",
-                          height: "8px",
-                          marginBottom: "8px",
-                        }}
-                      />
-                      <div
-                        className="ucma-skeleton"
-                        style={{ width: "90%", height: "8px" }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {path.length === 0 && !loadingLocations && (
-              <div
-                style={{
-                  textAlign: "center",
-                  color: "#94a3b8",
-                  fontSize: "12px",
-                  padding: "24px 12px",
-                }}
-              >
-                No location history for this date
-              </div>
-            )}
-            <div
-              style={{
-                position: "relative",
-                display: loadingLocations ? "none" : "block",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  bottom: 0,
-                  left: "50%",
-                  width: "2px",
-                  background: "#e5e7eb",
-                  transform: "translateX(-1px)",
-                }}
-              />
-              <motion.div
-                animate={{ height: `${spineProgressPct}%` }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: "50%",
-                  width: "2px",
-                  background: COLORS.travel,
-                  transform: "translateX(-1px)",
-                }}
-              />
-
-              {path.map((p, i) => {
-                const type = pointType(i);
-                const cfg = typeConfig[type];
-                const big = isEndpoint(i);
-                const isActive = activeIndex === i;
-                const isExpanded = expandedIndex === i;
-                const onLeft = i % 2 === 0;
-                const hasForm =
-                  !!p.formSubmission &&
-                  Array.isArray(p.formSubmission.submitted_data) &&
-                  p.formSubmission.submitted_data.length > 0;
-
-                const card = (
-                  <motion.div
-                    onClick={() => handleTimelineClick(p, i)}
-                    animate={{ scale: isActive ? 1.04 : 1 }}
-                    transition={{ duration: 0.18 }}
-                    className="ucma-tl-card"
-                    style={{
-                      cursor: "pointer",
-                      width: "100%",
-                      maxWidth: "220px",
-                      textAlign: onLeft ? "right" : "left",
-                      background: isActive ? "#eff6ff" : "#f8fafc",
-                      border: `1px solid ${isActive ? COLORS.travel : "#eef0f3"}`,
-                      borderRadius: "10px",
-                      padding: "6px 10px",
-                      boxShadow: isActive
-                        ? `0 3px 10px ${cfg.color}33`
-                        : "none",
-                    }}
-                  >
-                    <div style={{ fontSize: "12px", fontWeight: 700 }}>
-                      {p.timestamp}
-                    </div>
-                    <div style={{ fontSize: "10px", color: "#94a3b8" }}>
-                      {p.date}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        color: "#475569",
-                        marginTop: "2px",
-                        display: "-webkit-box",
-                        WebkitLineClamp: isExpanded ? 6 : 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {p.address || "—"}
-                    </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "6px",
-                        marginTop: "3px",
-                        justifyContent: onLeft ? "flex-end" : "flex-start",
-                      }}
-                    >
-                      <i
-                        // className={p.locationOn ? "ri-map-pin-2-fill" : "ri-map-pin-off-line"}
-                        className={p.locationOn ? "ri-map-pin-2-fill" : "ri-map-pin-2-line"}
-                        title={p.locationOn ? "Location on" : "Location off"}
-                        style={{
-                          fontSize: "12px",
-                          color: p.locationOn ? "#16a34a" : "#ee1e1e",
-                        }}
-                      />
-                      <i
-                        className={p.internetOn ? "ri-wifi-fill" : "ri-wifi-off-line"}
-                        title={p.internetOn ? "Internet on" : "Internet off"}
-                        style={{
-                          fontSize: "12px",
-                          color: p.internetOn ? "#16a34a" : "#ee1e1e",
-                        }}
-                      />
-                    </div>
-
-                    {p.customStatusInfo && (
-                      <div
-                        style={{
-                          marginTop: "4px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px",
-                          fontSize: "10px",
-                          fontWeight: 600,
-                          color: "#334155",
-                          background: "#e2e8f0",
-                          borderRadius: "10px",
-                          padding: "2px 8px",
+                          display: "flex",
+                          justifyContent:
+                            i % 2 === 0 ? "flex-end" : "flex-start",
                         }}
                       >
-                        <span>{p.customStatusInfo.icon}</span>
-                        <span>{p.customStatusInfo.name}</span>
-                      </div>
-                    )}
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "4px",
-                        marginTop: "4px",
-                        justifyContent: onLeft ? "flex-end" : "flex-start",
-                      }}
-                    >
-                      {typeof p.battery === "number" && (
-                        <span style={{ fontSize: "10px", color: "#64748b" }}>
-                          🔋 {p.battery}%
-                        </span>
-                      )}
-                      {p.outside && (
-                        <span
+                        <div
                           style={{
-                            fontSize: "9px",
-                            fontWeight: 600,
-                            color: "#b91c1c",
-                            background: "#fee2e2",
+                            width: "70%",
+                            maxWidth: "200px",
                             borderRadius: "10px",
-                            padding: "1px 7px",
+                            padding: "8px 10px",
+                            border: "1px solid #eef0f3",
+                            background: "#f8fafc",
                           }}
                         >
-                          Outside range
-                        </span>
-                      )}
-                    </div>
-                    {hasForm && (
-                      <button
-                        onClick={(e) => openFormModal(p, e)}
-                        style={{
-                          marginTop: "6px",
-                          border: "1px solid #2563eb",
-                          background: "#eff6ff",
-                          color: "#2563eb",
-                          borderRadius: "6px",
-                          padding: "3px 9px",
-                          fontSize: "10.5px",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                        title="View form submission details"
-                      >
-                        <i className="ri-file-list-3-line"></i>{" "}
-                        {p.customFormInfo?.name || "Form details"}
-                      </button>
-                    )}
-                  </motion.div>
-                );
+                          <div
+                            className="ucma-skeleton"
+                            style={{
+                              width: "60%",
+                              height: "10px",
+                              marginBottom: "6px",
+                            }}
+                          />
+                          <div
+                            className="ucma-skeleton"
+                            style={{
+                              width: "40%",
+                              height: "8px",
+                              marginBottom: "8px",
+                            }}
+                          />
+                          <div
+                            className="ucma-skeleton"
+                            style={{ width: "90%", height: "8px" }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-                return (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 8 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "0px 0px -20px 0px" }}
-                    transition={{ duration: 0.25 }}
+                {path.length === 0 && !loadingLocations && (
+                  <div
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "minmax(0,1fr) 32px minmax(0,1fr)",
-                      alignItems: "start",
-                      minHeight: "64px",
+                      textAlign: "center",
+                      color: "#94a3b8",
+                      fontSize: "12px",
+                      padding: "24px 12px",
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        paddingRight: "8px",
-                        minWidth: 0,
-                      }}
-                    >
-                      {onLeft && card}
-                    </div>
+                    No location history for this date
+                  </div>
+                )}
+                <div
+                  style={{
+                    position: "relative",
+                    display: loadingLocations ? "none" : "block",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      left: "50%",
+                      width: "2px",
+                      background: "#e5e7eb",
+                      transform: "translateX(-1px)",
+                    }}
+                  />
+                  <motion.div
+                    animate={{ height: `${spineProgressPct}%` }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: "50%",
+                      width: "2px",
+                      background: COLORS.travel,
+                      transform: "translateX(-1px)",
+                    }}
+                  />
 
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        position: "relative",
-                      }}
-                    >
+                  {path.map((p, i) => {
+                    const type = pointType(i);
+                    const cfg = typeConfig[type];
+                    const big = isEndpoint(i);
+                    const isActive = activeIndex === i;
+                    const isExpanded = expandedIndex === i;
+                    const onLeft = i % 2 === 0;
+                    const hasForm =
+                      !!p.formSubmission &&
+                      Array.isArray(p.formSubmission.submitted_data) &&
+                      p.formSubmission.submitted_data.length > 0;
+
+                    const card = (
                       <motion.div
-                        onClick={() => handleMarkerClick(p, i)}
-                        animate={{
-                          scale: isActive ? 1.15 : 1,
-                          boxShadow: isActive
-                            ? `0 0 0 4px ${cfg.color}33`
-                            : "0 0 0 0 transparent",
-                        }}
-                        transition={{ duration: 0.2 }}
+                        onClick={() => handleTimelineClick(p, i)}
+                        animate={{ scale: isActive ? 1.04 : 1 }}
+                        transition={{ duration: 0.18 }}
+                        className="ucma-tl-card"
                         style={{
-                          width: big ? "26px" : "20px",
-                          height: big ? "26px" : "20px",
-                          borderRadius: "50%",
-                          background: "#fff",
-                          border: `2px solid ${cfg.color}`,
-                          color: cfg.color,
-                          fontSize: big ? "12px" : "10px",
-                          fontWeight: 700,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
                           cursor: "pointer",
-                          marginTop: "2px",
+                          width: "100%",
+                          maxWidth: "220px",
+                          textAlign: onLeft ? "right" : "left",
+                          background: isActive ? "#eff6ff" : "#f8fafc",
+                          border: `1px solid ${isActive ? COLORS.travel : "#eef0f3"}`,
+                          borderRadius: "10px",
+                          padding: "6px 10px",
+                          boxShadow: isActive
+                            ? `0 3px 10px ${cfg.color}33`
+                            : "none",
                         }}
                       >
-                        {cfg.icon ? <i className={cfg.icon}></i> : cfg.letter}
-                      </motion.div>
-                    </div>
+                        <div style={{ fontSize: "12px", fontWeight: 700 }}>
+                          {p.timestamp}
+                        </div>
+                        <div style={{ fontSize: "10px", color: "#94a3b8" }}>
+                          {p.date}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "11px",
+                            color: "#475569",
+                            marginTop: "2px",
+                            display: "-webkit-box",
+                            WebkitLineClamp: isExpanded ? 6 : 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {p.address || "—"}
+                        </div>
 
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "6px",
+                            marginTop: "3px",
+                            justifyContent: onLeft ? "flex-end" : "flex-start",
+                          }}
+                        >
+                          <i
+                            className={
+                              p.locationOn
+                                ? "ri-map-pin-2-fill"
+                                : "ri-map-pin-2-line"
+                            }
+                            title={
+                              p.locationOn ? "Location on" : "Location off"
+                            }
+                            style={{
+                              fontSize: "12px",
+                              color: p.locationOn ? "#16a34a" : "#ee1e1e",
+                            }}
+                          />
+                          <i
+                            className={
+                              p.internetOn ? "ri-wifi-fill" : "ri-wifi-off-line"
+                            }
+                            title={
+                              p.internetOn ? "Internet on" : "Internet off"
+                            }
+                            style={{
+                              fontSize: "12px",
+                              color: p.internetOn ? "#16a34a" : "#ee1e1e",
+                            }}
+                          />
+                        </div>
+
+                        {p.customStatusInfo && (
+                          <div
+                            style={{
+                              marginTop: "4px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              fontSize: "10px",
+                              fontWeight: 600,
+                              color: "#334155",
+                              background: "#e2e8f0",
+                              borderRadius: "10px",
+                              padding: "2px 8px",
+                            }}
+                          >
+                            <span>{p.customStatusInfo.icon}</span>
+                            <span>{p.customStatusInfo.name}</span>
+                          </div>
+                        )}
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "4px",
+                            marginTop: "4px",
+                            justifyContent: onLeft ? "flex-end" : "flex-start",
+                          }}
+                        >
+                          {typeof p.battery === "number" && (
+                            <span
+                              style={{ fontSize: "10px", color: "#64748b" }}
+                            >
+                              🔋 {p.battery}%
+                            </span>
+                          )}
+                          {p.outside && (
+                            <span
+                              style={{
+                                fontSize: "9px",
+                                fontWeight: 600,
+                                color: "#b91c1c",
+                                background: "#fee2e2",
+                                borderRadius: "10px",
+                                padding: "1px 7px",
+                              }}
+                            >
+                              Outside range
+                            </span>
+                          )}
+                        </div>
+                        {hasForm && (
+                          <button
+                            onClick={(e) => openFormModal(p, e)}
+                            style={{
+                              marginTop: "6px",
+                              border: "1px solid #2563eb",
+                              background: "#eff6ff",
+                              color: "#2563eb",
+                              borderRadius: "6px",
+                              padding: "3px 9px",
+                              fontSize: "10.5px",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                            title="View form submission details"
+                          >
+                            <i className="ri-file-list-3-line"></i>{" "}
+                            {p.customFormInfo?.name || "Form details"}
+                          </button>
+                        )}
+                      </motion.div>
+                    );
+
+                    return (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 8 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "0px 0px -20px 0px" }}
+                        transition={{ duration: 0.25 }}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "minmax(0,1fr) 32px minmax(0,1fr)",
+                          alignItems: "start",
+                          minHeight: "64px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            paddingRight: "8px",
+                            minWidth: 0,
+                          }}
+                        >
+                          {onLeft && card}
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            position: "relative",
+                          }}
+                        >
+                          <motion.div
+                            onClick={() => handleMarkerClick(p, i)}
+                            animate={{
+                              scale: isActive ? 1.15 : 1,
+                              boxShadow: isActive
+                                ? `0 0 0 4px ${cfg.color}33`
+                                : "0 0 0 0 transparent",
+                            }}
+                            transition={{ duration: 0.2 }}
+                            style={{
+                              width: big ? "26px" : "20px",
+                              height: big ? "26px" : "20px",
+                              borderRadius: "50%",
+                              background: "#fff",
+                              border: `2px solid ${cfg.color}`,
+                              color: cfg.color,
+                              fontSize: big ? "12px" : "10px",
+                              fontWeight: 700,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              marginTop: "2px",
+                            }}
+                          >
+                            {cfg.icon ? (
+                              <i className={cfg.icon}></i>
+                            ) : (
+                              cfg.letter
+                            )}
+                          </motion.div>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "flex-start",
+                            paddingLeft: "8px",
+                            minWidth: 0,
+                          }}
+                        >
+                          {!onLeft && card}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* ══════════════ ACTIVITY TIMELINE (zigzag, same as Location) ══════════════ */}
+            {activeTab === TIMELINE_TABS.ACTIVITY && (
+              <>
+                {loadingActivity && (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "18px",
+                      padding: "4px 10px",
+                    }}
+                  >
+                    {[0, 1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          justifyContent:
+                            i % 2 === 0 ? "flex-end" : "flex-start",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "70%",
+                            maxWidth: "200px",
+                            borderRadius: "10px",
+                            padding: "8px 10px",
+                            border: "1px solid #eef0f3",
+                            background: "#f8fafc",
+                          }}
+                        >
+                          <div
+                            className="ucma-skeleton"
+                            style={{
+                              width: "60%",
+                              height: "10px",
+                              marginBottom: "6px",
+                            }}
+                          />
+                          <div
+                            className="ucma-skeleton"
+                            style={{
+                              width: "40%",
+                              height: "8px",
+                              marginBottom: "8px",
+                            }}
+                          />
+                          <div
+                            className="ucma-skeleton"
+                            style={{ width: "90%", height: "8px" }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {activityRows.length === 0 && !loadingActivity && (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      color: "#94a3b8",
+                      fontSize: "12px",
+                      padding: "24px 12px",
+                    }}
+                  >
+                    No activity timeline for this date
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    position: "relative",
+                    display: loadingActivity ? "none" : "block",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      left: "50%",
+                      width: "2px",
+                      background: "#e5e7eb",
+                      transform: "translateX(-1px)",
+                    }}
+                  />
+
+                  {activityRows.map((item, idx) => {
+                    const cfg = item._config;
+                    const rowKey = `activity-${item.type}-${item.id ?? idx}`;
+                    const isActive = expandedIndex === rowKey;
+                    const onLeft = idx % 2 === 0;
+                    const title = item._chipLabel || cfg.label;
+                    const address = item._subtitle || "—";
+                    const statusEmoji = item._statusIcon;
+
+                    const card = (
+                      <motion.div
+                        onClick={() => handleSideRowClick(item, rowKey)}
+                        animate={{ scale: isActive ? 1.04 : 1 }}
+                        transition={{ duration: 0.18 }}
+                        className="ucma-tl-card"
+                        style={{
+                          cursor: item._hasCoords ? "pointer" : "default",
+                          width: "100%",
+                          maxWidth: "220px",
+                          textAlign: onLeft ? "right" : "left",
+                          background: isActive ? "#eff6ff" : "#f8fafc",
+                          border: `1px solid ${isActive ? COLORS.travel : "#eef0f3"}`,
+                          borderRadius: "10px",
+                          padding: "6px 10px",
+                          boxShadow: isActive
+                            ? `0 3px 10px ${cfg.color}33`
+                            : "none",
+                        }}
+                      >
+                        <div style={{ fontSize: "12px", fontWeight: 700 }}>
+                          {item._time || title}
+                        </div>
+                        <div style={{ fontSize: "10px", color: "#94a3b8" }}>
+                          {item._date}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "11px",
+                            color: "#475569",
+                            marginTop: "2px",
+                            display: "-webkit-box",
+                            WebkitLineClamp: isActive ? 6 : 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {address}
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: "4px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            fontSize: "10px",
+                            fontWeight: 600,
+                            color: "#334155",
+                            background: "#e2e8f0",
+                            borderRadius: "10px",
+                            padding: "2px 8px",
+                          }}
+                        >
+                          {statusEmoji ? (
+                            <span style={{ fontSize: "11px", lineHeight: 1 }}>
+                              {statusEmoji}
+                            </span>
+                          ) : (
+                            <i
+                              className={cfg.icon}
+                              style={{ color: cfg.color, fontSize: "11px" }}
+                            ></i>
+                          )}
+                          <span>{title}</span>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "4px",
+                            marginTop: "4px",
+                            justifyContent: onLeft ? "flex-end" : "flex-start",
+                          }}
+                        >
+                          {item._isOngoing && (
+                            <span
+                              style={{
+                                fontSize: "9px",
+                                fontWeight: 600,
+                                color: "#b45309",
+                                background: "#fef3c7",
+                                borderRadius: "10px",
+                                padding: "1px 7px",
+                              }}
+                            >
+                              Ongoing
+                            </span>
+                          )}
+                          {!isStatusActivityType(item.type) &&
+                            item.is_inside_range === false && (
+                              <span
+                                style={{
+                                  fontSize: "9px",
+                                  fontWeight: 600,
+                                  color: "#b91c1c",
+                                  background: "#fee2e2",
+                                  borderRadius: "10px",
+                                  padding: "1px 7px",
+                                }}
+                              >
+                                Outside range
+                              </span>
+                            )}
+                        </div>
+                      </motion.div>
+                    );
+
+                    return (
+                      <motion.div
+                        key={rowKey}
+                        initial={{ opacity: 0, y: 8 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "0px 0px -20px 0px" }}
+                        transition={{ duration: 0.25 }}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "minmax(0,1fr) 32px minmax(0,1fr)",
+                          alignItems: "start",
+                          minHeight: "64px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            paddingRight: "8px",
+                            minWidth: 0,
+                          }}
+                        >
+                          {onLeft && card}
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            position: "relative",
+                          }}
+                        >
+                          <motion.div
+                            onClick={() => handleSideRowClick(item, rowKey)}
+                            animate={{
+                              scale: isActive ? 1.15 : 1,
+                              boxShadow: isActive
+                                ? `0 0 0 4px ${cfg.color}33`
+                                : "0 0 0 0 transparent",
+                            }}
+                            transition={{ duration: 0.2 }}
+                            style={{
+                              width: "26px",
+                              height: "26px",
+                              borderRadius: "50%",
+                              background: "#fff",
+                              border: `2px solid ${cfg.color}`,
+                              color: cfg.color,
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: item._hasCoords ? "pointer" : "default",
+                              marginTop: "2px",
+                            }}
+                          >
+                            {statusEmoji ? (
+                              <span style={{ fontSize: "12px", lineHeight: 1 }}>
+                                {statusEmoji}
+                              </span>
+                            ) : (
+                              <i className={cfg.icon}></i>
+                            )}
+                          </motion.div>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "flex-start",
+                            paddingLeft: "8px",
+                            minWidth: 0,
+                          }}
+                        >
+                          {!onLeft && card}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* ══════════════ MOBILE (DEVICE TOGGLE) TIMELINE ══════════════ */}
+            {activeTab === TIMELINE_TABS.MOBILE && (
+              <>
+                {loadingMobile && (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                      padding: "4px 10px",
+                    }}
+                  >
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        style={{
+                          borderRadius: "10px",
+                          padding: "10px 12px",
+                          border: "1px solid #eef0f3",
+                          background: "#f8fafc",
+                        }}
+                      >
+                        <div
+                          className="ucma-skeleton"
+                          style={{
+                            width: "50%",
+                            height: "10px",
+                            marginBottom: "6px",
+                          }}
+                        />
+                        <div
+                          className="ucma-skeleton"
+                          style={{ width: "80%", height: "8px" }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!loadingMobile && mobileRows.length === 0 && (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      color: "#94a3b8",
+                      fontSize: "12px",
+                      padding: "24px 12px",
+                    }}
+                  >
+                    No toggle events for this date
+                  </div>
+                )}
+
+                {!loadingMobile && mobileRows.length > 0 && (
+                  <div
+                    className="ucma-tl-timeline"
+                    style={{ padding: "2px 10px 2px 4px" }}
+                  >
+                    <div className="ucma-tl-spine" />
                     <div
                       style={{
                         display: "flex",
-                        justifyContent: "flex-start",
-                        paddingLeft: "8px",
-                        minWidth: 0,
+                        flexDirection: "column",
+                        gap: "14px",
                       }}
                     >
-                      {!onLeft && card}
+                      {mobileRows.map((p) => {
+                        const rowKey = `mobile-${p.id}`;
+                        const isActive = expandedIndex === rowKey;
+                        const hasCoords = activityHasCoords(p);
+                        const locOff = p.location_toggle === "off";
+                        const netOff = p.internet_toggle === "off";
+                        const dotColor =
+                          locOff || netOff ? "#dc2626" : COLORS.travel;
+                        const dotIcon =
+                          locOff && netOff
+                            ? "ri-signal-wifi-off-line"
+                            : locOff
+                              ? "ri-map-pin-2-line"
+                              : netOff
+                                ? "ri-wifi-off-line"
+                                : "ri-smartphone-line";
+                        return (
+                          <motion.div
+                            key={rowKey}
+                            initial={{ opacity: 0, y: 6 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{
+                              once: true,
+                              margin: "0px 0px -20px 0px",
+                            }}
+                            transition={{ duration: 0.2 }}
+                            className="ucma-tl-row"
+                          >
+                            <div
+                              className="ucma-tl-dot"
+                              style={{ color: dotColor, marginTop: "2px" }}
+                            >
+                              <i className={dotIcon}></i>
+                            </div>
+
+                            <motion.div
+                              onClick={() => handleSideRowClick(p, rowKey)}
+                              animate={{ scale: isActive ? 1.02 : 1 }}
+                              transition={{ duration: 0.18 }}
+                              className="ucma-tl-card"
+                              style={{
+                                flex: 1,
+                                minWidth: 0,
+                                cursor: hasCoords ? "pointer" : "default",
+                                borderRadius: "10px",
+                                padding: "8px 10px",
+                                background: isActive ? "#eff6ff" : "#f8fafc",
+                                border: `1px solid ${isActive ? COLORS.travel : "#eef0f3"}`,
+                                boxShadow: isActive
+                                  ? `0 3px 10px ${dotColor}33`
+                                  : "none",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <div>
+                                  <div
+                                    style={{
+                                      fontSize: "12px",
+                                      fontWeight: 700,
+                                      color: "#1e293b",
+                                    }}
+                                  >
+                                    {p._time}
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: "10px",
+                                      color: "#94a3b8",
+                                    }}
+                                  >
+                                    {p._date}
+                                  </div>
+                                </div>
+                                {typeof p.battery_percentage === "number" && (
+                                  <span
+                                    style={{
+                                      fontSize: "10px",
+                                      color: "#64748b",
+                                    }}
+                                  >
+                                    🔋 {p.battery_percentage}%
+                                  </span>
+                                )}
+                              </div>
+
+                              {p.accurate_address && (
+                                <div
+                                  style={{
+                                    fontSize: "11px",
+                                    color: "#475569",
+                                    marginTop: "4px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                  }}
+                                >
+                                  <i
+                                    className="ri-map-pin-2-fill"
+                                    style={{ color: "#3b82f6" }}
+                                  ></i>
+                                  {p.accurate_address}
+                                </div>
+                              )}
+
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: "6px",
+                                  marginTop: "6px",
+                                }}
+                              >
+                                {p.location_toggle && (
+                                  <span
+                                    style={{
+                                      fontSize: "10px",
+                                      fontWeight: 700,
+                                      borderRadius: "10px",
+                                      padding: "2px 8px",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      color:
+                                        p.location_toggle === "on"
+                                          ? "#16a34a"
+                                          : "#b91c1c",
+                                      background:
+                                        p.location_toggle === "on"
+                                          ? "#dcfce7"
+                                          : "#fee2e2",
+                                    }}
+                                  >
+                                    <i
+                                      className={
+                                        p.location_toggle === "on"
+                                          ? "ri-map-pin-2-fill"
+                                          : "ri-map-pin-2-line"
+                                      }
+                                    ></i>
+                                    Location {p.location_toggle}
+                                  </span>
+                                )}
+                                {p.internet_toggle && (
+                                  <span
+                                    style={{
+                                      fontSize: "10px",
+                                      fontWeight: 700,
+                                      borderRadius: "10px",
+                                      padding: "2px 8px",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      color:
+                                        p.internet_toggle === "on"
+                                          ? "#16a34a"
+                                          : "#b91c1c",
+                                      background:
+                                        p.internet_toggle === "on"
+                                          ? "#dcfce7"
+                                          : "#fee2e2",
+                                    }}
+                                  >
+                                    <i
+                                      className={
+                                        p.internet_toggle === "on"
+                                          ? "ri-wifi-fill"
+                                          : "ri-wifi-off-line"
+                                      }
+                                    ></i>
+                                    Internet {p.internet_toggle}
+                                  </span>
+                                )}
+                              </div>
+                            </motion.div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
-                  </motion.div>
-                );
-              })}
-            </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
