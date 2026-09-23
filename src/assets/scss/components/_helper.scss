@@ -33,6 +33,11 @@ $border-style-mixing: double, dashed, groove, outset, ridge, dotted, inset;
     }
 }
 
+// Override: disable dashed border specifically
+.border-dashed {
+    border-style: none !important;
+}
+
 // Font Family
 
 .ff-base {
