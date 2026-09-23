@@ -265,7 +265,7 @@ const Employee = () => {
               <div>{obj.email}</div>
 
               {/* Show progress bar only if employee is active */}
-              {obj.is_active && (
+              {/* {obj.is_active && (
                 <div
                   className="progress mt-1"
                   style={{
@@ -288,7 +288,7 @@ const Employee = () => {
                     aria-valuemax="100"
                   ></div>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         );

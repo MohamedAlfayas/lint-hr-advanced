@@ -874,3 +874,11 @@ body .rs-table-row-header .rs-table-cell {
 .hide-picker-footer .ant-picker-footer {
   display: none;
 }
+
+#attendanceList .card-body {
+  padding-right: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+
+

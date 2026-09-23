@@ -485,19 +485,46 @@ const EmployeeForm = () => {
     setEmployeeObj({ ...employeeObj, branch_id_list: e.map((d) => d.value) });
   };
 
+  // const GetReportingManager = async (valid_dep_ids) => {
+  //   const ApiRes = await PostApi(
+  //     "employee/get-employee-list-for-reporting-manager/",
+  //     { dep_id: valid_dep_ids },
+  //     false,
+  //   );
+  //   if (ApiRes.status && ApiRes.status === 200) {
+  //     const response = ApiRes?.data?.data;
+  //     setReportingManagerOptions(
+  //       employee_data.filter(
+  //         (d) => d.id !== form_obj.id && response.includes(d.id),
+  //       ),
+  //     );
+  //   }
+  // };
+
   const GetReportingManager = async (valid_dep_ids) => {
-    const ApiRes = await PostApi(
-      "employee/get-employee-list-for-reporting-manager/",
-      { dep_id: valid_dep_ids },
-      false,
-    );
-    if (ApiRes.status && ApiRes.status === 200) {
-      const response = ApiRes?.data?.data;
-      setReportingManagerOptions(
-        employee_data.filter(
-          (d) => d.id !== form_obj.id && response.includes(d.id),
-        ),
+    if (!valid_dep_ids || valid_dep_ids.length === 0) {
+      setReportingManagerOptions([]);
+      return;
+    }
+    try {
+      const ApiRes = await PostApi(
+        "employee/get-employee-list-for-reporting-manager/",
+        { dep_id: valid_dep_ids },
+        false,
       );
+      if (ApiRes && ApiRes.status === 200) {
+        const response = ApiRes?.data?.data || [];
+        setReportingManagerOptions(
+          employee_data.filter(
+            (d) => d.id !== form_obj.id && response.includes(d.id),
+          ),
+        );
+      } else {
+        setReportingManagerOptions([]);
+      }
+    } catch (err) {
+      console.error("GetReportingManager failed:", err);
+      setReportingManagerOptions([]);
     }
   };
 
@@ -979,6 +1006,22 @@ const EmployeeForm = () => {
   const todayStr = dayjs().format("YYYY-MM-DD");
   const maxJoinStr = dayjs().add(1, "month").format("YYYY-MM-DD");
 
+  // Root/top-level department → Reporting Manager is optional.
+  // Any other department → Reporting Manager is mandatory.
+  const getRootDepartmentId = () => {
+    const root_department = dep_options.find((d) => d.is_root === true);
+    return root_department ? root_department.id : null;
+  };
+
+  const isReportingManagerOptional = (deptIds) => {
+    const root_department_id = getRootDepartmentId();
+    return (
+      root_department_id !== null &&
+      Array.isArray(deptIds) &&
+      deptIds.includes(root_department_id)
+    );
+  };
+
   const FormikForm = useFormik({
     enableReinitialize: true,
     // initialValues: employeeObj,
@@ -1172,16 +1215,28 @@ const EmployeeForm = () => {
         .required("Please select work schedule")
         .min(1, "Please select work schedule"),
 
+      // reporting_manager_id: Yup.number()
+      //   .nullable()
+      //   .test(
+      //     "reporting-manager-required",
+      //     "Please select reporting manager",
+      //     function (value) {
+            // mirror your HandleEmployeeSaveAPI rule: only required
+            // if primary dept isn't the root department
+        //     return !!value; // or your conditional logic if you want it optional for root dept
+        //   }
+        // ),
+
       reporting_manager_id: Yup.number()
         .nullable()
         .test(
           "reporting-manager-required",
           "Please select reporting manager",
           function (value) {
-            // mirror your HandleEmployeeSaveAPI rule: only required
-            // if primary dept isn't the root department
-            return !!value; // or your conditional logic if you want it optional for root dept
-          }
+            const deptIds = this.parent.primary_department_id_list;
+            if (isReportingManagerOptional(deptIds)) return true; // root dept → optional
+            return !!value; // any other dept → mandatory
+          },
         ),
       allowed_attendance_methods: Yup.object()
         .test(
@@ -1410,7 +1465,16 @@ const EmployeeForm = () => {
                   employeeObj.probation_end_date ||
                   FormikForm.values.probation_end_date ||
                   "",
+                reporting_manager_id:
+                  employeeObj.reporting_manager_id ?? FormikForm.values.reporting_manager_id ?? 0,
               };
+              if (syncedValues.reporting_manager_id !== FormikForm.values.reporting_manager_id) {
+                await FormikForm.setFieldValue(
+                  "reporting_manager_id",
+                  syncedValues.reporting_manager_id,
+                  false,
+                );
+              }
               if (syncedValues.joining_date !== FormikForm.values.joining_date) {
                 await FormikForm.setFieldValue(
                   "joining_date",
@@ -2230,7 +2294,10 @@ const EmployeeForm = () => {
               <Col lg={12}>
                 <div ref={(el) => (fieldRefs.current.reporting_manager_id = el)}>
                   <Label htmlFor="reporting_manager_id">
-                    Reporting Manager <span>*</span>
+                    Reporting Manager{" "}
+                    {!isReportingManagerOptional(employeeObj?.primary_department_id_list) && (
+                      <span>*</span>
+                    )}
                   </Label>
                   <Select
                     id="reporting_manager_id"
@@ -2289,8 +2356,14 @@ const EmployeeForm = () => {
                 {!(
                   (FormikForm.touched.reporting_manager_id || hasAttemptedSubmit) &&
                   FormikForm.errors.reporting_manager_id
-                )&&
-                <div className="form-text mb-3">Select reporting manager.</div>}
+                )&&(
+                  <div className="form-text mb-3">
+                      {isReportingManagerOptional(employeeObj?.primary_department_id_list)
+                        ? "Optional for the Main/Top-Level department."
+                        : "Select reporting manager."}
+                    </div>
+                  )}
+                {/* // <div className="form-text mb-3">Select reporting manager.</div> */}
               </Col>
 
               {/* ── Role ─────────────────────────────────────────────────── */}
