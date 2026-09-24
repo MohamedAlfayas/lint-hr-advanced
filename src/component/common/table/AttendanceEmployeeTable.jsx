@@ -66,6 +66,7 @@ import WebCheckInOut from "./../timer/WebCheckInOut";
 import CustomStatusTimeline from "./CustomStatusTimeLine";
 // NOTE: adjust this path to wherever ApplyLeaveForm.jsx lives in your project
 import ApplyLeaveForm from "../../forms/ApplyLeaveForm";
+import { EDIT_TEAM_ATTENDANCE_ACCESS_KEY } from "../../../common/constant/RoleConstants";
 
 const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
@@ -234,6 +235,16 @@ const AttendanceEmployeeTable = () => {
       // (w) => w.id === employeeInformation.work_schedule_id,
       (w) => w.id === employeeInformation?.work_schedule_id,
     ) || [];
+
+
+    const profile_data_lc = JSON.parse(
+  localStorage.getItem("lint_hr_profile_data") || "{}",
+);
+const isOwnAttendance = employeeInformation?.id === profile_data_lc?.id;
+const canEditTeamAttendance =
+  profile_data_lc?.permission_list?.includes(
+    EDIT_TEAM_ATTENDANCE_ACCESS_KEY,
+  ) || false;
 
   function open_timeline(rowData) {
     settimeline_modal(!timeline_modal);
@@ -584,13 +595,17 @@ const AttendanceEmployeeTable = () => {
     }
   };
 
-  const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
+ const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
     const dropdownItems = [
-      {
-        label: "Edit Attendance",
-        icon: <i className="ri-pencil-line"></i>,
-        onClick: () => editAttendanceReport(rowData),
-      },
+      ...(isOwnAttendance || canEditTeamAttendance
+        ? [
+            {
+              label: "Edit Attendance",
+              icon: <i className="ri-pencil-line"></i>,
+              onClick: () => editAttendanceReport(rowData),
+            },
+          ]
+        : []),
       {
         label: "Apply Leave",
         icon: <i className="ri-check-line"></i>,
@@ -771,6 +786,12 @@ const AttendanceEmployeeTable = () => {
 
   //Edit Modal Function
   const editAttendanceReport = (rowData) => {
+
+     if (!isOwnAttendance && !canEditTeamAttendance) {
+      toast.error("You don't have permission to edit this attendance");
+      return;
+    }
+
     let initial_obj = {
       id: rowData?.id,
       date: rowData?.date,
