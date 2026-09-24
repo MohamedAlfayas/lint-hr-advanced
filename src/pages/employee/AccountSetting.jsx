@@ -64,10 +64,16 @@ import {
 import { EmployeeDisplayInSelect } from "../../common/js/EmployeeDisplayInSelect";
 import { SetLocalStorage } from "../../meta/SetLocalStorageData";
 import dayjs from "dayjs";
-dayjs.extend(customParseFormat);
 import customParseFormat from "dayjs/plugin/customParseFormat";
+dayjs.extend(customParseFormat);
 import { useDispatch, useSelector } from "react-redux";
-import { account_settings_data } from "../../redux/reducers/ChildReducer/AccountSettingsReducer";
+// FIX: this reducer only exports the action creator "setEmployeeAccountSettingsData"
+// (and the default reducer). There is no "account_settings_data" export, so the
+// old import below resolved to undefined and was also being shadowed by the
+// useSelector destructure of the same name a few lines down — meaning redux's
+// AccountSettingsReducer slice was NEVER updated after a successful save.
+// That's why the old image came back after a refresh.
+import { setEmployeeAccountSettingsData } from "../../redux/reducers/ChildReducer/AccountSettingsReducer";
 import InputGroupAddon from "rsuite/esm/InputGroup/InputGroupAddon";
 import "../../common/css/lc_style.css";
 const AccountSettings = () => {
@@ -78,6 +84,12 @@ const AccountSettings = () => {
   const { account_settings_data } = useSelector(
     (state) => state.AccountSettingsReducer,
   );
+
+  // Populated independently at app bootstrap (see EmployeeView.js, which
+  // already relies on this surviving a refresh for its own access checks).
+  // Used below to re-derive "self" after a cold refresh wipes
+  // AccountSettingsReducer back to {}.
+  const { profile_data } = useSelector((state) => state.MyProfileReducer);
 
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
 
@@ -254,8 +266,33 @@ const AccountSettings = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // FIX: AccountSettingsReducer only ever gets populated by EmployeeView's
+    // one-off dispatch when the "Account Settings" button is clicked. A hard
+    // refresh resets redux to {} and there's no route param here to re-fetch
+    // by, so without this the page falls back to whatever stale/empty data
+    // it can find (hence the dummy image reappearing).
+    //
+    // Self-heal: once profile_data (fetched independently at app bootstrap)
+    // is available, look up "self" directly from the persisted "employee"
+    // array in local storage — which SetLocalStorage("employee", ..., 3)
+    // keeps correctly patched with the latest profile_url on every save —
+    // and push that into AccountSettingsReducer so the effect below can run.
+    if (
+      (!account_settings_data || !Object.keys(account_settings_data).length) &&
+      profile_data?.id
+    ) {
+      const employeeList = GetLocalStorageData("employee") || [];
+      const selfRecord = employeeList.find((d) => d.id === profile_data.id);
+      if (selfRecord) {
+        dispatch(setEmployeeAccountSettingsData(selfRecord));
+      }
+    }
+  }, [profile_data, account_settings_data]);
+
+  useEffect(() => {
     // Guard: on hard refresh Redux resets, so account_settings_data can be
-    // {} or undefined. Bail out until it's actually populated.
+    // {} or undefined. Bail out until it's actually populated (the effect
+    // above will populate it shortly once profile_data is ready).
     if (!account_settings_data || !Object.keys(account_settings_data).length) {
       return;
     }
@@ -263,6 +300,14 @@ const AccountSettings = () => {
     setEmployeeObj({
       ...account_settings_data,
       role_id: account_settings_data?.role?.id,
+      // FIX: backend/local-storage copies of gender can come back as a
+      // string ("1") while gender_options uses numbers (1). The Select's
+      // value lookup used a strict === comparison, so 1 !== "1" made the
+      // dropdown render empty right after a successful save. Normalizing
+      // here keeps gender a Number everywhere it's read from in this file.
+      gender: account_settings_data.gender != null
+        ? Number(account_settings_data.gender)
+        : "",
       dob: ConvertISODateFormat(account_settings_data.dob),
       joining_date: ConvertISODateFormat(account_settings_data.joining_date),
     });
@@ -538,20 +583,29 @@ const AccountSettings = () => {
         dispatch(setLoaderVisible(true));
 
         let form_data = new FormData();
-        employeeImage !== null &&
-          form_data.append("profile", employeeImage, employeeImage.name);
-        Object.entries(employeeObj).map((key, value) => {
-          if (
-            key[0] === "cf_values" ||
-            key[0] === "allowed_attendance_methods"
-          ) {
-            form_data.append(key[0], JSON.stringify(key[1]));
-          } else {
-            form_data.append(key[0], key[1]);
-          }
-        });
 
-        const Api = await PostApi("employee/add-new/", form_data, true);
+        if (employeeImage !== null) {
+          form_data.append("profile", employeeImage, employeeImage.name);
+        }
+
+        form_data.append("first_name", employeeObj.first_name || "");
+        form_data.append("last_name", employeeObj.last_name || "");
+        form_data.append("email", employeeObj.email || "");
+        form_data.append("dob", employeeObj.dob || "");
+        form_data.append("contact_number", employeeObj.contact_number || "");
+        form_data.append("country_code", employeeObj.country_code || "");
+        form_data.append("gender", employeeObj.gender || "");
+        form_data.append("joining_date", employeeObj.joining_date || "");
+        form_data.append(
+          "profile_timezone",
+          employeeObj.profile_timezone || "",
+        );
+
+        const Api = await PostApi(
+          "employee/update-profile/",
+          form_data,
+          true,
+        );
 
         if (Api.status && Api.status === 200) {
           // employeeObj.id === 0
@@ -562,6 +616,18 @@ const AccountSettings = () => {
             dispatch(editEmployee(Api?.data?.data));
             SetLocalStorage("employee", Api?.data.data, 3);
           }
+
+          // FIX: this is the missing piece. The page reads its state from
+          // AccountSettingsReducer's "account_settings_data" (see useSelector
+          // above and the useEffect that seeds employeeObj from it). Without
+          // this dispatch, that slice — including the new profile_url the
+          // server just saved — never gets updated, so a page refresh falls
+          // back to the old value still sitting in that slice/local storage.
+          dispatch(setEmployeeAccountSettingsData(Api?.data?.data));
+
+          // Clear the pending file now that it has been uploaded and saved,
+          // so a future submit without picking a new photo doesn't resend it.
+          setEmployeeImage(null);
 
           dispatch(toggleRSBView(false));
           toast.success(Api?.data?.message);
@@ -1038,17 +1104,26 @@ const AccountSettings = () => {
                                   }),
                                 }}
                                 value={
-                                  (employeeObj.gender &&
-                                    gender_options.find(
-                                      (e) => e.value === employeeObj.gender,
-                                    )) ||
-                                  []
+                                  gender_options.find(
+                                    (e) =>
+                                      Number(e.value) ===
+                                      Number(employeeObj.gender),
+                                  ) || null
                                 }
                                 onChange={(e) => {
                                   setEmployeeObj({
                                     ...employeeObj,
-                                    gender: e.value,
+                                    gender: Number(e.value),
                                   });
+                                  FormikForm.setFieldValue(
+                                    "gender",
+                                    Number(e.value),
+                                  );
+                                  FormikForm.setFieldTouched(
+                                    "gender",
+                                    true,
+                                    false,
+                                  );
                                 }}
                                 invalid={
                                   FormikForm.touched.gender &&
@@ -1754,10 +1829,6 @@ const AccountSettings = () => {
                                       ? "eye-off-outline"
                                       : "eye-outline"
                                   } eye-icon`}
-                                  // style={{
-                                  //   cursor: "pointer",
-                                  //   marginLeft: "10px",
-                                  // }}
                                   style={{ cursor: "pointer" }}
                                   onClick={() =>
                                     setShowPassword1(!showPassword1)

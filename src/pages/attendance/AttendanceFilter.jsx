@@ -87,15 +87,15 @@ const AttendanceFilter = () => {
     //   );
     // }
 
-    const permissions = profile_data?.permission_list || [];
+   const permissions = profile_data?.permission_list || [];
 
-    let allowedIds = ["1"];
+      let allowedIds = ["1"];
 
-    if (permissions.includes(VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY)) {
-      allowedIds = ["1", "2", "3"];
-    } else if (permissions.includes(VIEW_TEAM_EMPLOYEE_ACCESS_KEY)) {
-      allowedIds = ["1", "2"];
-    }
+      if (permissions.includes(VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY)) {
+        allowedIds = ["1", "2", "3"];
+      } else if (permissions.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)) {
+        allowedIds = ["1", "2"];
+      }
     console.log("attendance_type_options =", attendance_type_options);
     console.log("allowedIds =", allowedIds);
     setAttendanceViewFilter(
