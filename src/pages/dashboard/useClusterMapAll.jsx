@@ -3868,7 +3868,7 @@ const UsersClusterMapAll = ({
                               Ongoing
                             </span>
                           )}
-                          {!isStatusActivityType(item.type) &&
+                          /* {!isStatusActivityType(item.type) &&
                             item.is_inside_range === false && (
                               <span
                                 style={{
@@ -3882,7 +3882,7 @@ const UsersClusterMapAll = ({
                               >
                                 Outside range
                               </span>
-                            )}
+                            )} */
                         </div>
                       </motion.div>
                     );
