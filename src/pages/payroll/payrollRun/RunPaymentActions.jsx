@@ -16,7 +16,7 @@ import PayslipPaymentModal from "./PayslipPaymentModal";
 // `payslips` drives the eligible counts so the buttons show what they'll
 // actually touch; `onReleased` should re-fetch both the payslip list and the
 // run itself (run.status changes as a side effect on the backend).
-const RunPaymentActions = ({ run, payslips, onReleased }) => {
+const RunPaymentActions = ({ run, payslips, payslipsLoading, onReleased }) => {
   const [busy, setBusy] = useState(null); // which action is in flight
   const [partialOpen, setPartialOpen] = useState(false);
 
@@ -25,7 +25,7 @@ const RunPaymentActions = ({ run, payslips, onReleased }) => {
   const rows = payslips || [];
   const { fullEligible, salaryEligible, balanceEligible } = paymentEligibility(rows);
   const partialEligible = partialAmountEligible(rows);
-  const nothingPending = !fullEligible.length && !salaryEligible.length && !balanceEligible.length && !partialEligible.length;
+  const nothingPending = !payslipsLoading && !fullEligible.length && !salaryEligible.length && !balanceEligible.length && !partialEligible.length;
 
   const releaseFull = () => {
     const zeros = zeroSettlementEligible(rows);
@@ -114,6 +114,11 @@ const RunPaymentActions = ({ run, payslips, onReleased }) => {
             {busy === "pay_balance" ? <Spinner size="sm" className="me-1" /> : <i className="ri-gift-2-line align-middle me-1"></i>}
             Release Balance ({balanceEligible.length})
           </Button>
+        )}
+        {payslipsLoading && (
+          <span className="text-muted d-inline-flex align-items-center" style={{ fontSize: 12 }}>
+            <Spinner size="sm" className="me-1" /> Loading payments…
+          </span>
         )}
         {nothingPending && (
           <span className="text-muted" style={{ fontSize: 12 }}>Nothing pending release.</span>

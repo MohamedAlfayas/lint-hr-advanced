@@ -213,7 +213,23 @@ const PayrollRun = () => {
                           {getMonthName(row.month) || row.month}
                         </td>
                         <td>{row.year}</td>
-                        <td><RunStatusActions run={row} onChanged={fetchData} size="sm" /></td>
+                        <td>
+                          <RunStatusActions
+                            run={row}
+                            onChanged={(nextStatus) => {
+                              if (typeof nextStatus === "string") {
+                                setRecords((prev) => prev.map((item) => (
+                                  String(item.id) === String(row.id) ? { ...item, status: nextStatus } : item
+                                )));
+                                setSelectedRun((prev) => (
+                                  prev && String(prev.id) === String(row.id) ? { ...prev, status: nextStatus } : prev
+                                ));
+                              }
+                              fetchData();
+                            }}
+                            size="sm"
+                          />
+                        </td>
                         <td>{fmtDateTime(row.processed_at) || "—"}</td>
                         <td className="text-end">
                           <Button

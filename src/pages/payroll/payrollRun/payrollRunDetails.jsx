@@ -105,7 +105,9 @@ const PayrollRunDetails = ({ isOpen, toggle, data, onChanged }) => {
 
   useEffect(() => {
     if (isOpen && data?.id) {
+      setPayslips([]);
       setLoadingSlips(true);
+      refreshRunStatus();
       Api({ method: "GET", url: `payroll/employee-payslip/?payroll_run=${data.id}` })
         .then((res) => {
           const raw = res?.data?.data || [];
@@ -139,7 +141,7 @@ const PayrollRunDetails = ({ isOpen, toggle, data, onChanged }) => {
     if (!isRunFullySettled(payslips)) return;
     if (promotedRunId.current === data.id) return;
     promotedRunId.current = data.id;
-    promoteSettledRun(data.id, payslips)
+    promoteSettledRun(data.id)
       .then((res) => {
         const status = res?.data?.data?.status;
         if (status && status !== "paid") {
@@ -154,7 +156,11 @@ const PayrollRunDetails = ({ isOpen, toggle, data, onChanged }) => {
       })
       .catch((err) => {
         promotedRunId.current = null;
-        toast.error(err?.response?.data?.error_message || err?.message || "Could not mark the run paid.");
+        const data = err?.response?.data;
+        const raw = data?.error_message || data?.detail || err?.message || "Could not mark the run paid.";
+        const text = Array.isArray(raw) ? raw.map(String).join(" ") : String(raw);
+        const quoted = text.match(/string="([\s\S]*)",\s*code=/);
+        toast.error(quoted ? quoted[1] : text);
       });
   }, [isOpen, data?.id, loadingSlips, runStatus, payslips, onChanged]);
 
@@ -223,10 +229,23 @@ const PayrollRunDetails = ({ isOpen, toggle, data, onChanged }) => {
             Payroll Run — {MONTH_NAMES[data.month]} {data.year}
           </span>
           <span className="ms-2">
-            <RunStatusActions run={{ ...data, status: runStatus }} onChanged={() => { refreshRunStatus(); onChanged && onChanged(); }} />
+            <RunStatusActions
+              run={{ ...data, status: runStatus }}
+              onChanged={(nextStatus) => {
+                if (typeof nextStatus === "string") setRunStatus(nextStatus);
+                setPayslipRefreshKey((k) => k + 1);
+                refreshRunStatus();
+                onChanged && onChanged();
+              }}
+            />
           </span>
           <span className="ms-3">
-            <RunPaymentActions run={{ ...data, status: runStatus }} payslips={payslips} onReleased={handlePaymentReleased} />
+            <RunPaymentActions
+              run={{ ...data, status: runStatus }}
+              payslips={payslips}
+              payslipsLoading={loadingSlips}
+              onReleased={handlePaymentReleased}
+            />
           </span>
         </div>
         <Button close onClick={toggle} aria-label="Close" />

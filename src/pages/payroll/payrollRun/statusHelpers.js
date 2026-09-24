@@ -104,7 +104,8 @@ export const colorFor = (code) => {
 export const PAYMENT_ONLY_STATUSES = ["paid", "partially_paid"];
 
 // Run statuses that are allowed to release a tranche.
-export const RUN_RELEASE_STATUSES = ["locked", "partially_paid"];
+// "finalized" is the same ready-to-pay stage as "locked" in the status master.
+export const RUN_RELEASE_STATUSES = ["locked", "finalized", "finalised", "partially_paid"];
 
 export const isPaymentRecorded = (payslip) =>
     PAYMENT_ONLY_STATUSES.includes(payslip?.status);
@@ -176,9 +177,8 @@ export const partialAmountEligible = (payslips = []) =>
     );
 
 // Approved slips with nothing to pay (net, balance, deferred, and paid are all
-// 0). The payment endpoint accepts them and returns success without changing
-// status, which leaves the run stuck short of "paid". These are settled with
-// a status update instead.
+// 0). They are not sent through a payslip status change: that call is rejected
+// while the run is partially_paid.
 export const isZeroSettlement = (payslip) =>
     payslip?.status === "approved" &&
     !(amountOf(payslip, "net_pay") > 0) &&
@@ -210,54 +210,27 @@ export const isRunFullySettled = (payslips = []) =>
             slipsReadyToMarkPaid([p]).length > 0
     );
 
-export const markPayslipsPaid = (ids) => {
-    if (!ids?.length) return Promise.resolve(null);
-    const data = ids.length === 1
-        ? { id: ids[0], status: "paid" }
-        : { payslip_ids: ids, status: "paid" };
-    return Api({
+const errorMessage = (err, fallback) => {
+    const data = err?.response?.data;
+    const raw = data?.error_message || data?.detail || data?.non_field_errors || err?.message || fallback;
+    const text = Array.isArray(raw) ? raw.map(String).join(" ") : String(raw || fallback);
+    const quoted = text.match(/string="([\s\S]*)",\s*code=/);
+    return quoted ? quoted[1] : text;
+};
+
+// Nothing is left to pay. Move the run to paid without touching payslip
+// status. A payslip status change is rejected while the run is partially_paid
+// ("payslip status cannot be changed until it's rejected or reopened"), which
+// is what zero-value slips were hitting.
+export const promoteSettledRun = (runId) =>
+    Api({
         method: "PATCH",
-        url: "payroll/employee-payslip-status/",
-        data,
+        url: "payroll/payroll-run-status/",
+        data: { id: runId, status: "paid", cascade_payslips: false },
     });
-};
 
-const paidStatusResult = (res) => {
-    const body = res?.data?.data || {};
-    const skipped = Array.isArray(body.skipped) ? body.skipped : [];
-    const marked = typeof body.updated_count === "number"
-        ? body.updated_count
-        : (body.status === "paid" ? 1 : 0);
-    if (!marked) {
-        return { ok: false, message: skipped[0]?.reason || "Zero payslips were not marked paid." };
-    }
-    return { ok: true, message: `${marked} zero payslip(s) marked paid` };
-};
-
-const errorMessage = (err, fallback) =>
-    err?.response?.data?.error_message || err?.response?.data?.detail || fallback;
-
-// Balance is already zero. Mark leftover slips paid, then move the run to
-// paid without cascading, so Close (and any other next status) can appear.
-export const promoteSettledRun = (runId, payslips = []) => {
-    const ids = slipsReadyToMarkPaid(payslips).map((p) => p.id);
-    const mark = ids.length ? markPayslipsPaid(ids) : Promise.resolve(null);
-    return mark.then((res) => {
-        if (res) {
-            const outcome = paidStatusResult(res);
-            if (!outcome.ok) throw new Error(outcome.message);
-        }
-        return Api({
-            method: "PATCH",
-            url: "payroll/payroll-run-status/",
-            data: { id: runId, status: "paid", cascade_payslips: false },
-        });
-    });
-};
-
-// Money slips go to payslip-payment. Zero slips are marked paid afterwards
-// through the status endpoint, because the payment call reports success and
-// leaves them approved.
+// Money slips go to payslip-payment. Zero slips are left as they are — a
+// payslip status change is not allowed while the run is partially_paid.
 export const settleFullPay = ({ payable = [], zeros = [], paymentData }) => {
     const pay = payable.length
         ? Api({ method: "POST", url: "payroll/payslip-payment/", data: paymentData })
@@ -267,16 +240,10 @@ export const settleFullPay = ({ payable = [], zeros = [], paymentData }) => {
 
     return pay.then((paySummary) => {
         const summaries = paySummary ? [paySummary] : [];
-        if (!zeros.length) return summaries;
-        return markPayslipsPaid(zeros.map((p) => p.id))
-            .then((res) => {
-                summaries.push(paidStatusResult(res));
-                return summaries;
-            })
-            .catch((err) => {
-                summaries.push({ ok: false, message: errorMessage(err, "Zero payslips were not marked paid.") });
-                return summaries;
-            });
+        if (zeros.length && !payable.length) {
+            summaries.push({ ok: true, message: "No amount due on the selected payslips." });
+        }
+        return summaries;
     });
 };
 

@@ -39,8 +39,9 @@ const RunStatusActions = ({ run, onChanged, size = "sm" }) => {
       })
         .then((res) => {
           const cascaded = res?.data?.data?.payslips_cascaded || 0;
+          const nextStatus = res?.data?.data?.status || target;
           toast.success(`Run status updated${cascaded ? ` (${cascaded} payslip(s) cascaded)` : ""}`);
-          onChanged && onChanged();
+          onChanged && onChanged(nextStatus);
         })
         .catch((err) => toast.error(err?.response?.data?.error_message || "Failed to update status."))
         .finally(() => setBusy(false));
