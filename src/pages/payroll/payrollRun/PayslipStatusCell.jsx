@@ -11,12 +11,12 @@ const PayslipStatusCell = ({ payslip, runStatus, onChanged }) => {
 
   useEffect(() => { fetchStatusMaster("payslip").then(setRows); }, []);
 
-  // "paid" / "partially_paid" are released via the payment actions, except a
-  // zero slip (nothing earned, nothing deferred, nothing owed). The payment
-  // call reports success and leaves that slip approved, which blocks the run
-  // from becoming paid. Those slips can be marked paid here.
+  // A zero slip has nothing to record. Do not offer "paid" while the run is
+  // partially_paid — the status update is rejected until the run is rejected
+  // or reopened. The run itself is moved to paid once nothing is outstanding.
   const nextCodes = nextStatusCodes(rows, payslip.status, runStatus);
-  const options = isZeroSettlement(payslip) && !nextCodes.includes("paid")
+  const canMarkZeroPaid = isZeroSettlement(payslip) && runStatus !== "partially_paid";
+  const options = canMarkZeroPaid && !nextCodes.includes("paid")
     ? [...nextCodes, "paid"]
     : nextCodes;
 
