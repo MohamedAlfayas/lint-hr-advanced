@@ -336,7 +336,7 @@ const PayRollConfig = () => {
     { id: "4", label: "Policy Settings" },
     { id: "5", label: "Payroll Run" },
     { id: "6", label: "Regularization" },
-    { id: "7", label: "Status Master" },
+    // { id: "7", label: "Status Master" },
   ];
 
   return (
@@ -399,9 +399,9 @@ const PayRollConfig = () => {
                   <PayrollBulkEditor />
                 </TabPane>
 
-                <TabPane tabId="7">
+                {/* <TabPane tabId="7">
                   <StatusMasterTab />
-                </TabPane>
+                </TabPane> */}
               </TabContent>
             </Col>
           </Row>
