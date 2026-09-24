@@ -1,31 +1,29 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useMemo } from "react";
 import "react-toastify/dist/ReactToastify.css";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import InfoTable from "../../component/common/table/InfoTable";
 import { MetaTitle } from "../../common/data/MetaTitle";
-import { useDispatch, useSelector } from "react-redux";
-import { setLeaveApproval } from "../../redux/reducers/ChildReducer/LeaveApprovalReducer";
-import { Api } from "../../common/api/Api";
+import { useSelector } from "react-redux";
 import { Badge, Button, UncontrolledTooltip } from "reactstrap";
 import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
-import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
-import {
-  VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
-  VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
-} from "../../common/constant/RoleConstants";
-import { setApprovalEmployeeTypeFilter } from "../../redux/reducers/ChildReducer/ApprovalComponentReducer";
 
-const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
-  const dispatch = useDispatch();
-
+// NOTE: This component no longer fetches its own data. ApprovalFilter.jsx is
+// the single source of truth for fetching + pagination for both Leave and
+// Attendance approval tables (avoids two independent fetches racing to
+// overwrite the same Redux slice). This component just renders whatever is
+// currently in Redux, using the serverPagination object passed down from
+// ApprovalFilter for the table's pager.
+const LeaveApproval = ({
+  PendingLeave,
+  AttendancePending,
+  serverPagination,
+}) => {
   const { leave_approval_data } = useSelector(
     (data) => data.LeaveApprovalReducer,
   );
-  const { version } = useSelector((data) => data.MetaReducer);
 
   const DepartmentData = GetLocalStorageData("department") || [];
   const LeaveTypeData = GetLocalStorageData("leave_types") || [];
-  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
   // ── Status helpers ──────────────────────────────────────────
   const getStatusLabel = (status, is_deleted) => {
@@ -62,56 +60,6 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
 
   const getUnitId = (id) =>
     LeaveTypeData?.find((val) => val?.value === id)?.unit;
-
-  // ── Employee type permission ────────────────────────────────
-  let employee_type;
-  if (
-    profile_data.permission_list.includes(
-      VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
-    ) &&
-    profile_data.permission_list.includes(VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY)
-  ) {
-    employee_type = 1;
-  } else if (
-    profile_data.permission_list.includes(
-      VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
-    ) &&
-    !profile_data.permission_list.includes(VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY)
-  ) {
-    dispatch(setApprovalEmployeeTypeFilter(0));
-    employee_type = 0;
-  } else {
-    employee_type = 1;
-  }
-
-  // ── Fetch leave approvals ───────────────────────────────────
-  useEffect(() => {
-    dispatch(setLoaderVisible(true));
-    const today = new Date();
-    const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
-      .toString()
-      .padStart(2, "0")}`;
-
-    if (
-      profile_data.permission_list.includes(
-        VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
-      ) ||
-      profile_data.permission_list.includes(VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY)
-    ) {
-      Api({
-        method: "GET",
-        url: `leave/get-leave-application-for-approval/?thisMonth=${thisMonth}&employee_type=${employee_type}`,
-      })
-        .then((res) => {
-          dispatch(setLeaveApproval(res?.data?.data || []));
-          dispatch(setLoaderVisible(false));
-        })
-        .catch(() => {
-          dispatch(setLeaveApproval([]));
-          dispatch(setLoaderVisible(false));
-        });
-    }
-  }, []);
 
   // ── Table columns ───────────────────────────────────────────
   const additionalColumn = [
@@ -258,7 +206,6 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
         const thisLeaveType = LeaveTypeData.find(
           (d) => d.id === obj.leave_type_id,
         );
-        // return <React.Fragment>{thisLeaveType?.name}</React.Fragment>;
         return (
           <div>
             <div>{thisLeaveType?.name}</div>
@@ -277,20 +224,6 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
       filterable: false,
       id: "reason",
       accessor: (obj) => <b>{obj.reason}</b>,
-      // accessor: (obj) => {
-      //   if (obj.comp_off_work_date) {
-      //     return (
-      //       <div>
-      //         <div>
-      //           <b>Comp-Off</b>
-      //         </div>
-      //         <div>{convertDate(obj.comp_off_work_date)}</div>
-      //       </div>
-      //     );
-      //   }
-
-      //   return <b>{obj.reason}</b>;
-      // },
     },
     {
       Header: () => (
@@ -397,7 +330,7 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
     [],
   );
 
-  // ── Filter options ──────────────────────────────────────────
+  // ── Filter options (current page only) ───────────────────────
   const filterKey = "status";
   const filterOptions = [
     {
@@ -434,6 +367,7 @@ const LeaveApproval = ({ PendingLeave, AttendancePending }) => {
         filterKey={filterKey}
         filterOptions={filterOptions}
         width_per={"35%"}
+        serverPagination={serverPagination}
       />
     </React.Fragment>
   );

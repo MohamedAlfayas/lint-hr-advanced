@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Col, Container, Row } from "reactstrap";
 import LeaveTypesWidgets from "./LeaveTypesWidgets";
 import HolidayCalenderAPi from "../holidays/HolidayCalenderAPi";
@@ -12,6 +12,8 @@ import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setLeaveApplication } from "../../redux/reducers/ChildReducer/LeaveApplyReducer";
 import { setLeaveTypeForCurrentEmployee } from "../../redux/reducers/ChildReducer/LeaveTypeReducer";
+
+const DEFAULT_PAGE_SIZE = 25;
 
 const LeaveDashboard = () => {
   const dispatch = useDispatch();
@@ -30,18 +32,60 @@ const LeaveDashboard = () => {
     setSelectedLeaveRecord(null);
   };
 
-  // ── fetch leave applications ─────────────────
-  const fetchLeaveApplications = () => {
-    Api({ method: "GET", url: "leave/get-my-leave-application/" })
-      .then((res) => dispatch(setLeaveApplication(res?.data?.data || [])))
+  // ── pagination state ─────────────────────────
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const handlePaginationChange = (newPage, newPageSize) => {
+    setPage(newPage);
+    setPageSize(newPageSize);
+  };
+
+  // ── fetch leave applications (paginated) ─────
+  const fetchLeaveApplications = (
+    targetPage = page,
+    targetPageSize = pageSize,
+  ) => {
+    Api({
+      method: "GET",
+      url: `leave/get-my-leave-application/?page=${targetPage}&page_size=${targetPageSize}`,
+    })
+      .then((res) => {
+        const body = res?.data;
+        const payload = body?.data;
+
+        let list = [];
+        let total = 0;
+
+        if (Array.isArray(payload)) {
+          list = payload;
+          total = body?.count ?? body?.total ?? payload.length;
+        } else if (Array.isArray(payload?.results)) {
+          list = payload.results;
+          total = payload.count ?? payload.total ?? list.length;
+        } else if (Array.isArray(body?.results)) {
+          list = body.results;
+          total = body.count ?? list.length;
+        }
+
+        dispatch(setLeaveApplication(list));
+        setTotalCount(total);
+
+        // if current page became empty (e.g. last item removed), step back
+        if (list.length === 0 && targetPage > 1) {
+          setPage(targetPage - 1);
+        }
+      })
       .catch(() => console.log("ERR – leave applications"));
   };
 
-  // ── data fetch on mount ──────────────────────
+  // ── refetch whenever page / page size changes ─
   useEffect(() => {
-    fetchLeaveApplications();
-  }, []);
+    fetchLeaveApplications(page, pageSize);
+  }, [page, pageSize]);
 
+  // ── leave types on mount ─────────────────────
   useEffect(() => {
     Api({ method: "GET", url: "leave/get-leave-type-for-employee/" })
       .then((res) =>
@@ -354,6 +398,14 @@ const LeaveDashboard = () => {
     },
   ];
 
+  // ── server pagination config passed to table ─
+  const serverPagination = {
+    page,
+    pageSize,
+    totalCount,
+    onChange: handlePaginationChange,
+  };
+
   return (
     <React.Fragment>
       <div className="page-content">
@@ -378,6 +430,7 @@ const LeaveDashboard = () => {
               table_col={8}
               table_class={"Lc_leave_apply_table me-n3 ms-n3"}
               onChangeLeave={(row) => openChangeModal(row)}
+              serverPagination={serverPagination}
             />
             <HolidayCalenderAPi />
           </Row>

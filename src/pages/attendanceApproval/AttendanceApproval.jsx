@@ -87,7 +87,6 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
   //   employee_type = 1;
   // }
 
-
   if (isAdmin) {
     dispatch(setApprovalEmployeeTypeFilter(0));
     employee_type = 0;
@@ -105,7 +104,6 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
   } else {
     employee_type = 1;
   }
-
 
   // useEffect(() => {
   //   const today = new Date();
@@ -222,8 +220,8 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
         );
 
         if (!thisEmployee) {
-          console.log("thisEmployee: ",thisEmployee)
-          console.log("EmployeeData: ", EmployeeData)
+          console.log("thisEmployee: ", thisEmployee);
+          console.log("EmployeeData: ", EmployeeData);
           return (
             <div className="d-flex gap-2 align-items-center lc_sticky_first_additional_col">
               <div className="flex-grow-1">

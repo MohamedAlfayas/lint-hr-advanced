@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import {
   Badge,
   Card,
@@ -51,6 +57,13 @@ import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSel
 
 dayjs.extend(customParseFormat);
 
+const DEFAULT_PAGE_SIZE = 25;
+
+// Used only for the badge-count fetch, which needs every matching row (not
+// just one page) so the "Pending" badge reflects a true total. Large enough
+// to cover a month's worth of records in one request.
+const BADGE_COUNT_PAGE_SIZE = 5000;
+
 const ApprovalFilter = ({ formname }) => {
   const { leave_approval_data } = useSelector(
     (data) => data.LeaveApprovalReducer,
@@ -63,18 +76,6 @@ const ApprovalFilter = ({ formname }) => {
     (data) => data.ApprovalFilterReducer,
   );
 
-  console.log("leave_approval_data", leave_approval_data);
-
-  // const PendingLeave = leave_approval_data.filter(
-  //   (d) => d.status === 1 || d.status === 4,
-  // ).length;
-
-  const PendingLeave = leave_approval_data.filter(
-    (d) =>
-      (d.status === 1 || d.status === 4) &&
-      d.leave_cancellation_details?.status !== 2,
-  ).length;
-
   const [activeTab, setActiveTab] = useState("1");
   const toggleTab = (tab) => {
     setActiveTab(tab);
@@ -82,10 +83,19 @@ const ApprovalFilter = ({ formname }) => {
   const { attendance_approval_data } = useSelector(
     (state) => state.AttendanceApprovalReducer,
   );
-  const AttendancePending = attendance_approval_data.filter(
-    (d) => d.hr_status === 3,
-  ).length;
-  console.log("pend", attendance_approval_data);
+
+  // ── Badge counts (independent of the paginated table data) ──────────────
+  // BUG FIX: PendingLeave / AttendancePending used to be computed directly
+  // from leave_approval_data / attendance_approval_data via .filter(...).
+  // That worked before pagination existed, because those Redux arrays held
+  // the FULL filtered result set. Now that they only hold the current page
+  // (25 rows by default), counting "pending" against them only counts
+  // pending rows on whichever page happens to be loaded — not the true
+  // total. These are now tracked separately via a dedicated fetch that
+  // requests every matching row (BADGE_COUNT_PAGE_SIZE) purely to compute
+  // the count, without touching the paginated table data in Redux.
+  const [PendingLeave, setPendingLeave] = useState(0);
+  const [AttendancePending, setAttendancePending] = useState(0);
 
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
   const employee_options = useMemo(
@@ -93,7 +103,6 @@ const ApprovalFilter = ({ formname }) => {
     [],
   );
 
-  // near your other useMemo option lists
   const leave_type_options = useMemo(
     () =>
       (GetLocalStorageData("leave_types") || []).map((lt) => ({
@@ -135,6 +144,20 @@ const ApprovalFilter = ({ formname }) => {
       .padStart(2, "0")}`,
     employeeType: 1,
   });
+
+  // ── Pagination state (shared by Leave & Attendance approval tables) ─────
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [totalCount, setTotalCount] = useState(0);
+
+  // page/pageSize changes triggered by the table's own pager should refetch
+  // without re-running the "filters changed" reset-to-page-1 logic
+  const skipInitialPaginationFetch = useRef(true);
+
+  const handlePaginationChange = useCallback((newPage, newPageSize) => {
+    setPage(newPage);
+    setPageSize(newPageSize);
+  }, []);
 
   const { employee_table_filter_keys } = useSelector(
     (state) => state.TableFilterReducer,
@@ -226,94 +249,13 @@ const ApprovalFilter = ({ formname }) => {
     firstEffectExecutedRef.current = true;
   }, []);
 
-  useEffect(() => {
-    if (!firstEffectExecutedRef.current) return;
-
-    if (
-      !showAllAttendanceApproval &&
-      !showTeamAttendanceApproval &&
-      !showAllLeaveApproval &&
-      !showTeamLeaveApproval
-    ) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      dispatch(setFilteredCurrentValue(filteredValue));
-      dispatch(setFilteredLatestValue(filteredValue));
-
-      FilterData(activeTab);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [
-    employeeType,
-    filteredMonth,
-    activeTab,
-    selectedEmployees,
-    selectedLeaveType,
-    employee_table_filter_keys?.primary_department_id_list,
-  ]);
-
-  useEffect(() => {
-    if (!firstEffectExecutedRef.current) return;
-    if (
-      !showAllAttendanceApproval &&
-      !showTeamAttendanceApproval &&
-      !showAllLeaveApproval &&
-      !showTeamLeaveApproval
-    ) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      dispatch(setFilteredCurrentValue(filteredValue));
-      dispatch(setFilteredLatestValue(filteredValue));
-      FilterData(activeTab);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [
-    employeeType,
-    filteredMonth,
-    activeTab,
-    selectedEmployees,
-    showAllAttendanceApproval,
-    showTeamAttendanceApproval,
-    showAllLeaveApproval,
-    showTeamLeaveApproval,
-    selectedLeaveType,
-  ]);
-
-  useEffect(() => {
-    if (firstEffectExecutedRef.current) {
-      if (
-        activeTab === "2" ||
-        (!showAllAttendanceApproval &&
-          !showTeamAttendanceApproval &&
-          activeTab === "1")
-      ) {
-        dispatch(setCurrentApprovalComponent("leave_approval_component_name"));
-      } else if (activeTab === "1") {
-        dispatch(
-          setCurrentApprovalComponent("attendance_approval_component_name"),
-        );
-      } else {
-        setCurrentApprovalComponent("");
-      }
-    }
-  }, [
-    activeTab,
-    showAllAttendanceApproval,
-    showTeamAttendanceApproval,
-    firstEffectExecutedRef.current,
-  ]);
-
   let integerEmployeeType;
 
   const isLeaveApprovalActive =
     activeTab === "2" ||
-    (!showAllAttendanceApproval && !showTeamAttendanceApproval && activeTab === "1");
+    (!showAllAttendanceApproval &&
+      !showTeamAttendanceApproval &&
+      activeTab === "1");
 
   const getDepartmentParam = () => {
     const deptId = employee_table_filter_keys?.primary_department_id_list;
@@ -355,7 +297,6 @@ const ApprovalFilter = ({ formname }) => {
     );
   };
 
-  // ✅ client-side fallback filter (works even if backend ignores employee_id_list)
   const applyEmployeeFilter = (data) => {
     if (!selectedEmployees.length) return data;
     const ids = selectedEmployees.map((e) => Number(e.id ?? e.value));
@@ -366,47 +307,51 @@ const ApprovalFilter = ({ formname }) => {
     );
   };
 
-  const handleLeaveFilter = async (type) => {
-    const integerEmployeeType = parseInt(type, 10);
+  // ── Extracts total count from any of the common response shapes ────────
+  const extractListAndTotal = (response) => {
+    const body = response?.data;
+    const payload = body?.data;
+
+    let list = [];
+    let total = 0;
+
+    if (Array.isArray(payload)) {
+      list = payload;
+      total = body?.count ?? body?.total ?? payload.length;
+    } else if (Array.isArray(payload?.results)) {
+      list = payload.results;
+      total = payload.count ?? payload.total ?? list.length;
+    } else if (Array.isArray(body?.results)) {
+      list = body.results;
+      total = body.count ?? list.length;
+    }
+
+    return { list, total };
+  };
+
+  const buildLeaveUrl = (targetPage, targetPageSize) => {
     const deptParam = getDepartmentParam();
     const empParam = getEmployeeParam();
-    const leaveTypeParam = getLeaveTypeParam(); // ← add
-
+    const leaveTypeParam = getLeaveTypeParam();
 
     const baseUrl =
       "leave/get-leave-application-for-approval/?thisMonth=" +
       filteredMonth +
       "&employee_type=";
 
-    const url =
-      !showAllLeaveApproval && showTeamLeaveApproval
+    return (
+      (!showAllLeaveApproval && showTeamLeaveApproval
         ? baseUrl + "1" + deptParam + empParam
         : showAllLeaveApproval && !showTeamLeaveApproval
           ? baseUrl + "0" + deptParam + empParam
-          : baseUrl + type + deptParam + empParam;
-
-    try {
-      console.log("Leave API URL:", url);
-
-      const response = await Api({ type: "GET", url });
-
-      let data = response?.data?.data || [];
-
-      data = applyDepartmentFilter(data);
-      data = applyEmployeeFilter(data);
-      data = applyLeaveTypeFilter(data); 
-
-      dispatch(setApprovalEmployeeTypeFilter(integerEmployeeType));
-      dispatch(setLeaveApproval(data));
-    } catch (error) {
-      console.error(error);
-    } finally {
-      dispatch(setLoaderVisible(false));
-    }
+          : baseUrl + employeeType + deptParam + empParam) +
+      leaveTypeParam +
+      `&page=${targetPage}` +
+      `&page_size=${targetPageSize}`
+    );
   };
 
-  const handleAttendanceFilter = async (type) => {
-    const integerEmployeeType = parseInt(type, 10);
+  const buildAttendanceUrl = (targetPage, targetPageSize) => {
     const deptParam = getDepartmentParam();
     const empParam = getEmployeeParam();
 
@@ -415,25 +360,40 @@ const ApprovalFilter = ({ formname }) => {
       filteredMonth +
       "&employee_type=";
 
-    const url =
-      !showAllAttendanceApproval && showTeamAttendanceApproval
+    return (
+      (!showAllAttendanceApproval && showTeamAttendanceApproval
         ? baseUrl + "1" + deptParam + empParam
         : showAllAttendanceApproval && !showTeamAttendanceApproval
           ? baseUrl + "0" + deptParam + empParam
-          : baseUrl + type + deptParam + empParam;
+          : baseUrl + employeeType + deptParam + empParam) +
+      `&page=${targetPage}` +
+      `&page_size=${targetPageSize}`
+    );
+  };
+
+  // GET /leave/get-leave-application-for-approval/?thisMonth=2026-09&employee_type=1&page=1&page_size=25
+  const handleLeaveFilter = async (
+    type,
+    targetPage = page,
+    targetPageSize = pageSize,
+  ) => {
+    const integerEmployeeType = parseInt(type, 10);
+    const url = buildLeaveUrl(targetPage, targetPageSize);
 
     try {
-      console.log("Attendance API URL:", url);
+      console.log("Leave API URL:", url);
 
       const response = await Api({ type: "GET", url });
 
-      let data = response?.data?.data || [];
+      let { list: data, total } = extractListAndTotal(response);
 
       data = applyDepartmentFilter(data);
       data = applyEmployeeFilter(data);
+      data = applyLeaveTypeFilter(data);
 
       dispatch(setApprovalEmployeeTypeFilter(integerEmployeeType));
-      dispatch(setAttendanceApprovalData(data));
+      dispatch(setLeaveApproval(data));
+      setTotalCount(total);
     } catch (error) {
       console.error(error);
     } finally {
@@ -441,21 +401,104 @@ const ApprovalFilter = ({ formname }) => {
     }
   };
 
-  const FilterData = async (tab) => {
+  // GET /attendance/get-attendance-data-for-approval/?thisMonth=2026-09&employee_type=1&page=1&page_size=25
+  const handleAttendanceFilter = async (
+    type,
+    targetPage = page,
+    targetPageSize = pageSize,
+  ) => {
+    const integerEmployeeType = parseInt(type, 10);
+    const url = buildAttendanceUrl(targetPage, targetPageSize);
+
+    try {
+      console.log("Attendance API URL:", url);
+
+      const response = await Api({ type: "GET", url });
+
+      let { list: data, total } = extractListAndTotal(response);
+
+      data = applyDepartmentFilter(data);
+      data = applyEmployeeFilter(data);
+
+      dispatch(setApprovalEmployeeTypeFilter(integerEmployeeType));
+      dispatch(setAttendanceApprovalData(data));
+      setTotalCount(total);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      dispatch(setLoaderVisible(false));
+    }
+  };
+
+  // ── Badge-count fetches: full (unpaginated) dataset, counted client-side,
+  // never dispatched into the table's Redux slice ─────────────────────────
+  const refreshLeavePendingBadge = async () => {
+    if (!(showAllLeaveApproval || showTeamLeaveApproval)) return;
+
+    try {
+      const url = buildLeaveUrl(1, BADGE_COUNT_PAGE_SIZE);
+      const response = await Api({ type: "GET", url });
+
+      let { list } = extractListAndTotal(response);
+      list = applyDepartmentFilter(list);
+      list = applyEmployeeFilter(list);
+      list = applyLeaveTypeFilter(list);
+
+      const pendingCount = list.filter(
+        (d) =>
+          (d.status === 1 || d.status === 4) &&
+          d.leave_cancellation_details?.status !== 2,
+      ).length;
+
+      setPendingLeave(pendingCount);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const refreshAttendancePendingBadge = async () => {
+    if (!(showAllAttendanceApproval || showTeamAttendanceApproval)) return;
+
+    try {
+      const url = buildAttendanceUrl(1, BADGE_COUNT_PAGE_SIZE);
+      const response = await Api({ type: "GET", url });
+
+      let { list } = extractListAndTotal(response);
+      list = applyDepartmentFilter(list);
+      list = applyEmployeeFilter(list);
+
+      const pendingCount = list.filter((d) => d.hr_status === 3).length;
+
+      setAttendancePending(pendingCount);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const refreshBadgeCounts = () => {
+    refreshLeavePendingBadge();
+    refreshAttendancePendingBadge();
+  };
+
+  const FilterData = async (
+    tab,
+    targetPage = page,
+    targetPageSize = pageSize,
+  ) => {
     dispatch(setLoaderVisible(true));
     if (
       tab === "2" ||
       (!showAllAttendanceApproval && !showTeamAttendanceApproval && tab === "1")
     ) {
       if (showAllLeaveApproval || showTeamLeaveApproval) {
-        handleLeaveFilter(employeeType);
+        handleLeaveFilter(employeeType, targetPage, targetPageSize);
       } else {
         dispatch(setLoaderVisible(false));
         toast.error("Sometyhing Went Wrong!");
       }
     } else if (tab === "1") {
       if (showAllAttendanceApproval || showTeamAttendanceApproval) {
-        handleAttendanceFilter(employeeType);
+        handleAttendanceFilter(employeeType, targetPage, targetPageSize);
       } else {
         dispatch(setLoaderVisible(false));
         toast.error("Sometyhing Went Wrong!");
@@ -466,9 +509,115 @@ const ApprovalFilter = ({ formname }) => {
     }
   };
 
+  // ── Filter-value changes: reset to page 1, refetch table + badges ──────
+  useEffect(() => {
+    if (!firstEffectExecutedRef.current) return;
+
+    if (
+      !showAllAttendanceApproval &&
+      !showTeamAttendanceApproval &&
+      !showAllLeaveApproval &&
+      !showTeamLeaveApproval
+    ) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      dispatch(setFilteredCurrentValue(filteredValue));
+      dispatch(setFilteredLatestValue(filteredValue));
+
+      skipInitialPaginationFetch.current = true;
+      setPage(1);
+      FilterData(activeTab, 1, pageSize);
+      refreshBadgeCounts();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [
+    employeeType,
+    filteredMonth,
+    activeTab,
+    selectedEmployees,
+    selectedLeaveType,
+    employee_table_filter_keys?.primary_department_id_list,
+  ]);
+
+  useEffect(() => {
+    if (!firstEffectExecutedRef.current) return;
+    if (
+      !showAllAttendanceApproval &&
+      !showTeamAttendanceApproval &&
+      !showAllLeaveApproval &&
+      !showTeamLeaveApproval
+    ) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      dispatch(setFilteredCurrentValue(filteredValue));
+      dispatch(setFilteredLatestValue(filteredValue));
+
+      skipInitialPaginationFetch.current = true;
+      setPage(1);
+      FilterData(activeTab, 1, pageSize);
+      refreshBadgeCounts();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [
+    employeeType,
+    filteredMonth,
+    activeTab,
+    selectedEmployees,
+    showAllAttendanceApproval,
+    showTeamAttendanceApproval,
+    showAllLeaveApproval,
+    showTeamLeaveApproval,
+    selectedLeaveType,
+  ]);
+
+  // ── Page / page-size changes from the table pager: refetch table only ──
+  // (badge counts are independent of which page the table is on, so they
+  // don't need to refresh here)
+  useEffect(() => {
+    if (!firstEffectExecutedRef.current) return;
+    if (skipInitialPaginationFetch.current) {
+      skipInitialPaginationFetch.current = false;
+      return;
+    }
+    FilterData(activeTab, page, pageSize);
+  }, [page, pageSize]);
+
+  useEffect(() => {
+    if (firstEffectExecutedRef.current) {
+      if (
+        activeTab === "2" ||
+        (!showAllAttendanceApproval &&
+          !showTeamAttendanceApproval &&
+          activeTab === "1")
+      ) {
+        dispatch(setCurrentApprovalComponent("leave_approval_component_name"));
+      } else if (activeTab === "1") {
+        dispatch(
+          setCurrentApprovalComponent("attendance_approval_component_name"),
+        );
+      } else {
+        setCurrentApprovalComponent("");
+      }
+    }
+  }, [
+    activeTab,
+    showAllAttendanceApproval,
+    showTeamAttendanceApproval,
+    firstEffectExecutedRef.current,
+  ]);
+
   const handleFilter = async () => {
     dispatch(setFilteredCurrentValue(filteredValue));
-    FilterData(activeTab);
+    skipInitialPaginationFetch.current = true;
+    setPage(1);
+    FilterData(activeTab, 1, pageSize);
+    refreshBadgeCounts();
   };
 
   const handleFilterChange = (e, name) => {
@@ -481,6 +630,16 @@ const ApprovalFilter = ({ formname }) => {
       }),
     );
   };
+
+  const serverPagination = useMemo(
+    () => ({
+      page,
+      pageSize,
+      totalCount,
+      onChange: handlePaginationChange,
+    }),
+    [page, pageSize, totalCount, handlePaginationChange],
+  );
 
   return (
     <React.Fragment>
@@ -556,24 +715,27 @@ const ApprovalFilter = ({ formname }) => {
                   />
                 </Col>
 
-                {isLeaveApprovalActive && (showAllLeaveApproval || showTeamLeaveApproval) && (
-                  <Col md={3}>
-                    <Select
-                      id="leave_type_filter"
-                      name="leave_type_filter"
-                      isClearable
-                      isMulti={false}
-                      options={leave_type_options}
-                      className="basic-multi-select"
-                      placeholder="Select Leave Type"
-                      value={selectedLeaveType}
-                      onChange={handleLeaveTypeFilterChange}
-                      filterOption={(option, inputValue) =>
-                        option.label.toLowerCase().includes(inputValue.toLowerCase())
-                      }
-                    />
-                  </Col>
-                )}
+                {isLeaveApprovalActive &&
+                  (showAllLeaveApproval || showTeamLeaveApproval) && (
+                    <Col md={3}>
+                      <Select
+                        id="leave_type_filter"
+                        name="leave_type_filter"
+                        isClearable
+                        isMulti={false}
+                        options={leave_type_options}
+                        className="basic-multi-select"
+                        placeholder="Select Leave Type"
+                        value={selectedLeaveType}
+                        onChange={handleLeaveTypeFilterChange}
+                        filterOption={(option, inputValue) =>
+                          option.label
+                            .toLowerCase()
+                            .includes(inputValue.toLowerCase())
+                        }
+                      />
+                    </Col>
+                  )}
 
                 <Col md={3}>
                   <div className="form-icon right">
@@ -664,7 +826,9 @@ const ApprovalFilter = ({ formname }) => {
                                       filteredcurrentvalue !==
                                       filteredlatestvalue
                                     ) {
-                                      FilterData("2");
+                                      skipInitialPaginationFetch.current = true;
+                                      setPage(1);
+                                      FilterData("2", 1, pageSize);
                                       dispatch(
                                         setFilteredLatestValue(
                                           filteredcurrentvalue,
@@ -707,7 +871,7 @@ const ApprovalFilter = ({ formname }) => {
                   : "0"
               }
             >
-              <AttendanceApproval />
+              <AttendanceApproval serverPagination={serverPagination} />
             </TabPane>
           )}
           {(showAllLeaveApproval || showTeamLeaveApproval) && (
@@ -718,7 +882,11 @@ const ApprovalFilter = ({ formname }) => {
                   : "2"
               }
             >
-              <LeaveApproval />
+              <LeaveApproval
+                PendingLeave={PendingLeave}
+                AttendancePending={AttendancePending}
+                serverPagination={serverPagination}
+              />
             </TabPane>
           )}
         </TabContent>

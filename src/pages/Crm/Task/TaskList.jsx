@@ -12,6 +12,8 @@ import InfoTable from "../../../component/common/table/InfoTable";
 import TaskDetailModal from "./Modal/TaskDetailModal";
 import { getLabel, getEmployeeProfile } from "../Task/Modal/Taskhelpers";
 
+const DEFAULT_PAGE_SIZE = 25;
+
 // ─── Helper: build avatar element ────────────────────────────────────────────
 const EmployeeAvatar = ({ emp, size = 32, style = {} }) => {
   const initial =
@@ -96,6 +98,16 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
   // ── Modal state ─────────────────────────────────────────────────────────────
   const [detailModal, setDetailModal] = useState({ open: false, taskId: null });
 
+  // ── Pagination state ────────────────────────────────────────────────────────
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const handlePaginationChange = useCallback((newPage, newPageSize) => {
+    setPage(newPage);
+    setPageSize(newPageSize);
+  }, []);
+
   // ── Redux ───────────────────────────────────────────────────────────────────
   const { tasks: task_data } = useSelector((state) => state.TaskReducer);
   const { task_list_filter_keys } = useSelector(
@@ -170,24 +182,51 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
     return filtered;
   }, [task_data, projectId, clientId, searchQuery, task_list_filter_keys]);
 
-  // ── Fetch all tasks ─────────────────────────────────────────────────────────
+  // ── Fetch tasks (paginated) ─────────────────────────────────────────────────
+  // GET /task/?page=1&page_size=25
   const getAllTasks = useCallback(async () => {
     try {
-      const response = await Api.get("/task/");
-      // ✅ FIX: API returns { data: [...] } — a flat array, not { external, internal }
-      const tasks = Array.isArray(response?.data?.data)
-        ? response.data.data
-        : [];
-      dispatch(setTasks(tasks));
+      const response = await Api.get(
+        `/task/?page=${page}&page_size=${pageSize}`,
+      );
+      const body = response?.data;
+      const payload = body?.data;
+
+      let list = [];
+      let total = 0;
+
+      if (Array.isArray(payload)) {
+        list = payload;
+        total = body?.count ?? body?.total ?? payload.length;
+      } else if (Array.isArray(payload?.results)) {
+        list = payload.results;
+        total = payload.count ?? payload.total ?? list.length;
+      } else if (Array.isArray(body?.results)) {
+        list = body.results;
+        total = body.count ?? list.length;
+      }
+
+      dispatch(setTasks(list));
+      setTotalCount(total);
+
+      // current page became empty (e.g. last task deleted) -> step back
+      if (list.length === 0 && page > 1) {
+        setPage(page - 1);
+      }
     } catch (error) {
       console.log("Task Fetch Error :", error);
     }
-  }, [dispatch]);
+  }, [dispatch, page, pageSize]);
 
+  // refetch whenever page / page size changes
   useEffect(() => {
     getAllTasks();
+  }, [getAllTasks]);
+
+  // reset filter panel once on mount
+  useEffect(() => {
     dispatch(resetTaskListFilterKeys());
-  }, [getAllTasks, dispatch]);
+  }, [dispatch]);
 
   // ── Modal handlers ──────────────────────────────────────────────────────────
   const openTaskDetail = useCallback((taskId) => {
@@ -423,7 +462,9 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
             (p) => Number(p.id) === Number(obj.task_priority),
           );
           if (!priority) return "-";
-          const bgColor = isValidColor(priority.color) ? priority.color : "#000000";
+          const bgColor = isValidColor(priority.color)
+            ? priority.color
+            : "#000000";
           return (
             <span
               className="badge"
@@ -453,7 +494,10 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
           return (
             <span
               className="badge"
-              style={{ backgroundColor: bgColor, color: getContrastTextColor(status.color) }}
+              style={{
+                backgroundColor: bgColor,
+                color: getContrastTextColor(status.color),
+              }}
             >
               {status.name}
             </span>
@@ -504,7 +548,7 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
     [projectId, clientId],
   );
 
-  // ── Filter options ──────────────────────────────────────────────────────────
+  // ── Filter options (current page only) ──────────────────────────────────────
   const filterKey = "status";
 
   const filterOptions = useMemo(
@@ -524,6 +568,17 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
     [displayedTasks],
   );
 
+  // ── Server pagination config passed to table ────────────────────────────────
+  const serverPagination = useMemo(
+    () => ({
+      page,
+      pageSize,
+      totalCount,
+      onChange: handlePaginationChange,
+    }),
+    [page, pageSize, totalCount, handlePaginationChange],
+  );
+
   document.title = `Tasks | ${MetaTitle}`;
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -538,6 +593,7 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
         filterOptions={filterOptions}
         width_per={"35%"}
         table_class={"Lc_leave_apply_table me-n3 ms-n3"}
+        serverPagination={serverPagination}
       />
 
       <TaskDetailModal
