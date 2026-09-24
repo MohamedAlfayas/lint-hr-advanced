@@ -15,7 +15,9 @@ import { Link } from "react-router-dom";
 import AttendanceApproval from "../../../pages/attendanceApproval/AttendanceApproval";
 dayjs.extend(customParseFormat);
 
-const LeaveApprovalFilter = ({ formname }) => {
+const DEFAULT_PAGE_SIZE = 25;
+
+const LeaveApprovalFilter = ({ formname, onPaginationChange }) => {
   const inputRef = useRef();
 
   const dispatch = useDispatch();
@@ -26,6 +28,11 @@ const LeaveApprovalFilter = ({ formname }) => {
       .toString()
       .padStart(2, "0")}`,
   );
+
+  // ── Pagination state ────────────────────────────────────────
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [totalCount, setTotalCount] = useState(0);
 
   const employeeTypeOptions = [
     { id: "0", label: "All Employee", value: "0" },
@@ -40,45 +47,112 @@ const LeaveApprovalFilter = ({ formname }) => {
     setFilteredMonth(monthStr);
   };
 
-  const handleFilter = async () => {
+  // ── Shared fetch, parameterised by page/page_size ────────────
+  // GET /leave/get-leave-application-for-approval/?thisMonth=2026-09&employee_type=1&page=1&page_size=25
+  // GET /attendance/get-attendance-data-for-approval/?thisMonth=2026-09&employee_type=1&page=1&page_size=25
+  const fetchFilteredData = async (targetPage, targetPageSize) => {
     dispatch(setLoaderVisible(true));
+
     if (formname === "leave_approval_component_name") {
-      Api({
-        type: "GET",
-        url:
-          "leave/get-leave-application-for-approval/?thisMonth=" +
-          filteredMonth +
-          "&employee_type=" +
-          employeeType,
-      })
-        .then((res) => {
-          dispatch(setLeaveApproval(res?.data?.data));
-          dispatch(setLoaderVisible(false));
-        })
-        .catch((err) => {
-          console.log("ERR = ", err);
-          dispatch(setLoaderVisible(false));
+      try {
+        const res = await Api({
+          type: "GET",
+          url:
+            "leave/get-leave-application-for-approval/?thisMonth=" +
+            filteredMonth +
+            "&employee_type=" +
+            employeeType +
+            "&page=" +
+            targetPage +
+            "&page_size=" +
+            targetPageSize,
         });
+
+        const body = res?.data;
+        const payload = body?.data;
+
+        let list = [];
+        let total = 0;
+
+        if (Array.isArray(payload)) {
+          list = payload;
+          total = body?.count ?? body?.total ?? payload.length;
+        } else if (Array.isArray(payload?.results)) {
+          list = payload.results;
+          total = payload.count ?? payload.total ?? list.length;
+        } else if (Array.isArray(body?.results)) {
+          list = body.results;
+          total = body.count ?? list.length;
+        }
+
+        dispatch(setLeaveApproval(list));
+        setTotalCount(total);
+        onPaginationChange?.({
+          page: targetPage,
+          pageSize: targetPageSize,
+          totalCount: total,
+        });
+      } catch (err) {
+        console.log("ERR = ", err);
+        dispatch(setLeaveApproval([]));
+      } finally {
+        dispatch(setLoaderVisible(false));
+      }
     } else if (formname === "attendance_approval_component_name") {
-      Api({
-        type: "GET",
-        url:
-          "attendance/get-attendance-data-for-approval/?thisMonth=" +
-          filteredMonth +
-          "&employee_type=" +
-          employeeType,
-      })
-        .then((res) => {
-          dispatch(setAttendanceApprovalData(res?.data?.data));
-          dispatch(setLoaderVisible(false));
-        })
-        .catch((err) => {
-          console.log("ERR = ", err);
-          dispatch(setLoaderVisible(false));
+      try {
+        const res = await Api({
+          type: "GET",
+          url:
+            "attendance/get-attendance-data-for-approval/?thisMonth=" +
+            filteredMonth +
+            "&employee_type=" +
+            employeeType +
+            "&page=" +
+            targetPage +
+            "&page_size=" +
+            targetPageSize,
         });
+
+        const body = res?.data;
+        const payload = body?.data;
+
+        let list = [];
+        let total = 0;
+
+        if (Array.isArray(payload)) {
+          list = payload;
+          total = body?.count ?? body?.total ?? payload.length;
+        } else if (Array.isArray(payload?.results)) {
+          list = payload.results;
+          total = payload.count ?? payload.total ?? list.length;
+        } else if (Array.isArray(body?.results)) {
+          list = body.results;
+          total = body.count ?? list.length;
+        }
+
+        dispatch(setAttendanceApprovalData(list));
+        setTotalCount(total);
+        onPaginationChange?.({
+          page: targetPage,
+          pageSize: targetPageSize,
+          totalCount: total,
+        });
+      } catch (err) {
+        console.log("ERR = ", err);
+        dispatch(setAttendanceApprovalData([]));
+      } finally {
+        dispatch(setLoaderVisible(false));
+      }
     } else {
+      dispatch(setLoaderVisible(false));
       toast.error("Sometyhing Went Wrong!");
     }
+  };
+
+  // Applying a new filter always resets back to page 1
+  const handleFilter = () => {
+    setPage(1);
+    fetchFilteredData(1, pageSize);
   };
 
   return (

@@ -377,6 +377,14 @@ const Navdata = () => {
         stateVariables: isBaseUi,
       },
       {
+        id: "notifications",
+        label: "Notifications",
+        link: "/notifications",
+        parentId: "baseUi",
+        perm: "all",
+        icon: "ri-notification-3-line",
+      },
+      {
         id: "control-panel",
         label: "CRM",
         icon: " ri-list-settings-line",

@@ -36,6 +36,8 @@ import ClientOverviewTab from "../pages/Crm/Clients/ClientOverviewTab";
 import LeaveReport from "../pages/attendance/LeaveReport";
 import AllEmployeeLocation from "../pages/dashboard/EmployeeMap/AllEmployeeLocation";
 import BreakReport from "../pages/attendance/BreakReport";
+import { Notification } from "rsuite";
+import Notifications from "../pages/notification/Notifications";
 
 // import Dashboard from "../pages/dashboard/Dashboard";
 // import Login from "../pages/auth/login/Login";
@@ -247,6 +249,11 @@ const privateRoutes = [
   {
     path: "/employee-locations",
     component: <AllEmployeeLocation />,
+    perm: "all",
+  },
+  {
+    path: "/notifications",
+    component: <Notifications />,
     perm: "all",
   },
 ];

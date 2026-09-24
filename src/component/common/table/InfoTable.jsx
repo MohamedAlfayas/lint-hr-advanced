@@ -142,7 +142,8 @@ const InfoTable = ({
   table_col,
   table_class,
   initialActiveTab,
-  onChangeLeave, // ✅ ADD THIS
+  onChangeLeave,
+  serverPagination, // ✅ ADD THIS
   ...props
 }) => {
   const dispatch = useDispatch();
@@ -2663,7 +2664,6 @@ const InfoTable = ({
                         .filter((obj) => {
                           const selectedYear =
                             attendance_approval_table_filter_keys?.year;
-
                           const selectedMonth =
                             attendance_approval_table_filter_keys?.month;
 
@@ -2704,12 +2704,11 @@ const InfoTable = ({
 
                             if (value == null) return false;
 
-                            let searchValue = String(value);
+                            const searchValue = String(value);
 
                             if (key === "date") {
                               const formattedDate =
                                 dayjs(value).format("DD-MM-YYYY");
-
                               const normalizedDate = formattedDate.replace(
                                 /[-/]/g,
                                 "",
@@ -2719,20 +2718,17 @@ const InfoTable = ({
                                 "",
                               );
 
-                              const matched =
+                              return (
                                 formattedDate
                                   .toLowerCase()
                                   .includes(search.toLowerCase()) ||
-                                normalizedDate.includes(normalizedSearch);
-
-                              return matched;
+                                normalizedDate.includes(normalizedSearch)
+                              );
                             }
 
-                            const matched = searchValue
+                            return searchValue
                               .toLowerCase()
                               .includes(search.toLowerCase());
-
-                            return matched;
                           });
                         }) || []
                     }
@@ -2747,6 +2743,7 @@ const InfoTable = ({
                     isDataFilter={true}
                     SearchPlaceholder="Search for data ID, customer, data status or something..."
                     showInfo={true}
+                    serverPagination={serverPagination}
                   />
                 )}
               </div>

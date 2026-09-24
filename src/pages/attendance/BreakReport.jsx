@@ -28,6 +28,28 @@ import "../../common/css/lc_style.css";
 
 const { Column, HeaderCell, Cell, ColumnGroup } = Table;
 
+const DEFAULT_PAGE_SIZE = 20; // API default (max 100)
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+
+// builds [1, "...", 4, 5, 6, "...", 20]
+const getPageNumbers = (current, total) => {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const pages = new Set([1, total, current - 1, current, current + 1]);
+  const sorted = Array.from(pages)
+    .filter((p) => p >= 1 && p <= total)
+    .sort((a, b) => a - b);
+  const result = [];
+  sorted.forEach((p, i) => {
+    if (i > 0 && p - sorted[i - 1] > 1) {
+      result.push("...");
+    }
+    result.push(p);
+  });
+  return result;
+};
+
 const BreakReport = () => {
   const dispatch = useDispatch();
   const { layoutModeType } = useSelector((state) => state.LayoutReducer);
@@ -46,6 +68,12 @@ const BreakReport = () => {
       .padStart(2, "0")}`,
   });
 
+  // ── pagination state ────────────────────────
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPagesFromApi, setTotalPagesFromApi] = useState(1);
+
   const [showModal, setShowModal] = useState(false);
   const toggleModal = () => setShowModal((s) => !s);
 
@@ -55,26 +83,59 @@ const BreakReport = () => {
     status_log: [],
   });
 
-  useEffect(() => {
-    getReportData(filterKeys.month);
-  }, []);
-
-  const getReportData = (thisMonth) => {
+  // GET /report/get-employee-break-report/v2/?thisMonth=2026-09&page=1&page_size=20
+  const getReportData = (thisMonth, targetPage, targetPageSize) => {
     setLoading(true);
     Api({
-      type: "GET",
-      url: "report/get-employee-break-report/?thisMonth=" + thisMonth,
+      method: "GET",
+      url:
+        "report/get-employee-break-report/v2/?thisMonth=" +
+        thisMonth +
+        "&page=" +
+        targetPage +
+        "&page_size=" +
+        targetPageSize,
     })
       .then((res) => {
-        setReport(res?.data?.data || []);
+        const body = (res && res.data) || {};
+        const list = Array.isArray(body.data) ? body.data : [];
+        const total = body.count != null ? body.count : list.length;
+        const pages =
+          body.total_pages != null
+            ? body.total_pages
+            : Math.max(1, Math.ceil(total / targetPageSize));
+
+        setReport(list);
+        setTotalCount(total);
+        setTotalPagesFromApi(Math.max(1, pages));
+
+        // current page became empty -> step back
+        if (list.length === 0 && targetPage > 1) {
+          setPage(targetPage - 1);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
   };
 
+  // fetch on mount and whenever month / page / page size changes
+  useEffect(() => {
+    getReportData(filterKeys.month, page, pageSize);
+  }, [filterKeys.month, page, pageSize]);
+
   const handleDateRangeChange = (e, monthStr) => {
     setFilterKeys((p) => ({ ...p, month: monthStr }));
-    getReportData(monthStr);
+    setPage(1);
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPagesFromApi || newPage === page) return;
+    setPage(newPage);
+  };
+
+  const handlePageSizeChange = (e) => {
+    setPageSize(Number(e.target.value));
+    setPage(1);
   };
 
   function formatDate(dateString) {
@@ -95,7 +156,7 @@ const BreakReport = () => {
       .padStart(2, "0")}`;
   }
 
-  // ----- derived data -----
+  // ----- derived data (current page only) -----
   const breakDates = Array.from(
     new Set(report.flatMap((e) => e.break_status_data.map((d) => d.date))),
   );
@@ -111,11 +172,6 @@ const BreakReport = () => {
   )
     .map(([id, name]) => ({ id, name }))
     .sort((a, b) => a.id - b.id);
-
-  const teamTotalBreak = report.reduce(
-    (sum, e) => sum + (e.overall_total_break_duration || 0),
-    0,
-  );
 
   const monthLabel = breakDates.length
     ? (() => {
@@ -314,7 +370,7 @@ const BreakReport = () => {
     );
   };
 
-  // ----- team export -----
+  // ----- team export (current page only) -----
   const exportExcelFile = () => {
     const wb = new ExcelJs.Workbook();
     const sheet = wb.addWorksheet("Break Report", {
@@ -390,7 +446,7 @@ const BreakReport = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Break_Report_${filterKeys.month}.xlsx`;
+      a.download = `Break_Report_${filterKeys.month}_page${page}.xlsx`;
       a.click();
       window.URL.revokeObjectURL(url);
     });
@@ -453,6 +509,46 @@ const BreakReport = () => {
     </Column>,
   ];
 
+  // ── pagination values (computed outside JSX) ──
+  const rowsOnPage = report.length;
+  const startItem = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endItem = Math.min((page - 1) * pageSize + rowsOnPage, totalCount);
+  const prevDisabled = page <= 1;
+  const nextDisabled = page >= totalPagesFromApi;
+  const prevClass = prevDisabled ? "page-item disabled" : "page-item";
+  const nextClass = nextDisabled ? "page-item disabled" : "page-item";
+  const pageNumbers = getPageNumbers(page, totalPagesFromApi);
+
+  const pageItems = [];
+  pageNumbers.forEach((p, idx) => {
+    if (p === "...") {
+      pageItems.push(
+        <li className="page-item disabled" key={"gap-" + idx}>
+          <span className="page-link">...</span>
+        </li>,
+      );
+      return;
+    }
+    const linkClass = p === page ? "page-link active" : "page-link";
+    pageItems.push(
+      <li className="page-item" key={"p-" + p}>
+        <button
+          type="button"
+          className={linkClass}
+          onClick={() => handlePageChange(p)}
+        >
+          {p}
+        </button>
+      </li>,
+    );
+  });
+
+  const pageSizeOptions = PAGE_SIZE_OPTIONS.map((size) => (
+    <option key={size} value={size}>
+      {"Show " + size}
+    </option>
+  ));
+
   return (
     <React.Fragment>
       <div className="page-content">
@@ -477,7 +573,7 @@ const BreakReport = () => {
                 <Col xl={4}>
                   <div className="d-flex align-items-center gap-2">
                     <span className="badge bg-info-subtle text-info fs-12 p-2">
-                      Employees: <b>{report.length}</b>
+                      Employees: <b>{totalCount}</b>
                     </span>
                   </div>
                 </Col>
@@ -511,8 +607,8 @@ const BreakReport = () => {
                       <div className="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
                         <h4>Are you sure?</h4>
                         <p className="text-muted mx-4 mb-0">
-                          Export <b>{monthLabel}</b> Break Report as a XLSX
-                          file?
+                          Export <b>{monthLabel}</b> Break Report (current page)
+                          as a XLSX file?
                         </p>
                       </div>
                     </div>
@@ -551,7 +647,7 @@ const BreakReport = () => {
           rowHeight={60}
           autoHeight
           loading={loading}
-          className="mb-5"
+          className="mb-3"
           affixHorizontalScrollbar
         >
           <Column width={250} fixed="left" align="center">
@@ -570,6 +666,56 @@ const BreakReport = () => {
           {dynamicColumns}
           {summaryColumns}
         </Table>
+
+        {/* ── Pagination ── */}
+        <Container fluid>
+          <Row className="align-items-center g-3 text-center text-sm-start mb-5">
+            <div className="col-sm">
+              <div className="text-muted">
+                Showing
+                <span className="fw-semibold ms-1">{startItem}</span> to{" "}
+                <span className="fw-semibold">{endItem}</span> of{" "}
+                <span className="fw-semibold">{totalCount}</span>
+              </div>
+            </div>
+
+            <div className="col-sm-auto">
+              <ul className="pagination pagination-separated pagination-md justify-content-center justify-content-sm-start mb-0">
+                <li className={prevClass}>
+                  <button
+                    type="button"
+                    className="page-link"
+                    disabled={prevDisabled}
+                    onClick={() => handlePageChange(page - 1)}
+                  >
+                    Previous
+                  </button>
+                </li>
+                {pageItems}
+                <li className={nextClass}>
+                  <button
+                    type="button"
+                    className="page-link"
+                    disabled={nextDisabled}
+                    onClick={() => handlePageChange(page + 1)}
+                  >
+                    Next
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <div className="col-sm-auto">
+              <select
+                className="form-select custom-select-medium text-muted my-select"
+                value={pageSize}
+                onChange={handlePageSizeChange}
+              >
+                {pageSizeOptions}
+              </select>
+            </div>
+          </Row>
+        </Container>
 
         {/* status_log detail modal */}
         <Modal

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   Card,
-  CardBody,
   CardHeader,
   Col,
   Row,
@@ -13,38 +12,58 @@ import {
 } from "reactstrap";
 import SimpleBar from "simplebar-react";
 import { MetaTitle } from "../../common/data/MetaTitle";
-import CountUp from "react-countup";
 import { ButtonToolbar, IconButton, Table } from "rsuite";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
-import { parse, format } from "date-fns";
+import { format, differenceInMinutes } from "date-fns";
 import { Link } from "react-router-dom";
 import { MonthFormat } from "../../common/constant/Constants";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-dayjs.extend(customParseFormat);
 import { useDispatch, useSelector } from "react-redux";
 import { DatePicker } from "antd";
 import { ConvertSecondsToTime } from "../../common/js/ConvertSecondsToTime";
-import { PostApi } from "../../common/api/PostApi";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { Api } from "../../common/api/Api";
 import { setTeamDailyAttendanceReport } from "../../redux/reducers/ChildReducer/TeamDailyAttendanceReportReducer";
 import { ParseTime } from "../../common/js/ParseTime";
-import * as XLSX from "xlsx";
-const ExcelJs = require("exceljs");
 import "../../common/css/lc_style.css";
-import { differenceInMinutes } from "date-fns";
-import { CSVLink } from "react-csv";
 import {
   late_entry_display,
   on_time_entry_display,
   earlyin_display,
   earlyout_display,
 } from "../../common/constant/Constants";
-
 import { changeLayoutMode } from "../../layout/HtmlLayoutHelpers";
+
+const ExcelJs = require("exceljs");
+
+dayjs.extend(customParseFormat);
+
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
+// builds [1, "...", 4, 5, 6, "...", 20]
+const getPageNumbers = (current, total) => {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const pages = new Set([1, total, current - 1, current, current + 1]);
+  const sorted = Array.from(pages)
+    .filter((p) => p >= 1 && p <= total)
+    .sort((a, b) => a - b);
+  const result = [];
+  sorted.forEach((p, i) => {
+    if (i > 0 && p - sorted[i - 1] > 1) {
+      result.push("...");
+    }
+    result.push(p);
+  });
+  return result;
+};
+
 const AttendanceReport = () => {
   const { layoutModeType } = useSelector((state) => state.LayoutReducer);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (layoutModeType) {
@@ -55,68 +74,98 @@ const AttendanceReport = () => {
   document.title = `Attendance Report | ${MetaTitle}`;
 
   const { Column, HeaderCell, Cell, ColumnGroup } = Table;
-  const [loading, setLoading] = React.useState(false);
+  const [loading] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   const toggleModal = () => {
     setShowModal(!showModal);
   };
 
-  const dispatch = useDispatch();
-
   const employee_data = GetLocalStorageData("employee") || [];
 
   const { team_daily_attendance_report } = useSelector(
-    (state) => state.TeamDailyAttendanceReportReducer
+    (state) => state.TeamDailyAttendanceReportReducer,
   );
 
-  useEffect(() => {
-    const today = new Date();
-    const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
-      .toString()
-      .padStart(2, "0")}`;
-
-    getReportData(thisMonth);
-  }, []);
-
-  const getReportData = (thisMonth) => {
-    dispatch(setLoaderVisible(true));
-
-    Api({
-      type: "GET",
-      url: "report/get-team-daily-attendance-report/?thisMonth=" + thisMonth,
-    })
-      .then((res) => {
-        dispatch(setTeamDailyAttendanceReport(res?.data?.data));
-        dispatch(setLoaderVisible(false));
-      })
-      .catch((err) => {
-        dispatch(setLoaderVisible(false));
-      });
-  };
+  // ── filter + pagination state ────────────────
   const [filterKeys, setFilterKeys] = useState({
     month: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
       .toString()
       .padStart(2, "0")}`,
   });
-  // useEffect(() => {
-  //   getReportData(filterKeys.month);
-  // }, [filterKeys.month]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  // POST /report/get-attendance-report/v3/?page=1&page_size=10
+  const getReportData = (thisMonth, targetPage, targetPageSize) => {
+    dispatch(setLoaderVisible(true));
+
+    Api({
+      method: "GET",
+      url:
+        "report/get-team-daily-attendance-report/?thisMonth=" +
+        thisMonth +
+        "&page=" +
+        targetPage +
+        "&page_size=" +
+        targetPageSize,
+    })
+      .then((res) => {
+        const body = res?.data;
+
+        const list = Array.isArray(body?.data) ? body.data : [];
+        const total = body?.count != null ? body.count : 0;
+
+        dispatch(setTeamDailyAttendanceReport(list));
+        setTotalCount(total);
+
+        // If current page becomes empty, go back one page
+        if (list.length === 0 && targetPage > 1) {
+          setPage(targetPage - 1);
+        }
+
+        dispatch(setLoaderVisible(false));
+      })
+      .catch((error) => {
+        console.error("Attendance report API error:", error);
+
+        dispatch(setTeamDailyAttendanceReport([]));
+        setTotalCount(0);
+        dispatch(setLoaderVisible(false));
+      });
+  };
+  // fetch on mount and whenever month / page / page size changes
+  useEffect(() => {
+    getReportData(filterKeys.month, page, pageSize);
+  }, [filterKeys.month, page, pageSize]);
 
   const handleDateRangeChange = (e, monthStr) => {
     setFilterKeys({
       ...filterKeys,
       month: monthStr,
     });
-    getReportData(monthStr);
+    setPage(1); // restart from first page for a new month
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages || newPage === page) return;
+    setPage(newPage);
+  };
+
+  const handlePageSizeChange = (e) => {
+    setPageSize(Number(e.target.value));
+    setPage(1);
   };
 
   const employeeDate = Array.from(
     new Set(
       team_daily_attendance_report.flatMap((employee) =>
-        employee.workday_data.map((report) => report.date)
-      )
-    )
+        employee.workday_data.map((report) => report.date),
+      ),
+    ),
   );
   const monthYear = employeeDate.map((dateString) => {
     const date = new Date(dateString);
@@ -124,6 +173,16 @@ const AttendanceReport = () => {
     const year = date.getFullYear();
     return `${month} ${year}`;
   });
+
+  function formatDate(dateString) {
+    const dateObj = new Date(dateString);
+    const year = dateObj.getFullYear().toString().substr(2);
+    const month = new Intl.DateTimeFormat("en", { month: "short" }).format(
+      dateObj,
+    );
+    const day = dateObj.getDate().toString().padStart(2, "0");
+    return `${day} ${month} ${year}`;
+  }
 
   const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
     const exportindividualExcelFile = () => {
@@ -137,16 +196,15 @@ const AttendanceReport = () => {
           },
         ],
       });
-      // const sheet = workbook.addWorksheet("My Sheet", {});
       sheet.properties.defaultRowHeight = 20;
       sheet.autoFilter = {
         from: {
-          row: 1, // Assuming your headers start from row 1
-          column: 1, // Assuming "Employee Name" is the first column
+          row: 1,
+          column: 1,
         },
         to: {
-          row: 2, // Assuming all rows are populated
-          column: 2, // Assuming "Email" is the second column
+          row: 2,
+          column: 2,
         },
       };
 
@@ -162,24 +220,22 @@ const AttendanceReport = () => {
         "OT",
         "Paid Hr",
         "Edited Hours",
-        // "Notes",
         "In Location",
         "Out Location",
         "In",
         "Out",
         "Total",
       ];
-      // Assuming `team_daily_attendance_report` is available
       const employeeDatesXls = Array.from(
         new Set(
           team_daily_attendance_report.flatMap((employee) =>
-            employee.workday_data.map((report) => report.date)
-          )
-        )
+            employee.workday_data.map((report) => report.date),
+          ),
+        ),
       );
 
       const foundEmployee = employee_data.find(
-        (emp) => rowData.employee_id === emp.id
+        (emp) => rowData.employee_id === emp.id,
       );
       const emp_name = foundEmployee ? foundEmployee.first_name : "";
       const employee_id = foundEmployee ? foundEmployee.emp_id : "";
@@ -187,41 +243,39 @@ const AttendanceReport = () => {
       // Add headers row
       const headerRow = sheet.addRow(["Date", ...headers]);
       headerRow.eachCell((cell) => {
-        cell.font = { bold: true }; // Make the header cells bold
+        cell.font = { bold: true };
       });
-      const entry_status_column = [];
+
       // Add data rows
-      employeeDatesXls.forEach((date, index) => {
+      employeeDatesXls.forEach((date) => {
         const row = [];
         const attendance_data = rowData.workday_data.find(
-          (day) => day.date === date
+          (day) => day.date === date,
         );
         if (attendance_data) {
           const attend_data =
             attendance_data.is_present === true
               ? "P"
               : attendance_data.is_holiday === true
-              ? "H"
-              : attendance_data.is_day_on === false
-              ? "WO"
-              : attendance_data.is_leave_approved === true
-              ? "L"
-              : attendance_data.leave_taken_without_approval === true
-              ? "A"
-              : "A";
+                ? "H"
+                : attendance_data.is_day_on === false
+                  ? "WO"
+                  : attendance_data.is_leave_approved === true
+                    ? "L"
+                    : "A";
 
           const total_hour = ConvertSecondsToTime(
-            attendance_data.final_paid_hr_in_seconds
+            attendance_data.final_paid_hr_in_seconds,
           );
           const workScheduleHr = ConvertSecondsToTime(
-            attendance_data.work_schedule_hr_without_break_in_seconds
+            attendance_data.work_schedule_hr_without_break_in_seconds,
           );
           const checkedInHr = ConvertSecondsToTime(
-            attendance_data.checked_in_hr_in_seconds
+            attendance_data.checked_in_hr_in_seconds,
           );
           const status = attendance_data.hr_status;
 
-          function getStatusText(hr_status) {
+          const getStatusText = (hr_status) => {
             switch (hr_status) {
               case 1:
                 return "Auto Approval";
@@ -234,7 +288,7 @@ const AttendanceReport = () => {
               default:
                 return "Unknown";
             }
-          }
+          };
 
           const statusText = getStatusText(status);
           let entry_status;
@@ -249,40 +303,29 @@ const AttendanceReport = () => {
             attendance_data.leave_taken_without_approval === true
           ) {
             entry_status = "-";
+          } else if (activity.early_in === true) {
+            entry_status = earlyin_display.text;
+          } else if (activity.ontime === true) {
+            entry_status = on_time_entry_display.text;
+          } else if (activity.late === true) {
+            entry_status = late_entry_display.text;
+          } else if (activity.early_out === true) {
+            entry_status = earlyout_display.text;
           } else {
-            entry_status =
-              activity.early_in === true
-                ? earlyin_display.text
-                : activity.ontime === true
-                ? on_time_entry_display.text
-                : activity.late === true
-                ? late_entry_display.text
-                : activity.early_out === true
-                ? earlyout_display.text
-                : on_time_entry_display.text;
+            entry_status = on_time_entry_display.text;
           }
 
           const otHours = ConvertSecondsToTime(
-            attendance_data.final_ot_hr_in_seconds
+            attendance_data.final_ot_hr_in_seconds,
           );
           const editedHours = ConvertSecondsToTime(
             attendance_data.final_paid_hr_in_seconds -
-              attendance_data.checked_in_hr_in_seconds
+              attendance_data.checked_in_hr_in_seconds,
           );
 
-          // const notes = attendance_data.notes;
-
-          // const message = notes && notes.length > 0
-          //     ? notes.length > 1
-          //         ? `${notes[0].message} (${notes.length - 1})`
-          //         : notes[0].message
-          //     : "-";
-
           const entryLogs = attendance_data.entry_log.map((entry) => {
-            const entryTime = entry.entry_time;
-            const location = entry.location;
             return {
-              time: format(ParseTime(entryTime), "h:mm a"),
+              time: format(ParseTime(entry.entry_time), "h:mm a"),
               location: entry.location,
               type: entry.entry_type,
             };
@@ -294,67 +337,47 @@ const AttendanceReport = () => {
           const inLength = entryLogIn.length;
           const outLength = entryLogOut.length;
           const maxIterations = Math.max(inLength, outLength);
-          function applyFontColor(
+
+          const applyFontColor = (
             cell,
             cellNumber,
-            attend_data,
-            statusText,
-            entry_status
-          ) {
-            let fontColor = "000000"; // Default font color (#1a1d24)
+            attend_data_v,
+            statusText_v,
+            entry_status_v,
+          ) => {
+            let fontColor = "000000";
             let isBold = false;
-            // Check cell number and corresponding data to determine font color
             switch (cellNumber) {
-              // Attend Data
               case 5:
-                fontColor =
-                  attend_data === "P"
-                    ? "00FF00" // Green for Present
-                    : attend_data === "A"
-                    ? "FF0000" // Red for Absent
-                    : attend_data === "H"
-                    ? "000000" // Blue for Holiday
-                    : attend_data === "L"
-                    ? "FFA500" // Orange for Leave
-                    : attend_data === "WO"
-                    ? "888888" // Blue for WeekOff
-                    : "000000"; // Default for other cases
+                if (attend_data_v === "P") fontColor = "00FF00";
+                else if (attend_data_v === "A") fontColor = "FF0000";
+                else if (attend_data_v === "L") fontColor = "FFA500";
+                else if (attend_data_v === "WO") fontColor = "888888";
+                else fontColor = "000000";
                 isBold = true;
                 break;
-              // Status Text
               case 6:
-                fontColor =
-                  statusText === "Auto Approval"
-                    ? "87CEEB" // Sky blue for Auto Approval
-                    : statusText === "Approval"
-                    ? "00FF00" // Green for Approval
-                    : statusText === "Pending"
-                    ? "FFA500" // Orange for Pending
-                    : statusText === "Reject"
-                    ? "FF0000" // Red for Reject
-                    : "000000"; // Default for other cases
+                if (statusText_v === "Auto Approval") fontColor = "87CEEB";
+                else if (statusText_v === "Approval") fontColor = "00FF00";
+                else if (statusText_v === "Pending") fontColor = "FFA500";
+                else if (statusText_v === "Reject") fontColor = "FF0000";
+                else fontColor = "000000";
                 isBold = true;
                 break;
-              // Entry Status
               case 7:
-                fontColor =
-                  entry_status === "Early In"
-                    ? "00FF00" // Green for Early In
-                    : entry_status === "OnTime"
-                    ? "00FF00" // Green for On Time
-                    : entry_status === "Late"
-                    ? "FFA500" // Orange for Late
-                    : entry_status === "Early Out"
-                    ? "FFA500" // Orange for Early Out
-                    : "000000"; // Default for other cases
+                if (entry_status_v === "Early In") fontColor = "00FF00";
+                else if (entry_status_v === "OnTime") fontColor = "00FF00";
+                else if (entry_status_v === "Late") fontColor = "FFA500";
+                else if (entry_status_v === "Early Out") fontColor = "FFA500";
+                else fontColor = "000000";
                 isBold = true;
                 break;
-              // Add more cases for other cells if needed
+              default:
+                break;
             }
-
-            // Apply font color to the cell
             cell.font = { color: { argb: fontColor }, bold: isBold };
-          }
+          };
+
           row.push(formatDate(date));
           row.push(emp_name);
           row.push(foundEmployee ? foundEmployee.email : "");
@@ -367,86 +390,80 @@ const AttendanceReport = () => {
           row.push(otHours || "-");
           row.push(total_hour);
           row.push(editedHours || "-");
-          // row.push(message || "-");
-          // Flag to track if in/out data has been added for the day
+
           let inOutAdded = false;
 
-          // If either entryLogIn or entryLogOut is empty, push an empty row
+          // If either entryLogIn or entryLogOut is empty, push a single row
           if (inLength === 0 || outLength === 0) {
             row.push(
               inLength > 0
                 ? entryLogIn.map((entry) => entry.location).join(", ")
-                : "-"
-            ); // In Location
+                : "-",
+            );
             row.push(
               outLength > 0
                 ? entryLogOut.map((entry) => entry.location).join(", ")
-                : "-"
-            ); // Out Location
-            row.push(inLength > 0 ? entryLogIn[0].time : "-"); // In Time
-            row.push(outLength > 0 ? entryLogOut[0].time : "-"); // Out Time
-            row.push("-"); // Total Hours
+                : "-",
+            );
+            row.push(inLength > 0 ? entryLogIn[0].time : "-");
+            row.push(outLength > 0 ? entryLogOut[0].time : "-");
+            row.push("-");
             sheet.addRow(row).eachCell((cell, cellNumber) => {
-              // Assuming the text content for the cell is in the row array
               applyFontColor(
                 cell,
                 cellNumber,
                 attend_data,
                 statusText,
-                entry_status
+                entry_status,
               );
             });
           } else {
             for (let i = 0; i < maxIterations; i++) {
-              const newRow = [...row]; // Copy the existing row
+              const newRow = [...row];
               const inOut = [];
-              newRow.push(i < inLength ? entryLogIn[i].location : "-"); // In Location
-              newRow.push(i < outLength ? entryLogOut[i].location : "-"); // Out Location
-              newRow.push(i < inLength ? entryLogIn[i].time : "-"); // In Time
-              newRow.push(i < outLength ? entryLogOut[i].time : "-"); // Out Time
-              inOut.push(i < inLength ? entryLogIn[i].location : "-"); // In Location
-              inOut.push(i < outLength ? entryLogOut[i].location : "-"); // Out Location
-              inOut.push(i < inLength ? entryLogIn[i].time : "-"); // In Time
-              inOut.push(i < outLength ? entryLogOut[i].time : "-"); // Out Time
+              newRow.push(i < inLength ? entryLogIn[i].location : "-");
+              newRow.push(i < outLength ? entryLogOut[i].location : "-");
+              newRow.push(i < inLength ? entryLogIn[i].time : "-");
+              newRow.push(i < outLength ? entryLogOut[i].time : "-");
+              inOut.push(i < inLength ? entryLogIn[i].location : "-");
+              inOut.push(i < outLength ? entryLogOut[i].location : "-");
+              inOut.push(i < inLength ? entryLogIn[i].time : "-");
+              inOut.push(i < outLength ? entryLogOut[i].time : "-");
               if (entryLogIn[i] && entryLogOut[i]) {
-                let logInTime = new Date("2000-01-01 " + entryLogIn[i].time);
-                let logOutTime = new Date("2000-01-01 " + entryLogOut[i].time);
-                let timeDifferenceMs = logOutTime - logInTime;
-                // If the difference is negative, it means it spans over multiple days, adjust it to be positive
-                if (timeDifferenceMs < 0) {
-                  timeDifferenceMs += 24 * 60 * 60 * 1000; // Add 24 hours
-                }
-                // Convert milliseconds to hours and minutes
-                let hours = Math.floor(timeDifferenceMs / (1000 * 60 * 60));
-                let minutes = Math.floor(
-                  (timeDifferenceMs % (1000 * 60 * 60)) / (1000 * 60)
+                const logInTime = new Date("2000-01-01 " + entryLogIn[i].time);
+                const logOutTime = new Date(
+                  "2000-01-01 " + entryLogOut[i].time,
                 );
-                // Format the result
-                let differenceFormatted =
+                let timeDifferenceMs = logOutTime - logInTime;
+                if (timeDifferenceMs < 0) {
+                  timeDifferenceMs += 24 * 60 * 60 * 1000;
+                }
+                const hours = Math.floor(timeDifferenceMs / (1000 * 60 * 60));
+                const minutes = Math.floor(
+                  (timeDifferenceMs % (1000 * 60 * 60)) / (1000 * 60),
+                );
+                const differenceFormatted =
                   hours.toString().padStart(2, "0") +
                   ":" +
                   minutes.toString().padStart(2, "0") +
                   " hr";
-                newRow.push(differenceFormatted); // Push the formatted difference
+                newRow.push(differenceFormatted);
                 inOut.push(differenceFormatted);
               } else {
-                newRow.push("-"); // Push '-' if either logInTime or logOutTime is not available
+                newRow.push("-");
               }
 
-              // Add the new row based on the condition
               if (!inOutAdded) {
                 sheet.addRow(newRow).eachCell((cell, cellNumber) => {
-                  // Assuming the text content for the cell is in the row array
                   applyFontColor(
                     cell,
                     cellNumber,
                     attend_data,
                     statusText,
-                    entry_status
+                    entry_status,
                   );
                 });
               } else {
-                // Push empty values for other rows
                 const emptyRow = [
                   formatDate(date),
                   "-",
@@ -470,18 +487,16 @@ const AttendanceReport = () => {
                   inOut[4],
                 ];
                 sheet.addRow(inoutRow).eachCell((cell, cellNumber) => {
-                  // Assuming the text content for the cell is in the row array
                   applyFontColor(
                     cell,
                     cellNumber,
                     attend_data,
                     statusText,
-                    entry_status
+                    entry_status,
                   );
                 });
-                // sheet.addRow(inOut);
               }
-              inOutAdded = true; // Set flag to true after adding in/out data for the day
+              inOutAdded = true;
             }
           }
         }
@@ -493,19 +508,11 @@ const AttendanceReport = () => {
       for (let rowIndex = 1; rowIndex <= maxRows; rowIndex++) {
         for (let colIndex = 1; colIndex <= maxColumns; colIndex++) {
           const cell = sheet.getCell(rowIndex, colIndex);
-          if (colIndex % 2 === 0) {
-            cell.fill = {
-              type: "pattern",
-              pattern: "solid",
-              fgColor: { argb: "FFFFFF" }, // Set the background color for even columns
-            };
-          } else {
-            cell.fill = {
-              type: "pattern",
-              pattern: "solid",
-              fgColor: { argb: "e6f7ff" }, // Set the background color for odd columns
-            };
-          }
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: colIndex % 2 === 0 ? "FFFFFF" : "e6f7ff" },
+          };
         }
       }
       // Set column widths and cell borders
@@ -514,7 +521,7 @@ const AttendanceReport = () => {
         column.eachCell({ includeEmpty: true }, (cell) => {
           maxLength = Math.max(
             maxLength,
-            cell.value ? cell.value.toString().length : 0
+            cell.value ? cell.value.toString().length : 0,
           );
           cell.border = {
             top: { style: "thin" },
@@ -527,7 +534,7 @@ const AttendanceReport = () => {
         column.width = maxLength < 10 ? 10 : maxLength + 2;
       });
 
-      const monthYear = employeeDatesXls.map((dateString) => {
+      const monthYearXls = employeeDatesXls.map((dateString) => {
         const date = new Date(dateString);
         const month = date.toLocaleString("default", { month: "short" });
         const year = date.getFullYear();
@@ -539,7 +546,7 @@ const AttendanceReport = () => {
         });
         const url = window.URL.createObjectURL(blob);
         const anchor = document.createElement("a");
-        const filename = `${emp_name}_${employee_id}_Attendance_${monthYear[0]}.xlsx`;
+        const filename = `${emp_name}_${employee_id}_Attendance_${monthYearXls[0]}.xlsx`;
         anchor.href = url;
         anchor.download = filename;
         anchor.click();
@@ -563,7 +570,7 @@ const AttendanceReport = () => {
             icon={
               <span className="text-primary d-inline-block edit-item-btn fs-16">
                 <i
-                  class="ri-download-2-line"
+                  className="ri-download-2-line"
                   onClick={exportindividualExcelFile}
                 ></i>
               </span>
@@ -573,14 +580,6 @@ const AttendanceReport = () => {
       </Cell>
     );
   };
-
-  const employeeDatesXls = Array.from(
-    new Set(
-      team_daily_attendance_report.flatMap((employee) =>
-        employee.workday_data.map((report) => report.date)
-      )
-    )
-  );
 
   const exportExcelFile = () => {
     const workbook = new ExcelJs.Workbook();
@@ -596,28 +595,27 @@ const AttendanceReport = () => {
     sheet.properties.defaultRowHeight = 20;
     sheet.autoFilter = {
       from: {
-        row: 1, // Assuming your headers start from row 1
-        column: 1, // Assuming "Employee Name" is the first column
+        row: 1,
+        column: 1,
       },
       to: {
-        row: 2, // Assuming all rows are populated
-        column: 2, // Assuming "Email" is the second column
+        row: 2,
+        column: 2,
       },
     };
 
     const headers = ["Employee Name", "Email"];
     const subheaders = ["", ""];
 
-    // Assuming `team_daily_attendance_report` is available
     const employeeDatesXls = Array.from(
       new Set(
         team_daily_attendance_report.flatMap((employee) =>
-          employee.workday_data.map((report) => report.date)
-        )
-      )
+          employee.workday_data.map((report) => report.date),
+        ),
+      ),
     );
 
-    employeeDatesXls.forEach((date, index) => {
+    employeeDatesXls.forEach((date) => {
       headers.push("", "", formatDate(date), "");
       subheaders.push("#", "Check-in", "Check-out", "Duration", "Notes");
     });
@@ -655,7 +653,7 @@ const AttendanceReport = () => {
             bottom: { style: "thin" },
             right: { style: "thin" },
           };
-          cell.alignment = { horizontal: "center" }; // Center align the content
+          cell.alignment = { horizontal: "center" };
         });
       });
     }
@@ -663,42 +661,43 @@ const AttendanceReport = () => {
     team_daily_attendance_report.forEach((rowData, rowIndex, colIndex) => {
       const row = [];
       const foundEmployee = employee_data.find(
-        (emp) => rowData.employee_id === emp.id
+        (emp) => rowData.employee_id === emp.id,
       );
       const emp_name = foundEmployee ? foundEmployee.first_name : "";
       row.push(emp_name);
       row.push(foundEmployee ? foundEmployee.email : "");
 
-      employeeDatesXls.forEach((date, colIndex) => {
+      employeeDatesXls.forEach((date) => {
         const attendance_data = rowData.workday_data.find(
-          (day) => day.date === date
+          (day) => day.date === date,
         );
-        let attend_data =
-          attendance_data && attendance_data.is_present === true
-            ? "P"
-            : attendance_data && attendance_data.is_holiday === true
-            ? "H"
-            : attendance_data && attendance_data.is_day_on === false
-            ? "WO"
-            : attendance_data && attendance_data.is_leave_approved === true
-            ? "L"
-            : attendance_data &&
-              attendance_data.leave_taken_without_approval === true
-            ? "A"
-            : "A";
+        let attend_data = "A";
+        if (attendance_data && attendance_data.is_present === true) {
+          attend_data = "P";
+        } else if (attendance_data && attendance_data.is_holiday === true) {
+          attend_data = "H";
+        } else if (attendance_data && attendance_data.is_day_on === false) {
+          attend_data = "WO";
+        } else if (
+          attendance_data &&
+          attendance_data.is_leave_approved === true
+        ) {
+          attend_data = "L";
+        }
         row.push(attend_data);
-        const notes = attendance_data.notes;
-
-        const message =
-          notes && notes.length > 0
-            ? notes.length > 1
-              ? `${notes[0].message} (${notes.length - 1})`
-              : notes[0].message
-            : "-";
 
         if (attendance_data) {
+          const notes = attendance_data.notes;
+          let message = "-";
+          if (notes && notes.length > 0) {
+            message =
+              notes.length > 1
+                ? `${notes[0].message} (${notes.length - 1})`
+                : notes[0].message;
+          }
+
           const checkInLog = attendance_data.entry_log.find(
-            (log) => parseInt(log.entry_type) === 1
+            (log) => parseInt(log.entry_type) === 1,
           );
           const checkOutLog = attendance_data.entry_log
             .slice()
@@ -711,10 +710,10 @@ const AttendanceReport = () => {
             ? format(ParseTime(checkOutLog.entry_time), "h:mm a")
             : "";
           const total_hour = ConvertSecondsToTime(
-            attendance_data.final_paid_hr_in_seconds
+            attendance_data.final_paid_hr_in_seconds,
           );
           const entryLogLength = attendance_data.entry_log.length;
-          let duration =
+          const duration =
             entryLogLength === 0
               ? total_hour
               : `${total_hour} (${entryLogLength})`;
@@ -723,7 +722,7 @@ const AttendanceReport = () => {
           row.push(duration);
           row.push(message);
         } else {
-          row.push("", "", "", "", "");
+          row.push("", "", "", "");
         }
       });
 
@@ -732,7 +731,7 @@ const AttendanceReport = () => {
       const dataRow = sheet.addRow(row);
 
       dataRow.eachCell((cell, cellNumber) => {
-        let value = cell.value;
+        const value = cell.value;
         let fontColor = "000000";
         let isBold = false;
 
@@ -755,198 +754,33 @@ const AttendanceReport = () => {
         if (cellNumber > 1) {
           cell.alignment = { horizontal: "center" };
         }
+
+        // Background bands: 8-12 uses colIndex, then 5-column blocks
+        // from 13 to 152 alternating white / light blue.
         if (cellNumber >= 8 && cellNumber <= 12) {
-          const fillColor = colIndex % 2 === 0 ? "FFFFFF" : "e6f7ff";
           cell.fill = {
             type: "pattern",
             pattern: "solid",
-            fgColor: { argb: fillColor },
+            fgColor: { argb: colIndex % 2 === 0 ? "FFFFFF" : "e6f7ff" },
           };
-        } else if (cellNumber >= 13 && cellNumber <= 17) {
+        } else if (cellNumber >= 13 && cellNumber <= 152) {
+          const block = Math.floor((cellNumber - 13) / 5);
           cell.fill = {
             type: "pattern",
             pattern: "solid",
-            fgColor: { argb: "FFFFFF" },
-          };
-        } else if (cellNumber >= 18 && cellNumber <= 22) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "e6f7ff" },
-          };
-        } else if (cellNumber >= 23 && cellNumber <= 27) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFFF" },
-          };
-        } else if (cellNumber >= 28 && cellNumber <= 32) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "e6f7ff" },
-          };
-        } else if (cellNumber >= 33 && cellNumber <= 37) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFFF" },
-          };
-        } else if (cellNumber >= 38 && cellNumber <= 42) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "e6f7ff" },
-          };
-        } else if (cellNumber >= 43 && cellNumber <= 47) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFFF" },
-          };
-        } else if (cellNumber >= 48 && cellNumber <= 52) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "e6f7ff" },
-          };
-        } else if (cellNumber >= 53 && cellNumber <= 57) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFFF" },
-          };
-        } else if (cellNumber >= 58 && cellNumber <= 62) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "e6f7ff" },
-          };
-        } else if (cellNumber >= 63 && cellNumber <= 67) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFFF" },
-          };
-        } else if (cellNumber >= 68 && cellNumber <= 72) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "e6f7ff" },
-          };
-        } else if (cellNumber >= 73 && cellNumber <= 77) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFFF" },
-          };
-        } else if (cellNumber >= 78 && cellNumber <= 82) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "e6f7ff" },
-          };
-        } else if (cellNumber >= 83 && cellNumber <= 87) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFFF" },
-          };
-        } else if (cellNumber >= 88 && cellNumber <= 92) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "e6f7ff" },
-          };
-        } else if (cellNumber >= 93 && cellNumber <= 97) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFFF" },
-          };
-        } else if (cellNumber >= 98 && cellNumber <= 102) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "e6f7ff" },
-          };
-        } else if (cellNumber >= 103 && cellNumber <= 107) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFFF" },
-          };
-        } else if (cellNumber >= 108 && cellNumber <= 112) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "e6f7ff" },
-          };
-        } else if (cellNumber >= 113 && cellNumber <= 117) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFFF" },
-          };
-        } else if (cellNumber >= 118 && cellNumber <= 122) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "e6f7ff" },
-          };
-        } else if (cellNumber >= 123 && cellNumber <= 127) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFFF" },
-          };
-        } else if (cellNumber >= 128 && cellNumber <= 132) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "e6f7ff" },
-          };
-        } else if (cellNumber >= 133 && cellNumber <= 137) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFFF" },
-          };
-        } else if (cellNumber >= 138 && cellNumber <= 142) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "e6f7ff" },
-          };
-        } else if (cellNumber >= 143 && cellNumber <= 147) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFFFF" },
-          };
-        } else if (cellNumber >= 148 && cellNumber <= 152) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "e6f7ff" },
+            fgColor: { argb: block % 2 === 0 ? "FFFFFF" : "e6f7ff" },
           };
         }
       });
     });
 
-    sheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    sheet.eachRow({ includeEmpty: true }, (row) => {
       let maxHeight = 0;
-      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      row.eachCell({ includeEmpty: true }, (cell) => {
         const lines = cell.value ? cell.value.toString().split("\n").length : 1;
         maxHeight = Math.max(maxHeight, lines);
       });
-      row.height = maxHeight * 15; // Adjust this factor according to your font size and row height settings
-    });
-
-    sheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-        cell.alignment = { horizontal: "center" };
-      });
+      row.height = maxHeight * 15;
     });
 
     sheet.columns.forEach((column) => {
@@ -954,13 +788,13 @@ const AttendanceReport = () => {
       column.eachCell({ includeEmpty: true }, (cell) => {
         maxLength = Math.max(
           maxLength,
-          cell.value ? cell.value.toString().length : 0
+          cell.value ? cell.value.toString().length : 0,
         );
       });
       column.width = maxLength < 10 ? 10 : maxLength + 2;
     });
 
-    // Apply borders to all cells
+    // Borders + centered alignment on all cells
     sheet.eachRow((row) => {
       row.eachCell((cell) => {
         cell.border = {
@@ -969,11 +803,10 @@ const AttendanceReport = () => {
           bottom: { style: "thin" },
           right: { style: "thin" },
         };
-        cell.alignment = { horizontal: "center" }; // Center align the content
+        cell.alignment = { horizontal: "center" };
       });
     });
-    // const additionalSheet = workbook.addWorksheet("Additional Data");
-    // additionalSheet.addRow(["Additional", "Data", "Goes", "Here"]);
+
     workbook.xlsx.writeBuffer().then((data) => {
       const blob = new Blob([data], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -981,94 +814,69 @@ const AttendanceReport = () => {
       const url = window.URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      const employeeDatesXls = Array.from(
-        new Set(
-          team_daily_attendance_report.flatMap((employee) =>
-            employee.workday_data.map((report) => report.date)
-          )
-        )
-      );
 
-      const monthYear = employeeDatesXls.map((dateString) => {
+      const monthYearList = employeeDatesXls.map((dateString) => {
         const date = new Date(dateString);
         const month = date.toLocaleString("default", { month: "short" });
         const year = date.getFullYear();
         return `${month}_${year}`;
       });
 
-      const filename = `Attendance_${monthYear[0]}.xlsx`; // Assuming you want to use the first month-year combination in the array
-
-      anchor.download = filename;
+      anchor.download = `Attendance_${monthYearList[0]}.xlsx`;
       anchor.click();
       window.URL.revokeObjectURL(url);
     });
   };
 
-  function formatDate(dateString) {
-    const dateObj = new Date(dateString);
-    const year = dateObj.getFullYear().toString().substr(2);
-    const month = new Intl.DateTimeFormat("en", { month: "short" }).format(
-      dateObj
-    );
-    const day = dateObj.getDate().toString().padStart(2, "0");
-    return `${day} ${month} ${year}`;
-  }
   const [timeline_modal, settimeline_modal] = useState(false);
   const [timelineList, setTimelineList] = useState([]);
   const [timelineDate, setTimeLineDate] = useState("");
-  function open_timeline() {
+  const open_timeline = () => {
     settimeline_modal(!timeline_modal);
-  }
+  };
 
   const FixedColumns = ({ rowData, index, dataKey, ...props }) => {
-    let foundEmployee;
-    let emp_name = (foundEmployee = employee_data.find(
-      (emp) => rowData.employee_id === emp.id
-    ));
+    const emp_name = employee_data.find(
+      (emp) => rowData.employee_id === emp.id,
+    );
 
-    let html_tag = emp_name.profile_url ? (
+    if (!emp_name) {
+      return <Cell {...props} dataKey="id" />;
+    }
+
+    let avatar;
+    if (emp_name.profile_url) {
+      avatar = (
+        <img
+          src={emp_name.profile_url}
+          alt=""
+          className="avatar-xs rounded-circle"
+          style={{ objectFit: "cover" }}
+        />
+      );
+    } else {
+      avatar = (
+        <div
+          className="avatar-xs rounded-circle"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            background: "#0ab39c",
+          }}
+          data-bs-toggle="tooltip"
+          title={emp_name.first_name}
+        >
+          <span className="first_letter" style={{ color: "white" }}>
+            {emp_name.first_name ? emp_name.first_name.charAt(0) : ""}
+          </span>
+        </div>
+      );
+    }
+
+    const html_tag = (
       <div className="d-flex gap-2 align-items-center">
-        <div className="flex-shrink-0">
-          <img
-            src={emp_name.profile_url}
-            alt=""
-            className="avatar-xs rounded-circle"
-            style={{ objectFit: "cover" }}
-          />
-        </div>
-        <div className="flex-grow-1">
-          <div>
-            <Link to="#" className="link-body-emphasis mb-0">
-              {" "}
-              <h5 className="fs-14 mb-1" style={{ textAlign: "left" }}>
-                {emp_name.first_name}
-              </h5>
-            </Link>
-          </div>
-          <div className="fs-14 mb-1" style={{ textAlign: "left" }}>
-            {emp_name.email}
-          </div>
-        </div>
-      </div>
-    ) : (
-      <div className="d-flex gap-2 align-items-center">
-        <div className="flex-shrink-0">
-          <div
-            className="avatar-xs rounded-circle"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              background: "#0ab39c",
-            }}
-            data-bs-toggle="tooltip"
-            title={emp_name.first_name}
-          >
-            <span className="first_letter" style={{ color: "white" }}>
-              {emp_name?.first_name?.charAt(0) || ""}
-            </span>
-          </div>
-        </div>
+        <div className="flex-shrink-0">{avatar}</div>
         <div className="flex-grow-1">
           <div>
             <Link to="#" className="link-body-emphasis mb-0">
@@ -1084,22 +892,23 @@ const AttendanceReport = () => {
         </div>
       </div>
     );
+
+    let rowBg;
+    if (index % 2 === 0) {
+      rowBg = layoutModeType === "dark" ? "#1a1a1a" : "white";
+    } else {
+      rowBg = layoutModeType === "dark" ? "#242933" : "#e6f7ff";
+    }
+
     return (
       <Cell
         {...props}
         dataKey="id"
         style={{
-          backgroundColor:
-            index % 2 === 0
-              ? layoutModeType === "dark"
-                ? "#1a1a1a"
-                : "white"
-              : layoutModeType === "dark"
-              ? "#242933"
-              : "#e6f7ff",
-              alignItems: "flex-start",
-              justifyContent: "flex-start",
-              paddingRight: "10px",
+          backgroundColor: rowBg,
+          alignItems: "flex-start",
+          justifyContent: "flex-start",
+          paddingRight: "10px",
         }}
       >
         {html_tag}
@@ -1113,30 +922,25 @@ const AttendanceReport = () => {
     const employeeDates = Array.from(
       new Set(
         team_daily_attendance_report.flatMap((employee) =>
-          employee.workday_data.map((report) => report.date)
-        )
-      )
+          employee.workday_data.map((report) => report.date),
+        ),
+      ),
     );
 
     const AttendanceData = ({ rowData, date, ...props }) => {
       const attendance_data = rowData.workday_data.find(
-        (day) => day.date === date
+        (day) => day.date === date,
       );
 
-      let attend_data =
-        attendance_data.is_present === true
-          ? "P"
-          : attendance_data.is_leave_approved === true
-          ? "L"
-          : attendance_data.is_holiday === true
-          ? "H"
-          : attendance_data.is_day_on === false
-          ? "WO"
-          : attendance_data.leave_taken_without_approval === true
-          ? "A"
-          : "A";
+      let attend_data = "A";
+      if (attendance_data) {
+        if (attendance_data.is_present === true) attend_data = "P";
+        else if (attendance_data.is_leave_approved === true) attend_data = "L";
+        else if (attendance_data.is_holiday === true) attend_data = "H";
+        else if (attendance_data.is_day_on === false) attend_data = "WO";
+      }
       return (
-        <Cell {...props} dataKey={`is_present${date}`}>
+        <Cell {...props} dataKey={"is_present" + date}>
           {attend_data}
         </Cell>
       );
@@ -1144,15 +948,15 @@ const AttendanceReport = () => {
 
     const DurationData = ({ rowData, date, ...props }) => {
       const durationData = rowData.workday_data.find(
-        (day) => day.date === date
+        (day) => day.date === date,
       );
 
-      const total_hour = ConvertSecondsToTime(
-        durationData.final_paid_hr_in_seconds
-      );
+      const total_hour = durationData
+        ? ConvertSecondsToTime(durationData.final_paid_hr_in_seconds)
+        : "-";
 
       return (
-        <Cell {...props} dataKey={`is_present${date}`}>
+        <Cell {...props} dataKey={"duration" + date}>
           {total_hour}
         </Cell>
       );
@@ -1160,64 +964,68 @@ const AttendanceReport = () => {
 
     const InOut = ({ rowData, date, ...props }) => {
       const entryLogForDate = rowData.workday_data.find(
-        (day) => day.date === date
+        (day) => day.date === date,
       );
       const entryLogLength = entryLogForDate
         ? entryLogForDate.entry_log.length
-        : "-";
+        : 0;
+
+      let content;
+      if (entryLogLength > 0) {
+        content = (
+          <div>
+            {entryLogLength}{" "}
+            <Link
+              className="link-opacity-75 ms-1"
+              to="#"
+              style={{ color: "#0AB39C" }}
+              onClick={() => {
+                setTimelineList(entryLogForDate.entry_log);
+                setTimeLineDate(
+                  format(new Date(entryLogForDate.date), "dd MMM, yyyy"),
+                );
+                open_timeline();
+              }}
+            >
+              view
+            </Link>
+          </div>
+        );
+      } else {
+        content = <span>-</span>;
+      }
 
       return (
-        <Cell {...props} dataKey={`entry_log_${date}`}>
-          {!!entryLogLength && entryLogLength}
-          {!!entryLogLength && entryLogLength > 0 ? (
-            <div>
-              {" "}
-              <Link
-                className="link-opacity-75 ms-1"
-                href="#"
-                style={{ color: "#0AB39C" }}
-                onClick={() => {
-                  setTimelineList(entryLogForDate?.entry_log);
-                  setTimeLineDate(
-                    format(new Date(entryLogForDate?.date), "dd MMM, yyyy")
-                  );
-                  open_timeline();
-                }}
-              >
-                view
-              </Link>
-            </div>
-          ) : (
-            <span>-</span>
-          )}
+        <Cell {...props} dataKey={"entry_log_" + date}>
+          {content}
         </Cell>
       );
     };
 
     employeeDates.forEach((date, index) => {
       const isEven = index % 2 === 0;
-      const isDarkMode = layoutModeType === "dark";
-      const isLightMode = layoutModeType === "light";
+      const isDark = layoutModeType === "dark";
+      const isLight = layoutModeType === "light";
 
-      const bgColor = isEven
-        ? isLightMode
-          ? "white"
-          : "#1a1d24"
-        : isDarkMode
-        ? "#242933"
-        : "#e6f7ff";
+      let bgColor;
+      if (isEven) {
+        bgColor = isLight ? "white" : "#1a1d24";
+      } else {
+        bgColor = isDark ? "#242933" : "#e6f7ff";
+      }
 
       const dynamicColumn = (
         <ColumnGroup
-       
-          key={`date_${date}`}
+          key={"date_" + date}
           align="center"
           header={
             <span style={{ fontWeight: "bold" }}>{formatDate(date)}</span>
           }
         >
           <Column width={100} align="center">
-            <HeaderCell style={{ fontWeight: "bold",  backgroundColor: bgColor, }}>
+            <HeaderCell
+              style={{ fontWeight: "bold", backgroundColor: bgColor }}
+            >
               Attendance
             </HeaderCell>
             <AttendanceData date={date} style={{ backgroundColor: bgColor }} />
@@ -1262,7 +1070,7 @@ const AttendanceReport = () => {
       <Cell
         dataKey="total_working_days_count"
         fullText
-        style={{ background: headerBgColor, }}
+        style={{ background: headerBgColor }}
       />
     </Column>,
     <Column width={130} align="center" key="present-days">
@@ -1279,7 +1087,7 @@ const AttendanceReport = () => {
       <Cell
         dataKey="total_present_days_count"
         fullText
-        style={{ background: headerBgColor, }}
+        style={{ background: headerBgColor }}
       />
     </Column>,
     <Column width={80} fixed="right" key="down-column">
@@ -1292,14 +1100,134 @@ const AttendanceReport = () => {
       >
         Down
       </HeaderCell>
-      <EditableCell  style={{ backgroundColor: headerBgColor }}/>
+      <EditableCell style={{ backgroundColor: headerBgColor }} />
     </Column>,
   ];
 
   const allColumns = [...dynamicColumns(), ...additionalColumns];
 
-  const isDarkTheme = layoutModeType === "dark";
-  const headerColor = isDarkTheme ? "#242933" : "#e6f7ff";
+  const headerColor = isDarkMode ? "#242933" : "#e6f7ff";
+
+  // ─────────────────────────────────────────────
+  // Everything below is computed OUTSIDE the JSX so
+  // the return() has no nested ternaries / comparisons.
+  // ─────────────────────────────────────────────
+
+  // pagination values
+  const rowsOnPage = (team_daily_attendance_report || []).length;
+  const startItem = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endItem = Math.min((page - 1) * pageSize + rowsOnPage, totalCount);
+  const prevDisabled = page <= 1;
+  const nextDisabled = page >= totalPages;
+  const prevClass = prevDisabled ? "page-item disabled" : "page-item";
+  const nextClass = nextDisabled ? "page-item disabled" : "page-item";
+  const pageNumbers = getPageNumbers(page, totalPages);
+
+  const pageItems = [];
+  pageNumbers.forEach((p, idx) => {
+    if (p === "...") {
+      pageItems.push(
+        <li className="page-item disabled" key={"gap-" + idx}>
+          <span className="page-link">...</span>
+        </li>,
+      );
+      return;
+    }
+    const linkClass = p === page ? "page-link active" : "page-link";
+    pageItems.push(
+      <li className="page-item" key={"p-" + p}>
+        <button
+          type="button"
+          className={linkClass}
+          onClick={() => handlePageChange(p)}
+        >
+          {p}
+        </button>
+      </li>,
+    );
+  });
+
+  const pageSizeOptions = PAGE_SIZE_OPTIONS.map((size) => (
+    <option key={size} value={size}>
+      {"Show " + size}
+    </option>
+  ));
+
+  // timeline modal helpers
+  const renderLocation = (entry) => {
+    if (!entry) return null;
+    if (entry.location_id !== null) {
+      const mapUrl =
+        "https://maps.google.com/?q=" + entry.latitude + "," + entry.longitude;
+      return (
+        <a href={mapUrl} target="_blank" rel="noopener noreferrer">
+          <i className="mdi mdi-map-marker"></i> {entry.location || ""}
+        </a>
+      );
+    }
+    if (entry.location !== "") {
+      return (
+        <span>
+          <i className="mdi mdi-map-marker"></i> {entry.location}
+        </span>
+      );
+    }
+    return null;
+  };
+
+  const locationStyle = {
+    display: "inline-block",
+    maxWidth: "100px",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  };
+
+  const timelineRows = [];
+  timelineList.forEach((checkInData, idx) => {
+    const checkOutData = timelineList[idx + 1];
+    if (!checkInData || parseInt(checkInData.entry_type) !== 1) return;
+
+    const checkInTime = format(ParseTime(checkInData.entry_time), "h:mm a");
+    let checkOutTime = "";
+    let totalDifference = 0;
+    if (checkOutData) {
+      checkOutTime = format(ParseTime(checkOutData.entry_time), "h:mm a");
+      totalDifference = differenceInMinutes(
+        ParseTime(checkOutData.entry_time),
+        ParseTime(checkInData.entry_time),
+      );
+    }
+    const hh = String(Math.floor(totalDifference / 60)).padStart(2, "0");
+    const mm = String(totalDifference % 60).padStart(2, "0");
+
+    timelineRows.push(
+      <tr key={"tl-" + idx}>
+        <td>
+          <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
+            {checkInTime}
+          </p>
+          <small className="mb-0 text-muted" style={locationStyle}>
+            {renderLocation(checkInData)}
+          </small>
+        </td>
+        <td>
+          <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
+            {checkOutTime}
+          </p>
+          <small className="mb-0 text-muted" style={locationStyle}>
+            {renderLocation(checkOutData)}
+          </small>
+        </td>
+        <td>
+          <p className="text-muted mb-1" style={{ fontWeight: "bold" }}>
+            {hh + ":" + mm + " Hr"}
+          </p>
+        </td>
+      </tr>,
+    );
+  });
+
   return (
     <React.Fragment>
       <div className="page-content">
@@ -1310,7 +1238,7 @@ const AttendanceReport = () => {
                 <Col xl={2}>
                   <div className="form-icon right">
                     <DatePicker
-                      value={dayjs(filterKeys?.month, MonthFormat)}
+                      value={dayjs(filterKeys.month, MonthFormat)}
                       format={MonthFormat}
                       picker="month"
                       allowClear={false}
@@ -1324,7 +1252,7 @@ const AttendanceReport = () => {
                 <Button
                   type="button"
                   className="btn btn-info"
-                  onClick={toggleModal} // Open the modal when the button is clicked
+                  onClick={toggleModal}
                   style={{
                     padding: "0.25rem 0.5rem",
                     fontSize: "0.75rem",
@@ -1358,7 +1286,7 @@ const AttendanceReport = () => {
                       <Button
                         type="button"
                         className="btn w-sm btn-light"
-                        onClick={toggleModal} // Close the modal when the "Close" button is clicked
+                        onClick={toggleModal}
                       >
                         Close
                       </Button>
@@ -1367,7 +1295,7 @@ const AttendanceReport = () => {
                         className="btn w-sm btn-success"
                         onClick={() => {
                           exportExcelFile();
-                          toggleModal(); // Close the modal after clicking the "Download" button
+                          toggleModal();
                         }}
                       >
                         Download
@@ -1389,12 +1317,10 @@ const AttendanceReport = () => {
           rowHeight={60}
           autoHeight={true}
           loading={loading}
-          className="mb-5"
+          className="mb-3"
           affixHorizontalScrollbar
         >
-          
           <Column width={250} fixed="left" align="center">
-          
             <HeaderCell
               style={{
                 background: headerColor,
@@ -1409,11 +1335,59 @@ const AttendanceReport = () => {
           </Column>
           {allColumns}
         </Table>
+
+        <Container fluid>
+          <Row className="align-items-center g-3 text-center text-sm-start mb-5">
+            <div className="col-sm">
+              <div className="text-muted">
+                Showing
+                <span className="fw-semibold ms-1">{startItem}</span> to{" "}
+                <span className="fw-semibold">{endItem}</span> of{" "}
+                <span className="fw-semibold">{totalCount}</span>
+              </div>
+            </div>
+
+            <div className="col-sm-auto">
+              <ul className="pagination pagination-separated pagination-md justify-content-center justify-content-sm-start mb-0">
+                <li className={prevClass}>
+                  <button
+                    type="button"
+                    className="page-link"
+                    disabled={prevDisabled}
+                    onClick={() => handlePageChange(page - 1)}
+                  >
+                    Previous
+                  </button>
+                </li>
+                {pageItems}
+                <li className={nextClass}>
+                  <button
+                    type="button"
+                    className="page-link"
+                    disabled={nextDisabled}
+                    onClick={() => handlePageChange(page + 1)}
+                  >
+                    Next
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <div className="col-sm-auto">
+              <select
+                className="form-select custom-select-medium text-muted my-select"
+                value={pageSize}
+                onChange={handlePageSizeChange}
+              >
+                {pageSizeOptions}
+              </select>
+            </div>
+          </Row>
+        </Container>
+
         <Modal
           isOpen={timeline_modal}
-          toggle={() => {
-            open_timeline();
-          }}
+          toggle={open_timeline}
           centered
           className="custom-modal"
         >
@@ -1443,138 +1417,11 @@ const AttendanceReport = () => {
                       <th>Total Hours</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {timelineList.length > 0 &&
-                      timelineList.map((data, idx) => {
-                        let checkInData = timelineList[idx];
-                        let checkOutData = timelineList[idx + 1];
-                        if (
-                          checkInData &&
-                          parseInt(checkInData.entry_type) === 1
-                        ) {
-                          let checkInTime = format(
-                            ParseTime(checkInData.entry_time),
-                            "h:mm a"
-                          );
-                          let checkOutTime = checkOutData
-                            ? format(
-                                ParseTime(checkOutData.entry_time),
-                                "h:mm a"
-                              )
-                            : "";
-                          let totalDifference = checkOutData
-                            ? differenceInMinutes(
-                                ParseTime(checkOutData.entry_time),
-                                ParseTime(checkInData.entry_time)
-                              )
-                            : 0;
-                          let totalHours = Math.floor(totalDifference / 60);
-                          let totalMinutes = totalDifference % 60;
-
-                          let formattedTotalHours = totalHours
-                            .toString()
-                            .padStart(2, "0");
-                          let formattedTotalMinutes = totalMinutes
-                            .toString()
-                            .padStart(2, "0");
-
-                          return (
-                            <tr key={idx}>
-                              <td>
-                                <p
-                                  className="text-muted mb-1"
-                                  style={{ fontWeight: "bold" }}
-                                >
-                                  {checkInTime}
-                                </p>
-                                <small
-                                  className="mb-0 text-muted"
-                                  style={{
-                                    display: "inline-block",
-                                    maxWidth: "100px",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  {checkInData.location_id !== null ? (
-                                    <a
-                                      href={`https://maps.google.com/?q=${checkInData.latitude},${checkInData.longitude}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                    >
-                                      <i className="mdi mdi-map-marker"></i>{" "}
-                                      {checkInData.location || ""}
-                                    </a>
-                                  ) : checkInData &&
-                                    checkInData.location !== "" ? (
-                                    <span>
-                                      <i className="mdi mdi-map-marker"></i>{" "}
-                                      {checkInData.location}
-                                    </span>
-                                  ) : null}
-                                </small>
-                              </td>
-                              <td>
-                                <p
-                                  className="text-muted mb-1"
-                                  style={{ fontWeight: "bold" }}
-                                >
-                                  {checkOutTime}
-                                </p>
-                                <small
-                                  className="mb-0 text-muted"
-                                  style={{
-                                    display: "inline-block",
-                                    maxWidth: "100px",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  {checkOutData &&
-                                  checkOutData.location_id !== null ? (
-                                    <a
-                                      href={`https://maps.google.com/?q=${checkOutData.latitude},${checkOutData.longitude}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                    >
-                                      <i className="mdi mdi-map-marker"></i>{" "}
-                                      {checkOutData.location || ""}
-                                    </a>
-                                  ) : checkOutData &&
-                                    checkOutData.location !== "" ? (
-                                    <span>
-                                      <i className="mdi mdi-map-marker"></i>{" "}
-                                      {checkOutData.location}
-                                    </span>
-                                  ) : null}
-                                </small>
-                              </td>
-                              <td>
-                                <p
-                                  className="text-muted mb-1"
-                                  style={{ fontWeight: "bold" }}
-                                >
-                                  {formattedTotalHours}:{formattedTotalMinutes}{" "}
-                                  Hr
-                                </p>
-                              </td>
-                            </tr>
-                          );
-                        }
-                        return null; // Skip rendering if it's not a check-in entry
-                      })}
-                  </tbody>
+                  <tbody>{timelineRows}</tbody>
                 </table>
               </SimpleBar>
               <div className="text-center mt-3">
-                <Button
-                  className="btn btn-warning"
-                  onClick={() => {
-                    open_timeline();
-                  }}
-                >
+                <Button className="btn btn-warning" onClick={open_timeline}>
                   Close
                 </Button>
               </div>

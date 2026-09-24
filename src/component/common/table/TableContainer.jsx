@@ -1,22 +1,19 @@
-import React, { Fragment, useEffect } from "react";
+import React, { Fragment, useCallback, useEffect } from "react";
 import PropTypes from "prop-types";
-import { useState } from "react";
 import {
   useTable,
   useGlobalFilter,
-  useAsyncDebounce,
   useSortBy,
   useFilters,
   useExpanded,
   usePagination,
   useRowSelect,
 } from "react-table";
-import { Table, Row, Col, Button, Input, CardBody } from "reactstrap";
+import { Table, Row, Col, CardBody } from "reactstrap";
 import { DefaultColumnFilter } from "./Filters";
 import { Link } from "react-router-dom";
 import EmployeeTableFilter from "../tableFilter/EmployeeTableFilter";
 import TaskListFilter from "../tableFilter/TaskListFilter";
-import AttendanceApprovalFilter from "../tableFilter/AttendanceApprovalFilter";
 import {
   employee_component_name,
   leave_approval_component_name,
@@ -25,16 +22,17 @@ import {
   holiday_component_name,
   attendance_pending_table,
   leave_pending_table,
-  task_table,
   task_list_component_name,
   status_component_name,
 } from "../../../common/constant/Constants";
-import LeaveApprovalFilter from "../tableFilter/LeaveApprovalFilter";
 import LeaveTypeFilter from "../tableFilter/LeaveTypeFilter";
 import HolidayFilter from "../tableFilter/HolidayFilter";
 import { useDispatch, useSelector } from "react-redux";
 import { setTableFilterSearchText } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
 import "../../../common/css/lc_style.css";
+
+const DEFAULT_PAGE_SIZE = 25;
+
 const TableContainer = ({
   columns,
   data,
@@ -49,10 +47,29 @@ const TableContainer = ({
   divClass,
   SearchPlaceholder,
   showInfo,
+  // { page (1-based), pageSize, totalCount, onChange(page, pageSize) }
+  serverPagination,
 }) => {
   const { search } = useSelector((state) => state.TableFilterReducer);
-
   const dispatch = useDispatch();
+
+  const isServer = !!serverPagination;
+  const serverPage = serverPagination?.page ?? 1;
+  const serverPageSize = serverPagination?.pageSize ?? DEFAULT_PAGE_SIZE;
+  const serverTotal = serverPagination?.totalCount ?? 0;
+
+  // controlled pageIndex / pageSize when server-side
+  const useControlledState = useCallback(
+    (tableState) =>
+      isServer
+        ? {
+            ...tableState,
+            pageIndex: serverPage - 1,
+            pageSize: serverPageSize,
+          }
+        : tableState,
+    [isServer, serverPage, serverPageSize],
+  );
 
   const {
     getTableProps,
@@ -67,11 +84,8 @@ const TableContainer = ({
     nextPage,
     previousPage,
     setPageSize,
-    state,
-    preGlobalFilteredRows,
-    setGlobalFilter,
     rows,
-    state: { pageIndex, pageSize, pageCount },
+    state: { pageIndex, pageSize },
   } = useTable(
     {
       columns,
@@ -79,10 +93,16 @@ const TableContainer = ({
       defaultColumn: { Filter: DefaultColumnFilter },
       initialState: {
         pageIndex: 0,
-        pageSize: 25,
+        pageSize: DEFAULT_PAGE_SIZE,
         selectedRowIds: 0,
         sortBy: formname === status_component_name ? [] : [{ desc: true }],
       },
+      ...(isServer && {
+        manualPagination: true,
+        autoResetPage: false,
+        pageCount: Math.max(1, Math.ceil(serverTotal / serverPageSize)),
+        useControlledState,
+      }),
     },
     useGlobalFilter,
     useFilters,
@@ -109,22 +129,60 @@ const TableContainer = ({
     );
   };
 
-  const onChangeInSelect = (event) => {
-    setPageSize(Number(event.target.value));
-  };
-  const handlePageSizeChange = (e) => {
-    setPageSize(Number(e.target.value));
-    gotoPage(page);
-  };
-  const startItem = pageIndex * pageSize + 1;
-  const endItem =
-    (pageIndex + 1) * pageSize < data.length
-      ? (pageIndex + 1) * pageSize
-      : data.length;
+  // ── pagination actions (server or client) ────
+  const totalPages = isServer
+    ? Math.max(1, Math.ceil(serverTotal / serverPageSize))
+    : pageOptions.length;
 
-  // ✅ FIX: empty state now lives here, inside the table, so the filter row
-  // (rendered right below in the Row/CardBody) stays visible even when a
-  // filter selection produces zero matching rows.
+  const handleGoToPage = (index) => {
+    if (isServer) {
+      if (index < 0 || index >= totalPages) return;
+      serverPagination.onChange(index + 1, serverPageSize);
+    } else {
+      gotoPage(index);
+    }
+  };
+
+  const handlePrevious = (e) => {
+    e?.preventDefault?.();
+    if (isServer) {
+      if (serverPage > 1) handleGoToPage(pageIndex - 1);
+    } else {
+      previousPage();
+    }
+  };
+
+  const handleNext = (e) => {
+    e?.preventDefault?.();
+    if (isServer) {
+      if (serverPage < totalPages) handleGoToPage(pageIndex + 1);
+    } else {
+      nextPage();
+    }
+  };
+
+  const handlePageSizeChange = (e) => {
+    const size = Number(e.target.value);
+    if (isServer) {
+      // reset to first page on size change
+      serverPagination.onChange(1, size);
+    } else {
+      setPageSize(size);
+    }
+  };
+
+  const hasPrev = isServer ? serverPage > 1 : canPreviousPage;
+  const hasNext = isServer ? serverPage < totalPages : canNextPage;
+
+  const totalItems = isServer ? serverTotal : rows.length;
+  const startItem = totalItems === 0 ? 0 : pageIndex * pageSize + 1;
+  const endItem = isServer
+    ? Math.min(pageIndex * pageSize + page.length, serverTotal)
+    : Math.min((pageIndex + 1) * pageSize, data.length);
+
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i);
+
+  // empty state lives inside the table area so the filter row stays visible
   const hasRows = page.length > 0;
 
   return (
@@ -136,15 +194,11 @@ const TableContainer = ({
               <select
                 className="form-select"
                 value={pageSize}
-                onChange={onChangeInSelect}
+                onChange={handlePageSizeChange}
               >
-                {[25, 50, 100].map((pageSize) => (
-                  <option
-                    key={pageSize}
-                    value={pageSize}
-                    style={{ paddingTop: 0.4 }}
-                  >
-                    Show {pageSize}
+                {[25, 50, 100].map((size) => (
+                  <option key={size} value={size} style={{ paddingTop: 0.4 }}>
+                    Show {size}
                   </option>
                 ))}
               </select>
@@ -265,49 +319,42 @@ const TableContainer = ({
           </p>
         </div>
       )}
-      {showInfo === true && hasRows && (
+
+      {showInfo === true && (hasRows || (isServer && serverTotal > 0)) && (
         <Row className="align-items-center g-3 text-center text-sm-start mt-3 mb-0">
           <div className="col-sm">
             <div className="text-muted">
-            {/* <div className="text-muted d-flex align-items-center justify-content-center justify-content-sm-start h-100"> */}
               Showing
               <span className="fw-semibold ms-1">{startItem}</span> to{" "}
               <span className="fw-semibold">{endItem}</span> of{" "}
-              <span className="fw-semibold">{rows.length}</span>
+              <span className="fw-semibold">{totalItems}</span>
             </div>
           </div>
           <div className="col-sm-auto">
             <ul className="pagination pagination-separated pagination-md justify-content-center justify-content-sm-start mb-0">
-              <li
-                className={
-                  !canPreviousPage ? "page-item disabled" : "page-item"
-                }
-              >
-                <Link
-                  to="javscript:;"
-                  className="page-link"
-                  onClick={previousPage}
-                >
+              <li className={!hasPrev ? "page-item disabled" : "page-item"}>
+                <Link to="#" className="page-link" onClick={handlePrevious}>
                   Previous
                 </Link>
               </li>
-              {pageOptions.map((item, key) => (
-                <React.Fragment key={key}>
-                  <li className="page-item">
-                    <Link
-                      to="javscript:;"
-                      className={
-                        pageIndex === item ? "page-link active" : "page-link"
-                      }
-                      onClick={() => gotoPage(item)}
-                    >
-                      {item + 1}
-                    </Link>
-                  </li>
-                </React.Fragment>
+              {pageNumbers.map((item) => (
+                <li className="page-item" key={item}>
+                  <Link
+                    to="#"
+                    className={
+                      pageIndex === item ? "page-link active" : "page-link"
+                    }
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleGoToPage(item);
+                    }}
+                  >
+                    {item + 1}
+                  </Link>
+                </li>
               ))}
-              <li className={!canNextPage ? "page-item disabled" : "page-item"}>
-                <Link to="javscript:;" className="page-link" onClick={nextPage}>
+              <li className={!hasNext ? "page-item disabled" : "page-item"}>
+                <Link to="#" className="page-link" onClick={handleNext}>
                   Next
                 </Link>
               </li>
@@ -334,6 +381,12 @@ const TableContainer = ({
 
 TableContainer.propTypes = {
   preGlobalFilteredRows: PropTypes.any,
+  serverPagination: PropTypes.shape({
+    page: PropTypes.number,
+    pageSize: PropTypes.number,
+    totalCount: PropTypes.number,
+    onChange: PropTypes.func,
+  }),
 };
 
 export default TableContainer;
