@@ -100,6 +100,12 @@ import {
   APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
   APPROVE_REJECT_HIERARCHY_ATTENDANCE_ACCESS_KEY,
   APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
+  CREATE_PROJECT_ACCESS_KEY,   // ← add
+  EDIT_PROJECT_ACCESS_KEY,     // ← add
+  CREATE_TASK_ACCESS_KEY,            // ← add
+  EDIT_TASK_ACCESS_KEY,               // ← add
+  CREATE_TASK_SETTINGS_ACCESS_KEY,    // ← add
+  EDIT_TASK_SETTINGS_ACCESS_KEY,      // ← add
 } from "../../../common/constant/RoleConstants";
 
 import { loadAnimation } from "lottie-web";
@@ -1677,7 +1683,8 @@ const InfoTable = ({
           formname === task_list_component_name ||
           formname === custom_status_form_component_name ||
           formname === custom_field_component_name ||
-          formname === work_schedule_component_name
+          formname === work_schedule_component_name ||
+          formname === role_component_name   // ← add
         ) {
           const rowData = cellProps.row.original;
 
@@ -1855,7 +1862,7 @@ const InfoTable = ({
     );
     if (
       formname === leave_approval_component_name ||
-      attendance_approval_component_name
+      formname === attendance_approval_component_name
     ) {
       setShowAllLeaveApprovalBtn(
         profile_data.permission_list.includes(
@@ -1961,7 +1968,15 @@ const InfoTable = ({
           (thisFormName === client_component_name &&
             profile_data.permission_list.includes(CREATE_CLIENT_ACCESS_KEY)) ||
           (thisFormName === role_component_name &&
-            profile_data.permission_list.includes(CREATE_ROLES_ACCESS_KEY))
+            profile_data.permission_list.includes(CREATE_ROLES_ACCESS_KEY))  ||
+          (thisFormName === project_component_name &&                      
+            profile_data.permission_list.includes(CREATE_PROJECT_ACCESS_KEY)) ||
+           (thisFormName === task_list_component_name &&                          
+            profile_data.permission_list.includes(CREATE_TASK_ACCESS_KEY)) ||    
+          ((thisFormName === status_component_name ||                            
+            thisFormName === priorities_component_name ||                       
+            thisFormName === custom_status_form_component_name) &&               
+            profile_data.permission_list.includes(CREATE_TASK_SETTINGS_ACCESS_KEY)) 
         ) {
           console.log("Create Access Granted");
           setShowCreateBtn(true);
@@ -1997,7 +2012,15 @@ const InfoTable = ({
           (thisFormName === client_component_name &&
             profile_data.permission_list.includes(EDIT_CLIENT_ACCESS_KEY)) ||
           (thisFormName === role_component_name &&
-            profile_data.permission_list.includes(EDIT_ROLES_ACCESS_KEY))
+            profile_data.permission_list.includes(EDIT_ROLES_ACCESS_KEY))  ||
+          (thisFormName === project_component_name &&                    
+            profile_data.permission_list.includes(EDIT_PROJECT_ACCESS_KEY)) ||
+           (thisFormName === task_list_component_name &&                          
+            profile_data.permission_list.includes(EDIT_TASK_ACCESS_KEY)) ||      
+          ((thisFormName === status_component_name ||                            
+            thisFormName === priorities_component_name ||                       
+            thisFormName === custom_status_form_component_name) &&               
+            profile_data.permission_list.includes(EDIT_TASK_SETTINGS_ACCESS_KEY)) 
         ) {
           setShowEditBtn(true);
         } else if (thisFormName === leave_application_component_name) {
@@ -2394,7 +2417,7 @@ const InfoTable = ({
                               Create {formname.split("_").join(" ")}
                             </button>
                           )}{" "}
-                        {formname === status_component_name && (
+                        {formname === status_component_name && showEditBtn &&(
                           <button
                             type="button"
                             className="btn btn-secondary"

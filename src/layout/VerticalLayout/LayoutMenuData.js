@@ -23,6 +23,15 @@ import {
   VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,     
   VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,               
   VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY, 
+  PROJECT_VIEW_ACCESS_KEY,
+  CREATE_PROJECT_ACCESS_KEY,
+  EDIT_PROJECT_ACCESS_KEY,
+  CREATE_TASK_ACCESS_KEY,
+  EDIT_TASK_ACCESS_KEY,
+  TASK_SETTINGS_VIEW_ACCESS_KEY,
+  CREATE_TASK_SETTINGS_ACCESS_KEY,
+  EDIT_TASK_SETTINGS_ACCESS_KEY,
+
 } from "../../common/constant/RoleConstants";
 
 const Navdata = () => {
@@ -397,7 +406,20 @@ const Navdata = () => {
         id: "control-panel",
         label: "CRM",
         icon: " ri-list-settings-line",
-        perm: "all",
+        // perm: "all",
+        perm: [
+          CLIENT_VIEW_ACCESS_KEY,
+          CREATE_CLIENT_ACCESS_KEY,
+          EDIT_CLIENT_ACCESS_KEY,
+          PROJECT_VIEW_ACCESS_KEY,
+          CREATE_PROJECT_ACCESS_KEY,
+          EDIT_PROJECT_ACCESS_KEY,
+          CREATE_TASK_ACCESS_KEY,
+          EDIT_TASK_ACCESS_KEY,
+          TASK_SETTINGS_VIEW_ACCESS_KEY,
+          CREATE_TASK_SETTINGS_ACCESS_KEY,
+          EDIT_TASK_SETTINGS_ACCESS_KEY,
+        ],
         link: "/#",
         click: function (e) {
           e.preventDefault();
@@ -424,21 +446,21 @@ const Navdata = () => {
             label: "Projects",
             link: "/projects",
             parentId: "baseUi",
-            perm: "all",
+            perm: [PROJECT_VIEW_ACCESS_KEY, CREATE_PROJECT_ACCESS_KEY, EDIT_PROJECT_ACCESS_KEY],
           },
           {
             id: "tasks",
             label: "Tasks",
             link: "/tasks",
             parentId: "baseUi",
-            perm: "all",
+            perm: [CREATE_TASK_ACCESS_KEY, EDIT_TASK_ACCESS_KEY],
           },
           {
             id: "settings",
             label: "Settings",
             link: "/task-settings",
             parentId: "baseUi",
-            perm: "all",
+            perm: [TASK_SETTINGS_VIEW_ACCESS_KEY, CREATE_TASK_SETTINGS_ACCESS_KEY, EDIT_TASK_SETTINGS_ACCESS_KEY],
           },
         ],
       },
