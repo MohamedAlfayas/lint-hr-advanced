@@ -3868,21 +3868,6 @@ const UsersClusterMapAll = ({
                               Ongoing
                             </span>
                           )}
-                          /* {!isStatusActivityType(item.type) &&
-                            item.is_inside_range === false && (
-                              <span
-                                style={{
-                                  fontSize: "9px",
-                                  fontWeight: 600,
-                                  color: "#b91c1c",
-                                  background: "#fee2e2",
-                                  borderRadius: "10px",
-                                  padding: "1px 7px",
-                                }}
-                              >
-                                Outside range
-                              </span>
-                            )} */
                         </div>
                       </motion.div>
                     );
