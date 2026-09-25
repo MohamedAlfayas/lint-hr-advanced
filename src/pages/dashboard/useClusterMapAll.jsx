@@ -4101,16 +4101,6 @@ const UsersClusterMapAll = ({
                                     {p._date}
                                   </div>
                                 </div>
-                                {typeof p.battery_percentage === "number" && (
-                                  <span
-                                    style={{
-                                      fontSize: "10px",
-                                      color: "#64748b",
-                                    }}
-                                  >
-                                    🔋 {p.battery_percentage}%
-                                  </span>
-                                )}
                               </div>
 
                               {p.accurate_address && (
