@@ -1,5 +1,5 @@
 const platform = process.env.REACT_APP_LC_PLATFORM || "local";
-const LOCAL_BASE_URL = "http://localhost:8000/";
+const LOCAL_BASE_URL = "http://192.168.0.22:8000/";
 export const getBaseUrlFromDomain = () => {
   // Local dev/testing (e.g. on a physical device pointed at your machine's
   // LAN IP) always talks to the fixed local server — skip hostname/subdomain

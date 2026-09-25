@@ -151,22 +151,55 @@ const AttendanceApproval = ({
       id: "employee_id",
 
       accessor: (obj) => {
-        const thisEmployee = EmployeeData.find(
-          (data) => data.id === obj.employee_id,
+        const thisEmployee = EmployeeData?.find(
+          (data) => data?.id === obj?.employee_id,
         );
-        return thisEmployee.profile_url ? (
+
+        // Employee not found
+        if (!thisEmployee) {
+          return (
+            <div className="d-flex gap-2 align-items-center lc_sticky_first_additional_col">
+              <div className="flex-shrink-0">
+                <div
+                  className="avatar-xs rounded-circle"
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    background: "#0ab39c",
+                    color: "white",
+                  }}
+                >
+                  <span className="first_letter">-</span>
+                </div>
+              </div>
+
+              <div className="flex-grow-1">
+                <div>-</div>
+                <div>-</div>
+              </div>
+            </div>
+          );
+        }
+
+        const firstName = thisEmployee?.first_name || "-";
+        const email = thisEmployee?.email || "-";
+        const profileUrl = thisEmployee?.profile_url || "";
+
+        return profileUrl ? (
           <div className="d-flex gap-2 align-items-center lc_sticky_first_additional_col">
             <div className="flex-shrink-0">
               <img
-                src={thisEmployee.profile_url}
-                alt=""
+                src={profileUrl}
+                alt={firstName}
                 className="avatar-xs rounded-circle"
                 style={{ objectFit: "cover" }}
               />
             </div>
+
             <div className="flex-grow-1">
-              <div>{thisEmployee.first_name}</div>
-              <div>{thisEmployee.email}</div>
+              <div>{firstName}</div>
+              <div>{email}</div>
             </div>
           </div>
         ) : (
@@ -181,16 +214,17 @@ const AttendanceApproval = ({
                   background: "#0ab39c",
                 }}
                 data-bs-toggle="tooltip"
-                title={thisEmployee.first_name}
+                title={firstName}
               >
                 <span className="first_letter" style={{ color: "white" }}>
-                  {thisEmployee.first_name.charAt(0)}
+                  {firstName !== "-" ? firstName.charAt(0).toUpperCase() : "-"}
                 </span>
               </div>
             </div>
+
             <div className="flex-grow-1">
-              <div>{thisEmployee.first_name}</div>
-              <div>{thisEmployee.email}</div>
+              <div>{firstName}</div>
+              <div>{email}</div>
             </div>
           </div>
         );

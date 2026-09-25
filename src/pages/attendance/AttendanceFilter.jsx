@@ -1,25 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Card, CardHeader, Col, Row } from "reactstrap";
 import { Api } from "../../common/api/Api";
 import {
   MonthFormat,
   hr_status_options,
-  record_options,
   attendance_type_options,
 } from "../../common/constant/Constants";
 import {
   VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
   VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
-  VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
-  VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
 import { DatePicker } from "antd";
 import Select from "react-select";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
+  setAttendancePagination,
   setIndividualAttendanceReportData,
   setShowTeamTable,
   setTeamAttendanceReportData,
@@ -36,6 +34,13 @@ dayjs.extend(customParseFormat);
 const AttendanceFilter = () => {
   const dispatch = useDispatch();
 
+  // page / page_size live in Redux so the table's pager can control them
+  const { attendance_pagination } = useSelector(
+    (state) => state.AttendanceReportReducer,
+  );
+  const page = attendance_pagination?.page ?? 1;
+  const page_size = attendance_pagination?.page_size ?? 20;
+
   const [filterKeys, setFilterKeys] = useState({
     thisMonth: `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
       .toString()
@@ -51,57 +56,26 @@ const AttendanceFilter = () => {
   const [attendanceViewFilter, setAttendanceViewFilter] = useState([]);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
+  const requestIdRef = useRef(0);
+  const prevFilterKeysRef = useRef(filterKeys);
+
   const employee_data = GetLocalStorageData("employee");
   const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
 
   // 🔹 Permission-based filter
   useEffect(() => {
-    console.log("permission_list:", profile_data?.permission_list);
+    const permissions = profile_data?.permission_list || [];
 
-    console.log(
-      "VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY:",
-      VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY
-    );
+    let allowedIds = ["1"];
+    if (permissions.includes(VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY)) {
+      allowedIds = ["1", "2", "3"];
+    } else if (permissions.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)) {
+      allowedIds = ["1", "2"];
+    }
 
-    console.log(
-      "Has Permission:",
-      profile_data?.permission_list?.includes(
-        VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY
-      )
-    );
-    // if (
-    //   profile_data.permission_list.includes(
-    //     VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
-    //   )
-    // ) {
-    //   setAttendanceViewFilter(attendance_type_options);
-    // } else if (
-    //   profile_data.permission_list.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)
-    // ) {
-    //   setAttendanceViewFilter(
-    //     attendance_type_options.filter((d) => d.id !== "3"),
-    //   );
-    // } else {
-    //   setAttendanceViewFilter(
-    //     attendance_type_options.filter((d) => d.id === "1"),
-    //   );
-    // }
-
-   const permissions = profile_data?.permission_list || [];
-
-      let allowedIds = ["1"];
-
-      if (permissions.includes(VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY)) {
-        allowedIds = ["1", "2", "3"];
-      } else if (permissions.includes(VIEW_TEAM_ATTENDANCE_ACCESS_KEY)) {
-        allowedIds = ["1", "2"];
-      }
-    console.log("attendance_type_options =", attendance_type_options);
-    console.log("allowedIds =", allowedIds);
     setAttendanceViewFilter(
-      attendance_type_options.filter((d) => allowedIds.includes(d.id))
+      attendance_type_options.filter((d) => allowedIds.includes(d.id)),
     );
-
   }, []);
 
   // 🔹 Load employees
@@ -111,11 +85,11 @@ const AttendanceFilter = () => {
       url: "employee/get-my-team-members/",
     })
       .then((res) => {
-        const response = res?.data?.data;
+        const response = res?.data?.data || [];
 
-        let emp_options = response.map((d) =>
-          employee_data.find((e) => e.id === d),
-        );
+        const emp_options = response
+          .map((d) => employee_data.find((e) => e.id === d))
+          .filter(Boolean);
 
         setEmployeeOptions([
           { id: "0", label: "All", value: "0" },
@@ -127,100 +101,144 @@ const AttendanceFilter = () => {
       });
   }, []);
 
-  // 🔹 Handlers
+  // 🔹 Handlers – any filter change resets to page 1
+  const resetPage = () => dispatch(setAttendancePagination({ page: 1 }));
+
   const handleDateRangeChange = (e, monthStr) => {
     setFilterKeys((prev) => ({ ...prev, thisMonth: monthStr }));
+    resetPage();
   };
 
   const handleHRStatusChange = (e) => {
     setFilterKeys((prev) => ({ ...prev, hr_status: e.value }));
-  };
-
-  const handleRecordChange = (e) => {
-    setFilterKeys((prev) => ({ ...prev, record: e.value }));
+    resetPage();
   };
 
   const handleTypeChange = (e) => {
-    setFilterKeys((prev) => ({
-      ...prev,
-      type: e.value,
-      employee: "0",
-    }));
-
+    setFilterKeys((prev) => ({ ...prev, type: e.value, employee: "0" }));
     setShowEmployeeSelect(e.value === "2");
+    resetPage();
   };
 
   const handleEmployeeChange = (e) => {
     setFilterKeys((prev) => ({ ...prev, employee: e.value }));
+    resetPage();
   };
 
   // 🔹 API Call
-  const handleFilter = async () => {
+  const handleFilter = async (keys, currentPage, currentPageSize) => {
+    const requestId = ++requestIdRef.current;
     dispatch(setLoaderVisible(true));
 
-    const attendanceApi = await PostApi(
-      "report/get-attendance-report/v2/",
-      filterKeys,
-      false,
-    );
-
-    if (attendanceApi?.status === 200) {
-      const data = attendanceApi?.data?.data;
-
-      dispatch(
-        setIndividualAttendanceReportData(data?.individual_attendance_report),
+    try {
+      const attendanceApi = await PostApi(
+        "report/get-attendance-report/v3/",
+        { ...keys, page: currentPage, page_size: currentPageSize },
+        false,
       );
 
-      BuildAttendanceReportChart(data?.individual_attendance_report, dispatch);
+      // A newer request has started – ignore this response
+      if (requestId !== requestIdRef.current) return;
 
-      // Leave API
-      if (filterKeys?.type === "1") {
-        Api({
-          type: "GET",
-          url: `leave/get-leave-type-details-for-employee/?employee_id=${profile_data.id}`,
-        }).then((res) => {
-          dispatch(setEmployeeLeaveType(res?.data?.data));
-        });
+      if (attendanceApi?.status === 200) {
+        const body = attendanceApi?.data;
+        const data = body?.data;
+        const total_pages = body?.total_pages ?? 0;
+
+        // Only count / total_pages are written back (page & page_size are
+        // controlled by the UI) so this can never trigger a refetch loop.
+        dispatch(
+          setAttendancePagination({
+            count: body?.count ?? 0,
+            total_pages,
+          }),
+        );
+
+        // Current page became empty -> step back
+        if (
+          (data?.team_attendance_report || []).length === 0 &&
+          (data?.individual_attendance_report || []).length === 0 &&
+          currentPage > 1
+        ) {
+          dispatch(
+            setAttendancePagination({
+              page: Math.max(1, Math.min(currentPage - 1, total_pages || 1)),
+            }),
+          );
+          return;
+        }
+
+        dispatch(
+          setIndividualAttendanceReportData(data?.individual_attendance_report),
+        );
+
+        BuildAttendanceReportChart(
+          data?.individual_attendance_report,
+          dispatch,
+        );
+
+        // Leave API
+        if (keys.type === "1") {
+          Api({
+            type: "GET",
+            url: `leave/get-leave-type-details-for-employee/?employee_id=${profile_data?.id}`,
+          }).then((res) => {
+            dispatch(setEmployeeLeaveType(res?.data?.data));
+          });
+        }
+
+        if (keys.type === "2" && keys.employee !== "0") {
+          Api({
+            type: "GET",
+            url: `leave/get-leave-type-details-for-employee/?employee_id=${keys.employee}`,
+          }).then((res) => {
+            dispatch(setEmployeeLeaveType(res?.data?.data));
+          });
+        }
+
+        dispatch(setTeamAttendanceReportData(data?.team_attendance_report));
+
+        dispatch(
+          setShowTeamTable(
+            (keys.type === "2" && keys.employee === "0") || keys.type === "3",
+          ),
+        );
+      } else {
+        toast.error(
+          attendanceApi?.data?.message ||
+            attendanceApi?.data?.detail ||
+            "Failed to load attendance report",
+        );
       }
-
-      if (filterKeys?.type === "2" && filterKeys?.employee !== "0") {
-        Api({
-          type: "GET",
-          url: `leave/get-leave-type-details-for-employee/?employee_id=${filterKeys.employee}`,
-        }).then((res) => {
-          dispatch(setEmployeeLeaveType(res?.data?.data));
-        });
+    } catch (err) {
+      if (requestId === requestIdRef.current) {
+        toast.error("Failed to load attendance report");
       }
-
-      dispatch(setTeamAttendanceReportData(data?.team_attendance_report));
-
-      dispatch(
-        setShowTeamTable(
-          (filterKeys?.type === "2" && filterKeys?.employee === "0") ||
-            filterKeys?.type === "3",
-        ),
-      );
-
-      setTimeout(() => dispatch(setLoaderVisible(false)), 500);
-    } else {
-      toast.error(attendanceApi?.data?.message || attendanceApi?.data?.detail);
-      setTimeout(() => dispatch(setLoaderVisible(false)), 500);
+    } finally {
+      if (requestId === requestIdRef.current) {
+        setTimeout(() => dispatch(setLoaderVisible(false)), 500);
+      }
     }
   };
 
-  // 🔹 Auto filter with debounce
+  // 🔹 Auto filter: debounce filter changes, fetch immediately on page / page size
   useEffect(() => {
     if (isFirstLoad) {
       setIsFirstLoad(false);
+      prevFilterKeysRef.current = filterKeys;
       return;
     }
 
-    const delay = setTimeout(() => {
-      handleFilter();
-    }, 500);
+    const onlyPagingChanged = prevFilterKeysRef.current === filterKeys;
+    prevFilterKeysRef.current = filterKeys;
+
+    const delay = setTimeout(
+      () => handleFilter(filterKeys, page, page_size),
+      onlyPagingChanged ? 0 : 500,
+    );
 
     return () => clearTimeout(delay);
-  }, [filterKeys]);
+  }, [filterKeys, page, page_size]);
 
   return (
     <Card>
@@ -247,15 +265,6 @@ const AttendanceFilter = () => {
               onChange={handleHRStatusChange}
             />
           </Col>
-
-          {/* <Col xl={2}>
-            <Select
-              options={record_options}
-              placeholder="Select Record"
-              value={record_options.find((d) => d.id === filterKeys.record)}
-              onChange={handleRecordChange}
-            />
-          </Col> */}
 
           <Col xl={2}>
             <Select

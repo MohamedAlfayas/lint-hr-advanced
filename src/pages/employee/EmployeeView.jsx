@@ -49,8 +49,19 @@ import { useTable } from "react-table";
 import EmployeePayslip from "../payroll/EmployeePayslip";
 
 const MONTH_NAMES = [
-  "", "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 const getMonthName = (month) => {
   if (month === null || month === undefined || month === "") return "";
@@ -141,7 +152,8 @@ const EmployeeView = () => {
 
       setPayrollObj({
         latestNetSalary: latest?.net_pay ? `₹ ${latest.net_pay}` : "-",
-        latestPayMonth: `${getMonthName(latest?.month)} ${latest?.year || ""}`.trim(),
+        latestPayMonth:
+          `${getMonthName(latest?.month)} ${latest?.year || ""}`.trim(),
         lastPayDate: latest?.pay_date || "-",
         totalPayslips: totalThisYear,
       });
@@ -279,7 +291,11 @@ const EmployeeView = () => {
                   }}
                 >
                   <img
-                    src={profileObj.profile_url ? profileObj.profile_url : DummyUserImg}
+                    src={
+                      profileObj.profile_url
+                        ? profileObj.profile_url
+                        : DummyUserImg
+                    }
                     style={{
                       objectFit: "cover",
                       width: "90px",
@@ -354,8 +370,8 @@ const EmployeeView = () => {
                         navigate(`/account-settings/`);
                       }}
                     >
-                      <i className="ri-edit-box-line align-bottom"></i>{" "}
-                      Account Settings
+                      <i className="ri-edit-box-line align-bottom"></i> Account
+                      Settings
                     </Button>
                   )}
                 </div>

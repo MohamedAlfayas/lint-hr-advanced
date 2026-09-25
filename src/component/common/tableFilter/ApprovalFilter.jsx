@@ -64,6 +64,11 @@ const DEFAULT_PAGE_SIZE = 25;
 // to cover a month's worth of records in one request.
 const BADGE_COUNT_PAGE_SIZE = 5000;
 
+const employeeTypeOptionsNew = [
+  { id: "0", label: "All Employee", value: "0" },
+  { id: "1", label: "My Team Members", value: "1" },
+];
+
 const ApprovalFilter = ({ formname }) => {
   const { leave_approval_data } = useSelector(
     (data) => data.LeaveApprovalReducer,
@@ -85,15 +90,6 @@ const ApprovalFilter = ({ formname }) => {
   );
 
   // ── Badge counts (independent of the paginated table data) ──────────────
-  // BUG FIX: PendingLeave / AttendancePending used to be computed directly
-  // from leave_approval_data / attendance_approval_data via .filter(...).
-  // That worked before pagination existed, because those Redux arrays held
-  // the FULL filtered result set. Now that they only hold the current page
-  // (25 rows by default), counting "pending" against them only counts
-  // pending rows on whichever page happens to be loaded — not the true
-  // total. These are now tracked separately via a dedicated fetch that
-  // requests every matching row (BADGE_COUNT_PAGE_SIZE) purely to compute
-  // the count, without touching the paginated table data in Redux.
   const [PendingLeave, setPendingLeave] = useState(0);
   const [AttendancePending, setAttendancePending] = useState(0);
 
@@ -133,6 +129,7 @@ const ApprovalFilter = ({ formname }) => {
   const dispatch = useDispatch();
 
   const [employeeType, setEmployeeType] = useState(1);
+  const [employeeTypeNew, setEmployeeTypeNew] = useState(1);
   const [filteredMonth, setFilteredMonth] = useState(
     `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
       .toString()
@@ -150,8 +147,6 @@ const ApprovalFilter = ({ formname }) => {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [totalCount, setTotalCount] = useState(0);
 
-  // page/pageSize changes triggered by the table's own pager should refetch
-  // without re-running the "filters changed" reset-to-page-1 logic
   const skipInitialPaginationFetch = useRef(true);
 
   const handlePaginationChange = useCallback((newPage, newPageSize) => {
@@ -216,6 +211,12 @@ const ApprovalFilter = ({ formname }) => {
     }));
   };
 
+  const handleEmployeeTypeChangeNew = (e) => {
+    const value = Number(e?.value ?? 1);
+
+    setEmployeeTypeNew(value);
+  };
+
   const handleDateRangeChange = (e, monthStr) => {
     setFilteredMonth(monthStr);
     setFilteredValue((prev) => ({
@@ -248,8 +249,6 @@ const ApprovalFilter = ({ formname }) => {
     });
     firstEffectExecutedRef.current = true;
   }, []);
-
-  let integerEmployeeType;
 
   const isLeaveApprovalActive =
     activeTab === "2" ||
@@ -307,7 +306,6 @@ const ApprovalFilter = ({ formname }) => {
     );
   };
 
-  // ── Extracts total count from any of the common response shapes ────────
   const extractListAndTotal = (response) => {
     const body = response?.data;
     const payload = body?.data;
@@ -329,56 +327,51 @@ const ApprovalFilter = ({ formname }) => {
     return { list, total };
   };
 
-  const buildLeaveUrl = (targetPage, targetPageSize) => {
+  // Shared URL builder for both approval kinds.
+  // Sends BOTH employee-type values on every request:
+  //   - employee_type      : permission-forced scope (unchanged behavior —
+  //                          if the user only has one of the two permissions
+  //                          for that kind, that scope wins outright)
+  //   - employee_type_new  : whatever the "All Employee / My Team Members"
+  //                          select (employeeTypeOptionsNew) is currently
+  //                          set to, sent independently so the backend
+  //                          receives both regardless of which one scopes
+  //                          the query.
+  // NOTE: confirm "employee_type_new" is the param name the backend expects.
+  const buildUrl = (kind, targetPage, targetPageSize) => {
     const deptParam = getDepartmentParam();
     const empParam = getEmployeeParam();
-    const leaveTypeParam = getLeaveTypeParam();
+    const isLeave = kind === "leave";
 
-    const baseUrl =
-      "leave/get-leave-application-for-approval/?thisMonth=" +
-      filteredMonth +
-      "&employee_type=";
+    const baseUrl = isLeave
+      ? "leave/get-leave-application-for-approval/?thisMonth=" +
+        filteredMonth +
+        "&employee_type="
+      : "attendance/get-attendance-data-for-approval/?thisMonth=" +
+        filteredMonth +
+        "&employee_type=";
+
+    // employee_type is always the employeeTypeOptionsNew selection
+    // (All Employee / My Team Members) — no separate key needed.
+    const scopedUrl = baseUrl + employeeTypeNew + deptParam + empParam;
+
+    const leaveTypeParam = isLeave ? getLeaveTypeParam() : "";
 
     return (
-      (!showAllLeaveApproval && showTeamLeaveApproval
-        ? baseUrl + "1" + deptParam + empParam
-        : showAllLeaveApproval && !showTeamLeaveApproval
-          ? baseUrl + "0" + deptParam + empParam
-          : baseUrl + employeeType + deptParam + empParam) +
+      scopedUrl +
       leaveTypeParam +
       `&page=${targetPage}` +
       `&page_size=${targetPageSize}`
     );
   };
 
-  const buildAttendanceUrl = (targetPage, targetPageSize) => {
-    const deptParam = getDepartmentParam();
-    const empParam = getEmployeeParam();
-
-    const baseUrl =
-      "attendance/get-attendance-data-for-approval/?thisMonth=" +
-      filteredMonth +
-      "&employee_type=";
-
-    return (
-      (!showAllAttendanceApproval && showTeamAttendanceApproval
-        ? baseUrl + "1" + deptParam + empParam
-        : showAllAttendanceApproval && !showTeamAttendanceApproval
-          ? baseUrl + "0" + deptParam + empParam
-          : baseUrl + employeeType + deptParam + empParam) +
-      `&page=${targetPage}` +
-      `&page_size=${targetPageSize}`
-    );
-  };
-
-  // GET /leave/get-leave-application-for-approval/?thisMonth=2026-09&employee_type=1&page=1&page_size=25
   const handleLeaveFilter = async (
     type,
     targetPage = page,
     targetPageSize = pageSize,
   ) => {
     const integerEmployeeType = parseInt(type, 10);
-    const url = buildLeaveUrl(targetPage, targetPageSize);
+    const url = buildUrl("leave", targetPage, targetPageSize);
 
     try {
       console.log("Leave API URL:", url);
@@ -401,18 +394,15 @@ const ApprovalFilter = ({ formname }) => {
     }
   };
 
-  // GET /attendance/get-attendance-data-for-approval/?thisMonth=2026-09&employee_type=1&page=1&page_size=25
   const handleAttendanceFilter = async (
     type,
     targetPage = page,
     targetPageSize = pageSize,
   ) => {
     const integerEmployeeType = parseInt(type, 10);
-    const url = buildAttendanceUrl(targetPage, targetPageSize);
+    const url = buildUrl("attendance", targetPage, targetPageSize);
 
     try {
-      console.log("Attendance API URL:", url);
-
       const response = await Api({ type: "GET", url });
 
       let { list: data, total } = extractListAndTotal(response);
@@ -430,13 +420,11 @@ const ApprovalFilter = ({ formname }) => {
     }
   };
 
-  // ── Badge-count fetches: full (unpaginated) dataset, counted client-side,
-  // never dispatched into the table's Redux slice ─────────────────────────
   const refreshLeavePendingBadge = async () => {
     if (!(showAllLeaveApproval || showTeamLeaveApproval)) return;
 
     try {
-      const url = buildLeaveUrl(1, BADGE_COUNT_PAGE_SIZE);
+      const url = buildUrl("leave", 1, BADGE_COUNT_PAGE_SIZE);
       const response = await Api({ type: "GET", url });
 
       let { list } = extractListAndTotal(response);
@@ -460,7 +448,7 @@ const ApprovalFilter = ({ formname }) => {
     if (!(showAllAttendanceApproval || showTeamAttendanceApproval)) return;
 
     try {
-      const url = buildAttendanceUrl(1, BADGE_COUNT_PAGE_SIZE);
+      const url = buildUrl("attendance", 1, BADGE_COUNT_PAGE_SIZE);
       const response = await Api({ type: "GET", url });
 
       let { list } = extractListAndTotal(response);
@@ -486,30 +474,30 @@ const ApprovalFilter = ({ formname }) => {
     targetPageSize = pageSize,
   ) => {
     dispatch(setLoaderVisible(true));
+
     if (
       tab === "2" ||
       (!showAllAttendanceApproval && !showTeamAttendanceApproval && tab === "1")
     ) {
       if (showAllLeaveApproval || showTeamLeaveApproval) {
-        handleLeaveFilter(employeeType, targetPage, targetPageSize);
+        handleLeaveFilter(employeeTypeNew, targetPage, targetPageSize);
       } else {
         dispatch(setLoaderVisible(false));
-        toast.error("Sometyhing Went Wrong!");
+        toast.error("Something Went Wrong!");
       }
     } else if (tab === "1") {
       if (showAllAttendanceApproval || showTeamAttendanceApproval) {
-        handleAttendanceFilter(employeeType, targetPage, targetPageSize);
+        handleAttendanceFilter(employeeTypeNew, targetPage, targetPageSize);
       } else {
         dispatch(setLoaderVisible(false));
-        toast.error("Sometyhing Went Wrong!");
+        toast.error("Something Went Wrong!");
       }
     } else {
       dispatch(setLoaderVisible(false));
-      toast.error("Sometyhing Went Wrong!");
+      toast.error("Something Went Wrong!");
     }
   };
 
-  // ── Filter-value changes: reset to page 1, refetch table + badges ──────
   useEffect(() => {
     if (!firstEffectExecutedRef.current) return;
 
@@ -535,50 +523,18 @@ const ApprovalFilter = ({ formname }) => {
     return () => clearTimeout(timer);
   }, [
     employeeType,
+    employeeTypeNew,
     filteredMonth,
     activeTab,
     selectedEmployees,
     selectedLeaveType,
     employee_table_filter_keys?.primary_department_id_list,
-  ]);
-
-  useEffect(() => {
-    if (!firstEffectExecutedRef.current) return;
-    if (
-      !showAllAttendanceApproval &&
-      !showTeamAttendanceApproval &&
-      !showAllLeaveApproval &&
-      !showTeamLeaveApproval
-    ) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      dispatch(setFilteredCurrentValue(filteredValue));
-      dispatch(setFilteredLatestValue(filteredValue));
-
-      skipInitialPaginationFetch.current = true;
-      setPage(1);
-      FilterData(activeTab, 1, pageSize);
-      refreshBadgeCounts();
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [
-    employeeType,
-    filteredMonth,
-    activeTab,
-    selectedEmployees,
     showAllAttendanceApproval,
     showTeamAttendanceApproval,
     showAllLeaveApproval,
     showTeamLeaveApproval,
-    selectedLeaveType,
   ]);
 
-  // ── Page / page-size changes from the table pager: refetch table only ──
-  // (badge counts are independent of which page the table is on, so they
-  // don't need to refresh here)
   useEffect(() => {
     if (!firstEffectExecutedRef.current) return;
     if (skipInitialPaginationFetch.current) {
@@ -596,21 +552,16 @@ const ApprovalFilter = ({ formname }) => {
           !showTeamAttendanceApproval &&
           activeTab === "1")
       ) {
-        dispatch(setCurrentApprovalComponent("leave_approval_component_name"));
+        dispatch(setCurrentApprovalComponent(leave_approval_component_name));
       } else if (activeTab === "1") {
         dispatch(
-          setCurrentApprovalComponent("attendance_approval_component_name"),
+          setCurrentApprovalComponent(attendance_approval_component_name),
         );
       } else {
-        setCurrentApprovalComponent("");
+        dispatch(setCurrentApprovalComponent(""));
       }
     }
-  }, [
-    activeTab,
-    showAllAttendanceApproval,
-    showTeamAttendanceApproval,
-    firstEffectExecutedRef.current,
-  ]);
+  }, [activeTab, showAllAttendanceApproval, showTeamAttendanceApproval]);
 
   const handleFilter = async () => {
     dispatch(setFilteredCurrentValue(filteredValue));
@@ -685,6 +636,24 @@ const ApprovalFilter = ({ formname }) => {
                     components={{ Option: EmployeeDisplayInSelect }}
                     value={selectedEmployees}
                     filterOption={handleEmployeeSearch}
+                  />
+                </Col>
+                <Col md={3}>
+                  <Select
+                    id="employee_filter_new"
+                    name="employee_filter_new"
+                    isClearable={false}
+                    isMulti={false}
+                    options={employeeTypeOptionsNew}
+                    className="basic-multi-select"
+                    placeholder="Select Employee Type"
+                    allowClear={false}
+                    onChange={handleEmployeeTypeChangeNew}
+                    value={
+                      employeeTypeOptionsNew.find(
+                        (d) => Number(d.value) === Number(employeeTypeNew),
+                      ) || employeeTypeOptionsNew[1]
+                    }
                   />
                 </Col>
                 <Col md={3}>

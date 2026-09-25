@@ -11,9 +11,18 @@ import {
 import SimpleBar from "simplebar-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { Api } from "../api/Api";
+import {
+  decrementUnreadCount,
+  setUnreadCount,
+} from "../../redux/reducers/ChildReducer/NotificationReducer";
 
 dayjs.extend(relativeTime);
+
+// Dropdown shows only the latest N notifications; "See all" opens the full page
+const PAGE_SIZE = 10;
 
 const TYPE_ICON = {
   general: { icon: "bx bx-bell", className: "bg-primary-subtle text-primary" },
@@ -51,12 +60,20 @@ const formatCreatedOn = (ts) => {
 };
 
 const NotificationDropdown = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  // Server-side unread total (shared with the sidebar badge)
+  const totalUnread = useSelector(
+    (state) => state.NotificationReducer.unread_count,
+  );
+
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
   const [readingIds, setReadingIds] = useState(() => new Set());
 
+  // Unread rows currently loaded in the dropdown list (used for button state)
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.is_read).length,
     [notifications],
@@ -67,9 +84,12 @@ const NotificationDropdown = () => {
       if (!silent) setLoading(true);
       try {
         const res = await Api.get("/notification/list/", {
-          params: { unread_only: true },
+          params: { unread_only: true, page: 1, page_size: PAGE_SIZE },
         });
         const list = Array.isArray(res?.data?.data) ? res.data.data : [];
+
+        // Shared count -> Redux (sidebar badge reads this)
+        dispatch(setUnreadCount(res?.data?.count ?? list.length));
 
         if (mergeSeen) {
           // Keep rows the user already marked read in this open session, and
@@ -78,12 +98,12 @@ const NotificationDropdown = () => {
             const seenLocal = prev.filter((n) => n.is_read);
             const seenIds = new Set(seenLocal.map((n) => n.id));
             const fresh = list.filter((n) => !seenIds.has(n.id));
-            return [...fresh, ...seenLocal].sort(
-              (a, b) => new Date(b.created_on) - new Date(a.created_on),
-            );
+            return [...fresh, ...seenLocal]
+              .sort((a, b) => new Date(b.created_on) - new Date(a.created_on))
+              .slice(0, PAGE_SIZE);
           });
         } else {
-          setNotifications(list);
+          setNotifications(list.slice(0, PAGE_SIZE));
         }
       } catch (err) {
         console.error("Failed to load notifications:", err);
@@ -91,7 +111,7 @@ const NotificationDropdown = () => {
         if (!silent) setLoading(false);
       }
     },
-    [],
+    [dispatch],
   );
 
   // Auto-refresh badge: poll + tab focus + live FCM pushes (no full page reload).
@@ -137,6 +157,11 @@ const NotificationDropdown = () => {
     });
   };
 
+  const handleSeeAll = () => {
+    setIsOpen(false);
+    navigate("/notifications");
+  };
+
   const markOneRead = async (e, item) => {
     e?.preventDefault?.();
     e?.stopPropagation?.();
@@ -154,6 +179,7 @@ const NotificationDropdown = () => {
 
     try {
       await Api.post(`/notification/${item.id}/read/`);
+      dispatch(decrementUnreadCount());
     } catch (err) {
       console.error(`Failed to mark notification ${item.id} read:`, err);
       setNotifications((prev) =>
@@ -187,6 +213,7 @@ const NotificationDropdown = () => {
 
     try {
       await Api.post("/notification/read-all/");
+      dispatch(setUnreadCount(0));
     } catch (err) {
       console.error("Failed to mark all notifications read:", err);
       setNotifications(snapshot);
@@ -209,9 +236,9 @@ const NotificationDropdown = () => {
           id="page-header-notifications-dropdown"
         >
           <i className="bx bx-bell fs-22"></i>
-          {unreadCount > 0 && (
+          {totalUnread > 0 && (
             <span className="position-absolute topbar-badge fs-10 translate-middle badge rounded-pill bg-danger">
-              {unreadCount > 99 ? "99+" : unreadCount}
+              {totalUnread > 99 ? "99+" : totalUnread}
               <span className="visually-hidden">unread messages</span>
             </span>
           )}
@@ -232,7 +259,7 @@ const NotificationDropdown = () => {
                 </Col>
                 <div className="col-auto">
                   <span className="badge bg-light-subtle text-body fs-13">
-                    {unreadCount} New
+                    {totalUnread} New
                   </span>
                 </div>
               </Row>
@@ -341,10 +368,7 @@ const NotificationDropdown = () => {
                         </div>
                       ) : (
                         <div className="px-2 fs-15 flex-shrink-0 text-success">
-                          <i
-                            className="ri-check-double-line"
-                            title="Seen"
-                          ></i>
+                          <i className="ri-check-double-line" title="Seen"></i>
                         </div>
                       )}
                     </div>
@@ -354,7 +378,14 @@ const NotificationDropdown = () => {
             </SimpleBar>
           )}
 
-          <div className="p-2 border-top d-grid">
+          <div className="p-2 border-top d-grid gap-2">
+            <button
+              type="button"
+              className="btn btn-sm btn-primary"
+              onClick={handleSeeAll}
+            >
+              See all notifications
+            </button>
             <button
               type="button"
               className="btn btn-sm btn-soft-success"

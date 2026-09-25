@@ -9,6 +9,7 @@ import {
   ModalBody,
   ModalHeader,
   Button,
+  Spinner,
 } from "reactstrap";
 import SimpleBar from "simplebar-react";
 import { MetaTitle } from "../../common/data/MetaTitle";
@@ -76,9 +77,16 @@ const AttendanceReport = () => {
   const { Column, HeaderCell, Cell, ColumnGroup } = Table;
   const [loading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [exportType, setExportType] = useState("page"); // "page" | "all"
+  const [exportingAll, setExportingAll] = useState(false);
 
   const toggleModal = () => {
     setShowModal(!showModal);
+  };
+
+  const openExportModal = (type) => {
+    setExportType(type);
+    setShowModal(true);
   };
 
   const employee_data = GetLocalStorageData("employee") || [];
@@ -99,7 +107,7 @@ const AttendanceReport = () => {
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-  // POST /report/get-attendance-report/v3/?page=1&page_size=10
+  // GET /report/get-team-daily-attendance-report/?thisMonth=2026-09&page=1&page_size=10
   const getReportData = (thisMonth, targetPage, targetPageSize) => {
     dispatch(setLoaderVisible(true));
 
@@ -581,7 +589,13 @@ const AttendanceReport = () => {
     );
   };
 
-  const exportExcelFile = () => {
+  // Builds the team XLSX from any report list.
+  //  - "Export"     -> current page rows (default: team_daily_attendance_report)
+  //  - "Export All" -> full month list from the export-all API
+  const exportExcelFile = (
+    reportData = team_daily_attendance_report,
+    fileSuffix = "",
+  ) => {
     const workbook = new ExcelJs.Workbook();
     const sheet = workbook.addWorksheet("My Sheet", {
       views: [
@@ -609,7 +623,7 @@ const AttendanceReport = () => {
 
     const employeeDatesXls = Array.from(
       new Set(
-        team_daily_attendance_report.flatMap((employee) =>
+        reportData.flatMap((employee) =>
           employee.workday_data.map((report) => report.date),
         ),
       ),
@@ -658,7 +672,7 @@ const AttendanceReport = () => {
       });
     }
 
-    team_daily_attendance_report.forEach((rowData, rowIndex, colIndex) => {
+    reportData.forEach((rowData, rowIndex, colIndex) => {
       const row = [];
       const foundEmployee = employee_data.find(
         (emp) => rowData.employee_id === emp.id,
@@ -822,10 +836,38 @@ const AttendanceReport = () => {
         return `${month}_${year}`;
       });
 
-      anchor.download = `Attendance_${monthYearList[0]}.xlsx`;
+      anchor.download = `Attendance_${monthYearList[0]}${fileSuffix}.xlsx`;
       anchor.click();
       window.URL.revokeObjectURL(url);
     });
+  };
+
+  // GET /report/export-all-attendance-report/?thisMonth=2026-09
+  // Fetches every employee for the selected month, then builds the same XLSX.
+  const handleExportAll = () => {
+    setExportingAll(true);
+    dispatch(setLoaderVisible(true));
+
+    Api({
+      method: "GET",
+      url: "report/export-all-attendance-report/?thisMonth=" + filterKeys.month,
+    })
+      .then((res) => {
+        const list = Array.isArray(res?.data?.data) ? res.data.data : [];
+        if (list.length === 0) {
+          window.alert("No attendance data found for this month.");
+          return;
+        }
+        exportExcelFile(list, "_All");
+      })
+      .catch((error) => {
+        console.error("Export all attendance report API error:", error);
+        window.alert("Failed to export the attendance report.");
+      })
+      .finally(() => {
+        setExportingAll(false);
+        dispatch(setLoaderVisible(false));
+      });
   };
 
   const [timeline_modal, settimeline_modal] = useState(false);
@@ -1113,6 +1155,23 @@ const AttendanceReport = () => {
   // the return() has no nested ternaries / comparisons.
   // ─────────────────────────────────────────────
 
+  // export modal text
+  const isExportAll = exportType === "all";
+  const exportMonthLabel = dayjs(filterKeys.month, MonthFormat).format(
+    "MMM YYYY",
+  );
+  const exportMessage = isExportAll ? (
+    <>
+      Are you sure you want to export the <b>{exportMonthLabel}</b> Attendance
+      Report for <b>all employees</b> as a XLSX file?
+    </>
+  ) : (
+    <>
+      Are you sure you want to export the <b>{exportMonthLabel}</b> Attendance
+      Report (current page) as a XLSX file?
+    </>
+  );
+
   // pagination values
   const rowsOnPage = (team_daily_attendance_report || []).length;
   const startItem = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -1249,20 +1308,42 @@ const AttendanceReport = () => {
                   </div>
                 </Col>
 
-                <Button
-                  type="button"
-                  className="btn btn-info"
-                  onClick={toggleModal}
-                  style={{
-                    padding: "0.25rem 0.5rem",
-                    fontSize: "0.75rem",
-                    width: "80px",
-                    marginLeft: "auto",
-                  }}
-                >
-                  <i className="ri-file-download-line align-bottom me-1"></i>
-                  Export
-                </Button>
+                <Col className="d-flex justify-content-end align-items-center gap-2">
+                  <Button
+                    type="button"
+                    className="btn btn-info"
+                    onClick={() => openExportModal("page")}
+                    style={{
+                      padding: "0.25rem 0.5rem",
+                      fontSize: "0.75rem",
+                      width: "80px",
+                    }}
+                  >
+                    <i className="ri-file-download-line align-bottom me-1"></i>
+                    Export
+                  </Button>
+
+                  <Button
+                    type="button"
+                    className="btn btn-success"
+                    onClick={() => openExportModal("all")}
+                    disabled={exportingAll}
+                    style={{
+                      padding: "0.25rem 0.5rem",
+                      fontSize: "0.75rem",
+                      width: "100px",
+                    }}
+                  >
+                    {exportingAll ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <>
+                        <i className="ri-download-cloud-2-line align-bottom me-1"></i>
+                        Export All
+                      </>
+                    )}
+                  </Button>
+                </Col>
 
                 <Modal isOpen={showModal} toggle={toggleModal} centered={true}>
                   <ModalHeader toggle={toggleModal}></ModalHeader>
@@ -1276,10 +1357,7 @@ const AttendanceReport = () => {
                       ></lord-icon>
                       <div className="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
                         <h4>Are you sure?</h4>
-                        <p className="text-muted mx-4 mb-0">
-                          Are you sure you want to export <b>{monthYear[0]}</b>{" "}
-                          Attendance Report as a XLSX file?
-                        </p>
+                        <p className="text-muted mx-4 mb-0">{exportMessage}</p>
                       </div>
                     </div>
                     <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
@@ -1294,7 +1372,8 @@ const AttendanceReport = () => {
                         type="button"
                         className="btn w-sm btn-success"
                         onClick={() => {
-                          exportExcelFile();
+                          if (isExportAll) handleExportAll();
+                          else exportExcelFile();
                           toggleModal();
                         }}
                       >

@@ -16,13 +16,13 @@ import {
   ROLES_VIEW_ACCESS_KEY,
   FORMS_VIEW_ACCESS_KEY,
   LOCATION_GROUP_VIEW_ACCESS_KEY,
-  ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY,          
-  VIEW_TEAM_ATTENDANCE_ACCESS_KEY,                   
-  VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,              
-  VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,          
-  VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,     
-  VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,               
-  VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY, 
+  ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY,
+  VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
+  VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
+  VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
+  VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY,
   PROJECT_VIEW_ACCESS_KEY,
   CREATE_PROJECT_ACCESS_KEY,
   EDIT_PROJECT_ACCESS_KEY,
@@ -31,8 +31,8 @@ import {
   TASK_SETTINGS_VIEW_ACCESS_KEY,
   CREATE_TASK_SETTINGS_ACCESS_KEY,
   EDIT_TASK_SETTINGS_ACCESS_KEY,
-
 } from "../../common/constant/RoleConstants";
+import { useSelector } from "react-redux";
 
 const Navdata = () => {
   const history = useNavigate();
@@ -94,6 +94,10 @@ const Navdata = () => {
 
   const [iscurrentState, setIscurrentState] = useState("Dashboard");
 
+  // Unread count is kept in Redux by NotificationDropdown (topbar bell, always
+  // mounted) and by the Notifications page. Navdata only reads it.
+  const unread = useSelector((state) => state.NotificationReducer.unread_count);
+
   function updateIconSidebar(e) {
     if (e && e.target && e.target.getAttribute("subitems")) {
       const ul = document.getElementById("two-column-menu");
@@ -112,7 +116,7 @@ const Navdata = () => {
   useEffect(() => {
     const path = location.pathname;
 
-    const reportPaths = ["/attendancereport"];
+    const reportPaths = ["/attendancereport", "/leavereport", "/breakreport"];
     const crmPaths = ["/clients", "/projects", "/tasks", "/task-settings"];
     const attendancePaths = [
       "/attendance",
@@ -292,15 +296,9 @@ const Navdata = () => {
             label: "Approval",
             link: "/approval",
             parentId: "baseUi",
-            // perm: [
-            //   "8d33a155-2d7e-4a5d-8608-35431a44662c",
-            //   "2ebd3c5d-dca8-45cc-8334-5a32f2451893",
-            //   "1b5d106f-f3e8-41f3-8041-d3f71a19d27d",
-            //   "08cd201a-d20d-45d3-8b60-3a6fb7e4acc0",
-            // ],
             perm: [
-              VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
-              VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
+              // VIEW_TEAM_ATTENDANCE_ACCESS_KEY,
+              // VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
               VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
               VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
               VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY,
@@ -312,7 +310,6 @@ const Navdata = () => {
             label: "Leave Type",
             link: "/leavetype",
             parentId: "baseUi",
-            // perm: [],
             perm: [ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY],
           },
           {
@@ -320,7 +317,6 @@ const Navdata = () => {
             label: "WorkSchedule",
             link: "/workschedule",
             parentId: "baseUi",
-            // perm: [],
             perm: [ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY],
           },
         ],
@@ -409,12 +405,14 @@ const Navdata = () => {
         parentId: "baseUi",
         perm: "all",
         icon: "ri-notification-3-line",
+        badgeName:
+          unread > 0 ? (unread > 99 ? "99+" : String(unread)) : undefined,
+        badgeColor: "danger",
       },
       {
         id: "control-panel",
         label: "CRM",
         icon: " ri-list-settings-line",
-        // perm: "all",
         perm: [
           CLIENT_VIEW_ACCESS_KEY,
           CREATE_CLIENT_ACCESS_KEY,
@@ -442,7 +440,6 @@ const Navdata = () => {
             label: "Clients",
             link: "/clients",
             parentId: "baseUi",
-            // perm: "all",
             perm: [
               CLIENT_VIEW_ACCESS_KEY,
               CREATE_CLIENT_ACCESS_KEY,
@@ -454,7 +451,11 @@ const Navdata = () => {
             label: "Projects",
             link: "/projects",
             parentId: "baseUi",
-            perm: [PROJECT_VIEW_ACCESS_KEY, CREATE_PROJECT_ACCESS_KEY, EDIT_PROJECT_ACCESS_KEY],
+            perm: [
+              PROJECT_VIEW_ACCESS_KEY,
+              CREATE_PROJECT_ACCESS_KEY,
+              EDIT_PROJECT_ACCESS_KEY,
+            ],
           },
           {
             id: "tasks",
@@ -468,7 +469,11 @@ const Navdata = () => {
             label: "Settings",
             link: "/task-settings",
             parentId: "baseUi",
-            perm: [TASK_SETTINGS_VIEW_ACCESS_KEY, CREATE_TASK_SETTINGS_ACCESS_KEY, EDIT_TASK_SETTINGS_ACCESS_KEY],
+            perm: [
+              TASK_SETTINGS_VIEW_ACCESS_KEY,
+              CREATE_TASK_SETTINGS_ACCESS_KEY,
+              EDIT_TASK_SETTINGS_ACCESS_KEY,
+            ],
           },
         ],
       },
@@ -483,22 +488,6 @@ const Navdata = () => {
     } else if (!!profile_data && !!profile_data.permission_list) {
       let updated_menu = [];
       menuList.map((route) => {
-        const hasEmployeePermission =
-          Array.isArray(route?.perm) &&
-          route.perm.some((d) => {
-            console.log("d =", d);
-            return profile_data?.permission_list.includes(d);
-          });
-
-        const isAllPermission =
-          typeof route?.perm === "string" && route?.perm === "all";
-
-        const isHeader = route.isHeader === true;
-
-        console.log("Route:", route.label);
-        console.log("hasEmployeePermission:", hasEmployeePermission);
-        console.log("isAllPermission:", isAllPermission);
-        console.log("isHeader:", isHeader);
         if (
           (Array.isArray(route?.perm) &&
             (route?.perm).some((d) =>
