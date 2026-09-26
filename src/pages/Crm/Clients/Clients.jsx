@@ -1,5 +1,12 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "react-toastify/dist/ReactToastify.css";
+import {
+  Offcanvas,
+  OffcanvasHeader,
+  OffcanvasBody,
+   Row,
+  Col,
+} from "reactstrap";
 import InfoTable from "../../../component/common/table/InfoTable";
 import { MetaTitle } from "../../../common/data/MetaTitle";
 import { useDispatch, useSelector } from "react-redux";
@@ -12,13 +19,23 @@ const Clients = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // ================= REDUX DATA =================
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const toggleDrawer = () => setDrawerOpen((prev) => !prev);
+
   const { client_data } = useSelector((state) => state.ClientReducer);
 
-  // ================= LOAD LOCAL STORAGE ON PAGE LOAD =================
+  const employeeData = GetLocalStorageData("employee") || [];
+
+  const getEmployeeName = (empId) => {
+    const emp = employeeData.find((e) => Number(e.id) === Number(empId));
+    if (!emp) return "-";
+    return `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || emp.name || "-";
+  };
+
   useEffect(() => {
     const localClients = GetLocalStorageData("clients") || [];
-
     dispatch(setClients(localClients));
   }, [dispatch]);
 
@@ -29,7 +46,10 @@ const Clients = () => {
       filterable: false,
       accessor: (obj) => (
         <span
-          onClick={() => navigate(`/client-overview/${obj.id}`)}
+          onClick={() => {
+            setSelectedClient(obj);
+            setDrawerOpen(true);
+          }}
           style={{
             cursor: "pointer",
             color: "#405189",
@@ -91,7 +111,6 @@ const Clients = () => {
       accessor: (obj) => {
         const status = obj.status ? "Active" : "Inactive";
         const statusClass = obj.status ? "success" : "warning";
-
         return (
           <span
             className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
@@ -140,6 +159,10 @@ const Clients = () => {
 
   document.title = `Clients | ${MetaTitle}`;
 
+  const websiteLink = selectedClient && selectedClient.website
+    ? selectedClient.website
+    : "";
+
   return (
     <React.Fragment>
       <InfoTable
@@ -151,6 +174,147 @@ const Clients = () => {
         filterOptions={filterOptions}
         width_per={"30%"}
       />
+
+           <Offcanvas
+        isOpen={drawerOpen}
+        toggle={toggleDrawer}
+        direction="end"
+        style={{ width: "480px" }}
+      >
+        <OffcanvasHeader toggle={toggleDrawer}>
+          <div>
+            <h5 className="mb-0 fw-bold">{selectedClient?.name || "Client Details"}</h5>
+            <span
+              className={`badge text-uppercase bg-${
+                selectedClient?.status ? "success" : "warning"
+              }-subtle text-${selectedClient?.status ? "success" : "warning"} mt-1`}
+            >
+              {selectedClient?.status ? "Active" : "Inactive"}
+            </span>
+          </div>
+        </OffcanvasHeader>
+      <OffcanvasBody className="pt-2">
+          {/* ── Contact Info Section ── */}
+          <div className="mb-4">
+            <h6 className="text-uppercase text-muted fs-12 fw-bold mb-3 pb-1 border-bottom">
+              Contact Information
+            </h6>
+               <div className="d-flex justify-content-between align-items-center mb-4">
+              <span className="text-muted">Phone</span>
+              <span className="fw-medium">
+                {selectedClient?.phone_number || "-"}
+              </span>
+            </div>
+                       <div className="d-flex justify-content-between align-items-center mb-4">
+              <span className="text-muted">Pincode</span>
+              <span className="fw-medium">
+                {selectedClient?.pincode || "-"}
+              </span>
+            </div>
+                        <div className="d-flex justify-content-between align-items-center mb-4">
+              <span className="text-muted">Address</span>
+              <span className="fw-medium text-end">
+                {selectedClient?.address || "-"}
+              </span>
+            </div>
+                       <div className="d-flex justify-content-between align-items-center mb-4">
+              <span className="text-muted">City</span>
+              <span className="fw-medium">
+                {selectedClient?.city || "-"}
+              </span>
+            </div>
+                       <div className="d-flex justify-content-between align-items-center mb-4">
+              <span className="text-muted">State</span>
+              <span className="fw-medium">
+                {selectedClient?.state || "-"}
+              </span>
+            </div>
+                        <div className="d-flex justify-content-between align-items-center mb-4">
+              <span className="text-muted">Country</span>
+              <span className="fw-medium">
+                {selectedClient?.country || "-"}
+              </span>
+            </div>
+            <div className="d-flex justify-content-between align-items-center">
+              <span className="text-muted">Website</span>
+              <span className="fw-medium">
+                {websiteLink ? (
+                  <a href={websiteLink} target="_blank" rel="noreferrer">
+                    {websiteLink}
+                  </a>
+                ) : (
+                  "-"
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* ── Business Info Section ── */}
+          <div className="mb-4">
+            <h6 className="text-uppercase text-muted fs-12 fw-bold mb-3 pb-1 border-bottom">
+              Business Details
+            </h6>
+                          <div className="d-flex justify-content-between align-items-center mb-4">
+              <span className="text-muted">GST Number</span>
+              <span className="fw-medium">
+                {selectedClient?.gst_number || "-"}
+              </span>
+            </div>
+                       <div className="d-flex justify-content-between align-items-center mb-4">
+              <span className="text-muted">Owner</span>
+              <span className="fw-medium">
+                {getEmployeeName(selectedClient?.owner)}
+              </span>
+            </div>
+            <div className="d-flex justify-content-between align-items-center">
+              <span className="text-muted">Managers</span>
+              <span className="fw-medium text-end">
+                {selectedClient?.manager_id_list?.length > 0
+                  ? selectedClient.manager_id_list
+                      .map((id) => getEmployeeName(id))
+                      .join(", ")
+                  : "-"}
+              </span>
+            </div>
+          </div>
+
+          {/* ── Locations Section ── */}
+          {selectedClient?.entity_location_details?.length > 0 && (
+            <div className="mb-4">
+              <h6 className="text-uppercase text-muted fs-12 fw-bold mb-3 pb-1 border-bottom">
+                Locations
+              </h6>
+              {selectedClient.entity_location_details.map((loc, idx) => (
+                <div
+                  key={idx}
+                  className="d-flex align-items-start mb-2 p-2 rounded"
+                  style={{ backgroundColor: "#f8f9fa" }}
+                >
+                  <i className="ri-map-pin-2-fill text-primary me-2 mt-1"></i>
+                  <div>
+                    <div className="fw-medium">{loc.name}</div>
+                    <div className="text-muted fs-12">
+                      {loc.accurate_address || loc.address || "-"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="btn btn-primary w-100"
+            onClick={() => {
+              setDrawerOpen(false);
+              navigate(`/client-overview/${selectedClient?.id}`);
+            }}
+          >
+            <i className="ri-folder-2-line align-bottom me-1"></i>
+            View Projects
+          </button>
+        </OffcanvasBody>
+      </Offcanvas>
     </React.Fragment>
   );
 };

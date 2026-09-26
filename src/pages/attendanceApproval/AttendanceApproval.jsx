@@ -150,10 +150,13 @@ const AttendanceApproval = ({
       filterable: false,
       id: "employee_id",
 
-      accessor: (obj) => {
+          accessor: (obj) => {
         const thisEmployee = EmployeeData.find(
-          (data) => data.id === obj.employee_id,
+          (data) => String(data.id) === String(obj.employee_id),
         );
+        if (!thisEmployee) {
+          return <span className="text-muted">-</span>;
+        }
         return thisEmployee.profile_url ? (
           <div className="d-flex gap-2 align-items-center lc_sticky_first_additional_col">
             <div className="flex-shrink-0">
@@ -203,11 +206,11 @@ const AttendanceApproval = ({
       accessor: (obj) => {
         let thisEmp = EmployeeData.find((data) => data.id === obj.employee_id);
 
-        let thisDepartment = thisEmp
-          ? thisEmp.primary_department_id_list.map((deptId) =>
-              DepartmentData.find((dept) => dept.id === deptId),
-            )
-          : [];
+            let thisDepartment = (thisEmp?.primary_department_id_list || [])
+          .map((deptId) =>
+            DepartmentData.find((dept) => Number(dept.id) === Number(deptId)),
+          )
+          .filter(Boolean);
 
         let firstDep_name = thisDepartment?.length
           ? thisDepartment[0].name
@@ -654,9 +657,10 @@ const AttendanceApproval = ({
             <SimpleBar style={{ height: "300px" }} className="px-3 mx-n3 mb-2">
               {notesList && notesList.length > 0 ? (
                 notesList.map((d) => {
-                  let emp_details =
-                    !!EmployeeData &&
-                    EmployeeData.find((e) => e.id === d.employee_id);
+                                   let emp_details =
+                    EmployeeData.find(
+                      (e) => String(e.id) === String(d.employee_id),
+                    ) || { first_name: "Unknown", email: "" };
 
                   return (
                     <div className="d-flex mb-4">
