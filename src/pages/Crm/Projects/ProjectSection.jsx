@@ -11,7 +11,7 @@ import {
   TabPane,
 } from "reactstrap";
 import classnames from "classnames";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate  } from "react-router-dom";
 import slack from "../../../assets/images/brands/slack.png";
 import ProjectOverview from "./ProjectOverview";
 import { useSelector } from "react-redux";
@@ -22,6 +22,7 @@ import ProjectsFiles from "./ProjectsFiles";
 
 const ProjectSection = () => {
   const { id } = useParams();
+   const navigate = useNavigate();
 
   // Try Redux cache first for instant render
   const cachedProject = useSelector((state) =>
@@ -85,7 +86,7 @@ const ProjectSection = () => {
           <Card className="mt-n4 mx-n4">
             <div className="bg-info-subtle">
               <CardBody className="pb-0 px-4">
-                <Row className="mb-3">
+                <Row className="mb-3" align-items-end>
                   <div className="col-md">
                     <Row className="align-items-center g-3">
                       <div className="col-md-auto">
@@ -138,8 +139,18 @@ const ProjectSection = () => {
                             </div>
                           </div>
                         )}
-                      </div>
+                                            </div>
                     </Row>
+                  </div>
+                  <div className="col-md-auto ms-auto me-3">
+                    <button
+                      type="button"
+                      className="btn btn btn-primary"
+                      onClick={() => navigate(-1)}
+                    >
+                      <i className="ri-arrow-left-line align-bottom me-1"></i>
+                      Back
+                    </button>
                   </div>
                 </Row>
 
