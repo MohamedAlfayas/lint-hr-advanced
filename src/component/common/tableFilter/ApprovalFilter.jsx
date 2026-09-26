@@ -64,11 +64,6 @@ const DEFAULT_PAGE_SIZE = 25;
 // to cover a month's worth of records in one request.
 const BADGE_COUNT_PAGE_SIZE = 5000;
 
-const employeeTypeOptionsNew = [
-  { id: "0", label: "All Employee", value: "0" },
-  { id: "1", label: "My Team Members", value: "1" },
-];
-
 const ApprovalFilter = ({ formname }) => {
   const { leave_approval_data } = useSelector(
     (data) => data.LeaveApprovalReducer,
@@ -129,7 +124,6 @@ const ApprovalFilter = ({ formname }) => {
   const dispatch = useDispatch();
 
   const [employeeType, setEmployeeType] = useState(1);
-  const [employeeTypeNew, setEmployeeTypeNew] = useState(1);
   const [filteredMonth, setFilteredMonth] = useState(
     `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
       .toString()
@@ -209,12 +203,6 @@ const ApprovalFilter = ({ formname }) => {
       ...prev,
       employeeType: e.value,
     }));
-  };
-
-  const handleEmployeeTypeChangeNew = (e) => {
-    const value = Number(e?.value ?? 1);
-
-    setEmployeeTypeNew(value);
   };
 
   const handleDateRangeChange = (e, monthStr) => {
@@ -328,16 +316,8 @@ const ApprovalFilter = ({ formname }) => {
   };
 
   // Shared URL builder for both approval kinds.
-  // Sends BOTH employee-type values on every request:
-  //   - employee_type      : permission-forced scope (unchanged behavior —
-  //                          if the user only has one of the two permissions
-  //                          for that kind, that scope wins outright)
-  //   - employee_type_new  : whatever the "All Employee / My Team Members"
-  //                          select (employeeTypeOptionsNew) is currently
-  //                          set to, sent independently so the backend
-  //                          receives both regardless of which one scopes
-  //                          the query.
-  // NOTE: confirm "employee_type_new" is the param name the backend expects.
+  // employee_type is the single selected value from employeeTypeOptions
+  // (All Employee / My Team Members) — sent as the `employee_type` param.
   const buildUrl = (kind, targetPage, targetPageSize) => {
     const deptParam = getDepartmentParam();
     const empParam = getEmployeeParam();
@@ -351,9 +331,7 @@ const ApprovalFilter = ({ formname }) => {
         filteredMonth +
         "&employee_type=";
 
-    // employee_type is always the employeeTypeOptionsNew selection
-    // (All Employee / My Team Members) — no separate key needed.
-    const scopedUrl = baseUrl + employeeTypeNew + deptParam + empParam;
+    const scopedUrl = baseUrl + employeeType + deptParam + empParam;
 
     const leaveTypeParam = isLeave ? getLeaveTypeParam() : "";
 
@@ -480,14 +458,14 @@ const ApprovalFilter = ({ formname }) => {
       (!showAllAttendanceApproval && !showTeamAttendanceApproval && tab === "1")
     ) {
       if (showAllLeaveApproval || showTeamLeaveApproval) {
-        handleLeaveFilter(employeeTypeNew, targetPage, targetPageSize);
+        handleLeaveFilter(employeeType, targetPage, targetPageSize);
       } else {
         dispatch(setLoaderVisible(false));
         toast.error("Something Went Wrong!");
       }
     } else if (tab === "1") {
       if (showAllAttendanceApproval || showTeamAttendanceApproval) {
-        handleAttendanceFilter(employeeTypeNew, targetPage, targetPageSize);
+        handleAttendanceFilter(employeeType, targetPage, targetPageSize);
       } else {
         dispatch(setLoaderVisible(false));
         toast.error("Something Went Wrong!");
@@ -523,7 +501,6 @@ const ApprovalFilter = ({ formname }) => {
     return () => clearTimeout(timer);
   }, [
     employeeType,
-    employeeTypeNew,
     filteredMonth,
     activeTab,
     selectedEmployees,
@@ -636,24 +613,6 @@ const ApprovalFilter = ({ formname }) => {
                     components={{ Option: EmployeeDisplayInSelect }}
                     value={selectedEmployees}
                     filterOption={handleEmployeeSearch}
-                  />
-                </Col>
-                <Col md={3}>
-                  <Select
-                    id="employee_filter_new"
-                    name="employee_filter_new"
-                    isClearable={false}
-                    isMulti={false}
-                    options={employeeTypeOptionsNew}
-                    className="basic-multi-select"
-                    placeholder="Select Employee Type"
-                    allowClear={false}
-                    onChange={handleEmployeeTypeChangeNew}
-                    value={
-                      employeeTypeOptionsNew.find(
-                        (d) => Number(d.value) === Number(employeeTypeNew),
-                      ) || employeeTypeOptionsNew[1]
-                    }
                   />
                 </Col>
                 <Col md={3}>

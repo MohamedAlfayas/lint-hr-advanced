@@ -10,6 +10,7 @@ import {
   ModalHeader,
   Button,
   Spinner,
+  Input,
 } from "reactstrap";
 import SimpleBar from "simplebar-react";
 import { MetaTitle } from "../../common/data/MetaTitle";
@@ -42,6 +43,7 @@ dayjs.extend(customParseFormat);
 
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const SEARCH_DEBOUNCE_MS = 400;
 
 // builds [1, "...", 4, 5, 6, "...", 20]
 const getPageNumbers = (current, total) => {
@@ -105,21 +107,42 @@ const AttendanceReport = () => {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [totalCount, setTotalCount] = useState(0);
 
+  // search state: searchInput is what the user types (updates instantly),
+  // search is the debounced value that actually drives the API call.
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-  // GET /report/get-team-daily-attendance-report/?thisMonth=2026-09&page=1&page_size=10
-  const getReportData = (thisMonth, targetPage, targetPageSize) => {
+  // debounce searchInput -> search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1); // restart from first page on a new search
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // GET /report/get-team-daily-attendance-report/?thisMonth=2026-09&page=1&page_size=10&search=john
+  const getReportData = (thisMonth, targetPage, targetPageSize, searchTerm) => {
     dispatch(setLoaderVisible(true));
+
+    let url =
+      "report/get-team-daily-attendance-report/?thisMonth=" +
+      thisMonth +
+      "&page=" +
+      targetPage +
+      "&page_size=" +
+      targetPageSize;
+
+    if (searchTerm) {
+      url += "&search=" + encodeURIComponent(searchTerm);
+    }
 
     Api({
       method: "GET",
-      url:
-        "report/get-team-daily-attendance-report/?thisMonth=" +
-        thisMonth +
-        "&page=" +
-        targetPage +
-        "&page_size=" +
-        targetPageSize,
+      url,
     })
       .then((res) => {
         const body = res?.data;
@@ -145,10 +168,10 @@ const AttendanceReport = () => {
         dispatch(setLoaderVisible(false));
       });
   };
-  // fetch on mount and whenever month / page / page size changes
+  // fetch on mount and whenever month / page / page size / search changes
   useEffect(() => {
-    getReportData(filterKeys.month, page, pageSize);
-  }, [filterKeys.month, page, pageSize]);
+    getReportData(filterKeys.month, page, pageSize, search);
+  }, [filterKeys.month, page, pageSize, search]);
 
   const handleDateRangeChange = (e, monthStr) => {
     setFilterKeys({
@@ -156,6 +179,14 @@ const AttendanceReport = () => {
       month: monthStr,
     });
     setPage(1); // restart from first page for a new month
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchInput(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchInput("");
   };
 
   const handlePageChange = (newPage) => {
@@ -842,15 +873,22 @@ const AttendanceReport = () => {
     });
   };
 
-  // GET /report/export-all-attendance-report/?thisMonth=2026-09
-  // Fetches every employee for the selected month, then builds the same XLSX.
+  // GET /report/export-all-attendance-report/?thisMonth=2026-09&search=john
+  // Fetches every employee for the selected month (honoring the current
+  // search filter), then builds the same XLSX.
   const handleExportAll = () => {
     setExportingAll(true);
     dispatch(setLoaderVisible(true));
 
+    let url =
+      "report/export-all-attendance-report/?thisMonth=" + filterKeys.month;
+    if (search) {
+      url += "&search=" + encodeURIComponent(search);
+    }
+
     Api({
       method: "GET",
-      url: "report/export-all-attendance-report/?thisMonth=" + filterKeys.month,
+      url,
     })
       .then((res) => {
         const list = Array.isArray(res?.data?.data) ? res.data.data : [];
@@ -1293,7 +1331,7 @@ const AttendanceReport = () => {
         <Container fluid>
           <Card>
             <CardHeader className="border-0 rounded">
-              <Row className="g-2">
+              <Row className="g-2 align-items-center">
                 <Col xl={2}>
                   <div className="form-icon right">
                     <DatePicker
@@ -1305,6 +1343,54 @@ const AttendanceReport = () => {
                       placeholder="Select Month"
                       onChange={handleDateRangeChange}
                     />
+                  </div>
+                </Col>
+
+                <Col xl={3}>
+                  <div className="position-relative">
+                    <Input
+                      type="text"
+                      className="form-control"
+                      placeholder="Search employee..."
+                      value={searchInput}
+                      onChange={handleSearchChange}
+                      style={{ paddingRight: "32px" }}
+                    />
+                    {/* Plain <i class="search-icon"> from the template CSS
+                        ships with pointer-events: none, so clicks never
+                        reached it. Using a focusable <span> with an
+                        explicit pointer-events/zIndex fixes that. */}
+                    <span
+                      role="button"
+                      tabIndex={searchInput ? 0 : -1}
+                      aria-label="Clear search"
+                      onClick={searchInput ? clearSearch : undefined}
+                      onKeyDown={(e) => {
+                        if (
+                          searchInput &&
+                          (e.key === "Enter" || e.key === " ")
+                        ) {
+                          e.preventDefault();
+                          clearSearch();
+                        }
+                      }}
+                      style={{
+                        position: "absolute",
+                        right: "10px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        cursor: searchInput ? "pointer" : "default",
+                        pointerEvents: "auto",
+                        zIndex: 5,
+                        lineHeight: 0,
+                      }}
+                    >
+                      <i
+                        className={
+                          searchInput ? "ri-close-line" : "ri-search-line"
+                        }
+                      ></i>
+                    </span>
                   </div>
                 </Col>
 

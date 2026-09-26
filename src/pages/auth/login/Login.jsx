@@ -76,22 +76,18 @@ const Login = () => {
       email: Yup.string()
         .trim()
         .required("Please Enter Your Email")
-        .transform((value) =>
-          value ? value.trim().toLowerCase() : value
-        )
+        .transform((value) => (value ? value.trim().toLowerCase() : value))
         // .max(50, "Email must not exceed 50 characters")
         .max(50, "Enter a valid email address")
         .matches(
           // /^[a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*)+$/,
           /^(?!.*\.\.)([a-zA-Z0-9]+([._+-][a-zA-Z0-9]+)*)@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,13}$/,
-          "Enter a valid email address"
+          "Enter a valid email address",
         ),
-      password: Yup.string()
-        .trim()
-        .required("Please Enter Your Password")
+      password: Yup.string().trim().required("Please Enter Your Password"),
 
-        // .max(20, "Password must not exceed 20 characters")
-        // .min(8,"Password must be at least 8 characters long")
+      // .max(20, "Password must not exceed 20 characters")
+      // .min(8,"Password must be at least 8 characters long")
     }),
     onSubmit: (values) => {
       dispatch(setLoaderVisible(true));
@@ -197,8 +193,7 @@ const Login = () => {
           dispatch(setLoaderVisible(false));
 
           const errorMessage =
-            err?.response?.data?.message ||
-            "Invalid Email or Password";
+            err?.response?.data?.message || "Invalid Email or Password";
 
           toast.error(errorMessage);
         });
@@ -253,16 +248,12 @@ const Login = () => {
     }
 
     if (!domainRegex.test(domain)) {
-      toast.error(
-        "Domain can contain only letters, numbers and hyphens (-)"
-      );
+      toast.error("Domain can contain only letters, numbers and hyphens (-)");
       return;
     }
 
     if (domain.startsWith("-") || domain.endsWith("-")) {
-      toast.error(
-        "Domain cannot start or end with a hyphen (-)"
-      );
+      toast.error("Domain cannot start or end with a hyphen (-)");
       return;
     }
 
@@ -288,10 +279,7 @@ const Login = () => {
       .catch((error) => {
         console.log("Validate Domain Error - ", error);
 
-        if (
-          !!error?.response &&
-          error.response.status === 404
-        ) {
+        if (!!error?.response && error.response.status === 404) {
           window.location.href = "/auth/workspace";
         } else {
           toast.error(error?.response?.data?.message);
@@ -348,7 +336,9 @@ const Login = () => {
                               onChange={validation.handleChange}
                               // onBlur={validation.handleBlur}
                               onBlur={(e) => {
-                                const value = e.target.value.trim().toLowerCase();
+                                const value = e.target.value
+                                  .trim()
+                                  .toLowerCase();
 
                                 validation.setFieldValue("email", value);
                                 validation.handleBlur(e);
@@ -361,8 +351,7 @@ const Login = () => {
                                   : false
                               }
                             />
-                            {
-                            validation.touched.email &&
+                            {validation.touched.email &&
                             validation.errors.email ? (
                               <FormFeedback type="invalid">
                                 {validation.errors.email}
@@ -401,23 +390,31 @@ const Login = () => {
                                     : false
                                 }
                               />
-                              {
-                              validation.touched.password &&
+                              {validation.touched.password &&
                               validation.errors.password ? (
                                 <FormFeedback type="invalid">
                                   {validation.errors.password}
                                 </FormFeedback>
                               ) : null}
-                              {!(validation.touched.password && validation.errors.password) && (
-                              <button
-                                className="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted"
-                                type="button"
-                                id="password-addon"
-                                onClick={() => setPasswordShow(!passwordShow)}
-                              >
-                                {/* <i className="ri-eye-fill align-middle"></i> */}
-                                <i className={passwordShow ? "ri-eye-off-fill align-middle" : "ri-eye-fill align-middle"}></i>
-                              </button>
+                              {!(
+                                validation.touched.password &&
+                                validation.errors.password
+                              ) && (
+                                <button
+                                  className="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted"
+                                  type="button"
+                                  id="password-addon"
+                                  onClick={() => setPasswordShow(!passwordShow)}
+                                >
+                                  {/* <i className="ri-eye-fill align-middle"></i> */}
+                                  <i
+                                    className={
+                                      passwordShow
+                                        ? "ri-eye-off-fill align-middle"
+                                        : "ri-eye-fill align-middle"
+                                    }
+                                  ></i>
+                                </button>
                               )}
                             </div>
                           </div>
@@ -447,14 +444,14 @@ const Login = () => {
                                   : "pointer",
                               }}
                             > */}
-                              <Button
-                                color="success"
-                                className="btn btn-success w-100 text-center"
-                                type="submit"
-                                // disabled={!(validation.values.email && validation.values.password && validation.isValid)}
-                              >
-                                Sign In
-                              </Button>
+                            <Button
+                              color="success"
+                              className="btn btn-success w-100 text-center"
+                              type="submit"
+                              // disabled={!(validation.values.email && validation.values.password && validation.isValid)}
+                            >
+                              Sign In
+                            </Button>
                             {/* </span> */}
                           </div>
 

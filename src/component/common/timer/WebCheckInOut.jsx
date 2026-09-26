@@ -77,6 +77,20 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
     };
     const device_type = getDeviceType();
 
+    const getBrowserType = () => {
+      const ua = navigator.userAgent;
+
+      if (/edg/i.test(ua)) return "Edge";
+      if (/opr\//i.test(ua) || /opera/i.test(ua)) return "Opera";
+      if (/chrome|crios/i.test(ua) && !/edg/i.test(ua)) return "Chrome";
+      if (/firefox|fxios/i.test(ua)) return "Firefox";
+      if (/safari/i.test(ua) && !/chrome|crios|edg/i.test(ua)) return "Safari";
+      if (/msie|trident/i.test(ua)) return "Internet Explorer";
+
+      return "Unknown";
+    };
+    const device_browser = getBrowserType();
+
     const getUserIP = async () => {
       try {
         const response = await fetch("https://api.ipify.org?format=json");
@@ -121,6 +135,7 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
           location_id,
           map_data: fullMapData,
           device_type,
+          device_browser,
           ip_address,
         };
 
