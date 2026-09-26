@@ -10,6 +10,7 @@ import {
   ModalHeader,
   Button,
   Spinner,
+  Input,
 } from "reactstrap";
 import SimpleBar from "simplebar-react";
 import { MetaTitle } from "../../common/data/MetaTitle";
@@ -31,6 +32,7 @@ const { Column, HeaderCell, Cell, ColumnGroup } = Table;
 
 const DEFAULT_PAGE_SIZE = 20; // API default (max 100)
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+const SEARCH_DEBOUNCE_MS = 400;
 
 // builds [1, "...", 4, 5, 6, "...", 20]
 const getPageNumbers = (current, total) => {
@@ -69,6 +71,29 @@ const BreakReport = () => {
       .padStart(2, "0")}`,
   });
 
+  // ── search state (debounced) ────────────────
+  // searchInput updates instantly as the user types;
+  // search is the debounced value that drives the API call.
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1); // restart from first page on a new search
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const handleSearchChange = (e) => {
+    setSearchInput(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchInput("");
+  };
+
   // ── pagination state ────────────────────────
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -95,18 +120,25 @@ const BreakReport = () => {
     status_log: [],
   });
 
-  // GET /report/get-employee-break-report/v2/?thisMonth=2026-09&page=1&page_size=20
-  const getReportData = (thisMonth, targetPage, targetPageSize) => {
+  // GET /report/get-employee-break-report/v2/?thisMonth=2026-09&page=1&page_size=20&search=john
+  const getReportData = (thisMonth, targetPage, targetPageSize, searchTerm) => {
     setLoading(true);
+
+    let url =
+      "report/get-employee-break-report/v2/?thisMonth=" +
+      thisMonth +
+      "&page=" +
+      targetPage +
+      "&page_size=" +
+      targetPageSize;
+
+    if (searchTerm) {
+      url += "&search=" + encodeURIComponent(searchTerm);
+    }
+
     Api({
       method: "GET",
-      url:
-        "report/get-employee-break-report/v2/?thisMonth=" +
-        thisMonth +
-        "&page=" +
-        targetPage +
-        "&page_size=" +
-        targetPageSize,
+      url,
     })
       .then((res) => {
         const body = (res && res.data) || {};
@@ -130,10 +162,10 @@ const BreakReport = () => {
       .catch(() => setLoading(false));
   };
 
-  // fetch on mount and whenever month / page / page size changes
+  // fetch on mount and whenever month / page / page size / search changes
   useEffect(() => {
-    getReportData(filterKeys.month, page, pageSize);
-  }, [filterKeys.month, page, pageSize]);
+    getReportData(filterKeys.month, page, pageSize, search);
+  }, [filterKeys.month, page, pageSize, search]);
 
   const handleDateRangeChange = (e, monthStr) => {
     setFilterKeys((p) => ({ ...p, month: monthStr }));
@@ -505,9 +537,10 @@ const BreakReport = () => {
   // ====================================================
   // EXPORT ALL
   //
-  // GET /report/export-all-break-report/?thisMonth=2026-09
-  // Fetches every employee for the selected month (not
-  // paginated), then builds the same XLSX as a normal export.
+  // GET /report/export-all-break-report/?thisMonth=2026-09&search=john
+  // Fetches every employee for the selected month (honoring
+  // the current search filter, not paginated), then builds
+  // the same XLSX as a normal export.
   // Durations from the API are already in seconds, matching
   // what formatDuration/exportExcelFile expect.
   // ====================================================
@@ -515,11 +548,17 @@ const BreakReport = () => {
   const handleExportAll = () => {
     setExportingAll(true);
 
+    let url =
+      "report/export-all-break-report/?thisMonth=" +
+      encodeURIComponent(filterKeys.month);
+
+    if (search) {
+      url += "&search=" + encodeURIComponent(search);
+    }
+
     Api({
       method: "GET",
-      url:
-        "report/export-all-break-report/?thisMonth=" +
-        encodeURIComponent(filterKeys.month),
+      url,
     })
       .then((res) => {
         const body = res?.data;
@@ -675,7 +714,55 @@ const BreakReport = () => {
                   </div>
                 </Col>
 
-                <Col xl={4}>
+                <Col xl={3}>
+                  <div className="position-relative">
+                    <Input
+                      type="text"
+                      className="form-control"
+                      placeholder="Search employee..."
+                      value={searchInput}
+                      onChange={handleSearchChange}
+                      style={{ paddingRight: "32px" }}
+                    />
+                    {/* Plain <i class="search-icon"> from the template CSS
+                        ships with pointer-events: none, so clicks never
+                        reached it. Using a focusable <span> with an
+                        explicit pointer-events/zIndex fixes that. */}
+                    <span
+                      role="button"
+                      tabIndex={searchInput ? 0 : -1}
+                      aria-label="Clear search"
+                      onClick={searchInput ? clearSearch : undefined}
+                      onKeyDown={(e) => {
+                        if (
+                          searchInput &&
+                          (e.key === "Enter" || e.key === " ")
+                        ) {
+                          e.preventDefault();
+                          clearSearch();
+                        }
+                      }}
+                      style={{
+                        position: "absolute",
+                        right: "10px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        cursor: searchInput ? "pointer" : "default",
+                        pointerEvents: "auto",
+                        zIndex: 5,
+                        lineHeight: 0,
+                      }}
+                    >
+                      <i
+                        className={
+                          searchInput ? "ri-close-line" : "ri-search-line"
+                        }
+                      ></i>
+                    </span>
+                  </div>
+                </Col>
+
+                <Col xl={3}>
                   <div className="d-flex align-items-center gap-2">
                     <span className="badge bg-info-subtle text-info fs-12 p-2">
                       Employees: <b>{totalCount}</b>
@@ -683,7 +770,7 @@ const BreakReport = () => {
                   </div>
                 </Col>
 
-                <Col xl={6} className="text-end">
+                <Col xl={4} className="text-end">
                   <div className="d-flex justify-content-end gap-2">
                     <Button
                       type="button"
