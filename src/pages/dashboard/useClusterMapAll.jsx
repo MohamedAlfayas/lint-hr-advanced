@@ -86,9 +86,10 @@ const LS_CUSTOM_FORM_KEY = "custom_form";
 const TIMELINE_WIDTH_CLAMP = "clamp(300px, 26vw, 640px)";
 
 // ── Which of the three timeline "views" is showing on the right panel.
-// Independent of `dataMode` (GPS/Road/Both) below — TAB switches which
-// API/dataset drives the right panel list, dataMode only affects which
-// coordinate fields are used for the map route while on the Location tab.
+// Independent of `dataMode` (GPS/Road/Both/lintAI) below — TAB switches
+// which API/dataset drives the right panel list, dataMode only affects
+// which coordinate fields (or, for lintAI, which separate route dataset)
+// drive the map while on the Location tab.
 const TIMELINE_TABS = {
   LOCATION: "location",
   ACTIVITY: "activity",
@@ -126,6 +127,19 @@ const haversine = (a, b) => {
   return 2 * R * Math.asin(Math.sqrt(h));
 };
 
+// Clockwise degrees from north, from point a toward point b.
+// FORWARD_CLOSED_ARROW points north at rotation 0, so this is the marker rotation.
+const bearingDeg = (a, b) => {
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x =
+    Math.cos(lat1) * Math.sin(lat2) -
+    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return (Math.atan2(y, x) * 180) / Math.PI;
+};
+
 // ── Which coordinate source builds the map/timeline. "gps" = raw
 // latitude/longitude straight from the device, drawn as a solid blue
 // line. "road" = OSRM-snapped formatted_latitude/formatted_longitude
@@ -138,6 +152,16 @@ const DATA_MODES = {
   GPS: "gps",
   ROAD: "road",
   BOTH: "both",
+  // "lintAI" = a dedicated, continuous road-following route fetched from a
+  // separate backend endpoint (GET /location/employee-route/<employee_id>/
+  // ?date=YYYY-MM-DD), NOT derived from the per-ping formatted_latitude/
+  // formatted_longitude fields the way ROAD/BOTH are. Unlike the other three
+  // modes (which just re-derive `path` from data already in memory), this
+  // API call is only ever made when the user explicitly selects this tab —
+  // see the lintAI fetch effect below. There is no cache for it: every time
+  // the tab is (re)selected, or the employee/date changes while it's
+  // selected, it fetches fresh.
+  LINTAI: "lintAI",
 };
 
 // ─── Raw GPS coordinates, straight off the device.
@@ -226,6 +250,9 @@ const COLORS = {
   moving: "#ff9800",
   form: "#7c3aed",
   roadLine: "#dc2626",
+  // Continuous solid line color for the lintAI OSRM-matched route — kept
+  // visually distinct from the dotted roadLine (Road/Both) overlay.
+  lintAILine: "#0d9488",
 };
 
 // ─── Scrollbar styling for the form-submission modal body (matches the
@@ -950,14 +977,15 @@ const UsersClusterMapAll = ({
 
   // Per-employee, per-date location history fetched on demand from
   // GET /attendance/get-location-tracking-data/{emp_id}?date=YYYY-MM-DD
-  // Cached by "empId::date" so switching back to a previously viewed
-  // employee/date combo doesn't re-fetch.
-  const [locationCache, setLocationCache] = useState({});
+  // NO CACHE — every employee or date switch fetches fresh. This trades a
+  // network round-trip for correctness over the previous cache-based
+  // optimization (a stale cached copy could otherwise hide new pings).
+  const [activeLocations, setActiveLocations] = useState([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
 
   // Per-employee, per-date Activity Timeline, from
   // GET /attendance/get-attendance-activity-timeline/{emp_id}?date=YYYY-MM-DD
-  // Cached the same way as locationCache, fetched lazily only once the
+  // Cached the same way, fetched lazily only once the
   // Activity tab is actually opened.
   const [activityCache, setActivityCache] = useState({});
   const [loadingActivity, setLoadingActivity] = useState(false);
@@ -971,10 +999,33 @@ const UsersClusterMapAll = ({
   // ── Live tracking (websocket) ──
   const [liveLocation, setLiveLocation] = useState(null);
   const [isLive, setIsLive] = useState(false);
-  // Live points that arrive before today's REST history is cached. Folding
-  // them into an empty cache key would make `if (locationCache[key]) return`
-  // skip the API fetch and leave the map/timeline empty.
-  const pendingLiveRef = useRef([]);
+
+  // ── lintAI: dedicated OSRM road-matched route (continuous line), fetched
+  //     ONLY when the user selects the "lintAI" tab — see the fetch effect
+  //     near the other data-fetch effects below. Separate from `path`,
+  //     which stays on the raw/road per-ping GPS data used everywhere else.
+  //     No cache here either: reselecting the tab, or changing employee/
+  //     date while it's selected, always re-fetches. ─────────────────────
+  const [matchedRouteCoords, setMatchedRouteCoords] = useState([]); // [{lat,lng}, ...]
+  const [matchedRouteMeta, setMatchedRouteMeta] = useState({
+    distanceMeters: null,
+    durationSeconds: null,
+  });
+  const [loadingMatchedRoute, setLoadingMatchedRoute] = useState(false);
+
+  // Tracks the current date filter without forcing the websocket-connect
+  // effect (which only depends on [selectedEmpId]) to re-run on every date
+  // change. Read inside the live onMessage/onRouteUpdate handlers below.
+  const dateFilterRef = useRef(dateFilter);
+  useEffect(() => {
+    dateFilterRef.current = dateFilter;
+  }, [dateFilter]);
+
+  // Same pattern for dataMode: read inside the websocket's onRouteUpdate
+  // handler (declared further below) so a live lintAI push is only ever
+  // applied while that tab is actually selected, without forcing the
+  // websocket-connect effect to reconnect every time the tab changes.
+  const dataModeRef = useRef(DATA_MODES.GPS);
 
   // ── Which coordinate source is currently driving the map/timeline:
   //    raw GPS ("gps"), OSRM-snapped ("road"), or both overlaid together
@@ -982,6 +1033,9 @@ const UsersClusterMapAll = ({
   //    switching re-derives `path` below from the same cached
   //    `activeLocations`, no extra fetch required. ───────────────────────
   const [dataMode, setDataMode] = useState(DATA_MODES.GPS);
+  useEffect(() => {
+    dataModeRef.current = dataMode;
+  }, [dataMode]);
 
   // ── Form submission details modal ──
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -1078,11 +1132,14 @@ const UsersClusterMapAll = ({
   useEffect(() => {
     setDeptFilter("All");
     setSelectedEmpId(initialEmpId ?? null);
-    setLocationCache({});
+    setActiveLocations([]);
     setActivityCache({});
     setMobileCache({});
     setDateFilter("");
     setActiveTab(TIMELINE_TABS.LOCATION);
+    setDataMode(DATA_MODES.GPS);
+    setMatchedRouteCoords([]);
+    setMatchedRouteMeta({ distanceMeters: null, durationSeconds: null });
   }, [employeesSignature, initialEmpId]);
 
   // ─── Department options ────────────────────────────────────────
@@ -1155,12 +1212,15 @@ const UsersClusterMapAll = ({
     setDateFilter((prev) => prev || initialDate || todayIsoIN());
   }, [selectedEmpId, initialDate]);
 
-  // ─── Fetch the selected employee + date's location history on demand ──
+  // ─── Fetch the selected employee + date's location history.
+  //     NO CACHE — hits the API every time selectedEmpId or dateFilter
+  //     changes, so switching back to a previously-viewed combo still shows
+  //     current data instead of a stale cached copy. ───────────────────────
   useEffect(() => {
-    if (!selectedEmpId || !dateFilter) return;
-
-    const key = `${selectedEmpId}::${dateFilter}`;
-    if (locationCache[key]) return; // already fetched (even if empty)
+    if (!selectedEmpId || !dateFilter) {
+      setActiveLocations([]);
+      return;
+    }
 
     let cancelled = false;
 
@@ -1172,14 +1232,7 @@ const UsersClusterMapAll = ({
         );
         const data = response?.data?.data;
         if (!cancelled) {
-          const base = Array.isArray(data) ? data : [];
-          const todayKey = `${selectedEmpId}::${todayIsoIN()}`;
-          const pending =
-            key === todayKey ? pendingLiveRef.current.splice(0) : [];
-          setLocationCache((prev) => ({
-            ...prev,
-            [key]: pending.length ? [...base, ...pending] : base,
-          }));
+          setActiveLocations(Array.isArray(data) ? data : []);
         }
       } catch (error) {
         console.error(
@@ -1187,13 +1240,7 @@ const UsersClusterMapAll = ({
           error,
         );
         if (!cancelled) {
-          const todayKey = `${selectedEmpId}::${todayIsoIN()}`;
-          const pending =
-            key === todayKey ? pendingLiveRef.current.splice(0) : [];
-          setLocationCache((prev) => ({
-            ...prev,
-            [key]: pending,
-          }));
+          setActiveLocations([]);
         }
       } finally {
         if (!cancelled) setLoadingLocations(false);
@@ -1204,7 +1251,54 @@ const UsersClusterMapAll = ({
     return () => {
       cancelled = true;
     };
-  }, [selectedEmpId, dateFilter, locationCache]);
+  }, [selectedEmpId, dateFilter]);
+
+  // ─── Fetch the selected employee + date's lintAI (OSRM road-matched)
+  //     route. Unlike every other fetch here, this one is gated on
+  //     `dataMode === DATA_MODES.LINTAI` — it only ever calls the API when
+  //     the user has actually selected the lintAI tab. Switching to any
+  //     other tab does not fetch it, and switching back to lintAI (or
+  //     changing employee/date while it's selected) always re-fetches, with
+  //     no cache. A 404 (no matched route for that employee/date yet) is
+  //     treated as "no route", not an error worth surfacing. ─────────────
+  useEffect(() => {
+    if (dataMode !== DATA_MODES.LINTAI || !selectedEmpId || !dateFilter) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchMatchedRoute = async () => {
+      try {
+        setLoadingMatchedRoute(true);
+        const response = await Api.get(
+          `/location/employee-route/${selectedEmpId}/?date=${dateFilter}`,
+        );
+        const data = response?.data;
+        if (!cancelled) {
+          const route = Array.isArray(data?.route) ? data.route : [];
+          setMatchedRouteCoords(route.map(([lng, lat]) => ({ lat, lng })));
+          setMatchedRouteMeta({
+            distanceMeters: data?.distance_meters ?? null,
+            durationSeconds: data?.duration_seconds ?? null,
+          });
+        }
+      } catch (error) {
+        // 404 = no matched route segment for this employee/date yet
+        if (!cancelled) {
+          setMatchedRouteCoords([]);
+          setMatchedRouteMeta({ distanceMeters: null, durationSeconds: null });
+        }
+      } finally {
+        if (!cancelled) setLoadingMatchedRoute(false);
+      }
+    };
+
+    fetchMatchedRoute();
+    return () => {
+      cancelled = true;
+    };
+  }, [dataMode, selectedEmpId, dateFilter]);
 
   // ─── Fetch Activity Timeline whenever the Activity tab is active
   //     (including every time the user switches onto it) and whenever
@@ -1288,13 +1382,6 @@ const UsersClusterMapAll = ({
       cancelled = true;
     };
   }, [activeTab, selectedEmpId, dateFilter]);
-
-  // ─── Location history for the active employee + selected date ─────
-  const activeLocations = useMemo(() => {
-    if (!selectedEmpId || !dateFilter) return [];
-    const key = `${selectedEmpId}::${dateFilter}`;
-    return locationCache[key] || [];
-  }, [selectedEmpId, dateFilter, locationCache]);
 
   // ─── Activity Timeline rows for the active employee + selected date ──
   const activeActivity = useMemo(() => {
@@ -1412,36 +1499,26 @@ const UsersClusterMapAll = ({
 
   // ─── Live tracking: connect to the watch socket for whichever employee
   //     is currently selected (follows dropdown changes, not just the
-  //     employee the modal was opened for). On a successful connection we
-  //     also drop today's cached API data so the fetch effect above pulls
-  //     a fresh copy — the socket alone isn't treated as the source of
-  //     truth for the initial state. Every subsequent message is folded
-  //     into today's cache so the map + timeline update live, the same
-  //     way a fresh API fetch would render them. ─────────────────────────
+  //     employee the modal was opened for). Reconnects only when the
+  //     employee changes, not on date changes — the date filter is read via
+  //     `dateFilterRef` inside the handlers so live events only get applied
+  //     when the person is actually viewing today. No cache to manage here
+  //     any more: a live ping is simply appended straight onto
+  //     `activeLocations` when today is on screen. ─────────────────────────
   useEffect(() => {
     if (!selectedEmpId) {
       disconnectWebSocket();
       setIsLive(false);
       setLiveLocation(null);
-      pendingLiveRef.current = [];
       return;
     }
 
     setLiveLocation(null);
     setIsLive(false);
-    pendingLiveRef.current = [];
 
     connectWebSocket(selectedEmpId, {
       onOpen: () => {
         setIsLive(true);
-        pendingLiveRef.current = [];
-        const todayKey = `${selectedEmpId}::${todayIsoIN()}`;
-        setLocationCache((prev) => {
-          if (!(todayKey in prev)) return prev;
-          const next = { ...prev };
-          delete next[todayKey];
-          return next;
-        });
       },
       onMessage: (data) => {
         // Ignore watch acks / non-tracking frames. Accept null lat/lng when
@@ -1460,15 +1537,44 @@ const UsersClusterMapAll = ({
 
         // Only fold live points into TODAY's history — a different date
         // being viewed shouldn't get contaminated with live data.
-        const todayKey = `${selectedEmpId}::${todayIsoIN()}`;
-        setLocationCache((prev) => {
-          // Don't create today's key from WS alone — that skips REST fetch.
-          if (!(todayKey in prev)) {
-            pendingLiveRef.current = [...pendingLiveRef.current, normalized];
-            return prev;
-          }
-          return { ...prev, [todayKey]: [...prev[todayKey], normalized] };
+        if (dateFilterRef.current === todayIsoIN()) {
+          setActiveLocations((prev) => [...prev, normalized]);
+        }
+      },
+      // ── lintAI live updates: only applied when the lintAI tab is the one
+      //    currently selected AND today is on screen. Selecting a different
+      //    tab means these pushes are simply ignored — they never trigger
+      //    an API call or state update on their own. ───────────────────────
+      onRouteUpdate: (data) => {
+        if (!data?.route) return;
+        if (dataModeRef.current !== DATA_MODES.LINTAI) return;
+        if (dateFilterRef.current !== todayIsoIN()) return;
+
+        const coords = data.route.map(([lng, lat]) => ({ lat, lng }));
+        // The socket sends only the new leg, in travel order. Append it
+        // onto the day's line from EmployeeRouteSegment.
+        setMatchedRouteCoords((prev) => {
+          if (!prev.length) return coords;
+          const last = prev[prev.length - 1];
+          const first = coords[0];
+          const incoming =
+            first &&
+            Math.abs(first.lat - last.lat) < 1e-5 &&
+            Math.abs(first.lng - last.lng) < 1e-5
+              ? coords.slice(1)
+              : coords;
+          return incoming.length ? [...prev, ...incoming] : prev;
         });
+        setMatchedRouteMeta((prev) => ({
+          distanceMeters:
+            data?.distance_meters == null
+              ? prev.distanceMeters
+              : (Number(prev.distanceMeters) || 0) + Number(data.distance_meters),
+          durationSeconds:
+            data?.duration_seconds == null
+              ? prev.durationSeconds
+              : (Number(prev.durationSeconds) || 0) + Number(data.duration_seconds),
+        }));
       },
       onClose: () => setIsLive(false),
       onError: () => setIsLive(false),
@@ -1477,7 +1583,6 @@ const UsersClusterMapAll = ({
     return () => {
       disconnectWebSocket();
       setIsLive(false);
-      pendingLiveRef.current = [];
     };
   }, [selectedEmpId]);
 
@@ -1625,6 +1730,13 @@ const UsersClusterMapAll = ({
       .filter(hasValidCoords);
   }, [activeLocations, dataMode]);
 
+  // Playback follows the lintAI road line while that tab is selected.
+  // Other tabs keep the GPS / road ping path.
+  const playbackPath = useMemo(() => {
+    if (dataMode === DATA_MODES.LINTAI) return matchedRouteCoords;
+    return mapPath;
+  }, [dataMode, matchedRouteCoords, mapPath]);
+
   // ─── Trip summary: duration + total distance ──────────────────
   const summary = useMemo(() => {
     if (path.length === 0) return { duration: "-", distance: "0 Km", km: 0 };
@@ -1683,6 +1795,27 @@ const UsersClusterMapAll = ({
       fitToPath(mapRef.current, mapPath);
   }, [mapPath, fitToPath]);
 
+  // ─── lintAI: re-fit to the matched route's own geometry once it arrives
+  //     (it can run further along roads than the raw pings, so fitting to
+  //     mapPath alone could clip it). Only acts while that tab is selected. ──
+  useEffect(() => {
+    if (
+      dataMode === DATA_MODES.LINTAI &&
+      mapRef.current &&
+      matchedRouteCoords.length > 0
+    ) {
+      fitToPath(mapRef.current, matchedRouteCoords);
+    }
+  }, [dataMode, matchedRouteCoords, fitToPath]);
+
+  // Heading of the lintAI line: last segment of the ordered route.
+  const lintAIHeading = useMemo(() => {
+    if (matchedRouteCoords.length < 2) return null;
+    const from = matchedRouteCoords[matchedRouteCoords.length - 2];
+    const to = matchedRouteCoords[matchedRouteCoords.length - 1];
+    return { position: to, rotation: bearingDeg(from, to) };
+  }, [matchedRouteCoords]);
+
   const onMapLoad = useCallback(
     (map) => {
       mapRef.current = map;
@@ -1711,26 +1844,27 @@ const UsersClusterMapAll = ({
   }, [mapPath, fitToPath]);
 
   // ─── Interpolate position + label from a 0..1 progress value ──
-  // Uses mapPath (valid coords only) so playback never jumps to (0,0).
-  // nearIndex is the original timeline index (`pathIndex`).
+  // Uses playbackPath so lintAI walks the matched route and the other
+  // tabs walk the GPS / road pings. nearIndex is the timeline index
+  // (`pathIndex`); lintAI points have none, so the timeline stays put.
   const computeFromProgress = useCallback(
     (t) => {
-      if (mapPath.length === 0) return null;
-      if (mapPath.length === 1) {
+      if (playbackPath.length === 0) return null;
+      if (playbackPath.length === 1) {
         return {
-          pos: { lat: mapPath[0].lat, lng: mapPath[0].lng },
-          label: mapPath[0].timestamp,
-          nearIndex: mapPath[0].pathIndex,
+          pos: { lat: playbackPath[0].lat, lng: playbackPath[0].lng },
+          label: playbackPath[0].timestamp || "",
+          nearIndex: playbackPath[0].pathIndex ?? null,
         };
       }
 
-      const segCount = mapPath.length - 1;
+      const segCount = playbackPath.length - 1;
       const scaled = Math.min(Math.max(t, 0), 1) * segCount;
       const segIndex = Math.min(Math.floor(scaled), segCount - 1);
       const segT = scaled - segIndex;
 
-      const a = mapPath[segIndex];
-      const b = mapPath[segIndex + 1];
+      const a = playbackPath[segIndex];
+      const b = playbackPath[segIndex + 1];
 
       const lat = a.lat + (b.lat - a.lat) * segT;
       const lng = a.lng + (b.lng - a.lng) * segT;
@@ -1738,36 +1872,36 @@ const UsersClusterMapAll = ({
 
       return {
         pos: { lat, lng },
-        label: near.timestamp,
-        nearIndex: near.pathIndex,
+        label: near.timestamp || "",
+        nearIndex: near.pathIndex ?? null,
       };
     },
-    [mapPath],
+    [playbackPath],
   );
 
   // ─── Build the polyline coords drawn so far (start → current) ─
   const getDrawnPath = useCallback(
     (t) => {
-      if (mapPath.length < 2) return [];
-      const segCount = mapPath.length - 1;
+      if (playbackPath.length < 2) return [];
+      const segCount = playbackPath.length - 1;
       const scaled = Math.min(Math.max(t, 0), 1) * segCount;
       const segIndex = Math.min(Math.floor(scaled), segCount - 1);
       const segT = scaled - segIndex;
 
-      const drawn = mapPath.slice(0, segIndex + 1).map((p) => ({
+      const drawn = playbackPath.slice(0, segIndex + 1).map((p) => ({
         lat: p.lat,
         lng: p.lng,
       }));
 
-      const a = mapPath[segIndex];
-      const b = mapPath[segIndex + 1];
+      const a = playbackPath[segIndex];
+      const b = playbackPath[segIndex + 1];
       drawn.push({
         lat: a.lat + (b.lat - a.lat) * segT,
         lng: a.lng + (b.lng - a.lng) * segT,
       });
       return drawn;
     },
-    [mapPath],
+    [playbackPath],
   );
 
   // ─── Animation loop (playback) ─────────────────────────────────
@@ -1828,12 +1962,12 @@ const UsersClusterMapAll = ({
 
   // ─── Always-on marching-ants flow along the route line ─────────
   useEffect(() => {
-    if (mapPath.length < 2) return;
+    if (playbackPath.length < 2 && mapPath.length < 2) return;
     const id = setInterval(() => {
       setAntOffset((o) => (o + 4) % 140);
     }, 60);
     return () => clearInterval(id);
-  }, [mapPath.length]);
+  }, [playbackPath.length, mapPath.length]);
 
   // ─── Zoom in once, right when playback starts (not on every frame —
   //     calling setZoom repeatedly mid-pan is what caused the "stuck"
@@ -1871,7 +2005,7 @@ const UsersClusterMapAll = ({
   };
 
   const togglePlay = () => {
-    if (mapPath.length < 2) return;
+    if (playbackPath.length < 2) return;
     setSelectedMarker(null);
     if (progress >= 1) {
       setProgress(0);
@@ -1884,7 +2018,11 @@ const UsersClusterMapAll = ({
     setIsPlaying(false);
     setProgress(0);
     applyProgress(0);
-    if (mapRef.current && mapPath.length) fitToPath(mapRef.current, mapPath);
+    const fitPts =
+      dataMode === DATA_MODES.LINTAI && matchedRouteCoords.length > 0
+        ? matchedRouteCoords
+        : mapPath;
+    if (mapRef.current && fitPts.length) fitToPath(mapRef.current, fitPts);
   };
 
   // ─── Refresh → reset everything to initial full view ──────────
@@ -1896,7 +2034,13 @@ const UsersClusterMapAll = ({
     setActiveIndex(null);
     setExpandedIndex(null);
     setSelectedMarker(null);
-    if (mapRef.current) fitToPath(mapRef.current, mapPath);
+    if (mapRef.current) {
+      const pts =
+        dataMode === DATA_MODES.LINTAI && matchedRouteCoords.length > 0
+          ? matchedRouteCoords
+          : mapPath;
+      fitToPath(mapRef.current, pts);
+    }
   };
 
   // ─── Close the InfoWindow (default 'x' + our own custom close icon) ──
@@ -1972,7 +2116,13 @@ const UsersClusterMapAll = ({
     setActiveIndex(null);
     setExpandedIndex(null);
     setSelectedMarker(null);
-    if (mapRef.current) fitToPath(mapRef.current, mapPath);
+    if (mapRef.current) {
+      const pts =
+        dataMode === DATA_MODES.LINTAI && matchedRouteCoords.length > 0
+          ? matchedRouteCoords
+          : mapPath;
+      fitToPath(mapRef.current, pts);
+    }
   };
 
   // ─── Activity / Mobile row click → same "pan + zoom on the map" idea as
@@ -2069,7 +2219,11 @@ const UsersClusterMapAll = ({
       ? (activeIndex / (path.length - 1)) * 100
       : 0;
 
-  const distanceCovered = (summary.km * progress).toFixed(1);
+  const playbackKm =
+    dataMode === DATA_MODES.LINTAI && matchedRouteMeta.distanceMeters != null
+      ? Number(matchedRouteMeta.distanceMeters) / 1000
+      : summary.km;
+  const distanceCovered = (playbackKm * progress).toFixed(1);
 
   // ── Right-panel header count + loading flag, per active tab ──
   const panelCount =
@@ -2113,22 +2267,27 @@ const UsersClusterMapAll = ({
             options={mapOptions}
           >
             {/* Faint full-route track, always visible underneath
-                (Normal / Both — the Road-only dotted line below replaces
-                this entirely rather than layering under it) */}
-            {mapPath.length > 1 && dataMode !== DATA_MODES.ROAD && (
-              <Polyline
-                path={mapPath}
-                options={{
-                  strokeColor: COLORS.route,
-                  strokeOpacity: 0.22,
-                  strokeWeight: 4,
-                }}
-              />
-            )}
+                (Normal / Both — the Road-only dotted line and the lintAI
+                continuous line below replace this entirely rather than
+                layering under it) */}
+            {mapPath.length > 1 &&
+              dataMode !== DATA_MODES.ROAD &&
+              dataMode !== DATA_MODES.LINTAI && (
+                <Polyline
+                  path={mapPath}
+                  options={{
+                    strokeColor: COLORS.route,
+                    strokeOpacity: 0.22,
+                    strokeWeight: 4,
+                  }}
+                />
+              )}
 
             {/* Travelled / full route line with continuous marching-ant
                 arrows (Normal / Both) */}
-            {mapPath.length > 1 && dataMode !== DATA_MODES.ROAD && (
+            {mapPath.length > 1 &&
+              dataMode !== DATA_MODES.ROAD &&
+              dataMode !== DATA_MODES.LINTAI && (
               <Polyline
                 path={drawnLinePath}
                 options={{
@@ -2178,6 +2337,82 @@ const UsersClusterMapAll = ({
               />
             )}
 
+            {/* lintAI: road-matched line from EmployeeRouteSegment.
+                While the player runs, the solid stroke grows along that
+                line; the faint stroke stays the full route underneath. */}
+            {matchedRouteCoords.length > 1 &&
+              dataMode === DATA_MODES.LINTAI && (
+                <>
+                  {(isPlaying || progress > 0) && (
+                    <Polyline
+                      path={matchedRouteCoords}
+                      options={{
+                        strokeColor: COLORS.lintAILine,
+                        strokeOpacity: 0.22,
+                        strokeWeight: 5,
+                      }}
+                    />
+                  )}
+                  <Polyline
+                    path={
+                      isPlaying || progress > 0
+                        ? getDrawnPath(progress)
+                        : matchedRouteCoords
+                    }
+                    options={{
+                      strokeColor: COLORS.lintAILine,
+                      strokeOpacity: 0.95,
+                      strokeWeight: 5,
+                      icons: [
+                        {
+                          icon: {
+                            path: window.google.maps.SymbolPath
+                              .FORWARD_CLOSED_ARROW,
+                            scale: 3.5,
+                            strokeColor: "#ffffff",
+                            strokeWeight: 1,
+                            fillColor: COLORS.lintAILine,
+                            fillOpacity: 1,
+                          },
+                          offset: `${antOffset}px`,
+                          repeat: "120px",
+                        },
+                      ],
+                    }}
+                  />
+                </>
+              )}
+            {matchedRouteCoords.length > 0 &&
+              dataMode === DATA_MODES.LINTAI && (
+                <Marker
+                  position={matchedRouteCoords[0]}
+                  zIndex={10}
+                  icon={{
+                    path: window.google.maps.SymbolPath.CIRCLE,
+                    scale: 9,
+                    fillColor: COLORS.start,
+                    fillOpacity: 1,
+                    strokeWeight: 3,
+                    strokeColor: "#ffffff",
+                  }}
+                />
+              )}
+            {lintAIHeading && dataMode === DATA_MODES.LINTAI && (
+              <Marker
+                position={lintAIHeading.position}
+                zIndex={30}
+                icon={{
+                  path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                  scale: 6,
+                  rotation: lintAIHeading.rotation,
+                  fillColor: "#0f766e",
+                  fillOpacity: 1,
+                  strokeColor: "#ffffff",
+                  strokeWeight: 2,
+                }}
+              />
+            )}
+
             {/* OSRM road-snapped overlay, dotted red (Both mode — drawn
                 on top of the normal blue line above, using the raw
                 activeLocations-derived secondaryRoadLinePath since `path`
@@ -2205,8 +2440,9 @@ const UsersClusterMapAll = ({
                 />
               )}
 
-            {/* Start marker (green) with radar ping ring — first valid coords */}
-            {mapPath.length > 0 && (
+            {/* Start marker (green) with radar ping ring — first valid coords.
+                Hidden on lintAI; that tab's start is the matched route. */}
+            {mapPath.length > 0 && dataMode !== DATA_MODES.LINTAI && (
               <>
                 <OverlayView
                   position={mapPath[0]}
@@ -2243,7 +2479,7 @@ const UsersClusterMapAll = ({
             )}
 
             {/* End marker (red) — last valid coords */}
-            {mapPath.length > 1 && (
+            {mapPath.length > 1 && dataMode !== DATA_MODES.LINTAI && (
               <Marker
                 position={mapPath[mapPath.length - 1]}
                 zIndex={10}
@@ -2269,20 +2505,21 @@ const UsersClusterMapAll = ({
                 gets its own document-pin marker. Clicking it pans/zooms in
                 AND opens the form details modal (handleMarkerClick does both).
                 Points with null lat/lng are timeline-only and skipped here. */}
-            {mapPath.map(
-              (p) =>
-                p.formSubmission &&
-                p.pathIndex !== mapPath[0].pathIndex &&
-                p.pathIndex !== mapPath[mapPath.length - 1].pathIndex && (
-                  <Marker
-                    key={`form-marker-${p.pathIndex}`}
-                    position={{ lat: p.lat, lng: p.lng }}
-                    zIndex={11}
-                    icon={buildFormMarkerIcon()}
-                    onClick={() => handleMarkerClick(p, p.pathIndex)}
-                  />
-                ),
-            )}
+            {dataMode !== DATA_MODES.LINTAI &&
+              mapPath.map(
+                (p) =>
+                  p.formSubmission &&
+                  p.pathIndex !== mapPath[0].pathIndex &&
+                  p.pathIndex !== mapPath[mapPath.length - 1].pathIndex && (
+                    <Marker
+                      key={`form-marker-${p.pathIndex}`}
+                      position={{ lat: p.lat, lng: p.lng }}
+                      zIndex={11}
+                      icon={buildFormMarkerIcon()}
+                      onClick={() => handleMarkerClick(p, p.pathIndex)}
+                    />
+                  ),
+              )}
 
             {/* Animated moving marker */}
             {movingPos && (
@@ -2707,8 +2944,44 @@ const UsersClusterMapAll = ({
               >
                 Both
               </button>
+              <button
+                className={`ucma-mode-tab${dataMode === DATA_MODES.LINTAI ? " active" : ""}`}
+                onClick={() => setDataMode(DATA_MODES.LINTAI)}
+                title="lintAI — continuous OSRM road-matched route (fetched only when this tab is selected)"
+              >
+                lintAI{loadingMatchedRoute && dataMode === DATA_MODES.LINTAI
+                  ? "…"
+                  : ""}
+              </button>
             </div>
           )}
+
+          {/* lintAI: "no matched route yet" hint, shown only when that tab
+              is selected, nothing is loading, and the API returned none. */}
+          {path.length > 0 &&
+            activeTab === TIMELINE_TABS.LOCATION &&
+            dataMode === DATA_MODES.LINTAI &&
+            !loadingMatchedRoute &&
+            matchedRouteCoords.length === 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "56px",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  background: "rgba(255,255,255,0.95)",
+                  border: "1px solid #e2e5ee",
+                  borderRadius: "8px",
+                  padding: "6px 12px",
+                  fontSize: "12px",
+                  color: "#888",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  zIndex: 5,
+                }}
+              >
+                No lintAI route available for this date
+              </div>
+            )}
 
           {/* ── Map overlay controls, top-right: Refresh + Full view ──
               Moved out of the timeline panel so they sit on the map itself. ── */}
@@ -2767,7 +3040,7 @@ const UsersClusterMapAll = ({
           {/* ── Live distance-covered readout, top-right, while playing/scrubbed ── */}
           <AnimatePresence>
             {activeTab === TIMELINE_TABS.LOCATION &&
-              mapPath.length > 1 &&
+              playbackPath.length > 1 &&
               (isPlaying || progress > 0) && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -2802,7 +3075,11 @@ const UsersClusterMapAll = ({
                     />
                   )}
                   <span>
-                    {distanceCovered} / {summary.distance}
+                    {distanceCovered} /{" "}
+                    {dataMode === DATA_MODES.LINTAI &&
+                    matchedRouteMeta.distanceMeters != null
+                      ? `${(Number(matchedRouteMeta.distanceMeters) / 1000).toFixed(1)} Km`
+                      : summary.distance}
                   </span>
                 </motion.div>
               )}
@@ -2811,7 +3088,7 @@ const UsersClusterMapAll = ({
           {/* ── Playback controls — vertical panel, left side of the map.
               Only meaningful for the Location Timeline tab (playback
               animates the GPS/road route). ─────────────────────────── */}
-          {activeTab === TIMELINE_TABS.LOCATION && mapPath.length > 1 && (
+          {activeTab === TIMELINE_TABS.LOCATION && playbackPath.length > 1 && (
             <div
               className="ucma-playback-panel"
               style={{
@@ -2858,7 +3135,8 @@ const UsersClusterMapAll = ({
                     background: COLORS.travel,
                   }}
                 />
-                {mapPath.map((_, i) => (
+                {dataMode !== DATA_MODES.LINTAI &&
+                  mapPath.map((_, i) => (
                   <span
                     key={i}
                     style={{
