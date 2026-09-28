@@ -215,6 +215,25 @@ const extractFormattedAddress = (loc) => {
   return loc?.accurate_address || "";
 };
 
+// ─── Device info from `meta`:
+//     { device_id, device_brand, device_model }. `meta` may arrive as an
+//     object or a JSON string — handle both. Returns empty strings when
+//     missing so callers can simply check truthiness. ──────────────────
+const getDeviceInfo = (loc) => {
+  let meta = loc?.meta;
+  if (typeof meta === "string") {
+    try {
+      meta = JSON.parse(meta);
+    } catch {
+      meta = null;
+    }
+  }
+  return {
+    brand: (meta && meta.device_brand) || "",
+    model: (meta && meta.device_model) || "",
+  };
+};
+
 // Original palette — unchanged (form added for form-submission markers,
 // roadLine added for the dotted OSRM/road-snapped route)
 const COLORS = {
@@ -1564,6 +1583,9 @@ const UsersClusterMapAll = ({
         const customStatusInfo = findCustomStatus(rawCustomStatusId);
         const customFormInfo = findCustomForm(rawCustomFormId);
 
+        // Device brand / model from `meta`
+        const deviceInfo = getDeviceInfo(loc);
+
         return {
           index: index + 1,
           name: activeEmployee?.first_name || "",
@@ -1573,6 +1595,8 @@ const UsersClusterMapAll = ({
           timestamp: indianTime,
           date: indianDate,
           battery: loc?.battery_percentage,
+          deviceBrand: deviceInfo.brand,
+          deviceModel: deviceInfo.model,
           outside: loc?.is_outside_range,
           locationOn: loc?.is_location_on,
           internetOn: loc?.is_internet_on,
@@ -3445,6 +3469,9 @@ const UsersClusterMapAll = ({
                       !!p.formSubmission &&
                       Array.isArray(p.formSubmission.submitted_data) &&
                       p.formSubmission.submitted_data.length > 0;
+                    const deviceLabel = [p.deviceBrand, p.deviceModel]
+                      .filter(Boolean)
+                      .join(" ");
 
                     const card = (
                       <motion.div
@@ -3572,6 +3599,42 @@ const UsersClusterMapAll = ({
                             </span>
                           )}
                         </div>
+
+                        {/* Device brand + model (from `meta`), right below battery % */}
+                        {deviceLabel && (
+                          <div
+                            title={deviceLabel}
+                            style={{
+                              marginTop: "3px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              fontSize: "10px",
+                              color: "#64748b",
+                              justifyContent: onLeft
+                                ? "flex-end"
+                                : "flex-start",
+                              minWidth: 0,
+                            }}
+                          >
+                            <i
+                              className="ri-smartphone-line"
+                              style={{ fontSize: "11px", flexShrink: 0 }}
+                            ></i>
+                            <span
+                              style={{
+                                textTransform: "capitalize",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                minWidth: 0,
+                              }}
+                            >
+                              {deviceLabel}
+                            </span>
+                          </div>
+                        )}
+
                         {hasForm && (
                           <button
                             onClick={(e) => openFormModal(p, e)}

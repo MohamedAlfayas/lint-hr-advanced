@@ -73,19 +73,27 @@ import { EDIT_TEAM_ATTENDANCE_ACCESS_KEY } from "../../../common/constant/RoleCo
 // timeline modal to show what device a check-in/out came from,
 // based on entry_log[i].meta.device_type).
 // ------------------------------------------------------------
-const getDeviceIcon = (deviceType) => {
-  const type = (deviceType || "").toLowerCase();
+const getDeviceIcon = (punchedBy) => {
+  const type = Number(punchedBy);
 
-  if (type === "mobile") {
-    return { icon: "mdi-cellphone", label: "Mobile" };
+  if (type === 1) {
+    return {
+      icon: "mdi-monitor",
+      label: "Desktop",
+    };
   }
-  if (type === "tablet") {
-    return { icon: "mdi-tablet", label: "Tablet" };
+
+  if (type === 2) {
+    return {
+      icon: "mdi-cellphone",
+      label: "Mobile",
+    };
   }
-  if (type === "desktop") {
-    return { icon: "mdi-monitor", label: "Desktop" };
-  }
-  return { icon: "mdi-help-circle-outline", label: deviceType || "Unknown" };
+
+  return {
+    icon: "mdi-help-circle-outline",
+    label: "Unknown",
+  };
 };
 
 const AttendanceEmployeeTable = () => {
@@ -1605,11 +1613,11 @@ const AttendanceEmployeeTable = () => {
 
                         // Device information
                         const checkInDevice = getDeviceIcon(
-                          checkInData?.meta?.device_type,
+                          checkInData?.punched_by,
                         );
 
                         const checkOutDevice = checkOutData
-                          ? getDeviceIcon(checkOutData?.meta?.device_type)
+                          ? getDeviceIcon(checkOutData?.punched_by)
                           : null;
 
                         return (
