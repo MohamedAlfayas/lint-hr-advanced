@@ -24,6 +24,8 @@ import {
   ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY,
   VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  CREATE_TASK_ACCESS_KEY,
+  EDIT_TASK_ACCESS_KEY,
 } from "../common/constant/RoleConstants";
 import Status from "../pages/Task/Status/Status";
 import Priorities from "../pages/Task/Priorities/Priorities";
@@ -243,7 +245,7 @@ const privateRoutes = [
     ],
   },
   { path: "/projects", component: <Projects />, perm: "all" },
-  { path: "/tasks", component: <TaskTab />, perm: "all" },
+  { path: "/tasks", component: <TaskTab />,   perm: [CREATE_TASK_ACCESS_KEY, EDIT_TASK_ACCESS_KEY], },
   {
     path: "/task-settings",
     component: <TaskSettingsTab />,

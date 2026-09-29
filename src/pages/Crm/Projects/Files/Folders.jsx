@@ -429,7 +429,7 @@ const FolderTree = ({
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-const Folders = ({ projectId }) => {
+const Folders = ({ projectId, canAddFiles = true  }) => {
   const dispatch = useDispatch();
 
   // ── Redux state ───────────────────────────────────────────────────────────────
@@ -955,19 +955,24 @@ const Folders = ({ projectId }) => {
                   )}
                 </button>
 
-                <button
-                  className="btn btn-soft-success text-nowrap flex-shrink-0"
-                  onClick={() => setNewFolderModal(true)}
-                >
-                  <i className="ri-folder-add-line align-bottom me-1"></i>New
-                  Folder
-                </button>
-                <button
-                  className="btn btn-success text-nowrap flex-shrink-0"
-                  onClick={() => setNewFileModal(true)}
-                >
-                  <i className="ri-add-line align-bottom me-1"></i>Add Files
-                </button>
+                        {canAddFiles && (
+                  <>
+                    <button
+                      className="btn btn-soft-success text-nowrap flex-shrink-0"
+                      onClick={() => setNewFolderModal(true)}
+                    >
+                      <i className="ri-folder-add-line align-bottom me-1"></i>
+                      New Folder
+                    </button>
+                    <button
+                      className="btn btn-success text-nowrap flex-shrink-0"
+                      onClick={() => setNewFileModal(true)}
+                    >
+                      <i className="ri-add-line align-bottom me-1"></i>Add
+                      Files
+                    </button>
+                  </>
+                )}
               </div>
             </Col>
           </Row>

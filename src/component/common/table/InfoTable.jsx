@@ -1848,6 +1848,8 @@ const InfoTable = ({
   ];
 
   const [showCreateBtn, setShowCreateBtn] = useState(false);
+  const [showImportBtn, setShowImportBtn] = useState(false);
+  const [showExportBtn, setShowExportBtn] = useState(false);
   const [showEditBtn, setShowEditBtn] = useState(false);
   const [showAllLeaveApprovalBtn, setShowAllLeaveApprovalBtn] = useState(false);
   const [showTeamLeaveApprovalBtn, setShowTeamLeaveApprovalBtn] =
@@ -1861,35 +1863,37 @@ const InfoTable = ({
     const profile_data = JSON.parse(
       localStorage.getItem("lint_hr_profile_data"),
     );
+       const isAdminUser = profile_data?.is_admin === true;
+    const approvePermList = profile_data?.permission_list || [];
+
     if (
       formname === leave_approval_component_name ||
-      formname === attendance_approval_component_name
+      attendance_approval_component_name
     ) {
       setShowAllLeaveApprovalBtn(
-        profile_data.permission_list.includes(
-          APPROVE_REJECT_HIERARCHY_LEAVE_ACCESS_KEY,
-        ),
+        isAdminUser ||
+          approvePermList.includes(APPROVE_REJECT_HIERARCHY_LEAVE_ACCESS_KEY),
       );
       setShowTeamLeaveApprovalBtn(
-        profile_data.permission_list.includes(
-          APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY,
-        ),
+        isAdminUser ||
+          approvePermList.includes(APPROVE_REJECT_TEAM_LEAVE_ACCESS_KEY),
       );
 
       setShowAllAttendanceApprovalBtn(
-        profile_data.permission_list.includes(
-          APPROVE_REJECT_HIERARCHY_ATTENDANCE_ACCESS_KEY,
-        ),
+        isAdminUser ||
+          approvePermList.includes(
+            APPROVE_REJECT_HIERARCHY_ATTENDANCE_ACCESS_KEY,
+          ),
       );
       setShowTeamAttendanceApprovalBtn(
-        profile_data.permission_list.includes(
-          APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY,
-        ),
+        isAdminUser ||
+          approvePermList.includes(APPROVE_REJECT_TEAM_ATTENDANCE_ACCESS_KEY),
       );
     }
     firstEffectExecutedRef.current = true;
     CheckCreateAccess(profile_data, formname);
     CheckEditAccess(profile_data, formname);
+    CheckImportExportAccess(profile_data, formname);
   }, [formname]);
 
   useEffect(() => {
@@ -1898,14 +1902,14 @@ const InfoTable = ({
       formname === leave_approval_component_name
     ) {
       if (firstEffectExecutedRef.current) {
-        if (currentApprovalComponent === "attendance_approval_component_name") {
+              if (currentApprovalComponent === attendance_approval_component_name) {
           approvalEmployeeTypeFilter === 0 && showAllAttendanceApprovalBtn
             ? setShowEditBtn(true)
             : approvalEmployeeTypeFilter === 1 && showTeamAttendanceApprovalBtn
               ? setShowEditBtn(true)
               : setShowEditBtn(false);
         }
-        if (currentApprovalComponent === "leave_approval_component_name") {
+              if (currentApprovalComponent === leave_approval_component_name) {
           approvalEmployeeTypeFilter === 0 && showAllLeaveApprovalBtn
             ? setShowEditBtn(true)
             : approvalEmployeeTypeFilter === 1 && showTeamLeaveApprovalBtn
@@ -2033,6 +2037,24 @@ const InfoTable = ({
     } else {
       setShowEditBtn(false);
     }
+  };
+
+  const CheckImportExportAccess = (profile_data, thisFormName) => {
+    const isAdmin = profile_data?.is_admin === true;
+    const perms = profile_data?.permission_list || [];
+
+    // Admins and non-employee forms keep the current behaviour
+    if (isAdmin || thisFormName !== employee_component_name) {
+      setShowImportBtn(true);
+      setShowExportBtn(true);
+      return;
+    }
+
+    const canCreate = perms.includes(CREATE_EMPLOYEE_ACCESS_KEY);
+    const canEdit = perms.includes(EDIT_EMPLOYEE_ACCESS_KEY);
+
+    setShowImportBtn(canCreate);
+    setShowExportBtn(canCreate);
   };
 
   const [tableColumn, setTableColumn] = useState(initialColumns);
@@ -2450,7 +2472,8 @@ const InfoTable = ({
                             component_list_for_import_btn_access.includes(
                               formname,
                             ) &&
-                            formname !== holiday_component_name && (
+                            formname !== holiday_component_name &&
+                            showImportBtn &&  (
                               <button
                                 type="button"
                                 className="btn btn-primary align-bottom me-1"
@@ -2475,7 +2498,8 @@ const InfoTable = ({
                             formname !== task_list_component_name &&
                             formname !== client_component_name &&
                             formname !== custom_status_form_component_name &&
-                            formname !== holiday_component_name && (
+                            formname !== holiday_component_name && 
+                            showExportBtn && (
                               <button
                                 type="button"
                                 className="btn btn-info"
@@ -2491,10 +2515,9 @@ const InfoTable = ({
                               formname ===
                                 attendance_approval_component_name) && (
                               <div>
-                                {formname ===
+                                                                {formname ===
                                   attendance_approval_component_name &&
-                                  showAllAttendanceApprovalBtn &&
-                                  showTeamAttendanceApprovalBtn && (
+                                  showEditBtn && (
                                     <>
                                       <button
                                         type="button"
@@ -2516,9 +2539,8 @@ const InfoTable = ({
                                       </button>{" "}
                                     </>
                                   )}
-                                {formname === leave_approval_component_name &&
-                                  showAllLeaveApprovalBtn &&
-                                  showTeamLeaveApprovalBtn && (
+                                                            {formname === leave_approval_component_name &&
+                                  showEditBtn && (
                                     <>
                                       <button
                                         type="button"
