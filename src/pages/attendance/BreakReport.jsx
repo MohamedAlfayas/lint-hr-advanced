@@ -9,6 +9,8 @@ import {
   ModalBody,
   ModalHeader,
   Button,
+  Spinner,
+  Input,
 } from "reactstrap";
 import SimpleBar from "simplebar-react";
 import { MetaTitle } from "../../common/data/MetaTitle";
@@ -30,6 +32,7 @@ const { Column, HeaderCell, Cell, ColumnGroup } = Table;
 
 const DEFAULT_PAGE_SIZE = 20; // API default (max 100)
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+const SEARCH_DEBOUNCE_MS = 400;
 
 // builds [1, "...", 4, 5, 6, "...", 20]
 const getPageNumbers = (current, total) => {
@@ -68,14 +71,48 @@ const BreakReport = () => {
       .padStart(2, "0")}`,
   });
 
+  // ── search state (debounced) ────────────────
+  // searchInput updates instantly as the user types;
+  // search is the debounced value that drives the API call.
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1); // restart from first page on a new search
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const handleSearchChange = (e) => {
+    setSearchInput(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchInput("");
+  };
+
   // ── pagination state ────────────────────────
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPagesFromApi, setTotalPagesFromApi] = useState(1);
 
+  // ── export modal state ──────────────────────
+  // "page" -> export current page (report state)
+  // "all"  -> export every employee via export-all-break-report/
   const [showModal, setShowModal] = useState(false);
+  const [exportType, setExportType] = useState("page");
+  const [exportingAll, setExportingAll] = useState(false);
+
   const toggleModal = () => setShowModal((s) => !s);
+
+  const openExportModal = (type) => {
+    setExportType(type);
+    setShowModal(true);
+  };
 
   const [detailModal, setDetailModal] = useState(false);
   const [detailData, setDetailData] = useState({
@@ -83,18 +120,25 @@ const BreakReport = () => {
     status_log: [],
   });
 
-  // GET /report/get-employee-break-report/v2/?thisMonth=2026-09&page=1&page_size=20
-  const getReportData = (thisMonth, targetPage, targetPageSize) => {
+  // GET /report/get-employee-break-report/v2/?thisMonth=2026-09&page=1&page_size=20&search=john
+  const getReportData = (thisMonth, targetPage, targetPageSize, searchTerm) => {
     setLoading(true);
+
+    let url =
+      "report/get-employee-break-report/v2/?thisMonth=" +
+      thisMonth +
+      "&page=" +
+      targetPage +
+      "&page_size=" +
+      targetPageSize;
+
+    if (searchTerm) {
+      url += "&search=" + encodeURIComponent(searchTerm);
+    }
+
     Api({
       method: "GET",
-      url:
-        "report/get-employee-break-report/v2/?thisMonth=" +
-        thisMonth +
-        "&page=" +
-        targetPage +
-        "&page_size=" +
-        targetPageSize,
+      url,
     })
       .then((res) => {
         const body = (res && res.data) || {};
@@ -118,10 +162,10 @@ const BreakReport = () => {
       .catch(() => setLoading(false));
   };
 
-  // fetch on mount and whenever month / page / page size changes
+  // fetch on mount and whenever month / page / page size / search changes
   useEffect(() => {
-    getReportData(filterKeys.month, page, pageSize);
-  }, [filterKeys.month, page, pageSize]);
+    getReportData(filterKeys.month, page, pageSize, search);
+  }, [filterKeys.month, page, pageSize, search]);
 
   const handleDateRangeChange = (e, monthStr) => {
     setFilterKeys((p) => ({ ...p, month: monthStr }));
@@ -156,7 +200,7 @@ const BreakReport = () => {
       .padStart(2, "0")}`;
   }
 
-  // ----- derived data (current page only) -----
+  // ----- derived data (current page only — drives the on-screen table) -----
   const breakDates = Array.from(
     new Set(report.flatMap((e) => e.break_status_data.map((d) => d.date))),
   );
@@ -370,37 +414,75 @@ const BreakReport = () => {
     );
   };
 
-  // ----- team export (current page only) -----
-  const exportExcelFile = () => {
+  // ====================================================
+  // TEAM EXPORT
+  //
+  // Builds the team XLSX from any report list:
+  //  - "Export"     -> current page rows (default: `report` state)
+  //  - "Export All" -> full month list from export-all-break-report/
+  //
+  // Dates / break types are derived from whichever dataset is
+  // passed in, NOT from the paginated `breakDates` / `breakTypes`
+  // above — otherwise "Export All" would be clipped to whatever
+  // columns happen to exist on the current page.
+  // ====================================================
+
+  const exportExcelFile = (reportData = report, fileSuffix = "") => {
     const wb = new ExcelJs.Workbook();
     const sheet = wb.addWorksheet("Break Report", {
       views: [{ state: "frozen", xSplit: 2, ySplit: 1 }],
     });
 
+    const datesForExport = Array.from(
+      new Set(
+        reportData.flatMap((e) =>
+          (e.break_status_data || []).map((d) => d.date),
+        ),
+      ),
+    );
+
+    const typesForExport = Array.from(
+      new Map(
+        reportData.flatMap((e) =>
+          (e.break_status_data || []).flatMap((d) =>
+            (d.status_log || []).map((s) => [s.id, s.name]),
+          ),
+        ),
+      ),
+    )
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.id - b.id);
+
+    const getTypeTotalFor = (rowData, typeId) =>
+      (rowData.break_status_data || []).reduce((sum, d) => {
+        const entry = (d.status_log || []).find((s) => s.id === typeId);
+        return sum + (entry ? entry.break_duration : 0);
+      }, 0);
+
     const headers = ["Employee", "Email"];
-    breakDates.forEach((d) => headers.push(formatDate(d)));
-    breakTypes.forEach((bt) => headers.push(bt.name));
+    datesForExport.forEach((d) => headers.push(formatDate(d)));
+    typesForExport.forEach((bt) => headers.push(bt.name));
     headers.push("Total Break");
 
     const headerRow = sheet.addRow(headers);
     headerRow.font = { bold: true };
 
-    report.forEach((emp) => {
+    reportData.forEach((emp) => {
       const e = emp.employee || {};
       const row = [
         `${e.first_name || ""} ${e.last_name || ""}`.trim(),
         e.email || "",
       ];
-      breakDates.forEach((d) => {
-        const day = emp.break_status_data.find((x) => x.date === d);
+      datesForExport.forEach((d) => {
+        const day = (emp.break_status_data || []).find((x) => x.date === d);
         row.push(
           day && day.total_break_duration > 0
             ? formatDuration(day.total_break_duration)
             : "-",
         );
       });
-      breakTypes.forEach((bt) => {
-        const total = getTypeTotal(emp, bt.id);
+      typesForExport.forEach((bt) => {
+        const total = getTypeTotalFor(emp, bt.id);
         row.push(total > 0 ? formatDuration(total) : "-");
       });
       row.push(formatDuration(emp.overall_total_break_duration));
@@ -446,10 +528,58 @@ const BreakReport = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Break_Report_${filterKeys.month}_page${page}.xlsx`;
+      a.download = `Break_Report_${filterKeys.month}${fileSuffix}.xlsx`;
       a.click();
       window.URL.revokeObjectURL(url);
     });
+  };
+
+  // ====================================================
+  // EXPORT ALL
+  //
+  // GET /report/export-all-break-report/?thisMonth=2026-09&search=john
+  // Fetches every employee for the selected month (honoring
+  // the current search filter, not paginated), then builds
+  // the same XLSX as a normal export.
+  // Durations from the API are already in seconds, matching
+  // what formatDuration/exportExcelFile expect.
+  // ====================================================
+
+  const handleExportAll = () => {
+    setExportingAll(true);
+
+    let url =
+      "report/export-all-break-report/?thisMonth=" +
+      encodeURIComponent(filterKeys.month);
+
+    if (search) {
+      url += "&search=" + encodeURIComponent(search);
+    }
+
+    Api({
+      method: "GET",
+      url,
+    })
+      .then((res) => {
+        const body = res?.data;
+        const list = Array.isArray(body?.data) ? body.data : [];
+
+        if (list.length === 0) {
+          window.alert(body?.message || "No break data found for this month.");
+          return;
+        }
+
+        exportExcelFile(list, "_All");
+      })
+      .catch((error) => {
+        console.error("Export all break report API error:", error);
+
+        const apiMessage = error?.response?.data?.message;
+        window.alert(apiMessage || "Failed to export the break report.");
+      })
+      .finally(() => {
+        setExportingAll(false);
+      });
   };
 
   // ----- columns -----
@@ -549,6 +679,20 @@ const BreakReport = () => {
     </option>
   ));
 
+  // ----- export modal text (kept out of JSX) -----
+  const isExportAll = exportType === "all";
+
+  const exportMessage = isExportAll ? (
+    <>
+      Export <b>{monthLabel}</b> Break Report for <b>all employees</b> as a XLSX
+      file?
+    </>
+  ) : (
+    <>
+      Export <b>{monthLabel}</b> Break Report (current page) as a XLSX file?
+    </>
+  );
+
   return (
     <React.Fragment>
       <div className="page-content">
@@ -570,7 +714,55 @@ const BreakReport = () => {
                   </div>
                 </Col>
 
-                <Col xl={4}>
+                <Col xl={3}>
+                  <div className="position-relative">
+                    <Input
+                      type="text"
+                      className="form-control"
+                      placeholder="Search employee..."
+                      value={searchInput}
+                      onChange={handleSearchChange}
+                      style={{ paddingRight: "32px" }}
+                    />
+                    {/* Plain <i class="search-icon"> from the template CSS
+                        ships with pointer-events: none, so clicks never
+                        reached it. Using a focusable <span> with an
+                        explicit pointer-events/zIndex fixes that. */}
+                    <span
+                      role="button"
+                      tabIndex={searchInput ? 0 : -1}
+                      aria-label="Clear search"
+                      onClick={searchInput ? clearSearch : undefined}
+                      onKeyDown={(e) => {
+                        if (
+                          searchInput &&
+                          (e.key === "Enter" || e.key === " ")
+                        ) {
+                          e.preventDefault();
+                          clearSearch();
+                        }
+                      }}
+                      style={{
+                        position: "absolute",
+                        right: "10px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        cursor: searchInput ? "pointer" : "default",
+                        pointerEvents: "auto",
+                        zIndex: 5,
+                        lineHeight: 0,
+                      }}
+                    >
+                      <i
+                        className={
+                          searchInput ? "ri-close-line" : "ri-search-line"
+                        }
+                      ></i>
+                    </span>
+                  </div>
+                </Col>
+
+                <Col xl={3}>
                   <div className="d-flex align-items-center gap-2">
                     <span className="badge bg-info-subtle text-info fs-12 p-2">
                       Employees: <b>{totalCount}</b>
@@ -578,20 +770,43 @@ const BreakReport = () => {
                   </div>
                 </Col>
 
-                <Col xl={6} className="text-end">
-                  <Button
-                    type="button"
-                    className="btn btn-info"
-                    onClick={toggleModal}
-                    style={{
-                      padding: "0.25rem 0.5rem",
-                      fontSize: "0.75rem",
-                      width: "80px",
-                    }}
-                  >
-                    <i className="ri-file-download-line align-bottom me-1"></i>
-                    Export
-                  </Button>
+                <Col xl={4} className="text-end">
+                  <div className="d-flex justify-content-end gap-2">
+                    <Button
+                      type="button"
+                      className="btn btn-info"
+                      onClick={() => openExportModal("page")}
+                      style={{
+                        padding: "0.25rem 0.5rem",
+                        fontSize: "0.75rem",
+                        width: "80px",
+                      }}
+                    >
+                      <i className="ri-file-download-line align-bottom me-1"></i>
+                      Export
+                    </Button>
+
+                    <Button
+                      type="button"
+                      className="btn btn-success"
+                      onClick={() => openExportModal("all")}
+                      disabled={exportingAll}
+                      style={{
+                        padding: "0.25rem 0.5rem",
+                        fontSize: "0.75rem",
+                        width: "100px",
+                      }}
+                    >
+                      {exportingAll ? (
+                        <Spinner size="sm" />
+                      ) : (
+                        <>
+                          <i className="ri-download-cloud-2-line align-bottom me-1"></i>
+                          Export All
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </Col>
 
                 <Modal isOpen={showModal} toggle={toggleModal} centered>
@@ -606,10 +821,7 @@ const BreakReport = () => {
                       ></lord-icon>
                       <div className="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
                         <h4>Are you sure?</h4>
-                        <p className="text-muted mx-4 mb-0">
-                          Export <b>{monthLabel}</b> Break Report (current page)
-                          as a XLSX file?
-                        </p>
+                        <p className="text-muted mx-4 mb-0">{exportMessage}</p>
                       </div>
                     </div>
                     <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
@@ -624,7 +836,11 @@ const BreakReport = () => {
                         type="button"
                         className="btn w-sm btn-success"
                         onClick={() => {
-                          exportExcelFile();
+                          if (isExportAll) {
+                            handleExportAll();
+                          } else {
+                            exportExcelFile();
+                          }
                           toggleModal();
                         }}
                       >

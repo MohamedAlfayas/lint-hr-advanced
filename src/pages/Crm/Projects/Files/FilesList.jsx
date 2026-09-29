@@ -335,7 +335,7 @@ const ContextMenu = ({ menu, onAction, onClose }) => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const FilesList = ({ projectId, folderId }) => {
+const FilesList = ({ projectId, folderId, canAddFiles = true  }) => {
   const dispatch = useDispatch();
 
   // ── Redux ─────────────────────────────────────────────────────────────────
@@ -544,10 +544,12 @@ const FilesList = ({ projectId, folderId }) => {
         <CardBody>
           <div className="d-flex align-items-center mb-3">
             <h5 className="flex-grow-1 fs-16 mb-0">Recent Files</h5>
-            <button className="btn btn-success" onClick={openAddModal}>
-              <i className="ri-add-line align-bottom me-1" />
-              Add File
-            </button>
+                       {canAddFiles && (
+              <button className="btn btn-success" onClick={openAddModal}>
+                <i className="ri-add-line align-bottom me-1" />
+                Add File
+              </button>
+            )}
           </div>
 
           <div

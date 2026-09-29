@@ -9,6 +9,8 @@ import {
   ModalBody,
   ModalHeader,
   Button,
+  Spinner,
+  Input,
 } from "reactstrap";
 import SimpleBar from "simplebar-react";
 import { MetaTitle } from "../../common/data/MetaTitle";
@@ -41,6 +43,7 @@ dayjs.extend(customParseFormat);
 
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const SEARCH_DEBOUNCE_MS = 400;
 
 // builds [1, "...", 4, 5, 6, "...", 20]
 const getPageNumbers = (current, total) => {
@@ -76,9 +79,16 @@ const AttendanceReport = () => {
   const { Column, HeaderCell, Cell, ColumnGroup } = Table;
   const [loading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [exportType, setExportType] = useState("page"); // "page" | "all"
+  const [exportingAll, setExportingAll] = useState(false);
 
   const toggleModal = () => {
     setShowModal(!showModal);
+  };
+
+  const openExportModal = (type) => {
+    setExportType(type);
+    setShowModal(true);
   };
 
   const employee_data = GetLocalStorageData("employee") || [];
@@ -97,21 +107,42 @@ const AttendanceReport = () => {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [totalCount, setTotalCount] = useState(0);
 
+  // search state: searchInput is what the user types (updates instantly),
+  // search is the debounced value that actually drives the API call.
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-  // POST /report/get-attendance-report/v3/?page=1&page_size=10
-  const getReportData = (thisMonth, targetPage, targetPageSize) => {
+  // debounce searchInput -> search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1); // restart from first page on a new search
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // GET /report/get-team-daily-attendance-report/?thisMonth=2026-09&page=1&page_size=10&search=john
+  const getReportData = (thisMonth, targetPage, targetPageSize, searchTerm) => {
     dispatch(setLoaderVisible(true));
+
+    let url =
+      "report/get-team-daily-attendance-report/?thisMonth=" +
+      thisMonth +
+      "&page=" +
+      targetPage +
+      "&page_size=" +
+      targetPageSize;
+
+    if (searchTerm) {
+      url += "&search=" + encodeURIComponent(searchTerm);
+    }
 
     Api({
       method: "GET",
-      url:
-        "report/get-team-daily-attendance-report/?thisMonth=" +
-        thisMonth +
-        "&page=" +
-        targetPage +
-        "&page_size=" +
-        targetPageSize,
+      url,
     })
       .then((res) => {
         const body = res?.data;
@@ -137,10 +168,10 @@ const AttendanceReport = () => {
         dispatch(setLoaderVisible(false));
       });
   };
-  // fetch on mount and whenever month / page / page size changes
+  // fetch on mount and whenever month / page / page size / search changes
   useEffect(() => {
-    getReportData(filterKeys.month, page, pageSize);
-  }, [filterKeys.month, page, pageSize]);
+    getReportData(filterKeys.month, page, pageSize, search);
+  }, [filterKeys.month, page, pageSize, search]);
 
   const handleDateRangeChange = (e, monthStr) => {
     setFilterKeys({
@@ -148,6 +179,14 @@ const AttendanceReport = () => {
       month: monthStr,
     });
     setPage(1); // restart from first page for a new month
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchInput(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchInput("");
   };
 
   const handlePageChange = (newPage) => {
@@ -581,7 +620,13 @@ const AttendanceReport = () => {
     );
   };
 
-  const exportExcelFile = () => {
+  // Builds the team XLSX from any report list.
+  //  - "Export"     -> current page rows (default: team_daily_attendance_report)
+  //  - "Export All" -> full month list from the export-all API
+  const exportExcelFile = (
+    reportData = team_daily_attendance_report,
+    fileSuffix = "",
+  ) => {
     const workbook = new ExcelJs.Workbook();
     const sheet = workbook.addWorksheet("My Sheet", {
       views: [
@@ -609,7 +654,7 @@ const AttendanceReport = () => {
 
     const employeeDatesXls = Array.from(
       new Set(
-        team_daily_attendance_report.flatMap((employee) =>
+        reportData.flatMap((employee) =>
           employee.workday_data.map((report) => report.date),
         ),
       ),
@@ -658,7 +703,7 @@ const AttendanceReport = () => {
       });
     }
 
-    team_daily_attendance_report.forEach((rowData, rowIndex, colIndex) => {
+    reportData.forEach((rowData, rowIndex, colIndex) => {
       const row = [];
       const foundEmployee = employee_data.find(
         (emp) => rowData.employee_id === emp.id,
@@ -822,10 +867,45 @@ const AttendanceReport = () => {
         return `${month}_${year}`;
       });
 
-      anchor.download = `Attendance_${monthYearList[0]}.xlsx`;
+      anchor.download = `Attendance_${monthYearList[0]}${fileSuffix}.xlsx`;
       anchor.click();
       window.URL.revokeObjectURL(url);
     });
+  };
+
+  // GET /report/export-all-attendance-report/?thisMonth=2026-09&search=john
+  // Fetches every employee for the selected month (honoring the current
+  // search filter), then builds the same XLSX.
+  const handleExportAll = () => {
+    setExportingAll(true);
+    dispatch(setLoaderVisible(true));
+
+    let url =
+      "report/export-all-attendance-report/?thisMonth=" + filterKeys.month;
+    if (search) {
+      url += "&search=" + encodeURIComponent(search);
+    }
+
+    Api({
+      method: "GET",
+      url,
+    })
+      .then((res) => {
+        const list = Array.isArray(res?.data?.data) ? res.data.data : [];
+        if (list.length === 0) {
+          window.alert("No attendance data found for this month.");
+          return;
+        }
+        exportExcelFile(list, "_All");
+      })
+      .catch((error) => {
+        console.error("Export all attendance report API error:", error);
+        window.alert("Failed to export the attendance report.");
+      })
+      .finally(() => {
+        setExportingAll(false);
+        dispatch(setLoaderVisible(false));
+      });
   };
 
   const [timeline_modal, settimeline_modal] = useState(false);
@@ -1113,6 +1193,23 @@ const AttendanceReport = () => {
   // the return() has no nested ternaries / comparisons.
   // ─────────────────────────────────────────────
 
+  // export modal text
+  const isExportAll = exportType === "all";
+  const exportMonthLabel = dayjs(filterKeys.month, MonthFormat).format(
+    "MMM YYYY",
+  );
+  const exportMessage = isExportAll ? (
+    <>
+      Are you sure you want to export the <b>{exportMonthLabel}</b> Attendance
+      Report for <b>all employees</b> as a XLSX file?
+    </>
+  ) : (
+    <>
+      Are you sure you want to export the <b>{exportMonthLabel}</b> Attendance
+      Report (current page) as a XLSX file?
+    </>
+  );
+
   // pagination values
   const rowsOnPage = (team_daily_attendance_report || []).length;
   const startItem = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -1234,7 +1331,7 @@ const AttendanceReport = () => {
         <Container fluid>
           <Card>
             <CardHeader className="border-0 rounded">
-              <Row className="g-2">
+              <Row className="g-2 align-items-center">
                 <Col xl={2}>
                   <div className="form-icon right">
                     <DatePicker
@@ -1249,20 +1346,90 @@ const AttendanceReport = () => {
                   </div>
                 </Col>
 
-                <Button
-                  type="button"
-                  className="btn btn-info"
-                  onClick={toggleModal}
-                  style={{
-                    padding: "0.25rem 0.5rem",
-                    fontSize: "0.75rem",
-                    width: "80px",
-                    marginLeft: "auto",
-                  }}
-                >
-                  <i className="ri-file-download-line align-bottom me-1"></i>
-                  Export
-                </Button>
+                <Col xl={3}>
+                  <div className="position-relative">
+                    <Input
+                      type="text"
+                      className="form-control"
+                      placeholder="Search employee..."
+                      value={searchInput}
+                      onChange={handleSearchChange}
+                      style={{ paddingRight: "32px" }}
+                    />
+                    {/* Plain <i class="search-icon"> from the template CSS
+                        ships with pointer-events: none, so clicks never
+                        reached it. Using a focusable <span> with an
+                        explicit pointer-events/zIndex fixes that. */}
+                    <span
+                      role="button"
+                      tabIndex={searchInput ? 0 : -1}
+                      aria-label="Clear search"
+                      onClick={searchInput ? clearSearch : undefined}
+                      onKeyDown={(e) => {
+                        if (
+                          searchInput &&
+                          (e.key === "Enter" || e.key === " ")
+                        ) {
+                          e.preventDefault();
+                          clearSearch();
+                        }
+                      }}
+                      style={{
+                        position: "absolute",
+                        right: "10px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        cursor: searchInput ? "pointer" : "default",
+                        pointerEvents: "auto",
+                        zIndex: 5,
+                        lineHeight: 0,
+                      }}
+                    >
+                      <i
+                        className={
+                          searchInput ? "ri-close-line" : "ri-search-line"
+                        }
+                      ></i>
+                    </span>
+                  </div>
+                </Col>
+
+                <Col className="d-flex justify-content-end align-items-center gap-2">
+                  <Button
+                    type="button"
+                    className="btn btn-info"
+                    onClick={() => openExportModal("page")}
+                    style={{
+                      padding: "0.25rem 0.5rem",
+                      fontSize: "0.75rem",
+                      width: "80px",
+                    }}
+                  >
+                    <i className="ri-file-download-line align-bottom me-1"></i>
+                    Export
+                  </Button>
+
+                  <Button
+                    type="button"
+                    className="btn btn-success"
+                    onClick={() => openExportModal("all")}
+                    disabled={exportingAll}
+                    style={{
+                      padding: "0.25rem 0.5rem",
+                      fontSize: "0.75rem",
+                      width: "100px",
+                    }}
+                  >
+                    {exportingAll ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <>
+                        <i className="ri-download-cloud-2-line align-bottom me-1"></i>
+                        Export All
+                      </>
+                    )}
+                  </Button>
+                </Col>
 
                 <Modal isOpen={showModal} toggle={toggleModal} centered={true}>
                   <ModalHeader toggle={toggleModal}></ModalHeader>
@@ -1276,10 +1443,7 @@ const AttendanceReport = () => {
                       ></lord-icon>
                       <div className="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
                         <h4>Are you sure?</h4>
-                        <p className="text-muted mx-4 mb-0">
-                          Are you sure you want to export <b>{monthYear[0]}</b>{" "}
-                          Attendance Report as a XLSX file?
-                        </p>
+                        <p className="text-muted mx-4 mb-0">{exportMessage}</p>
                       </div>
                     </div>
                     <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
@@ -1294,7 +1458,8 @@ const AttendanceReport = () => {
                         type="button"
                         className="btn w-sm btn-success"
                         onClick={() => {
-                          exportExcelFile();
+                          if (isExportAll) handleExportAll();
+                          else exportExcelFile();
                           toggleModal();
                         }}
                       >

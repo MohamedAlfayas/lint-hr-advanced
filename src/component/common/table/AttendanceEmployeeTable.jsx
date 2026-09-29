@@ -68,6 +68,34 @@ import CustomStatusTimeline from "./CustomStatusTimeLine";
 import ApplyLeaveForm from "../../forms/ApplyLeaveForm";
 import { EDIT_TEAM_ATTENDANCE_ACCESS_KEY } from "../../../common/constant/RoleConstants";
 
+// ------------------------------------------------------------
+// Device type -> icon + label helper (used in the IN/OUT
+// timeline modal to show what device a check-in/out came from,
+// based on entry_log[i].meta.device_type).
+// ------------------------------------------------------------
+const getDeviceIcon = (punchedBy) => {
+  const type = Number(punchedBy);
+
+  if (type === 1) {
+    return {
+      icon: "mdi-monitor",
+      label: "Desktop",
+    };
+  }
+
+  if (type === 2) {
+    return {
+      icon: "mdi-cellphone",
+      label: "Mobile",
+    };
+  }
+
+  return {
+    icon: "mdi-help-circle-outline",
+    label: "Unknown",
+  };
+};
+
 const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
 
@@ -228,23 +256,22 @@ const AttendanceEmployeeTable = () => {
       ? employeeData.find(
           (e) => e.id === individual_attendance_report_data[0].employee_id,
         )
-      // : [];
-      : null;
+      : // : [];
+        null;
   const employeeWorkSchedule =
     workScheduleData.find(
       // (w) => w.id === employeeInformation.work_schedule_id,
       (w) => w.id === employeeInformation?.work_schedule_id,
     ) || [];
 
-
-    const profile_data_lc = JSON.parse(
-  localStorage.getItem("lint_hr_profile_data") || "{}",
-);
-const isOwnAttendance = employeeInformation?.id === profile_data_lc?.id;
-const canEditTeamAttendance =
-  profile_data_lc?.permission_list?.includes(
-    EDIT_TEAM_ATTENDANCE_ACCESS_KEY,
-  ) || false;
+  const profile_data_lc = JSON.parse(
+    localStorage.getItem("lint_hr_profile_data") || "{}",
+  );
+  const isOwnAttendance = employeeInformation?.id === profile_data_lc?.id;
+  const canEditTeamAttendance =
+    profile_data_lc?.permission_list?.includes(
+      EDIT_TEAM_ATTENDANCE_ACCESS_KEY,
+    ) || false;
 
   function open_timeline(rowData) {
     settimeline_modal(!timeline_modal);
@@ -595,7 +622,7 @@ const canEditTeamAttendance =
     }
   };
 
- const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
+  const EditableCell = ({ rowData, dataKey, onChange, ...props }) => {
     const dropdownItems = [
       ...(isOwnAttendance || canEditTeamAttendance
         ? [
@@ -786,8 +813,7 @@ const canEditTeamAttendance =
 
   //Edit Modal Function
   const editAttendanceReport = (rowData) => {
-
-     if (!isOwnAttendance && !canEditTeamAttendance) {
+    if (!isOwnAttendance && !canEditTeamAttendance) {
       toast.error("You don't have permission to edit this attendance");
       return;
     }
@@ -1194,7 +1220,7 @@ const canEditTeamAttendance =
           {/* ── OT (conditional) ─────────────────────────────────────── */}
           {employeeWorkSchedule?.has_ot &&
             // selectedColumns.includes("totalIn") && (
-            selectedColumns.includes("ot") && ( 
+            selectedColumns.includes("ot") && (
               <Column flexGrow={1} minWidth={90}>
                 <HeaderCell>OT</HeaderCell>
                 <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
@@ -1553,6 +1579,7 @@ const canEditTeamAttendance =
                     timelineList.map((data, idx) => {
                       let checkInData = timelineList[idx];
                       let checkOutData = timelineList[idx + 1];
+
                       if (
                         checkInData &&
                         parseInt(checkInData.entry_type) === 1
@@ -1561,27 +1588,41 @@ const canEditTeamAttendance =
                           ParseTime(checkInData.entry_time),
                           "h:mm a",
                         );
+
                         let checkOutTime = checkOutData
                           ? format(ParseTime(checkOutData.entry_time), "h:mm a")
                           : "";
+
                         let totalDifference = checkOutData
                           ? differenceInMinutes(
                               ParseTime(checkOutData.entry_time),
                               ParseTime(checkInData.entry_time),
                             )
                           : 0;
+
                         let totalHours = Math.floor(totalDifference / 60);
                         let totalMinutes = totalDifference % 60;
 
                         let formattedTotalHours = totalHours
                           .toString()
                           .padStart(2, "0");
+
                         let formattedTotalMinutes = totalMinutes
                           .toString()
                           .padStart(2, "0");
 
+                        // Device information
+                        const checkInDevice = getDeviceIcon(
+                          checkInData?.punched_by,
+                        );
+
+                        const checkOutDevice = checkOutData
+                          ? getDeviceIcon(checkOutData?.punched_by)
+                          : null;
+
                         return (
                           <tr key={idx}>
+                            {/* CHECK IN */}
                             <td>
                               <div
                                 style={{
@@ -1629,13 +1670,38 @@ const canEditTeamAttendance =
                                 )}
 
                                 <div>
+                                  {/* TIME + DEVICE */}
                                   <p
-                                    className="text-muted mb-1"
-                                    style={{ fontWeight: "bold" }}
+                                    className="text-muted mb-1 d-flex align-items-center"
+                                    style={{
+                                      fontWeight: "bold",
+                                      gap: "6px",
+                                    }}
                                   >
-                                    {checkInTime}
+                                    <span>{checkInTime}</span>
+
+                                    <span
+                                      className="d-flex align-items-center"
+                                      style={{
+                                        gap: "3px",
+                                        fontWeight: "normal",
+                                        fontSize: "13px",
+                                      }}
+                                      title={checkInDevice.label}
+                                    >
+                                      <i
+                                        className={`mdi ${checkInDevice.icon}`}
+                                        style={{
+                                          fontSize: "16px",
+                                          color: "#6c757d",
+                                        }}
+                                      ></i>
+
+                                      <span>{checkInDevice.label}</span>
+                                    </span>
                                   </p>
 
+                                  {/* LOCATION */}
                                   <small
                                     className="mb-0 text-muted"
                                     style={{
@@ -1652,12 +1718,12 @@ const canEditTeamAttendance =
                                         target="_blank"
                                         rel="noopener noreferrer"
                                       >
-                                        <i className="mdi mdi-map-marker"></i>
+                                        <i className="mdi mdi-map-marker"></i>{" "}
                                         {checkInData.location || ""}
                                       </a>
                                     ) : checkInData.location !== "" ? (
                                       <span>
-                                        <i className="mdi mdi-map-marker"></i>
+                                        <i className="mdi mdi-map-marker"></i>{" "}
                                         {checkInData.location}
                                       </span>
                                     ) : null}
@@ -1665,6 +1731,8 @@ const canEditTeamAttendance =
                                 </div>
                               </div>
                             </td>
+
+                            {/* CHECK OUT */}
                             <td>
                               <div
                                 style={{
@@ -1712,13 +1780,40 @@ const canEditTeamAttendance =
                                 ) : null}
 
                                 <div>
+                                  {/* TIME + DEVICE */}
                                   <p
-                                    className="text-muted mb-1"
-                                    style={{ fontWeight: "bold" }}
+                                    className="text-muted mb-1 d-flex align-items-center"
+                                    style={{
+                                      fontWeight: "bold",
+                                      gap: "6px",
+                                    }}
                                   >
-                                    {checkOutTime}
+                                    <span>{checkOutTime}</span>
+
+                                    {checkOutDevice && (
+                                      <span
+                                        className="d-flex align-items-center"
+                                        style={{
+                                          gap: "3px",
+                                          fontWeight: "normal",
+                                          fontSize: "13px",
+                                        }}
+                                        title={checkOutDevice.label}
+                                      >
+                                        <i
+                                          className={`mdi ${checkOutDevice.icon}`}
+                                          style={{
+                                            fontSize: "16px",
+                                            color: "#6c757d",
+                                          }}
+                                        ></i>
+
+                                        <span>{checkOutDevice.label}</span>
+                                      </span>
+                                    )}
                                   </p>
 
+                                  {/* LOCATION */}
                                   <small
                                     className="mb-0 text-muted"
                                     style={{
@@ -1736,13 +1831,13 @@ const canEditTeamAttendance =
                                         target="_blank"
                                         rel="noopener noreferrer"
                                       >
-                                        <i className="mdi mdi-map-marker"></i>
+                                        <i className="mdi mdi-map-marker"></i>{" "}
                                         {checkOutData.location || ""}
                                       </a>
                                     ) : checkOutData &&
                                       checkOutData.location !== "" ? (
                                       <span>
-                                        <i className="mdi mdi-map-marker"></i>
+                                        <i className="mdi mdi-map-marker"></i>{" "}
                                         {checkOutData.location}
                                       </span>
                                     ) : null}
@@ -1750,6 +1845,8 @@ const canEditTeamAttendance =
                                 </div>
                               </div>
                             </td>
+
+                            {/* TOTAL HOURS */}
                             <td>
                               <p
                                 className="text-muted mb-1"
@@ -1761,7 +1858,9 @@ const canEditTeamAttendance =
                           </tr>
                         );
                       }
-                      return null; // Skip rendering if it's not a check-in entry
+
+                      // Skip rendering if it is not a check-in entry
+                      return null;
                     })}
                 </tbody>
               </table>

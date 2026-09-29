@@ -1,59 +1,119 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useMemo, useState } from "react";
 import { Table } from "rsuite";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import {
   Badge,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
   Col,
+  Input,
   Modal,
   ModalBody,
   ModalHeader,
+  Pagination,
+  PaginationItem,
+  PaginationLink,
   Row,
   UncontrolledTooltip,
 } from "reactstrap";
-import { hr_status } from "../../../common/constant/Constants";
 import { Link } from "react-router-dom";
-import { parse, format } from "date-fns";
+import { format } from "date-fns";
 import SimpleBar from "simplebar-react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { ConvertSecondsToTime } from "../../../common/js/ConvertSecondsToTime";
+import { setAttendancePagination } from "../../../redux/reducers/ChildReducer/AttendanceReportReducer";
+
+const PAGE_SIZE_OPTIONS = [10, 20, 25, 50, 100];
+
+// Forces pager buttons and the "Show N" select to the exact same height / baseline
+const pagerStyles = `
+.att-pager .pagination { margin: 0 !important; align-items: center; }
+.att-pager .page-link { height: 34px; min-width: 34px; display: inline-flex; align-items: center; justify-content: center; padding: 0 12px; line-height: 1; }
+.att-pager .att-pager-select { height: 34px; margin: 0; padding-top: 0; padding-bottom: 0; line-height: 32px; box-shadow: none; }
+`;
+
+// Builds [1, "gap-4", 5, 6, 7, "gap-12", 12]
+const buildPageWindow = (current, total) => {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages = new Set([1, total, current, current - 1, current + 1]);
+  if (current <= 3) [2, 3, 4].forEach((p) => pages.add(p));
+  if (current >= total - 2)
+    [total - 1, total - 2, total - 3].forEach((p) => pages.add(p));
+  const sorted = [...pages]
+    .filter((p) => p >= 1 && p <= total)
+    .sort((a, b) => a - b);
+  const out = [];
+  sorted.forEach((p, i) => {
+    if (i > 0 && p - sorted[i - 1] > 1) out.push(`gap-${p}`);
+    out.push(p);
+  });
+  return out;
+};
 
 const AttendanceTeamTable = () => {
+  const dispatch = useDispatch();
   const { Column, HeaderCell, Cell } = Table;
-  const [loading, setLoading] = React.useState(false);
+  const [loading] = useState(false);
 
-  const ws_data = GetLocalStorageData("work_schedule") || [];
   const holiday_data = GetLocalStorageData("holiday") || [];
-  const leave_types_data = GetLocalStorageData("leave_types") || [];
   const employee_data = GetLocalStorageData("employee") || [];
   const DepartmentData = GetLocalStorageData("department") || [];
 
   const [timeline_modal, settimeline_modal] = useState(false);
   const [notes_modal, setNotes_modal] = useState(false);
 
-  const { team_attendance_report_data } = useSelector(
+  const { team_attendance_report_data, attendance_pagination } = useSelector(
     (state) => state.AttendanceReportReducer,
   );
 
-  function open_timeline(rowData) {
+  const pagination = attendance_pagination || {
+    count: 0,
+    page: 1,
+    page_size: 20,
+    total_pages: 0,
+  };
+
+  // 🔹 Pagination handlers (Filter component refetches when these change)
+  const handlePageChange = (nextPage) => {
+    if (
+      nextPage < 1 ||
+      nextPage > pagination.total_pages ||
+      nextPage === pagination.page
+    )
+      return;
+    dispatch(setAttendancePagination({ page: nextPage }));
+  };
+
+  const handlePageSizeChange = (e) => {
+    dispatch(
+      setAttendancePagination({ page_size: Number(e.target.value), page: 1 }),
+    );
+  };
+
+  const pageWindow = useMemo(
+    () => buildPageWindow(pagination.page, pagination.total_pages),
+    [pagination.page, pagination.total_pages],
+  );
+
+  const rangeStart =
+    pagination.count === 0
+      ? 0
+      : (pagination.page - 1) * pagination.page_size + 1;
+  const rangeEnd = Math.min(
+    pagination.page * pagination.page_size,
+    pagination.count,
+  );
+
+  function open_timeline() {
     settimeline_modal(!timeline_modal);
   }
 
-  function open_notes_modal(rowData) {
+  function open_notes_modal() {
     setNotes_modal(!notes_modal);
   }
 
-  // const EmployeeCell = ({ rowData, dataKey, ...props }) => {
-  //   let at_employee_data = employee_data.find(function (i) {
-  //     return i.id == rowData.employee_id;
-  //   });
-  
   const EmployeeCell = ({ rowData, dataKey, ...props }) => {
     const at_employee_data = (employee_data || []).find(
-      (i) => i.id == rowData.employee_id
+      (i) => i.id == rowData.employee_id,
     );
 
     if (!at_employee_data) {
@@ -123,26 +183,16 @@ const AttendanceTeamTable = () => {
   };
 
   const DepartmentCell = ({ rowData, dataKey, ...props }) => {
-    // let thisDepartment = DepartmentData
-    //   ? DepartmentData.filter((data) =>
-    //       rowData.primary_department_id_list.includes(data.id),
-    //     )
-    //   : [];
     const departmentIds = rowData?.primary_department_id_list || [];
 
     const thisDepartment = (DepartmentData || []).filter((data) =>
-      departmentIds.includes(data.id)
+      departmentIds.includes(data.id),
     );
-
 
     let firstDep_name = thisDepartment?.length ? thisDepartment[0].name : "";
 
     let subDepList = thisDepartment?.length
-      ? thisDepartment.filter((datas, index) => {
-          if (index !== 0) {
-            return datas;
-          }
-        })
+      ? thisDepartment.filter((datas, index) => index !== 0)
       : [];
 
     return (
@@ -157,7 +207,6 @@ const AttendanceTeamTable = () => {
             {subDepList.length > 0 ? (
               <span>
                 <Badge
-                  //id="tooltipwithHtml"
                   pill
                   color="success"
                   className="position-absolute top-0 start-100 translate-middle"
@@ -172,8 +221,10 @@ const AttendanceTeamTable = () => {
                 >
                   {" "}
                   <div className="mt-1">
-                    {subDepList.map((item, key) => (
-                      <p className="mb-1">{item.name}</p>
+                    {subDepList.map((item) => (
+                      <p className="mb-1" key={item.id}>
+                        {item.name}
+                      </p>
                     ))}
                   </div>{" "}
                 </UncontrolledTooltip>
@@ -226,131 +277,83 @@ const AttendanceTeamTable = () => {
     );
   };
 
-  const DynamicHourColumn = ({ rowData, dataKey, ...props }) => {
-    let at_employee_data = employee_data.find(function (i) {
-      return i.id == rowData.employee_id;
-    });
-    let at_employee_DepartmentData = DepartmentData.find(function (i) {
-      return i.id == at_employee_data.primary_department_id;
-    });
-
-    {
-      rowData.workday_data.map((item, key) => (
-        <Column width={200}>
-          <HeaderCell>Date</HeaderCell>
-          <Cell dataKey="ws_hours">paid_hr</Cell>
-        </Column>
-      ));
-    }
-
-    return "";
-  };
-
   const fixedColumns = [
-    <Column width={250} fixed="left">
+    <Column key="employee" width={250} fixed="left">
       <HeaderCell>Employee</HeaderCell>
       <EmployeeCell dataKey="employee" fullText />
     </Column>,
-    <Column width={200} fixed="left">
+    <Column key="ws_hours" width={200} fixed="left">
       <HeaderCell>Paid Time / Work Schedule</HeaderCell>
       <WSHourCell
         dataKey="total_work_schedule_hr_without_break_in_seconds"
         fullText
       />
     </Column>,
-    <Column width={200} fixed="left">
+    <Column key="department" width={200} fixed="left">
       <HeaderCell>Department</HeaderCell>
       <DepartmentCell dataKey="primary_department_id_list" fullText />
     </Column>,
   ];
 
   const dynamicColumns =
-    // team_attendance_report_data.length > 0
-    //   ? team_attendance_report_data[0].workday_data.map
     (team_attendance_report_data || []).length > 0
-      ? (team_attendance_report_data[0]?.workday_data || []).map((day, index) => (
-          <Column key={`dynamic_${index}`} width={100} align="center">
-            <HeaderCell>
-              {" "}
-              {format(new Date(day.date), "dd MMM, yyyy")}
-            </HeaderCell>
-            {/* <Cell dataKey={`workday_data[${index}].final_paid_hr_in_seconds`} /> */}
-            <Cell
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              {(rowData) => {
-                let result_text = "";
-                let result_text_color = "black";
+      ? (team_attendance_report_data[0]?.workday_data || []).map(
+          (day, index) => (
+            <Column key={`dynamic_${index}`} width={100} align="center">
+              <HeaderCell>
+                {" "}
+                {format(new Date(day.date), "dd MMM, yyyy")}
+              </HeaderCell>
+              <Cell
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                {(rowData) => {
+                  const dayData = rowData.workday_data?.[index];
+                  if (!dayData) return <span>-</span>;
 
-                if (rowData.workday_data[index].is_holiday === true) {
-                  let holiday_name =
-                    holiday_data.find(
-                      (d) => d.id === rowData.workday_data[index].holiday_id,
-                    )?.name || "Holiday";
-                  result_text = holiday_name;
-                  result_text_color = "green";
-                } else if (rowData.workday_data[index].is_week_off === true) {
-                  result_text =
-                    rowData.workday_data[index].week_off_day_name || "";
-                  result_text_color = "blue";
-                } else if (
-                  rowData.workday_data[index].is_leave_approved === true
-                ) {
-                  result_text = "Leave";
-                  result_text_color = "orange";
-                } else if (
-                  rowData.workday_data[index].leave_taken_without_approval ===
-                  true
-                ) {
-                  result_text = "Absent";
-                  result_text_color = "red";
-                } else if (
-                  rowData.workday_data[index].is_attendance_exists === false
-                ) {
-                  result_text = "-";
-                  result_text_color = "black";
-                } else {
-                  result_text =
-                    parseInt(
-                      rowData.workday_data[index].final_paid_hr_in_seconds,
-                    ) > 0
-                      ? ConvertSecondsToTime(
-                          rowData.workday_data[index].final_paid_hr_in_seconds,
-                        )
-                      : "00:00Hr";
-                  result_text_color = "black";
-                }
+                  let result_text = "";
+                  let result_text_color = "black";
 
-                return (
-                  <span style={{ color: result_text_color }}>
-                    {result_text}
-                  </span>
-                );
-              }}
-            </Cell>
-          </Column>
-        ))
+                  if (dayData.is_holiday === true) {
+                    result_text =
+                      holiday_data.find((d) => d.id === dayData.holiday_id)
+                        ?.name || "Holiday";
+                    result_text_color = "green";
+                  } else if (dayData.is_week_off === true) {
+                    result_text = dayData.week_off_day_name || "";
+                    result_text_color = "blue";
+                  } else if (dayData.is_leave_approved === true) {
+                    result_text = "Leave";
+                    result_text_color = "orange";
+                  } else if (dayData.leave_taken_without_approval === true) {
+                    result_text = "Absent";
+                    result_text_color = "red";
+                  } else if (dayData.is_attendance_exists === false) {
+                    result_text = "-";
+                    result_text_color = "black";
+                  } else {
+                    result_text =
+                      parseInt(dayData.final_paid_hr_in_seconds) > 0
+                        ? ConvertSecondsToTime(dayData.final_paid_hr_in_seconds)
+                        : "00:00Hr";
+                    result_text_color = "black";
+                  }
+
+                  return (
+                    <span style={{ color: result_text_color }}>
+                      {result_text}
+                    </span>
+                  );
+                }}
+              </Cell>
+            </Column>
+          ),
+        )
       : [];
-
-  const actionColumn = (
-    <Column width={80} fixed="right">
-      <HeaderCell>Action</HeaderCell>
-      <Cell style={{ padding: "6px" }}>
-        {(rowData) => (
-          <Button
-            appearance="link"
-            onClick={() => alert(`name:${rowData.date}`)}
-          >
-            Edit
-          </Button>
-        )}
-      </Cell>
-    </Column>
-  );
 
   const allColumns = [...fixedColumns, ...dynamicColumns];
 
@@ -364,18 +367,102 @@ const AttendanceTeamTable = () => {
         loading={loading}
         bordered={true}
         affixHorizontalScrollbar
-        className="mb-5"
+        className="mb-3"
       >
         {allColumns}
       </Table>
+
+      {/* Pagination */}
+      {pagination.count > 0 && (
+        <div className="att-pager d-flex align-items-center justify-content-between flex-wrap gap-3 bg-white rounded px-4 py-3 mb-4">
+          <style>{pagerStyles}</style>
+          <div className="text-muted">
+            Showing <span className="fw-semibold">{rangeStart}</span> to{" "}
+            <span className="fw-semibold">{rangeEnd}</span> of{" "}
+            <span className="fw-semibold">{pagination.count}</span>
+          </div>
+
+          <div className="d-flex align-items-center gap-2">
+            {pagination.total_pages > 1 && (
+              <Pagination
+                className="pagination-separated mb-0"
+                aria-label="Attendance pages"
+              >
+                <PaginationItem disabled={pagination.page <= 1}>
+                  <PaginationLink
+                    previous
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(pagination.page - 1);
+                    }}
+                  >
+                    Previous
+                  </PaginationLink>
+                </PaginationItem>
+
+                {pageWindow.map((p) =>
+                  typeof p === "string" ? (
+                    <PaginationItem key={p} disabled>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => e.preventDefault()}
+                      >
+                        …
+                      </PaginationLink>
+                    </PaginationItem>
+                  ) : (
+                    <PaginationItem key={p} active={p === pagination.page}>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(p);
+                        }}
+                      >
+                        {p}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ),
+                )}
+
+                <PaginationItem
+                  disabled={pagination.page >= pagination.total_pages}
+                >
+                  <PaginationLink
+                    next
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(pagination.page + 1);
+                    }}
+                  >
+                    Next
+                  </PaginationLink>
+                </PaginationItem>
+              </Pagination>
+            )}
+
+            <Input
+              type="select"
+              value={pagination.page_size}
+              onChange={handlePageSizeChange}
+              aria-label="Employees per page"
+              className="att-pager-select"
+              style={{ width: "auto", minWidth: 110 }}
+            >
+              {PAGE_SIZE_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  Show {n}
+                </option>
+              ))}
+            </Input>
+          </div>
+        </div>
+      )}
+
       {/* IN/OUT List Modal */}
-      <Modal
-        isOpen={timeline_modal}
-        toggle={() => {
-          open_timeline();
-        }}
-        centered
-      >
+      <Modal isOpen={timeline_modal} toggle={open_timeline} centered>
         <ModalHeader>
           <h5 className="modal-title" id="exampleModalToggleLabel">
             Date :
@@ -433,25 +520,15 @@ const AttendanceTeamTable = () => {
                 </div>
               </div>
             </SimpleBar>
-            <Button
-              className="btn btn-warning"
-              onClick={() => {
-                open_timeline(false);
-              }}
-            >
+            <Button className="btn btn-warning" onClick={open_timeline}>
               Continue
             </Button>
           </div>
         </ModalBody>
       </Modal>
+
       {/* Notes Modal */}
-      <Modal
-        isOpen={notes_modal}
-        toggle={() => {
-          open_notes_modal();
-        }}
-        centered
-      >
+      <Modal isOpen={notes_modal} toggle={open_notes_modal} centered>
         <ModalBody className="text-left">
           <div>
             <SimpleBar style={{ height: "300px" }} className="px-3 mx-n3 mb-2">

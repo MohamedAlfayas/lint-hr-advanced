@@ -8,7 +8,7 @@ let currentEmployeeId = null;
  */
 export const connectWebSocket = (
   employeeId,
-  { onOpen, onMessage, onError, onClose } = {},
+  { onOpen, onMessage, onRouteUpdate, onError, onClose } = {},
 ) => {
   if (!employeeId) {
     console.warn("⚠️ Employee ID is missing.");
@@ -80,6 +80,12 @@ export const connectWebSocket = (
     try {
       const data = JSON.parse(event.data);
       console.log("Parsed:", data);
+
+      if (data.action === "route_update") {
+        if (onRouteUpdate) onRouteUpdate(data);
+        console.log("====================================");
+        return;
+      }
 
       if (onMessage) onMessage(data);
     } catch (err) {

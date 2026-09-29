@@ -9,6 +9,8 @@ import {
   ModalBody,
   ModalHeader,
   Button,
+  Spinner,
+  Input,
 } from "reactstrap";
 import SimpleBar from "simplebar-react";
 import { MetaTitle } from "../../common/data/MetaTitle";
@@ -33,6 +35,7 @@ const { Column, HeaderCell, Cell, ColumnGroup } = Table;
 
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const SEARCH_DEBOUNCE_MS = 400;
 
 // ----------------------------------------------------
 // Pagination page number helper
@@ -100,6 +103,31 @@ const LeaveReport = () => {
   });
 
   // ----------------------------------------------------
+  // Search filter (debounced)
+  // searchInput updates instantly as the user types;
+  // search is the debounced value that drives the API call.
+  // ----------------------------------------------------
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1); // restart from first page on a new search
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const handleSearchChange = (e) => {
+    setSearchInput(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchInput("");
+  };
+
+  // ----------------------------------------------------
   // Server-side pagination
   // ----------------------------------------------------
   const [page, setPage] = useState(1);
@@ -109,11 +137,20 @@ const LeaveReport = () => {
 
   // ----------------------------------------------------
   // Export-confirm modal
+  // "page" -> export current page (report state)
+  // "all"  -> export every employee via export-all-leave-report/
   // ----------------------------------------------------
   const [showModal, setShowModal] = useState(false);
+  const [exportType, setExportType] = useState("page");
+  const [exportingAll, setExportingAll] = useState(false);
 
   const toggleModal = () => {
     setShowModal((s) => !s);
+  };
+
+  const openExportModal = (type) => {
+    setExportType(type);
+    setShowModal(true);
   };
 
   // ----------------------------------------------------
@@ -135,19 +172,26 @@ const LeaveReport = () => {
   // ?thisMonth=2026-09
   // &page=1
   // &page_size=10
+  // &search=john
   // ====================================================
-  const getReportData = (thisMonth, targetPage, targetPageSize) => {
+  const getReportData = (thisMonth, targetPage, targetPageSize, searchTerm) => {
     setLoading(true);
+
+    let url =
+      "report/get-team-monthly-leave-report/?thisMonth=" +
+      encodeURIComponent(thisMonth) +
+      "&page=" +
+      targetPage +
+      "&page_size=" +
+      targetPageSize;
+
+    if (searchTerm) {
+      url += "&search=" + encodeURIComponent(searchTerm);
+    }
 
     Api({
       method: "GET",
-      url:
-        "report/get-team-monthly-leave-report/?thisMonth=" +
-        encodeURIComponent(thisMonth) +
-        "&page=" +
-        targetPage +
-        "&page_size=" +
-        targetPageSize,
+      url,
     })
       .then((res) => {
         const body = res?.data;
@@ -184,11 +228,11 @@ const LeaveReport = () => {
 
   // ----------------------------------------------------
   // Fetch on mount and whenever:
-  // month / page / pageSize changes
+  // month / page / pageSize / search changes
   // ----------------------------------------------------
   useEffect(() => {
-    getReportData(filterKeys.month, page, pageSize);
-  }, [filterKeys.month, page, pageSize]);
+    getReportData(filterKeys.month, page, pageSize, search);
+  }, [filterKeys.month, page, pageSize, search]);
 
   // ----------------------------------------------------
   // Month change
@@ -242,7 +286,8 @@ const LeaveReport = () => {
   }
 
   // ====================================================
-  // DERIVED DATA
+  // DERIVED DATA (drives the on-screen table — always
+  // based on the current paginated `report` state)
   // ====================================================
 
   // Dates available in current API page
@@ -589,9 +634,18 @@ const LeaveReport = () => {
 
   // ====================================================
   // TEAM EXPORT
+  //
+  // Builds the team XLSX from any report list:
+  //  - "Export"     -> current page rows (default: `report` state)
+  //  - "Export All" -> full month list from export-all-leave-report/
+  //
+  // Dates / leave types are derived from whichever dataset
+  // is passed in, NOT from the paginated `leaveDates` /
+  // `leaveTypes` above — otherwise an "Export All" run would
+  // be limited to just the columns present on the current page.
   // ====================================================
 
-  const exportExcelFile = () => {
+  const exportExcelFile = (reportData = report, fileSuffix = "") => {
     const wb = new ExcelJs.Workbook();
 
     const sheet = wb.addWorksheet("Leave Report", {
@@ -604,13 +658,44 @@ const LeaveReport = () => {
       ],
     });
 
+    const datesForExport = Array.from(
+      new Set(
+        reportData.flatMap((e) =>
+          (e.daily_leave_data || []).map((d) => d.date),
+        ),
+      ),
+    );
+
+    const leaveTypesForExport = Array.from(
+      new Map(
+        reportData.flatMap((e) => [
+          ...(e.leave_type_summary || []).map((lt) => [
+            lt.leave_type_id,
+            lt.leave_type_name,
+          ]),
+
+          ...(e.daily_leave_data || []).flatMap((d) =>
+            (d.leave_counts || []).map((lc) => [
+              lc.leave_type_id,
+              lc.leave_type_name,
+            ]),
+          ),
+        ]),
+      ),
+    )
+      .map(([id, name]) => ({
+        id,
+        name,
+      }))
+      .sort((a, b) => a.id - b.id);
+
     const headers = ["Employee", "Email"];
 
-    leaveDates.forEach((d) => {
+    datesForExport.forEach((d) => {
       headers.push(formatDate(d));
     });
 
-    leaveTypes.forEach((lt) => {
+    leaveTypesForExport.forEach((lt) => {
       headers.push(lt.name);
     });
 
@@ -622,18 +707,18 @@ const LeaveReport = () => {
       bold: true,
     };
 
-    report.forEach((emp) => {
+    reportData.forEach((emp) => {
       const found = employee_data.find((e) => emp.employee_id === e.id);
 
       const row = [found ? found.first_name : "", found ? found.email : ""];
 
-      leaveDates.forEach((d) => {
+      datesForExport.forEach((d) => {
         const day = (emp.daily_leave_data || []).find((x) => x.date === d);
 
         row.push(day && day.total_leaves > 0 ? day.total_leaves : "-");
       });
 
-      leaveTypes.forEach((lt) => {
+      leaveTypesForExport.forEach((lt) => {
         const s = (emp.leave_type_summary || []).find(
           (x) => x.leave_type_id === lt.id,
         );
@@ -716,12 +801,56 @@ const LeaveReport = () => {
 
       a.href = url;
 
-      a.download = `Leave_Report_${filterKeys.month}.xlsx`;
+      a.download = `Leave_Report_${filterKeys.month}${fileSuffix}.xlsx`;
 
       a.click();
 
       window.URL.revokeObjectURL(url);
     });
+  };
+
+  // ====================================================
+  // EXPORT ALL
+  //
+  // GET /report/export-all-leave-report/?thisMonth=2026-09&search=john
+  // Fetches every employee for the selected month (honoring
+  // the current search filter, not paginated), then builds
+  // the same XLSX as a normal export.
+  // ====================================================
+
+  const handleExportAll = () => {
+    setExportingAll(true);
+
+    let url =
+      "report/export-all-leave-report/?thisMonth=" +
+      encodeURIComponent(filterKeys.month);
+
+    if (search) {
+      url += "&search=" + encodeURIComponent(search);
+    }
+
+    Api({
+      method: "GET",
+      url,
+    })
+      .then((res) => {
+        const list = Array.isArray(res?.data?.data) ? res.data.data : [];
+
+        if (list.length === 0) {
+          window.alert("No leave data found for this month.");
+          return;
+        }
+
+        exportExcelFile(list, "_All");
+      })
+      .catch((error) => {
+        console.error("Export all leave report API error:", error);
+
+        window.alert("Failed to export the leave report.");
+      })
+      .finally(() => {
+        setExportingAll(false);
+      });
   };
 
   // ====================================================
@@ -886,6 +1015,24 @@ const LeaveReport = () => {
     </option>
   ));
 
+  // ----------------------------------------------------
+  // Export modal text (kept out of JSX so return() has
+  // no nested ternaries — same pattern as AttendanceReport)
+  // ----------------------------------------------------
+
+  const isExportAll = exportType === "all";
+
+  const exportMessage = isExportAll ? (
+    <>
+      Export <b>{monthLabel}</b> Leave Report for <b>all employees</b> as a XLSX
+      file?
+    </>
+  ) : (
+    <>
+      Export <b>{monthLabel}</b> Leave Report (current page) as a XLSX file?
+    </>
+  );
+
   // ====================================================
   // RETURN
   // ====================================================
@@ -912,8 +1059,57 @@ const LeaveReport = () => {
                   </div>
                 </Col>
 
+                {/* Search */}
+                <Col xl={3}>
+                  <div className="position-relative">
+                    <Input
+                      type="text"
+                      className="form-control"
+                      placeholder="Search employee..."
+                      value={searchInput}
+                      onChange={handleSearchChange}
+                      style={{ paddingRight: "32px" }}
+                    />
+                    {/* Plain <i class="search-icon"> from the template CSS
+                        ships with pointer-events: none, so clicks never
+                        reached it. Using a focusable <span> with an
+                        explicit pointer-events/zIndex fixes that. */}
+                    <span
+                      role="button"
+                      tabIndex={searchInput ? 0 : -1}
+                      aria-label="Clear search"
+                      onClick={searchInput ? clearSearch : undefined}
+                      onKeyDown={(e) => {
+                        if (
+                          searchInput &&
+                          (e.key === "Enter" || e.key === " ")
+                        ) {
+                          e.preventDefault();
+                          clearSearch();
+                        }
+                      }}
+                      style={{
+                        position: "absolute",
+                        right: "10px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        cursor: searchInput ? "pointer" : "default",
+                        pointerEvents: "auto",
+                        zIndex: 5,
+                        lineHeight: 0,
+                      }}
+                    >
+                      <i
+                        className={
+                          searchInput ? "ri-close-line" : "ri-search-line"
+                        }
+                      ></i>
+                    </span>
+                  </div>
+                </Col>
+
                 {/* Summary */}
-                <Col xl={4}>
+                <Col xl={3}>
                   <div className="d-flex align-items-center gap-2">
                     <span className="badge bg-danger-subtle text-danger fs-12 p-2">
                       Total Leaves: <b>{teamTotalLeaves}</b>
@@ -930,20 +1126,43 @@ const LeaveReport = () => {
                 </Col>
 
                 {/* Export */}
-                <Col xl={6} className="text-end">
-                  <Button
-                    type="button"
-                    className="btn btn-info"
-                    onClick={toggleModal}
-                    style={{
-                      padding: "0.25rem 0.5rem",
-                      fontSize: "0.75rem",
-                      width: "80px",
-                    }}
-                  >
-                    <i className="ri-file-download-line align-bottom me-1"></i>
-                    Export
-                  </Button>
+                <Col xl={4} className="text-end">
+                  <div className="d-flex justify-content-end gap-2">
+                    <Button
+                      type="button"
+                      className="btn btn-info"
+                      onClick={() => openExportModal("page")}
+                      style={{
+                        padding: "0.25rem 0.5rem",
+                        fontSize: "0.75rem",
+                        width: "80px",
+                      }}
+                    >
+                      <i className="ri-file-download-line align-bottom me-1"></i>
+                      Export
+                    </Button>
+
+                    <Button
+                      type="button"
+                      className="btn btn-success"
+                      onClick={() => openExportModal("all")}
+                      disabled={exportingAll}
+                      style={{
+                        padding: "0.25rem 0.5rem",
+                        fontSize: "0.75rem",
+                        width: "100px",
+                      }}
+                    >
+                      {exportingAll ? (
+                        <Spinner size="sm" />
+                      ) : (
+                        <>
+                          <i className="ri-download-cloud-2-line align-bottom me-1"></i>
+                          Export All
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </Col>
 
                 {/* Export Modal */}
@@ -965,10 +1184,7 @@ const LeaveReport = () => {
                       <div className="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
                         <h4>Are you sure?</h4>
 
-                        <p className="text-muted mx-4 mb-0">
-                          Export <b>{monthLabel}</b> Leave Report as a XLSX
-                          file?
-                        </p>
+                        <p className="text-muted mx-4 mb-0">{exportMessage}</p>
                       </div>
                     </div>
 
@@ -985,7 +1201,11 @@ const LeaveReport = () => {
                         type="button"
                         className="btn w-sm btn-success"
                         onClick={() => {
-                          exportExcelFile();
+                          if (isExportAll) {
+                            handleExportAll();
+                          } else {
+                            exportExcelFile();
+                          }
                           toggleModal();
                         }}
                       >
