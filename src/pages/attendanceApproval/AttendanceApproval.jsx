@@ -154,10 +154,15 @@ const AttendanceApproval = ({
         const thisEmployee = EmployeeData.find(
           (data) => String(data.id) === String(obj.employee_id),
         );
-        if (!thisEmployee) {
+          if (!thisEmployee) {
           return <span className="text-muted">-</span>;
         }
-        return thisEmployee.profile_url ? (
+
+        const profileUrl = thisEmployee.profile_url;
+        const firstName = thisEmployee.first_name || "-";
+        const email = thisEmployee.email || "";
+
+        return profileUrl ? (
           <div className="d-flex gap-2 align-items-center lc_sticky_first_additional_col">
             <div className="flex-shrink-0">
               <img

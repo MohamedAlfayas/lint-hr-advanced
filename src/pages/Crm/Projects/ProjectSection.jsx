@@ -19,6 +19,27 @@ import { GetApi } from "../../../common/api/GetApi";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import Tasks from "../Task/TaskList";
 import ProjectsFiles from "./ProjectsFiles";
+import {
+  CREATE_TASK_ACCESS_KEY,
+  EDIT_TASK_ACCESS_KEY,
+  CREATE_PROJECT_ACCESS_KEY,
+} from "../../../common/constant/RoleConstants";
+
+
+const hasPermission = (keys) => {
+  try {
+    const profile = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+    if (!profile) return false;
+    if (profile.is_admin === true) return true;
+    const list = Array.isArray(keys) ? keys : [keys];
+    return (
+      Array.isArray(profile.permission_list) &&
+      list.some((k) => profile.permission_list.includes(k))
+    );
+  } catch {
+    return false;
+  }
+};
 
 const ProjectSection = () => {
   const { id } = useParams();
@@ -52,8 +73,16 @@ const ProjectSection = () => {
   }, [id]);
 
   // Tab
+  const hasTaskAccess = hasPermission([
+    CREATE_TASK_ACCESS_KEY,
+    EDIT_TASK_ACCESS_KEY,
+  ]);
+
+    const canAddFiles = hasPermission([CREATE_PROJECT_ACCESS_KEY]);
+
   const [activeTab, setActiveTab] = useState(() => {
-    return localStorage.getItem("activeTab") || "1";
+    const saved = localStorage.getItem("activeTab") || "1";
+    return saved === "2" && !hasTaskAccess ? "1" : saved;
   });
 
   const toggleTab = (tab) => {
@@ -167,18 +196,20 @@ const ProjectSection = () => {
                       Overview
                     </NavLink>
                   </NavItem>
-                  <NavItem>
-                    <NavLink
-                      className={classnames(
-                        { active: activeTab === "2" },
-                        "fw-semibold",
-                      )}
-                      onClick={() => toggleTab("2")}
-                      href="#"
-                    >
-                      Task List
-                    </NavLink>
-                  </NavItem>
+                                   {hasTaskAccess && (
+                    <NavItem>
+                      <NavLink
+                        className={classnames(
+                          { active: activeTab === "2" },
+                          "fw-semibold",
+                        )}
+                        onClick={() => toggleTab("2")}
+                        href="#"
+                      >
+                        Task List
+                      </NavLink>
+                    </NavItem>
+                  )}
                   <NavItem>
                     <NavLink
                       className={classnames(
@@ -208,11 +239,13 @@ const ProjectSection = () => {
                 projectId={id}
               />
             </TabPane>
-            <TabPane tabId="2">
-              <Tasks projectId={id} />
-            </TabPane>
+                       {hasTaskAccess && (
+              <TabPane tabId="2">
+                <Tasks projectId={id} />
+              </TabPane>
+            )}
             <TabPane tabId="3">
-              <ProjectsFiles projectId={id} />
+              <ProjectsFiles projectId={id}  canAddFiles={canAddFiles}/>
             </TabPane>
           </TabContent>
         </Col>
