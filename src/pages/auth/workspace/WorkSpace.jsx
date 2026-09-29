@@ -94,7 +94,7 @@ const WorkSpace = () => {
         })
         .catch((err) => {
           console.error("Err - ", err);
-          setErrorMessage("Company not found");
+          // setErrorMessage("Company not found");
           toast?.error(
             err?.response?.data?.message || "Company not found",
           );

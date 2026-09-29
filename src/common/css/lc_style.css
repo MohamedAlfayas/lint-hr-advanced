@@ -880,5 +880,29 @@ body .rs-table-row-header .rs-table-cell {
   padding-bottom: 0 !important;
 }
 
+/* ── Attendance table: vertical scrollbar starts below the heading ── */
+#attendanceList .attendance-table {
+  --att-head-h: 52px;
+}
+
+#attendanceList .attendance-table thead th {
+  height: var(--att-head-h);
+  box-sizing: border-box;
+}
+
+#attendanceList .attendance-table-wrapper .simplebar-track.simplebar-vertical {
+  top: var(--att-head-h, 52px);
+  bottom: 0;
+}
+
+@media (max-width: 767px) {
+  #attendanceList .attendance-table {
+    --att-head-h: 44px;
+  }
+  #attendanceList .attendance-table-wrapper .simplebar-track.simplebar-vertical {
+    top: 44px;
+  }
+}
+
 
 

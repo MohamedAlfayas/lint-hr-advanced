@@ -1,99 +1,199 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Card, CardBody, CardHeader, Col, Row } from "reactstrap";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Col,
+  Row,
+  Button,
+  Progress,
+  Modal, ModalHeader, ModalBody, ModalFooter,
+} from "reactstrap";
 import ReactApexChart from "react-apexcharts";
-import { useSelector } from "react-redux";
+import SimpleBar from "simplebar-react";
+import "simplebar-react/dist/simplebar.min.css";
+import { useDispatch, useSelector } from "react-redux";
 import { GetApi } from "../../../common/api/GetApi";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import getChartColorsArray from "../../../component/common/dynamicColor/ChartsDynamicColor";
+// import { setFormObj, toggleRSBView } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
+import {
+  setComponentToShow,
+  setFormObj,
+  setFormTitle,
+  setFormWidthPercentage,
+  toggleRSBView,
+} from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
+import { project_component_name } from "../../../common/constant/Constants";
+import { EDIT_PROJECT_ACCESS_KEY } from "../../../common/constant/RoleConstants";
+import AsyncSelect from "react-select/async";
+import { toast } from "react-toastify";
+import { Api } from "../../../common/api/Api";
+import { PutApi } from "../../../common/api/PutApi";
+import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
+import { editProject } from "../../../redux/reducers/ChildReducer/ProjectsReducer";
+
+const LIST_MAX_HEIGHT = 240; // Project Timeline's inner scroll area
+const ACTIVITY_MAX_HEIGHT = 260; // recent activity feed
+const RECENT_TASK_LIMIT = 15;
+const COMPACT_LIST_MAX_HEIGHT = 130; // Project Progress / Task Status / Members lists — kept short so those 3 cards stay small
+
+const displayValue = (val, fallback = "-") => {
+  if (val == null) return fallback;
+  if (typeof val === "string" || typeof val === "number") return val;
+  if (typeof val === "object") return val.name ?? val.title ?? val.label ?? fallback;
+  return fallback;
+};
+
+const buildEmployeeOption = (emp) => ({
+  ...emp,
+  value: emp.id,
+  label:
+    `${emp.first_name || ""} ${emp.last_name || ""}`.trim() ||
+    emp.label ||
+    emp.name ||
+    `Employee ${emp.id}`,
+});
+
+const toId = (v) => (v && typeof v === "object" ? v.id : v);
+
+const ChartSquare = ({ max = 130, children }) => (
+  <div
+    style={{
+      width: "100%",
+      maxWidth: max,
+      aspectRatio: "1 / 1",
+      margin: "0 auto",
+    }}
+  >
+    {children}
+  </div>
+);
 
 // ─────────────────────────────────────────────
-// RADIAL SCORE CHART
+// PROJECT PROGRESS DONUT (single value, green ring)
 // ─────────────────────────────────────────────
-const GradientCircleRadialbar = ({ dataColors, percentage }) => {
-  const chartColors = getChartColorsArray(dataColors);
-
+const ProgressRadial = ({ percentage }) => {
   const series = [percentage ?? 0];
-
   const options = {
-    chart: {
-      height: 320,
-      type: "radialBar",
-      toolbar: { show: false },
-    },
+    chart: { type: "radialBar", sparkline: { enabled: true } },
     plotOptions: {
       radialBar: {
-        startAngle: -135,
-        endAngle: 225,
-        hollow: { size: "70%" },
-        track: { strokeWidth: "67%" },
+        hollow: { size: "68%" },
+        track: { background: "#eef0f4", strokeWidth: "100%" },
         dataLabels: {
           name: {
             show: true,
-            offsetY: -10,
+            offsetY: 24,
+            fontSize: "13px",
+            fontWeight: 500,
             color: "#878a99",
-            fontSize: "16px",
           },
           value: {
             show: true,
-            fontSize: "34px",
-            fontWeight: 600,
-            formatter: function (val) {
-              return `${parseInt(val)}%`;
-            },
+            offsetY: -8,
+            fontSize: "26px",
+            fontWeight: 700,
+            color: "#212529",
+            formatter: (val) => `${parseInt(val)}%`,
           },
         },
       },
     },
-    fill: {
-      type: "gradient",
-      gradient: {
-        shade: "dark",
-        type: "horizontal",
-        gradientToColors: chartColors,
-        opacityFrom: 1,
-        opacityTo: 1,
-        stops: [0, 100],
-      },
-    },
+    fill: { colors: ["#22c55e"] },
     stroke: { lineCap: "round" },
     labels: ["Completed"],
   };
 
   return (
-    <ReactApexChart
-      options={options}
-      series={series}
-      type="radialBar"
-      height={320}
-      className="apex-charts"
-    />
+    <ChartSquare>
+      <ReactApexChart
+        options={options}
+        series={series}
+        type="radialBar"
+        width="100%"
+        height="100%"
+      />
+    </ChartSquare>
   );
 };
 
 // ─────────────────────────────────────────────
-// DONUT TASK CHART
+// TASK STATUS DONUT (multi-color, center total)
 // ─────────────────────────────────────────────
-const UsersByDeviceCharts = ({ dataColors, series, labels, colors }) => {
-  const chartColors = colors?.length ? colors : getChartColorsArray(dataColors);
-
+const TaskStatusDonut = ({ series, labels, colors, total }) => {
   const options = {
     labels: labels || [],
-    chart: { type: "donut", height: 220 },
-    plotOptions: { pie: { donut: { size: "76%" } } },
+    chart: { type: "donut" },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: "68%",
+          labels: {
+            show: true,
+            total: {
+              show: true,
+              label: "Tasks",
+              fontSize: "13px",
+              color: "#878a99",
+              formatter: () => total,
+            },
+            value: {
+              fontSize: "26px",
+              fontWeight: 700,
+              color: "#212529",
+            },
+          },
+        },
+      },
+    },
     dataLabels: { enabled: false },
     legend: { show: false },
-    stroke: { width: 0 },
-    colors: chartColors,
+    stroke: { width: 2, colors: ["#fff"] },
+    colors: colors,
   };
 
   return (
-    <ReactApexChart
-      options={options}
-      series={series}
-      type="donut"
-      height={220}
-      className="apex-charts"
-    />
+    <ChartSquare>
+      <ReactApexChart
+        options={options}
+        series={series}
+        type="donut"
+        width="100%"
+        height="100%"
+      />
+    </ChartSquare>
+  );
+};
+
+// ─────────────────────────────────────────────
+// SMALL STAT CARD (Total / Completed / In Progress / Pending / Overdue)
+// ─────────────────────────────────────────────
+const StatCard = ({ icon, label, value, tone }) => {
+  const tones = {
+    primary: { bg: "#eaf1ff", color: "#431ee7" },
+    success: { bg: "#e8f9ef", color: "#22c55e" },
+    info: { bg: "#e8f4fd", color: "#0d6efd" },
+    warning: { bg: "#fff6e5", color: "#f59e0b" },
+    danger: { bg: "#fdeceb", color: "#dc3545" },
+  };
+  const c = tones[tone] || tones.primary;
+
+  return (
+    <Card className="h-100 mb-0">
+      <CardBody className="d-flex align-items-center gap-3 flex-wrap">
+        <div
+          className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+          style={{ width: 44, height: 44, background: c.bg, color: c.color, fontSize: 35 }}
+        >
+          <i className={icon}></i>
+        </div>
+        <div>
+          <p className="text-muted mb-0" style={{ fontSize: 13 }}>{label}</p>
+          <h4 className="mb-0">{value}</h4>
+        </div>
+      </CardBody>
+    </Card>
   );
 };
 
@@ -101,32 +201,138 @@ const UsersByDeviceCharts = ({ dataColors, series, labels, colors }) => {
 // MAIN COMPONENT
 // ─────────────────────────────────────────────
 const ProjectOverview = ({ projectId }) => {
+  const dispatch = useDispatch();
+
+  const [project, setProject] = useState(null);
   const [members, setMembers] = useState([]);
+  const [projectTasks, setProjectTasks] = useState([]);
   const [taskStatusDetails, setTaskStatusDetails] = useState(null);
   const [taskStatusRows, setTaskStatusRows] = useState([]);
   const [donutSeries, setDonutSeries] = useState([]);
   const [donutLabels, setDonutLabels] = useState([]);
   const [donutColors, setDonutColors] = useState([]);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [newMembers, setNewMembers] = useState([]);
+  const [savingMembers, setSavingMembers] = useState(false);
 
   // ✅ Subscribe to Redux — when TaskListForm / TaskDetailModal dispatches
-  // editProject after a task save, this selector fires and the useMemo below
-  // picks up the updated task_status_details with zero extra API calls.
+  // editProject after a task save, this selector fires and the useMemo
+  // below picks up the updated task_status_details with zero extra API calls.
   const { project_data } = useSelector((state) => state.ProjectsReducer);
+  const { tasks: task_data } = useSelector((state) => state.TaskReducer);
 
-  // ✅ Find this project in Redux store reactively
   const reduxProject = useMemo(
     () => project_data?.find((p) => Number(p.id) === Number(projectId)),
     [project_data, projectId],
   );
 
+  const canEditProject = useMemo(() => {
+    const profile = JSON.parse(localStorage.getItem("lint_hr_profile_data") || "{}");
+    return (
+      profile?.is_admin === true ||
+      (profile?.permission_list || []).includes(EDIT_PROJECT_ACCESS_KEY)
+    );
+  }, []);
+
+
+  const existingMemberIds = useMemo(
+    () => (reduxProject?.members_id_list || []).map(Number),
+    [reduxProject],
+  );
+
+  const defaultMemberOptions = () =>
+    (GetLocalStorageData("employee") || [])
+      .filter((e) => !existingMemberIds.includes(Number(e.id)))
+      .map(buildEmployeeOption);
+
+  const loadMemberOptions = async (inputValue) => {
+    if (!inputValue || !inputValue.trim()) return defaultMemberOptions();
+    try {
+      const response = await Api.get(
+        `/employee/get-data-on-search/?search=${encodeURIComponent(inputValue.trim())}`,
+      );
+      return (response?.data?.data || [])
+        .filter((e) => !existingMemberIds.includes(Number(e.id)))
+        .map(buildEmployeeOption);
+    } catch (err) {
+      const q = inputValue.toLowerCase();
+      return defaultMemberOptions().filter((e) => e.label.toLowerCase().includes(q));
+    }
+  };
+
+  const openAddMember = () => {
+    setNewMembers([]);
+    setShowAddMember(true);
+  };
+
+  const handleSaveMembers = async () => {
+    if (!reduxProject || newMembers.length === 0) return;
+    setSavingMembers(true);
+    try {
+      const payload = {
+        id: reduxProject.id,
+        title: reduxProject.title,
+        type: toId(reduxProject.type),
+        client: toId(reduxProject.client),
+        description: reduxProject.description || "",
+        start_date: reduxProject.start_date,
+        deadline: reduxProject.deadline,
+        price: reduxProject.price,
+        members_id_list: [
+          ...new Set([...existingMemberIds, ...newMembers.map((m) => Number(m.id))]),
+        ],
+      };
+
+      const response = await PutApi("projects/", payload, false);
+
+      if (response?.status === 200 || response?.status === 201) {
+        const updated = response?.data?.data;
+        if (updated) dispatch(editProject(updated));
+        toast.success(response?.data?.message || "Members added");
+        setShowAddMember(false);
+        setNewMembers([]);
+        fetchProjectMembers();
+      } else {
+        toast.error(response?.data?.message || "Something went wrong");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("API Error");
+    }
+    setSavingMembers(false);
+  };
+
+  // ─────────────────────────────────────────
+  // EDIT PROJECT — opens the RightSideBar form pre-filled with the raw
+  // project entity from redux (matches what ProjectForm expects: id,
+  // title, type, client, description, start_date, deadline, price,
+  // status). Do NOT pass the local `project` state here — that's a
+  // display-only object transformed for this page's cards/timeline.
+  // ─────────────────────────────────────────
+  const handleEditProject = () => {
+    // Redux first; fall back to localStorage if the page was opened directly / refreshed
+    const projectToEdit =
+      reduxProject ||
+      (GetLocalStorageData("projects") || []).find(
+        (p) => Number(p.id) === Number(projectId),
+      );
+
+    if (!projectToEdit) return;
+
+    dispatch(setFormTitle(project_component_name));
+    dispatch(setFormObj(projectToEdit));
+    dispatch(setFormWidthPercentage("30%"));   // same width_per Projects.jsx passes
+    dispatch(setComponentToShow(project_component_name));
+    dispatch(toggleRSBView(true));
+  };
   // ─────────────────────────────────────────
   // SHARED: build chart/table data from task_status_details
-  // Called both on initial API fetch and when Redux project updates.
   // ─────────────────────────────────────────
   const processTaskStatusDetails = (details) => {
     if (!details) return;
-
-    setTaskStatusDetails(details);
+    // setTaskStatusDetails(details);
+    setTaskStatusDetails((prev) => ({ ...(prev || {}), ...details }));
 
     const taskStatusList = GetLocalStorageData("task_status") || [];
     const statusCounts = details.status_counts || {};
@@ -137,33 +343,28 @@ const ProjectOverview = ({ projectId }) => {
     const colors = [];
 
     Object.entries(statusCounts).forEach(([statusId, count]) => {
-      const matched = taskStatusList.find(
-        (s) => String(s.id) === String(statusId),
-      );
+      const matched = taskStatusList.find((s) => String(s.id) === String(statusId));
 
-      if (matched) {
-        rows.push({
-          id: matched.id,
-          name: matched.name,
-          category: matched.category,
-          color: matched.color || "#808080",
-          count,
-        });
-        series.push(count);
-        labels.push(matched.name);
-        colors.push(matched.color || "#808080");
-      } else {
-        rows.push({
-          id: statusId,
-          name: `Status ${statusId}`,
-          category: "unknown",
-          color: "#808080",
-          count,
-        });
-        series.push(count);
-        labels.push(`Status ${statusId}`);
-        colors.push("#808080");
-      }
+      const row = matched
+        ? {
+            id: matched.id,
+            name: matched.name,
+            category: matched.category,
+            color: matched.color || "#808080",
+            count,
+          }
+        : {
+            id: statusId,
+            name: `Status ${statusId}`,
+            category: "unknown",
+            color: "#808080",
+            count,
+          };
+
+      rows.push(row);
+      series.push(count);
+      labels.push(row.name);
+      colors.push(row.color);
     });
 
     setTaskStatusRows(rows);
@@ -172,9 +373,6 @@ const ProjectOverview = ({ projectId }) => {
     setDonutColors(colors);
   };
 
-  // ─────────────────────────────────────────
-  // INITIAL LOAD — fetch project detail from API once on mount
-  // ─────────────────────────────────────────
   useEffect(() => {
     if (projectId) {
       fetchProjectDetail();
@@ -182,12 +380,33 @@ const ProjectOverview = ({ projectId }) => {
     }
   }, [projectId]);
 
+  // useEffect(() => {
+  //   if (projectId) fetchProjectMembers();
+  // }, [task_data]);
+  useEffect(() => {
+    if (projectId) fetchProjectMembers();
+  }, [task_data, reduxProject?.members_id_list]);
+
   const fetchProjectDetail = async () => {
     try {
-      const response = await GetApi(
-        `/projects/get-project-detail/${projectId}`,
-      );
+      const response = await GetApi(`/projects/get-project-detail/${projectId}`);
       const data = response?.data?.data;
+      if (!data) return;
+
+      // ASSUMED field names — adjust to match your real API response
+      setProject({
+        name: data?.name ?? data?.project_name ?? "Untitled Project",
+        client: data?.client_name ?? data?.client ?? "-",
+        manager: data?.manager_name ?? data?.project_manager_name ?? "-",
+        status: data?.status ?? "in_progress",
+        priority: data?.priority ?? "Medium",
+        createdAt: data?.created_at ?? data?.start_date,
+        // Your API returns the due date as `deadline` (see projects[]),
+        // not `due_date`/`end_date` — that mismatch is why it was blank.
+        dueDate: data?.deadline ?? data?.due_date ?? data?.end_date,
+        logoUrl: data?.logo_url ?? null,
+        activities: data?.recent_activities ?? [],
+      });
 
       if (data?.task_status_details) {
         processTaskStatusDetails(data.task_status_details);
@@ -197,41 +416,63 @@ const ProjectOverview = ({ projectId }) => {
     }
   };
 
-  // ─────────────────────────────────────────
-  // ✅ REACTIVE UPDATE — when Redux project changes (after task save),
-  // rebuild chart data immediately without any API call.
-  // ─────────────────────────────────────────
+  // ✅ REACTIVE UPDATE — Redux project change after task save, no API call
   useEffect(() => {
     if (reduxProject?.task_status_details) {
       processTaskStatusDetails(reduxProject.task_status_details);
     }
   }, [reduxProject]);
 
-  // ─────────────────────────────────────────
-  // FETCH MEMBERS
-  // ─────────────────────────────────────────
   const fetchProjectMembers = async () => {
     try {
       const response = await GetApi("/task/");
       const allTasks = response?.data?.data || [];
 
-      const projectTasks = allTasks.filter(
-        (item) =>
-          item?.related_to === "project" &&
-          Number(item?.project) === Number(projectId),
+      // const projectTasks = allTasks.filter(
+      //   (item) => item?.related_to === "project" && Number(item?.project) === Number(projectId),
+      // );
+      // setProjectTasks(projectTasks);
+      const tasksOfProject = allTasks.filter(
+        (item) => item?.related_to === "project" && Number(item?.project) === Number(projectId),
       );
+      setProjectTasks(tasksOfProject);
+
+      // const collaboratorIds = [
+      //   ...new Set(projectTasks.flatMap((task) => task?.collaborators_id_list || [])),
+      // ];
+
+      // const employeeData = GetLocalStorageData("employee") || [];
+
+      // task count per member, for the "N Tasks" label in the list
+      // const taskCountByEmp = {};
+      // projectTasks.forEach((task) => {
+      //   (task?.collaborators_id_list || []).forEach((id) => {
+      //     taskCountByEmp[id] = (taskCountByEmp[id] || 0) + 1;
+      //   });
+      // });
 
       const collaboratorIds = [
-        ...new Set(
-          projectTasks.flatMap((task) => task?.collaborators_id_list || []),
-        ),
+        ...new Set([
+        ...tasksOfProject.flatMap((task) => task?.collaborators_id_list || []),
+        ...existingMemberIds,
+        ]),
       ];
 
       const employeeData = GetLocalStorageData("employee") || [];
 
+      const taskCountByEmp = {};
+      tasksOfProject.forEach((task) => {          // ← was projectTasks
+        (task?.collaborators_id_list || []).forEach((id) => {
+          taskCountByEmp[id] = (taskCountByEmp[id] || 0) + 1;
+        });
+      });
+
       const matchedEmployees = employeeData
         .filter((emp) => collaboratorIds.includes(emp?.id))
-        .slice(0, 12);
+        .map((emp) => ({ ...emp, taskCount: taskCountByEmp[emp.id] || 0 }));
+      // ⚠️ removed the old `.slice(0, 12)` cap — with a scrollbar in place
+      // we no longer need to silently truncate the member list. Add it
+      // back if you'd rather cap the count than scroll.
 
       setMembers(matchedEmployees);
     } catch (error) {
@@ -239,21 +480,9 @@ const ProjectOverview = ({ projectId }) => {
     }
   };
 
-  // ─────────────────────────────────────────
-  // INITIALS
-  // ─────────────────────────────────────────
-  const getInitials = (name = "") => {
-    return name
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  const getInitials = (name = "") =>
+    name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 
-  // ─────────────────────────────────────────
-  // AVATAR COLORS
-  // ─────────────────────────────────────────
   const avatarColors = [
     { bg: "#fce8e6", color: "#dc3545" },
     { bg: "#e8f4fd", color: "#0d6efd" },
@@ -263,174 +492,390 @@ const ProjectOverview = ({ projectId }) => {
     { bg: "#fde8f4", color: "#d63384" },
   ];
 
-  // ─────────────────────────────────────────
-  // CATEGORY BADGE HELPER
-  // ─────────────────────────────────────────
-  const getCategoryBadge = (category) => {
-    switch (category) {
-      case "todo":
-        return {
-          badgeClass: "bg-warning-subtle text-warning",
-          label: "Pending",
-        };
-      case "in_progress":
-        return { badgeClass: "bg-info-subtle text-info", label: "In Progress" };
-      case "completed":
-        return { badgeClass: "bg-success-subtle text-success", label: "Done" };
-      default:
-        return {
-          badgeClass: "bg-secondary-subtle text-secondary",
-          label: category,
-        };
+  
+  const stats = useMemo(() => {
+    const total = taskStatusRows.reduce((sum, r) => sum + r.count, 0);
+    const completed = taskStatusRows
+      .filter((r) => r.category === "done") // ← fixed: was "completed"
+      .reduce((s, r) => s + r.count, 0);
+    const inProgress = taskStatusRows
+      .filter((r) => r.category === "in_progress")
+      .reduce((s, r) => s + r.count, 0);
+    const pending = taskStatusRows
+      .filter((r) => r.category === "todo")
+      .reduce((s, r) => s + r.count, 0);
+    const overdue =
+      taskStatusDetails?.overdue_task_count ??
+      taskStatusDetails?.overdue_count ??   // keeps working if the API ever renames it
+      0;
+      return { total, completed, inProgress, pending, overdue };
+  }, [taskStatusRows, taskStatusDetails]);
+
+  const legendItems = [
+    { label: "Completed", value: stats.completed, color: "#22c55e" },
+    { label: "In Progress", value: stats.inProgress, color: "#0d6efd" },
+    { label: "To Do", value: stats.pending, color: "#f59e0b" },
+    { label: "Overdue", value: stats.overdue, color: "#dc3545" },
+  ];
+
+  const statusBadge = (status) => {
+    const map = {
+      in_progress: { text: "In Progress", cls: "bg-success-subtle text-success" },
+      completed: { text: "Completed", cls: "bg-primary-subtle text-primary" },
+      on_hold: { text: "On Hold", cls: "bg-warning-subtle text-warning" },
+    };
+    return map[status] || map.in_progress;
+  };
+
+  const formatDate = (d) => {
+    if (!d) return "-";
+    try {
+      return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    } catch {
+      return d;
     }
   };
 
+  const getTaskTime = (t) =>
+    new Date(t?.updated_on ?? t?.created_on ?? 0).getTime() || 0;
+    // new Date(t?.created_at ?? t?.created_on ?? t?.updated_at ?? t?.start_time ?? 0).getTime() || 0;
+    
+
+  const formatDateTime = (ts) => {
+    if (!ts) return "-";
+    const d = new Date(ts);
+    const date = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+    return `${date}, ${time}`;
+  };
+
+  const recentTasks = useMemo(() => {
+    const statuses = GetLocalStorageData("task_status") || [];
+    const employees = GetLocalStorageData("employee") || [];
+
+    return [...projectTasks]
+      .sort((a, b) => getTaskTime(b) - getTaskTime(a) || Number(b.id) - Number(a.id)) // newest first
+      .slice(0, RECENT_TASK_LIMIT) // 15 max – a new task pushes the oldest one out
+      .map((t) => {
+        const status = statuses.find((s) => Number(s.id) === Number(t.task_status));
+        const emp = employees.find((e) => Number(e.id) === Number(t.assigned_to));
+        return {
+          id: t.id,
+          title: t.title,
+          statusName: status?.name || "-",
+          statusColor: status?.color || "#808080",
+          assignee: emp ? `${emp.first_name || ""} ${emp.last_name || ""}`.trim() : "Unassigned",
+          time: getTaskTime(t),
+        };
+      });
+  }, [projectTasks]);
+
+  const badge = statusBadge(project?.status);
+  const percentComplete = taskStatusDetails?.project_completed_percentage ?? 0;
+
   return (
-    <React.Fragment>
-      <Row>
-        {/* SCORE CARD */}
-        <Col xl={4} lg={4}>
+    <div className="pb-4 mb-2">
+      {/* ───── EDIT PROJECT BUTTON — Overview-only, lives here so it never
+              renders on the Task List or Files tabs ───── */}
+      {canEditProject && (
+        <div className="d-flex justify-content-end mb-3">
+          <Button type="button" color="primary" size="sm" onClick={handleEditProject}>
+            <i className="ri-edit-line align-middle me-1"></i>
+            Edit Project
+          </Button>
+        </div>
+      )}
+
+      {/* ───── STAT CARDS ─────
+              xxl: 5 across, xl/lg: 3 across (wraps to 2 rows), md: 2 across, xs: 1 across */}
+      <Row className="g-3 mb-3">
+        <Col xxl xl={4} lg={4} md={6} xs={12}><StatCard icon="ri-list-check-2" label="Total Tasks" value={stats.total} tone="primary" /></Col>
+        <Col xxl xl={4} lg={4} md={6} xs={12}><StatCard icon="ri-checkbox-circle-fill" label="Completed" value={stats.completed} tone="success" /></Col>
+        <Col xxl xl={4} lg={4} md={6} xs={12}><StatCard icon="ri-time-line" label="In Progress" value={stats.inProgress} tone="info" /></Col>
+        <Col xxl xl={4} lg={4} md={6} xs={12}><StatCard icon="ri-todo-line" label="To Do" value={stats.pending} tone="warning" /></Col>
+        <Col xxl xl={4} lg={4} md={6} xs={12}><StatCard icon="ri-alarm-warning-line" label="Overdue" value={stats.overdue} tone="danger" /></Col>
+      </Row>
+
+      <Row className="g-3 mb-3">
+        <Col xl={4} lg={6} md={12}>
           <Card className="h-100">
-            <CardBody>
-              <h5 className="mb-4">Project Completed</h5>
-              {/* ✅ taskStatusDetails updates immediately via processTaskStatusDetails
-                  called from the reduxProject useEffect — no stale value */}
-              <GradientCircleRadialbar
-                dataColors='["--vz-info", "--vz-success"]'
-                percentage={
-                  taskStatusDetails?.project_completed_percentage ?? 0
-                }
-              />
+            <CardBody className="py-3">
+              <h5 className="mb-2" style={{ fontSize: 15 }}>Project Progress</h5>
+              <Row className="align-items-center g-2">
+                <Col sm={5} xs={12}>
+                  <ProgressRadial percentage={percentComplete} />
+                </Col>
+                <Col sm={7} xs={12}>
+                  <p className="text-muted mb-1" style={{ fontSize: 12 }}>
+                    {stats.completed} of {stats.total} tasks completed
+                  </p>
+                  <Progress value={percentComplete} color="success" className="mb-2" style={{ height: 5 }} />
+                  <SimpleBar style={{ maxHeight: COMPACT_LIST_MAX_HEIGHT }}>
+                    <div className="pe-2">
+                      {legendItems.map((item) => (
+                        <div key={item.label} className="d-flex align-items-center justify-content-between mb-1" style={{ fontSize: 12 }}>
+                          <span className="d-flex align-items-center gap-2">
+                            <span className="rounded-circle d-inline-block" style={{ width: 8, height: 8, background: item.color }}></span>
+                            {item.label}
+                          </span>
+                          <span className="fw-semibold">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </SimpleBar>
+                </Col>
+              </Row>
             </CardBody>
           </Card>
         </Col>
 
-        {/* TASK STATUS */}
-        <Col xl={4} lg={4}>
+        <Col xl={4} lg={6} md={12}>
           <Card className="h-100">
-            <CardBody>
-              {donutSeries.length > 0 && (
-                <UsersByDeviceCharts
-                  series={donutSeries}
-                  labels={donutLabels}
-                  colors={donutColors}
-                  dataColors='["--vz-warning", "--vz-info", "--vz-success"]'
-                />
-              )}
-
-              <div className="table-responsive mt-4">
-                <table className="table table-borderless table-sm align-middle mb-0">
-                  <tbody>
-                    {taskStatusRows.map((row) => {
-                      const badge = getCategoryBadge(row.category);
-                      return (
-                        <tr key={row.id}>
-                          <td>
-                            <div className="d-flex align-items-center">
-                              <i
-                                className="ri-stop-fill me-2 fs-16"
-                                style={{ color: row.color }}
-                              ></i>
-                              <span>{row.name}</span>
-                            </div>
-                          </td>
-                          <td className="text-muted">{row.count} Tasks</td>
-                          <td className="text-end">
-                            <span className={`badge ${badge.badgeClass}`}>
-                              {badge.label}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-
-                    {taskStatusRows.length === 0 && (
-                      <tr>
-                        <td colSpan={3} className="text-center text-muted py-3">
-                          No task data available
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            <CardBody className="py-3">
+              <h5 className="mb-2" style={{ fontSize: 15 }}>Task Status</h5>
+              <Row className="align-items-center g-2">
+                <Col sm={5} xs={12}>
+                  {donutSeries.length > 0 ? (
+                    <TaskStatusDonut series={donutSeries} labels={donutLabels} colors={donutColors} total={stats.total} />
+                  ) : (
+                    <div className="text-center text-muted py-4">No data</div>
+                  )}
+                </Col>
+                <Col sm={7} xs={12}>
+                  <SimpleBar style={{ maxHeight: COMPACT_LIST_MAX_HEIGHT }}>
+                    <div className="pe-2">
+                      {taskStatusRows.map((row) => (
+                        <div key={row.id} className="d-flex align-items-center justify-content-between mb-1" style={{ fontSize: 12 }}>
+                          <span className="d-flex align-items-center gap-2">
+                            <span className="rounded-circle d-inline-block" style={{ width: 8, height: 8, background: row.color }}></span>
+                            {row.name}
+                          </span>
+                          <span className="fw-semibold">{row.count}</span>
+                        </div>
+                      ))}
+                      {taskStatusRows.length === 0 && <div className="text-muted">No task data available</div>}
+                    </div>
+                  </SimpleBar>
+                </Col>
+              </Row>
             </CardBody>
           </Card>
         </Col>
 
-        {/* MEMBERS */}
-        <Col xl={4} lg={4}>
+        <Col xl={4} lg={12} md={12}>
           <Card className="h-100">
-            <CardHeader className="d-flex align-items-center">
-              <h4 className="card-title mb-0 flex-grow-1">
-                Members
-                {members.length > 0 && (
-                  <span className="badge bg-light text-dark ms-2">
-                    {members.length}
-                  </span>
-                )}
-              </h4>
+            <CardHeader className="d-flex align-items-center justify-content-between flex-wrap gap-2 py-2">
+              <h5 className="mb-0" style={{ fontSize: 15 }}><i className="ri-team-line me-2"></i>Project Members</h5>
+              <Button type="button" size="sm" color="primary" onClick={openAddMember}>
+                <i className="ri-add-line me-1"></i>Add Member
+              </Button>
             </CardHeader>
-
-            <CardBody>
-              {members?.length > 0 ? (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
-                    gap: "14px",
-                    justifyItems: "center",
-                  }}
-                >
-                  {members.map((member, index) => {
-                    const colorSet = avatarColors[index % avatarColors.length];
-                    return (
-                      <div key={member?.id} className="text-center">
-                        {member?.profile_url ? (
-                          <img
-                            src={member?.profile_url}
-                            alt=""
-                            className="rounded-circle"
-                            style={{
-                              width: "44px",
-                              height: "44px",
-                              objectFit: "cover",
-                            }}
-                          />
-                        ) : (
-                          <div
-                            className="rounded-circle d-flex align-items-center justify-content-center"
-                            style={{
-                              width: "44px",
-                              height: "44px",
-                              background: colorSet.bg,
-                              color: colorSet.color,
-                              fontWeight: 600,
-                            }}
-                          >
-                            {getInitials(member?.first_name)}
+            <CardBody className="py-2">
+              <SimpleBar style={{ maxHeight: COMPACT_LIST_MAX_HEIGHT }}>
+                <div className="pe-2">
+                  {members.length > 0 ? (
+                    members.map((member, index) => {
+                      const colorSet = avatarColors[index % avatarColors.length];
+                      return (
+                        <div key={member?.id} className="d-flex align-items-center justify-content-between py-1 flex-wrap gap-2">
+                          <div className="d-flex align-items-center gap-2">
+                            {member?.profile_url ? (
+                              <img src={member.profile_url} alt="" className="rounded-circle" style={{ width: 34, height: 34, objectFit: "cover" }} />
+                            ) : (
+                              <div
+                                className="rounded-circle d-flex align-items-center justify-content-center"
+                                style={{ width: 34, height: 34, background: colorSet.bg, color: colorSet.color, fontWeight: 600, fontSize: 12 }}
+                              >
+                                {getInitials(member?.first_name)}
+                              </div>
+                            )}
+                            <div>
+                              <p className="mb-0 fw-semibold" style={{ fontSize: 13 }}>{member?.first_name} {member?.last_name || ""}</p>
+                              <p className="mb-0 text-muted" style={{ fontSize: 11 }}>
+                                {displayValue(member?.designation) !== "-" ? displayValue(member?.designation) : displayValue(member?.role, "Member")}
+                              </p>
+                            </div>
                           </div>
-                        )}
-                        <p
-                          className="mb-0 mt-2 text-truncate"
-                          style={{ fontSize: "11px", maxWidth: "60px" }}
-                        >
-                          {member?.first_name}
-                        </p>
-                      </div>
-                    );
-                  })}
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="text-muted" style={{ fontSize: 11 }}>{member.taskCount} Tasks</span>
+                            <i className="ri-more-2-fill text-muted" style={{ cursor: "pointer" }}></i>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center text-muted py-4">No members found</div>
+                  )}
                 </div>
-              ) : (
-                <div className="text-center text-muted py-4">
-                  No members found
-                </div>
-              )}
+              </SimpleBar>
             </CardBody>
           </Card>
         </Col>
       </Row>
-    </React.Fragment>
+
+      <Row className="g-3 mb-3">
+        <Col lg={6} xs={12}>
+          <Card className="h-100">
+            <CardBody>
+              <h5 className="mb-3" style={{ fontSize: 15 }}><i className="ri-calendar-2-line me-2"></i>Project Timeline</h5>
+
+              <div className="position-relative px-1 mb-3" style={{ height: 62 }}>
+                <div
+                  className="position-absolute rounded-pill"
+                  style={{ top: 9, left: "9%", right: "9%", height: 4, background: "#eef0f4", zIndex: 0 }}
+                >
+                  <div
+                    className="rounded-pill"
+                    style={{
+                      width: `${Math.min(Math.max(percentComplete, 0), 100)}%`,
+                      height: "100%",
+                      background: "linear-gradient(90deg, #22c55e, #16a34a)",
+                      transition: "width .4s ease",
+                    }}
+                  ></div>
+                </div>
+
+                <div className="d-flex align-items-start justify-content-between position-relative" style={{ zIndex: 1 }}>
+                  <div className="d-flex flex-column align-items-center" style={{ width: 76 }}>
+                    <span
+                      className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                      style={{ width: 20, height: 20, background: "#22c55e", color: "#fff", fontSize: 12 }}
+                    >
+                      <i className="ri-check-line"></i>
+                    </span>
+                    <span className="mt-2 fw-semibold text-truncate" style={{ fontSize: 12, maxWidth: 76 }}>{formatDate(project?.createdAt)}</span>
+                    <span className="text-muted" style={{ fontSize: 11 }}>Start Date</span>
+                  </div>
+
+                  <div className="d-flex flex-column align-items-center" style={{ width: 90 }}>
+                    <span
+                      className="rounded-circle d-inline-block flex-shrink-0"
+                      style={{ width: 20, height: 20, background: "#0d6efd", border: "3px solid #fff", boxShadow: "0 0 0 3px rgba(13,110,253,0.25)" }}
+                    ></span>
+                    <span className="mt-2 fw-semibold text-primary" style={{ fontSize: 12 }}>Today · {percentComplete}%</span>
+                    <span className="text-muted text-truncate" style={{ fontSize: 11, maxWidth: 90 }}>{badge.text}</span>
+                  </div>
+
+                  <div className="d-flex flex-column align-items-center" style={{ width: 76 }}>
+                    <span
+                      className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                      style={
+                        percentComplete >= 100
+                          ? { width: 20, height: 20, background: "#22c55e", color: "#fff", fontSize: 12 }
+                          : { width: 20, height: 20, background: "#fff", border: "3px solid #ced4da" }
+                      }
+                    >
+                      {percentComplete >= 100 && <i className="ri-check-line"></i>}
+                    </span>
+                    <span className="mt-2 fw-semibold text-truncate" style={{ fontSize: 12, maxWidth: 76 }}>{formatDate(project?.dueDate)}</span>
+                    <span className="text-muted" style={{ fontSize: 11 }}>Due Date</span>
+                  </div>
+                </div>
+              </div>
+
+              <SimpleBar style={{ maxHeight: LIST_MAX_HEIGHT }}>
+                <div className="pe-2">
+                  <div className="d-flex align-items-center justify-content-between p-2 rounded flex-wrap gap-2" style={{ background: "#f8f9fa" }}>
+                    <span className="text-success" style={{ fontSize: 13 }}>
+                      <i className="ri-checkbox-circle-fill me-1"></i>{percentComplete}% completed
+                    </span>
+                    {stats.overdue > 0 && (
+                      <span className="text-danger" style={{ fontSize: 13 }}>
+                        <i className="ri-error-warning-fill me-1"></i>{stats.overdue} overdue
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </SimpleBar>
+            </CardBody>
+          </Card>
+        </Col>
+
+        <Col lg={6} xs={12} className="recent-activity-col">
+          <style>{`
+            .recent-activity-col { position: relative; }
+            @media (min-width: 992px) {
+              .recent-activity-col > .card { position: absolute; inset: 0; }
+            }
+          `}</style>
+
+          <Card className="h-100 d-flex flex-column mb-0">
+            <CardHeader className="d-flex align-items-center justify-content-between flex-shrink-0">
+              <h5 className="mb-0"><i className="ri-history-line me-2"></i>Recent Activity</h5>
+            </CardHeader>
+
+            <CardBody className="flex-grow-1 overflow-hidden" style={{ minHeight: 0 }}>
+              <SimpleBar style={{ height: "100%", maxHeight: ACTIVITY_MAX_HEIGHT }}>
+                <div className="pe-2">
+                  {recentTasks.length > 0 ? (
+                    recentTasks.map((task) => (
+                      <div key={task.id} className="d-flex align-items-start gap-2 mb-3">
+                        <span
+                          className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                          style={{ width: 30, height: 30, background: "#f3f6f9", color: task.statusColor }}
+                        >
+                          <i className="ri-task-line" style={{ fontSize: 14 }}></i>
+                        </span>
+
+                        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                          <p className="mb-0 fw-semibold text-truncate" style={{ fontSize: 13 }} title={task.title}>
+                            {task.title}
+                          </p>
+                          <p className="mb-0 text-muted d-flex align-items-center gap-2 flex-wrap" style={{ fontSize: 12 }}>
+                            <span className="d-inline-flex align-items-center gap-1">
+                              <span className="rounded-circle d-inline-block" style={{ width: 8, height: 8, background: task.statusColor }}></span>
+                              {task.statusName}
+                            </span>
+                            <span>· {task.assignee}</span>
+                          </p>
+                        </div>
+
+                        <span className="text-muted flex-shrink-0" style={{ fontSize: 11 }}>
+                          {formatDateTime(task.time)}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-muted py-4">No recent tasks yet</div>
+                  )}
+                </div>
+              </SimpleBar>
+            </CardBody>
+          </Card>
+        </Col>
+      </Row>
+      <Modal isOpen={showAddMember} toggle={() => setShowAddMember(false)} centered>
+        <ModalHeader toggle={() => setShowAddMember(false)}>Add Members</ModalHeader>
+        <ModalBody>
+          <label className="form-label">Members</label>
+          <AsyncSelect
+            isMulti
+            isClearable
+            cacheOptions
+            defaultOptions={defaultMemberOptions()}
+            loadOptions={loadMemberOptions}
+            components={{ Option: EmployeeDisplayInSelect }}
+            classNamePrefix="lc-select"
+            placeholder="Search members..."
+            noOptionsMessage={({ inputValue }) =>
+              inputValue ? "No employees found" : "Type to search"
+            }
+            loadingMessage={() => "Searching..."}
+            value={newMembers}
+            onChange={(selected) => setNewMembers(selected || [])}
+            menuPortalTarget={document.body}
+            styles={{ menuPortal: (base) => ({ ...base, zIndex: 2000 }) }}
+          />
+          <div className="form-text">Select or search employees to add to this project.</div>
+        </ModalBody>
+        <ModalFooter>
+          <Button color="light" onClick={() => setShowAddMember(false)}>Cancel</Button>
+          <Button color="success" onClick={handleSaveMembers} disabled={savingMembers || newMembers.length === 0}>
+            {savingMembers ? "Saving..." : "Add"}
+          </Button>
+        </ModalFooter>
+      </Modal>
+    </div>
   );
 };
 
