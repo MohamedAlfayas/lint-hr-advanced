@@ -118,7 +118,7 @@ const CustomFormConfig = () => {
                     }}
                     id="v-pills-messages-tab"
                   >
-                    Asign Custom Form
+                    Assign Custom Form
                   </NavLink>
                 </NavItem>
               </Nav>

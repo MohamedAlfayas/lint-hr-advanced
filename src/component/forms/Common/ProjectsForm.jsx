@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import dayjs from "dayjs";
-import { Col, Form, Input, Label, Row, Button, FormFeedback } from "reactstrap";
+import { Col, Form, Input, Label, Row, Button } from "reactstrap";
 
 import { useDispatch, useSelector } from "react-redux";
 
@@ -25,11 +25,34 @@ import { defineElement } from "lord-icon-element";
 import { PutApi } from "../../../common/api/PutApi";
 
 import Select from "react-select";
+import AsyncSelect from "react-select/async";
 
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
+import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
+import { Api } from "../../../common/api/Api";
 
 defineElement(loadAnimation);
+
+// ================= EMPLOYEE OPTION =================
+const buildEmployeeOption = (emp) => ({
+  ...emp,
+  value: emp.id,
+  label:
+    `${emp.first_name || ""} ${emp.last_name || ""}`.trim() ||
+    emp.label ||
+    emp.name ||
+    `Employee ${emp.id}`,
+});
+
+// ================= FIELD LIMITS =================
+const TITLE_MAX = 100;
+const DESCRIPTION_MAX = 1500;
+const PRICE_MAX = 100000000000;
+
+const TITLE_MAX_MSG = `Project title must not exceed ${TITLE_MAX} characters.`;
+const DESCRIPTION_MAX_MSG = `Description must not exceed ${DESCRIPTION_MAX} characters.`;
+const PRICE_MAX_MSG = `Price cannot exceed ${PRICE_MAX}.00`;
 
 // ================= PROJECT TYPE =================
 const PROJECT_TYPE_INTERNAL = 1;
@@ -86,7 +109,43 @@ const ProjectForm = () => {
     deadline: null,
     price: "",
     status: true,
+    members_id_list: [],
   });
+
+  // Holds full employee objects for members picked via search, since they
+  // may not exist in the localStorage "employee" list.
+  const [memberDetails, setMemberDetails] = useState([]);
+
+  // Errors are only shown after the user clicks Save.
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+
+  // ================= MEMBER OPTIONS =================
+  const buildDefaultMemberOptions = useCallback(() => {
+    const list = GetLocalStorageData("employee") || [];
+    return list.map(buildEmployeeOption);
+  }, []);
+
+  const loadMemberOptions = useCallback(
+    async (inputValue) => {
+      if (!inputValue || inputValue.trim().length === 0) {
+        return buildDefaultMemberOptions();
+      }
+      try {
+        const response = await Api.get(
+          `/employee/get-data-on-search/?search=${encodeURIComponent(inputValue.trim())}`,
+        );
+        const results = response?.data?.data || [];
+        return results.map(buildEmployeeOption);
+      } catch (error) {
+        console.error("Member search error:", error);
+        const q = inputValue.toLowerCase();
+        return buildDefaultMemberOptions().filter((e) =>
+          e.label.toLowerCase().includes(q),
+        );
+      }
+    },
+    [buildDefaultMemberOptions],
+  );
 
   // ================= CLIENT OPTIONS =================
   const clientOptions = clientData.map((client) => ({
@@ -100,41 +159,16 @@ const ProjectForm = () => {
     if (form_obj) {
       setProjectData({
         ...form_obj,
+        members_id_list: (form_obj.members_id_list || []).map(Number),
       });
+      setMemberDetails([]);
+      setHasAttemptedSubmit(false);
     }
   }, [form_obj]);
 
   // ================= INPUT CHANGE =================
-  const MAX_PRICE = 100000000000;
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-
-    if (name === "price") {
-      FormikForm.setFieldTouched("price", true, false);
-
-      setProjectData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-
-      FormikForm.setFieldValue(name, value);
-
-      if (value === "") {
-        FormikForm.setFieldError("price", undefined);
-      } else if (Number(value) > MAX_PRICE) {
-        FormikForm.setFieldError(
-          "price",
-          "Price cannot exceed 100000000000.00",
-        );
-      } else if (Number(value) < 0) {
-        FormikForm.setFieldError("price", "Price cannot be negative");
-      } else {
-        FormikForm.setFieldError("price", undefined);
-      }
-
-      return;
-    }
 
     if (name === "title") {
       const filteredValue = value.replace(/[^A-Za-z0-9\s.,!?'"\-_()&:;/]/g, "");
@@ -143,20 +177,6 @@ const ProjectForm = () => {
         ...prev,
         [name]: filteredValue,
       }));
-
-      FormikForm.setFieldValue(name, filteredValue);
-      FormikForm.setFieldTouched("title", true, false);
-
-      if (filteredValue.length > 100) {
-        FormikForm.setFieldError(
-          "title",
-          "Project title must not exceed 100 characters.",
-        );
-      } else if (filteredValue.trim() === "") {
-        FormikForm.setFieldError("title", "Please Enter the project title");
-      } else {
-        FormikForm.setFieldError("title", undefined);
-      }
 
       return;
     }
@@ -171,41 +191,6 @@ const ProjectForm = () => {
         description: filteredValue,
       }));
 
-      FormikForm.setFieldValue("description", filteredValue);
-
-      return;
-    }
-
-    
-    if (name === "start_date" || name === "deadline") {
-      const updatedData = {
-        ...projectData,
-        [name]: value,
-      };
-
-      setProjectData(updatedData);
-      FormikForm.setFieldValue(name, value);
-      FormikForm.setFieldTouched(name, true, false);
-
-      const startDate =
-        name === "start_date" ? value : updatedData.start_date;
-
-      const deadlineDate =
-        name === "deadline" ? value : updatedData.deadline;
-
-      if (
-        startDate &&
-        deadlineDate &&
-        dayjs(deadlineDate).isBefore(dayjs(startDate), "day")
-      ) {
-        FormikForm.setFieldError(
-          "deadline",
-          "Deadline cannot be before Start Date"
-        );
-      } else {
-        FormikForm.setFieldError("deadline", undefined);
-      }
-
       return;
     }
 
@@ -213,8 +198,6 @@ const ProjectForm = () => {
       ...prev,
       [name]: value,
     }));
-
-    FormikForm.setFieldValue(name, value);
   };
 
   // ================= CLIENT PROJECT CHECK =================
@@ -231,6 +214,17 @@ const ProjectForm = () => {
       (o) => Number(o.value) === Number(projectData.type),
     ) || null;
 
+  const membersValue = (() => {
+    const ids = (projectData.members_id_list || []).map(Number);
+    if (!ids.length) return [];
+
+    const known = [...memberDetails, ...buildDefaultMemberOptions()];
+    return ids
+      .map((id) => known.find((e) => Number(e.id) === id))
+      .filter(Boolean)
+      .map(buildEmployeeOption);
+  })();
+
   // ================= SELECT STYLE =================
   const selectStyles = (touched, error) => ({
     control: (provided, state) => ({
@@ -244,6 +238,27 @@ const ProjectForm = () => {
       "&:hover": {
         borderColor:
           !state.isFocused && touched && error ? "red" : provided.borderColor,
+      },
+    }),
+
+    // Overriding `control` changes react-select's generated class names, so the
+    // themes.scss multi-value (chip) colors no longer apply and are set here.
+    multiValue: (provided) => ({
+      ...provided,
+      backgroundColor: "var(--vz-primary)",
+    }),
+
+    multiValueLabel: (provided) => ({
+      ...provided,
+      color: "var(--vz-white)",
+    }),
+
+    multiValueRemove: (provided) => ({
+      ...provided,
+      color: "var(--vz-white)",
+      "&:hover": {
+        backgroundColor: "rgba(0, 0, 0, 0.15)",
+        color: "var(--vz-white)",
       },
     }),
   });
@@ -261,7 +276,7 @@ const ProjectForm = () => {
           /^[A-Za-z0-9\s.,!?'"\-_()&:;/]+$/,
           "Please Enter the project title",
         )
-        .max(100, "Project title must not exceed 100 characters.")
+        .max(TITLE_MAX, TITLE_MAX_MSG)
         .required("Please Enter the project title")
         .test(
           "not-only-spaces",
@@ -278,6 +293,8 @@ const ProjectForm = () => {
           then: (schema) => schema.required("Please Select Client"),
           otherwise: (schema) => schema.nullable(),
         }),
+
+      members_id_list: Yup.array().min(1, "Please Select Project Members"),
 
       // Optional Fields
       start_date: Yup.string()
@@ -324,7 +341,7 @@ const ProjectForm = () => {
         ),
       price: Yup.number()
         .min(0, "Price cannot be negative")
-        .max(100000000000, "Price cannot exceed 100000000000.00")
+        .max(PRICE_MAX, PRICE_MAX_MSG)
         .nullable(),
 
       description: Yup.string()
@@ -332,7 +349,7 @@ const ProjectForm = () => {
           /^[A-Za-z0-9\s.,\-#\/'&():;?!]*$/,
           "Description contains invalid characters",
         )
-        .max(1500, "Description must not exceed 1500 characters.")
+        .max(DESCRIPTION_MAX, DESCRIPTION_MAX_MSG)
         .nullable(),
     }),
 
@@ -359,6 +376,8 @@ const ProjectForm = () => {
           status: projectData.status,
 
           client: isClientProject ? projectData.client : null,
+
+          members_id_list: (projectData.members_id_list || []).map(Number),
         };
         console.log("Project Status Before Save:", projectData.status);
         console.log("Payload:", payload);
@@ -425,15 +444,54 @@ const ProjectForm = () => {
     },
   });
 
+  // enableReinitialize resets Formik errors on every edit, so re-run
+  // validation after the first Save to keep errors in sync while fixing fields.
+  useEffect(() => {
+    if (hasAttemptedSubmit) {
+      FormikForm.validateForm(projectData);
+    }
+  }, [projectData, hasAttemptedSubmit]);
+
+  // Max-limit errors show instantly; all other errors wait for Save.
+  const limitErrors = {
+    title:
+      (projectData.title || "").trim().length > TITLE_MAX
+        ? TITLE_MAX_MSG
+        : undefined,
+    description:
+      (projectData.description || "").length > DESCRIPTION_MAX
+        ? DESCRIPTION_MAX_MSG
+        : undefined,
+    price:
+      projectData.price !== "" &&
+      projectData.price !== null &&
+      Number(projectData.price) > PRICE_MAX
+        ? PRICE_MAX_MSG
+        : undefined,
+  };
+
+  const fieldError = (field) =>
+    limitErrors[field] ||
+    (hasAttemptedSubmit ? FormikForm.errors[field] : undefined);
+
+  // lc_form_error_text already carries a 1rem bottom margin, so the field
+  // wrapper drops its own mb-3 while an error is shown.
+  const fieldWrapperClass = (field) => (fieldError(field) ? "" : "mb-3");
+
   return (
     <React.Fragment>
       <Row>
         <Col xl={12}>
-          <Form onSubmit={FormikForm.handleSubmit}>
+          <Form
+            onSubmit={(e) => {
+              setHasAttemptedSubmit(true);
+              FormikForm.handleSubmit(e);
+            }}
+          >
             <Row>
               {/* PROJECT TITLE */}
               <Col md={12}>
-                <div className="mb-3">
+                <div className={fieldWrapperClass("title")}>
                   <Label className="form-label">Project Title *</Label>
 
                   <Input
@@ -443,19 +501,20 @@ const ProjectForm = () => {
                     placeholder="Project Title"
                     value={projectData.title || ""}
                     onChange={handleInputChange}
-                    onBlur={() => FormikForm.setFieldTouched("title", true)}
-                    invalid={FormikForm.errors.title ? true : false}
+                    invalid={!!fieldError("title")}
                   />
 
-                  {FormikForm.errors.title && (
-                    <FormFeedback>{FormikForm.errors.title}</FormFeedback>
+                  {fieldError("title") && (
+                    <div className="lc_form_error_text">
+                      {fieldError("title")}
+                    </div>
                   )}
                 </div>
               </Col>
 
               {/* PROJECT TYPE */}
               <Col md={12}>
-                <div className="mb-3">
+                <div className={fieldWrapperClass("type")}>
                   <Label className="form-label">Project Type *</Label>
 
                   <Select
@@ -463,8 +522,8 @@ const ProjectForm = () => {
                     value={typeSelectValue}
                     classNamePrefix="lc-select"
                     styles={selectStyles(
-                      FormikForm.touched.type,
-                      FormikForm.errors.type,
+                      hasAttemptedSubmit,
+                      fieldError("type"),
                     )}
                     onChange={(selectedOption) => {
                       setProjectData((prev) => ({
@@ -479,13 +538,19 @@ const ProjectForm = () => {
                       }));
                     }}
                   />
+
+                  {fieldError("type") && (
+                    <div className="lc_form_error_text">
+                      {fieldError("type")}
+                    </div>
+                  )}
                 </div>
               </Col>
 
               {/* CLIENT */}
               {isClientProject && (
                 <Col md={12}>
-                  <div className="mb-3">
+                  <div className={fieldWrapperClass("client")}>
                     <Label className="form-label">Client *</Label>
 
                     <Select
@@ -498,8 +563,8 @@ const ProjectForm = () => {
                       classNamePrefix="lc-select"
                       placeholder="Select Client"
                       styles={selectStyles(
-                        FormikForm.touched.client,
-                        FormikForm.errors.client,
+                        hasAttemptedSubmit,
+                        fieldError("client"),
                       )}
                       onChange={(selectedOption) => {
                         setProjectData((prev) => ({
@@ -510,18 +575,69 @@ const ProjectForm = () => {
                       }}
                     />
 
-                    {FormikForm.touched.client && FormikForm.errors.client && (
-                      <div className="text-danger small mt-1">
-                        {FormikForm.errors.client}
+                    {fieldError("client") && (
+                      <div className="lc_form_error_text">
+                        {fieldError("client")}
                       </div>
                     )}
                   </div>
                 </Col>
               )}
 
+               {/* PROJECT MEMBERS */}
+              <Col md={12}>
+                <div className={fieldWrapperClass("members_id_list")}>
+                  <Label htmlFor="members_id_list" className="form-label">
+                    Project Members *
+                  </Label>
+                  <AsyncSelect
+                    id="members_id_list"
+                    name="members_id_list"
+                    isMulti
+                    isClearable
+                    cacheOptions
+                    defaultOptions={buildDefaultMemberOptions()}
+                    loadOptions={loadMemberOptions}
+                    components={{ Option: EmployeeDisplayInSelect }}
+                    className="basic-multi-select"
+                    classNamePrefix="lc-select"
+                    placeholder="Search members..."
+                    noOptionsMessage={({ inputValue }) =>
+                      inputValue ? "No employees found" : "Type to search"
+                    }
+                    loadingMessage={() => "Searching..."}
+                    value={membersValue}
+                    styles={selectStyles(
+                      hasAttemptedSubmit,
+                      fieldError("members_id_list"),
+                    )}
+                    onChange={(selected) => {
+                      setProjectData((prev) => ({
+                        ...prev,
+                        members_id_list: selected
+                          ? selected.map((o) => Number(o.id))
+                          : [],
+                      }));
+                      setMemberDetails(
+                        selected ? selected.map((o) => ({ ...o })) : [],
+                      );
+                    }}
+                  />
+                  {fieldError("members_id_list") ? (
+                    <div className="lc_form_error_text">
+                      {fieldError("members_id_list")}
+                    </div>
+                  ) : (
+                    <div className="form-text">
+                      Select or search project members.
+                    </div>
+                  )}
+                </div>
+              </Col>
+
               {/* DESCRIPTION */}
               <Col md={12}>
-                <div className="mb-3">
+                <div className={fieldWrapperClass("description")}>
                   <Label className="form-label">Description</Label>
 
                   <Input
@@ -532,12 +648,12 @@ const ProjectForm = () => {
                     placeholder="Project Description"
                     value={projectData.description || ""}
                     onChange={handleInputChange}
-                    invalid={!!FormikForm.errors.description}
+                    invalid={!!fieldError("description")}
                   />
-                  {FormikForm.errors.description ? (
-                    <FormFeedback type="invalid">
-                      {FormikForm.errors.description}
-                    </FormFeedback>
+                  {fieldError("description") ? (
+                    <div className="lc_form_error_text">
+                      {fieldError("description")}
+                    </div>
                   ) : (
                     <div className="form-text">
                       Description (Optional).{" "}
@@ -549,7 +665,7 @@ const ProjectForm = () => {
 
               {/* START DATE */}
               <Col md={6}>
-                <div className="mb-3">
+                <div className={fieldWrapperClass("start_date")}>
                   <Label className="form-label">Start Date</Label>
 
                   <Input
@@ -559,26 +675,20 @@ const ProjectForm = () => {
                     className="form-control"
                     value={projectData.start_date || ""}
                     onChange={handleInputChange}
-                    invalid={
-                      FormikForm.touched.start_date &&
-                      FormikForm.errors.start_date
-                        ? true
-                        : false
-                    }
+                    invalid={!!fieldError("start_date")}
                   />
 
-                  {FormikForm.touched.start_date &&
-                    FormikForm.errors.start_date && (
-                      <FormFeedback>
-                        {FormikForm.errors.start_date}
-                      </FormFeedback>
-                    )}
+                  {fieldError("start_date") && (
+                    <div className="lc_form_error_text">
+                      {fieldError("start_date")}
+                    </div>
+                  )}
                 </div>
               </Col>
 
               {/* DEADLINE */}
               <Col md={6}>
-                <div className="mb-3">
+                <div className={fieldWrapperClass("deadline")}>
                   <Label className="form-label">Deadline</Label>
 
                   <Input
@@ -588,23 +698,20 @@ const ProjectForm = () => {
                     className="form-control"
                     value={projectData.deadline || ""}
                     onChange={handleInputChange}
-                    invalid={
-                      FormikForm.touched.deadline && FormikForm.errors.deadline
-                        ? true
-                        : false
-                    }
+                    invalid={!!fieldError("deadline")}
                   />
 
-                  {FormikForm.touched.deadline &&
-                    FormikForm.errors.deadline && (
-                      <FormFeedback>{FormikForm.errors.deadline}</FormFeedback>
-                    )}
+                  {fieldError("deadline") && (
+                    <div className="lc_form_error_text">
+                      {fieldError("deadline")}
+                    </div>
+                  )}
                 </div>
               </Col>
 
               {/* PRICE */}
               <Col md={12}>
-                <div className="mb-3">
+                <div className={fieldWrapperClass("price")}>
                   <Label className="form-label">Price</Label>
 
                   <Input
@@ -619,14 +726,15 @@ const ProjectForm = () => {
                         e.preventDefault();
                       }
                     }}
-                    onBlur={() => FormikForm.setFieldTouched("price", true)}
                     value={projectData.price || ""}
                     onChange={handleInputChange}
-                    invalid={FormikForm.errors.price ? true : false}
+                    invalid={!!fieldError("price")}
                   />
 
-                  {FormikForm.errors.price && (
-                    <FormFeedback>{FormikForm.errors.price}</FormFeedback>
+                  {fieldError("price") && (
+                    <div className="lc_form_error_text">
+                      {fieldError("price")}
+                    </div>
                   )}
                 </div>
               </Col>
