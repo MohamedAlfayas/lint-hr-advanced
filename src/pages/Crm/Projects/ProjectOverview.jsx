@@ -15,6 +15,7 @@ import "simplebar-react/dist/simplebar.min.css";
 import { useDispatch, useSelector } from "react-redux";
 import { GetApi } from "../../../common/api/GetApi";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
+import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
 import getChartColorsArray from "../../../component/common/dynamicColor/ChartsDynamicColor";
 // import { setFormObj, toggleRSBView } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
 import {
@@ -31,7 +32,10 @@ import { toast } from "react-toastify";
 import { Api } from "../../../common/api/Api";
 import { PutApi } from "../../../common/api/PutApi";
 import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
-import { editProject } from "../../../redux/reducers/ChildReducer/ProjectsReducer";
+import {
+  editProject,
+  setProjects,
+} from "../../../redux/reducers/ChildReducer/ProjectsReducer";
 
 const LIST_MAX_HEIGHT = 240; // Project Timeline's inner scroll area
 const ACTIVITY_MAX_HEIGHT = 260; // recent activity feed
@@ -204,8 +208,8 @@ const ProjectOverview = ({ projectId }) => {
   const dispatch = useDispatch();
 
   const [project, setProject] = useState(null);
-  const [members, setMembers] = useState([]);
   const [projectTasks, setProjectTasks] = useState([]);
+  const [detailMemberDetails, setDetailMemberDetails] = useState([]);
   const [taskStatusDetails, setTaskStatusDetails] = useState(null);
   const [taskStatusRows, setTaskStatusRows] = useState([]);
   const [donutSeries, setDonutSeries] = useState([]);
@@ -236,10 +240,57 @@ const ProjectOverview = ({ projectId }) => {
   }, []);
 
 
-  const existingMemberIds = useMemo(
-    () => (reduxProject?.members_id_list || []).map(Number),
-    [reduxProject],
+  // Redux first; fall back to localStorage if the page was opened directly / refreshed
+  const currentProject = useMemo(
+    () =>
+      reduxProject ||
+      (GetLocalStorageData("projects") || []).find(
+        (p) => Number(p.id) === Number(projectId),
+      ),
+    [reduxProject, projectId],
   );
+
+  // Project Members come from the project's member_details. The project list
+  // (redux / localStorage) is preferred; the project-detail API response is
+  // the fallback when the list entry doesn't carry member_details.
+  const memberDetails = useMemo(() => {
+    if (Array.isArray(currentProject?.member_details)) {
+      return currentProject.member_details;
+    }
+    return detailMemberDetails;
+  }, [currentProject, detailMemberDetails]);
+
+  // Sent back as members_id_list on save. Falls back to members_id_list only
+  // when member_details is missing, so saving never wipes existing members.
+  const existingMemberIds = useMemo(() => {
+    if (memberDetails.length) {
+      return memberDetails.map((m) => Number(m?.id)).filter((id) => !Number.isNaN(id));
+    }
+    return (currentProject?.members_id_list || []).map(Number);
+  }, [memberDetails, currentProject]);
+
+  const members = useMemo(() => {
+    // Task count = assigned tasks + collaborator tasks, so a member who is
+    // both assignee and collaborator on the same task is counted for each role.
+    const isValidId = (id) => id !== undefined && id !== null && id !== "";
+    const taskCountByEmp = {};
+    const increment = (id) => {
+      taskCountByEmp[id] = (taskCountByEmp[id] || 0) + 1;
+    };
+
+    projectTasks.forEach((task) => {
+      const assigneeId = toId(task?.assigned_to);
+      if (isValidId(assigneeId)) increment(Number(assigneeId));
+
+      new Set(
+        (task?.collaborators_id_list || []).filter(isValidId).map(Number),
+      ).forEach(increment);
+    });
+
+    return memberDetails
+      .filter((m) => m && m.id !== undefined && m.id !== null)
+      .map((m) => ({ ...m, taskCount: taskCountByEmp[Number(m.id)] || 0 }));
+  }, [memberDetails, projectTasks]);
 
   const defaultMemberOptions = () =>
     (GetLocalStorageData("employee") || [])
@@ -267,18 +318,19 @@ const ProjectOverview = ({ projectId }) => {
   };
 
   const handleSaveMembers = async () => {
-    if (!reduxProject || newMembers.length === 0) return;
+    if (!currentProject || newMembers.length === 0) return;
     setSavingMembers(true);
     try {
       const payload = {
-        id: reduxProject.id,
-        title: reduxProject.title,
-        type: toId(reduxProject.type),
-        client: toId(reduxProject.client),
-        description: reduxProject.description || "",
-        start_date: reduxProject.start_date,
-        deadline: reduxProject.deadline,
-        price: reduxProject.price,
+        id: currentProject.id,
+        title: currentProject.title,
+        type: toId(currentProject.type),
+        client: toId(currentProject.client),
+        description: currentProject.description || "",
+        start_date: currentProject.start_date,
+        deadline: currentProject.deadline,
+        price: currentProject.price,
+        status: currentProject.status,
         members_id_list: [
           ...new Set([...existingMemberIds, ...newMembers.map((m) => Number(m.id))]),
         ],
@@ -288,11 +340,20 @@ const ProjectOverview = ({ projectId }) => {
 
       if (response?.status === 200 || response?.status === 201) {
         const updated = response?.data?.data;
-        if (updated) dispatch(editProject(updated));
+        if (updated) {
+          const oldProjects = GetLocalStorageData("projects") || [];
+          const exists = oldProjects.some((p) => Number(p.id) === Number(updated.id));
+          const updatedProjects = exists
+            ? oldProjects.map((p) => (Number(p.id) === Number(updated.id) ? updated : p))
+            : [...oldProjects, updated];
+          SetLocalStorage("projects", updatedProjects, 1);
+
+          dispatch(reduxProject ? editProject(updated) : setProjects(updatedProjects));
+        }
+        fetchProjectDetail();
         toast.success(response?.data?.message || "Members added");
         setShowAddMember(false);
         setNewMembers([]);
-        fetchProjectMembers();
       } else {
         toast.error(response?.data?.message || "Something went wrong");
       }
@@ -374,18 +435,12 @@ const ProjectOverview = ({ projectId }) => {
   };
 
   useEffect(() => {
-    if (projectId) {
-      fetchProjectDetail();
-      fetchProjectMembers();
-    }
+    if (projectId) fetchProjectDetail();
   }, [projectId]);
 
-  // useEffect(() => {
-  //   if (projectId) fetchProjectMembers();
-  // }, [task_data]);
   useEffect(() => {
-    if (projectId) fetchProjectMembers();
-  }, [task_data, reduxProject?.members_id_list]);
+    if (projectId) fetchProjectTasks();
+  }, [projectId, task_data]);
 
   const fetchProjectDetail = async () => {
     try {
@@ -411,6 +466,8 @@ const ProjectOverview = ({ projectId }) => {
       if (data?.task_status_details) {
         processTaskStatusDetails(data.task_status_details);
       }
+
+      setDetailMemberDetails(Array.isArray(data?.member_details) ? data.member_details : []);
     } catch (error) {
       console.log("Error fetching project detail", error);
     }
@@ -423,60 +480,17 @@ const ProjectOverview = ({ projectId }) => {
     }
   }, [reduxProject]);
 
-  const fetchProjectMembers = async () => {
+  const fetchProjectTasks = async () => {
     try {
       const response = await GetApi("/task/");
       const allTasks = response?.data?.data || [];
 
-      // const projectTasks = allTasks.filter(
-      //   (item) => item?.related_to === "project" && Number(item?.project) === Number(projectId),
-      // );
-      // setProjectTasks(projectTasks);
       const tasksOfProject = allTasks.filter(
         (item) => item?.related_to === "project" && Number(item?.project) === Number(projectId),
       );
       setProjectTasks(tasksOfProject);
-
-      // const collaboratorIds = [
-      //   ...new Set(projectTasks.flatMap((task) => task?.collaborators_id_list || [])),
-      // ];
-
-      // const employeeData = GetLocalStorageData("employee") || [];
-
-      // task count per member, for the "N Tasks" label in the list
-      // const taskCountByEmp = {};
-      // projectTasks.forEach((task) => {
-      //   (task?.collaborators_id_list || []).forEach((id) => {
-      //     taskCountByEmp[id] = (taskCountByEmp[id] || 0) + 1;
-      //   });
-      // });
-
-      const collaboratorIds = [
-        ...new Set([
-        ...tasksOfProject.flatMap((task) => task?.collaborators_id_list || []),
-        ...existingMemberIds,
-        ]),
-      ];
-
-      const employeeData = GetLocalStorageData("employee") || [];
-
-      const taskCountByEmp = {};
-      tasksOfProject.forEach((task) => {          // ← was projectTasks
-        (task?.collaborators_id_list || []).forEach((id) => {
-          taskCountByEmp[id] = (taskCountByEmp[id] || 0) + 1;
-        });
-      });
-
-      const matchedEmployees = employeeData
-        .filter((emp) => collaboratorIds.includes(emp?.id))
-        .map((emp) => ({ ...emp, taskCount: taskCountByEmp[emp.id] || 0 }));
-      // ⚠️ removed the old `.slice(0, 12)` cap — with a scrollbar in place
-      // we no longer need to silently truncate the member list. Add it
-      // back if you'd rather cap the count than scroll.
-
-      setMembers(matchedEmployees);
     } catch (error) {
-      console.log("Error fetching members", error);
+      console.log("Error fetching project tasks", error);
     }
   };
 
@@ -686,11 +700,13 @@ const ProjectOverview = ({ projectId }) => {
                                 className="rounded-circle d-flex align-items-center justify-content-center"
                                 style={{ width: 34, height: 34, background: colorSet.bg, color: colorSet.color, fontWeight: 600, fontSize: 12 }}
                               >
-                                {getInitials(member?.first_name)}
+                                {getInitials(member?.first_name || member?.name)}
                               </div>
                             )}
                             <div>
-                              <p className="mb-0 fw-semibold" style={{ fontSize: 13 }}>{member?.first_name} {member?.last_name || ""}</p>
+                              <p className="mb-0 fw-semibold" style={{ fontSize: 13 }}>
+                                {`${member?.first_name || ""} ${member?.last_name || ""}`.trim() || member?.name || "-"}
+                              </p>
                               <p className="mb-0 text-muted" style={{ fontSize: 11 }}>
                                 {displayValue(member?.designation) !== "-" ? displayValue(member?.designation) : displayValue(member?.role, "Member")}
                               </p>
@@ -849,6 +865,7 @@ const ProjectOverview = ({ projectId }) => {
         <ModalBody>
           <label className="form-label">Members</label>
           <AsyncSelect
+            key={existingMemberIds.join(",")}
             isMulti
             isClearable
             cacheOptions
