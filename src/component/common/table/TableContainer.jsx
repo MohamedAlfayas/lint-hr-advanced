@@ -71,6 +71,11 @@ const TableContainer = ({
     [isServer, serverPage, serverPageSize],
   );
 
+  // Status & Task tables keep the order they receive (Task list is already
+  // sorted newest-first in Tasks.jsx). Other tables keep the old default.
+  const keepIncomingOrder =
+    formname === status_component_name || formname === task_list_component_name;
+
   const {
     getTableProps,
     getTableBodyProps,
@@ -95,7 +100,7 @@ const TableContainer = ({
         pageIndex: 0,
         pageSize: DEFAULT_PAGE_SIZE,
         selectedRowIds: 0,
-        sortBy: formname === status_component_name ? [] : [{ desc: true }],
+        sortBy: keepIncomingOrder ? [] : [{ desc: true }],
       },
       ...(isServer && {
         manualPagination: true,

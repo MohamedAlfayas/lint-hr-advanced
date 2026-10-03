@@ -1,5 +1,12 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 import "react-toastify/dist/ReactToastify.css";
+import { Spinner } from "reactstrap";
 
 import { useDispatch, useSelector } from "react-redux";
 import { setTasks } from "../../../redux/reducers/ChildReducer/TaskReducer";
@@ -13,6 +20,33 @@ import TaskDetailModal from "./Modal/TaskDetailModal";
 import { getLabel, getEmployeeProfile } from "../Task/Modal/Taskhelpers";
 
 const DEFAULT_PAGE_SIZE = 25;
+
+// ─── Helper: find the task array in any API response shape ───────────────────
+// Handles: [..] | {data:[..]} | {results:[..]} | {data:{results:[..]}} | ...
+const pickList = (node, depth = 0) => {
+  if (Array.isArray(node)) return node;
+  if (!node || typeof node !== "object" || depth > 3) return null;
+  for (const key of ["results", "data", "items", "tasks"]) {
+    const found = pickList(node[key], depth + 1);
+    if (found) return found;
+  }
+  return null;
+};
+
+// ─── Helper: newest first (created time if available, else id) ───────────────
+const getCreatedTs = (task) => {
+  const raw = task?.created_time || task?.created_at || task?.created_on;
+  if (!raw) return null;
+  const ts = new Date(raw).getTime();
+  return Number.isNaN(ts) ? null : ts;
+};
+
+const sortNewestFirst = (a, b) => {
+  const ta = getCreatedTs(a);
+  const tb = getCreatedTs(b);
+  if (ta !== null && tb !== null && ta !== tb) return tb - ta;
+  return Number(b?.id || 0) - Number(a?.id || 0);
+};
 
 // ─── Helper: build avatar element ────────────────────────────────────────────
 const EmployeeAvatar = ({ emp, size = 32, style = {} }) => {
@@ -103,6 +137,10 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [totalCount, setTotalCount] = useState(0);
 
+  // ── Loading + stale-response guard ──────────────────────────────────────────
+  const [isLoading, setIsLoading] = useState(false);
+  const requestIdRef = useRef(0);
+
   const handlePaginationChange = useCallback((newPage, newPageSize) => {
     setPage(newPage);
     setPageSize(newPageSize);
@@ -110,9 +148,14 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
 
   // ── Redux ───────────────────────────────────────────────────────────────────
   const { tasks: task_data } = useSelector((state) => state.TaskReducer);
-  const { task_list_filter_keys } = useSelector(
+  const { task_list_filter_keys, task_date_range } = useSelector(
     (state) => state.TableFilterReducer,
   );
+
+  // Date range filter (server-side) — YYYY-MM-DD, kept outside
+  // task_list_filter_keys so InfoTable can't match it against row fields.
+  const startDate = task_date_range?.start_date || null;
+  const endDate = task_date_range?.end_date || null;
 
   const displayedTasks = useMemo(() => {
     if (!Array.isArray(task_data)) return [];
@@ -144,6 +187,7 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
     }
 
     // ── Apply select-filter panel (TaskListFilter) ─────────────────────────
+    // NOTE: start_date / end_date are applied by the API (see getAllTasks)
     const f = task_list_filter_keys || {};
 
     if (f.assigned_to) {
@@ -179,32 +223,40 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
       );
     }
 
-    return filtered;
+    // ── Recently added task first ──────────────────────────────────────────
+    return filtered.sort(sortNewestFirst);
   }, [task_data, projectId, clientId, searchQuery, task_list_filter_keys]);
 
-  // ── Fetch tasks (paginated) ─────────────────────────────────────────────────
-  // GET /task/?page=1&page_size=25
+  // ── Fetch tasks (paginated + date range) ────────────────────────────────────
+  // GET /task/?page=1&page_size=25&start_date=2026-09-01&end_date=2026-09-30
   const getAllTasks = useCallback(async () => {
+    // only the latest request may update the table (prevents an older,
+    // filtered response from overwriting the unfiltered list after clearing)
+    const requestId = ++requestIdRef.current;
+    setIsLoading(true);
+
     try {
-      const response = await Api.get(
-        `/task/?page=${page}&page_size=${pageSize}`,
-      );
+      const params = new URLSearchParams({
+        page: String(page),
+        page_size: String(pageSize),
+      });
+      if (startDate) params.append("start_date", startDate);
+      if (endDate) params.append("end_date", endDate);
+
+      const url = `/task/?${params.toString()}`;
+      const response = await Api.get(url);
+      if (requestId !== requestIdRef.current) return;
+
       const body = response?.data;
-      const payload = body?.data;
+      console.log("Task API call :", url, body); // check this in DevTools console
 
-      let list = [];
-      let total = 0;
-
-      if (Array.isArray(payload)) {
-        list = payload;
-        total = body?.count ?? body?.total ?? payload.length;
-      } else if (Array.isArray(payload?.results)) {
-        list = payload.results;
-        total = payload.count ?? payload.total ?? list.length;
-      } else if (Array.isArray(body?.results)) {
-        list = body.results;
-        total = body.count ?? list.length;
-      }
+      const list = pickList(body) || [];
+      const total =
+        body?.count ??
+        body?.total ??
+        body?.data?.count ??
+        body?.data?.total ??
+        list.length;
 
       dispatch(setTasks(list));
       setTotalCount(total);
@@ -215,13 +267,30 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
       }
     } catch (error) {
       console.log("Task Fetch Error :", error);
+    } finally {
+      if (requestId === requestIdRef.current) setIsLoading(false);
     }
-  }, [dispatch, page, pageSize]);
+  }, [dispatch, page, pageSize, startDate, endDate]);
 
-  // refetch whenever page / page size changes
+  // Refetch when page / page size / date range changes.
+  // When the date range changes while on page > 1, jump back to page 1 first
+  // (the page change then triggers the fetch) so we never request a page that
+  // doesn't exist for the new range.
+  const prevRangeRef = useRef(`${startDate}|${endDate}`);
+
   useEffect(() => {
+    const rangeKey = `${startDate}|${endDate}`;
+
+    if (prevRangeRef.current !== rangeKey) {
+      prevRangeRef.current = rangeKey;
+      if (page !== 1) {
+        setPage(1);
+        return;
+      }
+    }
+
     getAllTasks();
-  }, [getAllTasks]);
+  }, [getAllTasks, startDate, endDate, page]);
 
   // reset filter panel once on mount
   useEffect(() => {
@@ -584,17 +653,39 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <React.Fragment>
-      <InfoTable
-        additionalColumn={additionalColumn}
-        tabledata={displayedTasks}
-        formname={task_list_component_name}
-        initialFormObj={initialFormObj}
-        filterKey={filterKey}
-        filterOptions={filterOptions}
-        width_per={"35%"}
-        table_class={"Lc_leave_apply_table me-n3 ms-n3"}
-        serverPagination={serverPagination}
-      />
+      <div
+        style={{
+          position: "relative",
+          opacity: isLoading ? 0.5 : 1,
+          pointerEvents: isLoading ? "none" : "auto",
+          transition: "opacity 0.15s ease",
+        }}
+      >
+        {isLoading && (
+          <div
+            style={{
+              position: "absolute",
+              top: 80,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 20,
+            }}
+          >
+            <Spinner color="primary" size="sm" />
+          </div>
+        )}
+        <InfoTable
+          additionalColumn={additionalColumn}
+          tabledata={displayedTasks}
+          formname={task_list_component_name}
+          initialFormObj={initialFormObj}
+          filterKey={filterKey}
+          filterOptions={filterOptions}
+          width_per={"35%"}
+          table_class={"Lc_leave_apply_table me-n3 ms-n3"}
+          serverPagination={serverPagination}
+        />
+      </div>
 
       <TaskDetailModal
         isOpen={detailModal.open}

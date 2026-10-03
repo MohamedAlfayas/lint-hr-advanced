@@ -144,7 +144,7 @@ const Login = () => {
                 // toast.error(error?.response?.data?.message);
               });
           } catch (err) {}
-
+          localStorage.setItem("lint_hr_v", res_data.meta_version);
           localStorage.setItem(
             "lint_hr_globaldata",
             JSON.stringify(res_data?.meta_data),
