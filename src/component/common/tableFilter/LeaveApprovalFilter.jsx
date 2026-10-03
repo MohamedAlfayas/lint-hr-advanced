@@ -49,7 +49,7 @@ const LeaveApprovalFilter = ({ formname }) => {
           "leave/get-leave-application-for-approval/?thisMonth=" +
           filteredMonth +
           "&employee_type=" +
-          employeeType,
+          "1",
       })
         .then((res) => {
           dispatch(setLeaveApproval(res?.data?.data));
@@ -66,7 +66,7 @@ const LeaveApprovalFilter = ({ formname }) => {
           "attendance/get-attendance-data-for-approval/?thisMonth=" +
           filteredMonth +
           "&employee_type=" +
-          employeeType,
+          "1",
       })
         .then((res) => {
           dispatch(setAttendanceApprovalData(res?.data?.data));

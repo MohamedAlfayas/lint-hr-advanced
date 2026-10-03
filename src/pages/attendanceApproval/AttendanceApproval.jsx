@@ -149,7 +149,7 @@ const AttendanceApproval = ({ PendingLeave, AttendancePending }) => {
     ) {
       Api({
         type: "GET",
-        url: `attendance/get-attendance-data-for-approval/?thisMonth=${thisMonth}&employee_type=${employee_type}`,
+        url: `attendance/get-attendance-data-for-approval/?thisMonth=${thisMonth}&employee_type=1`,
       })
         .then((res) => {
           dispatch(setLoaderVisible(false));

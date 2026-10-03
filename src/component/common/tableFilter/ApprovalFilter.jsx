@@ -382,8 +382,8 @@ const ApprovalFilter = ({ formname }) => {
       !showAllLeaveApproval && showTeamLeaveApproval
         ? baseUrl + "1" + deptParam + empParam
         : showAllLeaveApproval && !showTeamLeaveApproval
-          ? baseUrl + "0" + deptParam + empParam
-          : baseUrl + type + deptParam + empParam;
+          ? baseUrl + "1" + deptParam + empParam
+          : baseUrl + "1" + deptParam + empParam;
 
     try {
       console.log("Leave API URL:", url);
@@ -419,8 +419,8 @@ const ApprovalFilter = ({ formname }) => {
       !showAllAttendanceApproval && showTeamAttendanceApproval
         ? baseUrl + "1" + deptParam + empParam
         : showAllAttendanceApproval && !showTeamAttendanceApproval
-          ? baseUrl + "0" + deptParam + empParam
-          : baseUrl + type + deptParam + empParam;
+          ? baseUrl + "1" + deptParam + empParam
+          : baseUrl + "1" + deptParam + empParam;
 
     try {
       console.log("Attendance API URL:", url);

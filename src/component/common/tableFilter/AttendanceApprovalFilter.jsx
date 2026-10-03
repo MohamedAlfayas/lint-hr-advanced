@@ -47,7 +47,7 @@ const AttendanceApprovalFilter = () => {
         "attendance/get-attendance-data-for-approval/?thisMonth=" +
         filteredMonth +
         "&employee_type=" +
-        employeeType,
+        "1",
     })
       .then((res) => {
         dispatch(setAttendanceApprovalData(res?.data?.data));
