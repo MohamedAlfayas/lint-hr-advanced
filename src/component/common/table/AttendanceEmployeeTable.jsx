@@ -173,6 +173,20 @@ const AttendanceEmployeeTable = () => {
   const containerRef = useRef(null);
   const [tableWidth, setTableWidth] = useState(0);
 
+  // Fixed table height -> header stays fixed, only body rows scroll.
+  const [tableHeight, setTableHeight] = useState(500);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      // 280 = space used by page header, filters, columns button, paddings.
+      // Tune this number to fit your layout.
+      setTableHeight(Math.max(300, window.innerHeight - 280));
+    };
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
+  }, []);
+
   // Watch container width and re-set so RSuite recalculates flexGrow
   useEffect(() => {
     if (!containerRef.current) return;
@@ -1136,22 +1150,18 @@ const AttendanceEmployeeTable = () => {
       </div>
 
       {/* Table */}
-      <div ref={containerRef} style={{ width: "100%", overflowX: "auto" }}>
+      <div ref={containerRef} style={{ width: "100%" }}>
         <Table
-          // Use measured width so RSuite knows how much space to distribute
+          // Measured width so RSuite knows how much space to distribute
           width={tableWidth || undefined}
-          height={400}
+          // Fixed height (no autoHeight): header stays fixed, only body scrolls
+          height={tableHeight}
           data={individual_attendance_report_data || []}
-          autoHeight
           loading={loading}
           bordered
           rowHeight={60}
-          // affixHeader keeps the header visible while scrolling vertically
-          affixHeader
-          affixHorizontalScrollbar
+          headerHeight={40}
           className="mb-5"
-          // Tell RSuite to honour flexGrow
-          fillHeight={false}
         >
           {/* ── DATE (fixed left, never flex) ─────────────────────────── */}
           {selectedColumns.includes("date") && (
