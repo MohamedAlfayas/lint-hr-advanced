@@ -3855,13 +3855,6 @@ const UsersClusterMapAll = ({
                             justifyContent: onLeft ? "flex-end" : "flex-start",
                           }}
                         >
-                          {typeof p.battery === "number" && (
-                            <span
-                              style={{ fontSize: "10px", color: "#64748b" }}
-                            >
-                              🔋 {p.battery}%
-                            </span>
-                          )}
                           {p.outside && (
                             <span
                               style={{
