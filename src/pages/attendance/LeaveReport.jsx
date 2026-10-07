@@ -343,7 +343,8 @@ const LeaveReport = () => {
   // ====================================================
 
   const FixedColumns = ({ rowData, index, ...props }) => {
-    const emp = employee_data.find((e) => rowData.employee_id === e.id) || {};
+    // const emp = employee_data.find((e) => rowData.employee_id === e.id) || {};
+    const emp = rowData.employee || {};
 
     const html_tag = (
       <div className="d-flex gap-2 align-items-center">
@@ -504,11 +505,14 @@ const LeaveReport = () => {
 
   const DownloadCell = ({ rowData, ...props }) => {
     const exportEmp = () => {
-      const found = employee_data.find((e) => rowData.employee_id === e.id);
+      // const found = employee_data.find((e) => rowData.employee_id === e.id);
 
-      const name = found ? found.first_name : "Employee";
+      // const name = found ? found.first_name : "Employee";
 
-      const empId = found ? found.emp_id : "";
+      // const empId = found ? found.emp_id : "";
+      const emp = rowData.employee || {};
+      const name = emp.first_name || "Employee";
+      const empId = emp.emp_id || "";
 
       const wb = new ExcelJs.Workbook();
 
@@ -707,26 +711,46 @@ const LeaveReport = () => {
       bold: true,
     };
 
-    reportData.forEach((emp) => {
-      const found = employee_data.find((e) => emp.employee_id === e.id);
+    // reportData.forEach((emp) => {
+    //   const found = employee_data.find((e) => emp.employee_id === e.id);
 
-      const row = [found ? found.first_name : "", found ? found.email : ""];
+    //   const row = [found ? found.first_name : "", found ? found.email : ""];
 
-      datesForExport.forEach((d) => {
-        const day = (emp.daily_leave_data || []).find((x) => x.date === d);
+    //   datesForExport.forEach((d) => {
+    //     const day = (emp.daily_leave_data || []).find((x) => x.date === d);
+    reportData.forEach((item) => {
+        const emp = item.employee || {};
+
+        const row = [
+          [emp.first_name, emp.last_name].filter(Boolean).join(" "),
+          emp.email || "",
+        ];
+
+        datesForExport.forEach((d) => {
+          const day = (item.daily_leave_data || []).find((x) => x.date === d);
 
         row.push(day && day.total_leaves > 0 ? day.total_leaves : "-");
       });
 
+      // leaveTypesForExport.forEach((lt) => {
+      //   const s = (emp.leave_type_summary || []).find(
+      //     (x) => x.leave_type_id === lt.id,
+      //   );
+
+      //   row.push(s ? s.total_taken : 0);
+      // });
+
+      // row.push(emp.total_leaves_taken || 0);
+
       leaveTypesForExport.forEach((lt) => {
-        const s = (emp.leave_type_summary || []).find(
+        const s = (item.leave_type_summary || []).find(
           (x) => x.leave_type_id === lt.id,
         );
 
         row.push(s ? s.total_taken : 0);
       });
 
-      row.push(emp.total_leaves_taken || 0);
+      row.push(item.total_leaves_taken || 0);
 
       const dataRow = sheet.addRow(row);
 

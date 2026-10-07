@@ -14,6 +14,11 @@ import { setClients } from "../../../redux/reducers/ChildReducer/ClientReducer";
 import { client_component_name } from "../../../common/constant/Constants";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { useNavigate } from "react-router-dom";
+import {
+  PROJECT_VIEW_ACCESS_KEY,
+  CREATE_PROJECT_ACCESS_KEY,
+  EDIT_PROJECT_ACCESS_KEY,
+} from "../../../common/constant/RoleConstants";
 
 const Clients = () => {
   const dispatch = useDispatch();
@@ -23,6 +28,17 @@ const Clients = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const toggleDrawer = () => setDrawerOpen((prev) => !prev);
+
+  const canViewProjects = useMemo(() => {
+    const profile = JSON.parse(localStorage.getItem("lint_hr_profile_data") || "{}");
+    if (profile?.is_admin === true) return true;
+    const permissionList = profile?.permission_list || [];
+    return [
+      PROJECT_VIEW_ACCESS_KEY,
+      CREATE_PROJECT_ACCESS_KEY,
+      EDIT_PROJECT_ACCESS_KEY,
+    ].some((key) => permissionList.includes(key));
+  }, []);
 
   const { client_data } = useSelector((state) => state.ClientReducer);
 
@@ -60,7 +76,31 @@ const Clients = () => {
         </span>
       ),
     },
-      {
+    // {
+    //   Header: "City",
+    //   accessor: "city",
+    //   filterable: false,
+    //   id: "city",
+    // },
+    // {
+    //   Header: "State",
+    //   accessor: "state",
+    //   filterable: false,
+    //   id: "state",
+    // },
+    // {
+    //   Header: "Country",
+    //   accessor: "country",
+    //   filterable: false,
+    //   id: "country",
+    // },
+    // {
+    //   Header: "Phone",
+    //   accessor: "phone_number",
+    //   filterable: false,
+    //   id: "phone_number",
+    // },
+    {
       Header: "Owner",
       id: "owner",
       filterable: false,
@@ -308,17 +348,19 @@ const Clients = () => {
             </div>
           )}
 
-          <button
-            type="button"
-            className="btn btn-primary w-100"
-            onClick={() => {
-              setDrawerOpen(false);
-              navigate(`/client-overview/${selectedClient?.id}`);
-            }}
-          >
-            <i className="ri-folder-2-line align-bottom me-1"></i>
-            View Projects
-          </button>
+          {canViewProjects && (
+            <button
+              type="button"
+              className="btn btn-primary w-100"
+              onClick={() => {
+                setDrawerOpen(false);
+                navigate(`/client-overview/${selectedClient?.id}`);
+              }}
+            >
+              <i className="ri-folder-2-line align-bottom me-1"></i>
+              View Projects
+            </button>
+          )}
         </OffcanvasBody>
       </Offcanvas>
     </React.Fragment>

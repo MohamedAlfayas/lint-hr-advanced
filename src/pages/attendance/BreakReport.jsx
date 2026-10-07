@@ -234,25 +234,91 @@ const BreakReport = () => {
     }, 0);
 
   // ----- employee fixed cell -----
+  // const FixedColumns = ({ rowData, index, ...props }) => {
+  //   const emp = rowData.employee || {};
+  //   const html_tag = (
+  //     <div className="d-flex gap-2 align-items-center">
+  //       <div className="flex-shrink-0">
+  //         <div
+  //           className="avatar-xs rounded-circle"
+  //           style={{
+  //             display: "flex",
+  //             justifyContent: "center",
+  //             alignItems: "center",
+  //             background: "#0ab39c",
+  //           }}
+  //           title={emp.first_name}
+  //         >
+  //           <span className="first_letter" style={{ color: "white" }}>
+  //             {emp?.first_name?.charAt(0) || ""}
+  //           </span>
+  //         </div>
+  //       </div>
+  //       <div className="flex-grow-1">
+  //         <Link to="#" className="link-body-emphasis mb-0">
+  //           <h5 className="fs-14 mb-1" style={{ textAlign: "left" }}>
+  //             {emp.first_name} {emp.last_name}
+  //           </h5>
+  //         </Link>
+  //         <div className="fs-14 mb-1" style={{ textAlign: "left" }}>
+  //           {emp.email}
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  //   return (
+  //     <Cell
+  //       {...props}
+  //       style={{
+  //         backgroundColor:
+  //           index % 2 === 0
+  //             ? layoutModeType === "dark"
+  //               ? "#1a1a1a"
+  //               : "white"
+  //             : layoutModeType === "dark"
+  //               ? "#242933"
+  //               : "#e6f7ff",
+  //         alignItems: "flex-start",
+  //         justifyContent: "flex-start",
+  //         paddingRight: "10px",
+  //       }}
+  //     >
+  //       {html_tag}
+  //     </Cell>
+  //   );
+  // };
+
   const FixedColumns = ({ rowData, index, ...props }) => {
     const emp = rowData.employee || {};
+    const departmentNames = Array.isArray(emp.departments)
+      ? emp.departments.map((d) => d.name).join(", ")
+      : "";
+
     const html_tag = (
       <div className="d-flex gap-2 align-items-center">
         <div className="flex-shrink-0">
-          <div
-            className="avatar-xs rounded-circle"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              background: "#0ab39c",
-            }}
-            title={emp.first_name}
-          >
-            <span className="first_letter" style={{ color: "white" }}>
-              {emp?.first_name?.charAt(0) || ""}
-            </span>
-          </div>
+          {emp.profile_url ? (
+            <img
+              src={emp.profile_url}
+              alt={emp.first_name}
+              className="avatar-xs rounded-circle"
+            />
+          ) : (
+            <div
+              className="avatar-xs rounded-circle"
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                background: "#0ab39c",
+              }}
+              title={emp.first_name}
+            >
+              <span className="first_letter" style={{ color: "white" }}>
+                {emp.first_name?.charAt(0) || ""}
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex-grow-1">
           <Link to="#" className="link-body-emphasis mb-0">
@@ -263,21 +329,23 @@ const BreakReport = () => {
           <div className="fs-14 mb-1" style={{ textAlign: "left" }}>
             {emp.email}
           </div>
+          {departmentNames && (
+            <div className="fs-12 text-muted" style={{ textAlign: "left" }}>
+              {departmentNames}
+            </div>
+          )}
         </div>
       </div>
     );
+
     return (
       <Cell
         {...props}
         style={{
           backgroundColor:
             index % 2 === 0
-              ? layoutModeType === "dark"
-                ? "#1a1a1a"
-                : "white"
-              : layoutModeType === "dark"
-                ? "#242933"
-                : "#e6f7ff",
+              ? layoutModeType === "dark" ? "#1a1a1a" : "white"
+              : layoutModeType === "dark" ? "#242933" : "#e6f7ff",
           alignItems: "flex-start",
           justifyContent: "flex-start",
           paddingRight: "10px",
@@ -459,7 +527,7 @@ const BreakReport = () => {
         return sum + (entry ? entry.break_duration : 0);
       }, 0);
 
-    const headers = ["Employee", "Email"];
+    const headers = ["Employee", "Email", "Department"];
     datesForExport.forEach((d) => headers.push(formatDate(d)));
     typesForExport.forEach((bt) => headers.push(bt.name));
     headers.push("Total Break");
@@ -472,6 +540,7 @@ const BreakReport = () => {
       const row = [
         `${e.first_name || ""} ${e.last_name || ""}`.trim(),
         e.email || "",
+        (e.departments || []).map((d) => d.name).join(", "),
       ];
       datesForExport.forEach((d) => {
         const day = (emp.break_status_data || []).find((x) => x.date === d);

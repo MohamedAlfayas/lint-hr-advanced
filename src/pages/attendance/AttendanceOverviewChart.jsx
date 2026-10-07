@@ -88,7 +88,7 @@ const AttendanceOverviewChart = ({ dataColors, chartData }) => {
       },
       legend: {
         position: "bottom",
-        offsetY: 0,
+        offsetY: 5,
         itemMargin: {
           top: 5,
           horizontal: 5,

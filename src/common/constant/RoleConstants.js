@@ -97,6 +97,12 @@ export const VIEW_HIERARCHY_LEAVE_APPROVAL_ACCESS_KEY =
 export const APPROVE_REJECT_HIERARCHY_LEAVE_ACCESS_KEY =
   "15c51336-a05b-488b-af43-29061deec942";
 
+export const VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY =
+  "c3d4e5f6-7a8b-4c1d-9a2f-0e1f2a3b4c5d";
+
+export const VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY =
+   "e5b8f9c2-7a6d-4c1b-9a2f-3c4d5e6f7a8b";
+
 // Report
 
 export const CAN_VIEW_REPORT_ACCESS_KEY =
@@ -123,6 +129,7 @@ export const EDIT_PROJECT_ACCESS_KEY = "4e9a1c76-8d35-42bf-b7c2-9f1e5d3a6b84"
 
 export const CREATE_TASK_ACCESS_KEY = "1c7d9e54-6b2f-4a81-b3e7-9d5f2a6c8b14"
 export const EDIT_TASK_ACCESS_KEY = "7a3f1c92-5d8e-4b67-a9c1-2e6d4f8b3c75"
+export const TASK_VIEW_ACCESS_KEY = "1ad2ad2f-31e1-470f-b954-51abcadde5d9"
 
 // Task Settings
 
@@ -562,6 +569,28 @@ export const default_roles_list = [
         checked: false,
         disabled: false,
       },
+
+      {
+        id: 314,
+        role_uuid: VIEW_ALL_LEAVE_APPROVAL_ACCESS_KEY,
+        dependency_for_uuid_list: [],
+        notes: "User Can View All Leave Approval",
+        element: "per_all_leave_approval_view",
+        dependency_to_element_list: ["per_attendance_view"],
+        checked: false,
+        disabled: false,
+      },
+
+      {
+        id: 315,
+        role_uuid: VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
+        dependency_for_uuid_list: [],
+        notes: "User Can View All Attendance Approval",
+        element: "per_all_attendance_approval_view",
+        dependency_to_element_list: ["per_attendance_view"],
+        checked: false,
+        disabled: false,
+      },
     ],
   },
   {
@@ -696,7 +725,7 @@ export const default_roles_list = [
                 "dependency_for_uuid_list": [],
                 "notes": "User Can Create Task",
                 "element": "per_create_task",
-                "dependency_to_element_list": [],
+                "dependency_to_element_list": ["per_task_view"],
                 "checked": false,
                 "disabled": false,
             },
@@ -706,7 +735,7 @@ export const default_roles_list = [
                 "dependency_for_uuid_list": [],
                 "notes": "User Can Edit Task",
                 "element": "per_edit_task",
-                "dependency_to_element_list": [],
+                "dependency_to_element_list": ["per_task_view"],
                 "checked": false,
                 "disabled": false,
             },
@@ -737,6 +766,17 @@ export const default_roles_list = [
                 "notes": "User Can Edit Task Status",
                 "element": "per_edit_task_status",
                 "dependency_to_element_list": ["per_task_status_view"],
+                "checked": false,
+                "disabled": false,
+            },
+
+            {
+                "id": 706,
+                "role_uuid": TASK_VIEW_ACCESS_KEY,
+                "dependency_for_uuid_list": [CREATE_TASK_ACCESS_KEY, EDIT_TASK_ACCESS_KEY],
+                "notes": "User Can View Task",
+                "element": "per_task_view",
+                "dependency_to_element_list": [],
                 "checked": false,
                 "disabled": false,
             },

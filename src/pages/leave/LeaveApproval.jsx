@@ -68,45 +68,41 @@ const LeaveApproval = ({
       filterable: false,
       id: "employee_id",
       accessor: (obj) => {
-        const EmployeeData = GetLocalStorageData("employee") || [];
-        const thisEmployee = EmployeeData.find((d) => d.id === obj.employee_id);
-        if (!thisEmployee) return null;
+        const emp = obj?.employee;
+        if (!emp) return <span className="text-muted">-</span>;
 
-        return thisEmployee.profile_url ? (
+        const firstName = emp.first_name || "-";
+
+        return (
           <div className="d-flex gap-2 align-items-center">
             <div className="flex-shrink-0">
-              <img
-                src={thisEmployee.profile_url}
-                alt=""
-                className="avatar-xs rounded-circle"
-                style={{ objectFit: "cover" }}
-              />
+              {emp.profile_url ? (
+                <img
+                  src={emp.profile_url}
+                  alt={firstName}
+                  className="avatar-xs rounded-circle"
+                  style={{ objectFit: "cover" }}
+                />
+              ) : (
+                <div
+                  className="avatar-xs rounded-circle"
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    background: "#0ab39c",
+                  }}
+                  title={firstName}
+                >
+                  <span className="first_letter" style={{ color: "white" }}>
+                    {firstName !== "-" ? firstName.charAt(0).toUpperCase() : "-"}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex-grow-1">
-              <div>{thisEmployee.first_name}</div>
-              <div>{thisEmployee.email}</div>
-            </div>
-          </div>
-        ) : (
-          <div className="d-flex gap-2 align-items-center">
-            <div className="flex-shrink-0">
-              <div
-                className="avatar-xs rounded-circle"
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  background: "#0ab39c",
-                }}
-              >
-                <span className="first_letter" style={{ color: "white" }}>
-                  {thisEmployee.first_name?.charAt(0)}
-                </span>
-              </div>
-            </div>
-            <div className="flex-grow-1">
-              <div>{thisEmployee.first_name}</div>
-              <div>{thisEmployee.email}</div>
+              <div>{firstName}</div>
+              <div>{emp.email || ""}</div>
             </div>
           </div>
         );
@@ -117,11 +113,9 @@ const LeaveApproval = ({
       id: "department",
       filterable: false,
       accessor: (obj) => {
-        const thisDepartment = DepartmentData.filter((d) =>
-          obj.primary_department_id_list.includes(d.id),
-        );
-        const firstDep_name = thisDepartment[0]?.name || "";
-        const subDepList = thisDepartment.slice(1);
+        const departments = obj?.employee?.departments || [];
+        const firstDep_name = departments[0]?.name || "-";
+        const subDepList = departments.slice(1);
 
         return (
           <span>
@@ -132,30 +126,31 @@ const LeaveApproval = ({
             >
               {firstDep_name}
               {subDepList.length > 0 && (
-                <span>
-                  <Badge
-                    pill
-                    color="success"
-                    className="position-absolute top-0 start-100 translate-middle"
-                  >
-                    +{subDepList.length}
-                    <span className="visually-hidden">Departments</span>
-                  </Badge>
-                  <UncontrolledTooltip
-                    placement="bottom"
-                    target={`depListRef-${obj.id}`}
-                  >
-                    <div className="mt-1">
-                      {subDepList.map((item, key) => (
-                        <p className="mb-1" key={key}>
-                          {item.name}
-                        </p>
-                      ))}
-                    </div>
-                  </UncontrolledTooltip>
-                </span>
+                <Badge
+                  pill
+                  color="success"
+                  className="position-absolute top-0 start-100 translate-middle"
+                >
+                  +{subDepList.length}
+                  <span className="visually-hidden">Departments</span>
+                </Badge>
               )}
             </Button>
+
+            {subDepList.length > 0 && (
+              <UncontrolledTooltip
+                placement="bottom"
+                target={`depListRef-${obj.id}`}
+              >
+                <div className="mt-1">
+                  {subDepList.map((item) => (
+                    <p className="mb-1" key={item.id}>
+                      {item.name}
+                    </p>
+                  ))}
+                </div>
+              </UncontrolledTooltip>
+            )}
           </span>
         );
       },
