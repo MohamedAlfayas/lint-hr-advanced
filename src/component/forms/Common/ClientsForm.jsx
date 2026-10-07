@@ -241,12 +241,23 @@ const ClientForm = () => {
       `Employee ${emp.id}`,
   }));
 
+   const countryCodeOptions = CountryList.filter((c) => c.show)
+    .sort((a, b) => a.countryName.localeCompare(b.countryName))
+    .map((d) => ({
+      ...d,
+      value: d.id,
+      label: `${d.countryName} (${d.countryCode})`,
+    }));
+
   // ─── Sync form_obj ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (form_obj) {
-      setClientData(form_obj);
-      setInitialFormValues(form_obj);
-      // Load existing locations for this client if present
+   if (form_obj) {
+      const merged = {
+        ...form_obj,
+        country_code: form_obj.country_code || "+91",
+      };
+      setClientData(merged);
+      setInitialFormValues(merged);
       setEntityLocations(form_obj?.entity_location_details || []);
       setHasAttemptedSubmit(false);
       setLengthWarnings({
@@ -279,10 +290,15 @@ const ClientForm = () => {
   }, [locationObj?.country]);
 
   useEffect(() => {
-    if (form_obj) {
-      setClientData(form_obj);
-      setInitialFormValues(form_obj);
+     if (form_obj) {
+      const merged = {
+        ...form_obj,
+        country_code: form_obj.country_code || "+91",
+      };
+      setClientData(merged);
+      setInitialFormValues(merged);
       setEntityLocations(form_obj?.entity_location_details || []);
+
 
       const selectedCountry = CountryList.find(
         (d) => d.countryName === form_obj.country,
@@ -548,27 +564,27 @@ const ClientForm = () => {
         .required("Please Enter Phone Number")
         .matches(/^[0-9]+$/, "Phone number must contain digits only")
         .length(10, "Phone number must be 10 digits"),
-      city: Yup.string()
-        .trim()
-        .matches(
-          /^[A-Za-z\s.'-]+$/,
-          "City should contain only letters, spaces, periods (.), hyphens (-), or apostrophes (')",
-        )
-        .required("Please Enter City")
-        .test(
-          "city-length",
-          "City cannot exceed 100 characters",
-          (value) => !value || value.length <= 100,
-        ),
-      state: Yup.string().required("Please Enter State"),
-      country: Yup.string().required("Please Enter Country"),
+      // city: Yup.string()
+      //   .trim()
+      //   .matches(
+      //     /^[A-Za-z\s.'-]+$/,
+      //     "City should contain only letters, spaces, periods (.), hyphens (-), or apostrophes (')",
+      //   )
+      //   .required("Please Enter City")
+      //   .test(
+      //     "city-length",
+      //     "City cannot exceed 100 characters",
+      //     (value) => !value || value.length <= 100,
+      //   ),
+      // state: Yup.string().required("Please Enter State"),
+      // country: Yup.string().required("Please Enter Country"),
       country_code: Yup.string()
         .required("Country code is required"),
-      pincode: Yup.string()
-        .trim()
-        .matches(/^[0-9]+$/, "Pincode should contain only numbers")
-        .length(6, "Please Enter Valid 6 Digit Pincode")
-        .required("Please Enter Pincode"),
+      // pincode: Yup.string()
+      //   .trim()
+      //   .matches(/^[0-9]+$/, "Pincode should contain only numbers")
+      //   .length(6, "Please Enter Valid 6 Digit Pincode")
+      //   .required("Please Enter Pincode"),
       website: Yup.string()
         .trim()
         .test(
@@ -591,18 +607,18 @@ const ClientForm = () => {
         )
         .length(15, "GST Number must be exactly 15 characters")
         .nullable(),
-      address: Yup.string()
-        .trim()
-        .required("Address is required")
-        .matches(
-          /^[A-Za-z0-9\s.,\-#/'&]+$/,
-          "Address contains invalid characters",
-        )
-        .test(
-          "address-length",
-          "Address cannot exceed 250 characters",
-          (value) => !value || value.length <= 250,
-        ),
+      // address: Yup.string()
+      //   .trim()
+      //   .required("Address is required")
+      //   .matches(
+      //     /^[A-Za-z0-9\s.,\-#/'&]+$/,
+      //     "Address contains invalid characters",
+      //   )
+      //   .test(
+      //     "address-length",
+      //     "Address cannot exceed 250 characters",
+      //     (value) => !value || value.length <= 250,
+      //   ),
     }),
     onSubmit: async () => {
       dispatch(setLoaderVisible(true));
@@ -1042,8 +1058,9 @@ const ClientForm = () => {
                 </div>
               </Col>
 
+
               {/* ── Contry / State ── */}
-              <Col md={6} lg={6} xxl={6}>
+             {/*  <Col md={6} lg={6} xxl={6}>
                 <div className="mb-3">
                   <Label htmlFor="country" className="form-label">
                     Country *
@@ -1119,9 +1136,11 @@ const ClientForm = () => {
                 </div>
               </Col>
 
+              */}
+
               {/* ── Address ── */}
 
-              <Col md={12} lg={12} xxl={12}>
+            {/*  <Col md={12} lg={12} xxl={12}>
                 <div className="mb-3">
                   <Label htmlFor="address" className="form-label">
                     Address *
@@ -1167,10 +1186,11 @@ const ClientForm = () => {
                       : lengthWarnings.address || "\u00A0"}
                   </div>
                 </div>
-              </Col>
+              </Col>*/}
 
+            
               {/* ── city / pincode ── */}
-              <Col md={6} lg={6} xxl={6}>
+            {/*   <Col md={6} lg={6} xxl={6}>
                 <div className="mb-3">
                   <Label htmlFor="city" className="form-label">
                     City *
@@ -1235,34 +1255,63 @@ const ClientForm = () => {
                     {showClientError("pincode") ? FormikForm.errors.pincode : "\u00A0"}
                   </div>
                 </div>
-              </Col>
+              </Col> */}
 
               {/* ── country / Phone ── */}
-              <Col md={6} lg={6} xxl={6}>
+              <Col md={5} lg={5} xxl={5}>
                 <div className="mb-3">
                   <Label htmlFor="country_code" className="form-label">
                     Country Code *
                   </Label>
-                  <Input
-                    type="text"
-                    name="country_code"
+                  <Select
                     id="country_code"
-                    className="form-control"
-                    placeholder="e.g. IN"
-                    value={clientData.country_code || ""}
-                    readOnly
-                    invalid={!!(hasAttemptedSubmit && FormikForm.errors.country_code)}
+                    name="country_code"
+                    isMulti={false}
+                    options={countryCodeOptions}
+                    placeholder="Select"
+                    classNamePrefix="lc-select"
+                    styles={selectStyles(
+                      FormikForm.touched.country_code || hasAttemptedSubmit,
+                      FormikForm.errors.country_code,
+                    )}
+                    value={
+                      countryCodeOptions.find(
+                        (o) => o.countryCode === clientData.country_code,
+                      ) || null
+                    }
+                    formatOptionLabel={(opt, { context }) => (
+                      <div className="d-flex align-items-center">
+                        <img
+                          src={opt.flagImg}
+                          alt="flag"
+                          height="16"
+                          className="me-2"
+                        />
+                        {context === "value" ? (
+                          <span>{opt.countryCode}</span>
+                        ) : (
+                          <span>
+                            {opt.countryName}{" "}
+                            <span className="text-muted">{opt.countryCode}</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    onChange={(opt) => {
+                      const code = opt?.countryCode || "";
+                      setClientData((prev) => ({ ...prev, country_code: code }));
+                      FormikForm.setFieldValue("country_code", code);
+                      FormikForm.setFieldTouched("country_code", true, false);
+                    }}
                   />
-                   {hasAttemptedSubmit && FormikForm.errors.country_code ? (
-                    <FormFeedback type="invalid">
-                      {FormikForm.errors.country_code}
-                    </FormFeedback>
-                  ) : (
-                    <div className="form-text">Auto-filled based on selected country.</div>
-                  )}
+                  <div className="lc_form_error_text">
+                    {showClientError("country_code")
+                      ? FormikForm.errors.country_code
+                      : "\u00A0"}
+                  </div>
                 </div>
               </Col>
-              <Col md={6} lg={6} xxl={6}>
+              <Col md={7} lg={7} xxl={7}>
                 <div className="mb-3">
                   <Label htmlFor="phone_number" className="form-label">
                     Phone Number *
@@ -1273,6 +1322,8 @@ const ClientForm = () => {
                     id="phone_number"
                     className="form-control"
                     placeholder="9876543210"
+                    inputMode="numeric"
+                    maxLength={10}
                     value={clientData.phone_number || ""}
                     onChange={(e) => {
                       handlePhoneNumberOnly(e);
@@ -1292,7 +1343,9 @@ const ClientForm = () => {
                     invalid={!!showClientError("phone_number")}
                   />
                   <div className="lc_form_error_text">
-                    {showClientError("phone_number") ? FormikForm.errors.phone_number : "\u00A0"}
+                    {showClientError("phone_number")
+                      ? FormikForm.errors.phone_number
+                      : "\u00A0"}
                   </div>
                 </div>
               </Col>

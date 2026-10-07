@@ -130,21 +130,33 @@ const TaskListForm = () => {
       .filter((c) => c.value !== undefined && c.value !== null);
   };
 
-  // ✅ NEW: client locations sourced from localStorage "entity_locations"
-  // (type === "client" AND type_id === selected client's id)
+   // ✅ Client locations come from the selected client's entity_location_details
+  // (saved by ClientForm -> Add Location). Falls back to "entity_locations".
   const buildClientLocationOptions = (clientId) => {
     if (clientId === null || clientId === undefined || clientId === "")
       return [];
-    const list = GetLocalStorageData("entity_locations") || [];
+
+    const clients = GetLocalStorageData("clients") || [];
+    const selectedClient = clients.find(
+      (c) => Number(c.id ?? c.client_id ?? c.pk) === Number(clientId),
+    );
+
+    let list = selectedClient?.entity_location_details || [];
+
+    if (!list.length) {
+      const fallback = GetLocalStorageData("entity_locations") || [];
+      list = fallback.filter(
+        (l) => l.type === "client" && Number(l.type_id) === Number(clientId),
+      );
+    }
+
     return list
-      .filter(
-        (l) => l.type === "client" && Number(l.type_id) === Number(clientId), // ✅ loose numeric compare, avoids string/number mismatch
-      )
+      .filter((l) => !l.type || l.type === "client")
       .map((l) => {
         const id = l.id;
-        const name =
-          l.name || l.accurate_address || l.address || `Location ${id}`;
-        return { ...l, id, value: id, label: name };
+        const address = l.address || l.accurate_address || "";
+        const label = [l.name, address].filter(Boolean).join(", ") || `Location ${id}`;
+        return { ...l, id, value: id, label };
       })
       .filter((l) => l.value !== undefined && l.value !== null);
   };

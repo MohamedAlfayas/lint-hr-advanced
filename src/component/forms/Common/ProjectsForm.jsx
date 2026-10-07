@@ -27,6 +27,8 @@ import { PutApi } from "../../../common/api/PutApi";
 import Select from "react-select";
 import AsyncSelect from "react-select/async";
 
+import Swal from "sweetalert2";
+
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
 import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
@@ -386,10 +388,48 @@ const ProjectForm = () => {
           payload.id = projectData.id;
         }
 
-        const Api = isEdit
-          ? await PutApi("projects/", payload, false)
-          : await PostApi("projects/", payload, false);
+              
+        const callApi = async (body) => {
+          try {
+            return isEdit
+              ? await PutApi("projects/", body, false)
+              : await PostApi("projects/", body, false);
+          } catch (err) {
+            return err?.response || { status: err?.status, data: err?.data };
+          }
+        };
 
+        let Api = await callApi(payload);
+
+        
+        if (Api?.status === 409 && Api?.data?.requires_confirmation) {
+          dispatch(setLoaderVisible(false));
+
+          const result = await Swal.fire({
+            title: "Pending Tasks",
+            text:
+              Api?.data?.message ||
+              "This project has pending tasks. Do you want to deactivate it anyway?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#6c757d",
+            confirmButtonText: "Yes, Deactivate",
+            cancelButtonText: "Cancel",
+          });
+
+            if (!result.isConfirmed) {
+            
+            setProjectData((prev) => ({
+              ...prev,
+              status: true,
+            }));
+            return;
+          }
+
+          dispatch(setLoaderVisible(true));
+          Api = await callApi({ ...payload, confirm: true });
+        }
         if (Api?.status === 200 || Api?.status === 201) {
           const responseData = Api?.data?.data;
           console.log("API Response:", responseData);
