@@ -42,88 +42,6 @@ import {
 dayjs.extend(customParseFormat);
 
 // ─── Responsive styles injected once ─────────────────────────────────────
-// const RESPONSIVE_STYLES = `
-//   .attendance-table-wrapper {
-//     width: 100%;
-//     overflow-x: auto;
-//     -webkit-overflow-scrolling: touch;
-//   }
-//   .attendance-table {
-//     width: 100%;
-//     min-width: 700px;
-//     table-layout: fixed;
-//     border-collapse: collapse;
-//   }
-//   .attendance-table.leave-tab {
-//     min-width: 560px;
-//   }
-//   @media (max-width: 991px) {
-//     .attendance-table {
-//       min-width: 620px;
-//     }
-//     .attendance-table.leave-tab {
-//       min-width: 480px;
-//     }
-//   }
-//   @media (max-width: 575px) {
-//     .attendance-table,
-//     .attendance-table.leave-tab {
-//       min-width: 520px;
-//     }
-//     .filter-container .row > [class*="col-"] {
-//       flex: 0 0 100%;
-//       max-width: 100%;
-//     }
-//   }
-//   .attendance-table thead th {
-//     position: sticky;
-//     top: 0;
-//     z-index: 2;
-//     background: #f8f9fa;
-//   }
-//   @media (max-width: 767px) {
-//     .attendance-table td,
-//     .attendance-table th {
-//       padding: 8px 6px !important;
-//       font-size: 12px;
-//     }
-//   }
-
-
-//    /* ✅ SimpleBar scroll track/thumb overrides */
-//   .attendance-table-wrapper .simplebar-wrapper,
-//   .attendance-table-wrapper .simplebar-mask,
-//   .attendance-table-wrapper .simplebar-offset {
-//     width: 100% !important;
-//   }
-//   .attendance-table-wrapper .simplebar-track.simplebar-vertical {
-//     right: 2px;
-//     width: 10px;
-//   }
-//   .attendance-table-wrapper .simplebar-track.simplebar-horizontal {
-//     bottom: 2px;
-//     height: 10px;
-//   }
-//   .attendance-table-wrapper .simplebar-track.simplebar-vertical .simplebar-scrollbar::before {
-//     top: 0;
-//     bottom: 0;
-//     left: 0;
-//     right: 0;
-//     background-color: #adb5bd;
-//     border-radius: 4px;
-//     opacity: 1;
-//   }
-//   .attendance-table-wrapper .simplebar-track.simplebar-horizontal .simplebar-scrollbar::before {
-//     top: 0;
-//     bottom: 0;
-//     left: 0;
-//     right: 0;
-//     background-color: #adb5bd;
-//     border-radius: 4px;
-//     opacity: 1;
-//   }
-
-// `;
 const RESPONSIVE_STYLES = `
   /* Defensive: some dashboard themes set overflow:hidden on .card to clip
      rounded corners — that silently clips our scrollbar too. Force it open
@@ -220,6 +138,34 @@ const RESPONSIVE_STYLES = `
     opacity: 1;
   }
 `;
+
+// ─── Check-in device icon (punched_by: 1 = desktop, 2 = mobile) ──────────
+const PunchDeviceIcon = ({ punchedBy }) => {
+  const type = Number(punchedBy);
+
+  if (type === 1) {
+    return (
+      <i
+        className="bx bx-desktop"
+        title="Checked in from Desktop"
+        style={{ color: "#405189", fontSize: "16px", lineHeight: 1 }}
+      ></i>
+    );
+  }
+
+  if (type === 2) {
+    return (
+      <i
+        className="bx bx-mobile-alt"
+        title="Checked in from Mobile"
+        style={{ color: "#0ab39c", fontSize: "16px", lineHeight: 1 }}
+      ></i>
+    );
+  }
+
+  return null;
+};
+
 // ─── Custom status badge ──────────────────────────────────────────────────
 const getCheckInStatusBadge = (statusName, customStatuses = []) => {
   const matched = customStatuses.find(
@@ -544,6 +490,14 @@ const TodayAttendanceTable = () => {
             attendanceStatus = "Not Check In";
           }
 
+          // ✅ First check-in device: punched_by 1 = desktop, 2 = mobile
+          const firstCheckIn =
+            (Array.isArray(item.location_history) &&
+              item.location_history[0]) ||
+            item.first_check_in ||
+            null;
+          const punchedBy = firstCheckIn?.punched_by ?? null;
+
           return {
             emp_id: item.employee.emp_id,
             employee_id: item.employee.id,
@@ -560,6 +514,7 @@ const TodayAttendanceTable = () => {
 
             inTime: item.first_check_in_time || null,
             outTime: item.last_check_out_time || null,
+            punchedBy,
 
             totalHours: (() => {
               const totalSeconds =
@@ -1249,10 +1204,20 @@ const TodayAttendanceTable = () => {
                     #{row.emp_id}
                   </span>
                 </h5>
-
-                {row.checkInStatus &&
-                  getCheckInStatusBadge(row.checkInStatus, customStatuses)}
               </div>
+
+              {/* ✅ Badge row: device icon + check-in / check-out status */}
+              {((row.inTime && row.punchedBy) || row.checkInStatus) && (
+                <div
+                  className="d-flex align-items-center gap-2 flex-wrap"
+                  style={{ marginBottom: "2px" }}
+                >
+                  {row.inTime && <PunchDeviceIcon punchedBy={row.punchedBy} />}
+
+                  {row.checkInStatus &&
+                    getCheckInStatusBadge(row.checkInStatus, customStatuses)}
+                </div>
+              )}
 
               <div
                 className="text-muted"
@@ -1511,42 +1476,38 @@ const TodayAttendanceTable = () => {
                 className="attendance-table-wrapper"
                 style={{
                   marginTop: "8px",
-                  // border: "1px solid #f0f0f0",
-                  // borderRadius: "6px",
                 }}
               >
                 <SimpleBar
                   ref={scrollBarRef}
                   Name="attendance-table-inner"
-                  style={{ maxHeight: "420px", minHeight: "420px", width: "100%"  }}
+                  style={{
+                    maxHeight: "420px",
+                    minHeight: "420px",
+                    width: "100%",
+                  }}
                   autoHide={false}
                 >
-                  {/* <style> */}
-                    {/* {`.simplebar-track { display: none !important; }`} */}
-                    {/* {`.simplebar-track.simplebar-horizontal { display: none !important; }`}
-                  </style> */}
-                  {/* <div style={{ minWidth: "100%", paddingRight: "14px"  }}> */}
-                    <table
-                      className={`table align-middle mb-0 attendance-table${
-                        activeTab === "3" ? " leave-tab" : ""
-                      }`}
-                    >
-                      <thead className="table-light text-muted">
-                        {renderTableHeaders()}
-                      </thead>
-                      <tbody>
-                        {loading ? (
-                          <SkletonDashboard
-                            rows={6}
-                            columns={getColumnCount(activeTab)}
-                            hasAvatar={true}
-                          />
-                        ) : (
-                          renderTableRows()
-                        )}
-                      </tbody>
-                    </table>
-                  {/* </div> */}
+                  <table
+                    className={`table align-middle mb-0 attendance-table${
+                      activeTab === "3" ? " leave-tab" : ""
+                    }`}
+                  >
+                    <thead className="table-light text-muted">
+                      {renderTableHeaders()}
+                    </thead>
+                    <tbody>
+                      {loading ? (
+                        <SkletonDashboard
+                          rows={6}
+                          columns={getColumnCount(activeTab)}
+                          hasAvatar={true}
+                        />
+                      ) : (
+                        renderTableRows()
+                      )}
+                    </tbody>
+                  </table>
                 </SimpleBar>
               </div>
             </CardBody>
@@ -1613,7 +1574,7 @@ const TodayAttendanceTable = () => {
               </span>
             </div>
 
-            {/* Right: employee avatar + name, fullscreen toggle, close */}
+            {/* Right: employee avatar + name, close */}
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
               <div
                 style={{
@@ -1662,26 +1623,6 @@ const TodayAttendanceTable = () => {
                 )}
                 <span>{mapSelectedEmpName}</span>
               </div>
-
-              {/* <button
-                onClick={() => setIsMapFull((f) => !f)}
-                title={isMapFull ? "Exit full view" : "Full view"}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  fontSize: "20px",
-                  lineHeight: 1,
-                  cursor: "pointer",
-                  color: "#374151",
-                  padding: "2px 6px",
-                }}
-              >
-                <i
-                  className={
-                    isMapFull ? "ri-fullscreen-exit-line" : "ri-fullscreen-line"
-                  }
-                ></i>
-              </button> */}
 
               <button
                 onClick={() => setIsMapOpen(false)}
