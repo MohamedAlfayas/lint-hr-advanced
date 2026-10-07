@@ -60,29 +60,35 @@ const Clients = () => {
         </span>
       ),
     },
-    {
-      Header: "City",
-      accessor: "city",
+      {
+      Header: "Owner",
+      id: "owner",
       filterable: false,
-      id: "city",
+      accessor: (obj) => <span>{getEmployeeName(obj.owner)}</span>,
     },
     {
-      Header: "State",
-      accessor: "state",
+      Header: "Managers",
+      id: "managers",
       filterable: false,
-      id: "state",
+      accessor: (obj) => (
+        <span>
+          {obj.manager_id_list?.length > 0
+            ? obj.manager_id_list.map((id) => getEmployeeName(id)).join(", ")
+            : "-"}
+        </span>
+      ),
     },
-    {
-      Header: "Country",
-      accessor: "country",
-      filterable: false,
-      id: "country",
-    },
-    {
+       {
       Header: "Phone",
-      accessor: "phone_number",
-      filterable: false,
       id: "phone_number",
+      filterable: false,
+      accessor: (obj) => (
+        <span>
+          {obj.phone_number
+            ? `${obj.country_code || ""} ${obj.phone_number}`.trim()
+            : "-"}
+        </span>
+      ),
     },
     {
       Header: "Website",

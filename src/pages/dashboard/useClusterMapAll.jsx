@@ -1040,6 +1040,9 @@ const UsersClusterMapAll = ({
     dateFilterRef.current = dateFilter;
   }, [dateFilter]);
 
+  const liveAppendRef = useRef(false); 
+  const skipNextFitRef = useRef(false);
+
   // Same pattern for dataMode: read inside the websocket's onRouteUpdate
   // handler (declared further below) so a live lintAI push is only ever
   // applied while that tab is actually selected, without forcing the
@@ -1074,6 +1077,10 @@ const UsersClusterMapAll = ({
   const rafRef = useRef(null);
   const startTimeRef = useRef(null);
   const startProgressRef = useRef(0);
+
+  const timelineScrollRef = useRef(null);
+  const pendingFocusLatestRef = useRef(false);
+  const [focusLatestToken, setFocusLatestToken] = useState(0);
 
   useEffect(() => {
     injectStyles();
@@ -1251,7 +1258,9 @@ const UsersClusterMapAll = ({
         );
         const data = response?.data?.data;
         if (!cancelled) {
-          setActiveLocations(Array.isArray(data) ? data : []);
+          const list = Array.isArray(data) ? data : [];
+          pendingFocusLatestRef.current = list.length > 0;
+          setActiveLocations(list);
         }
       } catch (error) {
         console.error(
@@ -1557,6 +1566,7 @@ const UsersClusterMapAll = ({
         // Only fold live points into TODAY's history — a different date
         // being viewed shouldn't get contaminated with live data.
         if (dateFilterRef.current === todayIsoIN()) {
+            liveAppendRef.current = true;  
           setActiveLocations((prev) => [...prev, normalized]);
         }
       },
@@ -1623,6 +1633,27 @@ const UsersClusterMapAll = ({
         }
       : null;
 
+
+   // ─── Live follow: map pan + timeline scroll ───
+  useEffect(() => {
+    if (!isLive || !liveMarkerPos || !mapRef.current) return;
+    if (activeTab !== TIMELINE_TABS.LOCATION) return;
+    if (dataMode === DATA_MODES.LINTAI || isPlaying) return;
+
+    const map = mapRef.current;
+    map.panTo(liveMarkerPos);
+    if ((map.getZoom() || 0) < PLAYBACK_FOLLOW_ZOOM) {
+      map.setZoom(PLAYBACK_FOLLOW_ZOOM);
+    }
+
+    const t = setTimeout(() => {
+      const el = timelineScrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    }, 150);
+    return () => clearTimeout(t);
+  }, [liveLocation, isLive]);
+
+
   // ─── Build path + timeline data (from the active employee's route).
   //     Re-runs on `dataMode` too, so flipping the GPS/Road/Both tab
   //     re-derives the same cached `activeLocations` through the other
@@ -1631,7 +1662,8 @@ const UsersClusterMapAll = ({
   //     for "both" is built separately below (secondaryRoadLinePath) so
   //     every marker / timeline card / playback value stays anchored to
   //     one consistent set of points. ─────────────────────────────────
-  useEffect(() => {
+    useEffect(() => {
+    let focusLatestIndex = null;
     if (Array.isArray(activeLocations) && activeLocations.length > 0) {
       const resolveLat = dataMode === DATA_MODES.ROAD ? getRoadLat : getLat;
       const resolveLng = dataMode === DATA_MODES.ROAD ? getRoadLng : getLng;
@@ -1712,10 +1744,31 @@ const UsersClusterMapAll = ({
         };
       });
       setPath(processed);
+      if (liveAppendRef.current) {
+      liveAppendRef.current = false;
+      skipNextFitRef.current = true;
+      setActiveIndex(processed.length - 1);
+      const latest = [...processed].reverse().find(hasValidCoords);
+      if (latest) {
+        setSelectedMarker({
+          lat: latest.lat,
+          lng: latest.lng,
+          count: 1,
+          users: [latest],
+        });
+      }
+      return;                                   
+    }
+
+      if (pendingFocusLatestRef.current) {
+        pendingFocusLatestRef.current = false;
+        focusLatestIndex = processed.length - 1; // latest record
+      }
     } else {
       setPath([]);
     }
-    setActiveIndex(null);
+    setActiveIndex(focusLatestIndex);
+    if (focusLatestIndex !== null) setFocusLatestToken((t) => t + 1);
     setExpandedIndex(null);
     setSelectedMarker(null);
     setIsPlaying(false);
@@ -1815,9 +1868,56 @@ const UsersClusterMapAll = ({
   }, []);
 
   useEffect(() => {
+      if (skipNextFitRef.current) {              
+      skipNextFitRef.current = false;
+      return;
+    }
     if (mapRef.current && mapPath.length > 0)
       fitToPath(mapRef.current, mapPath);
   }, [mapPath, fitToPath]);
+
+
+   // ─── On a fresh load, land on the LATEST record: scroll the timeline to
+  //     the bottom, open its info window and pan the map to it. ─────────
+  useEffect(() => {
+    if (!focusLatestToken) return;
+    if (activeTab !== TIMELINE_TABS.LOCATION) return;
+    if (dataMode === DATA_MODES.LINTAI) return;
+    if (path.length === 0) return;
+
+    // Timeline: scroll to the last card
+    const scrollTimer = setTimeout(() => {
+      const el = timelineScrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    }, 150);
+
+    // Map: latest record that actually has coordinates
+    const lastWithCoords = [...path].reverse().find(hasValidCoords);
+    let mapTimer;
+    if (lastWithCoords) {
+      setSelectedMarker({
+        lat: lastWithCoords.lat,
+        lng: lastWithCoords.lng,
+        count: 1,
+        users: [lastWithCoords],
+      });
+      mapTimer = setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.panTo({
+            lat: lastWithCoords.lat,
+            lng: lastWithCoords.lng,
+          });
+          mapRef.current.setZoom(17);
+        }
+      }, 200);
+    }
+
+    return () => {
+      clearTimeout(scrollTimer);
+      clearTimeout(mapTimer);
+    };
+  
+  }, [focusLatestToken]);
 
   // ─── lintAI: re-fit to the matched route's own geometry once it arrives
   //     (it can run further along roads than the raw pings, so fitting to
@@ -2194,6 +2294,15 @@ const UsersClusterMapAll = ({
     setIsPlaying(false);
     setProgress(0);
     setMovingPos(null);
+  
+
+  // Coming back to the Location tab → land on the LATEST record again
+    if (tabKey === TIMELINE_TABS.LOCATION && path.length > 0) {
+      setActiveIndex(path.length - 1);
+      setFocusLatestToken((t) => t + 1);
+    } else {
+      setActiveIndex(null);
+    }
   };
 
   // ─── Date picker helpers (must stay above the `!isLoaded` early return —
@@ -2213,6 +2322,16 @@ const UsersClusterMapAll = ({
   const datePickerValue = useMemo(
     () => (dateFilter ? dayjs(dateFilter, ISO_DATE_FORMAT) : null),
     [dateFilter],
+  );
+
+  const firstLat = mapPath[0]?.lat;
+  const firstLng = mapPath[0]?.lng;
+  const mapCenter = useMemo(
+    () =>
+      firstLat != null && firstLng != null
+        ? { lat: firstLat, lng: firstLng }
+        : indiaCenter,
+    [firstLat, firstLng],
   );
 
   const handleDatePickerChange = (date) => {
@@ -2286,7 +2405,7 @@ const UsersClusterMapAll = ({
         <div style={{ flex: "1 1 0%", minWidth: 0, position: "relative" }}>
           <GoogleMap
             mapContainerStyle={{ width: "100%", height: "100%" }}
-            center={mapPath.length ? mapPath[0] : indiaCenter}
+           center={mapCenter}
             onLoad={onMapLoad}
             options={mapOptions}
           >
@@ -3630,6 +3749,7 @@ const UsersClusterMapAll = ({
           {/* ── Body — switches per active tab ── */}
           <div
             className="ucma-scroll"
+            ref={timelineScrollRef}
             style={{
               flex: 1,
               overflowY: "auto",
