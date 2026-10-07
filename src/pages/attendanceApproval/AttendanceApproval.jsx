@@ -31,6 +31,7 @@ import { toast } from "react-toastify";
 import {
   VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
   VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
 import { setApprovalEmployeeTypeFilter } from "../../redux/reducers/ChildReducer/ApprovalComponentReducer";
 
@@ -64,40 +65,71 @@ const AttendanceApproval = ({
   const isAdmin = profile_data?.is_admin === true;
   const permList = profile_data?.permission_list || [];
 
+  // let employee_type;
+
+  // if (isAdmin) {
+  //   dispatch(setApprovalEmployeeTypeFilter(0));
+  //   employee_type = 0;
+  // } else if (
+  //   permList.includes(VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY) &&
+  //   permList.includes(VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY)
+  // ) {
+  //   employee_type = 1;
+  // } else if (
+  //   permList.includes(VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY) &&
+  //   !permList.includes(VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY)
+  // ) {
+  //   dispatch(setApprovalEmployeeTypeFilter(0));
+  //   employee_type = 0;
+  // } else {
+  //   employee_type = 1;
+  // }
+
+  // const hasAttendanceApprovalAccess =
+  //   isAdmin ||
+  //   permList.includes(VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY) ||
+  //   permList.includes(VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY);
+
+  // // employee_type is retained from the previous permission flow.
+  // // The actual API request is intentionally handled by ApprovalFilter.
+  // void employee_type;
+
+  // useEffect(() => {
+  //   dispatch(
+  //     setAttendanceApprovalTableFilterKeys({ primary_department_id_list: 0 }),
+  //   );
+  // }, []);
+
+
+  // ⬇️ NEW BLOCK STARTS HERE
+  const hasAll =
+    isAdmin || permList.includes(VIEW_ALL_ATTENDANCE_APPROVAL_ACCESS_KEY);
+  const hasHierarchy = permList.includes(
+    VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY,
+  );
+  const hasTeam = permList.includes(VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY);
+
   let employee_type;
+  if (hasAll) employee_type = 0;
+  else if (hasHierarchy && hasTeam) employee_type = 1;
+  else if (hasHierarchy) employee_type = 0;
+  else employee_type = 1;
 
-  if (isAdmin) {
-    dispatch(setApprovalEmployeeTypeFilter(0));
-    employee_type = 0;
-  } else if (
-    permList.includes(VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY) &&
-    permList.includes(VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY)
-  ) {
-    employee_type = 1;
-  } else if (
-    permList.includes(VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY) &&
-    !permList.includes(VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY)
-  ) {
-    dispatch(setApprovalEmployeeTypeFilter(0));
-    employee_type = 0;
-  } else {
-    employee_type = 1;
-  }
+  const hasAttendanceApprovalAccess = hasAll || hasHierarchy || hasTeam;
 
-  const hasAttendanceApprovalAccess =
-    isAdmin ||
-    permList.includes(VIEW_HIERARCHY_ATTENDANCE_APPROVAL_ACCESS_KEY) ||
-    permList.includes(VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY);
-
-  // employee_type is retained from the previous permission flow.
-  // The actual API request is intentionally handled by ApprovalFilter.
-  void employee_type;
+  useEffect(() => {
+    if (employee_type === 0) {
+      dispatch(setApprovalEmployeeTypeFilter(0));
+    }
+  }, [employee_type]);
+  // ⬆️ NEW BLOCK ENDS HERE
 
   useEffect(() => {
     dispatch(
       setAttendanceApprovalTableFilterKeys({ primary_department_id_list: 0 }),
     );
   }, []);
+
 
   const [timelineList, setTimelineList] = useState([]);
   const [timelineDate, setTimeLineDate] = useState("");
@@ -143,59 +175,49 @@ const AttendanceApproval = ({
   };
 
   const additionalColumn = [
+  
     {
       Header: "Name",
       className: "lc_sticky_first_additional_col",
-      accessor: "employee_id",
-      filterable: false,
       id: "employee_id",
+      filterable: false,
+      accessor: (obj) => {
+        const emp = obj?.employee;
 
-          accessor: (obj) => {
-        const thisEmployee = EmployeeData.find(
-          (data) => String(data.id) === String(obj.employee_id),
-        );
-          if (!thisEmployee) {
+        if (!emp) {
           return <span className="text-muted">-</span>;
         }
 
-        const profileUrl = thisEmployee.profile_url;
-        const firstName = thisEmployee.first_name || "-";
-        const email = thisEmployee.email || "";
+        const profileUrl = emp.profile_url;
+        const firstName = emp.first_name || "-";
+        const email = emp.email || "";
 
-        return profileUrl ? (
+        return (
           <div className="d-flex gap-2 align-items-center lc_sticky_first_additional_col">
             <div className="flex-shrink-0">
-              <img
-                src={profileUrl}
-                alt={firstName}
-                className="avatar-xs rounded-circle"
-                style={{ objectFit: "cover" }}
-              />
-            </div>
-
-            <div className="flex-grow-1">
-              <div>{firstName}</div>
-              <div>{email}</div>
-            </div>
-          </div>
-        ) : (
-          <div className="d-flex gap-2 align-items-center lc_sticky_first_additional_col">
-            <div className="flex-shrink-0">
-              <div
-                className="avatar-xs rounded-circle"
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  background: "#0ab39c",
-                }}
-                data-bs-toggle="tooltip"
-                title={firstName}
-              >
-                <span className="first_letter" style={{ color: "white" }}>
-                  {firstName !== "-" ? firstName.charAt(0).toUpperCase() : "-"}
-                </span>
-              </div>
+              {profileUrl ? (
+                <img
+                  src={profileUrl}
+                  alt={firstName}
+                  className="avatar-xs rounded-circle"
+                  style={{ objectFit: "cover" }}
+                />
+              ) : (
+                <div
+                  className="avatar-xs rounded-circle"
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    background: "#0ab39c",
+                  }}
+                  title={firstName}
+                >
+                  <span className="first_letter" style={{ color: "white" }}>
+                    {firstName !== "-" ? firstName.charAt(0).toUpperCase() : "-"}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex-grow-1">
@@ -211,25 +233,9 @@ const AttendanceApproval = ({
       id: "department",
       filterable: false,
       accessor: (obj) => {
-        let thisEmp = EmployeeData.find((data) => data.id === obj.employee_id);
-
-            let thisDepartment = (thisEmp?.primary_department_id_list || [])
-          .map((deptId) =>
-            DepartmentData.find((dept) => Number(dept.id) === Number(deptId)),
-          )
-          .filter(Boolean);
-
-        let firstDep_name = thisDepartment?.length
-          ? thisDepartment[0].name
-          : "";
-
-        let subDepList = thisDepartment?.length
-          ? thisDepartment.filter((datas, index) => {
-              if (index !== 0) {
-                return datas;
-              }
-            })
-          : [];
+        const departments = obj?.employee?.departments || [];
+        const firstDep_name = departments[0]?.name || "-";
+        const subDepList = departments.slice(1);
 
         return (
           <span>
@@ -238,34 +244,33 @@ const AttendanceApproval = ({
               id={`depListRef-${obj.id}`}
               className="position-relative"
             >
-              <React.Fragment>{firstDep_name}</React.Fragment>
-              {subDepList.length > 0 ? (
-                <span>
-                  <Badge
-                    pill
-                    color="success"
-                    className="position-absolute top-0 start-100 translate-middle"
-                  >
-                    +{subDepList.length}
-                    <span className="visually-hidden">Departments</span>
-                  </Badge>
-
-                  <UncontrolledTooltip
-                    placement="bottom"
-                    target={`depListRef-${obj.id}`}
-                  >
-                    {" "}
-                    <div className="mt-1">
-                      {subDepList.map((item, key) => (
-                        <p className="mb-1">{item.name}</p>
-                      ))}
-                    </div>{" "}
-                  </UncontrolledTooltip>
-                </span>
-              ) : (
-                ""
+              {firstDep_name}
+              {subDepList.length > 0 && (
+                <Badge
+                  pill
+                  color="success"
+                  className="position-absolute top-0 start-100 translate-middle"
+                >
+                  +{subDepList.length}
+                  <span className="visually-hidden">Departments</span>
+                </Badge>
               )}
             </Button>
+
+            {subDepList.length > 0 && (
+              <UncontrolledTooltip
+                placement="bottom"
+                target={`depListRef-${obj.id}`}
+              >
+                <div className="mt-1">
+                  {subDepList.map((item) => (
+                    <p className="mb-1" key={item.id}>
+                      {item.name}
+                    </p>
+                  ))}
+                </div>
+              </UncontrolledTooltip>
+            )}
           </span>
         );
       },
@@ -786,7 +791,8 @@ const AttendanceApproval = ({
                     </button>
                     {!!notesObj?.notes &&
                       (notesObj?.notes).trim().length > 0 &&
-                      notesData.hrStatus != 2 && (
+                      // notesData.hrStatus != 2 
+                      notesData.hr_status !== 2 && (
                         <button
                           type="button"
                           className="btn w-sm btn-success"

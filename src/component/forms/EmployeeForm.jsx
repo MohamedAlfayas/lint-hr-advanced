@@ -74,6 +74,14 @@ const EmployeeForm = () => {
   const dep_options = GetLocalStorageData("department") || [];
   const ws_options = GetLocalStorageData("work_schedule") || [];
   const role_id_option = GetLocalStorageData("role") || [];
+  const adminRole = role_id_option.find(
+    (r) => (r.name || "").toLowerCase() === "admin",
+  );
+
+  const isRoleLockedByDept = (deptIds) => {
+    const root = dep_options.find((d) => d.is_root === true);
+    return !!root && Array.isArray(deptIds) && deptIds.includes(root.id);
+  };
 
   const [reportingManagerOptions, setReportingManagerOptions] = useState([]);
   const [employeeImage, setEmployeeImage] = useState(null);
@@ -327,6 +335,11 @@ const EmployeeForm = () => {
     ) {
       this_role_id = form_obj?.role?.id;
     }
+
+    const final_role_id =
+      isRoleLockedByDept(form_obj?.primary_department_id_list) && adminRole
+        ? adminRole.id
+        : this_role_id;
     // Prefer dayjs over ConvertISODateFormat — new Date(DD-MM-YYYY) swaps/NaNs.
     const toIsoOrEmpty = (val) => {
       if (!val || val === "-") return "";
@@ -345,7 +358,8 @@ const EmployeeForm = () => {
       ...form_obj,
       dob: toIsoOrEmpty(form_obj.dob),
       joining_date: toIsoOrEmpty(form_obj.joining_date),
-      role_id: this_role_id,
+      // role_id: this_role_id,
+      role_id: final_role_id,
       employment_type: form_obj.employment_type || 2,
       probation_end_date: toIsoOrEmpty(form_obj.probation_end_date),
     });
@@ -353,7 +367,8 @@ const EmployeeForm = () => {
       ...form_obj,
       dob: toIsoOrEmpty(form_obj.dob),
       joining_date: toIsoOrEmpty(form_obj.joining_date),
-      role_id: this_role_id,
+      // role_id: this_role_id,
+      role_id: final_role_id,
       employment_type: form_obj.employment_type || 2,
       probation_end_date: toIsoOrEmpty(form_obj.probation_end_date),
     });
@@ -546,11 +561,17 @@ const EmployeeForm = () => {
     valid_dep_ids.length
       ? GetReportingManager(valid_dep_ids)
       : setReportingManagerOptions([]);
+
+    const lockRole = isRoleLockedByDept(valid_dep_ids) && !!adminRole;
     setEmployeeObj({
       ...employeeObj,
       primary_department_id_list: valid_dep_ids,
       reporting_manager_id: 0,
+      ...(lockRole ? { role_id: adminRole.id } : {}),
     });
+    if (lockRole) {
+      FormikForm.setFieldValue("role_id", adminRole.id);
+    }
   };
 
   const handleDateKeyDown = (e) => {
@@ -2376,6 +2397,7 @@ const EmployeeForm = () => {
                     id="role_id"
                     name="role_id"
                     isMulti={false}
+                    isDisabled={isRoleLockedByDept(employeeObj?.primary_department_id_list)}
                     options={role_id_option || []}
                     className="basic-multi-select"
                     styles={{
@@ -2413,12 +2435,19 @@ const EmployeeForm = () => {
                       {FormikForm.errors.role_id}
                     </div>
                   )}
-                  {
+                  {/* {
                   !(
                   (FormikForm.touched.role_id || hasAttemptedSubmit) &&
                   FormikForm.errors.role_id ) && 
                     <div className="form-text mb-3">Select role.</div>
-                  }
+                  } */}
+                  {!((FormikForm.touched.role_id || hasAttemptedSubmit) && FormikForm.errors.role_id) && (
+                    <div className="form-text mb-3">
+                      {isRoleLockedByDept(employeeObj?.primary_department_id_list)
+                        ? "Role is Admin for the Main/Top-Level department."
+                        : "Select role."}
+                    </div>
+                  )}
                 </div>
               </Col>
 

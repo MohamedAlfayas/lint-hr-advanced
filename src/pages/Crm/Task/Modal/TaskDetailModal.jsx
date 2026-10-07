@@ -22,6 +22,7 @@ import { editTask } from "../../../../redux/reducers/ChildReducer/TaskReducer";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import TaskCommentSection from "./TaskCommentSection";
+import { EDIT_PROJECT_ACCESS_KEY } from "../../../../common/constant/RoleConstants";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1376,6 +1377,14 @@ const TaskDetailModal = ({
 
   const isSavingAny = Object.values(fieldSaving).some(Boolean);
 
+  const canEditProject = useMemo(() => {
+    const profile = JSON.parse(localStorage.getItem("lint_hr_profile_data") || "{}");
+    return (
+      profile?.is_admin === true ||
+      (profile?.permission_list || []).includes(EDIT_PROJECT_ACCESS_KEY)
+    );
+  }, []);
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -2080,19 +2089,21 @@ const TaskDetailModal = ({
       {!loading && !error && task && (
         <ModalFooter className="d-flex justify-content-between border-top py-2">
           <div className="d-flex gap-2">
-            <button
-              type="button"
-              className="btn btn-outline-danger btn-sm"
-              onClick={() => handleDeleteTask(taskId)}
-              disabled={deleting || isSavingAny}
-            >
-              {deleting ? (
-                <Spinner size="sm" className="me-1" />
-              ) : (
-                <i className="ri-delete-bin-line me-1" />
-              )}
-              Delete Task
-            </button>
+            {canEditProject && (
+              <button
+                type="button"
+                className="btn btn-outline-danger btn-sm"
+                onClick={() => handleDeleteTask(taskId)}
+                disabled={deleting || isSavingAny}
+              >
+                {deleting ? (
+                  <Spinner size="sm" className="me-1" />
+                ) : (
+                  <i className="ri-delete-bin-line me-1" />
+                )}
+                Delete Task
+              </button>
+            )}
           </div>
           <div className="d-flex gap-2 align-items-center">
             {isSavingAny && (
@@ -2105,15 +2116,17 @@ const TaskDetailModal = ({
                 Saving changes…
               </span>
             )}
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={handleEditTask}
-              disabled={isSavingAny}
-            >
-              <i className="ri-edit-line me-1" />
-              Edit Task
-            </button>
+            {canEditProject && (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={handleEditTask}
+                disabled={isSavingAny}
+              >
+                <i className="ri-edit-line me-1" />
+                Edit Task
+              </button>
+            )}
           </div>
         </ModalFooter>
       )}

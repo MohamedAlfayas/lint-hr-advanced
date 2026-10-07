@@ -273,9 +273,14 @@ const AttendanceReport = () => {
         ),
       );
 
-      const foundEmployee = employee_data.find(
-        (emp) => rowData.employee_id === emp.id,
-      );
+      // const foundEmployee = employee_data.find(
+      //   (emp) => rowData.employee_id === emp.id,
+      // );
+
+      const foundEmployee =
+        rowData?.employee ||
+        employee_data.find((emp) => rowData.employee_id === emp.id);
+
       const emp_name = foundEmployee ? foundEmployee.first_name : "";
       const employee_id = foundEmployee ? foundEmployee.emp_id : "";
 
@@ -705,9 +710,12 @@ const AttendanceReport = () => {
 
     reportData.forEach((rowData, rowIndex, colIndex) => {
       const row = [];
-      const foundEmployee = employee_data.find(
-        (emp) => rowData.employee_id === emp.id,
-      );
+      // const foundEmployee = employee_data.find(
+      //   (emp) => rowData.employee_id === emp.id,
+      // );
+      const foundEmployee =
+        rowData?.employee ||
+        employee_data.find((emp) => rowData.employee_id === emp.id);
       const emp_name = foundEmployee ? foundEmployee.first_name : "";
       row.push(emp_name);
       row.push(foundEmployee ? foundEmployee.email : "");
@@ -916,9 +924,13 @@ const AttendanceReport = () => {
   };
 
   const FixedColumns = ({ rowData, index, dataKey, ...props }) => {
-    const emp_name = employee_data.find(
-      (emp) => rowData.employee_id === emp.id,
-    );
+    // const emp_name = employee_data.find(
+    //   (emp) => rowData.employee_id === emp.id,
+    // );
+
+    const emp_name =
+      rowData?.employee ||
+      employee_data.find((emp) => rowData.employee_id === emp.id);
 
     if (!emp_name) {
       return <Cell {...props} dataKey="id" />;

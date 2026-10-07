@@ -28,7 +28,11 @@ export const BuildAttendanceReportChart = (individual_attendance_report_data, di
             let totalBalanceHours = 0;
 
             reversed_report_data.map((d) => {
-                dates.push(format(new Date(d.date), "dd MMM"));
+                // dates.push(format(new Date(d.date), "dd MMM"));
+                dates.push([
+                    format(new Date(d.date), "EEE"),     // Sun
+                    format(new Date(d.date), "dd MMM"),  // 04 Oct
+                ]);
 
                 let final_paid_hr_count = 0;
                 let balance_hr_count = 0;

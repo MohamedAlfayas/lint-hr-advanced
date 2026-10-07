@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { Col } from "reactstrap";
 import Select from "react-select";
@@ -28,6 +28,21 @@ const HolidayFilter = () => {
   const { attendance_approval_table_filter_keys } = useSelector(
     (state) => state.TableFilterReducer,
   );
+
+  const selectedYear =
+    attendance_approval_table_filter_keys?.year ||
+    new Date().getFullYear().toString();
+
+  useEffect(() => {
+    if (!attendance_approval_table_filter_keys?.year) {
+      dispatch(
+        setAttendanceApprovalTableFilterKeys({
+          ...attendance_approval_table_filter_keys,
+          year: selectedYear,
+        }),
+      );
+    }
+  }, []);
 
   const handleFilterChange = (e, name) => {
     let val = !!e ? e.id : 0;
@@ -75,6 +90,7 @@ const HolidayFilter = () => {
             className="form-control"
             style={{ width: "100%", height: "38px" }}
             placeholder="Select Year"
+            value={dayjs(selectedYear, "YYYY")}
             disabledDate={(current) => {
               const minYear = 1900;
               const maxYear = new Date().getFullYear() + 1;

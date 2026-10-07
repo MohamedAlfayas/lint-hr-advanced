@@ -680,9 +680,11 @@ const ProjectOverview = ({ projectId }) => {
           <Card className="h-100">
             <CardHeader className="d-flex align-items-center justify-content-between flex-wrap gap-2 py-2">
               <h5 className="mb-0" style={{ fontSize: 15 }}><i className="ri-team-line me-2"></i>Project Members</h5>
-              <Button type="button" size="sm" color="primary" onClick={openAddMember}>
-                <i className="ri-add-line me-1"></i>Add Member
-              </Button>
+              {canEditProject && (
+                <Button type="button" size="sm" color="primary" onClick={openAddMember}>
+                  <i className="ri-add-line me-1"></i>Add Member
+                </Button>
+              )}
             </CardHeader>
             <CardBody className="py-2">
               <SimpleBar style={{ maxHeight: COMPACT_LIST_MAX_HEIGHT }}>
