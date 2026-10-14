@@ -1,5 +1,5 @@
 const platform = process.env.REACT_APP_LC_PLATFORM || "local";
-const LOCAL_BASE_URL = "https://lintcloud.lintedu.com/";
+const LOCAL_BASE_URL = process.env.REACT_APP_LOCAL_BASE_URL || "https://lintcloud.vayulo.com/";
 export const getBaseUrlFromDomain = () => {
   // Local dev/testing (e.g. on a physical device pointed at your machine's
   // LAN IP) always talks to the fixed local server — skip hostname/subdomain
